@@ -9,8 +9,12 @@ Clearing the preset starts manual configuration with internal-user access.
   are added to owners. Native accounting/company invariants still apply.
 * Accountant: Invoicing, Purchase, Sales and POS. Approves purchase batches using the
   existing native approval flow. No unrelated HR, CRM or project business reads.
-* Cashier: POS and own bulk purchase batches. Draft input only; accountant approval.
-  Own approved summaries remain readable without general accounting access.
+* Cashier: POS, own bulk purchase batches, and operational raw-material requests.
+  The cashier can create/send requests and receive any request in the active company
+  through the existing procurement cashier workflow. That receipt records actual
+  quantity/price and purchase-price history; it does not grant invoice, payment,
+  custody, settlement, purchase-manager, or accounting access. Own approved
+  summaries remain readable without general accounting access.
 
 Limited roles retain required shared product/contact/tax access. Menu filtering is
 supplementary to native ACLs and conditional global rules. The optional model/group

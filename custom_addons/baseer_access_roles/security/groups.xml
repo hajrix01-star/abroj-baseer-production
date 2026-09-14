@@ -18,6 +18,6 @@
     <record id="group_cashier" model="res.groups">
         <field name="name">Cashier</field>
         <field name="privilege_id" eval="False"/>
-        <field name="implied_ids" eval="[(6, 0, [ref('base.group_user'), ref('point_of_sale.group_pos_user')])]"/>
+        <field name="implied_ids" eval="[(6, 0, [ref('base.group_user'), ref('point_of_sale.group_pos_user'), ref('baseer_procurement_requests.group_procurement_cashier')])]"/>
     </record>
 </odoo>

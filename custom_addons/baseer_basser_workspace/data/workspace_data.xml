@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="workspace_section_cashier_operations" model="baseer.basser.workspace.section">
+        <field name="name">Cashier operations</field>
+        <field name="role">cashier</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="workspace_item_cashier_new_procurement" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_cashier_operations"/>
+        <field name="name">New purchase request</field>
+        <field name="description">Create a new raw-material purchase request.</field>
+        <field name="menu_id" ref="baseer_procurement_requests.menu_procurement_catalog"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="workspace_item_cashier_procurement_requests" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_cashier_operations"/>
+        <field name="name">Purchase requests</field>
+        <field name="description">Review requests and record the received purchase.</field>
+        <field name="menu_id" ref="baseer_procurement_requests.menu_procurement_requests"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="workspace_item_cashier_sales_summaries" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_cashier_operations"/>
+        <field name="name">Sales summaries</field>
+        <field name="description">Enter and review the company sales summaries.</field>
+        <field name="menu_id" ref="baseer_pos_summary.menu_summary"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="workspace_section_accountant_operations" model="baseer.basser.workspace.section">
+        <field name="name">Accountant operations</field>
+        <field name="role">accountant</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="workspace_item_accountant_purchase_batches" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_accountant_operations"/>
+        <field name="name">Purchase batches</field>
+        <field name="description">Review and process approved purchase batches.</field>
+        <field name="menu_id" ref="baseer_purchase_batch.menu_purchase_batches"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="workspace_item_accountant_advances" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_accountant_operations"/>
+        <field name="name">Employee advances</field>
+        <field name="description">Review employee advances in the active company.</field>
+        <field name="menu_id" ref="baseer_access_roles.menu_account_advance_entries"/>
+        <field name="sequence">20</field>
+    </record>
+</odoo>

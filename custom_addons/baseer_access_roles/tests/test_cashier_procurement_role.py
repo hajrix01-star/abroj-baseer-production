@@ -86,8 +86,8 @@ class CashierProcurementRoleCase(TransactionCase):
             'baseer_procurement_requests.group_procurement_cashier'
         ))
 
-    def test_cpr_t01a_cashier_sees_only_procurement_navigation_under_inventory(self):
-        """Cashiers can reach requests and receipt work without Inventory admin menus."""
+    def test_cpr_t01a_cashier_sees_only_curated_navigation(self):
+        """BASSER replaces native roots when installed; otherwise preserve legacy paths."""
         company = self.env.company
         cashier = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Cashier procurement navigation',
@@ -97,7 +97,22 @@ class CashierProcurementRoleCase(TransactionCase):
             'baseer_access_role': 'cashier',
         })
 
-        visible = self.env['ir.ui.menu'].with_user(cashier)._visible_menu_ids()
+        menu_model = self.env['ir.ui.menu'].with_user(cashier)
+        visible = menu_model._visible_menu_ids()
+        workspace_root = self.env.ref(
+            'baseer_basser_workspace.menu_basser_root', raise_if_not_found=False,
+        )
+        if workspace_root:
+            self.assertIn(workspace_root.id, visible)
+            for xmlid in (
+                'stock.menu_stock_root',
+                'baseer_procurement_requests.menu_procurement_root',
+                'baseer_procurement_requests.menu_procurement_catalog',
+                'baseer_procurement_requests.menu_procurement_requests',
+            ):
+                self.assertNotIn(self.env.ref(xmlid).id, visible)
+            return
+
         for xmlid in (
             'stock.menu_stock_root',
             'baseer_procurement_requests.menu_procurement_root',

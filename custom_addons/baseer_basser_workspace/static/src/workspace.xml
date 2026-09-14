@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_basser_workspace.Workspace">
+        <main class="o_basser_workspace container-fluid" t-att-aria-busy="state.status === 'loading' ? 'true' : 'false'">
+            <header class="o_basser_workspace_header">
+                <div>
+                    <h1 t-esc="labels.title"/>
+                    <p class="text-muted mb-0" t-esc="labels.description"/>
+                </div>
+                <button t-if="state.status === 'ready' and state.canManage" type="button" class="btn btn-primary"
+                        t-att-disabled="state.openingItemId ? true : undefined"
+                        t-att-aria-disabled="state.openingItemId ? 'true' : 'false'"
+                        t-on-click="openManagement">
+                    <i class="fa fa-cog me-1" aria-hidden="true"/>
+                    <span t-esc="labels.manage"/>
+                </button>
+            </header>
+
+            <section t-if="state.status === 'loading'" class="o_basser_workspace_state" role="status" aria-live="polite">
+                <div class="o_basser_workspace_skeleton" aria-hidden="true"/>
+                <span t-esc="labels.loading"/>
+            </section>
+            <section t-elif="state.status === 'no_access'" class="o_basser_workspace_state alert alert-warning" role="alert">
+                <span t-esc="labels.noAccess"/>
+            </section>
+            <section t-elif="state.status === 'error'" class="o_basser_workspace_state alert alert-danger" role="alert">
+                <p class="mb-2" t-esc="labels.error"/>
+                <button type="button" class="btn btn-outline-danger" t-on-click="loadWorkspace" t-esc="labels.retry"/>
+            </section>
+            <section t-elif="state.status === 'empty'" class="o_basser_workspace_state" role="status" aria-live="polite">
+                <i class="fa fa-th-large o_basser_workspace_empty_icon" aria-hidden="true"/>
+                <p class="mb-0" t-esc="labels.empty"/>
+            </section>
+            <section t-else="" class="o_basser_workspace_sections">
+                <section t-foreach="state.sections" t-as="section" t-key="section.id" class="o_basser_workspace_section">
+                    <h2 t-esc="section.name"/>
+                    <div class="o_basser_workspace_grid">
+                        <button t-foreach="section.items" t-as="item" t-key="item.id" type="button"
+                                class="o_basser_workspace_card"
+                                t-att-disabled="state.openingItemId ? true : undefined"
+                                t-att-aria-disabled="state.openingItemId ? 'true' : 'false'"
+                                t-on-click="() => this.openItem(item)">
+                            <span class="o_basser_workspace_icon" aria-hidden="true"><i t-att-class="item.icon"/></span>
+                            <span class="o_basser_workspace_card_body">
+                                <strong t-esc="item.name"/>
+                                <small t-if="item.description" t-esc="item.description"/>
+                            </span>
+                            <span t-if="state.openingItemId === item.id" class="o_basser_workspace_opening" aria-live="polite" t-esc="labels.opening"/>
+                        </button>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </t>
+</templates>

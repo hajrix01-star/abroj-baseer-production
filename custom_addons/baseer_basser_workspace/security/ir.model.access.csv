@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_basser_workspace_section_owner,baseer.basser.workspace.section.owner,model_baseer_basser_workspace_section,baseer_access_roles.group_owner,1,1,1,1
+access_basser_workspace_item_owner,baseer.basser.workspace.item.owner,model_baseer_basser_workspace_item,baseer_access_roles.group_owner,1,1,1,1

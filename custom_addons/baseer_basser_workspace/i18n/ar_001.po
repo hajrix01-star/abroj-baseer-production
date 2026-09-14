@@ -1,0 +1,125 @@
+# Translation of BASSER Workspace.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0\n"
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "Your approved operational workspace."
+msgstr "مساحة عملك التشغيلية المعتمدة."
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "Loading your workspace…"
+msgstr "جارٍ تحميل مساحة العمل…"
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "No operational items are configured for your role and active company."
+msgstr "لا توجد عناصر تشغيلية مهيأة لدورك والشركة النشطة."
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "You are not allowed to use this workspace."
+msgstr "ليست لديك صلاحية استخدام مساحة العمل هذه."
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "BASSER could not be loaded."
+msgstr "تعذر تحميل BASSER."
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "Retry"
+msgstr "إعادة المحاولة"
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "Manage BASSER"
+msgstr "إدارة BASSER"
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "Opening…"
+msgstr "جارٍ الفتح…"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.menu,name:baseer_basser_workspace.menu_basser_configuration
+msgid "BASSER configuration"
+msgstr "إعدادات BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.actions.act_window,name:baseer_basser_workspace.action_workspace_section
+msgid "BASSER workspace"
+msgstr "مساحة عمل BASSER"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.section,name:baseer_basser_workspace.workspace_section_cashier_operations
+msgid "Cashier operations"
+msgstr "عمليات الكاشير"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.section,name:baseer_basser_workspace.workspace_section_accountant_operations
+msgid "Accountant operations"
+msgstr "عمليات المحاسب"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_new_procurement
+msgid "New purchase request"
+msgstr "طلب مشتريات جديد"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_new_procurement
+msgid "Create a new raw-material purchase request."
+msgstr "إنشاء طلب مشتريات جديد للمواد الخام."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_procurement_requests
+msgid "Purchase requests"
+msgstr "طلبات المشتريات"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_procurement_requests
+msgid "Review requests and record the received purchase."
+msgstr "مراجعة الطلبات وتسجيل استلام المشتريات."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_sales_summaries
+msgid "Sales summaries"
+msgstr "ملخصات المبيعات"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_sales_summaries
+msgid "Enter and review the company sales summaries."
+msgstr "إدخال ومراجعة ملخصات مبيعات الشركة."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_purchase_batches
+msgid "Purchase batches"
+msgstr "دفعات المشتريات"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_purchase_batches
+msgid "Review and process approved purchase batches."
+msgstr "مراجعة ومعالجة دفعات المشتريات المعتمدة."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_advances
+msgid "Employee advances"
+msgstr "سلف الموظفين"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_advances
+msgid "Review employee advances in the active company."
+msgstr "مراجعة سلف الموظفين في الشركة النشطة."

@@ -308,7 +308,12 @@ class HeatCalendarCase(TransactionCase):
         self.Target.sudo().create(values)
         with self.env.cr.savepoint(), self.assertRaises(IntegrityError):
             self.Target.sudo().create(values)
-        for invalid in ({'year': 0}, {'month': 0}, {'weekday': -1}):
+        for invalid in (
+            {'year': 0}, {'month': 0}, {'weekday': -1},
+            {'target_amount': float('nan')},
+            {'target_amount': float('inf')},
+            {'target_amount': float('-inf')},
+        ):
             with self.subTest(invalid=invalid), self.assertRaises(ValidationError):
                 self.Target.sudo().create({**self._target_values(self.company_a, weekday=4), **invalid})
 

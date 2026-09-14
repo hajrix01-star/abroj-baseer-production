@@ -683,3 +683,9 @@ msgstr "تغذية المناسبات السعودية فقط هي التي تح
 #: code:addons/baseer_sales_heat_calendar/models/occasion.py:0
 msgid "The source key is managed by the server."
 msgstr "يتولى الخادم إدارة مفتاح المصدر."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target.py:0
+msgid "The target amount must be a finite, non-negative number."
+msgstr "يجب أن يكون مبلغ الهدف رقماً منتهياً وغير سالب."

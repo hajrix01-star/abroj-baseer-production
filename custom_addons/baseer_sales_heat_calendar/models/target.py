@@ -1,3 +1,5 @@
+import math
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -36,6 +38,28 @@ class HeatCalendarTarget(models.Model):
         'unique(company_id, year, month, weekday)', 'Only one target is allowed for this scope.'
     )
 
+    @staticmethod
+    def _check_finite_target_amount(value):
+        """Reject values PostgreSQL/Odoo cannot safely round before insertion."""
+        try:
+            amount = float(value)
+        except (TypeError, ValueError):
+            amount = None
+        if isinstance(value, bool) or amount is None or not math.isfinite(amount) or amount < 0:
+            raise ValidationError(_('The target amount must be a finite, non-negative number.'))
+
+    @api.model_create_multi
+    def create(self, values_list):
+        for values in values_list:
+            if 'target_amount' in values:
+                self._check_finite_target_amount(values['target_amount'])
+        return super().create(values_list)
+
+    def write(self, values):
+        if 'target_amount' in values:
+            self._check_finite_target_amount(values['target_amount'])
+        return super().write(values)
+
     @api.constrains('year', 'month', 'weekday', 'target_amount')
     def _check_target_scope(self):
         for record in self:
@@ -45,5 +69,4 @@ class HeatCalendarTarget(models.Model):
                 raise ValidationError(_('Choose a calendar month from January to December.'))
             if not 0 <= record.weekday <= 6:
                 raise ValidationError(_('Choose one named weekday for this target.'))
-            if record.target_amount < 0:
-                raise ValidationError(_('The target amount cannot be negative.'))
+            self._check_finite_target_amount(record.target_amount)

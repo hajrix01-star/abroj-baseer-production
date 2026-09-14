@@ -38,6 +38,11 @@ msgid "Requests"
 msgstr "الطلبات"
 
 #. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Cashier purchase receipt"
+msgstr "استلام المشتريات"
+
+#. module: baseer_procurement_requests
 #: model:ir.actions.act_window,name:baseer_procurement_requests.action_procurement_custody
 #: model:ir.ui.menu,name:baseer_procurement_requests.menu_procurement_custody
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form

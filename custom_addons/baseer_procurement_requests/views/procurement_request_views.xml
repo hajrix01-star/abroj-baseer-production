@@ -27,7 +27,7 @@
                     <button name="action_mark_sent" type="object" string="Confirm sent" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_open_manager_receipt_catalog" type="object" string="Confirm manager receipt" class="oe_highlight" invisible="state != 'sent'" groups="baseer_procurement_requests.group_procurement_manager"/>
-                    <button name="action_open_actual_catalog" type="object" string="Cashier actual entry" class="oe_highlight" invisible="state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/>
+                    <button name="action_open_actual_catalog" type="object" string="Cashier purchase receipt" class="oe_highlight" invisible="state not in ('sent', 'received')" groups="baseer_procurement_requests.group_procurement_cashier"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,sent,received,purchased"/>
                 </header>
                 <sheet>

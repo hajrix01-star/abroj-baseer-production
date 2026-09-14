@@ -86,6 +86,32 @@ class CashierProcurementRoleCase(TransactionCase):
             'baseer_procurement_requests.group_procurement_cashier'
         ))
 
+    def test_cpr_t01a_cashier_sees_only_procurement_navigation_under_inventory(self):
+        """Cashiers can reach requests and receipt work without Inventory admin menus."""
+        company = self.env.company
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Cashier procurement navigation',
+            'login': 'cashier-procurement-navigation-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'baseer_access_role': 'cashier',
+        })
+
+        visible = self.env['ir.ui.menu'].with_user(cashier)._visible_menu_ids()
+        for xmlid in (
+            'stock.menu_stock_root',
+            'baseer_procurement_requests.menu_procurement_root',
+            'baseer_procurement_requests.menu_procurement_catalog',
+            'baseer_procurement_requests.menu_procurement_requests',
+        ):
+            self.assertIn(self.env.ref(xmlid).id, visible)
+        for xmlid in (
+            'baseer_procurement_requests.menu_procurement_options',
+            'baseer_procurement_requests.menu_procurement_custody',
+            'baseer_procurement_requests.menu_procurement_reports',
+        ):
+            self.assertNotIn(self.env.ref(xmlid).id, visible)
+
     def test_cpr_t02_role_can_receive_only_in_the_active_company(self):
         """A role cashier creates/receives in A but cannot mutate B via ORM."""
         company_a = self.env.company

@@ -427,7 +427,24 @@ class ProcurementRequest(models.Model):
             if request.state not in states:
                 raise UserError(_('This action is not available in the current request state.'))
 
+    def _require_active_company_for_cashier(self):
+        """Keep every cashier mutation inside the currently active company.
+
+        Record rules deliberately let a multi-company user read the companies
+        enabled for the session.  That must not permit the operational cashier
+        role to mutate a request from another selected company through a form
+        method or direct ORM call.  Managers without the cashier capability
+        retain their existing multi-company workflow.
+        """
+        if self.env.su or not self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ):
+            return
+        if any(request.company_id != self.env.company for request in self):
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+
     def action_mark_whatsapp_opened(self):
+        self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to send procurement requests.'))
         self._require_state('draft')
@@ -445,6 +462,7 @@ class ProcurementRequest(models.Model):
         }
 
     def action_mark_sent(self):
+        self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to send procurement requests.'))
         self._require_state('draft')
@@ -456,6 +474,7 @@ class ProcurementRequest(models.Model):
         return True
 
     def action_confirm_manager_receipt(self):
+        self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_manager'):
             raise AccessError(_('Only a procurement manager can confirm the operational receipt.'))
         self._require_state('sent')
@@ -467,6 +486,7 @@ class ProcurementRequest(models.Model):
     def action_open_manager_receipt_catalog(self):
         """Open the shared cashier surface for the manager's physical receipt."""
         self.ensure_one()
+        self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_manager'):
             raise AccessError(_('Only a procurement manager can confirm the operational receipt.'))
         self._require_state('sent')
@@ -476,6 +496,7 @@ class ProcurementRequest(models.Model):
         }
 
     def action_cancel(self):
+        self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to cancel procurement requests.'))
         self._require_state('draft', 'sent')
@@ -661,6 +682,7 @@ class ProcurementRequest(models.Model):
         self.ensure_one()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
             raise AccessError(_('Only a procurement cashier can confirm the quantity receipt.'))
+        self._require_active_company_for_cashier()
         if self.state == 'purchased':
             return self.action_open_picking()
         self._require_state('received')
@@ -748,6 +770,7 @@ class ProcurementRequest(models.Model):
         self.ensure_one()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
             raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
+        self._require_active_company_for_cashier()
         self._require_state('sent', 'received')
         return {
             'type': 'ir.actions.client', 'tag': 'baseer_procurement_requests.actual_catalog',
@@ -1484,6 +1507,7 @@ class ProcurementRequest(models.Model):
 
     def action_open_picking(self):
         self.ensure_one()
+        self._require_active_company_for_cashier()
         if not self.picking_id:
             return {
                 'type': 'ir.actions.act_window',
@@ -1497,6 +1521,7 @@ class ProcurementRequest(models.Model):
                 'view_mode': 'form', 'res_id': self.picking_id.id, 'target': 'current'}
 
     def write(self, vals):
+        self._require_active_company_for_cashier()
         protected = {'state', 'picking_id', 'whatsapp_opened_at', 'whatsapp_sent_at', 'manager_received_at',
                      'actual_confirmed_at', 'actual_confirmed_by_id', 'client_token', 'client_payload_hash'}
         if protected & set(vals):
@@ -1514,6 +1539,7 @@ class ProcurementRequest(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        self._require_active_company_for_cashier()
         if any(request.state != 'draft' for request in self):
             raise UserError(_('Sent, received, or purchased procurement requests cannot be deleted. Use the authorized correction process.'))
         return super().unlink()
@@ -1675,6 +1701,7 @@ class ProcurementRequestLine(models.Model):
             request = self.env['baseer.procurement.request'].browse(vals.get('request_id')).exists()
             if not request or request.state != 'draft':
                 raise AccessError(_('Request lines can only be created on a draft procurement request.'))
+            request._require_active_company_for_cashier()
             protected = ('manager_received_qty', 'actual_qty', 'actual_price')
             if any(vals.get(field) not in (False, 0, 0.0, None) for field in protected):
                 raise AccessError(_('Received quantities and actual prices are controlled by the receipt workflow.'))
@@ -1687,6 +1714,7 @@ class ProcurementRequestLine(models.Model):
             line.cashier_shortage_qty = max(line.manager_received_qty - line.actual_qty, 0)
 
     def write(self, vals):
+        self.mapped('request_id')._require_active_company_for_cashier()
         protected = {'requested_qty', 'requested_price', 'manager_received_qty', 'actual_qty', 'actual_price', 'option_id'}
         if protected & set(vals):
             locked = self.filtered(lambda line: line.request_id.state in ('purchased', 'cancel'))
@@ -1709,6 +1737,7 @@ class ProcurementRequestLine(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        self.mapped('request_id')._require_active_company_for_cashier()
         if any(line.request_id.state != 'draft' for line in self):
             raise UserError(_('Lines on sent, received, or purchased procurement requests cannot be deleted.'))
         return super().unlink()

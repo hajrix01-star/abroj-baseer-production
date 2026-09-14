@@ -1,31 +1,31 @@
-# Release receipt — Baseer cashier procurement operations
+# Release receipt — Baseer heat-calendar target editor
 
 **Freeze date:** 2026-09-14
 
-**Production source baseline:** `4cd12588a2b447cb14f924f09c913b4fb7b24f43`
+**Production source baseline:** `863bd851dc107ba8911b417263f21b83270701f0`
 
-**Immutable release tag:** `cashier-procurement-live-candidate-2026-09-14.2`
+**Immutable release tag:** `heat-calendar-targets-live-candidate-2026-09-14.1`
 
-**Included modules:** `baseer_access_roles 19.0.1.0.3` and
-`baseer_procurement_requests 19.0.11.0.2`.
+**Included module update:** `baseer_sales_heat_calendar 19.0.1.0.8`.
 
-This payload contains only the cashier-procurement permission change on the
-actual deployed source. A cashier can create, send, and operationally receive
-raw-material requests in the active company. Server-side guards reject
-cross-active-company request mutation, including direct ORM attempts to
-reassign a draft request to another allowed company.
+This release contains only the heat-calendar target-editor change relative to
+the live cashier-release baseline. A manager can select all or selected
+months and weekdays, fill up to 84 explicit month × weekday cells, then
+adjust each cell independently in one atomic save. The server is the source
+of truth for exact decimal validation, company scope, stale-write detection,
+and duplicate prevention. The calendar refreshes after a successful save.
 
-It does not include later heat-calendar target-editor changes, a database
-schema migration, a data migration, vendor-bill authority, payment authority,
-custody access, settlement access, or accounting-entry authority.
+It preserves the approved daily POS-sales summary as a read-only source. It
+does not add a schema migration, dependency, external integration, target
+wildcards, or accounting, invoice, payment, stock, payroll, HR, occasion, or
+sales-summary writes. The cashier-procurement change remains the deployed
+baseline and is not reintroduced or altered by this release.
 
 The payload hash is SHA-256 over sorted records of
 `relative-path + NUL + SHA-256(file-content) + newline`, excluding this
-receipt itself. It is
-`3fae2bb1d54d5695dbb5be2d84036d173996eb735c02507e12b68cb5a857132f` over
-875 tracked files. The release archive SHA-256 is recorded alongside the
-immutable tag in the external release manifest, because placing an archive's
-own checksum inside that archive would be self-referential.
+receipt itself. The final value is recorded in the external release manifest
+after the frozen commit is created. The archive SHA-256 is also recorded
+outside the archive to avoid a self-referential checksum.
 
 This candidate deliberately excludes database dumps, filestores, `.env`,
 production `odoo.conf`, local sessions, compiled Python artifacts, Noorix

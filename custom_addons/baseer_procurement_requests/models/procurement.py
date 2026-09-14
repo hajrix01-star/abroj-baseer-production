@@ -1522,6 +1522,15 @@ class ProcurementRequest(models.Model):
 
     def write(self, vals):
         self._require_active_company_for_cashier()
+        if 'company_id' in vals and self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ):
+            try:
+                requested_company_id = int(vals['company_id'])
+            except (TypeError, ValueError):
+                requested_company_id = False
+            if requested_company_id != self.env.company.id:
+                raise AccessError(_('The procurement request must remain in the active company.'))
         protected = {'state', 'picking_id', 'whatsapp_opened_at', 'whatsapp_sent_at', 'manager_received_at',
                      'actual_confirmed_at', 'actual_confirmed_by_id', 'client_token', 'client_payload_hash'}
         if protected & set(vals):

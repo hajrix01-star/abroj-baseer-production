@@ -1,13 +1,13 @@
 # Release receipt — Abroj/Baseer heat-calendar candidate
 
-**Freeze date:** 2026-09-14  
-**Payload source commit:** `9bfb75fc3e62d83c064406ad78a03fd9fe8233ed`  
-**Immutable release tag:** `heat-calendar-candidate-2026-09-14.2`  
-**Payload hash:** `E5DD600A413C68FF84F69B6270E27C1FE5E3CB7F8208138CFC69EC0CDDF08A4A`
+**Freeze date:** 2026-09-14
+**Payload source commit:** `9bfb75fc3e62d83c064406ad78a03fd9fe8233ed`
+**Immutable release tag:** `heat-calendar-candidate-2026-09-14.3`
+**Payload hash:** `5C56DF0AC57B153197ACFE51AB2F559868E02D27F339AF971071098B3B63041C`
 
 The payload hash is SHA-256 over sorted records of
 `relative-path + NUL + SHA-256(file-content) + newline`, excluding this
-receipt itself. It covers `871` tracked files (`42,294,958` bytes).
+receipt itself. It covers `871` tracked files (`41,984,982` bytes).
 
 The tag names the commit that contains this receipt. The release archive
 SHA-256 is recorded alongside the uploaded archive in the external release

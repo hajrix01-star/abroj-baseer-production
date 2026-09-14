@@ -5,7 +5,7 @@ from uuid import uuid4
 from psycopg2 import IntegrityError
 
 from odoo import Command
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.baseer_sales_heat_calendar.models.occasion import (
@@ -33,6 +33,7 @@ class HeatCalendarCase(TransactionCase):
         self.base_user_group = self.env.ref('base.group_user')
         self.Occasion = self.env['baseer.official.occasion']
         self.Target = self.env['baseer.heat.calendar.target']
+        self.TargetBatch = self.env['baseer.heat.calendar.target.batch']
         self.TargetWizard = self.env['baseer.heat.calendar.target.wizard']
         self.pos_user = self._user('HC POS reader', [self.pos_group])
         self.manager_user = self._user(
@@ -296,7 +297,7 @@ class HeatCalendarCase(TransactionCase):
         self.assertEqual(refreshed_days['2026-09-03']['ratio_display'], '200.0%')
         self.assertEqual(refreshed_days['2026-09-03']['heat_level'], 'high')
         for weekday in (3, 4):
-            self.assertEqual(self.Target.search_count([
+            self.assertEqual(self.Target.with_context(active_test=False).search_count([
                 ('company_id', '=', self.company_a.id), ('year', '=', 2026),
                 ('month', '=', 9), ('weekday', '=', weekday),
             ]), 1)
@@ -369,3 +370,107 @@ class HeatCalendarCase(TransactionCase):
                 'weekday': '3',
                 'target_amount': 100,
             })
+
+    def test_hctb_t01_batch_updates_cartesian_scopes_independently_and_idempotently(self):
+        """One batch can set several month/day intersections without overlap."""
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        baseline = Batch.get_target_batch(2026)
+        self.assertEqual(baseline['company'], {
+            'id': self.company_a.id,
+            'name': self.company_a.display_name,
+            'currency': self.company_a.currency_id.name,
+        })
+        entries = [
+            # JSON-RPC delivers browser monetary inputs as strings.  The
+            # backend accepts them only through Decimal validation.
+            {'month': 9, 'weekday': 3, 'target_amount': '101.11', 'active': True},
+            {'month': 9, 'weekday': 4, 'target_amount': 202.22, 'active': True},
+            {'month': 10, 'weekday': 3, 'target_amount': 303.33, 'active': True},
+            # An inactive cell keeps its amount for audit and can be enabled
+            # later; it is not silently deleted by the batch editor.
+            {'month': 10, 'weekday': 4, 'target_amount': 404.44, 'active': False},
+        ]
+        updated = Batch.apply_target_batch(2026, entries, baseline['version'])
+        values = {
+            (cell['month'], cell['weekday']): cell
+            for cell in updated['cells']
+        }
+        for entry in entries:
+            cell = values[(entry['month'], entry['weekday'])]
+            self.assertTrue(cell['configured'])
+            self.assertEqual(cell['active'], entry['active'])
+            self.assertEqual(cell['target_amount'], float(entry['target_amount']))
+            self.assertEqual(self.Target.with_context(active_test=False).search_count([
+                ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+                ('month', '=', entry['month']), ('weekday', '=', entry['weekday']),
+            ]), 1)
+
+        # A replay of the same explicit cells is an update, never four new
+        # scopes.  This is the controller contract used by the matrix UI.
+        replayed = Batch.apply_target_batch(2026, entries, updated['version'])
+        self.assertEqual(replayed['version'], updated['version'])
+        self.assertEqual(self.Target.with_context(active_test=False).search_count([
+            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('month', 'in', [9, 10]), ('weekday', 'in', [3, 4]),
+        ]), 4)
+
+    def test_hctb_t02_batch_validates_all_cells_before_any_write(self):
+        """A bad later cell cannot leave an earlier target half-saved."""
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        baseline = Batch.get_target_batch(2026)
+        entries = [
+            {'month': 9, 'weekday': 3, 'target_amount': 100.00, 'active': True},
+            {'month': 9, 'weekday': 4, 'target_amount': 10.001, 'active': True},
+        ]
+        with self.assertRaises(ValidationError):
+            Batch.apply_target_batch(2026, entries, baseline['version'])
+        self.assertFalse(self.Target.search_count([
+            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('month', '=', 9), ('weekday', 'in', [3, 4]),
+        ]))
+
+        for invalid_amount in (float('nan'), float('inf'), float('-inf'), True, 1.001):
+            with self.subTest(invalid_amount=invalid_amount), self.assertRaises(ValidationError):
+                self.Target.create({
+                    **self._target_values(self.company_a, weekday=5),
+                    'target_amount': invalid_amount,
+                })
+
+    def test_hctb_t03_stale_batch_is_rejected_without_mutation(self):
+        """The opaque version blocks an old browser tab from overwriting a target."""
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        stale = Batch.get_target_batch(2026)
+        self.Target.with_user(self.manager_user).with_context(
+            allowed_company_ids=[self.company_a.id],
+        ).create({
+            **self._target_values(self.company_a, weekday=3),
+            'target_amount': 90,
+        })
+        with self.assertRaises(UserError):
+            Batch.apply_target_batch(2026, [
+                {'month': 9, 'weekday': 3, 'target_amount': 999, 'active': True},
+            ], stale['version'])
+        target = self.Target.search([
+            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('month', '=', 9), ('weekday', '=', 3),
+        ])
+        self.assertEqual(len(target), 1)
+        self.assertEqual(target.target_amount, 90)
+
+    def test_hctb_t04_pos_cannot_read_or_apply_batch_and_sales_stay_untouched(self):
+        """The batch RPC is manager-only and never writes source sales summaries."""
+        pos_batch = self._as_user(self.TargetBatch, self.pos_user)
+        with self.assertRaises(AccessError):
+            pos_batch.get_target_batch(2026)
+        with self.assertRaises(AccessError):
+            pos_batch.apply_target_batch(2026, [
+                {'month': 9, 'weekday': 3, 'target_amount': 100, 'active': True},
+            ], 'not-a-manager-version')
+
+        summaries_before = self.env['baseer.pos.summary'].search_count([])
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        baseline = Batch.get_target_batch(2026)
+        Batch.apply_target_batch(2026, [
+            {'month': 9, 'weekday': 3, 'target_amount': 100, 'active': False},
+        ], baseline['version'])
+        self.assertEqual(self.env['baseer.pos.summary'].search_count([]), summaries_before)

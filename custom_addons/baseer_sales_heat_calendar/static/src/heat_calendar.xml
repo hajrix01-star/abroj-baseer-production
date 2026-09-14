@@ -169,4 +169,129 @@
             </section>
         </div>
     </t>
+
+    <t t-name="baseer_sales_heat_calendar.HeatTargetBatchDialog">
+        <Dialog title="labels.title" size="'xl'" bodyClass="'p-0'">
+            <form class="o_baseer_heat_target_batch" t-on-submit.prevent="save" t-att-aria-busy="state.loading or state.saving ? 'true' : 'false'">
+                <header class="o_baseer_heat_target_batch_intro">
+                    <p class="mb-0" t-esc="labels.scopeHelp"/>
+                </header>
+
+                <div class="o_baseer_heat_target_batch_content">
+                    <div class="o_baseer_heat_target_batch_context">
+                        <div class="o_baseer_heat_target_readonly">
+                            <span t-esc="labels.company"/>
+                            <strong t-esc="companyName"/>
+                        </div>
+                        <label class="o_baseer_heat_target_year">
+                            <span t-esc="labels.year"/>
+                            <select class="form-select form-select-sm o_baseer_heat_numeric" t-att-value="state.year" t-on-change="onYearChange" t-att-disabled="state.loading or state.saving">
+                                <option t-foreach="yearOptions" t-as="year" t-key="year" t-att-value="year" t-att-selected="year === state.year ? true : undefined" t-esc="year"/>
+                            </select>
+                        </label>
+                    </div>
+
+                    <section class="o_baseer_heat_target_scope" t-att-aria-label="labels.months">
+                        <div class="o_baseer_heat_target_scope_heading">
+                            <strong t-esc="labels.months"/>
+                            <div class="o_baseer_heat_target_scope_actions">
+                                <button type="button" class="btn btn-link btn-sm" t-on-click="selectAllMonths" t-att-disabled="state.loading or state.saving" t-esc="labels.selectAll"/>
+                                <button type="button" class="btn btn-link btn-sm" t-on-click="clearMonths" t-att-disabled="state.loading or state.saving" t-esc="labels.clear"/>
+                            </div>
+                        </div>
+                        <div class="o_baseer_heat_target_chips" role="group" t-att-aria-label="labels.months">
+                            <button t-foreach="state.months" t-as="month" t-key="month.value" type="button" class="btn btn-sm o_baseer_heat_target_chip" t-att-class="isMonthSelected(month.value) ? 'is-selected' : ''" t-att-aria-pressed="isMonthSelected(month.value) ? 'true' : 'false'" t-att-disabled="state.loading or state.saving" t-on-click="() => this.toggleMonth(month.value)" t-esc="month.label"/>
+                        </div>
+                    </section>
+
+                    <section class="o_baseer_heat_target_scope" t-att-aria-label="labels.weekdays">
+                        <div class="o_baseer_heat_target_scope_heading">
+                            <strong t-esc="labels.weekdays"/>
+                            <div class="o_baseer_heat_target_scope_actions">
+                                <button type="button" class="btn btn-link btn-sm" t-on-click="selectAllWeekdays" t-att-disabled="state.loading or state.saving" t-esc="labels.selectAll"/>
+                                <button type="button" class="btn btn-link btn-sm" t-on-click="clearWeekdays" t-att-disabled="state.loading or state.saving" t-esc="labels.clear"/>
+                            </div>
+                        </div>
+                        <div class="o_baseer_heat_target_chips" role="group" t-att-aria-label="labels.weekdays">
+                            <button t-foreach="state.weekdays" t-as="weekday" t-key="weekday.value" type="button" class="btn btn-sm o_baseer_heat_target_chip" t-att-class="isWeekdaySelected(weekday.value) ? 'is-selected' : ''" t-att-aria-pressed="isWeekdaySelected(weekday.value) ? 'true' : 'false'" t-att-disabled="state.loading or state.saving" t-on-click="() => this.toggleWeekday(weekday.value)" t-esc="weekday.label"/>
+                        </div>
+                    </section>
+
+                    <div t-if="state.error" class="alert alert-danger o_baseer_heat_target_error" role="alert" t-esc="state.error"/>
+
+                    <div t-if="state.loading" class="o_baseer_heat_target_loading" role="status" aria-live="polite">
+                        <i class="fa fa-circle-o-notch fa-spin" aria-hidden="true"/><span t-esc="labels.loading"/>
+                    </div>
+                    <t t-else="">
+                        <div class="o_baseer_heat_target_apply_bar">
+                            <label class="o_baseer_heat_target_common">
+                                <span t-esc="labels.commonAmount"/>
+                                <input type="number" min="0" step="any" inputmode="decimal" dir="ltr" class="form-control form-control-sm o_baseer_heat_numeric" t-att-value="state.commonAmount" t-on-input="setCommonAmount" t-att-disabled="state.saving"/>
+                            </label>
+                            <button type="button" class="btn btn-outline-primary btn-sm" t-on-click="applyCommonAmount" t-att-disabled="state.saving or !selectedCellCount" t-esc="labels.applyCommon"/>
+                            <div class="o_baseer_heat_target_selection_note" aria-live="polite">
+                                <strong class="o_baseer_heat_numeric" t-esc="selectedCellCount"/>
+                                <span t-esc="labels.selectedCells"/>
+                                <span class="text-muted" t-esc="labels.untouched"/>
+                                <span t-if="!hasActionableSelection" class="text-warning" t-esc="labels.noChanges"/>
+                            </div>
+                        </div>
+
+                        <div t-if="visibleMonths.length and visibleWeekdays.length" class="o_baseer_heat_target_matrix_wrap d-none d-sm-block">
+                            <table class="table table-sm o_baseer_heat_target_matrix mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" t-esc="labels.months"/>
+                                        <th t-foreach="visibleWeekdays" t-as="weekday" t-key="weekday.value" scope="col" t-esc="weekday.label"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="visibleMonths" t-as="month" t-key="month.value">
+                                        <th scope="row" t-esc="month.label"/>
+                                        <td t-foreach="visibleWeekdays" t-as="weekday" t-key="weekday.value">
+                                            <t t-set="cell" t-value="cellFor(month.value, weekday.value)"/>
+                                            <div class="o_baseer_heat_target_cell">
+                                                <input type="number" min="0" step="any" inputmode="decimal" dir="ltr" class="form-control form-control-sm o_baseer_heat_numeric" t-att-value="cell.amount" t-on-input="(event) => this.setCellAmount(month.value, weekday.value, event)" t-att-disabled="state.saving" t-att-aria-label="month.label + ' ' + weekday.label + ' ' + labels.target"/>
+                                                <label class="form-check form-switch o_baseer_heat_target_active">
+                                                    <input type="checkbox" class="form-check-input" t-att-checked="cell.active" t-on-change="(event) => this.setCellActive(month.value, weekday.value, event)" t-att-disabled="state.saving"/>
+                                                    <span class="form-check-label" t-esc="labels.active"/>
+                                                </label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div t-if="visibleMonths.length and visibleWeekdays.length" class="o_baseer_heat_target_mobile_cards d-sm-none">
+                            <article t-foreach="visibleMonths" t-as="month" t-key="month.value" class="o_baseer_heat_target_month_card">
+                                <h3 t-esc="month.label"/>
+                                <div t-foreach="visibleWeekdays" t-as="weekday" t-key="weekday.value" class="o_baseer_heat_target_mobile_cell">
+                                    <t t-set="cell" t-value="cellFor(month.value, weekday.value)"/>
+                                    <strong t-esc="weekday.label"/>
+                                    <label>
+                                        <span class="visually-hidden" t-esc="labels.target"/>
+                                        <input type="number" min="0" step="any" inputmode="decimal" dir="ltr" class="form-control form-control-sm o_baseer_heat_numeric" t-att-value="cell.amount" t-on-input="(event) => this.setCellAmount(month.value, weekday.value, event)" t-att-disabled="state.saving" t-att-aria-label="month.label + ' ' + weekday.label + ' ' + labels.target"/>
+                                    </label>
+                                    <label class="form-check form-switch o_baseer_heat_target_active">
+                                        <input type="checkbox" class="form-check-input" t-att-checked="cell.active" t-on-change="(event) => this.setCellActive(month.value, weekday.value, event)" t-att-disabled="state.saving"/>
+                                        <span class="form-check-label" t-esc="labels.active"/>
+                                    </label>
+                                </div>
+                            </article>
+                        </div>
+
+                        <div t-if="!visibleMonths.length or !visibleWeekdays.length" class="o_baseer_heat_target_empty text-muted" role="status" t-esc="labels.noSelection"/>
+                    </t>
+                </div>
+            </form>
+            <t t-set-slot="footer">
+                <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.loading or state.saving or !selectedCellCount or !hasActionableSelection">
+                    <i t-if="state.saving" class="fa fa-circle-o-notch fa-spin me-1" aria-hidden="true"/>
+                    <span t-esc="state.saving ? labels.saving : labels.save"/>
+                </button>
+                <button type="button" class="btn btn-secondary" t-on-click="props.close" t-att-disabled="state.saving" t-esc="labels.cancel"/>
+            </t>
+        </Dialog>
+    </t>
 </templates>

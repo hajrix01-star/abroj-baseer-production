@@ -626,3 +626,177 @@ msgstr "يتولى الخادم إدارة مفتاح المصدر."
 #: code:addons/baseer_sales_heat_calendar/models/target.py:0
 msgid "The target amount must be a finite, non-negative number."
 msgstr "يجب أن يكون مبلغ الهدف رقماً منتهياً وغير سالب."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Months"
+msgstr "الأشهر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Weekdays"
+msgstr "أيام الأسبوع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Select all"
+msgstr "تحديد الكل"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Clear"
+msgstr "مسح"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Common target amount"
+msgstr "مبلغ هدف موحّد"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Apply to selected cells"
+msgstr "تطبيق على الخانات المحددة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Selected cells"
+msgstr "خانات محددة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Unselected values will not change."
+msgstr "لن تتغير القيم غير المحددة."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Choose a target amount or activate an existing target to save a change."
+msgstr "أدخل مبلغ هدف أو فعّل هدفاً موجوداً لحفظ تغيير."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Enter a target amount for every active or configured selected cell."
+msgstr "أدخل مبلغ هدف لكل خانة محددة نشطة أو معدّة مسبقاً."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Start with the displayed month. Select the months and days you want to manage, then set each target independently."
+msgstr "ابدأ بالشهر المعروض. حدّد الأشهر والأيام التي تريد إدارتها، ثم عيّن كل هدف بشكل مستقل."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Loading targets…"
+msgstr "جارٍ تحميل الأهداف…"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Saving…"
+msgstr "جارٍ الحفظ…"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Save targets"
+msgstr "حفظ الأهداف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Select at least one month and one weekday."
+msgstr "حدّد شهراً واحداً ويوم أسبوع واحداً على الأقل."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Enter a common amount before applying it."
+msgstr "أدخل مبلغاً موحّداً قبل تطبيقه."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Targets could not be saved."
+msgstr "تعذر حفظ الأهداف."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Targets could not be loaded."
+msgstr "تعذر تحميل الأهداف."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "No target is active for this day."
+msgstr "لا يوجد هدف نشط لهذا اليوم."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target.py:0
+msgid "The target amount must be a finite, non-negative number with at most two decimal places."
+msgstr "يجب أن يكون مبلغ الهدف رقماً منتهياً وغير سالب وبحد أقصى منزلتين عشريتين."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Choose from one to 84 exact target cells."
+msgstr "اختر من خانة هدف دقيقة واحدة إلى 84 خانة."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Each target cell must include its month, weekday, amount, and status."
+msgstr "يجب أن تتضمن كل خانة هدف الشهر ويوم الأسبوع والمبلغ والحالة."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Choose one exact calendar month and weekday for every target cell."
+msgstr "اختر شهراً تقويمياً ويوم أسبوع محددين لكل خانة هدف."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Each target cell must state whether it is active."
+msgstr "يجب أن تحدد كل خانة هدف ما إذا كانت نشطة."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Each target cell needs a target amount, including inactive cells."
+msgstr "تحتاج كل خانة هدف إلى مبلغ هدف، بما فيها الخانات غير النشطة."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "A target scope can appear only once in one batch."
+msgstr "لا يمكن أن يظهر نطاق الهدف إلا مرة واحدة في الدفعة."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Refresh the targets before saving changes."
+msgstr "حدّث الأهداف قبل حفظ التغييرات."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_batch.py:0
+msgid "Targets changed in another session. Refresh required before saving."
+msgstr "تغيّرت الأهداف في جلسة أخرى. يجب التحديث قبل الحفظ."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Manage heat calendar targets"
+msgstr "إدارة أهداف التقويم الحراري"

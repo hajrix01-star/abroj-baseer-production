@@ -84,3 +84,89 @@
 @media (prefers-reduced-motion: reduce) {
     .o_baseer_heat_calendar .o_baseer_heat_day { transition: none; }
 }
+
+// The target batch editor lives in Odoo's dialog portal, outside the dashboard
+// container. Keep its namespace separate so it cannot restyle any native view.
+.o_baseer_heat_target_batch {
+    --o-heat-target-border: var(--border-color, #dee2e6);
+    --o-heat-target-muted: #6c757d;
+    color: var(--body-color, #212529);
+
+    .o_baseer_heat_target_batch_intro {
+        background: color-mix(in srgb, #0dcaf0 14%, var(--body-bg, #fff));
+        border-bottom: 1px solid color-mix(in srgb, #0dcaf0 28%, var(--o-heat-target-border));
+        color: color-mix(in srgb, #164b5c 88%, var(--body-color, #212529));
+        font-size: .875rem;
+        line-height: 1.55;
+        padding: .85rem 1rem;
+    }
+
+    .o_baseer_heat_target_batch_content { padding: 1rem; }
+    .o_baseer_heat_target_batch_context { align-items: end; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1rem; }
+    .o_baseer_heat_target_readonly,
+    .o_baseer_heat_target_year { display: grid; gap: .2rem; min-width: 10rem; }
+    .o_baseer_heat_target_readonly > span,
+    .o_baseer_heat_target_year > span { color: var(--o-heat-target-muted); font-size: .75rem; font-weight: 600; }
+    .o_baseer_heat_target_readonly > strong { font-size: .9375rem; }
+    .o_baseer_heat_target_year { max-width: 9rem; }
+
+    .o_baseer_heat_target_scope { border-top: 1px solid var(--o-heat-target-border); padding: .8rem 0; }
+    .o_baseer_heat_target_scope_heading { align-items: center; display: flex; gap: .75rem; justify-content: space-between; margin-bottom: .5rem; }
+    .o_baseer_heat_target_scope_heading > strong { font-size: .875rem; }
+    .o_baseer_heat_target_scope_actions { display: flex; gap: .25rem; }
+    .o_baseer_heat_target_scope_actions .btn { min-height: 2rem; padding-block: .2rem; }
+    .o_baseer_heat_target_chips { display: flex; flex-wrap: wrap; gap: .375rem; }
+    .o_baseer_heat_target_chip {
+        background: var(--body-bg, #fff); border: 1px solid var(--o-heat-target-border); color: var(--body-color, #212529);
+        min-height: 2.25rem; padding-inline: .65rem; transition: background-color .16s ease-out, border-color .16s ease-out, color .16s ease-out, transform .14s ease-out;
+    }
+    .o_baseer_heat_target_chip.is-selected { background: var(--primary, #714b67); border-color: var(--primary, #714b67); color: #fff; }
+    .o_baseer_heat_target_chip:active { transform: scale(.97); }
+    .o_baseer_heat_target_chip:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #714b67) 35%, transparent); outline: 0; }
+
+    .o_baseer_heat_target_error { margin: .25rem 0 .75rem; }
+    .o_baseer_heat_target_loading { align-items: center; color: var(--o-heat-target-muted); display: flex; gap: .5rem; justify-content: center; min-height: 14rem; }
+    .o_baseer_heat_target_apply_bar {
+        align-items: end; background: color-mix(in srgb, var(--body-bg, #fff) 92%, #6c757d); border: 1px solid var(--o-heat-target-border);
+        border-radius: .5rem; display: flex; flex-wrap: wrap; gap: .75rem; margin: .25rem 0 1rem; padding: .75rem;
+    }
+    .o_baseer_heat_target_common { display: grid; gap: .25rem; min-width: 11rem; }
+    .o_baseer_heat_target_common > span { font-size: .75rem; font-weight: 600; }
+    .o_baseer_heat_target_selection_note { align-items: baseline; display: flex; flex: 1 1 15rem; flex-wrap: wrap; font-size: .8125rem; gap: .3rem; line-height: 1.35; padding-bottom: .3rem; }
+    .o_baseer_heat_target_selection_note .text-muted { flex-basis: 100%; font-size: .75rem; }
+
+    .o_baseer_heat_target_matrix_wrap { border: 1px solid var(--o-heat-target-border); border-radius: .5rem; overflow: auto; }
+    .o_baseer_heat_target_matrix { min-width: 46rem; }
+    .o_baseer_heat_target_matrix th { background: color-mix(in srgb, var(--body-bg, #fff) 92%, #6c757d); font-size: .75rem; vertical-align: middle; white-space: nowrap; }
+    .o_baseer_heat_target_matrix td { min-width: 8.5rem; vertical-align: middle; }
+    .o_baseer_heat_target_cell { display: grid; gap: .35rem; }
+    .o_baseer_heat_target_active { align-items: center; display: inline-flex; font-size: .75rem; gap: .3rem; margin: 0; min-height: 1.5rem; }
+    .o_baseer_heat_target_active .form-check-input { float: none; margin: 0; }
+    .o_baseer_heat_target_empty { border: 1px dashed var(--o-heat-target-border); border-radius: .5rem; padding: 1.25rem; text-align: center; }
+    .o_baseer_heat_numeric { direction: ltr; font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .o_baseer_heat_target_batch .o_baseer_heat_target_chip:hover:not(:disabled) { border-color: var(--primary, #714b67); }
+}
+
+@media (max-width: 575.98px) {
+    .o_baseer_heat_target_batch {
+        .o_baseer_heat_target_batch_content { padding: .75rem; }
+        .o_baseer_heat_target_batch_context { align-items: stretch; flex-direction: column; gap: .75rem; }
+        .o_baseer_heat_target_year { max-width: none; }
+        .o_baseer_heat_target_chip { flex: 1 1 auto; }
+        .o_baseer_heat_target_apply_bar { align-items: stretch; flex-direction: column; }
+        .o_baseer_heat_target_common { min-width: 0; }
+        .o_baseer_heat_target_mobile_cards { display: grid; gap: .75rem; }
+        .o_baseer_heat_target_month_card { border: 1px solid var(--o-heat-target-border); border-radius: .5rem; margin: 0; overflow: hidden; }
+        .o_baseer_heat_target_month_card h3 { background: color-mix(in srgb, var(--body-bg, #fff) 92%, #6c757d); font-size: .9375rem; margin: 0; padding: .65rem .75rem; }
+        .o_baseer_heat_target_mobile_cell { align-items: center; border-top: 1px solid var(--o-heat-target-border); display: grid; gap: .6rem; grid-template-columns: minmax(5.5rem, 1fr) minmax(6.5rem, 1.2fr) auto; padding: .65rem .75rem; }
+        .o_baseer_heat_target_mobile_cell > strong { font-size: .8125rem; }
+        .o_baseer_heat_target_mobile_cell .o_baseer_heat_target_active { justify-content: end; }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .o_baseer_heat_target_batch .o_baseer_heat_target_chip { transition: none; }
+}

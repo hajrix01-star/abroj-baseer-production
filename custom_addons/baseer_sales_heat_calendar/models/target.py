@@ -1,4 +1,5 @@
 import math
+from decimal import Decimal, InvalidOperation
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -39,14 +40,44 @@ class HeatCalendarTarget(models.Model):
     )
 
     @staticmethod
-    def _check_finite_target_amount(value):
-        """Reject values PostgreSQL/Odoo cannot safely round before insertion."""
+    def _validate_target_amount(value):
+        """Return a safe two-decimal Decimal for every target write path.
+
+        ``fields.Monetary`` is stored by Odoo as a float, so accepting a
+        browser float without a Decimal boundary would allow rounding drift
+        and non-finite values to enter the persistent target table.  Keep the
+        persistent field for Odoo compatibility, but make this one validator
+        the authority for direct CRUD, the legacy wizard, and batch RPC.
+        """
+        if isinstance(value, bool):
+            raise ValidationError(_(
+                'The target amount must be a finite, non-negative number with at most two decimal places.'
+            ))
         try:
-            amount = float(value)
-        except (TypeError, ValueError):
+            amount = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
             amount = None
-        if isinstance(value, bool) or amount is None or not math.isfinite(amount) or amount < 0:
-            raise ValidationError(_('The target amount must be a finite, non-negative number.'))
+        if amount is None or not amount.is_finite() or amount < 0:
+            raise ValidationError(_(
+                'The target amount must be a finite, non-negative number with at most two decimal places.'
+            ))
+        try:
+            rounded = amount.quantize(Decimal('0.01'))
+            stored_amount = float(rounded)
+        except (InvalidOperation, OverflowError, ValueError):
+            raise ValidationError(_(
+                'The target amount must be a finite, non-negative number with at most two decimal places.'
+            ))
+        if not math.isfinite(stored_amount) or amount != rounded:
+            raise ValidationError(_(
+                'The target amount must be a finite, non-negative number with at most two decimal places.'
+            ))
+        return rounded
+
+    @classmethod
+    def _check_finite_target_amount(cls, value):
+        """Compatibility name retained for existing callers and migrations."""
+        return cls._validate_target_amount(value)
 
     @api.model_create_multi
     def create(self, values_list):

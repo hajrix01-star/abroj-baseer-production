@@ -54,7 +54,9 @@ services:
       - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
       - ./custom_addons:/mnt/baseer-addons:ro
       - ./third_party_addons:/mnt/third-party-addons:ro
-    networks: [backend]
+    # This network exists only to publish the loopback-only Odoo port to the
+    # host Nginx. It is unique to this compose project and carries no database.
+    networks: [frontend, backend]
     restart: unless-stopped
 
 volumes:
@@ -64,6 +66,8 @@ volumes:
     name: baseer-odoo-prod-odoo-data
 
 networks:
+  frontend:
+    name: baseer-odoo-prod-frontend
   backend:
     name: baseer-odoo-prod-backend
     internal: true

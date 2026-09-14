@@ -1,11 +1,11 @@
 # Release receipt — Abroj/Baseer production source
 
 **Date:** 2026-09-14  
-**Payload hash:** `69091A2A498573A0A0EC9C9BB1E7889CD9D84200F7E0B31D8C39868D6BD0A597`
+**Payload hash:** `E34F1F34297D27AF9D4752B855A13ECAF58CB515CE036D71E9821E5E74D39646`
 
 The payload hash is SHA-256 over sorted records of
 `relative-path + NUL + SHA-256(file-content) + newline`, excluding this
-receipt itself. It covers `853` files (`41,893,002` bytes): `23` Baseer/Abroj
+receipt itself. It covers `853` files (`42,190,183` bytes): `23` Baseer/Abroj
 addons and `5` third-party addon manifests required by the installed database.
 
 It deliberately excludes all database dumps, filestores, `.env`, production

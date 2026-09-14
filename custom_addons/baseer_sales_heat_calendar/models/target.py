@@ -2,7 +2,7 @@ import math
 from decimal import Decimal, InvalidOperation
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class HeatCalendarTarget(models.Model):
@@ -38,6 +38,50 @@ class HeatCalendarTarget(models.Model):
     _target_scope_unique = models.Constraint(
         'unique(company_id, year, month, weekday)', 'Only one target is allowed for this scope.'
     )
+
+    @api.model
+    def _check_target_company_in_session(self, company_id):
+        """Make company isolation explicit for every direct target CRUD path.
+
+        A record rule is not enough for ``create`` because a caller can supply
+        a foreign company id before there is a target record to filter.  The
+        superuser remains available for installation/migration work; every
+        normal manager must use a company explicitly available in the current
+        Odoo session.
+        """
+        if self.env.is_superuser():
+            return
+        if not company_id or company_id not in self.env.companies.ids:
+            raise AccessError(_('Choose a company available in the current session.'))
+
+    @api.model
+    def _lock_target_scopes(self, scopes):
+        """Serialize target writers by company/year in one shared lock space.
+
+        The batch service, legacy wizard, and raw ORM CRUD all take this lock.
+        Sorting the scope pairs keeps cross-scope create/write operations free
+        from lock-order deadlocks.
+        """
+        normalized = set()
+        for company_id, year in scopes:
+            if (isinstance(company_id, bool) or not isinstance(company_id, int)
+                    or isinstance(year, bool) or not isinstance(year, int)):
+                continue
+            if company_id > 0 and 1 <= year <= 9999:
+                normalized.add((company_id, year))
+        for company_id, year in sorted(normalized):
+            self.env.cr.execute(
+                'SELECT pg_advisory_xact_lock(%s, %s)',
+                (company_id, year),
+            )
+
+    @api.model
+    def _target_year_from_values(self, values):
+        """Resolve the create default only for advisory-lock scoping."""
+        year = values.get('year')
+        if year is None:
+            year = fields.Date.context_today(self).year
+        return year
 
     @staticmethod
     def _validate_target_amount(value):
@@ -82,13 +126,30 @@ class HeatCalendarTarget(models.Model):
     @api.model_create_multi
     def create(self, values_list):
         for values in values_list:
+            self._check_target_company_in_session(values.get('company_id'))
             if 'target_amount' in values:
                 self._check_finite_target_amount(values['target_amount'])
+        self._lock_target_scopes([
+            (values.get('company_id'), self._target_year_from_values(values))
+            for values in values_list
+        ])
         return super().create(values_list)
 
     def write(self, values):
         if 'target_amount' in values:
             self._check_finite_target_amount(values['target_amount'])
+        scope_pairs = []
+        for record in self:
+            final_company_id = values.get('company_id', record.company_id.id)
+            final_year = values.get('year', record.year)
+            self._check_target_company_in_session(final_company_id)
+            # Lock both sides for a move across company or year so no batch
+            # snapshot can race either scope during the mutation.
+            scope_pairs.extend([
+                (record.company_id.id, record.year),
+                (final_company_id, final_year),
+            ])
+        self._lock_target_scopes(scope_pairs)
         return super().write(values)
 
     @api.constrains('year', 'month', 'weekday', 'target_amount')

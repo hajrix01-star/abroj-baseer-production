@@ -436,16 +436,20 @@ class HeatCalendarCase(TransactionCase):
                     'target_amount': invalid_amount,
                 })
 
-    def test_hctb_t03_stale_batch_is_rejected_without_mutation(self):
-        """The opaque version blocks an old browser tab from overwriting a target."""
+    def test_hctb_t03_raw_writer_after_snapshot_is_detected_without_mutation(self):
+        """A legacy/raw writer shares the batch lock and invalidates old snapshots."""
         Batch = self._as_user(self.TargetBatch, self.manager_user)
         stale = Batch.get_target_batch(2026)
+        # This direct ORM create represents the legacy wizard/raw CRUD path,
+        # not the batch service.  It must participate in the same lock and
+        # leave the batch snapshot observably stale.
         self.Target.with_user(self.manager_user).with_context(
             allowed_company_ids=[self.company_a.id],
         ).create({
             **self._target_values(self.company_a, weekday=3),
             'target_amount': 90,
         })
+        self.assertNotEqual(stale['version'], Batch.get_target_batch(2026)['version'])
         with self.assertRaises(UserError):
             Batch.apply_target_batch(2026, [
                 {'month': 9, 'weekday': 3, 'target_amount': 999, 'active': True},
@@ -474,3 +478,30 @@ class HeatCalendarCase(TransactionCase):
             {'month': 9, 'weekday': 3, 'target_amount': 100, 'active': False},
         ], baseline['version'])
         self.assertEqual(self.env['baseer.pos.summary'].search_count([]), summaries_before)
+
+    def test_hctb_t05_raw_target_crud_enforces_final_company_session_scope(self):
+        """A manager cannot bypass company isolation through direct ORM CRUD."""
+        manager_targets = self._as_user(self.Target, self.manager_user)
+        with self.assertRaises(AccessError):
+            manager_targets.create(self._target_values(self.company_b, weekday=1))
+
+        target_a = manager_targets.create(self._target_values(self.company_a, weekday=1))
+        with self.assertRaises(AccessError):
+            target_a.write({'company_id': self.company_b.id})
+        self.assertEqual(target_a.company_id, self.company_a)
+
+        # The same manager can use company B after it has explicitly become
+        # part of the current Odoo session.  The server guard is therefore a
+        # final-company/session check, not a blanket cross-company ban.
+        self.manager_user.sudo().write({
+            'company_ids': [Command.set([self.company_a.id, self.company_b.id])],
+        })
+        allowed_targets = self.Target.with_user(self.manager_user).with_context(
+            allowed_company_ids=[self.company_a.id, self.company_b.id],
+        )
+        target_b = allowed_targets.create(self._target_values(self.company_b, weekday=2))
+        self.assertEqual(target_b.company_id, self.company_b)
+        target_a.with_context(
+            allowed_company_ids=[self.company_a.id, self.company_b.id],
+        ).write({'company_id': self.company_b.id})
+        self.assertEqual(target_a.company_id, self.company_b)

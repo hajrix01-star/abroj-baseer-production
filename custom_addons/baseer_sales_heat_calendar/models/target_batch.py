@@ -155,10 +155,9 @@ class HeatCalendarTargetBatch(models.AbstractModel):
     @api.model
     def _lock_scope(self, company, year):
         """Serialize batch writers for one company/year without table locks."""
-        self.env.cr.execute(
-            'SELECT pg_advisory_xact_lock(%s, %s)',
+        self.env['baseer.heat.calendar.target']._lock_target_scopes([
             (company.id, year),
-        )
+        ])
 
     @api.model
     def _create_or_update_exact_target(self, target, company, year, entry):

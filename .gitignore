@@ -1,0 +1,9 @@
+.env
+config/odoo.conf
+secure-input/
+backups/
+*.dump
+*.sql
+*.zip
+**/__pycache__/
+**/*.py[cod]

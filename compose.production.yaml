@@ -1,0 +1,69 @@
+name: baseer-odoo-prod
+
+services:
+  db:
+    image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  odoo_data_init:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    user: "0:0"
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ["install -d -o 100 -g 101 -m 0755 /var/lib/odoo/sessions /var/lib/odoo/filestore"]
+    volumes:
+      - odoo-data:/var/lib/odoo
+    restart: "no"
+
+  odoo:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+      odoo_data_init:
+        condition: service_completed_successfully
+    env_file: .env
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_prod
+      - --db-filter=^baseer_prod$
+      - --no-database-list
+      - --http-port=8069
+    ports:
+      - "127.0.0.1:18069:8069"
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
+      - ./custom_addons:/mnt/baseer-addons:ro
+      - ./third_party_addons:/mnt/third-party-addons:ro
+    networks: [backend]
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    name: baseer-odoo-prod-postgres-data
+  odoo-data:
+    name: baseer-odoo-prod-odoo-data
+
+networks:
+  backend:
+    name: baseer-odoo-prod-backend
+    internal: true

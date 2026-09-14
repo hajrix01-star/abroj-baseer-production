@@ -1,0 +1,28 @@
+{
+    'name': 'Baseer Procurement Requests',
+    'version': '19.0.11.0.0',
+    'category': 'Inventory/Purchase',
+    'summary': 'Company-product procurement requests, price history, and optional stock receipts',
+    'author': 'Baseer',
+    'license': 'LGPL-3',
+    'depends': ['stock', 'account', 'hr', 'mail', 'baseer_purchase_batch'],
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'data/sequence.xml',
+        'views/procurement_request_views.xml',
+        'views/procurement_option_views.xml',
+        'views/procurement_custody_views.xml',
+        'views/procurement_menus.xml',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'baseer_procurement_requests/static/src/procurement_catalog.js',
+            'baseer_procurement_requests/static/src/procurement_catalog.xml',
+            'baseer_procurement_requests/static/src/procurement_catalog.scss',
+        ],
+    },
+    'application': True,
+    'installable': True,
+    'post_init_hook': 'post_init_hook',
+}

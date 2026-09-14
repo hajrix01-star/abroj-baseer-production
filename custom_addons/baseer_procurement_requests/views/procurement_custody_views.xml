@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- One shared, company-scoped purchasing custody pool. Legacy employee
+         custodies remain in the database but outside this operational action. -->
+    <record id="view_procurement_custody_list" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.list</field>
+        <field name="model">baseer.procurement.custody</field>
+        <field name="arch" type="xml">
+            <list string="Purchasing custody fund" default_order="company_id, opened_on desc">
+                <field name="name" string="Custody fund"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="opened_on" string="Opened on"/>
+                <field name="funded_amount" string="Funds received" sum="Funds received"/>
+                <field name="settled_amount" string="Purchases paid" sum="Purchases paid"/>
+                <field name="returned_amount" string="Cash received back" sum="Cash received back"/>
+                <field name="balance" string="Current balance" sum="Current balance"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_event_form" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.event.form</field>
+        <field name="model">baseer.procurement.custody.event</field>
+        <field name="arch" type="xml">
+            <form string="Custody fund movement">
+                <header>
+                    <button name="action_post" type="object" string="Post movement"
+                            class="oe_highlight" invisible="state == 'posted'"
+                            groups="baseer_procurement_requests.group_procurement_accountant"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
+                </header>
+                <sheet>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <field name="custody_id" string="Custody fund" options="{'no_create': True}"
+                                   readonly="state == 'posted'"/>
+                            <field name="event_date" string="Date" readonly="state == 'posted'"/>
+                            <field name="event_type" string="Movement" readonly="state == 'posted'"/>
+                        </group>
+                        <group>
+                            <field name="representative_partner_id" string="Purchase representative"
+                                   options="{'no_create': True}" readonly="state == 'posted'"
+                                   domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('active', '=', True)]"/>
+                            <field name="procurement_request_id" string="Funded procurement request"
+                                   options="{'no_create': True}" readonly="state == 'posted'"
+                                   required="event_type == 'funding' and context.get('default_is_company_pool')"
+                                   invisible="event_type != 'funding' or not context.get('default_is_company_pool')"
+                                   domain="[('company_id', '=', company_id), ('state', 'not in', ['draft', 'cancel']), ('representative_partner_id', '=', representative_partner_id)]"/>
+                            <field name="amount" string="Amount" readonly="state == 'posted'"/>
+                            <field name="cash_journal_id" string="Bank / cash journal"
+                                   options="{'no_create': True}" readonly="state == 'posted'"
+                                   domain="[('company_id', '=', company_id), ('active', '=', True), ('type', 'in', ['bank', 'cash'])]"/>
+                            <field name="custody_account_id" string="Custody destination / source account" readonly="1"/>
+                            <field name="reference" string="Transfer reference" placeholder="Bank transfer or receipt reference"
+                                   readonly="state == 'posted'"/>
+                        </group>
+                    </group>
+                    <group string="Posted accounting document" invisible="state != 'posted'">
+                        <field name="move_id" string="Journal entry" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_form" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.form</field>
+        <field name="model">baseer.procurement.custody</field>
+        <field name="arch" type="xml">
+            <form string="Purchasing custody fund">
+                <header>
+                    <button name="action_close" type="object" string="Close fund" class="oe_highlight"
+                            invisible="state != 'open'" groups="baseer_procurement_requests.group_procurement_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="open,closed"/>
+                </header>
+                <sheet>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="is_company_pool" invisible="1"/>
+                    <div class="oe_title">
+                        <label for="name" string="Custody fund"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" readonly="event_ids" options="{'no_create': True}"/>
+                            <field name="opened_on" readonly="event_ids"/>
+                        </group>
+                        <group invisible="is_company_pool">
+                            <field name="employee_id" readonly="event_ids"/>
+                            <field name="representative_partner_id" readonly="event_ids" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <div class="row g-3 my-3">
+                        <div class="col-6 col-xl-3">
+                            <div class="card h-100 border-0 bg-light"><div class="card-body">
+                                <div class="text-muted">Funds received</div>
+                                <div class="fs-3 fw-bold" dir="ltr"><field name="funded_amount" readonly="1"/></div>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-xl-3">
+                            <div class="card h-100 border-0 bg-light"><div class="card-body">
+                                <div class="text-muted">Purchases paid</div>
+                                <div class="fs-3 fw-bold" dir="ltr"><field name="settled_amount" readonly="1"/></div>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-xl-3">
+                            <div class="card h-100 border-0 bg-light"><div class="card-body">
+                                <div class="text-muted">Cash received back</div>
+                                <div class="fs-3 fw-bold" dir="ltr"><field name="returned_amount" readonly="1"/></div>
+                            </div></div>
+                        </div>
+                        <div class="col-6 col-xl-3">
+                            <div class="card h-100 border-0 bg-primary-subtle"><div class="card-body">
+                                <div class="text-muted">Current balance</div>
+                                <div class="fs-3 fw-bold" dir="ltr"><field name="balance" readonly="1"/></div>
+                            </div></div>
+                        </div>
+                    </div>
+
+                    <notebook>
+                        <page string="Funding and returns" name="custody_movements">
+                            <p class="text-muted">
+                                Funding transfers money from the selected bank or cash journal into custody.
+                                A return receives money back into the selected journal.
+                            </p>
+                            <field name="event_ids" context="{'default_custody_id': id, 'default_is_company_pool': is_company_pool}" readonly="state == 'closed'">
+                                <list editable="bottom" open_form_view="True" default_order="event_date desc, id desc">
+                                    <field name="company_id" column_invisible="1"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="event_date" string="Date" readonly="state == 'posted'"/>
+                                    <field name="event_type" string="Movement" readonly="state == 'posted'"/>
+                                    <field name="representative_partner_id" string="Purchase representative"
+                                           options="{'no_create': True}" readonly="state == 'posted'"
+                                           domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('active', '=', True)]"/>
+                                    <field name="procurement_request_id" string="Funded procurement request"
+                                           options="{'no_create': True}" readonly="state == 'posted'"
+                                           required="event_type == 'funding' and context.get('default_is_company_pool')"
+                                           invisible="event_type != 'funding' or not context.get('default_is_company_pool')"
+                                           domain="[('company_id', '=', company_id), ('state', 'not in', ['draft', 'cancel']), ('representative_partner_id', '=', representative_partner_id)]"/>
+                                    <field name="amount" string="Amount" readonly="state == 'posted'"/>
+                                    <field name="cash_journal_id" string="Bank / cash journal"
+                                           options="{'no_create': True}" readonly="state == 'posted'"
+                                           domain="[('company_id', '=', company_id), ('active', '=', True), ('type', 'in', ['bank', 'cash'])]"/>
+                                    <field name="custody_account_id" string="Custody destination / source account" readonly="1" optional="show"/>
+                                    <field name="reference" string="Transfer reference" readonly="state == 'posted'"/>
+                                    <button name="action_post" type="object" string="Post" class="btn-primary"
+                                            invisible="state == 'posted'"
+                                            groups="baseer_procurement_requests.group_procurement_accountant"/>
+                                    <field name="move_id" string="Journal entry" readonly="1" optional="hide"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_search" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.search</field>
+        <field name="model">baseer.procurement.custody</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="company_id"/>
+                <filter name="open" string="Open" domain="[('state', '=', 'open')]"/>
+                <filter name="closed" string="Closed" domain="[('state', '=', 'closed')]"/>
+                <group><filter name="company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/></group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_procurement_custody" model="ir.actions.act_window">
+        <field name="name">Purchasing custody fund</field>
+        <field name="res_model">baseer.procurement.custody</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_procurement_custody_search"/>
+        <field name="domain">[('is_company_pool', '=', True), ('company_id', 'in', allowed_company_ids)]</field>
+        <field name="context">{'default_is_company_pool': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create the single purchasing custody fund for this company.</p>
+            <p>Funding, supplier purchases, returns, and the current balance remain traceable in Odoo accounting.</p>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_settlement_form" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.settlement.form</field>
+        <field name="model">baseer.procurement.custody.settlement</field>
+        <field name="arch" type="xml">
+            <form string="Custody settlement">
+                <header>
+                    <button name="action_reverse" type="object" string="Reverse settlement" class="btn-danger"
+                            invisible="state != 'active'" groups="baseer_procurement_requests.group_procurement_accountant"/>
+                    <field name="state" widget="statusbar" statusbar_visible="active,reversed"/>
+                </header>
+                <sheet><group>
+                    <group>
+                        <field name="custody_id" readonly="1"/>
+                        <field name="representative_partner_id" readonly="1"/>
+                        <field name="batch_line_id" readonly="1"/>
+                        <field name="amount" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="move_id" readonly="1"/>
+                        <field name="reversal_reason" readonly="state != 'active'" required="state == 'active'"/>
+                        <field name="reversal_move_id" readonly="1" invisible="not reversal_move_id"/>
+                    </group>
+                </group></sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_monthly_statement_list" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.monthly.statement.list</field>
+        <field name="model">baseer.procurement.custody.monthly.statement</field>
+        <field name="arch" type="xml">
+            <list string="Monthly custody reconciliation" create="0" edit="0" delete="0"
+                  default_order="month_start desc, representative_partner_id">
+                <field name="month_start" string="Month"/>
+                <field name="representative_partner_id" string="Purchase representative"/>
+                <field name="opening_balance" string="Opening balance" sum="Opening balance"/>
+                <field name="funded_amount" string="Funds received" sum="Funds received"/>
+                <field name="settled_amount" string="Purchases paid" sum="Purchases paid"/>
+                <field name="returned_amount" string="Cash received back" sum="Cash received back"/>
+                <field name="closing_balance" string="Closing / carried balance" sum="Closing balance"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="custody_id" optional="hide"/>
+                <field name="employee_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_monthly_statement_pivot" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.monthly.statement.pivot</field>
+        <field name="model">baseer.procurement.custody.monthly.statement</field>
+        <field name="arch" type="xml">
+            <pivot string="Monthly custody reconciliation">
+                <field name="representative_partner_id" type="row"/>
+                <field name="month_start" interval="month" type="col"/>
+                <field name="opening_balance" type="measure"/>
+                <field name="funded_amount" type="measure"/>
+                <field name="settled_amount" type="measure"/>
+                <field name="returned_amount" type="measure"/>
+                <field name="closing_balance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_monthly_statement_search" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.monthly.statement.search</field>
+        <field name="model">baseer.procurement.custody.monthly.statement</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="representative_partner_id" string="Purchase representative"/>
+                <field name="custody_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <filter name="month" string="Month" date="month_start"/>
+                <group>
+                    <filter name="representative" string="Purchase representative" context="{'group_by': 'representative_partner_id'}"/>
+                    <filter name="month_group" string="Month" context="{'group_by': 'month_start'}"/>
+                    <filter name="company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_procurement_custody_monthly_statement" model="ir.actions.act_window">
+        <field name="name">Monthly custody reconciliation</field>
+        <field name="res_model">baseer.procurement.custody.monthly.statement</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_procurement_custody_monthly_statement_search"/>
+        <field name="context">{'search_default_month': 1}</field>
+    </record>
+
+    <record id="view_procurement_custody_period_close_list" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.period.close.list</field>
+        <field name="model">baseer.procurement.custody.period.close</field>
+        <field name="arch" type="xml">
+            <list string="Custody month closes" default_order="month_start desc, representative_partner_id"
+                  editable="bottom" open_form_view="True" delete="0">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="month_start" string="Month" readonly="state == 'closed'"/>
+                <field name="custody_id" string="Custody fund" options="{'no_create': True}"
+                       readonly="state == 'closed'"
+                       domain="[('company_id', '=', company_id), ('is_company_pool', '=', True), ('state', '=', 'open')]"/>
+                <field name="representative_partner_id" string="Purchase representative"
+                       options="{'no_create': True}" readonly="state == 'closed'"
+                       domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('active', '=', True)]"/>
+                <field name="opening_balance" string="Opening" readonly="1" optional="show"/>
+                <field name="funded_amount" string="Funds received" readonly="1" optional="show"/>
+                <field name="settled_amount" string="Purchases paid" readonly="1" optional="show"/>
+                <field name="returned_amount" string="Cash received back" readonly="1" optional="show"/>
+                <field name="carry_forward_amount" string="Carried forward" readonly="1"/>
+                <button name="action_close" type="object" string="Close and carry forward"
+                        class="btn-primary" invisible="state == 'closed'"
+                        groups="baseer_procurement_requests.group_procurement_accountant"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_period_close_form" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.period.close.form</field>
+        <field name="model">baseer.procurement.custody.period.close</field>
+        <field name="arch" type="xml">
+            <form string="Custody month close">
+                <header>
+                    <button name="action_close" type="object" string="Close and carry forward"
+                            class="oe_highlight" invisible="state == 'closed'"
+                            groups="baseer_procurement_requests.group_procurement_accountant"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,closed"/>
+                </header>
+                <sheet>
+                    <field name="currency_id" invisible="1"/>
+                    <group>
+                        <group>
+                            <field name="company_id" readonly="1" groups="base.group_multi_company"/>
+                            <field name="month_start" string="Month" readonly="state == 'closed'"/>
+                            <field name="custody_id" string="Custody fund" options="{'no_create': True}"
+                                   readonly="state == 'closed'"
+                                   domain="[('company_id', '=', company_id), ('is_company_pool', '=', True), ('state', '=', 'open')]"/>
+                            <field name="representative_partner_id" string="Purchase representative"
+                                   options="{'no_create': True}" readonly="state == 'closed'"
+                                   domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('active', '=', True)]"/>
+                            <field name="note" string="Note" readonly="state == 'closed'"/>
+                        </group>
+                        <group invisible="state != 'closed'">
+                            <field name="closed_by_id" readonly="1"/>
+                            <field name="closed_at" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="row g-3 my-3" invisible="state != 'closed'">
+                        <div class="col-6 col-xl"><div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Opening balance</div><div class="fs-4 fw-bold" dir="ltr"><field name="opening_balance" readonly="1"/></div>
+                        </div></div></div>
+                        <div class="col-6 col-xl"><div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Funds received</div><div class="fs-4 fw-bold" dir="ltr"><field name="funded_amount" readonly="1"/></div>
+                        </div></div></div>
+                        <div class="col-6 col-xl"><div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Purchases paid</div><div class="fs-4 fw-bold" dir="ltr"><field name="settled_amount" readonly="1"/></div>
+                        </div></div></div>
+                        <div class="col-6 col-xl"><div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Cash received back</div><div class="fs-4 fw-bold" dir="ltr"><field name="returned_amount" readonly="1"/></div>
+                        </div></div></div>
+                        <div class="col-12 col-xl"><div class="card h-100 border-0 bg-primary-subtle"><div class="card-body">
+                            <div class="text-muted">Carried to next month</div><div class="fs-4 fw-bold" dir="ltr"><field name="carry_forward_amount" readonly="1"/></div>
+                        </div></div></div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_procurement_custody_period_close_search" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.period.close.search</field>
+        <field name="model">baseer.procurement.custody.period.close</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="representative_partner_id"/>
+                <field name="custody_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <filter name="month" string="Month" date="month_start"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="closed" string="Closed" domain="[('state', '=', 'closed')]"/>
+                <group>
+                    <filter name="representative" string="Purchase representative" context="{'group_by': 'representative_partner_id'}"/>
+                    <filter name="month_group" string="Month" context="{'group_by': 'month_start'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_procurement_custody_period_close" model="ir.actions.act_window">
+        <field name="name">Custody month closes</field>
+        <field name="res_model">baseer.procurement.custody.period.close</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_procurement_custody_period_close_search"/>
+        <field name="context">{}</field>
+    </record>
+
+    <record id="view_company_procurement_custody" model="ir.ui.view">
+        <field name="name">res.company.procurement.custody</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="baseer_procurement_custody" string="Purchasing custody"
+                      groups="baseer_procurement_requests.group_procurement_manager">
+                    <group>
+                        <field name="baseer_procurement_custody_account_id" string="Purchasing custody account"
+                               domain="[('company_ids', 'in', [id]), ('active', '=', True), ('reconcile', '=', True), ('account_type', 'in', ['asset_receivable', 'asset_current'])]"
+                               options="{'no_create': True}"/>
+                        <field name="baseer_procurement_custody_journal_id" string="Custody journal"
+                               domain="[('company_id', '=', id), ('active', '=', True), ('type', '=', 'general')]"
+                               options="{'no_create': True}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Legacy row allocation is read-only in the normal interface. New
+         custody settlements are linked once from the batch header. -->
+    <record id="view_purchase_batch_line_procurement_link" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.line.procurement.link</field>
+        <field name="model">baseer.purchase.batch.line</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_line_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='description']" position="after">
+                <field name="procurement_request_id" options="{'no_create': True}"
+                       readonly="batch_state == 'approved' or procurement_allocation_ids"
+                       invisible="not procurement_request_id or procurement_allocation_ids"
+                       domain="[('company_id', '=', company_id), ('state', '=', 'purchased')]"/>
+                <field name="procurement_custody_id" options="{'no_create': True}"
+                       readonly="batch_state == 'approved'" invisible="not procurement_custody_id"
+                       domain="[('company_id', '=', company_id), ('state', '=', 'open')]"/>
+                <field name="procurement_allocated_amount" readonly="1" invisible="not procurement_allocation_ids"/>
+                <field name="procurement_unallocated_amount" readonly="1" invisible="not procurement_allocation_ids"/>
+                <field name="procurement_settlement_move_id" readonly="1" invisible="not procurement_settlement_move_id"/>
+            </xpath>
+            <xpath expr="//field[@name='is_credit']" position="attributes">
+                <attribute name="invisible">context.get('baseer_custody_route')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_method_line_id']" position="attributes">
+                <attribute name="invisible">context.get('baseer_custody_route')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_method_line_id']/following-sibling::div[1]" position="attributes">
+                <attribute name="invisible">context.get('baseer_custody_route')</attribute>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group string="Legacy request allocations" invisible="not procurement_custody_id or not procurement_allocation_ids">
+                    <field name="procurement_allocation_ids" readonly="batch_state == 'approved'">
+                        <list editable="bottom">
+                            <field name="request_id" domain="[('company_id', '=', parent.company_id), ('state', '=', 'purchased')]"/>
+                            <field name="amount"/>
+                        </list>
+                    </field>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_batch_procurement_link" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.procurement.link</field>
+        <field name="model">baseer.purchase.batch</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='entry_date']" position="after">
+                <field name="procurement_request_id" string="Received purchase request"
+                       options="{'no_create': True}" readonly="state != 'draft'"
+                       domain="[('company_id', '=', company_id), ('state', '=', 'purchased'), ('procurement_batch_ids', '=', False)]"/>
+                <field name="procurement_custody_id" string="Payment source"
+                       options="{'no_create': True}" readonly="state != 'draft'"
+                       domain="[('company_id', '=', company_id), ('is_company_pool', '=', True), ('state', '=', 'open')]"/>
+                <field name="procurement_representative_partner_id" string="Purchase representative"
+                       options="{'no_create': True}" readonly="state != 'draft'" invisible="not procurement_custody_id"
+                       domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('active', '=', True)]"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="before">
+                <div class="alert alert-info mb-3" role="status" invisible="not procurement_custody_id">
+                    Payment source: <strong>Purchasing custody fund</strong>.
+                    Supplier rows are settled from custody after approval and their total must equal the received request total.
+                </div>
+                <div class="row g-3 mb-3" invisible="not procurement_custody_id">
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Received request total</div>
+                            <div class="fs-4 fw-bold" dir="ltr"><field name="procurement_request_actual_total" readonly="1"/></div>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Supplier invoices entered</div>
+                            <div class="fs-4 fw-bold" dir="ltr"><field name="amount_gross" readonly="1"/></div>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 bg-primary-subtle"><div class="card-body">
+                            <div class="text-muted">Representative custody balance</div>
+                            <div class="fs-4 fw-bold" dir="ltr"><field name="procurement_representative_balance" readonly="1"/></div>
+                        </div></div>
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="attributes">
+                <attribute name="context">{'default_company_id': company_id, 'default_invoice_date': entry_date, 'default_is_credit': procurement_custody_id and True or False, 'default_procurement_request_id': procurement_request_id, 'default_procurement_custody_id': procurement_custody_id, 'form_view_ref': 'baseer_purchase_batch.view_purchase_batch_line_form', 'baseer_custody_route': procurement_custody_id}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='is_credit']" position="attributes">
+                <attribute name="column_invisible">parent.procurement_custody_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="attributes">
+                <attribute name="column_invisible">parent.procurement_custody_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='move_id']" position="after">
+                <field name="procurement_settlement_move_id" string="Custody settlement" optional="hide" readonly="1"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/following-sibling::p[1]" position="attributes">
+                <attribute name="invisible">procurement_custody_id</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_batch_procurement_resettle" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.procurement.resettle</field>
+        <field name="model">baseer.purchase.batch</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_approve']" position="after">
+                <button name="action_resettle_custody" type="object" string="Resettle custody bills"
+                        invisible="state != 'approved' or not procurement_custody_id"
+                        groups="baseer_procurement_requests.group_procurement_accountant"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,41 @@
+# Translation of Baseer Arabic UI Terminology.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: eh_account_dynamic_reports
+#: model:ir.ui.menu,name:eh_account_dynamic_reports.menu_financial_statements
+msgid "Financial Statements"
+msgstr "القوائم المالية"
+
+#. module: eh_account_dynamic_reports
+#: model:ir.ui.menu,name:eh_account_dynamic_reports.menu_ledgers
+msgid "Ledgers and Balances"
+msgstr "دفاتر الأستاذ والأرصدة"
+
+#. module: eh_account_dynamic_reports
+#: model:ir.ui.menu,name:eh_account_dynamic_reports.menu_partner_reports
+msgid "Receivables and Payables"
+msgstr "الذمم المدينة والدائنة"
+
+#. module: eh_account_dynamic_reports
+#: model:ir.ui.menu,name:eh_account_dynamic_reports.menu_management_reports
+msgid "Management and Controls"
+msgstr "الإدارة والرقابة"
+
+#. module: eh_account_dynamic_reports
+#: model:ir.actions.act_window,name:eh_account_dynamic_reports.action_eh_noncash_transaction
+#: model:ir.ui.menu,name:eh_account_dynamic_reports.menu_eh_noncash_transaction
+msgid "Non-Cash Transactions"
+msgstr "المعاملات غير النقدية"
+
+#. module: account
+#: model:account.journal,name:account.2_tax_adjustment
+#: model:account.journal,name:account.3_tax_adjustment
+msgid "Tax Adjustments"
+msgstr "تسويات ضريبة القيمة المضافة"

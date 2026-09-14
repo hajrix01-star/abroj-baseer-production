@@ -1,0 +1,6 @@
+/* Rendered MP4 motion graphic; the original site image remains a reduced-motion fallback. */
+.hero-photo { background: #073b63; }
+.hero-photo:before { z-index: 2; }
+.hero-photo-label { z-index: 3; }
+.abroj-motion-film { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; object-fit: cover; background: #073b63; }
+@media (prefers-reduced-motion: reduce) { .abroj-motion-film { display: none; } }

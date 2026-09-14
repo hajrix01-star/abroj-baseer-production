@@ -298,17 +298,51 @@ class BaseerPurchaseBatch(models.Model):
 
     def action_approve(self):
         self.ensure_one()
+        return self._approve_locked(
+            self.env.user,
+            return_bills_action=True,
+        )
+
+    def _approve_as_actor(self, actor, authorization_check):
+        """Approve from a narrowly-authorized server-side workflow.
+
+        This private helper is deliberately not callable by the web RPC layer.
+        A caller must already be in sudo mode and supplies an in-process policy
+        callback that is evaluated only after both the batch and its company
+        have been locked.  It lets an access-policy addon authorize a specific
+        operational actor without giving that actor general invoice access.
+        """
+        self.ensure_one()
+        if not self.env.su or not callable(authorization_check):
+            raise AccessError(_('This approval path is available only to an internal server workflow.'))
+        actor = actor.exists()
+        if len(actor) != 1:
+            raise AccessError(_('A valid approval actor is required.'))
+        return self._approve_locked(
+            actor,
+            return_bills_action=False,
+            authorization_check=authorization_check,
+        )
+
+    def _approve_locked(self, approval_actor, return_bills_action, authorization_check=None):
+        """Run the existing atomic approval flow with a verified actor."""
+        self.ensure_one()
         # Savepoint is deliberate: callers catching UserError in-process must
         # not retain invoices/payments from earlier successful rows.
         with self.env.cr.savepoint():
             self._lock_batches()
             if self.state == 'approved':
-                return self.action_view_bills()
+                return self.action_view_bills() if return_bills_action else True
             self._require_draft()
             self._check_row_limit()
             if not self.line_ids:
                 raise UserError(_('Add at least one purchase row before approval.'))
-            if not self.env.user.has_group('account.group_account_invoice'):
+            # The ordinary approval route always runs as the user who clicked
+            # it and therefore needs accounting permission.  The only
+            # exception is the private, system-only helper used by the
+            # cashier policy wrapper; that helper rechecks the real cashier,
+            # company and enabled policy under this same database lock.
+            if not self.env.su and not self.env.user.has_group('account.group_account_invoice'):
                 raise AccessError(_('You do not have permission to post supplier bills.'))
             batch = company_scope(self, self.company_id)
             # Serializes reference checking across this batch interface. Core
@@ -319,6 +353,8 @@ class BaseerPurchaseBatch(models.Model):
             # retries with a fresh snapshot instead of missing the first bill.
             # No company business value, write_date or configuration is changed.
             batch.env.cr.execute('UPDATE res_company SET id = id WHERE id = %s', [batch.company_id.id])
+            if authorization_check:
+                authorization_check(batch)
             prepared = [(line, line._prepare_approval()) for line in batch.line_ids.sorted(lambda line: (line.sequence, line.id))]
             batch._check_duplicate_references()
             # Create and post the native supplier bills as recordsets.  Odoo's
@@ -365,9 +401,9 @@ class BaseerPurchaseBatch(models.Model):
                     'net_amount': bill.amount_untaxed, 'tax_amount': bill.amount_tax,
                 })
             super(BaseerPurchaseBatch, batch).write({
-                'state': 'approved', 'approved_by_id': self.env.uid, 'approved_at': fields.Datetime.now(),
+                'state': 'approved', 'approved_by_id': approval_actor.id, 'approved_at': fields.Datetime.now(),
             })
-            return batch.action_view_bills()
+            return batch.action_view_bills() if return_bills_action else True
 
     def action_view_bills(self):
         self.ensure_one()

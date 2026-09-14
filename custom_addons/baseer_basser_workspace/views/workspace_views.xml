@@ -71,4 +71,10 @@
               groups="baseer_access_roles.group_owner,baseer_access_roles.group_accountant,baseer_access_roles.group_cashier"/>
     <menuitem id="menu_basser_configuration" name="BASSER configuration" parent="menu_basser_root"
               action="action_workspace_section" sequence="90" groups="baseer_access_roles.group_owner"/>
+    <menuitem id="menu_basser_operational_policies" name="Operational policies" parent="menu_basser_root"
+              action="baseer_access_roles.action_baseer_operations_settings" sequence="91"
+              groups="baseer_access_roles.group_owner"/>
+    <menuitem id="menu_basser_cashier_batch_approval_audit" name="Cashier batch approval audit" parent="menu_basser_root"
+              action="baseer_access_roles.action_cashier_purchase_batch_approval_audit" sequence="92"
+              groups="baseer_access_roles.group_owner"/>
 </odoo>

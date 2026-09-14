@@ -6,8 +6,21 @@
         <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@invisible=&quot;state != 'draft'&quot;]" position="attributes"><attribute name="groups">!baseer_access_roles.group_cashier</attribute></xpath>
-            <xpath expr="//button[@name='action_approve']" position="attributes"><attribute name="groups">!baseer_access_roles.group_cashier</attribute></xpath>
+            <xpath expr="//button[@name='action_approve']" position="replace">
+                <button name="action_approve" type="object" string="Save and approve" class="oe_highlight"
+                        invisible="state != 'draft' or not is_current_company or (is_cashier and not cashier_batch_approval_allowed)"/>
+            </xpath>
             <xpath expr="//button[@name='action_view_bills']" position="attributes"><attribute name="groups">!baseer_access_roles.group_cashier</attribute></xpath>
+            <xpath expr="//field[@name='is_current_company']" position="after">
+                <field name="is_cashier" invisible="True"/>
+                <field name="cashier_batch_approval_allowed" invisible="True"/>
+            </xpath>
+            <xpath expr="//div[hasclass('text-muted', 'mb-3')]" position="after">
+                <div class="text-info mt-2" role="note" groups="baseer_access_roles.group_cashier"
+                     invisible="state != 'draft' or cashier_batch_approval_allowed">
+                    Your draft remains pending accountant approval for this company.
+                </div>
+            </xpath>
             <xpath expr="//field[@name='move_id']" position="attributes"><attribute name="groups">!baseer_access_roles.group_cashier</attribute></xpath>
             <xpath expr="//field[@name='bill_payment_state']" position="attributes"><attribute name="groups">!baseer_access_roles.group_cashier</attribute></xpath>
             <xpath expr="//field[@name='move_id']" position="after"><field name="baseer_bill_reference" optional="hide" readonly="True" groups="baseer_access_roles.group_cashier"/></xpath>

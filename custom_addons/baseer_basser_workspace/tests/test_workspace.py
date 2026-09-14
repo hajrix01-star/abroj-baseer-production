@@ -36,6 +36,7 @@ class BasserWorkspaceCase(TransactionCase):
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_sales_summaries').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_advances').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_cashier_purchase_batches').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_heat_calendar').id,
         }
         self.assertSetEqual(item_ids, expected)
@@ -169,7 +170,7 @@ class BasserWorkspaceCase(TransactionCase):
         owner = self._user('owner')
         section_model = self.env['baseer.basser.workspace.section'].with_user(owner)
         item_model = self.env['baseer.basser.workspace.item'].with_user(owner)
-        for sequence in range(1, 36):
+        for sequence in range(1, 35):
             section = section_model.create({
                 'name': 'Bounded cashier section %s' % sequence,
                 'role': 'cashier',

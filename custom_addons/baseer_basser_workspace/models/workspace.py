@@ -34,6 +34,10 @@ BASEER_WORKSPACE_TARGET_POLICY = {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-users',
         },
+        'baseer_access_roles.menu_cashier_purchase_batches': {
+            'action_type': 'ir.actions.act_window',
+            'icon': 'fa fa-files-o',
+        },
         'spreadsheet_dashboard.spreadsheet_dashboard_menu_dashboard': {
             'action_type': 'ir.actions.client',
             'tag': 'action_spreadsheet_dashboard',

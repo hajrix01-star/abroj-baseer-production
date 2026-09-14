@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_cashier_purchase_batch_approval_audit_list" model="ir.ui.view">
+        <field name="name">cashier.purchase.batch.approval.audit.list</field>
+        <field name="model">baseer.purchase.batch.cashier.approval.audit</field>
+        <field name="arch" type="xml">
+            <list string="Cashier Purchase-Batch Approvals" create="False" edit="False" delete="False">
+                <field name="approved_at"/>
+                <field name="batch_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="actor_user_id"/>
+                <field name="execution_user_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_cashier_purchase_batch_approval_audit" model="ir.actions.act_window">
+        <field name="name">Cashier purchase-batch approvals</field>
+        <field name="res_model">baseer.purchase.batch.cashier.approval.audit</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+    </record>
+</odoo>

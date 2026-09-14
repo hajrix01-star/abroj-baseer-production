@@ -1,7 +1,7 @@
 from uuid import uuid4
 
-from odoo import Command
-from odoo.exceptions import AccessError
+from odoo import Command, fields
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase
 
 
@@ -216,3 +216,234 @@ class CashierProcurementRoleCase(TransactionCase):
         with self.assertRaises(AccessError):
             cashier_request_b.action_confirm_actual_purchase()
         self.assertEqual(request_b.state, 'received')
+
+
+class CashierPurchaseBatchApprovalCase(TransactionCase):
+    """Regression coverage for the optional, company-scoped self-approval path."""
+
+    def setUp(self):
+        super().setUp()
+        sar = self.env['res.currency'].with_context(active_test=False).search(
+            [('name', '=', 'SAR')], limit=1,
+        )
+        self.assertTrue(sar, 'Cashier batch approval tests require SAR.')
+        if not sar.active:
+            sar.active = True
+        self.company_a = self.env['res.company'].search([('currency_id', '=', sar.id)], limit=1)
+        if not self.company_a:
+            self.company_a = self.env['res.company'].create({
+                'name': 'Cashier batch approval A',
+                'currency_id': sar.id,
+            })
+        self.env.user.company_ids |= self.company_a
+        self.env = self.env(context={
+            **self.env.context,
+            'allowed_company_ids': [self.company_a.id],
+        })
+        self.env.user.group_ids |= self.env.ref('account.group_account_invoice')
+        self.owner = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Cashier batch owner',
+            'login': 'cashier-batch-owner-%s' % uuid4().hex,
+            'company_id': self.company_a.id,
+            'company_ids': [Command.set(self.company_a.ids)],
+            'baseer_access_role': 'owner',
+        })
+        self.expense_account = self.env['account.account'].create({
+            'name': 'Cashier batch expense',
+            'code': 'CBA%s' % uuid4().hex[:7].upper(),
+            'account_type': 'expense',
+            'company_ids': [Command.set(self.company_a.ids)],
+        })
+        self.category = self.env['product.category'].create({
+            'name': 'Cashier batch category %s' % uuid4().hex,
+        })
+        self.service = self.env['product.product'].create({
+            'name': 'Cashier batch service %s' % uuid4().hex,
+            'type': 'service',
+            'categ_id': self.category.id,
+            'property_account_expense_id': self.expense_account.id,
+        })
+        self.mapping_a = self.env['baseer.purchase.category.map'].create({
+            'company_id': self.company_a.id,
+            'category_id': self.category.id,
+            'product_id': self.service.id,
+        })
+        self.supplier = self.env['res.partner'].create({
+            'name': 'Cashier batch supplier %s' % uuid4().hex,
+            'supplier_rank': 1,
+        })
+
+    def _cashier(self, company_ids=None):
+        company_ids = company_ids or self.company_a
+        return self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Cashier batch %s' % uuid4().hex,
+            'login': 'cashier-batch-%s' % uuid4().hex,
+            'company_id': self.company_a.id,
+            'company_ids': [Command.set(company_ids.ids)],
+            'baseer_access_role': 'cashier',
+        })
+
+    def _draft_batch(self, cashier, company=None, mapping=None):
+        company = company or self.company_a
+        mapping = mapping or self.mapping_a
+        return self.env['baseer.purchase.batch'].with_user(cashier).with_context(
+            allowed_company_ids=[company.id],
+        ).create({
+            'company_id': company.id,
+            'line_ids': [Command.create({
+                'partner_id': self.supplier.id,
+                'supplier_ref': 'CBA-%s' % uuid4().hex,
+                'entry_type': 'purchase',
+                'category_map_id': mapping.id,
+                'gross_amount': 40,
+                'is_credit': True,
+            })],
+        })
+
+    def _enable_self_approval(self, company=None, enabled=True):
+        company = company or self.company_a
+        company.with_user(self.owner).write({
+            'cashier_purchase_batch_approval_enabled': enabled,
+        })
+
+    def _assert_no_batch_documents(self, batch):
+        batch.invalidate_recordset(['state', 'approved_by_id', 'line_ids'])
+        self.assertEqual(batch.state, 'draft')
+        self.assertFalse(batch.line_ids.move_id)
+        self.assertFalse(self.env['baseer.purchase.batch.cashier.approval.audit'].sudo().search([
+            ('batch_id', '=', batch.id),
+        ]))
+
+    def test_cbpa_t01_default_is_accountant_approval_and_policy_write_is_owner_only(self):
+        cashier = self._cashier()
+        batch = self._draft_batch(cashier)
+        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Cashier batch accountant',
+            'login': 'cashier-batch-accountant-%s' % uuid4().hex,
+            'company_id': self.company_a.id,
+            'company_ids': [Command.set(self.company_a.ids)],
+            'baseer_access_role': 'accountant',
+        })
+
+        self.assertFalse(self.company_a.cashier_purchase_batch_approval_enabled)
+        self.assertFalse(cashier.has_group('account.group_account_invoice'))
+        self.assertFalse(
+            self.env['baseer.purchase.batch.cashier.approval.audit'].with_user(
+                accountant,
+            ).check_access_rights('read', raise_exception=False),
+        )
+        with self.assertRaises(AccessError):
+            self.company_a.with_user(cashier).write({
+                'cashier_purchase_batch_approval_enabled': True,
+            })
+        with self.assertRaises(AccessError):
+            batch.with_user(cashier).action_approve()
+        self._assert_no_batch_documents(batch)
+
+    def test_cbpa_t02_enabled_cashier_approves_only_own_active_company_batch_without_bill_access(self):
+        cashier = self._cashier()
+        batch = self._draft_batch(cashier)
+        self._enable_self_approval()
+
+        result = batch.with_user(cashier).action_approve()
+        self.assertEqual(result, {'type': 'ir.actions.client', 'tag': 'reload'})
+        batch.invalidate_recordset(['state', 'approved_by_id', 'line_ids'])
+        self.assertEqual(batch.state, 'approved')
+        self.assertEqual(batch.approved_by_id, cashier)
+        self.assertTrue(batch.line_ids.move_id)
+        self.assertFalse(cashier.has_group('account.group_account_invoice'))
+        with self.assertRaises(AccessError):
+            batch.with_user(cashier).action_view_bills()
+        audit = self.env['baseer.purchase.batch.cashier.approval.audit'].sudo().search([
+            ('batch_id', '=', batch.id),
+        ])
+        self.assertEqual(len(audit), 1)
+        self.assertEqual(audit.actor_user_id, cashier)
+        self.assertEqual(audit.company_id, self.company_a)
+        self.assertTrue(audit.execution_user_id)
+        with self.assertRaises(AccessError):
+            batch.with_user(cashier).action_approve()
+
+    def test_cbpa_t03_rechecks_creator_company_and_policy_inside_the_locked_flow(self):
+        cashier = self._cashier()
+        other_cashier = self._cashier()
+        other_batch = self._draft_batch(other_cashier)
+        self._enable_self_approval()
+        with self.assertRaises(AccessError):
+            other_batch.with_user(cashier).action_approve()
+        self._assert_no_batch_documents(other_batch)
+
+        company_b = self.env['res.company'].create({
+            'name': 'Cashier batch approval B',
+            'currency_id': self.company_a.currency_id.id,
+        })
+        self.env.user.company_ids |= company_b
+        self.owner.company_ids |= company_b
+        cashier.company_ids |= company_b
+        expense_b = self.env['account.account'].with_context(
+            allowed_company_ids=[company_b.id],
+        ).create({
+            'name': 'Cashier batch expense B',
+            'code': 'CBB%s' % uuid4().hex[:7].upper(),
+            'account_type': 'expense',
+            'company_ids': [Command.set(company_b.ids)],
+        })
+        category_b = self.env['product.category'].with_context(
+            allowed_company_ids=[company_b.id],
+        ).create({'name': 'Cashier batch category B %s' % uuid4().hex})
+        service_b = self.env['product.product'].with_context(
+            allowed_company_ids=[company_b.id],
+        ).create({
+            'name': 'Cashier batch service B %s' % uuid4().hex,
+            'type': 'service',
+            'categ_id': category_b.id,
+            'property_account_expense_id': expense_b.id,
+        })
+        mapping_b = self.env['baseer.purchase.category.map'].with_context(
+            allowed_company_ids=[company_b.id],
+        ).create({
+            'company_id': company_b.id,
+            'category_id': category_b.id,
+            'product_id': service_b.id,
+        })
+        batch_b = self._draft_batch(cashier, company_b, mapping_b)
+        with self.assertRaises(AccessError):
+            batch_b.with_user(cashier).with_context(
+                allowed_company_ids=[self.company_a.id, company_b.id],
+            ).action_approve()
+        self._assert_no_batch_documents(batch_b)
+
+        batch = self._draft_batch(cashier)
+        actor = self.env['res.users'].sudo().browse(cashier.id)
+
+        def disable_policy_then_check(locked_batch):
+            locked_batch.company_id.with_user(self.owner).write({
+                'cashier_purchase_batch_approval_enabled': False,
+            })
+            locked_batch._check_cashier_approval_policy_at_lock(actor)
+
+        with self.assertRaises(AccessError):
+            batch.sudo()._approve_as_actor(actor, disable_policy_then_check)
+        self._assert_no_batch_documents(batch)
+
+    def test_cbpa_t04_outer_savepoint_rolls_back_approval_and_audit_together(self):
+        cashier = self._cashier()
+        batch = self._draft_batch(cashier)
+        self._enable_self_approval()
+        actor = self.env['res.users'].sudo().browse(cashier.id)
+
+        with self.assertRaises(UserError):
+            with self.env.cr.savepoint():
+                batch.sudo()._approve_as_actor(
+                    actor,
+                    lambda locked_batch: locked_batch._check_cashier_approval_policy_at_lock(actor),
+                )
+                self.env['baseer.purchase.batch.cashier.approval.audit'].sudo().create({
+                    'batch_id': batch.id,
+                    'company_id': self.company_a.id,
+                    'actor_user_id': actor.id,
+                    'execution_user_id': batch.sudo().env.user.id,
+                    'approved_at': fields.Datetime.now(),
+                })
+                raise UserError('Forced outer approval rollback')
+        self._assert_no_batch_documents(batch)

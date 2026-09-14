@@ -155,3 +155,23 @@ msgstr "التقويم الحراري"
 #: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_heat_calendar
 msgid "View daily sales performance and official occasions."
 msgstr "عرض أداء المبيعات اليومية والمناسبات الرسمية."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_purchase_batches
+msgid "Purchase batch entry"
+msgstr "إدخال المشتريات المجمعة"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_purchase_batches
+msgid "Enter and follow up only your own grouped purchase batches."
+msgstr "إدخال ومتابعة دفعات مشترياتك المجمعة فقط."
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.menu,name:baseer_basser_workspace.menu_basser_operational_policies
+msgid "Operational policies"
+msgstr "السياسات التشغيلية"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.menu,name:baseer_basser_workspace.menu_basser_cashier_batch_approval_audit
+msgid "Cashier batch approval audit"
+msgstr "سجل اعتماد دفعات الكاشير"

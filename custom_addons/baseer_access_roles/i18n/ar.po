@@ -246,3 +246,95 @@ msgstr "اختر دفتر بنك أو صندوق نشطًا تابعًا لهذ�
 #: code:addons/baseer_access_roles/models/advance_entry.py:0
 msgid "An issued advance entry cannot be edited or deleted."
 msgstr "لا يمكن تعديل السلفة المصروفة أو حذفها."
+
+#. module: baseer_access_roles
+#: model:ir.model.fields,field_description:baseer_access_roles.field_res_company__cashier_purchase_batch_approval_enabled
+msgid "Allow cashiers to approve their own purchase batches"
+msgstr "السماح للكاشير باعتماد دفعات مشترياته"
+
+#. module: baseer_access_roles
+#: model:ir.model.fields,help:baseer_access_roles.field_res_company__cashier_purchase_batch_approval_enabled
+msgid "When enabled for this company, a cashier may approve only a draft purchase batch that they created in the active company. The approval still uses the protected native accounting workflow."
+msgstr "عند تفعيله لهذه الشركة، يستطيع الكاشير اعتماد دفعة مشتريات مسودة أنشأها هو في الشركة النشطة فقط، ويستمر الاعتماد عبر مسار المحاسبة الأصلي المحمي."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/res_company.py:0
+msgid "Only the Baseer owner can change cashier purchase-batch approval policy."
+msgstr "لا يغير سياسة اعتماد دفعات مشتريات الكاشير إلا مالك بصير."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/purchase_batch.py:0
+msgid "Only a cashier can use cashier purchase-batch approval."
+msgstr "يستطيع الكاشير فقط استخدام اعتماد دفعات المشتريات الخاص بالكاشير."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/purchase_batch.py:0
+msgid "Switch to the batch company before approving this purchase batch."
+msgstr "انتقل إلى شركة الدفعة قبل اعتماد هذه الدفعة."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/purchase_batch.py:0
+msgid "Cashiers can approve only purchase batches they created."
+msgstr "يستطيع الكاشير اعتماد دفعات المشتريات التي أنشأها فقط."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/purchase_batch.py:0
+msgid "Only a draft purchase batch can be approved."
+msgstr "لا يمكن اعتماد إلا دفعة مشتريات في حالة مسودة."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/purchase_batch.py:0
+msgid "Cashier purchase-batch approval is disabled for this company."
+msgstr "اعتماد دفعات مشتريات الكاشير معطل لهذه الشركة."
+
+#. module: baseer_access_roles
+#. odoo-python
+#: code:addons/baseer_access_roles/models/purchase_batch.py:0
+msgid "Cashiers can view their batch details, not the accounting documents."
+msgstr "يمكن للكاشير عرض تفاصيل دفعته، وليس المستندات المحاسبية."
+
+#. module: baseer_access_roles
+#: model:ir.model,name:baseer_access_roles.model_baseer_purchase_batch_cashier_approval_audit
+msgid "Cashier Purchase Batch Approval Audit"
+msgstr "سجل اعتماد دفعات مشتريات الكاشير"
+
+#. module: baseer_access_roles
+#: model:ir.actions.act_window,name:baseer_access_roles.action_cashier_purchase_batch_approval_audit
+msgid "Cashier purchase-batch approvals"
+msgstr "اعتمادات دفعات مشتريات الكاشير"
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_cashier_purchase_batch_approval_audit_list
+msgid "Cashier Purchase-Batch Approvals"
+msgstr "اعتمادات دفعات مشتريات الكاشير"
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_baseer_operations_settings
+msgid "Operational policies"
+msgstr "السياسات التشغيلية"
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_baseer_operations_settings
+msgid "Allow cashier self-approval for purchase batches"
+msgstr "السماح للكاشير باعتماد دفعات مشترياته"
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_baseer_operations_settings
+msgid "Disabled by default. When enabled, a cashier may approve only a draft batch they created in the selected company."
+msgstr "معطل افتراضياً. عند تفعيله، يستطيع الكاشير اعتماد دفعة مسودة أنشأها في الشركة المختارة فقط."
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_baseer_operations_settings
+msgid "This permits posting supplier bills and their selected payments through the protected batch workflow. It does not give cashiers access to the accounting documents."
+msgstr "يسمح هذا بترحيل فواتير الموردين ومدفوعاتها المختارة عبر مسار الدفعات المحمي، ولا يمنح الكاشير وصولاً إلى المستندات المحاسبية."
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_purchase_batch_form_cashier_approval
+msgid "Your draft remains pending accountant approval for this company."
+msgstr "تبقى مسودتك بانتظار اعتماد المحاسب لهذه الشركة."

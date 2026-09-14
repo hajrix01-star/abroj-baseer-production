@@ -1,0 +1,208 @@
+from datetime import date, timedelta
+from unittest.mock import patch
+
+from odoo import Command
+from odoo.exceptions import AccessError
+from odoo.tests.common import TransactionCase
+
+from odoo.addons.baseer_sales_heat_calendar.models.occasion import (
+    SAUDI_SOURCE_KEY_PREFIX,
+    SOURCE_KEY_CONTEXT,
+    SOURCE_KEY_TOKEN,
+)
+
+
+class HeatCalendarCase(TransactionCase):
+    """Acceptance coverage for the G2 company and replay contracts."""
+
+    def setUp(self):
+        super().setUp()
+        self.company_a = self.env.company
+        self.company_b = self.env['res.company'].create({
+            'name': 'HC isolated company B',
+            'currency_id': self.company_a.currency_id.id,
+        })
+        self.pos_group = self.env.ref('point_of_sale.group_pos_user')
+        self.manager_group = self.env.ref(
+            'baseer_sales_heat_calendar.group_heat_calendar_manager'
+        )
+        self.system_group = self.env.ref('base.group_system')
+        self.base_user_group = self.env.ref('base.group_user')
+        self.Occasion = self.env['baseer.official.occasion']
+        self.Target = self.env['baseer.heat.calendar.target']
+        self.pos_user = self._user('HC POS reader', [self.pos_group])
+        self.manager_user = self._user(
+            'HC calendar manager', [self.pos_group, self.manager_group]
+        )
+        self.system_user = self._user(
+            'HC system manager', [self.pos_group, self.system_group]
+        )
+        self.dashboard = self.env['spreadsheet.dashboard'].sudo().create({
+            'name': 'HC test dashboard',
+            'dashboard_group_id': self.env.ref(
+                'spreadsheet_dashboard.spreadsheet_dashboard_group_sales'
+            ).id,
+            'baseer_dashboard_kind': 'sales_heat_calendar',
+            'is_published': True,
+            'group_ids': [Command.set([self.pos_group.id])],
+            'company_ids': [Command.set([self.company_a.id])],
+        })
+
+    def _user(self, name, groups):
+        return self.env['res.users'].sudo().with_context(
+            no_reset_password=True,
+        ).create({
+            'name': name,
+            'login': name.lower().replace(' ', '_'),
+            'email': f"{name.lower().replace(' ', '.')}@example.test",
+            'company_id': self.company_a.id,
+            'company_ids': [Command.set([self.company_a.id])],
+            'group_ids': [Command.set([
+                self.base_user_group.id,
+                *(group.id for group in groups),
+            ])],
+        })
+
+    def _occasion_values(self, *, company=None, name='HC test occasion'):
+        values = {
+            'name': name,
+            'name_en': name,
+            'code': 'HC_TEST',
+            'date_from': date(2026, 9, 1),
+            'date_to': date(2026, 9, 1),
+            'occasion_type': 'official_holiday',
+            'status': 'confirmed',
+            'source_label': 'HC test source',
+        }
+        if company:
+            values['company_ids'] = [Command.set([company.id])]
+        return values
+
+    def _target_values(self, company, *, weekday=1):
+        return {
+            'company_id': company.id,
+            'year': 2026,
+            'month': 9,
+            'weekday': weekday,
+            'target_amount': 100,
+        }
+
+    def _aggregate_rows(self, date_from, date_to):
+        rows = []
+        cursor = date_from
+        while cursor <= date_to:
+            status = 'missing'
+            sales = customers = 0
+            if cursor == date(2026, 9, 1):
+                status, sales, customers = 'complete', 100, 4
+            elif cursor == date(2026, 9, 8):
+                status, sales, customers = 'incomplete', 900, 40
+            elif cursor == date(2026, 9, 15):
+                status, sales, customers = 'complete', 300, 12
+            rows.append({
+                'business_date': cursor,
+                'status': status,
+                'has_sales': bool(sales),
+                'sales': sales,
+                'customers': customers,
+                'summary_ids': [],
+                'closure_ids': [],
+            })
+            cursor += timedelta(days=1)
+        return rows
+
+    def _as_user(self, model, user):
+        return model.with_user(user).with_context(
+            allowed_company_ids=[self.company_a.id],
+        )
+
+    def test_hc_t01_manager_and_system_company_rules_do_not_bypass(self):
+        """System CRUD ACLs still have the same company rule as the manager."""
+        occasion_b = self.Occasion.sudo().create(
+            self._occasion_values(company=self.company_b, name='HC company B occasion')
+        )
+        target_b = self.Target.sudo().create(self._target_values(self.company_b))
+
+        for user in (self.manager_user, self.system_user):
+            with self.subTest(user=user.login, operation='read occasion'):
+                with self.assertRaises(AccessError):
+                    self._as_user(self.Occasion, user).browse(occasion_b.id).read(['name'])
+            with self.subTest(user=user.login, operation='read target'):
+                with self.assertRaises(AccessError):
+                    self._as_user(self.Target, user).browse(target_b.id).read(['target_amount'])
+            with self.subTest(user=user.login, operation='write occasion'):
+                with self.assertRaises(AccessError):
+                    self._as_user(self.Occasion, user).browse(occasion_b.id).write({'name': 'blocked'})
+            with self.subTest(user=user.login, operation='write target'):
+                with self.assertRaises(AccessError):
+                    self._as_user(self.Target, user).browse(target_b.id).write({'target_amount': 200})
+            with self.subTest(user=user.login, operation='create occasion'):
+                with self.assertRaises(AccessError):
+                    self._as_user(self.Occasion, user).create(self._occasion_values(company=self.company_b))
+            with self.subTest(user=user.login, operation='create target'):
+                with self.assertRaises(AccessError):
+                    self._as_user(self.Target, user).create(
+                        self._target_values(self.company_b, weekday=2)
+                    )
+
+    def test_hc_t02_pos_reader_uses_aggregate_and_complete_weekday_average_only(self):
+        """The monthly header is a backend aggregate of complete source days."""
+        aggregate_calls = []
+
+        def aggregate_days(report, company, date_from, date_to):
+            aggregate_calls.append((company.id, date_from, date_to))
+            return {'days': self._aggregate_rows(date_from, date_to)}
+
+        report_model = type(self.env['baseer.pos.daily.report'])
+        def untranslated(message, *args, **kwargs):
+            return message % kwargs if kwargs else message
+
+        with patch.object(report_model, '_aggregate_days', new=aggregate_days), patch(
+            'odoo.addons.baseer_sales_heat_calendar.models.dashboard._', new=untranslated,
+        ):
+            payload = self.dashboard.with_user(self.pos_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).get_baseer_heat_calendar('2026-09')
+            with self.assertRaises(AccessError):
+                self.dashboard.with_user(self.pos_user).with_context(
+                    allowed_company_ids=[self.company_b.id],
+                ).with_company(self.company_b).get_baseer_heat_calendar('2026-09')
+
+        self.assertEqual(aggregate_calls, [
+            (self.company_a.id, date(2026, 7, 7), date(2026, 9, 30)),
+        ])
+        weekday_headers = {header['name']: header for header in payload['weekdays']}
+        self.assertEqual(weekday_headers['Tuesday']['average_display'], '200.00')
+        self.assertTrue(weekday_headers['Tuesday']['has_average'])
+        self.assertFalse(weekday_headers['Monday']['has_average'])
+
+    def test_hc_t03_feed_skips_hidden_archived_source_key_without_disclosure(self):
+        """An archived seed key is a safe no-op, never a duplicate-key failure."""
+        source_key = f'{SAUDI_SOURCE_KEY_PREFIX}FOUNDING_DAY:2026'
+        existing = self.Occasion.sudo().with_context(**{
+            SOURCE_KEY_CONTEXT: SOURCE_KEY_TOKEN,
+        }).create({
+            **self._occasion_values(name='HC archived authoritative occasion'),
+            'source_key': source_key,
+            'active': False,
+        })
+        manager_occasions = self._as_user(self.Occasion, self.manager_user)
+        self.assertFalse(manager_occasions.search([('source_key', '=', source_key)]))
+
+        created = manager_occasions._seed_if_missing({
+            **self._occasion_values(name='must not overwrite archived record'),
+            'source_key': source_key,
+        })
+        self.assertFalse(created)
+        hidden = self.Occasion.sudo().with_context(active_test=False).search([
+            ('source_key', '=', source_key),
+        ])
+        self.assertEqual(hidden, existing)
+        self.assertEqual(hidden.name, 'HC archived authoritative occasion')
+
+        manual = manager_occasions.create({
+            **self._occasion_values(name='HC manual occasion'),
+            'source_key': source_key,
+        })
+        self.assertTrue(manual.source_key.startswith('MANUAL:'))
+        self.assertNotEqual(manual.source_key, source_key)

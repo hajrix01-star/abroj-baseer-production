@@ -381,3 +381,15 @@ msgstr "المتوسط"
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
 msgid "%(kind)s: %(name)s"
 msgstr "%(kind)s: %(name)s"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/occasion.py:0
+msgid "Only the Saudi occasion feed can define a source key."
+msgstr "تغذية المناسبات السعودية فقط هي التي تحدد مفتاح المصدر."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/occasion.py:0
+msgid "The source key is managed by the server."
+msgstr "يتولى الخادم إدارة مفتاح المصدر."

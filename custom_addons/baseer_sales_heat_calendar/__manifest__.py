@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Sales Heat Calendar',
-    'version': '19.0.1.0.3',
+    'version': '19.0.1.0.4',
     'author': 'Baseer',
     'category': 'Sales/Point of Sale',
     'license': 'LGPL-3',

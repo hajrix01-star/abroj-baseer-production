@@ -1,4 +1,4 @@
-import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, onWillUpdateProps, useRef, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
 
@@ -10,7 +10,64 @@ const monthShift = (value, shift) => {
 
 export class HeatDayDetails extends Component {
     static template = "baseer_sales_heat_calendar.HeatDayDetails";
-    static props = { day: Object, currency: String, labels: Object, openSources: Function, close: Function };
+    static props = {
+        day: Object,
+        currency: String,
+        labels: Object,
+        openSources: Function,
+        close: Function,
+        restoreFocus: Function,
+    };
+
+    setup() {
+        this.detailsPanel = useRef("detailsPanel");
+        this.closeButton = useRef("closeButton");
+        this._handleKeydown = this._handleKeydown.bind(this);
+        onMounted(() => {
+            this.closeButton.el?.focus({ preventScroll: true });
+            document.addEventListener("keydown", this._handleKeydown);
+        });
+        onWillUnmount(() => {
+            document.removeEventListener("keydown", this._handleKeydown);
+            this.props.restoreFocus();
+        });
+    }
+
+    _focusableElements() {
+        if (!this.detailsPanel.el) {
+            return [];
+        }
+        return [...this.detailsPanel.el.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )].filter((element) => element.tabIndex >= 0);
+    }
+
+    _handleKeydown(event) {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            this.props.close();
+            return;
+        }
+        if (event.key !== "Tab") {
+            return;
+        }
+        const focusable = this._focusableElements();
+        if (!focusable.length) {
+            event.preventDefault();
+            return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const activeElement = document.activeElement;
+        if (event.shiftKey && (activeElement === first || !this.detailsPanel.el.contains(activeElement))) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && (activeElement === last || !this.detailsPanel.el.contains(activeElement))) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
 
     get basisLabel() {
         return this.props.labels[`basis_${this.props.day.basis_kind}`];
@@ -32,6 +89,7 @@ export class BaseerHeatCalendar extends Component {
             payload: null,
             selectedDay: null,
         });
+        this._openedDayButton = null;
         onWillStart(() => this.load());
         onWillUpdateProps((nextProps) => {
             if (nextProps.dashboardId !== this.props.dashboardId) {
@@ -91,12 +149,21 @@ export class BaseerHeatCalendar extends Component {
         this.load();
     }
 
-    openDay(day) {
+    openDay(day, event) {
+        this._openedDayButton = event.currentTarget;
         this.state.selectedDay = day;
     }
 
     closeDay() {
         this.state.selectedDay = null;
+    }
+
+    restoreDayFocus() {
+        const opener = this._openedDayButton;
+        this._openedDayButton = null;
+        if (opener?.isConnected) {
+            requestAnimationFrame(() => opener.focus({ preventScroll: true }));
+        }
     }
 
     get detailLabels() {

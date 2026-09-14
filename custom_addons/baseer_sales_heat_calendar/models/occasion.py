@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import uuid4
 
 from psycopg2 import IntegrityError
 
@@ -8,6 +9,10 @@ from odoo.exceptions import AccessError, ValidationError
 
 OFFICIAL_HOLIDAYS_SOURCE = 'https://www.hrsd.gov.sa/en/knowledge-centre/articles/322'
 HEAT_CALENDAR_MANAGER_GROUP = 'baseer_sales_heat_calendar.group_heat_calendar_manager'
+SOURCE_KEY_CONTEXT = '_baseer_heat_calendar_source_key_token'
+SOURCE_KEY_TOKEN = object()
+MANUAL_SOURCE_KEY_PREFIX = 'MANUAL:'
+SAUDI_SOURCE_KEY_PREFIX = 'SAUDI:'
 
 
 class OfficialOccasion(models.Model):
@@ -18,7 +23,13 @@ class OfficialOccasion(models.Model):
     name = fields.Char(required=True, translate=True)
     name_en = fields.Char(required=True, translate=True)
     code = fields.Char(required=True, index=True, copy=False)
-    source_key = fields.Char(required=True, index=True, copy=False)
+    source_key = fields.Char(
+        required=True,
+        index=True,
+        copy=False,
+        readonly=True,
+        default=lambda self: self._new_manual_source_key(),
+    )
     date_from = fields.Date(required=True, index=True)
     date_to = fields.Date(required=True, index=True)
     occasion_type = fields.Selection([
@@ -53,16 +64,36 @@ class OfficialOccasion(models.Model):
             if not record.source_key or not record.source_key.strip():
                 raise ValidationError(_('A non-empty source key is required.'))
 
+    @api.model
+    def _new_manual_source_key(self):
+        """Keep user-created rows outside the reserved Saudi replay namespace."""
+        return f'{MANUAL_SOURCE_KEY_PREFIX}{uuid4()}'
+
+    @api.model
+    def _is_saudi_feed_context(self):
+        return self.env.context.get(SOURCE_KEY_CONTEXT) is SOURCE_KEY_TOKEN
+
     @api.model_create_multi
     def create(self, values_list):
+        is_saudi_feed = self._is_saudi_feed_context()
+        prepared_values = []
         for values in values_list:
-            if isinstance(values.get('source_key'), str):
-                values['source_key'] = values['source_key'].strip()
-        return super().create(values_list)
+            values = dict(values)
+            if is_saudi_feed:
+                source_key = values.get('source_key')
+                if not isinstance(source_key, str) or not source_key.strip().startswith(SAUDI_SOURCE_KEY_PREFIX):
+                    raise ValidationError(_('Only the Saudi occasion feed can define a source key.'))
+                values['source_key'] = source_key.strip()
+            else:
+                # Never accept a browser/RPC-supplied key.  In particular, a
+                # manually added record cannot accidentally block SAUDI: replay.
+                values['source_key'] = self._new_manual_source_key()
+            prepared_values.append(values)
+        return super().create(prepared_values)
 
     def write(self, values):
-        if isinstance(values.get('source_key'), str):
-            values['source_key'] = values['source_key'].strip()
+        if 'source_key' in values:
+            raise AccessError(_('The source key is managed by the server.'))
         return super().write(values)
 
     @api.model
@@ -79,17 +110,29 @@ class OfficialOccasion(models.Model):
         concurrency guard.
         """
         source_key = values['source_key']
-        if self.search([('source_key', '=', source_key)], limit=1):
+        if self._source_key_exists_internally(source_key):
             return False
         try:
             with self.env.cr.savepoint():
-                self.create(values)
+                self.with_context(**{SOURCE_KEY_CONTEXT: SOURCE_KEY_TOKEN}).create(values)
             return True
         except IntegrityError:
             # A concurrent feed won.  Do not mutate the record it created.
-            if self.search([('source_key', '=', source_key)], limit=1):
+            if self._source_key_exists_internally(source_key):
                 return False
             raise
+
+    @api.model
+    def _source_key_exists_internally(self, source_key):
+        """Existence-only replay probe, including archived or inaccessible rows.
+
+        The sudo lookup is deliberately confined to a boolean.  It prevents a
+        hidden/archived record from causing a duplicate-key exception, while
+        never returning its id, name, company, or any other field to the caller.
+        """
+        return bool(self.sudo().with_context(active_test=False).search_count(
+            [('source_key', '=', source_key)], limit=1,
+        ))
 
     @api.model
     def action_seed_saudi_fixed_holidays(self):

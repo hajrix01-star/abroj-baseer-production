@@ -25,7 +25,7 @@
                             <field name="name"/>
                             <field name="name_en"/>
                             <field name="code"/>
-                            <field name="source_key"/>
+                            <field name="source_key" readonly="1"/>
                             <field name="occasion_type"/>
                             <field name="status"/>
                         </group>

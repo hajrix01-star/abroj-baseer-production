@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from unittest.mock import patch
+from uuid import uuid4
 
 from odoo import Command
 from odoo.exceptions import AccessError
@@ -178,7 +179,7 @@ class HeatCalendarCase(TransactionCase):
 
     def test_hc_t03_feed_skips_hidden_archived_source_key_without_disclosure(self):
         """An archived seed key is a safe no-op, never a duplicate-key failure."""
-        source_key = f'{SAUDI_SOURCE_KEY_PREFIX}FOUNDING_DAY:2026'
+        source_key = f'{SAUDI_SOURCE_KEY_PREFIX}TEST_ARCHIVED:{uuid4()}'
         existing = self.Occasion.sudo().with_context(**{
             SOURCE_KEY_CONTEXT: SOURCE_KEY_TOKEN,
         }).create({

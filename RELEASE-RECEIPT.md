@@ -1,8 +1,8 @@
 # Release receipt — Abroj/Baseer heat-calendar targets candidate
 
-**Freeze date:** 2026-09-14  
-**Functional source commit:** `bef712075f4fb8fd192d5d2b009364f418f5456a`  
-**Immutable release tag:** `heat-calendar-targets-candidate-2026-09-14.2`
+**Freeze date:** 2026-09-14
+**Functional source commit:** `bef712075f4fb8fd192d5d2b009364f418f5456a`
+**Immutable release tag:** `heat-calendar-targets-candidate-2026-09-14.3`
 
 This delivery replaces the former generic weekday and wildcard target setup
 with exact target scopes: one company, Gregorian year, month, and named

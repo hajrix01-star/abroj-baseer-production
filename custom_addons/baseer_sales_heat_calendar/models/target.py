@@ -7,13 +7,22 @@ class HeatCalendarTarget(models.Model):
     _description = 'Heat calendar sales target'
     _order = 'company_id, year desc, month desc, weekday desc, id desc'
 
-    company_id = fields.Many2one('res.company', required=True, index=True, ondelete='cascade')
-    currency_id = fields.Many2one(related='company_id.currency_id', readonly=True)
-    year = fields.Integer(required=True, default=0, help='0 applies to every year.')
-    month = fields.Integer(required=True, default=0, help='0 applies to every month.')
-    weekday = fields.Integer(required=True, default=-1, help='-1 applies to every weekday; 0 is Monday.')
-    target_amount = fields.Monetary(required=True, currency_field='currency_id')
-    active = fields.Boolean(default=True)
+    company_id = fields.Many2one(
+        'res.company', string='Company', required=True, index=True, ondelete='cascade',
+    )
+    currency_id = fields.Many2one(
+        related='company_id.currency_id', string='Currency', readonly=True,
+    )
+    year = fields.Integer(string='Year', required=True, default=0, help='0 applies to every year.')
+    month = fields.Integer(string='Month', required=True, default=0, help='0 applies to every month.')
+    weekday = fields.Integer(
+        string='Weekday', required=True, default=-1,
+        help='-1 applies to every weekday; 0 is Monday.',
+    )
+    target_amount = fields.Monetary(
+        string='Target amount', required=True, currency_field='currency_id',
+    )
+    active = fields.Boolean(string='Active', default=True)
 
     _target_scope_unique = models.Constraint(
         'unique(company_id, year, month, weekday)', 'Only one target is allowed for this scope.'

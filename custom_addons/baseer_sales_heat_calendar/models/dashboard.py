@@ -145,7 +145,15 @@ class SalesHeatCalendarDashboard(models.Model):
         Summary.check_access('read')
         Target.check_access('read')
 
-        history_first = first - timedelta(weeks=BASELINE_WEEKS)
+        # `date.min` accepts a valid ISO month such as 0001-01, but it cannot
+        # be moved eight weeks backwards.  Keep that edge request a harmless
+        # calendar with no historical baseline instead of leaking an internal
+        # OverflowError through the RPC route.
+        earliest_history = date.min + timedelta(weeks=BASELINE_WEEKS)
+        history_first = (
+            first - timedelta(weeks=BASELINE_WEEKS)
+            if first >= earliest_history else date.min
+        )
         all_rows = Report._aggregate_days(company, history_first, last)['days']
         month_rows = [row for row in all_rows if first <= row['business_date'] <= last]
         complete_rows = [row for row in month_rows if row['status'] == 'complete']
@@ -182,7 +190,10 @@ class SalesHeatCalendarDashboard(models.Model):
             customers = int(raw['customers'])
             target = self._heat_target_for_day(targets, business_date)
             candidates = []
-            cursor = business_date - timedelta(weeks=BASELINE_WEEKS)
+            cursor = (
+                business_date - timedelta(weeks=BASELINE_WEEKS)
+                if business_date >= earliest_history else date.min
+            )
             while cursor < business_date:
                 candidate = next((row for row in all_rows if row['business_date'] == cursor), None)
                 if (candidate and candidate['status'] == 'complete' and not candidate['closure_ids']
@@ -250,7 +261,10 @@ class SalesHeatCalendarDashboard(models.Model):
 
         return {
             'company': {'id': company.id, 'name': company.name, 'currency': company.currency_id.name},
-            'month': first.strftime('%Y-%m'),
+            # ``strftime('%Y')`` is not zero-padded for years below 1000 on
+            # every supported platform.  Keep the RPC contract a strict
+            # ``YYYY-MM`` value, so the browser can safely request it again.
+            'month': f'{first.year:04d}-{first.month:02d}',
             'month_label': first.strftime('%m/%Y'),
             'weeks': self._heat_grid(first, prepared),
             'can_manage_occasions': (self.env.user.has_group('base.group_system')

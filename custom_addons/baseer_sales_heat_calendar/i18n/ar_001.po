@@ -75,6 +75,7 @@ msgstr "فتح ملخصات المبيعات المعتمدة"
 #. module: baseer_sales_heat_calendar
 #. odoo-javascript
 #: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__source_label
 msgid "Source"
 msgstr "المصدر"
 
@@ -98,13 +99,124 @@ msgstr "إعداد المبيعات"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-xml
+#: model:ir.actions.act_window,name:baseer_sales_heat_calendar.action_baseer_official_occasion
 msgid "Official occasions"
 msgstr "المناسبات الرسمية"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-xml
+#: model:ir.actions.act_window,name:baseer_sales_heat_calendar.action_baseer_heat_calendar_target
 msgid "Heat calendar targets"
 msgstr "أهداف التقويم الحراري"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__currency_id
+msgid "Currency"
+msgstr "العملة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__year
+msgid "Year"
+msgstr "السنة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__month
+msgid "Month"
+msgstr "الشهر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__weekday
+msgid "Weekday"
+msgstr "يوم الأسبوع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__target_amount
+msgid "Target amount"
+msgstr "المبلغ المستهدف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__active
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__name
+msgid "Arabic name"
+msgstr "الاسم العربي"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__name_en
+msgid "English name"
+msgstr "الاسم الإنجليزي"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__code
+msgid "Code"
+msgstr "الرمز"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__source_key
+msgid "Source key"
+msgstr "مفتاح المصدر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__date_from
+msgid "Starts on"
+msgstr "تاريخ البدء"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__date_to
+msgid "Ends on"
+msgstr "تاريخ الانتهاء"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__occasion_type
+msgid "Type"
+msgstr "النوع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__status
+msgid "Status"
+msgstr "الحالة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__company_ids
+msgid "Companies"
+msgstr "الشركات"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__source_url
+msgid "Source URL"
+msgstr "رابط المصدر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__reviewed_on
+msgid "Reviewed on"
+msgstr "تاريخ المراجعة"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-javascript
@@ -313,12 +425,14 @@ msgstr "المناسبة"
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: model:ir.model.fields.selection,name:baseer_sales_heat_calendar.selection__baseer_official_occasion__status__estimated
 msgid "Estimated"
 msgstr "تقديري"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: model:ir.model.fields.selection,name:baseer_sales_heat_calendar.selection__baseer_official_occasion__status__confirmed
 msgid "Confirmed"
 msgstr "معتمد"
 
@@ -367,8 +481,27 @@ msgstr "الجمعة"
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: model:ir.model.fields.selection,name:baseer_sales_heat_calendar.selection__baseer_official_occasion__occasion_type__official_holiday
 msgid "Official holiday"
 msgstr "عطلة رسمية"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields.selection,name:baseer_sales_heat_calendar.selection__baseer_official_occasion__occasion_type__national_occasion
+msgid "National occasion"
+msgstr "مناسبة وطنية"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields.selection,name:baseer_sales_heat_calendar.selection__baseer_official_occasion__occasion_type__commercial_season
+msgid "Commercial season"
+msgstr "موسم تجاري"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields.selection,name:baseer_sales_heat_calendar.selection__baseer_official_occasion__status__cancelled
+msgid "Cancelled"
+msgstr "ملغى"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python

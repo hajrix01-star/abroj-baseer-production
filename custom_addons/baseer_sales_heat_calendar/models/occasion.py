@@ -20,33 +20,34 @@ class OfficialOccasion(models.Model):
     _description = 'Official occasion for sales analysis'
     _order = 'date_from, date_to, id'
 
-    name = fields.Char(required=True, translate=True)
-    name_en = fields.Char(required=True, translate=True)
-    code = fields.Char(required=True, index=True, copy=False)
+    name = fields.Char(string='Arabic name', required=True, translate=True)
+    name_en = fields.Char(string='English name', required=True, translate=True)
+    code = fields.Char(string='Code', required=True, index=True, copy=False)
     source_key = fields.Char(
+        string='Source key',
         required=True,
         index=True,
         copy=False,
         readonly=True,
         default=lambda self: self._new_manual_source_key(),
     )
-    date_from = fields.Date(required=True, index=True)
-    date_to = fields.Date(required=True, index=True)
+    date_from = fields.Date(string='Starts on', required=True, index=True)
+    date_to = fields.Date(string='Ends on', required=True, index=True)
     occasion_type = fields.Selection([
         ('official_holiday', 'Official holiday'),
         ('national_occasion', 'National occasion'),
         ('commercial_season', 'Commercial season'),
-    ], required=True, default='official_holiday')
+    ], string='Type', required=True, default='official_holiday')
     status = fields.Selection([
         ('estimated', 'Estimated'),
         ('confirmed', 'Confirmed'),
         ('cancelled', 'Cancelled'),
-    ], required=True, default='estimated')
+    ], string='Status', required=True, default='estimated')
     company_ids = fields.Many2many('res.company', string='Companies', help='Leave empty for all companies.')
-    source_label = fields.Char(required=True)
-    source_url = fields.Char()
-    reviewed_on = fields.Date()
-    active = fields.Boolean(default=True)
+    source_label = fields.Char(string='Source', required=True)
+    source_url = fields.Char(string='Source URL')
+    reviewed_on = fields.Date(string='Reviewed on')
+    active = fields.Boolean(string='Active', default=True)
 
     _source_key_unique = models.Constraint(
         'unique(source_key)', 'The source key must be unique.'

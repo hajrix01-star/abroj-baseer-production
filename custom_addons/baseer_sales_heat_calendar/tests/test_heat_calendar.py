@@ -207,3 +207,24 @@ class HeatCalendarCase(TransactionCase):
         })
         self.assertTrue(manual.source_key.startswith('MANUAL:'))
         self.assertNotEqual(manual.source_key, source_key)
+
+    def test_hc_t04_earliest_iso_month_is_a_safe_calendar_request(self):
+        """A valid early ISO month must not underflow the baseline window."""
+        report_model = type(self.env['baseer.pos.daily.report'])
+
+        def aggregate_days(_report, _company, date_from, date_to):
+            return {'days': self._aggregate_rows(date_from, date_to)}
+
+        def untranslated(message, *args, **kwargs):
+            return message % kwargs if kwargs else message
+
+        with patch.object(report_model, '_aggregate_days', new=aggregate_days), patch(
+            'odoo.addons.baseer_sales_heat_calendar.models.dashboard._',
+            new=untranslated,
+        ):
+            payload = self.dashboard.with_user(self.pos_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).get_baseer_heat_calendar('0001-01')
+
+        self.assertEqual(payload['month'], '0001-01')
+        self.assertEqual(len(payload['weekdays']), 7)

@@ -34,7 +34,13 @@
     .o_baseer_heat_sales { font-size: 1rem; font-weight: 700; }
     .o_baseer_heat_customers { font-size: .8125rem; margin-top: .25rem; }
     .o_baseer_heat_status { font-size: .75rem; margin-top: auto; padding-top: .5rem; }
-    .o_baseer_heat_occasion { display: block; font-size: .75rem; font-weight: 600; margin-top: .25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .o_baseer_heat_day_occasion_badge {
+        align-items: center; background: color-mix(in srgb, var(--body-bg, #fff) 88%, #8a4d6f); border: 1px solid color-mix(in srgb, #8a4d6f 38%, var(--o-heat-border));
+        border-radius: 999px; display: inline-flex; font-size: .6875rem; font-weight: 700; gap: .25rem; left: .5rem; max-width: 85%; overflow: hidden;
+        padding: .15rem .4rem; position: absolute; text-overflow: ellipsis; top: .45rem; white-space: nowrap;
+    }
+    .o_baseer_heat_day_occasion_badge > span:not(.o_baseer_heat_occasion_count) { overflow: hidden; text-overflow: ellipsis; }
+    .o_baseer_heat_occasion_count { flex: 0 0 auto; }
     .o_baseer_heat_day .badge { align-self: flex-start; font-size: .7rem; margin-top: .25rem; }
     .o_baseer_heat_day.o_heat_low { background: #fbe9eb; border-top: 4px solid #d73a49; }
     .o_baseer_heat_day.o_heat_watch { background: #fff7df; border-top: 4px solid #d39e00; }
@@ -47,6 +53,11 @@
 
     .o_baseer_heat_audit_table { margin-top: 1.25rem; }
     .o_baseer_heat_audit_table summary { cursor: pointer; font-weight: 600; margin-bottom: .75rem; }
+    .o_baseer_heat_modal_backdrop { align-items: center; background: rgba(33, 37, 41, .36); display: flex; inset: 0; justify-content: center; padding: 1rem; position: fixed; z-index: 1100; }
+    .o_baseer_heat_details_panel { background: var(--body-bg, #fff); border: 1px solid var(--o-heat-border); border-radius: .5rem; box-shadow: 0 1rem 3rem rgba(0, 0, 0, .22); max-height: 92vh; max-width: 42rem; overflow: auto; padding: 1rem; width: 94%; }
+    .o_baseer_heat_details_header { align-items: center; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1rem; }
+    .o_baseer_heat_details_header h2 { font-size: 1.1rem; margin: 0; }
+    .o_baseer_heat_details_footer { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
     .o_baseer_heat_dialog dl { display: grid; gap: .75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .o_baseer_heat_dialog dl > div { border-bottom: 1px solid var(--o-heat-border); padding-bottom: .5rem; }
     .o_baseer_heat_dialog dt { color: var(--o-heat-muted); font-size: .8125rem; font-weight: 500; }
@@ -59,6 +70,10 @@
     .o_baseer_heat_calendar .o_baseer_heat_actions { justify-content: flex-start; }
     .o_baseer_heat_calendar .o_baseer_heat_grid { grid-template-columns: repeat(7, minmax(7.25rem, 1fr)); min-width: 50.75rem; }
     .o_baseer_heat_calendar .o_baseer_heat_day, .o_baseer_heat_calendar .o_baseer_heat_blank { min-height: 8.75rem; }
+    .o_baseer_heat_calendar .o_baseer_heat_modal_backdrop { align-items: flex-end; padding: .75rem; }
+    .o_baseer_heat_calendar .o_baseer_heat_details_panel { max-height: 78vh; }
+    .o_baseer_heat_calendar .o_baseer_heat_details_header { align-items: flex-start; flex-direction: column; }
+    .o_baseer_heat_calendar .o_baseer_heat_details_footer { justify-content: flex-start; }
     .o_baseer_heat_calendar .o_baseer_heat_dialog dl { grid-template-columns: 1fr; }
 }
 

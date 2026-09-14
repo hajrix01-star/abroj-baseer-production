@@ -2,7 +2,7 @@
 <odoo>
     <data noupdate="1">
         <record id="dashboard_sales_heat_calendar" model="spreadsheet.dashboard">
-            <field name="name">Heat calendar</field>
+            <field name="name">التقويم الحراري</field>
             <field name="dashboard_group_id" ref="spreadsheet_dashboard.spreadsheet_dashboard_group_sales"/>
             <field name="sequence">6</field>
             <field name="baseer_dashboard_kind">sales_heat_calendar</field>

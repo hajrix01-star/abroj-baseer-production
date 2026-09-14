@@ -1,5 +1,4 @@
 import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
-import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
 
@@ -9,9 +8,8 @@ const monthShift = (value, shift) => {
     return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
 };
 
-export class HeatDayDetailsDialog extends Component {
-    static template = "baseer_sales_heat_calendar.HeatDayDetailsDialog";
-    static components = { Dialog };
+export class HeatDayDetails extends Component {
+    static template = "baseer_sales_heat_calendar.HeatDayDetails";
     static props = { day: Object, currency: String, labels: Object, openSources: Function, close: Function };
 
     get basisLabel() {
@@ -22,16 +20,17 @@ export class HeatDayDetailsDialog extends Component {
 export class BaseerHeatCalendar extends Component {
     static template = "baseer_sales_heat_calendar.HeatCalendar";
     static props = { dashboardId: Number };
+    static components = { HeatDayDetails };
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        this.dialog = useService("dialog");
         this.state = useState({
             month: null,
             loading: false,
             error: "",
             payload: null,
+            selectedDay: null,
         });
         onWillStart(() => this.load());
         onWillUpdateProps((nextProps) => {
@@ -76,6 +75,7 @@ export class BaseerHeatCalendar extends Component {
                 [dashboardId], this.state.month,
             ]);
             this.state.month = this.state.payload.month;
+            this.state.selectedDay = null;
         } catch (error) {
             this.state.error = error?.message || _t("The heat calendar could not be loaded.");
         } finally {
@@ -92,14 +92,24 @@ export class BaseerHeatCalendar extends Component {
     }
 
     openDay(day) {
-        this.dialog.add(HeatDayDetailsDialog, {
-            day,
-            currency: this.state.payload.company.currency,
-            labels: { ...this.state.payload.labels, status: this.labels.status, performance: this.labels.performance,
-                source: this.labels.source, source_link: this.labels.sourceLink, approved_shifts: this.labels.approvedShifts,
-                close: this.labels.close, partial: this.labels.partial },
-            openSources: (action) => this.openSources(action),
-        });
+        this.state.selectedDay = day;
+    }
+
+    closeDay() {
+        this.state.selectedDay = null;
+    }
+
+    get detailLabels() {
+        return {
+            ...this.state.payload.labels,
+            status: this.labels.status,
+            performance: this.labels.performance,
+            source: this.labels.source,
+            source_link: this.labels.sourceLink,
+            approved_shifts: this.labels.approvedShifts,
+            close: this.labels.close,
+            partial: this.labels.partial,
+        };
     }
 
     openSources(action) {

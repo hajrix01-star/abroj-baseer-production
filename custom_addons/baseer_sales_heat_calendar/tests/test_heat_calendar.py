@@ -507,6 +507,33 @@ class HeatCalendarCase(TransactionCase):
                 {'month': 9, 'weekday': 5, 'target_amount': 999, 'active': True},
             ], stale_2027['version'])
 
+    def test_hctb_t03d_raw_integer_coercions_use_the_same_lock_scope(self):
+        """The lock mirrors Odoo's float/bool-to-Integer coercion too."""
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        for raw_year, expected_year, weekday in (
+            (2028.9, 2028, 4),
+            (True, 1, 3),
+        ):
+            with self.subTest(raw_year=raw_year):
+                stale = Batch.get_target_batch(expected_year)
+                target = self.Target.with_user(self.manager_user).with_context(
+                    allowed_company_ids=[self.company_a.id],
+                ).create({
+                    **self._target_values(self.company_a, weekday=weekday),
+                    'year': raw_year,
+                    'target_amount': 90,
+                })
+                self.assertEqual(target.year, expected_year)
+                with self.assertRaises(UserError):
+                    Batch.apply_target_batch(expected_year, [
+                        {
+                            'month': 9,
+                            'weekday': weekday,
+                            'target_amount': 999,
+                            'active': True,
+                        },
+                    ], stale['version'])
+
     def test_hctb_t04_pos_cannot_read_or_apply_batch_and_sales_stay_untouched(self):
         """The batch RPC is manager-only and never writes source sales summaries."""
         pos_batch = self._as_user(self.TargetBatch, self.pos_user)

@@ -35,7 +35,9 @@ class SalesHeatCalendarDashboard(models.Model):
 
     baseer_dashboard_kind = fields.Selection(
         selection_add=[('sales_heat_calendar', 'Heat calendar')],
-        ondelete={'sales_heat_calendar': 'set default'},
+        # The base dashboard field has no default.  Cascading removes only
+        # dashboards of this added type if this isolated add-on is uninstalled.
+        ondelete={'sales_heat_calendar': 'cascade'},
     )
 
     def _heat_month_bounds(self, raw_month):

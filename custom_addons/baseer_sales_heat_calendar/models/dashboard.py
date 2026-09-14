@@ -125,7 +125,7 @@ class SalesHeatCalendarDashboard(models.Model):
         if self.baseer_dashboard_kind != 'sales_heat_calendar' or not self.is_published:
             raise AccessError(_('This heat calendar is not available.'))
         if not self.env.user.has_group('point_of_sale.group_pos_user') or (
-                self.group_ids and not (self.group_ids & self.env.user.group_ids)):
+                self.group_ids and not (self.group_ids & self.env.user.all_group_ids)):
             raise AccessError(_('You do not have access to this heat calendar.'))
         company = self.env.company
         if self.company_ids and company not in self.company_ids:

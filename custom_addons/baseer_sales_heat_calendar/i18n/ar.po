@@ -97,6 +97,7 @@ msgstr "أهداف التقويم الحراري"
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__company_id
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target_wizard__company_id
 msgid "Company"
 msgstr "الشركة"
 
@@ -109,12 +110,14 @@ msgstr "العملة"
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__year
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target_wizard__year
 msgid "Year"
 msgstr "السنة"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__month
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target_wizard__month
 msgid "Month"
 msgstr "الشهر"
 
@@ -127,6 +130,7 @@ msgstr "يوم الأسبوع"
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__target_amount
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target_wizard__target_amount
 msgid "Target amount"
 msgstr "المبلغ المستهدف"
 
@@ -134,6 +138,7 @@ msgstr "المبلغ المستهدف"
 #. odoo-python
 #: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target__active
 #: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_official_occasion__active
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target_wizard__active
 msgid "Active"
 msgstr "نشط"
 
@@ -207,6 +212,128 @@ msgstr "تاريخ المراجعة"
 #. odoo-javascript
 msgid "Manage targets"
 msgstr "إدارة الأهداف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Set target"
+msgstr "إعداد هدف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-xml
+msgid "Set heat calendar target"
+msgstr "إعداد هدف التقويم الحراري"
+
+#. module: baseer_sales_heat_calendar
+#: model_terms:ir.ui.view,arch_db:baseer_sales_heat_calendar.view_baseer_heat_calendar_target_wizard_form
+msgid "Each target applies to one company, one calendar month, and one named weekday. Saving the same scope updates it instead of creating a duplicate."
+msgstr "يطبّق كل هدف على شركة واحدة وشهر تقويمي واحد ويوم أسبوع مُسمّى واحد. حفظ النطاق نفسه يحدّث الهدف بدل إنشاء تكرار."
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
+msgid "One target only: %(company)s — %(weekday)s, %(month)s %(year)s."
+msgstr "هدف واحد فقط: %(company)s — %(weekday)s، %(month)s %(year)s."
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
+msgid "Choose the company, month, and weekday."
+msgstr "اختر الشركة والشهر ويوم الأسبوع."
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/target.py:0
+msgid "Choose a valid calendar year for this target."
+msgstr "اختر سنة تقويمية صالحة لهذا الهدف."
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/target.py:0
+msgid "Choose a calendar month from January to December."
+msgstr "اختر شهرًا تقويميًا من يناير إلى ديسمبر."
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/target.py:0
+msgid "Choose one named weekday for this target."
+msgstr "اختر يوم أسبوع مُسمّى واحدًا لهذا الهدف."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: model:ir.model.fields,field_description:baseer_sales_heat_calendar.field_baseer_heat_calendar_target_wizard__weekday
+msgid "Day of week"
+msgstr "يوم الأسبوع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "January"
+msgstr "يناير"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "February"
+msgstr "فبراير"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "March"
+msgstr "مارس"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "April"
+msgstr "أبريل"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "May"
+msgstr "مايو"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "June"
+msgstr "يونيو"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "July"
+msgstr "يوليو"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "August"
+msgstr "أغسطس"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "September"
+msgstr "سبتمبر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "October"
+msgstr "أكتوبر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "November"
+msgstr "نوفمبر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "December"
+msgstr "ديسمبر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-xml
+#: model_terms:ir.ui.view,arch_db:baseer_sales_heat_calendar.view_baseer_heat_calendar_target_wizard_form
+msgid "Save target"
+msgstr "حفظ الهدف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Only a heat calendar manager can set targets."
+msgstr "مدير التقويم الحراري فقط يستطيع إعداد الأهداف."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Choose a company available in the current session."
+msgstr "اختر شركة متاحة في الجلسة الحالية."
 
 #. module: baseer_sales_heat_calendar
 #. odoo-javascript

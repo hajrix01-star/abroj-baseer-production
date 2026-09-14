@@ -112,7 +112,7 @@ export class BaseerHeatCalendar extends Component {
             sourceLink: _t("Source"),
             approvedShifts: _t("Approved shifts"),
             manage: _t("Manage occasions"),
-            targets: _t("Manage targets"),
+            targets: _t("Set target"),
             feed: _t("Feed Saudi occasions"),
             feedHelp: _t("Adds fixed official holidays and clearly labelled Eid estimates. Confirm published dates before relying on them."),
             close: _t("Close"),
@@ -190,7 +190,15 @@ export class BaseerHeatCalendar extends Component {
     }
 
     manageTargets() {
-        this.action.doAction("baseer_sales_heat_calendar.action_baseer_heat_calendar_target", { onClose: () => this.load() });
+        const [year, month] = this.state.month.split("-").map(Number);
+        this.action.doAction("baseer_sales_heat_calendar.action_baseer_heat_calendar_target", {
+            additionalContext: {
+                default_company_id: this.state.payload.company.id,
+                default_year: year,
+                default_month: String(month),
+            },
+            onClose: () => this.load(),
+        });
     }
 
     async feedFixedHolidays() {

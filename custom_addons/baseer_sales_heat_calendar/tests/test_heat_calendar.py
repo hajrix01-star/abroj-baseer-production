@@ -2,8 +2,10 @@ from datetime import date, timedelta
 from unittest.mock import patch
 from uuid import uuid4
 
+from psycopg2 import IntegrityError
+
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 
 from odoo.addons.baseer_sales_heat_calendar.models.occasion import (
@@ -31,6 +33,7 @@ class HeatCalendarCase(TransactionCase):
         self.base_user_group = self.env.ref('base.group_user')
         self.Occasion = self.env['baseer.official.occasion']
         self.Target = self.env['baseer.heat.calendar.target']
+        self.TargetWizard = self.env['baseer.heat.calendar.target.wizard']
         self.pos_user = self._user('HC POS reader', [self.pos_group])
         self.manager_user = self._user(
             'HC calendar manager', [self.pos_group, self.manager_group]
@@ -116,6 +119,20 @@ class HeatCalendarCase(TransactionCase):
         return model.with_user(user).with_context(
             allowed_company_ids=[self.company_a.id],
         )
+
+    def _set_target(self, *, company=None, weekday='3', amount=100, active=True):
+        company = company or self.company_a
+        wizard = self.TargetWizard.with_user(self.manager_user).with_context(
+            allowed_company_ids=[self.company_a.id],
+        ).create({
+            'company_id': company.id,
+            'year': 2026,
+            'month': '9',
+            'weekday': weekday,
+            'target_amount': amount,
+            'active': active,
+        })
+        wizard.action_apply()
 
     def test_hc_t01_manager_and_system_company_rules_do_not_bypass(self):
         """System CRUD ACLs still have the same company rule as the manager."""
@@ -228,3 +245,114 @@ class HeatCalendarCase(TransactionCase):
 
         self.assertEqual(payload['month'], '0001-01')
         self.assertEqual(len(payload['weekdays']), 7)
+
+    def test_hct_t01_exact_thursday_and_friday_targets_change_heat_not_sales(self):
+        """Each named weekday has one independent target and fresh RPC result."""
+        def aggregate_days(_report, _company, date_from, date_to):
+            rows = self._aggregate_rows(date_from, date_to)
+            for row in rows:
+                if row['business_date'] == date(2026, 9, 3):  # Thursday
+                    row.update(status='complete', has_sales=True, sales=100, customers=4)
+                elif row['business_date'] == date(2026, 9, 4):  # Friday
+                    row.update(status='complete', has_sales=True, sales=150, customers=6)
+            return {'days': rows}
+
+        def untranslated(message, *args, **kwargs):
+            return message % kwargs if kwargs else message
+
+        summaries_before = self.env['baseer.pos.summary'].search_count([])
+        self._set_target(weekday='3', amount=200)
+        self._set_target(weekday='4', amount=100)
+        report_model = type(self.env['baseer.pos.daily.report'])
+        with patch.object(report_model, '_aggregate_days', new=aggregate_days), patch(
+            'odoo.addons.baseer_sales_heat_calendar.models.dashboard._', new=untranslated,
+        ):
+            payload = self.dashboard.with_user(self.pos_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).get_baseer_heat_calendar('2026-09')
+            days = {
+                day['date']: day
+                for week in payload['weeks'] for day in week if day
+            }
+            self.assertEqual(days['2026-09-03']['basis_kind'], 'target')
+            self.assertEqual(days['2026-09-03']['basis_display'], '200.00')
+            self.assertEqual(days['2026-09-03']['ratio_display'], '50.0%')
+            self.assertEqual(days['2026-09-03']['heat_level'], 'low')
+            self.assertEqual(days['2026-09-04']['basis_display'], '100.00')
+            self.assertEqual(days['2026-09-04']['ratio_display'], '150.0%')
+            self.assertEqual(days['2026-09-04']['heat_level'], 'high')
+
+            # Same exact scope is an upsert, not a duplicate. A fresh calendar
+            # read therefore reflects the changed target without touching sales.
+            self._set_target(weekday='3', amount=50)
+            refreshed = self.dashboard.with_user(self.pos_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).get_baseer_heat_calendar('2026-09')
+        refreshed_days = {
+            day['date']: day
+            for week in refreshed['weeks'] for day in week if day
+        }
+        self.assertEqual(refreshed_days['2026-09-03']['basis_display'], '50.00')
+        self.assertEqual(refreshed_days['2026-09-03']['ratio_display'], '200.0%')
+        self.assertEqual(refreshed_days['2026-09-03']['heat_level'], 'high')
+        for weekday in (3, 4):
+            self.assertEqual(self.Target.search_count([
+                ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+                ('month', '=', 9), ('weekday', '=', weekday),
+            ]), 1)
+        self.assertEqual(self.env['baseer.pos.summary'].search_count([]), summaries_before)
+
+    def test_hct_t02_target_scope_is_exact_unique_and_company_isolated(self):
+        """Wildcards and duplicates cannot create overlapping day targets."""
+        values = self._target_values(self.company_a, weekday=3)
+        self.Target.sudo().create(values)
+        with self.env.cr.savepoint(), self.assertRaises(IntegrityError):
+            self.Target.sudo().create(values)
+        for invalid in ({'year': 0}, {'month': 0}, {'weekday': -1}):
+            with self.subTest(invalid=invalid), self.assertRaises(ValidationError):
+                self.Target.sudo().create({**self._target_values(self.company_a, weekday=4), **invalid})
+
+        with self.assertRaises(AccessError):
+            self.TargetWizard.with_user(self.manager_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).create({
+                'company_id': self.company_b.id,
+                'year': 2026,
+                'month': '9',
+                'weekday': '3',
+                'target_amount': 100,
+            })
+
+    def test_hct_t03_existing_named_scope_loads_before_manager_edits_it(self):
+        """Changing a selected weekday never starts from a misleading zero."""
+        self._set_target(weekday='3', amount=275, active=False)
+        wizard = self.TargetWizard.with_user(self.manager_user).with_context(
+            allowed_company_ids=[self.company_a.id],
+        ).create({
+            'company_id': self.company_a.id,
+            'year': 2026,
+            'month': '9',
+            'weekday': '3',
+            'target_amount': 1,
+            'active': True,
+        })
+        wizard._onchange_scope()
+        self.assertEqual(wizard.target_amount, 275)
+        self.assertFalse(wizard.active)
+
+    def test_hct_t04_pos_cannot_open_or_operate_target_setup(self):
+        """The manager-only action and wizard do not become a POS write route."""
+        with self.assertRaises(AccessError):
+            self.TargetWizard.with_user(self.pos_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).default_get(['company_id', 'year', 'month', 'weekday'])
+        with self.assertRaises(AccessError):
+            self.TargetWizard.with_user(self.pos_user).with_context(
+                allowed_company_ids=[self.company_a.id],
+            ).create({
+                'company_id': self.company_a.id,
+                'year': 2026,
+                'month': '9',
+                'weekday': '3',
+                'target_amount': 100,
+            })

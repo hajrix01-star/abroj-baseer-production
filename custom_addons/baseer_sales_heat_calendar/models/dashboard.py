@@ -54,17 +54,11 @@ class SalesHeatCalendarDashboard(models.Model):
         return first, first.replace(day=calendar.monthrange(first.year, first.month)[1])
 
     def _heat_target_for_day(self, targets, business_date):
-        candidates = [target for target in targets if target.year in (0, business_date.year)
-                      and target.month in (0, business_date.month)
-                      and target.weekday in (-1, business_date.weekday())]
-        if not candidates:
-            return None
-
-        def specificity(target):
-            return ((target.year == business_date.year) * 4
-                    + (target.month == business_date.month) * 2
-                    + (target.weekday == business_date.weekday()))
-        return max(candidates, key=lambda target: (specificity(target), target.id))
+        return next((target for target in targets if (
+            target.year == business_date.year
+            and target.month == business_date.month
+            and target.weekday == business_date.weekday()
+        )), None)
 
     def _heat_occasions(self, company, first, last):
         Occasion = self.env['baseer.official.occasion']
@@ -179,7 +173,7 @@ class SalesHeatCalendarDashboard(models.Model):
         breakdowns_by_day = self._heat_day_breakdowns(company, first, last)
         targets = Target.search([
             ('company_id', '=', company.id), ('active', '=', True),
-            ('year', 'in', [0, first.year]), ('month', 'in', [0, first.month]),
+            ('year', '=', first.year), ('month', '=', first.month),
         ])
 
         prepared = []

@@ -71,9 +71,9 @@
         </field>
     </record>
     <record id="action_baseer_heat_calendar_target" model="ir.actions.act_window">
-        <field name="name">Heat calendar targets</field>
-        <field name="res_model">baseer.heat.calendar.target</field>
-        <field name="view_mode">list,form</field>
-        <field name="target">current</field>
+        <field name="name">Set heat calendar target</field>
+        <field name="res_model">baseer.heat.calendar.target.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
     </record>
 </odoo>

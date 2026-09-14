@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Sales Heat Calendar',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.6',
     'author': 'Baseer',
     'category': 'Sales/Point of Sale',
     'license': 'LGPL-3',
@@ -10,6 +10,7 @@
         'security/ir.model.access.csv',
         'data/dashboard.xml',
         'data/occasion_views.xml',
+        'data/target_wizard_views.xml',
     ],
     'assets': {
         'spreadsheet.o_spreadsheet': [

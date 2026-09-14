@@ -122,6 +122,16 @@ class CashierProcurementRoleCase(TransactionCase):
             ('request_id', '=', request_a.id),
         ]))
 
+        with self.assertRaises(AccessError):
+            request_a.with_user(cashier).with_context(
+                allowed_company_ids=[company_a.id, company_b.id],
+            ).write({
+                'company_id': company_b.id,
+                'warehouse_id': warehouse_b.id,
+                'purchaser_id': purchaser_b.id,
+            })
+        self.assertEqual(request_a.company_id, company_a)
+
         self.env.user.company_ids |= company_b
         self.env.user.group_ids |= self.env.ref(
             'baseer_procurement_requests.group_procurement_manager'

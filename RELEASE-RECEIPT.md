@@ -1,18 +1,18 @@
-# Release receipt — Abroj/Baseer heat-calendar candidate
+# Release receipt — Abroj/Baseer heat-calendar targets candidate
 
-**Freeze date:** 2026-09-14
-**Payload source commit:** `9bfb75fc3e62d83c064406ad78a03fd9fe8233ed`
-**Immutable release tag:** `heat-calendar-candidate-2026-09-14.3`
-**Payload hash:** `5C56DF0AC57B153197ACFE51AB2F559868E02D27F339AF971071098B3B63041C`
+**Freeze date:** 2026-09-14  
+**Functional source commit:** `bef712075f4fb8fd192d5d2b009364f418f5456a`  
+**Immutable release tag:** `heat-calendar-targets-candidate-2026-09-14.2`
 
-The payload hash is SHA-256 over sorted records of
-`relative-path + NUL + SHA-256(file-content) + newline`, excluding this
-receipt itself. It covers `871` tracked files (`41,984,982` bytes).
+This delivery replaces the former generic weekday and wildcard target setup
+with exact target scopes: one company, Gregorian year, month, and named
+weekday. It includes the manager-only setup dialog, Arabic and English labels,
+automatic calendar refresh after saving, and server-enforced company scope.
 
-The tag names the commit that contains this receipt. The release archive
-SHA-256 is recorded alongside the uploaded archive in the external release
-evidence, because placing an archive's own checksum inside that archive would
-make the checksum self-referential.
+The delivery archive SHA-256 is recorded in the release evidence outside this
+file, because embedding an archive's own checksum would be self-referential.
+The immutable Git tag is the authoritative link between this receipt, the
+source revision, verification output, and the published archive.
 
 This candidate deliberately excludes all database dumps, filestores, `.env`,
 production `odoo.conf`, local sessions, compiled Python artifacts, Noorix

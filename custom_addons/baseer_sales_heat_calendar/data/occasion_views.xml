@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_official_occasion_list" model="ir.ui.view">
+        <field name="name">baseer.official.occasion.list</field>
+        <field name="model">baseer.official.occasion</field>
+        <field name="arch" type="xml">
+            <list create="1" edit="1" delete="1">
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="status"/>
+                <field name="company_ids" widget="many2many_tags"/>
+                <field name="source_label"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_baseer_official_occasion_form" model="ir.ui.view">
+        <field name="name">baseer.official.occasion.form</field>
+        <field name="model">baseer.official.occasion</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="name_en"/>
+                            <field name="code"/>
+                            <field name="source_key"/>
+                            <field name="occasion_type"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="company_ids" widget="many2many_tags"/>
+                            <field name="source_label"/>
+                            <field name="source_url" widget="url"/>
+                            <field name="reviewed_on"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_baseer_official_occasion" model="ir.actions.act_window">
+        <field name="name">Official occasions</field>
+        <field name="res_model">baseer.official.occasion</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">new</field>
+        <field name="groups_id" eval="[(6, 0, [ref('base.group_system'), ref('baseer_sales_heat_calendar.group_heat_calendar_manager')])]"/>
+    </record>
+    <record id="view_baseer_heat_calendar_target_list" model="ir.ui.view">
+        <field name="name">baseer.heat.calendar.target.list</field>
+        <field name="model">baseer.heat.calendar.target</field>
+        <field name="arch" type="xml">
+            <list create="1" edit="1" delete="1">
+                <field name="company_id"/>
+                <field name="year"/>
+                <field name="month"/>
+                <field name="weekday"/>
+                <field name="target_amount"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_baseer_heat_calendar_target_form" model="ir.ui.view">
+        <field name="name">baseer.heat.calendar.target.form</field>
+        <field name="model">baseer.heat.calendar.target</field>
+        <field name="arch" type="xml">
+            <form><sheet><group><field name="company_id"/><field name="year"/><field name="month"/><field name="weekday"/><field name="target_amount"/><field name="active"/></group></sheet></form>
+        </field>
+    </record>
+    <record id="action_baseer_heat_calendar_target" model="ir.actions.act_window">
+        <field name="name">Heat calendar targets</field>
+        <field name="res_model">baseer.heat.calendar.target</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">new</field>
+        <field name="groups_id" eval="[(6, 0, [ref('base.group_system'), ref('baseer_sales_heat_calendar.group_heat_calendar_manager')])]"/>
+    </record>
+</odoo>

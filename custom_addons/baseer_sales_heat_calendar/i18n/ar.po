@@ -1,0 +1,302 @@
+# Translation of Baseer Sales Heat Calendar.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0\n"
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Heat calendar"
+msgstr "التقويم الحراري"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Approved daily sales summaries, including VAT"
+msgstr "ملخصات المبيعات اليومية المعتمدة، شاملة ضريبة القيمة المضافة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Previous month"
+msgstr "الشهر السابق"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Next month"
+msgstr "الشهر التالي"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Refresh"
+msgstr "تحديث"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Loading the heat calendar…"
+msgstr "جارٍ تحميل التقويم الحراري…"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Retry"
+msgstr "إعادة المحاولة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Day details"
+msgstr "تفاصيل اليوم"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Operating status"
+msgstr "حالة التشغيل"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Performance"
+msgstr "الأداء"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Open approved sales summaries"
+msgstr "فتح ملخصات المبيعات المعتمدة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Source"
+msgstr "المصدر"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Approved shifts"
+msgstr "الورديات المعتمدة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Shift"
+msgstr "الوردية"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Sales configuration"
+msgstr "إعداد المبيعات"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-xml
+msgid "Official occasions"
+msgstr "المناسبات الرسمية"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-xml
+msgid "Heat calendar targets"
+msgstr "أهداف التقويم الحراري"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Manage targets"
+msgstr "إدارة الأهداف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Manage occasions"
+msgstr "إدارة المناسبات"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Feed Saudi occasions"
+msgstr "تغذية المناسبات السعودية"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Adds fixed official holidays and clearly labelled Eid estimates. Confirm published dates before relying on them."
+msgstr "يضيف العطل الرسمية الثابتة وتقديرات العيدين الموسومة بوضوح. اعتمد التواريخ المنشورة قبل الاعتماد عليها."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Preliminary manual estimate — review before use"
+msgstr "تقدير يدوي أولي — يُراجع قبل الاستخدام"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Only a heat calendar manager can feed official occasions."
+msgstr "مدير التقويم الحراري فقط يستطيع تغذية المناسبات الرسمية."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Switch to a company enabled for this heat calendar."
+msgstr "انتقل إلى شركة مفعلة لهذا التقويم الحراري."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Close"
+msgstr "إغلاق"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "The day is not evaluated until its operating status is complete."
+msgstr "لا يُقيَّم اليوم حتى تكتمل حالة تشغيله."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "No occasion"
+msgstr "لا توجد مناسبة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "The heat calendar could not be loaded."
+msgstr "تعذر تحميل التقويم الحراري."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+msgid "Official occasions could not be fed."
+msgstr "تعذرت تغذية المناسبات الرسمية."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Choose a valid calendar month."
+msgstr "اختر شهراً تقويمياً صالحاً."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "This heat calendar is not available."
+msgstr "هذا التقويم الحراري غير متاح."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "You do not have access to this heat calendar."
+msgstr "ليست لديك صلاحية الوصول إلى هذا التقويم الحراري."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Choose a calendar range of at most 366 days."
+msgstr "اختر نطاقاً تقويمياً لا يتجاوز 366 يوماً."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "No performance evaluation"
+msgstr "لا يوجد تقييم للأداء"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Below expectation"
+msgstr "أقل من المتوقع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Near expectation"
+msgstr "قريب من المتوقع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "On target"
+msgstr "ضمن الهدف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Above expectation"
+msgstr "أعلى من الهدف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Complete"
+msgstr "مكتمل"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Incomplete"
+msgstr "غير مكتمل"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Closed"
+msgstr "مغلق"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "No entry"
+msgstr "لا يوجد إدخال"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Partially closed"
+msgstr "إغلاق جزئي"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Sales including VAT"
+msgstr "المبيعات شاملة الضريبة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Recorded customers"
+msgstr "العملاء المسجلون"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Daily target"
+msgstr "الهدف اليومي"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Reference median"
+msgstr "الوسيط المرجعي"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "No target or reference"
+msgstr "لا يوجد هدف أو مرجع"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Comparable days"
+msgstr "الأيام القابلة للمقارنة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Occasion"
+msgstr "المناسبة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Estimated"
+msgstr "تقديري"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Confirmed"
+msgstr "معتمد"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Saturday"
+msgstr "السبت"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Sunday"
+msgstr "الأحد"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Monday"
+msgstr "الاثنين"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Tuesday"
+msgstr "الثلاثاء"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Wednesday"
+msgstr "الأربعاء"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Thursday"
+msgstr "الخميس"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+msgid "Friday"
+msgstr "الجمعة"

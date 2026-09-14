@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_heat_calendar_manager" model="res.groups">
+        <field name="name">Heat calendar manager</field>
+    </record>
+    <record id="baseer_official_occasion_company_rule" model="ir.rule">
+        <field name="name">Official occasions in allowed companies</field>
+        <field name="model_id" ref="model_baseer_official_occasion"/>
+        <field name="domain_force">['|', ('company_ids', '=', False), ('company_ids', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('point_of_sale.group_pos_user')), (4, ref('baseer_sales_heat_calendar.group_heat_calendar_manager'))]"/>
+    </record>
+    <record id="baseer_heat_calendar_target_company_rule" model="ir.rule">
+        <field name="name">Heat calendar targets in allowed companies</field>
+        <field name="model_id" ref="model_baseer_heat_calendar_target"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('point_of_sale.group_pos_user')), (4, ref('baseer_sales_heat_calendar.group_heat_calendar_manager'))]"/>
+    </record>
+</odoo>

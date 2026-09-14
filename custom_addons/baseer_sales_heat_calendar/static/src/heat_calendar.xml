@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_sales_heat_calendar.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="30">
+        <xpath expr="//DashboardSearchBar" position="attributes">
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="attributes">
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="attributes">
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar</attribute>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="before">
+            <BaseerHeatCalendar t-if="isBaseerHeatCalendar" dashboardId="dashboard.data.id" t-key="dashboard.data.id"/>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="attributes">
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="attributes">
+            <attribute name="t-else"/>
+            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_sales_heat_calendar.HeatCalendar">
+        <section class="o_baseer_heat_calendar" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <header class="o_baseer_heat_header">
+                <div>
+                    <h1 t-esc="labels.title"/>
+                    <p class="text-muted mb-0" t-esc="labels.subtitle"/>
+                    <p t-if="state.payload" class="o_baseer_heat_scope text-muted mb-0">
+                        <span t-esc="state.payload.company.name"/>
+                        <span class="o_baseer_heat_numeric" t-esc="state.payload.month_label"/>
+                    </p>
+                </div>
+                <div class="o_baseer_heat_actions">
+                    <button t-if="state.payload and state.payload.can_manage_occasions" type="button" class="btn btn-secondary" t-on-click="manageOccasions">
+                        <i class="fa fa-calendar me-1" aria-hidden="true"/><span t-esc="labels.manage"/>
+                    </button>
+                    <button t-if="state.payload and state.payload.can_manage_occasions" type="button" class="btn btn-secondary" t-on-click="manageTargets">
+                        <i class="fa fa-bullseye me-1" aria-hidden="true"/><span t-esc="labels.targets"/>
+                    </button>
+                    <button t-if="state.payload and state.payload.can_manage_occasions" type="button" class="btn btn-outline-secondary" t-on-click="feedFixedHolidays" t-att-title="labels.feedHelp">
+                        <i class="fa fa-download me-1" aria-hidden="true"/><span t-esc="labels.feed"/>
+                    </button>
+                    <button type="button" class="btn btn-light" t-on-click="() => this.load()" t-att-disabled="state.loading">
+                        <i class="fa fa-refresh me-1" aria-hidden="true"/><span t-esc="labels.refresh"/>
+                    </button>
+                </div>
+            </header>
+
+            <div class="o_baseer_heat_month_switcher" role="group" t-att-aria-label="labels.title">
+                <button type="button" class="btn btn-light" t-on-click="() => changeMonth(-1)" t-att-disabled="state.loading" t-att-title="labels.previous" t-att-aria-label="labels.previous"><i class="fa fa-chevron-left" aria-hidden="true"/></button>
+                <strong class="o_baseer_heat_numeric" t-esc="state.payload ? state.payload.month_label : state.month"/>
+                <button type="button" class="btn btn-light" t-on-click="() => changeMonth(1)" t-att-disabled="state.loading" t-att-title="labels.next" t-att-aria-label="labels.next"><i class="fa fa-chevron-right" aria-hidden="true"/></button>
+            </div>
+
+            <div t-if="state.loading and !state.payload" class="o_baseer_heat_state" role="status" aria-live="polite">
+                <i class="fa fa-circle-o-notch fa-spin text-muted" aria-hidden="true"/><span t-esc="labels.loading"/>
+            </div>
+            <div t-elif="state.error" class="alert alert-danger" role="alert">
+                <span t-esc="state.error"/>
+                <button type="button" class="btn btn-outline-danger btn-sm ms-2" t-on-click="() => this.load()" t-esc="labels.retry"/>
+            </div>
+            <t t-elif="state.payload">
+                <div class="o_baseer_heat_scroll" tabindex="0">
+                    <div class="o_baseer_heat_grid" t-att-aria-label="labels.title">
+                        <div class="o_baseer_heat_weekday" t-foreach="state.payload.weekdays" t-as="weekday" t-key="weekday" t-esc="weekday"/>
+                        <t t-foreach="state.payload.weeks" t-as="week" t-key="week_index">
+                            <t t-foreach="week" t-as="day" t-key="day_index">
+                                <div t-if="!day" class="o_baseer_heat_blank" aria-hidden="true"/>
+                                <button t-else="" type="button" class="o_baseer_heat_day" t-attf-class="o_heat_{{day.heat_level}} o_status_{{day.status}}" t-on-click="() => openDay(day)" t-att-aria-label="day.aria_label">
+                                    <span class="o_baseer_heat_day_number o_baseer_heat_numeric" t-esc="day.day"/>
+                                    <span class="o_baseer_heat_sales"><span class="visually-hidden" t-esc="state.payload.labels.sales"/><span class="o_baseer_heat_numeric" t-esc="day.sales_display"/></span>
+                                    <span class="o_baseer_heat_customers text-muted"><span class="visually-hidden" t-esc="state.payload.labels.customers"/><i class="fa fa-users me-1" aria-hidden="true"/><span class="o_baseer_heat_numeric" t-esc="day.customers_display"/></span>
+                                    <span class="o_baseer_heat_status" t-esc="day.heat_label"/>
+                                    <span t-if="day.partial_closure" class="badge text-bg-secondary" t-esc="day.partial_closure_label"/>
+                                    <span t-if="day.occasions.length" class="o_baseer_heat_occasion" t-att-title="day.occasion_label">
+                                        <i class="fa fa-star" aria-hidden="true"/><span t-esc="day.occasions[0].name"/>
+                                    </span>
+                                </button>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+
+                <details class="o_baseer_heat_audit_table">
+                    <summary t-esc="labels.details"/>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th scope="col">#</th><th scope="col" t-esc="state.payload.labels.sales"/><th scope="col" t-esc="state.payload.labels.customers"/><th scope="col" t-esc="labels.status"/><th scope="col" t-esc="labels.performance"/><th scope="col" t-esc="state.payload.labels.occasion"/></tr></thead>
+                            <tbody>
+                                <t t-foreach="state.payload.weeks" t-as="week" t-key="'audit_' + week_index">
+                                    <tr t-foreach="week" t-as="day" t-key="day ? day.date : day_index" t-if="day">
+                                        <th scope="row" class="o_baseer_heat_numeric" t-esc="day.date_display"/>
+                                        <td class="o_baseer_heat_numeric" t-esc="day.sales_display"/>
+                                        <td class="o_baseer_heat_numeric" t-esc="day.customers_display"/>
+                                        <td t-esc="day.status_label"/>
+                                        <td><span t-esc="day.heat_label"/> <span class="o_baseer_heat_numeric" t-esc="day.ratio_display"/></td>
+                                        <td t-esc="day.occasion_label || labels.noOccasion"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            </t>
+        </section>
+    </t>
+
+    <t t-name="baseer_sales_heat_calendar.HeatDayDetailsDialog">
+        <Dialog title="props.day.date_display" size="'lg'">
+            <div class="o_baseer_heat_dialog">
+                <dl>
+                    <div><dt t-esc="props.labels.sales"/><dd class="o_baseer_heat_numeric"><span t-esc="props.day.sales_display"/> <span t-esc="props.currency"/></dd></div>
+                    <div><dt t-esc="props.labels.customers"/><dd class="o_baseer_heat_numeric" t-esc="props.day.customers_display"/></div>
+                    <div><dt t-esc="props.labels.status"/><dd><span t-esc="props.day.status_label"/><span t-if="props.day.partial_closure" class="badge text-bg-secondary ms-2" t-esc="props.day.partial_closure_label"/></dd></div>
+                    <div><dt t-esc="props.labels.performance"/><dd><span t-esc="props.day.heat_label"/> <span class="o_baseer_heat_numeric" t-esc="props.day.ratio_display"/></dd></div>
+                    <div><dt t-esc="basisLabel"/><dd class="o_baseer_heat_numeric" t-esc="props.day.basis_display"/></div>
+                    <div><dt t-esc="props.labels.baseline_sample"/><dd class="o_baseer_heat_numeric" t-esc="props.day.baseline_sample_count"/></div>
+                </dl>
+                <p t-if="props.day.status !== 'complete'" class="alert alert-secondary mb-0" role="status" t-esc="props.labels.partial"/>
+                <div t-if="props.day.occasions.length" class="mt-3">
+                    <h3 t-esc="props.labels.occasion"/>
+                    <ul class="list-unstyled mb-0">
+                        <li t-foreach="props.day.occasions" t-as="occasion" t-key="occasion.code">
+                            <strong t-esc="occasion.name"/><span class="badge text-bg-light ms-2" t-esc="occasion.status === 'estimated' ? props.labels.estimated : props.labels.confirmed"/>
+                            <span class="text-muted ms-2" t-esc="occasion.source_label"/>
+                            <a t-if="occasion.source_url" class="ms-2" t-att-href="occasion.source_url" target="_blank" rel="noopener noreferrer" t-esc="props.labels.source_link"/>
+                        </li>
+                    </ul>
+                </div>
+                <div t-if="props.day.shift_breakdown.length" class="mt-3">
+                    <h3 t-esc="props.labels.approved_shifts"/>
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th scope="col" t-esc="props.labels.shift"/><th scope="col" t-esc="props.labels.configuration"/><th scope="col" t-esc="props.labels.sales"/><th scope="col" t-esc="props.labels.customers"/></tr></thead>
+                        <tbody><tr t-foreach="props.day.shift_breakdown" t-as="shift" t-key="shift.period + shift.configuration"><th scope="row" t-esc="shift.period"/><td t-esc="shift.configuration"/><td class="o_baseer_heat_numeric" t-esc="shift.sales_display"/><td class="o_baseer_heat_numeric" t-esc="shift.customers_display"/></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button t-if="props.day.source_action" class="btn btn-primary" type="button" t-on-click="() => props.openSources(props.day.source_action)" t-esc="props.labels.source"/>
+                <button class="btn btn-secondary" type="button" t-on-click="props.close" t-esc="props.labels.close"/>
+            </t>
+        </Dialog>
+    </t>
+</templates>

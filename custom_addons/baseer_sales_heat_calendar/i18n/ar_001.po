@@ -245,26 +245,31 @@ msgid "Each target applies to one company, one calendar month, and one named wee
 msgstr "يطبّق كل هدف على شركة واحدة وشهر تقويمي واحد ويوم أسبوع مُسمّى واحد. حفظ النطاق نفسه يحدّث الهدف بدل إنشاء تكرار."
 
 #. module: baseer_sales_heat_calendar
+#. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "One target only: %(company)s — %(weekday)s, %(month)s %(year)s."
 msgstr "هدف واحد فقط: %(company)s — %(weekday)s، %(month)s %(year)s."
 
 #. module: baseer_sales_heat_calendar
+#. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Choose the company, month, and weekday."
 msgstr "اختر الشركة والشهر ويوم الأسبوع."
 
 #. module: baseer_sales_heat_calendar
+#. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/target.py:0
 msgid "Choose a valid calendar year for this target."
 msgstr "اختر سنة تقويمية صالحة لهذا الهدف."
 
 #. module: baseer_sales_heat_calendar
+#. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/target.py:0
 msgid "Choose a calendar month from January to December."
 msgstr "اختر شهرًا تقويميًا من يناير إلى ديسمبر."
 
 #. module: baseer_sales_heat_calendar
+#. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/target.py:0
 msgid "Choose one named weekday for this target."
 msgstr "اختر يوم أسبوع مُسمّى واحدًا لهذا الهدف."
@@ -277,61 +282,73 @@ msgstr "يوم الأسبوع"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "January"
 msgstr "يناير"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "February"
 msgstr "فبراير"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "March"
 msgstr "مارس"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "April"
 msgstr "أبريل"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "May"
 msgstr "مايو"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "June"
 msgstr "يونيو"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "July"
 msgstr "يوليو"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "August"
 msgstr "أغسطس"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "September"
 msgstr "سبتمبر"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "October"
 msgstr "أكتوبر"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "November"
 msgstr "نوفمبر"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "December"
 msgstr "ديسمبر"
 
@@ -340,6 +357,12 @@ msgstr "ديسمبر"
 #: model_terms:ir.ui.view,arch_db:baseer_sales_heat_calendar.view_baseer_heat_calendar_target_wizard_form
 msgid "Save target"
 msgstr "حفظ الهدف"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-xml
+#: model_terms:ir.ui.view,arch_db:baseer_sales_heat_calendar.view_baseer_heat_calendar_target_wizard_form
+msgid "Cancel"
+msgstr "إلغاء"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
@@ -566,42 +589,49 @@ msgstr "معتمد"
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Saturday"
 msgstr "السبت"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Sunday"
 msgstr "الأحد"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Monday"
 msgstr "الاثنين"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Tuesday"
 msgstr "الثلاثاء"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Wednesday"
 msgstr "الأربعاء"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Thursday"
 msgstr "الخميس"
 
 #. module: baseer_sales_heat_calendar
 #. odoo-python
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+#: code:addons/baseer_sales_heat_calendar/models/target_wizard.py:0
 msgid "Friday"
 msgstr "الجمعة"
 

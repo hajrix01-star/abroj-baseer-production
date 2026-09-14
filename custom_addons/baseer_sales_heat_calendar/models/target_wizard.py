@@ -27,6 +27,14 @@ class HeatCalendarTargetWizard(models.TransientModel):
     _name = 'baseer.heat.calendar.target.wizard'
     _description = 'Set heat calendar target'
 
+    @api.model
+    def _weekday_selection(self):
+        return [(value, _(label)) for value, label in WEEKDAY_SELECTION]
+
+    @api.model
+    def _month_selection(self):
+        return [(value, _(label)) for value, label in MONTH_SELECTION]
+
     company_id = fields.Many2one(
         'res.company', string='Company', required=True, readonly=True,
         default=lambda self: self.env.company,
@@ -37,10 +45,12 @@ class HeatCalendarTargetWizard(models.TransientModel):
         default=lambda self: fields.Date.context_today(self).year,
     )
     month = fields.Selection(
-        MONTH_SELECTION, string='Month', required=True,
+        selection='_month_selection', string='Month', required=True,
         default=lambda self: str(fields.Date.context_today(self).month),
     )
-    weekday = fields.Selection(WEEKDAY_SELECTION, string='Day of week', required=True)
+    weekday = fields.Selection(
+        selection='_weekday_selection', string='Day of week', required=True,
+    )
     target_amount = fields.Monetary(
         string='Target amount', required=True, currency_field='currency_id',
     )
@@ -106,11 +116,13 @@ class HeatCalendarTargetWizard(models.TransientModel):
         weekday_names = dict(WEEKDAY_SELECTION)
         for wizard in self:
             if wizard.company_id and wizard.year and wizard.month and wizard.weekday:
+                weekday_label = _(weekday_names.get(wizard.weekday, wizard.weekday))
+                month_label = _(month_names.get(wizard.month, wizard.month))
                 wizard.scope_message = _(
                     'One target only: %(company)s — %(weekday)s, %(month)s %(year)s.',
                     company=wizard.company_id.display_name,
-                    weekday=weekday_names.get(wizard.weekday, wizard.weekday),
-                    month=month_names.get(wizard.month, wizard.month),
+                    weekday=weekday_label,
+                    month=month_label,
                     year=wizard.year,
                 )
             else:

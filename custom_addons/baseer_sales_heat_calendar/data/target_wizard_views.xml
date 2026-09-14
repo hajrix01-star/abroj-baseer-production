@@ -23,7 +23,7 @@
                 </sheet>
                 <footer>
                     <button name="action_apply" type="object" string="Save target" class="btn-primary"/>
-                    <button string="إلغاء" special="cancel" class="btn-secondary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
                 </footer>
             </form>
         </field>

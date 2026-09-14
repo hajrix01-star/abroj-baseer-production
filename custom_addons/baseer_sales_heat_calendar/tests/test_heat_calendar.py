@@ -339,6 +339,14 @@ class HeatCalendarCase(TransactionCase):
         wizard._onchange_scope()
         self.assertEqual(wizard.target_amount, 275)
         self.assertFalse(wizard.active)
+        arabic_wizard = wizard.with_context(lang='ar_001')
+        arabic_wizard._compute_scope_message()
+        self.assertIn('الخميس', arabic_wizard.scope_message)
+        self.assertIn('سبتمبر', arabic_wizard.scope_message)
+        english_wizard = wizard.with_context(lang='en_US')
+        english_wizard._compute_scope_message()
+        self.assertIn('Thursday', english_wizard.scope_message)
+        self.assertIn('September', english_wizard.scope_message)
 
     def test_hct_t04_pos_cannot_open_or_operate_target_setup(self):
         """The manager-only action and wizard do not become a POS write route."""

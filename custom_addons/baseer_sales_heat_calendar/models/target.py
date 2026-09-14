@@ -152,6 +152,19 @@ class HeatCalendarTarget(models.Model):
         self._lock_target_scopes(scope_pairs)
         return super().write(values)
 
+    def unlink(self):
+        """Keep direct removal in the same write-serialization boundary.
+
+        Batch saves take their snapshot before acquiring the advisory lock.
+        A direct delete must therefore lock the affected company/year too, so
+        it cannot interleave with a batch save after that snapshot.
+        """
+        self._lock_target_scopes([
+            (record.company_id.id, record.year)
+            for record in self
+        ])
+        return super().unlink()
+
     @api.constrains('year', 'month', 'weekday', 'target_amount')
     def _check_target_scope(self):
         for record in self:

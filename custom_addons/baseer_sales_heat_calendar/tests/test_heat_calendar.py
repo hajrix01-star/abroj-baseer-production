@@ -461,6 +461,27 @@ class HeatCalendarCase(TransactionCase):
         self.assertEqual(len(target), 1)
         self.assertEqual(target.target_amount, 90)
 
+    def test_hctb_t03b_raw_delete_after_snapshot_is_detected_without_mutation(self):
+        """A direct removal also invalidates a stale batch snapshot safely."""
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        target = self.Target.with_user(self.manager_user).with_context(
+            allowed_company_ids=[self.company_a.id],
+        ).create({
+            **self._target_values(self.company_a, weekday=6),
+            'target_amount': 90,
+        })
+        stale = Batch.get_target_batch(2026)
+        target.unlink()
+        self.assertNotEqual(stale['version'], Batch.get_target_batch(2026)['version'])
+        with self.assertRaises(UserError):
+            Batch.apply_target_batch(2026, [
+                {'month': 9, 'weekday': 6, 'target_amount': 999, 'active': True},
+            ], stale['version'])
+        self.assertFalse(self.Target.search_count([
+            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('month', '=', 9), ('weekday', '=', 6),
+        ]))
+
     def test_hctb_t04_pos_cannot_read_or_apply_batch_and_sales_stay_untouched(self):
         """The batch RPC is manager-only and never writes source sales summaries."""
         pos_batch = self._as_user(self.TargetBatch, self.pos_user)

@@ -30,6 +30,17 @@ BASEER_WORKSPACE_TARGET_POLICY = {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-calendar-times-o',
         },
+        'baseer_access_roles.menu_pos_advance_entries': {
+            'action_type': 'ir.actions.act_window',
+            'icon': 'fa fa-users',
+        },
+        'spreadsheet_dashboard.spreadsheet_dashboard_menu_dashboard': {
+            'action_type': 'ir.actions.client',
+            'tag': 'action_spreadsheet_dashboard',
+            'dashboard_xmlid': 'baseer_sales_heat_calendar.dashboard_sales_heat_calendar',
+            'dashboard_kind': 'sales_heat_calendar',
+            'icon': 'fa fa-calendar',
+        },
     },
     'accountant': {
         'baseer_purchase_batch.menu_purchase_batches': {
@@ -43,6 +54,14 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         'baseer_pos_summary.menu_summary': {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-line-chart',
+        },
+        'baseer_procurement_requests.menu_procurement_custody': {
+            'action_type': 'ir.actions.act_window',
+            'icon': 'fa fa-briefcase',
+        },
+        'baseer_procurement_requests.menu_procurement_custody_monthly_statement': {
+            'action_type': 'ir.actions.act_window',
+            'icon': 'fa fa-calendar-check-o',
         },
     },
 }
@@ -149,7 +168,22 @@ class BasserWorkspaceSection(models.Model):
         if not spec or not action or action.type != spec['action_type']:
             return False
         if action.type == 'ir.actions.client':
-            return bool(action.tag and action.tag == spec.get('tag'))
+            if not action.tag or action.tag != spec.get('tag'):
+                return False
+            dashboard_xmlid = spec.get('dashboard_xmlid')
+            if not dashboard_xmlid:
+                return True
+            dashboard = self.env.ref(dashboard_xmlid, raise_if_not_found=False)
+            if (not dashboard or dashboard._name != 'spreadsheet.dashboard'
+                    or dashboard.baseer_dashboard_kind != spec.get('dashboard_kind')
+                    or not dashboard.is_published):
+                return False
+            try:
+                dashboard.check_access('read')
+                dashboard.check_access_rule('read')
+            except AccessError:
+                return False
+            return True
         if action.type != 'ir.actions.act_window' or not action.res_model:
             return False
         if require_model_access:
@@ -233,14 +267,22 @@ class BasserWorkspaceSection(models.Model):
         if not target:
             raise AccessError(_('This BASSER item is not available to you.'))
         _section, _item, menu = target
+        spec = self._policy_spec(menu, role)
         action = menu.sudo().action
         if action.type == 'ir.actions.client':
+            client_action = {
+                'type': 'ir.actions.client',
+                'tag': action.tag,
+                'name': menu.name,
+            }
+            dashboard_xmlid = spec.get('dashboard_xmlid')
+            if dashboard_xmlid:
+                dashboard = self.env.ref(dashboard_xmlid, raise_if_not_found=False)
+                if not dashboard:
+                    raise AccessError(_('The approved dashboard is unavailable.'))
+                client_action['params'] = {'dashboard_id': dashboard.id}
             return {
-                'action': {
-                    'type': 'ir.actions.client',
-                    'tag': action.tag,
-                    'name': menu.name,
-                },
+                'action': client_action,
             }
         return {'action_id': action.id}
 

@@ -18,6 +18,14 @@ class BasserWorkspaceCase(TransactionCase):
 
     def test_basser_t01_cashier_gets_only_seeded_shortcuts_and_native_actions(self):
         cashier = self._user('cashier')
+        advance_menu = self.env.ref('baseer_access_roles.menu_pos_advance_entries')
+        self.assertIn(
+            advance_menu.id,
+            self.env['ir.ui.menu'].with_user(cashier)._baseer_native_visible_menu_ids(),
+        )
+        self.assertTrue(self.env['baseer.advance.entry'].with_user(cashier).check_access_rights(
+            'read', raise_exception=False,
+        ))
         workspace = self.env['baseer.basser.workspace.section'].with_user(cashier).get_workspace()
 
         self.assertEqual(workspace['role'], 'cashier')
@@ -27,6 +35,8 @@ class BasserWorkspaceCase(TransactionCase):
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_new_procurement').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_sales_summaries').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_cashier_advances').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_cashier_heat_calendar').id,
         }
         self.assertSetEqual(item_ids, expected)
 
@@ -42,6 +52,40 @@ class BasserWorkspaceCase(TransactionCase):
         )
         self.assertEqual(catalog_opened['action']['type'], 'ir.actions.client')
         self.assertEqual(catalog_opened['action']['tag'], 'baseer_procurement_requests.catalog')
+        heat_calendar_opened = self.env['baseer.basser.workspace.section'].with_user(
+            cashier
+        ).open_workspace_item(
+            self.env.ref('baseer_basser_workspace.workspace_item_cashier_heat_calendar').id,
+        )
+        self.assertEqual(heat_calendar_opened['action']['tag'], 'action_spreadsheet_dashboard')
+        self.assertEqual(
+            heat_calendar_opened['action']['params']['dashboard_id'],
+            self.env.ref('baseer_sales_heat_calendar.dashboard_sales_heat_calendar').id,
+        )
+        self.assertFalse(cashier.has_group('base.group_system'))
+        self.assertFalse(cashier.has_group(
+            'baseer_sales_heat_calendar.group_heat_calendar_manager'
+        ))
+        with self.assertRaises(AccessError):
+            self.env['baseer.heat.calendar.target'].with_user(cashier).check_access('create')
+        with self.assertRaises(AccessError):
+            self.env['baseer.official.occasion'].with_user(cashier).check_access('create')
+
+    def test_basser_t01a_accountant_gets_custody_and_monthly_reconciliation(self):
+        accountant = self._user('accountant')
+        self.assertTrue(accountant.has_group(
+            'baseer_procurement_requests.group_procurement_accountant'
+        ))
+        workspace = self.env['baseer.basser.workspace.section'].with_user(accountant).get_workspace()
+        item_ids = {item['id'] for section in workspace['sections'] for item in section['items']}
+        self.assertSetEqual(item_ids, {
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_purchase_batches').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_advances').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_procurement_custody').id,
+            self.env.ref(
+                'baseer_basser_workspace.workspace_item_accountant_monthly_custody_reconciliation'
+            ).id,
+        })
 
     def test_basser_t02_configuration_cannot_expose_unapproved_or_server_actions(self):
         owner = self._user('owner')
@@ -125,7 +169,7 @@ class BasserWorkspaceCase(TransactionCase):
         owner = self._user('owner')
         section_model = self.env['baseer.basser.workspace.section'].with_user(owner)
         item_model = self.env['baseer.basser.workspace.item'].with_user(owner)
-        for sequence in range(1, 38):
+        for sequence in range(1, 36):
             section = section_model.create({
                 'name': 'Bounded cashier section %s' % sequence,
                 'role': 'cashier',

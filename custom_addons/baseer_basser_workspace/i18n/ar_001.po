@@ -116,10 +116,42 @@ msgstr "مراجعة ومعالجة دفعات المشتريات المعتمد
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_advances
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_advances
 msgid "Employee advances"
 msgstr "سلف الموظفين"
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_advances
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_advances
 msgid "Review employee advances in the active company."
 msgstr "مراجعة سلف الموظفين في الشركة النشطة."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_procurement_custody
+msgid "Purchasing custody"
+msgstr "عهدة المشتريات"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_procurement_custody
+msgid "Review purchasing custody balances and movements."
+msgstr "مراجعة أرصدة وحركات عهدة المشتريات."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_monthly_custody_reconciliation
+msgid "Monthly custody reconciliation"
+msgstr "تسوية العهدة الشهرية"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_monthly_custody_reconciliation
+msgid "Review the monthly purchasing-custody reconciliation."
+msgstr "مراجعة تسوية عهدة المشتريات الشهرية."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_heat_calendar
+msgid "Heat calendar"
+msgstr "التقويم الحراري"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_heat_calendar
+msgid "View daily sales performance and official occasions."
+msgstr "عرض أداء المبيعات اليومية والمناسبات الرسمية."

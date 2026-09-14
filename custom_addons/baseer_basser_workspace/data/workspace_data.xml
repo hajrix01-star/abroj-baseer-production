@@ -26,6 +26,20 @@
         <field name="menu_id" ref="baseer_pos_summary.menu_summary"/>
         <field name="sequence">30</field>
     </record>
+    <record id="workspace_item_cashier_advances" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_cashier_operations"/>
+        <field name="name">Employee advances</field>
+        <field name="description">Review employee advances in the active company.</field>
+        <field name="menu_id" ref="baseer_access_roles.menu_pos_advance_entries"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="workspace_item_cashier_heat_calendar" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_cashier_operations"/>
+        <field name="name">Heat calendar</field>
+        <field name="description">View daily sales performance and official occasions.</field>
+        <field name="menu_id" ref="spreadsheet_dashboard.spreadsheet_dashboard_menu_dashboard"/>
+        <field name="sequence">50</field>
+    </record>
     <record id="workspace_section_accountant_operations" model="baseer.basser.workspace.section">
         <field name="name">Accountant operations</field>
         <field name="role">accountant</field>
@@ -44,5 +58,19 @@
         <field name="description">Review employee advances in the active company.</field>
         <field name="menu_id" ref="baseer_access_roles.menu_account_advance_entries"/>
         <field name="sequence">20</field>
+    </record>
+    <record id="workspace_item_accountant_procurement_custody" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_accountant_operations"/>
+        <field name="name">Purchasing custody</field>
+        <field name="description">Review purchasing custody balances and movements.</field>
+        <field name="menu_id" ref="baseer_procurement_requests.menu_procurement_custody"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="workspace_item_accountant_monthly_custody_reconciliation" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_accountant_operations"/>
+        <field name="name">Monthly custody reconciliation</field>
+        <field name="description">Review the monthly purchasing-custody reconciliation.</field>
+        <field name="menu_id" ref="baseer_procurement_requests.menu_procurement_custody_monthly_statement"/>
+        <field name="sequence">40</field>
     </record>
 </odoo>

@@ -22,7 +22,10 @@
 
     .o_baseer_heat_scroll { overflow-x: auto; padding-bottom: .25rem; }
     .o_baseer_heat_grid { display: grid; grid-template-columns: repeat(7, minmax(9rem, 1fr)); min-width: 63rem; }
-    .o_baseer_heat_weekday { border-bottom: 1px solid var(--o-heat-border); color: var(--o-heat-muted); font-size: .75rem; font-weight: 700; padding: .5rem; text-align: center; }
+    .o_baseer_heat_weekday { align-items: center; border-bottom: 1px solid var(--o-heat-border); color: var(--o-heat-muted); display: flex; flex-direction: column; font-size: .75rem; font-weight: 700; gap: .2rem; padding: .5rem; text-align: center; }
+    .o_baseer_heat_weekday_average { align-items: baseline; color: var(--body-color, #212529); display: inline-flex; font-size: .675rem; font-weight: 500; gap: .25rem; white-space: nowrap; }
+    .o_baseer_heat_weekday_average strong { font-weight: 700; }
+    .o_baseer_heat_weekday_currency { color: var(--o-heat-muted); font-size: .625rem; }
     .o_baseer_heat_blank { background: color-mix(in srgb, var(--body-bg, #fff) 92%, #6c757d); border: 1px solid var(--o-heat-border); min-height: 9rem; }
     .o_baseer_heat_day {
         background: var(--body-bg, #fff); border: 1px solid var(--o-heat-border); color: inherit; display: flex; flex-direction: column;
@@ -70,6 +73,7 @@
     .o_baseer_heat_calendar .o_baseer_heat_actions { justify-content: flex-start; }
     .o_baseer_heat_calendar .o_baseer_heat_grid { grid-template-columns: repeat(7, minmax(7.25rem, 1fr)); min-width: 50.75rem; }
     .o_baseer_heat_calendar .o_baseer_heat_day, .o_baseer_heat_calendar .o_baseer_heat_blank { min-height: 8.75rem; }
+    .o_baseer_heat_calendar .o_baseer_heat_weekday_currency { display: none; }
     .o_baseer_heat_calendar .o_baseer_heat_modal_backdrop { align-items: flex-end; padding: .75rem; }
     .o_baseer_heat_calendar .o_baseer_heat_details_panel { max-height: 78vh; }
     .o_baseer_heat_calendar .o_baseer_heat_details_header { align-items: flex-start; flex-direction: column; }

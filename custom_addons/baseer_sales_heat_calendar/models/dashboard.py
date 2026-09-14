@@ -85,6 +85,9 @@ class SalesHeatCalendarDashboard(models.Model):
                 by_day.setdefault(cursor, []).append({
                     'name': record.name if arabic else record.name_en,
                     'code': record.code,
+                    'occasion_type': record.occasion_type,
+                    'kind_label': (_('Official holiday') if record.occasion_type == 'official_holiday'
+                                   else _('Occasion')),
                     'status': record.status,
                     'source_label': record.source_label,
                     'source_url': record.source_url if (record.source_url or '').startswith('https://') else False,
@@ -145,6 +148,25 @@ class SalesHeatCalendarDashboard(models.Model):
         history_first = first - timedelta(weeks=BASELINE_WEEKS)
         all_rows = Report._aggregate_days(company, history_first, last)['days']
         month_rows = [row for row in all_rows if first <= row['business_date'] <= last]
+        complete_rows = [row for row in month_rows if row['status'] == 'complete']
+        weekday_names = (
+            (5, _('Saturday')), (6, _('Sunday')), (0, _('Monday')), (1, _('Tuesday')),
+            (2, _('Wednesday')), (3, _('Thursday')), (4, _('Friday')),
+        )
+        weekday_sales = {weekday: [] for weekday, _name in weekday_names}
+        for row in complete_rows:
+            weekday_sales[row['business_date'].weekday()].append(
+                money(Decimal(str(row['sales'])))
+            )
+        weekday_headers = []
+        for weekday, name in weekday_names:
+            sales = weekday_sales[weekday]
+            average = money(sum(sales, ZERO) / Decimal(len(sales))) if sales else None
+            weekday_headers.append({
+                'name': name,
+                'average_display': _money_display(average),
+                'has_average': average is not None,
+            })
         occasions_by_day = self._heat_occasions(company, history_first, last)
         breakdowns_by_day = self._heat_day_breakdowns(company, first, last)
         targets = Target.search([
@@ -190,7 +212,10 @@ class SalesHeatCalendarDashboard(models.Model):
                 'missing': _('No entry'),
             }[status]
             partial_closure = status == 'complete' and bool(raw['closure_ids'])
-            occasion_names = ', '.join(event['name'] for event in occasions_by_day.get(business_date, []))
+            occasion_names = ', '.join(
+                _('%(kind)s: %(name)s', kind=event['kind_label'], name=event['name'])
+                for event in occasions_by_day.get(business_date, [])
+            )
             source_action = self._baseer_source_action(company, business_date, business_date)
             aria = _('%(date)s: %(sales)s; %(customers)s customers; %(status)s',
                      date=business_date.strftime('%d/%m/%Y'), sales=_money_display(sales),
@@ -230,7 +255,7 @@ class SalesHeatCalendarDashboard(models.Model):
             'weeks': self._heat_grid(first, prepared),
             'can_manage_occasions': (self.env.user.has_group('base.group_system')
                                       or self.env.user.has_group(HEAT_CALENDAR_MANAGER_GROUP)),
-            'weekdays': [_('Saturday'), _('Sunday'), _('Monday'), _('Tuesday'), _('Wednesday'), _('Thursday'), _('Friday')],
+            'weekdays': weekday_headers,
             'labels': {
                 'sales': _('Sales including VAT'),
                 'customers': _('Recorded customers'),
@@ -238,6 +263,7 @@ class SalesHeatCalendarDashboard(models.Model):
                 'basis_baseline': _('Reference median'),
                 'basis_none': _('No target or reference'),
                 'baseline_sample': _('Comparable days'),
+                'weekday_average': _('Average'),
                 'occasion': _('Occasion'),
                 'shift': _('Shift'),
                 'configuration': _('Sales configuration'),

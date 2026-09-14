@@ -65,13 +65,22 @@
             <t t-elif="state.payload">
                 <div class="o_baseer_heat_scroll" tabindex="0">
                     <div class="o_baseer_heat_grid" t-att-aria-label="labels.title">
-                        <div class="o_baseer_heat_weekday" t-foreach="state.payload.weekdays" t-as="weekday" t-key="weekday" t-esc="weekday"/>
+                        <div class="o_baseer_heat_weekday" t-foreach="state.payload.weekdays" t-as="weekday" t-key="weekday.name">
+                            <span class="o_baseer_heat_weekday_name" t-esc="weekday.name"/>
+                            <span class="o_baseer_heat_weekday_average">
+                                <span t-esc="state.payload.labels.weekday_average"/>
+                                <strong t-if="weekday.has_average" class="o_baseer_heat_numeric" t-esc="weekday.average_display"/>
+                                <span t-if="weekday.has_average" class="o_baseer_heat_weekday_currency" t-esc="state.payload.company.currency"/>
+                                <strong t-else="" class="o_baseer_heat_numeric" t-esc="weekday.average_display"/>
+                            </span>
+                        </div>
                         <t t-foreach="state.payload.weeks" t-as="week" t-key="week_index">
                             <t t-foreach="week" t-as="day" t-key="day_index">
                                 <div t-if="!day" class="o_baseer_heat_blank" aria-hidden="true"/>
                                 <button t-else="" type="button" class="o_baseer_heat_day" t-attf-class="o_heat_{{day.heat_level}} o_status_{{day.status}}" t-on-click="() => this.openDay(day)" t-att-aria-label="day.aria_label">
                                     <span t-if="day.occasions.length" class="o_baseer_heat_day_occasion_badge" t-att-title="day.occasion_label">
-                                        <i class="fa fa-calendar" aria-hidden="true"/>
+                                        <i t-attf-class="fa {{day.occasions[0].occasion_type === 'official_holiday' ? 'fa-flag' : 'fa-calendar'}}" aria-hidden="true"/>
+                                        <span class="o_baseer_heat_occasion_kind" t-esc="day.occasions[0].kind_label"/>
                                         <span t-esc="day.occasions[0].name"/>
                                         <span t-if="day.occasions.length &gt; 1" class="o_baseer_heat_occasion_count" t-esc="'+' + (day.occasions.length - 1)"/>
                                     </span>
@@ -138,7 +147,7 @@
                     <h3 t-esc="props.labels.occasion"/>
                     <ul class="list-unstyled mb-0">
                         <li t-foreach="props.day.occasions" t-as="occasion" t-key="occasion.code">
-                            <strong t-esc="occasion.name"/><span class="badge text-bg-light ms-2" t-esc="occasion.status === 'estimated' ? props.labels.estimated : props.labels.confirmed"/>
+                            <strong t-esc="occasion.name"/><span class="badge text-bg-secondary ms-2" t-esc="occasion.kind_label"/><span class="badge text-bg-light ms-2" t-esc="occasion.status === 'estimated' ? props.labels.estimated : props.labels.confirmed"/>
                             <span class="text-muted ms-2" t-esc="occasion.source_label"/>
                             <a t-if="occasion.source_url" class="ms-2" t-att-href="occasion.source_url" target="_blank" rel="noopener noreferrer" t-esc="props.labels.source_link"/>
                         </li>

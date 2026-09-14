@@ -363,3 +363,21 @@ msgstr "الخميس"
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
 msgid "Friday"
 msgstr "الجمعة"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Official holiday"
+msgstr "عطلة رسمية"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Average"
+msgstr "المتوسط"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "%(kind)s: %(name)s"
+msgstr "%(kind)s: %(name)s"

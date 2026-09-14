@@ -15,9 +15,9 @@ class HeatCalendarTarget(models.Model):
     target_amount = fields.Monetary(required=True, currency_field='currency_id')
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ('target_scope_unique', 'unique(company_id, year, month, weekday)', 'Only one target is allowed for this scope.'),
-    ]
+    _target_scope_unique = models.Constraint(
+        'unique(company_id, year, month, weekday)', 'Only one target is allowed for this scope.'
+    )
 
     @api.constrains('year', 'month', 'weekday', 'target_amount')
     def _check_target_scope(self):

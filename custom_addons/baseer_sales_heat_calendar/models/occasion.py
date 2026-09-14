@@ -37,9 +37,9 @@ class OfficialOccasion(models.Model):
     reviewed_on = fields.Date()
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ('source_key_unique', 'unique(source_key)', 'The source key must be unique.'),
-    ]
+    _source_key_unique = models.Constraint(
+        'unique(source_key)', 'The source key must be unique.'
+    )
 
     @api.constrains('date_from', 'date_to')
     def _check_date_range(self):

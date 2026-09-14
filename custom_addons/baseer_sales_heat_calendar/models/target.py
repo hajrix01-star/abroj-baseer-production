@@ -64,11 +64,17 @@ class HeatCalendarTarget(models.Model):
         """
         normalized = set()
         for company_id, year in scopes:
-            if (isinstance(company_id, bool) or not isinstance(company_id, int)
-                    or isinstance(year, bool) or not isinstance(year, int)):
+            if isinstance(company_id, bool) or not isinstance(company_id, int):
                 continue
-            if company_id > 0 and 1 <= year <= 9999:
-                normalized.add((company_id, year))
+            try:
+                # Odoo's Integer field coerces RPC strings such as "2026".
+                # Lock the same canonical value before ORM writes it, rather
+                # than accidentally letting that raw mutation skip the lock.
+                canonical_year = int(year or 0)
+            except (TypeError, ValueError, OverflowError):
+                continue
+            if company_id > 0 and 1 <= canonical_year <= 9999:
+                normalized.add((company_id, canonical_year))
         for company_id, year in sorted(normalized):
             self.env.cr.execute(
                 'SELECT pg_advisory_xact_lock(%s, %s)',
@@ -81,7 +87,11 @@ class HeatCalendarTarget(models.Model):
         year = values.get('year')
         if year is None:
             year = fields.Date.context_today(self).year
-        return year
+        try:
+            # Mirror the Integer field coercion for the locking boundary.
+            return int(year or 0)
+        except (TypeError, ValueError, OverflowError):
+            return 0
 
     @staticmethod
     def _validate_target_amount(value):
@@ -141,7 +151,9 @@ class HeatCalendarTarget(models.Model):
         scope_pairs = []
         for record in self:
             final_company_id = values.get('company_id', record.company_id.id)
-            final_year = values.get('year', record.year)
+            final_year = self._target_year_from_values({
+                'year': values.get('year', record.year),
+            })
             self._check_target_company_in_session(final_company_id)
             # Lock both sides for a move across company or year so no batch
             # snapshot can race either scope during the mutation.

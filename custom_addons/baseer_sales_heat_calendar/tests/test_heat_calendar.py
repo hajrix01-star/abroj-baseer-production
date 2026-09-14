@@ -482,6 +482,31 @@ class HeatCalendarCase(TransactionCase):
             ('month', '=', 9), ('weekday', '=', 6),
         ]))
 
+    def test_hctb_t03c_raw_string_year_uses_the_same_lock_scope(self):
+        """String years accepted by Odoo's Integer field cannot skip locking."""
+        Batch = self._as_user(self.TargetBatch, self.manager_user)
+        stale_2026 = Batch.get_target_batch(2026)
+        target = self.Target.with_user(self.manager_user).with_context(
+            allowed_company_ids=[self.company_a.id],
+        ).create({
+            **self._target_values(self.company_a, weekday=5),
+            'year': '2026',
+            'target_amount': 90,
+        })
+        self.assertEqual(target.year, 2026)
+        with self.assertRaises(UserError):
+            Batch.apply_target_batch(2026, [
+                {'month': 9, 'weekday': 5, 'target_amount': 999, 'active': True},
+            ], stale_2026['version'])
+
+        stale_2027 = Batch.get_target_batch(2027)
+        target.write({'year': '2027'})
+        self.assertEqual(target.year, 2027)
+        with self.assertRaises(UserError):
+            Batch.apply_target_batch(2027, [
+                {'month': 9, 'weekday': 5, 'target_amount': 999, 'active': True},
+            ], stale_2027['version'])
+
     def test_hctb_t04_pos_cannot_read_or_apply_batch_and_sales_stay_untouched(self):
         """The batch RPC is manager-only and never writes source sales summaries."""
         pos_batch = self._as_user(self.TargetBatch, self.pos_user)

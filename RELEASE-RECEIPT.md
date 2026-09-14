@@ -1,16 +1,22 @@
-# Release receipt — Abroj/Baseer production source
+# Release receipt — Abroj/Baseer heat-calendar candidate
 
-**Date:** 2026-09-14  
-**Payload hash:** `E34F1F34297D27AF9D4752B855A13ECAF58CB515CE036D71E9821E5E74D39646`
+**Freeze date:** 2026-09-14  
+**Payload source commit:** `9bfb75fc3e62d83c064406ad78a03fd9fe8233ed`  
+**Immutable release tag:** `heat-calendar-candidate-2026-09-14.2`  
+**Payload hash:** `E5DD600A413C68FF84F69B6270E27C1FE5E3CB7F8208138CFC69EC0CDDF08A4A`
 
 The payload hash is SHA-256 over sorted records of
 `relative-path + NUL + SHA-256(file-content) + newline`, excluding this
-receipt itself. It covers `853` files (`42,190,183` bytes): `23` Baseer/Abroj
-addons and `5` third-party addon manifests required by the installed database.
+receipt itself. It covers `871` tracked files (`42,294,958` bytes).
 
-It deliberately excludes all database dumps, filestores, `.env`, production
-`odoo.conf`, local sessions, compiled Python artifacts, Noorix source material,
-and every Noorix rehearsal addon.
+The tag names the commit that contains this receipt. The release archive
+SHA-256 is recorded alongside the uploaded archive in the external release
+evidence, because placing an archive's own checksum inside that archive would
+make the checksum self-referential.
+
+This candidate deliberately excludes all database dumps, filestores, `.env`,
+production `odoo.conf`, local sessions, compiled Python artifacts, Noorix
+source material, and every rehearsal-only file.
 
 Images are pinned in `compose.production.yaml`:
 

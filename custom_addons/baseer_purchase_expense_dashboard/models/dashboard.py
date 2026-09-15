@@ -159,37 +159,37 @@ class PurchaseExpenseDashboard(models.Model):
             cursor = _month_start(cursor, 1)
         return rows
 
-    def _baseer_approved_pos_net_sales(self, company, first, last, currency):
-        """Read one approved POS net-sales aggregate after dashboard authorisation only."""
+    def _baseer_approved_pos_gross_sales(self, company, first, last, currency):
+        """Read one approved POS gross-sales aggregate after dashboard authorisation only."""
         Summary = self.env['baseer.pos.summary'].sudo()
         values = Summary.formatted_read_group([
             ('company_id', '=', company.id),
             ('business_date', '>=', first),
             ('business_date', '<=', last),
             ('state', '=', 'approved'),
-        ], [], ['amount_net:sum'])
-        value = values[0].get('amount_net:sum', ZERO) if values else ZERO
+        ], [], ['amount_gross:sum'])
+        value = values[0].get('amount_gross:sum', ZERO) if values else ZERO
         return _amount(value, currency)
 
-    def _baseer_supplier_rows(self, domain, currency, net_sales):
+    def _baseer_supplier_rows(self, domain, currency, gross_sales):
         grouped = self.env['account.move'].formatted_read_group(
-            domain, ['commercial_partner_id'], ['amount_untaxed_signed:sum'],
-            order='amount_untaxed_signed:sum ASC, commercial_partner_id ASC', limit=TOP_ROWS,
+            domain, ['commercial_partner_id'], ['amount_total_signed:sum'],
+            order='amount_total_signed:sum ASC, commercial_partner_id ASC', limit=TOP_ROWS,
         )
         rows = []
         for row in grouped:
             partner = row.get('commercial_partner_id')
             if not partner:
                 continue
-            total = -_amount(row.get('amount_untaxed_signed:sum', ZERO), currency)
+            total = -_amount(row.get('amount_total_signed:sum', ZERO), currency)
             rows.append({
                 'id': partner[0], 'name': partner[1], 'total': _card(total),
-                'sales_ratio': _ratio(total, net_sales),
+                'sales_ratio': _ratio(total, gross_sales),
             })
         return rows
 
-    def _baseer_category_rows(self, company, currency, first, last, net_sales):
-        """Group native product lines by category; taxes and display-only lines stay out."""
+    def _baseer_category_rows(self, company, currency, first, last, gross_sales):
+        """Group native product lines by gross category cost; display-only lines stay out."""
         Line = self.env['account.move.line']
         line_query = Line._search([
             ('move_id.company_id', '=', company.id),
@@ -203,7 +203,10 @@ class PurchaseExpenseDashboard(models.Model):
         self.env.cr.execute(SQL("""
             SELECT COALESCE(product_category.id, 0),
                    COALESCE(NULLIF(product_category.complete_name, ''), 'Unclassified'),
-                   COALESCE(SUM(move_line.balance), 0)
+                   COALESCE(SUM(CASE
+                       WHEN COALESCE(move_line.price_subtotal, 0) = 0 THEN move_line.balance
+                       ELSE move_line.balance * move_line.price_total / move_line.price_subtotal
+                   END), 0)
               FROM account_move_line AS move_line
               JOIN account_move AS move ON move.id = move_line.move_id
          LEFT JOIN product_product AS product ON product.id = move_line.product_id
@@ -211,14 +214,17 @@ class PurchaseExpenseDashboard(models.Model):
          LEFT JOIN product_category ON product_category.id = template.categ_id
              WHERE move_line.id IN (%s)
              GROUP BY product_category.id, product_category.complete_name
-             ORDER BY SUM(move_line.balance) DESC, product_category.complete_name ASC
+             ORDER BY SUM(CASE
+                 WHEN COALESCE(move_line.price_subtotal, 0) = 0 THEN move_line.balance
+                 ELSE move_line.balance * move_line.price_total / move_line.price_subtotal
+             END) DESC, product_category.complete_name ASC
              LIMIT %s
         """, line_query.select(), TOP_ROWS))
         return [{
             'id': category_id or False,
             'name': name,
             'total': _card(_amount(total, currency)),
-            'sales_ratio': _ratio(_amount(total, currency), net_sales),
+            'sales_ratio': _ratio(_amount(total, currency), gross_sales),
         } for category_id, name, total in self.env.cr.fetchall()]
 
     @api.readonly
@@ -235,7 +241,7 @@ class PurchaseExpenseDashboard(models.Model):
         foreign_count = Move.search_count(self._baseer_purchase_domain(company, first, last, same_currency=False) + [
             ('currency_id', '!=', currency.id),
         ])
-        net_sales = self._baseer_approved_pos_net_sales(company, first, last, currency)
+        gross_sales = self._baseer_approved_pos_gross_sales(company, first, last, currency)
 
         action = {
             'type': 'ir.actions.act_window',
@@ -254,9 +260,9 @@ class PurchaseExpenseDashboard(models.Model):
                 'total': _card(total), 'residual': _card(residual), 'paid': _card(paid),
             },
             'timeline': self._baseer_monthly_movement(company, currency, first, last),
-            'vendors': self._baseer_supplier_rows(domain, currency, net_sales),
-            'categories': self._baseer_category_rows(company, currency, first, last, net_sales),
-            'ratios': {'available': net_sales > ZERO},
+            'vendors': self._baseer_supplier_rows(domain, currency, gross_sales),
+            'categories': self._baseer_category_rows(company, currency, first, last, gross_sales),
+            'ratios': {'available': gross_sales > ZERO},
             'foreign_currency_count': foreign_count,
             'source_action': action,
         }

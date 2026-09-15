@@ -53,7 +53,7 @@ class PurchaseExpenseDashboardCase(TransactionCase):
         user_env = api.Environment(self.env.cr, user.id, context)
         return user_env['spreadsheet.dashboard'].browse(self.dashboard.id)
 
-    def test_ped_t01_payload_keeps_gross_cards_and_server_owned_net_ratios(self):
+    def test_ped_t01_payload_keeps_gross_cards_and_server_owned_gross_ratios(self):
         """The UI receives rounded values only; it does not own money or ratio arithmetic."""
         owner = self._user('Supplier dashboard owner', 'owner')
         partner = self.env['res.partner'].create({'name': 'Dashboard supplier'})
@@ -63,7 +63,7 @@ class PurchaseExpenseDashboardCase(TransactionCase):
         Move = self.env['account.move']
         with patch.object(PurchaseExpenseDashboard, '_baseer_purchase_totals', return_value=(Decimal('75.00'), Decimal('60.00'), Decimal('15.00'), 2)), patch.object(
             PurchaseExpenseDashboard, '_baseer_monthly_movement', return_value=timeline,
-        ), patch.object(PurchaseExpenseDashboard, '_baseer_approved_pos_net_sales', return_value=Decimal('200.00')), patch.object(
+        ), patch.object(PurchaseExpenseDashboard, '_baseer_approved_pos_gross_sales', return_value=Decimal('200.00')), patch.object(
             PurchaseExpenseDashboard, '_baseer_supplier_rows', return_value=vendors,
         ), patch.object(PurchaseExpenseDashboard, '_baseer_category_rows', return_value=categories), patch.object(
             type(Move), 'search_count', return_value=1,
@@ -104,7 +104,7 @@ class PurchaseExpenseDashboardCase(TransactionCase):
         Move = self.env['account.move']
         with patch.object(PurchaseExpenseDashboard, '_baseer_purchase_totals', return_value=(Decimal('20.00'), Decimal('0.00'), Decimal('20.00'), 1)), patch.object(
             PurchaseExpenseDashboard, '_baseer_monthly_movement', return_value=[],
-        ), patch.object(PurchaseExpenseDashboard, '_baseer_approved_pos_net_sales', return_value=Decimal('100.00')) as aggregate, patch.object(
+        ), patch.object(PurchaseExpenseDashboard, '_baseer_approved_pos_gross_sales', return_value=Decimal('100.00')) as aggregate, patch.object(
             PurchaseExpenseDashboard, '_baseer_supplier_rows', return_value=[],
         ), patch.object(PurchaseExpenseDashboard, '_baseer_category_rows', return_value=[]), patch.object(
             type(Move), 'search_count', return_value=0,
@@ -122,8 +122,8 @@ class PurchaseExpenseDashboardCase(TransactionCase):
                 'type': 'range', 'from': '2025-01-01', 'to': '2026-01-02',
             }})
 
-    def test_ped_t06_native_product_categories_use_signed_net_lines_and_unclassified(self):
-        """The category SQL covers native invoices, refunds and product-less expense lines."""
+    def test_ped_t06_native_product_categories_use_signed_gross_lines_and_unclassified(self):
+        """The category SQL covers gross native invoices, refunds and product-less expense lines."""
         partner = self.env['res.partner'].create({'name': 'Category dashboard supplier'})
         category = self.env['product.category'].create({'name': 'Dashboard category'})
         product = self.env['product.product'].create({'name': 'Dashboard material', 'categ_id': category.id})
@@ -153,13 +153,13 @@ class PurchaseExpenseDashboardCase(TransactionCase):
             )
         by_id = {row['id']: row for row in rows}
         by_name = {row['name']: row for row in rows}
-        self.assertEqual(by_id[category.id]['total']['value'], '80.00')
-        self.assertEqual(by_id[category.id]['sales_ratio']['display'], '40.00')
+        self.assertEqual(by_id[category.id]['total']['value'], '92.00')
+        self.assertEqual(by_id[category.id]['sales_ratio']['display'], '46.00')
         self.assertEqual(by_name['Unclassified']['total']['value'], '10.00')
         with self.assertQueryCount(1):
             timeline = self.dashboard.sudo()._baseer_monthly_movement(
                 self.company_a, self.company_a.currency_id, date(2026, 8, 1), date(2026, 9, 30),
             )
         self.assertEqual(len(timeline), 2)
-        # The movement card is explicitly gross; the product category remains net.
+        # Both movement and categories are gross; the product-less expense stays unclassified.
         self.assertEqual(timeline[1]['total']['value'], '102.00')

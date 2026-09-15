@@ -323,6 +323,20 @@ class BasserWorkspaceSection(models.Model):
             raise AccessError(_('Only the owner can manage BASSER.'))
         return {'action_id': self.env.ref('baseer_basser_workspace.action_workspace_section').id}
 
+    def _require_workspace_owner(self):
+        if self._current_workspace_role() != 'owner':
+            raise AccessError(_('Only the owner can change BASSER visibility.'))
+
+    def action_hide_from_basser(self):
+        self._require_workspace_owner()
+        self.write({'active': False})
+        return True
+
+    def action_show_in_basser(self):
+        self._require_workspace_owner()
+        self.write({'active': True})
+        return True
+
 
 class BasserWorkspaceItem(models.Model):
     _name = 'baseer.basser.workspace.item'
@@ -373,3 +387,17 @@ class BasserWorkspaceItem(models.Model):
                     'Choose an approved BASSER operation for this role.'
                 ))
         self.env['baseer.basser.workspace.section']._enforce_configuration_limits()
+
+    def _require_workspace_owner(self):
+        if self.env['baseer.basser.workspace.section']._current_workspace_role() != 'owner':
+            raise AccessError(_('Only the owner can change BASSER visibility.'))
+
+    def action_hide_from_basser(self):
+        self._require_workspace_owner()
+        self.write({'active': False})
+        return True
+
+    def action_show_in_basser(self):
+        self._require_workspace_owner()
+        self.write({'active': True})
+        return True

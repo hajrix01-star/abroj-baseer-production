@@ -242,3 +242,25 @@ msgstr "اسم القسم"
 #: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
 msgid "Use the original menu name if left empty"
 msgstr "استخدم اسم القائمة الأصلي عند ترك الحقل فارغًا"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_list
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Hide from BASSER"
+msgstr "إخفاء من BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_list
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Show in BASSER"
+msgstr "إظهار في BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Hide"
+msgstr "إخفاء"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Show"
+msgstr "إظهار"

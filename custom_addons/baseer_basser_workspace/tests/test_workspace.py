@@ -135,10 +135,15 @@ class BasserWorkspaceCase(TransactionCase):
     def test_basser_t03_cashier_cannot_manage_and_forged_item_is_rejected(self):
         cashier = self._user('cashier')
         section_model = self.env['baseer.basser.workspace.section'].with_user(cashier)
+        batch_item = self.env.ref(
+            'baseer_basser_workspace.workspace_item_cashier_purchase_batches'
+        )
         with self.assertRaises(AccessError):
             section_model.check_access('create')
         with self.assertRaises(AccessError):
             self.env['baseer.basser.workspace.item'].with_user(cashier).check_access('write')
+        with self.assertRaises(AccessError):
+            batch_item.with_user(cashier).action_hide_from_basser()
         with self.assertRaises(AccessError):
             section_model.open_workspace_item(
                 self.env.ref('baseer_basser_workspace.workspace_item_accountant_purchase_batches').id,
@@ -153,6 +158,30 @@ class BasserWorkspaceCase(TransactionCase):
         self.assertEqual(workspace['role'], 'owner')
         self.assertTrue(workspace['can_manage'])
         self.env['baseer.basser.workspace.section'].with_user(administrator).check_access('write')
+
+    def test_basser_t03b_owner_can_hide_and_restore_a_workspace_item(self):
+        owner = self._user('owner')
+        cashier = self._user('cashier')
+        item = self.env.ref('baseer_basser_workspace.workspace_item_cashier_purchase_batches')
+        self.assertTrue(item.active)
+
+        item.with_user(owner).action_hide_from_basser()
+        self.assertFalse(item.active)
+        hidden_ids = {
+            entry['id']
+            for section in self.env['baseer.basser.workspace.section'].with_user(cashier).get_workspace()['sections']
+            for entry in section['items']
+        }
+        self.assertNotIn(item.id, hidden_ids)
+
+        item.with_user(owner).action_show_in_basser()
+        self.assertTrue(item.active)
+        restored_ids = {
+            entry['id']
+            for section in self.env['baseer.basser.workspace.section'].with_user(cashier).get_workspace()['sections']
+            for entry in section['items']
+        }
+        self.assertIn(item.id, restored_ids)
 
     def test_basser_t04_company_scope_uses_server_active_company_only(self):
         company_a = self.env.company

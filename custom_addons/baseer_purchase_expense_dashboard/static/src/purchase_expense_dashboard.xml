@@ -28,48 +28,60 @@
     </t>
 
     <t t-name="baseer_purchase_expense_dashboard.PurchaseExpenseDashboard">
-        <section class="o_baseer_purchase_dashboard" t-att-aria-busy="state.loading ? 'true' : 'false'">
-            <header class="o_baseer_purchase_header">
-                <div>
-                    <h1 t-esc="labels.title"/>
-                    <p class="text-muted mb-0" t-esc="labels.subtitle"/>
-                    <p t-if="state.payload" class="text-muted mb-0 o_baseer_purchase_period"><span t-esc="state.payload.company.name"/> <span class="o_baseer_purchase_numeric" t-esc="period"/></p>
-                </div>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-light" t-on-click="() => this.load()" t-att-disabled="state.loading"><i class="fa fa-refresh me-1"/> <span t-esc="labels.refresh"/></button>
-                    <button t-if="state.payload" type="button" class="btn btn-primary" t-on-click="openSources"><i class="fa fa-list me-1"/> <span t-esc="labels.source"/></button>
-                </div>
-            </header>
-            <div t-if="state.loading and !state.payload" class="o_baseer_purchase_state"><i class="fa fa-circle-o-notch fa-spin text-muted me-2"/><span t-esc="labels.loading"/></div>
-            <div t-elif="state.error" class="alert alert-danger"><span t-esc="state.error"/> <button type="button" class="btn btn-outline-danger btn-sm ms-2" t-on-click="() => this.load()" t-esc="labels.retry"/></div>
-            <t t-elif="state.payload">
-                <div class="o_baseer_purchase_cards">
-                    <article><span t-esc="labels.count"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.count.display"/></article>
-                    <article><span t-esc="labels.total"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.total.display"/><small t-esc="state.payload.company.currency"/></article>
-                    <article><span t-esc="labels.residual"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.residual.display"/><small t-esc="state.payload.company.currency"/></article>
-                    <article><span t-esc="labels.paid"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.paid.display"/><small t-esc="state.payload.company.currency"/></article>
-                </div>
-                <p t-if="state.payload.foreign_currency_count" class="alert alert-warning"><strong class="o_baseer_purchase_numeric" t-esc="state.payload.foreign_currency_count"/> <span t-esc="labels.currencyNotice"/></p>
-                <p t-if="!hasData" class="alert alert-secondary" t-esc="labels.empty"/>
-                <div t-else="" class="o_baseer_purchase_panels">
-                    <article class="o_baseer_purchase_panel">
-                        <h2 t-esc="labels.timeline"/>
-                        <div class="o_baseer_purchase_chart" role="img" t-att-aria-label="labels.timeline">
-                            <div t-foreach="state.payload.timeline" t-as="row" t-key="row.key" class="o_baseer_purchase_chart_item">
-                                <span class="o_baseer_purchase_bar" t-att-style="'height:' + barHeight(row)"/>
-                                <strong class="o_baseer_purchase_numeric" t-esc="row.total.display"/>
-                                <small class="o_baseer_purchase_numeric" t-esc="row.label"/>
+        <section class="o_baseer_purchase_dashboard" t-ref="dashboard" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <div class="o_baseer_purchase_content">
+                <header class="o_baseer_purchase_header">
+                    <div>
+                        <h1 t-esc="labels.title"/>
+                        <p class="text-muted mb-0" t-esc="labels.subtitle"/>
+                        <p t-if="state.payload" class="text-muted mb-0 o_baseer_purchase_period"><span t-esc="state.payload.company.name"/> <span class="o_baseer_purchase_numeric" t-esc="period"/></p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap o_baseer_purchase_actions">
+                        <button type="button" class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="state.loading"><i class="fa fa-refresh me-1"/> <span t-esc="labels.refresh"/></button>
+                        <button t-if="state.payload" type="button" class="btn btn-primary" t-on-click="openSources"><i class="fa fa-list me-1"/> <span t-esc="labels.source"/></button>
+                    </div>
+                </header>
+                <div t-if="state.loading and !state.payload" class="o_baseer_purchase_state"><i class="fa fa-circle-o-notch fa-spin text-muted me-2"/><span t-esc="labels.loading"/></div>
+                <div t-elif="state.error" class="alert alert-danger"><span t-esc="state.error"/> <button type="button" class="btn btn-outline-danger btn-sm ms-2" t-on-click="() => this.load()" t-esc="labels.retry"/></div>
+                <t t-elif="state.payload">
+                    <div class="o_baseer_purchase_cards">
+                        <article class="o_baseer_purchase_card o_baseer_purchase_card--info"><i class="fa fa-file-text-o"/><span t-esc="labels.count"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.count.display"/></article>
+                        <article class="o_baseer_purchase_card o_baseer_purchase_card--primary"><i class="fa fa-shopping-cart"/><span t-esc="labels.total"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.total.display"/><small t-esc="state.payload.company.currency"/></article>
+                        <article class="o_baseer_purchase_card o_baseer_purchase_card--warning"><i class="fa fa-clock-o"/><span t-esc="labels.residual"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.residual.display"/><small t-esc="state.payload.company.currency"/></article>
+                        <article class="o_baseer_purchase_card o_baseer_purchase_card--success"><i class="fa fa-check-circle-o"/><span t-esc="labels.paid"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.paid.display"/><small t-esc="state.payload.company.currency"/></article>
+                    </div>
+                    <p t-if="state.payload.foreign_currency_count" class="alert alert-warning"><strong class="o_baseer_purchase_numeric" t-esc="state.payload.foreign_currency_count"/> <span t-esc="labels.currencyNotice"/></p>
+                    <p t-if="!hasData" class="alert alert-secondary" t-esc="labels.empty"/>
+                    <t t-else="">
+                        <section class="o_baseer_purchase_panel o_baseer_purchase_movement">
+                            <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.timeline"/><p class="text-muted mb-0" t-esc="labels.timelineNote"/></div></div>
+                            <div class="o_baseer_purchase_canvas_wrap"><canvas t-ref="movementChart" t-att-aria-label="labels.timelineAccessible" role="img"/></div>
+                            <div class="table-responsive o_baseer_purchase_chart_fallback">
+                                <table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.month"/><th scope="col" class="text-end" t-esc="labels.total"/><th scope="col" class="text-end" t-esc="labels.paid"/></tr></thead><tbody>
+                                    <tr t-foreach="state.payload.timeline" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_purchase_numeric" t-esc="row.label"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.paid.display"/> <small t-esc="state.payload.company.currency"/></td></tr>
+                                </tbody></table>
                             </div>
+                        </section>
+                        <p t-if="!state.payload.ratios.available" class="alert alert-info o_baseer_purchase_ratio_notice" t-esc="labels.ratioUnavailable"/>
+                        <div class="o_baseer_purchase_rankings">
+                            <section class="o_baseer_purchase_panel">
+                                <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.vendors"/><p class="text-muted mb-0" t-esc="labels.ratioBasis"/></div></div>
+                                <p t-if="!state.payload.vendors.length" class="text-muted mb-0" t-esc="labels.noVendors"/>
+                                <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.vendor"/><th scope="col" class="text-end" t-esc="labels.netAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
+                                    <tr t-foreach="state.payload.vendors" t-as="vendor" t-key="vendor.id"><th scope="row" t-esc="vendor.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.sales_ratio.display"/><span t-if="vendor.sales_ratio.available">%</span></td></tr>
+                                </tbody></table></div>
+                            </section>
+                            <section class="o_baseer_purchase_panel">
+                                <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.categories"/><p class="text-muted mb-0" t-esc="labels.categoryNote"/></div></div>
+                                <p t-if="!state.payload.categories.length" class="text-muted mb-0" t-esc="labels.noCategories"/>
+                                <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.category"/><th scope="col" class="text-end" t-esc="labels.netAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
+                                    <tr t-foreach="state.payload.categories" t-as="category" t-key="category.id || category.name"><th scope="row" t-esc="category.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.sales_ratio.display"/><span t-if="category.sales_ratio.available">%</span></td></tr>
+                                </tbody></table></div>
+                            </section>
                         </div>
-                    </article>
-                    <article class="o_baseer_purchase_panel">
-                        <h2 t-esc="labels.vendors"/>
-                        <table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.vendors"/><th scope="col" class="text-end" t-esc="labels.amount"/></tr></thead><tbody>
-                            <tr t-foreach="state.payload.vendors" t-as="vendor" t-key="vendor.id"><th scope="row" t-esc="vendor.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.total.display"/> <small t-esc="state.payload.company.currency"/></td></tr>
-                        </tbody></table>
-                    </article>
-                </div>
-            </t>
+                    </t>
+                </t>
+            </div>
         </section>
     </t>
 </templates>

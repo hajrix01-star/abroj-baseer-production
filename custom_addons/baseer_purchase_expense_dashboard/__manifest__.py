@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Purchase and Expense Dashboard',
     'summary': 'Read-only supplier bill and expense reporting for Baseer',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.1.0',
     'category': 'Accounting',
     'author': 'Baseer',
     'license': 'LGPL-3',

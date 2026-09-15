@@ -136,3 +136,87 @@ msgstr "تتطلب مشاهدة فواتير الموردين والمصروفا
 #: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
 msgid "Choose valid dashboard filters."
 msgstr "اختر مرشحات صالحة للوحة البيانات."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Total purchases and expenses (tax included)"
+msgstr "إجمالي المشتريات والمصروفات (شامل الضريبة)"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Tax-included posted purchase totals and paid amounts"
+msgstr "إجمالي المشتريات المرحلة والمدفوعات شاملة الضريبة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Top suppliers"
+msgstr "أكبر الموردين"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Supplier"
+msgstr "المورد"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Purchase categories"
+msgstr "فئات المشتريات"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Category"
+msgstr "الفئة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Net amount before tax"
+msgstr "صافي المبلغ قبل الضريبة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Share of net approved sales before tax"
+msgstr "النسبة من صافي المبيعات المعتمدة قبل الضريبة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Net supplier cost before tax ÷ net approved sales before tax"
+msgstr "صافي تكلفة المورد قبل الضريبة ÷ صافي المبيعات المعتمدة قبل الضريبة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Native product categories; tax and display lines are excluded"
+msgstr "فئات المنتجات الأصلية؛ تستبعد أسطر الضريبة والعرض"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "No approved net sales were recorded for this period, so purchase-to-sales percentages are unavailable."
+msgstr "لا توجد مبيعات صافية معتمدة مسجلة لهذه الفترة، لذا لا تتوفر نسب المشتريات إلى المبيعات."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "No suppliers in the selected period."
+msgstr "لا يوجد موردون في الفترة المحددة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "No categorized product lines in the selected period."
+msgstr "لا توجد أسطر منتجات مصنفة في الفترة المحددة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Month"
+msgstr "الشهر"

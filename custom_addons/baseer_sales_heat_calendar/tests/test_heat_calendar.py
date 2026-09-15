@@ -73,8 +73,8 @@ class HeatCalendarCase(TransactionCase):
             'name': name,
             'name_en': name,
             'code': 'HC_TEST',
-            'date_from': date(2026, 9, 1),
-            'date_to': date(2026, 9, 1),
+            'date_from': date(2037, 9, 1),
+            'date_to': date(2037, 9, 1),
             'occasion_type': 'official_holiday',
             'status': 'confirmed',
             'source_label': 'HC test source',
@@ -86,7 +86,7 @@ class HeatCalendarCase(TransactionCase):
     def _target_values(self, company, *, weekday=1):
         return {
             'company_id': company.id,
-            'year': 2026,
+            'year': 2037,
             'month': 9,
             'weekday': weekday,
             'target_amount': 100,
@@ -98,11 +98,11 @@ class HeatCalendarCase(TransactionCase):
         while cursor <= date_to:
             status = 'missing'
             sales = customers = 0
-            if cursor == date(2026, 9, 1):
+            if cursor == date(2037, 9, 1):
                 status, sales, customers = 'complete', 100, 4
-            elif cursor == date(2026, 9, 8):
+            elif cursor == date(2037, 9, 8):
                 status, sales, customers = 'incomplete', 900, 40
-            elif cursor == date(2026, 9, 15):
+            elif cursor == date(2037, 9, 15):
                 status, sales, customers = 'complete', 300, 12
             rows.append({
                 'business_date': cursor,
@@ -127,7 +127,7 @@ class HeatCalendarCase(TransactionCase):
             allowed_company_ids=[self.company_a.id],
         ).create({
             'company_id': company.id,
-            'year': 2026,
+            'year': 2037,
             'month': '9',
             'weekday': weekday,
             'target_amount': amount,
@@ -181,14 +181,14 @@ class HeatCalendarCase(TransactionCase):
         ):
             payload = self.dashboard.with_user(self.pos_user).with_context(
                 allowed_company_ids=[self.company_a.id],
-            ).get_baseer_heat_calendar('2026-09')
+            ).get_baseer_heat_calendar('2037-09')
             with self.assertRaises(AccessError):
                 self.dashboard.with_user(self.pos_user).with_context(
                     allowed_company_ids=[self.company_b.id],
-                ).with_company(self.company_b).get_baseer_heat_calendar('2026-09')
+                ).with_company(self.company_b).get_baseer_heat_calendar('2037-09')
 
         self.assertEqual(aggregate_calls, [
-            (self.company_a.id, date(2026, 7, 7), date(2026, 9, 30)),
+            (self.company_a.id, date(2037, 7, 7), date(2037, 9, 30)),
         ])
         weekday_headers = {header['name']: header for header in payload['weekdays']}
         self.assertEqual(weekday_headers['Tuesday']['average_display'], '200.00')
@@ -252,9 +252,9 @@ class HeatCalendarCase(TransactionCase):
         def aggregate_days(_report, _company, date_from, date_to):
             rows = self._aggregate_rows(date_from, date_to)
             for row in rows:
-                if row['business_date'] == date(2026, 9, 3):  # Thursday
+                if row['business_date'] == date(2037, 9, 3):  # Thursday
                     row.update(status='complete', has_sales=True, sales=100, customers=4)
-                elif row['business_date'] == date(2026, 9, 4):  # Friday
+                elif row['business_date'] == date(2037, 9, 4):  # Friday
                     row.update(status='complete', has_sales=True, sales=150, customers=6)
             return {'days': rows}
 
@@ -270,35 +270,35 @@ class HeatCalendarCase(TransactionCase):
         ):
             payload = self.dashboard.with_user(self.pos_user).with_context(
                 allowed_company_ids=[self.company_a.id],
-            ).get_baseer_heat_calendar('2026-09')
+            ).get_baseer_heat_calendar('2037-09')
             days = {
                 day['date']: day
                 for week in payload['weeks'] for day in week if day
             }
-            self.assertEqual(days['2026-09-03']['basis_kind'], 'target')
-            self.assertEqual(days['2026-09-03']['basis_display'], '200.00')
-            self.assertEqual(days['2026-09-03']['ratio_display'], '50.0%')
-            self.assertEqual(days['2026-09-03']['heat_level'], 'low')
-            self.assertEqual(days['2026-09-04']['basis_display'], '100.00')
-            self.assertEqual(days['2026-09-04']['ratio_display'], '150.0%')
-            self.assertEqual(days['2026-09-04']['heat_level'], 'high')
+            self.assertEqual(days['2037-09-03']['basis_kind'], 'target')
+            self.assertEqual(days['2037-09-03']['basis_display'], '200.00')
+            self.assertEqual(days['2037-09-03']['ratio_display'], '50.0%')
+            self.assertEqual(days['2037-09-03']['heat_level'], 'low')
+            self.assertEqual(days['2037-09-04']['basis_display'], '100.00')
+            self.assertEqual(days['2037-09-04']['ratio_display'], '150.0%')
+            self.assertEqual(days['2037-09-04']['heat_level'], 'high')
 
             # Same exact scope is an upsert, not a duplicate. A fresh calendar
             # read therefore reflects the changed target without touching sales.
             self._set_target(weekday='3', amount=50)
             refreshed = self.dashboard.with_user(self.pos_user).with_context(
                 allowed_company_ids=[self.company_a.id],
-            ).get_baseer_heat_calendar('2026-09')
+            ).get_baseer_heat_calendar('2037-09')
         refreshed_days = {
             day['date']: day
             for week in refreshed['weeks'] for day in week if day
         }
-        self.assertEqual(refreshed_days['2026-09-03']['basis_display'], '50.00')
-        self.assertEqual(refreshed_days['2026-09-03']['ratio_display'], '200.0%')
-        self.assertEqual(refreshed_days['2026-09-03']['heat_level'], 'high')
+        self.assertEqual(refreshed_days['2037-09-03']['basis_display'], '50.00')
+        self.assertEqual(refreshed_days['2037-09-03']['ratio_display'], '200.0%')
+        self.assertEqual(refreshed_days['2037-09-03']['heat_level'], 'high')
         for weekday in (3, 4):
             self.assertEqual(self.Target.with_context(active_test=False).search_count([
-                ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+                ('company_id', '=', self.company_a.id), ('year', '=', 2037),
                 ('month', '=', 9), ('weekday', '=', weekday),
             ]), 1)
         self.assertEqual(self.env['baseer.pos.summary'].search_count([]), summaries_before)
@@ -323,7 +323,7 @@ class HeatCalendarCase(TransactionCase):
                 allowed_company_ids=[self.company_a.id],
             ).create({
                 'company_id': self.company_b.id,
-                'year': 2026,
+                'year': 2037,
                 'month': '9',
                 'weekday': '3',
                 'target_amount': 100,
@@ -336,7 +336,7 @@ class HeatCalendarCase(TransactionCase):
             allowed_company_ids=[self.company_a.id],
         ).create({
             'company_id': self.company_a.id,
-            'year': 2026,
+            'year': 2037,
             'month': '9',
             'weekday': '3',
             'target_amount': 1,
@@ -365,7 +365,7 @@ class HeatCalendarCase(TransactionCase):
                 allowed_company_ids=[self.company_a.id],
             ).create({
                 'company_id': self.company_a.id,
-                'year': 2026,
+                'year': 2037,
                 'month': '9',
                 'weekday': '3',
                 'target_amount': 100,
@@ -374,7 +374,7 @@ class HeatCalendarCase(TransactionCase):
     def test_hctb_t01_batch_updates_cartesian_scopes_independently_and_idempotently(self):
         """One batch can set several month/day intersections without overlap."""
         Batch = self._as_user(self.TargetBatch, self.manager_user)
-        baseline = Batch.get_target_batch(2026)
+        baseline = Batch.get_target_batch(2037)
         self.assertEqual(baseline['company'], {
             'id': self.company_a.id,
             'name': self.company_a.display_name,
@@ -390,7 +390,7 @@ class HeatCalendarCase(TransactionCase):
             # later; it is not silently deleted by the batch editor.
             {'month': 10, 'weekday': 4, 'target_amount': 404.44, 'active': False},
         ]
-        updated = Batch.apply_target_batch(2026, entries, baseline['version'])
+        updated = Batch.apply_target_batch(2037, entries, baseline['version'])
         values = {
             (cell['month'], cell['weekday']): cell
             for cell in updated['cells']
@@ -401,31 +401,31 @@ class HeatCalendarCase(TransactionCase):
             self.assertEqual(cell['active'], entry['active'])
             self.assertEqual(cell['target_amount'], float(entry['target_amount']))
             self.assertEqual(self.Target.with_context(active_test=False).search_count([
-                ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+                ('company_id', '=', self.company_a.id), ('year', '=', 2037),
                 ('month', '=', entry['month']), ('weekday', '=', entry['weekday']),
             ]), 1)
 
         # A replay of the same explicit cells is an update, never four new
         # scopes.  This is the controller contract used by the matrix UI.
-        replayed = Batch.apply_target_batch(2026, entries, updated['version'])
+        replayed = Batch.apply_target_batch(2037, entries, updated['version'])
         self.assertEqual(replayed['version'], updated['version'])
         self.assertEqual(self.Target.with_context(active_test=False).search_count([
-            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('company_id', '=', self.company_a.id), ('year', '=', 2037),
             ('month', 'in', [9, 10]), ('weekday', 'in', [3, 4]),
         ]), 4)
 
     def test_hctb_t02_batch_validates_all_cells_before_any_write(self):
         """A bad later cell cannot leave an earlier target half-saved."""
         Batch = self._as_user(self.TargetBatch, self.manager_user)
-        baseline = Batch.get_target_batch(2026)
+        baseline = Batch.get_target_batch(2037)
         entries = [
             {'month': 9, 'weekday': 3, 'target_amount': 100.00, 'active': True},
             {'month': 9, 'weekday': 4, 'target_amount': 10.001, 'active': True},
         ]
         with self.assertRaises(ValidationError):
-            Batch.apply_target_batch(2026, entries, baseline['version'])
+            Batch.apply_target_batch(2037, entries, baseline['version'])
         self.assertFalse(self.Target.search_count([
-            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('company_id', '=', self.company_a.id), ('year', '=', 2037),
             ('month', '=', 9), ('weekday', 'in', [3, 4]),
         ]))
 
@@ -439,7 +439,7 @@ class HeatCalendarCase(TransactionCase):
     def test_hctb_t03_raw_writer_after_snapshot_is_detected_without_mutation(self):
         """A legacy/raw writer shares the batch lock and invalidates old snapshots."""
         Batch = self._as_user(self.TargetBatch, self.manager_user)
-        stale = Batch.get_target_batch(2026)
+        stale = Batch.get_target_batch(2037)
         # This direct ORM create represents the legacy wizard/raw CRUD path,
         # not the batch service.  It must participate in the same lock and
         # leave the batch snapshot observably stale.
@@ -449,13 +449,13 @@ class HeatCalendarCase(TransactionCase):
             **self._target_values(self.company_a, weekday=3),
             'target_amount': 90,
         })
-        self.assertNotEqual(stale['version'], Batch.get_target_batch(2026)['version'])
+        self.assertNotEqual(stale['version'], Batch.get_target_batch(2037)['version'])
         with self.assertRaises(UserError):
-            Batch.apply_target_batch(2026, [
+            Batch.apply_target_batch(2037, [
                 {'month': 9, 'weekday': 3, 'target_amount': 999, 'active': True},
             ], stale['version'])
         target = self.Target.search([
-            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('company_id', '=', self.company_a.id), ('year', '=', 2037),
             ('month', '=', 9), ('weekday', '=', 3),
         ])
         self.assertEqual(len(target), 1)
@@ -470,42 +470,42 @@ class HeatCalendarCase(TransactionCase):
             **self._target_values(self.company_a, weekday=6),
             'target_amount': 90,
         })
-        stale = Batch.get_target_batch(2026)
+        stale = Batch.get_target_batch(2037)
         target.unlink()
-        self.assertNotEqual(stale['version'], Batch.get_target_batch(2026)['version'])
+        self.assertNotEqual(stale['version'], Batch.get_target_batch(2037)['version'])
         with self.assertRaises(UserError):
-            Batch.apply_target_batch(2026, [
+            Batch.apply_target_batch(2037, [
                 {'month': 9, 'weekday': 6, 'target_amount': 999, 'active': True},
             ], stale['version'])
         self.assertFalse(self.Target.search_count([
-            ('company_id', '=', self.company_a.id), ('year', '=', 2026),
+            ('company_id', '=', self.company_a.id), ('year', '=', 2037),
             ('month', '=', 9), ('weekday', '=', 6),
         ]))
 
     def test_hctb_t03c_raw_string_year_uses_the_same_lock_scope(self):
         """String years accepted by Odoo's Integer field cannot skip locking."""
         Batch = self._as_user(self.TargetBatch, self.manager_user)
-        stale_2026 = Batch.get_target_batch(2026)
+        stale_2037 = Batch.get_target_batch(2037)
         target = self.Target.with_user(self.manager_user).with_context(
             allowed_company_ids=[self.company_a.id],
         ).create({
             **self._target_values(self.company_a, weekday=5),
-            'year': '2026',
+            'year': '2037',
             'target_amount': 90,
         })
-        self.assertEqual(target.year, 2026)
+        self.assertEqual(target.year, 2037)
         with self.assertRaises(UserError):
-            Batch.apply_target_batch(2026, [
+            Batch.apply_target_batch(2037, [
                 {'month': 9, 'weekday': 5, 'target_amount': 999, 'active': True},
-            ], stale_2026['version'])
+            ], stale_2037['version'])
 
-        stale_2027 = Batch.get_target_batch(2027)
-        target.write({'year': '2027'})
-        self.assertEqual(target.year, 2027)
+        stale_2038 = Batch.get_target_batch(2038)
+        target.write({'year': '2038'})
+        self.assertEqual(target.year, 2038)
         with self.assertRaises(UserError):
-            Batch.apply_target_batch(2027, [
+            Batch.apply_target_batch(2038, [
                 {'month': 9, 'weekday': 5, 'target_amount': 999, 'active': True},
-            ], stale_2027['version'])
+            ], stale_2038['version'])
 
     def test_hctb_t03d_raw_integer_coercions_use_the_same_lock_scope(self):
         """The lock mirrors Odoo's float/bool-to-Integer coercion too."""
@@ -538,16 +538,16 @@ class HeatCalendarCase(TransactionCase):
         """The batch RPC is manager-only and never writes source sales summaries."""
         pos_batch = self._as_user(self.TargetBatch, self.pos_user)
         with self.assertRaises(AccessError):
-            pos_batch.get_target_batch(2026)
+            pos_batch.get_target_batch(2037)
         with self.assertRaises(AccessError):
-            pos_batch.apply_target_batch(2026, [
+            pos_batch.apply_target_batch(2037, [
                 {'month': 9, 'weekday': 3, 'target_amount': 100, 'active': True},
             ], 'not-a-manager-version')
 
         summaries_before = self.env['baseer.pos.summary'].search_count([])
         Batch = self._as_user(self.TargetBatch, self.manager_user)
-        baseline = Batch.get_target_batch(2026)
-        Batch.apply_target_batch(2026, [
+        baseline = Batch.get_target_batch(2037)
+        Batch.apply_target_batch(2037, [
             {'month': 9, 'weekday': 3, 'target_amount': 100, 'active': False},
         ], baseline['version'])
         self.assertEqual(self.env['baseer.pos.summary'].search_count([]), summaries_before)

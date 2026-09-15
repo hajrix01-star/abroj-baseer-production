@@ -1,0 +1,41 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0\n"
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: baseer_native_spend
+#: model:account.analytic.plan,name:baseer_native_spend.spend_plan
+msgid "Spend Classification"
+msgstr "تصنيف الإنفاق"
+
+#. module: baseer_native_spend
+#. odoo-python
+#: code:addons/baseer_native_spend/models/account_move.py:0
+msgid "Configure the root Spend Classification analytic plan before posting vendor bills."
+msgstr "جهّز الخطة التحليلية الرئيسية لتصنيف الإنفاق قبل اعتماد فواتير الموردين."
+
+#. module: baseer_native_spend
+#. odoo-python
+#: code:addons/baseer_native_spend/models/account_move.py:0
+msgid "Complete Spend Classification setup for %(company)s: an active analytic account, a company-specific mandatory Vendor Bill applicability, and Unavailable default are required."
+msgstr "أكمل إعداد تصنيف الإنفاق لشركة %(company)s: يلزم حساب تحليلي نشط، وإلزام التصنيف لفواتير الموردين في الشركة، وتعيين الإتاحة الافتراضية إلى غير متاح."
+
+#. module: baseer_native_spend
+#. odoo-python
+#: code:addons/baseer_native_spend/models/account_move.py:0
+msgid "Spend Classification must remain mandatory for every vendor bill item. Review its applicability rules."
+msgstr "يجب أن يكون تصنيف الإنفاق إلزاميًا لكل سطر في فاتورة المورد. راجع قواعد إتاحة الخطة."
+
+#. module: baseer_native_spend
+#. odoo-python
+#: code:addons/baseer_native_spend/models/account_move.py:0
+msgid "Choose active Spend Classification accounts belonging to this company or shared accounts."
+msgstr "اختر حسابات تصنيف إنفاق نشطة خاصة بهذه الشركة أو حسابات مشتركة."
+
+#. module: baseer_native_spend
+#. odoo-python
+#: code:addons/baseer_native_spend/models/analytic_distribution_model.py:0
+msgid "Choose a valid analytic distribution: distinct accounts, valid percentages, and one Spend Classification account per allocation."
+msgstr "اختر توزيعًا تحليليًا صحيحًا: دون تكرار الحسابات، وبنسب صالحة، وحساب واحد لتصنيف الإنفاق في كل جزء من التوزيع."

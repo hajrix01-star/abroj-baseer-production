@@ -209,6 +209,33 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(catalog_request.line_ids.requested_qty, 2)
         self.assertIn(self.option.id, [row['id'] for row in self.env['baseer.procurement.request'].catalog_options('tomato')])
 
+    def test_whatsapp_can_be_resent_during_every_active_request_stage(self):
+        request = self._request()
+        self.assertNotIn(request.name, request.whatsapp_text)
+
+        def assert_share_keeps_stage(expected_state):
+            action = request.action_open_whatsapp()
+            self.assertEqual(request.state, expected_state)
+            self.assertEqual(action['type'], 'ir.actions.act_url')
+            self.assertIn('wa.me/?text=', action['url'])
+            self.assertTrue(request.whatsapp_opened_at)
+
+        assert_share_keeps_stage('draft')
+        request.action_mark_sent()
+        assert_share_keeps_stage('sent')
+        request.line_ids.manager_received_qty = 5
+        request.action_confirm_manager_receipt()
+        assert_share_keeps_stage('received')
+        request.line_ids.write({'actual_qty': 5, 'actual_price': 4})
+        request.action_confirm_actual_purchase()
+        assert_share_keeps_stage('purchased')
+
+        cancelled = self._request()
+        cancelled.cancellation_reason = 'PRC test cancellation'
+        cancelled.action_cancel()
+        with self.assertRaises(UserError):
+            cancelled.action_open_whatsapp()
+
     def test_cashier_quote_accepts_sent_request_with_actual_price(self):
         """A cashier can price a sent request before the guarded confirmation."""
         request = self._request()

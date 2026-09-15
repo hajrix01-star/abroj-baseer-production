@@ -453,7 +453,8 @@ class ProcurementRequest(models.Model):
         self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to send procurement requests.'))
-        self._require_state('draft')
+        if self.state == 'cancel':
+            raise UserError(_('A cancelled procurement request cannot be shared on WhatsApp.'))
         super(ProcurementRequest, self).write({'whatsapp_opened_at': fields.Datetime.now()})
         return True
 

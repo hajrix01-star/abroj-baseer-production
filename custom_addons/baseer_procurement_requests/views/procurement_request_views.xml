@@ -23,7 +23,7 @@
         <field name="arch" type="xml">
             <form string="Procurement request">
                 <header>
-                    <button name="action_open_whatsapp" type="object" string="Open WhatsApp" class="btn-secondary" invisible="state != 'draft'" groups="baseer_procurement_requests.group_procurement_user"/>
+                    <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="state == 'cancel'" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_mark_sent" type="object" string="Confirm sent" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_open_manager_receipt_catalog" type="object" string="Confirm manager receipt" class="oe_highlight" invisible="state != 'sent'" groups="baseer_procurement_requests.group_procurement_manager"/>

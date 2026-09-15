@@ -20,7 +20,16 @@ class HeatCalendarCase(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.company_a = self.env.company
+        sar = self.env['res.currency'].with_context(active_test=False).search(
+            [('name', '=', 'SAR')], limit=1,
+        )
+        self.assertTrue(sar, 'Heat-calendar tests require SAR.')
+        if not sar.active:
+            sar.active = True
+        self.company_a = self.env['res.company'].create({
+            'name': 'HC isolated company A',
+            'currency_id': sar.id,
+        })
         self.company_b = self.env['res.company'].create({
             'name': 'HC isolated company B',
             'currency_id': self.company_a.currency_id.id,

@@ -216,7 +216,8 @@ class ProcurementFlowCase(TransactionCase):
         self.assertNotIn('[NOORIX-D6FF9A261F210586]', request.whatsapp_text)
         self.assertIn('طلب مشتريات', request.whatsapp_text)
         self.assertIn('التاريخ:', request.whatsapp_text)
-        self.assertIn('مندوب المشتريات: PRC standard buyer', request.whatsapp_text)
+        self.assertNotIn('مندوب المشتريات:', request.whatsapp_text)
+        self.assertNotIn('PRC standard buyer', request.whatsapp_text)
         self.assertIn('PRC tomato (Piece): 5.00 × 4.00 = 20.00', request.whatsapp_text)
         self.assertIn('الإجمالي التقديري:', request.whatsapp_text)
 

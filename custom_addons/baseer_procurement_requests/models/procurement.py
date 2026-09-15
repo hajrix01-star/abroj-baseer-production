@@ -412,20 +412,45 @@ class ProcurementRequest(models.Model):
             request.requested_total = float(requested.quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP))
             request.actual_total = float(actual.quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP))
 
-    @api.depends('request_date', 'line_ids.option_id', 'line_ids.requested_qty', 'line_ids.requested_price')
+    @api.depends(
+        'request_date', 'representative_partner_id', 'purchaser_id', 'currency_id',
+        'line_ids.option_id', 'line_ids.requested_qty', 'line_ids.requested_price',
+    )
     def _compute_whatsapp_text(self):
         for request in self:
             request_date = fields.Datetime.context_timestamp(
                 request, request.request_date
             ).date()
+            representative_name = (
+                request.representative_partner_id.display_name
+                or request.purchaser_id.name
+                or _('Not assigned')
+            )
+            currency_symbol = request.currency_id.symbol or request.currency_id.name
             lines = [
-                _('Purchase request'),
-                _('Date: %s') % fields.Date.to_string(request_date),
+                'طلب مشتريات',
+                'التاريخ: %s' % fields.Date.to_string(request_date),
+                'مندوب المشتريات: %s' % representative_name,
+                '',
             ]
             for line in request.line_ids:
-                lines.append('- %s: %s %s' % (line.option_id.product_id.display_name,
-                                               _decimal_text(line.requested_qty), line.option_id.name))
-            lines.append(_('Estimated total: %s') % _decimal_text(request.requested_total))
+                line_total = _decimal_total(line.requested_qty, line.requested_price)
+                lines.append(
+                    '• %s (%s): %s × %s = %s %s' % (
+                        line.option_id.product_id.display_name,
+                        line.option_id.name,
+                        _decimal_text(line.requested_qty),
+                        _decimal_text(line.requested_price),
+                        _decimal_text(line_total),
+                        currency_symbol,
+                    )
+                )
+            lines.extend([
+                '',
+                'الإجمالي التقديري: %s %s' % (
+                    _decimal_text(request.requested_total), currency_symbol,
+                ),
+            ])
             request.whatsapp_text = '\n'.join(lines)
 
     def _require_state(self, *states):

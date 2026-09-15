@@ -212,6 +212,11 @@ class ProcurementFlowCase(TransactionCase):
     def test_whatsapp_can_be_resent_during_every_active_request_stage(self):
         request = self._request()
         self.assertNotIn(request.name, request.whatsapp_text)
+        self.assertIn('طلب مشتريات', request.whatsapp_text)
+        self.assertIn('التاريخ:', request.whatsapp_text)
+        self.assertIn('مندوب المشتريات: PRC standard buyer', request.whatsapp_text)
+        self.assertIn('PRC tomato (Piece): 5.00 × 4.00 = 20.00', request.whatsapp_text)
+        self.assertIn('الإجمالي التقديري:', request.whatsapp_text)
 
         def assert_share_keeps_stage(expected_state):
             action = request.action_open_whatsapp()

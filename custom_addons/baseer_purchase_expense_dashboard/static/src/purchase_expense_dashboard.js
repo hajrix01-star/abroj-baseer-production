@@ -101,19 +101,20 @@ export class BaseerPurchaseExpenseDashboard extends Component {
                 datasets: [{
                     type: "bar", label: this.labels.total, metric: "total", order: 2,
                     data: rows.map((row) => coordinate(row.total.value)),
-                    backgroundColor: "#714b67", borderRadius: 3, maxBarThickness: 42,
+                    borderColor: "#3385c4", backgroundColor: "#69afe5",
+                    borderWidth: 0, borderRadius: 2, maxBarThickness: 42, spanGaps: false,
                 }, {
                     type: "line", label: this.labels.paid, metric: "paid", order: 1,
                     data: rows.map((row) => coordinate(row.paid.value)),
-                    borderColor: "#21b799", backgroundColor: "#21b799", borderWidth: 2,
-                    pointRadius: 3, pointHoverRadius: 5, tension: 0, fill: false,
+                    borderColor: "#ba7428", backgroundColor: "#ba7428", borderWidth: 2,
+                    pointRadius: 2, pointHoverRadius: 6, tension: 0, fill: false, spanGaps: false,
                 }],
             },
             options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
                 font: { family: font }, interaction: { mode: "index", intersect: false },
                 plugins: {
-                    legend: { position: "top", rtl, textDirection: rtl ? "rtl" : "ltr", labels: { boxWidth: 18, boxHeight: 8, padding: 18, font: { family: font, size: 12 } } },
+                    legend: { display: true, position: "top", rtl, textDirection: rtl ? "rtl" : "ltr", onClick: () => {}, labels: { boxWidth: 18, boxHeight: 8, padding: 18, font: { family: font, size: 12 } } },
                     tooltip: {
                         rtl, textDirection: rtl ? "rtl" : "ltr", titleFont: { family: font }, bodyFont: { family: font },
                         callbacks: { label: (context) => `${context.dataset.label}: ${rows[context.dataIndex][context.dataset.metric].display} ${currency}` },

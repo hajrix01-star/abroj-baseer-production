@@ -214,7 +214,7 @@ class ProcurementFlowCase(TransactionCase):
         request = self._request()
         self.assertNotIn(request.name, request.whatsapp_text)
         self.assertNotIn('[NOORIX-D6FF9A261F210586]', request.whatsapp_text)
-        self.assertIn('طلب مشتريات', request.whatsapp_text)
+        self.assertIn('طلب مشتريات — %s' % self.company.name, request.whatsapp_text)
         self.assertIn('التاريخ:', request.whatsapp_text)
         self.assertNotIn('مندوب المشتريات:', request.whatsapp_text)
         self.assertNotIn('PRC standard buyer', request.whatsapp_text)

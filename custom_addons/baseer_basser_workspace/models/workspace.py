@@ -89,14 +89,14 @@ ROLE_SELECTION = [
 
 class BasserWorkspaceSection(models.Model):
     _name = 'baseer.basser.workspace.section'
-    _description = 'BASSER Workspace Section'
+    _description = 'Baseer Workspace Section'
     _order = 'sequence, id'
 
     name = fields.Char(required=True, translate=True)
     role = fields.Selection(ROLE_SELECTION, required=True, default='cashier', index=True)
     company_id = fields.Many2one('res.company', index=True, ondelete='cascade')
     sequence = fields.Integer(default=10, index=True)
-    active = fields.Boolean(string='Visible in BASSER', default=True, index=True)
+    active = fields.Boolean(string='Visible in Baseer', default=True, index=True)
     item_ids = fields.One2many('baseer.basser.workspace.item', 'section_id', string='Items')
 
     @api.model
@@ -355,7 +355,7 @@ class BasserWorkspaceSection(models.Model):
 
 class BasserWorkspaceItem(models.Model):
     _name = 'baseer.basser.workspace.item'
-    _description = 'BASSER Workspace Item'
+    _description = 'Baseer Workspace Item'
     _order = 'section_id, sequence, id'
 
     _section_menu_unique = models.Constraint(
@@ -371,7 +371,7 @@ class BasserWorkspaceItem(models.Model):
     menu_id = fields.Many2one('ir.ui.menu', required=True, ondelete='restrict')
     allowed_menu_ids = fields.Many2many('ir.ui.menu', compute='_compute_allowed_menu_ids')
     sequence = fields.Integer(default=10, index=True)
-    active = fields.Boolean(string='Visible in BASSER', default=True, index=True)
+    active = fields.Boolean(string='Visible in Baseer', default=True, index=True)
 
     @api.model_create_multi
     def create(self, vals_list):

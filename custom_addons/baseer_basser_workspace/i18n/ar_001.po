@@ -282,3 +282,51 @@ msgstr "أوامر BASSER"
 #, python-format
 msgid "BASSER commands: %(section)s"
 msgstr "أوامر BASSER: %(section)s"
+
+#. module: baseer_basser_workspace
+msgid "Baseer"
+msgstr "Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Baseer could not be loaded."
+msgstr "تعذر تحميل Baseer."
+
+#. module: baseer_basser_workspace
+msgid "Manage Baseer"
+msgstr "إدارة Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Baseer configuration is not available."
+msgstr "إعدادات Baseer غير متاحة."
+
+#. module: baseer_basser_workspace
+msgid "Baseer configuration"
+msgstr "إعدادات Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Baseer operations"
+msgstr "عمليات Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Baseer commands"
+msgstr "أوامر Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Visible in Baseer"
+msgstr "ظاهر في Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Hide from Baseer"
+msgstr "إخفاء من Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Show in Baseer"
+msgstr "إظهار في Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Baseer operations section"
+msgstr "قسم عمليات Baseer"
+
+#. module: baseer_basser_workspace
+msgid "Baseer workspace item"
+msgstr "عنصر مساحة عمل Baseer"

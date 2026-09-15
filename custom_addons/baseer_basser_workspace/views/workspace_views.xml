@@ -4,17 +4,17 @@
         <field name="name">baseer.basser.workspace.section.list</field>
         <field name="model">baseer.basser.workspace.section</field>
         <field name="arch" type="xml">
-            <list string="BASSER operations" editable="bottom">
+            <list string="Baseer operations" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="role"/>
                 <field name="company_id" groups="base.group_multi_company"/>
-                <field name="active" string="Visible in BASSER" widget="boolean_toggle" readonly="1"/>
+                <field name="active" string="Visible in Baseer" widget="boolean_toggle" readonly="1"/>
                 <button name="action_open_workspace_items" type="object" string="Manage commands"
                         icon="fa-list"/>
-                <button name="action_hide_from_basser" type="object" string="Hide from BASSER"
+                <button name="action_hide_from_basser" type="object" string="Hide from Baseer"
                         icon="fa-eye-slash" invisible="not active"/>
-                <button name="action_show_in_basser" type="object" string="Show in BASSER"
+                <button name="action_show_in_basser" type="object" string="Show in Baseer"
                         icon="fa-eye" invisible="active"/>
             </list>
         </field>
@@ -23,7 +23,7 @@
         <field name="name">baseer.basser.workspace.section.form</field>
         <field name="model">baseer.basser.workspace.section</field>
         <field name="arch" type="xml">
-            <form string="BASSER operations section">
+            <form string="Baseer operations section">
                 <sheet>
                     <div class="oe_title"><h1><field name="name" placeholder="Section name"/></h1></div>
                     <group>
@@ -33,7 +33,7 @@
                         </group>
                         <group>
                             <field name="sequence"/>
-                            <field name="active" string="Visible in BASSER" widget="boolean_toggle" readonly="1"/>
+                            <field name="active" string="Visible in Baseer" widget="boolean_toggle" readonly="1"/>
                         </group>
                     </group>
                     <div class="oe_button_box" name="button_box">
@@ -43,11 +43,11 @@
                         </button>
                         <button name="action_hide_from_basser" type="object" class="oe_stat_button"
                                 icon="fa-eye-slash" invisible="not active">
-                            <div class="o_stat_info"><span class="o_stat_text">Hide from BASSER</span></div>
+                            <div class="o_stat_info"><span class="o_stat_text">Hide from Baseer</span></div>
                         </button>
                         <button name="action_show_in_basser" type="object" class="oe_stat_button"
                                 icon="fa-eye" invisible="active">
-                            <div class="o_stat_info"><span class="o_stat_text">Show in BASSER</span></div>
+                            <div class="o_stat_info"><span class="o_stat_text">Show in Baseer</span></div>
                         </button>
                     </div>
                     <notebook>
@@ -59,29 +59,29 @@
                                     <field name="description" optional="hide"/>
                                     <field name="allowed_menu_ids" column_invisible="True"/>
                                     <field name="menu_id" domain="[('id', 'in', allowed_menu_ids)]" options="{'no_create': True}"/>
-                                    <field name="active" string="Visible in BASSER" widget="boolean_toggle" readonly="1"/>
+                                    <field name="active" string="Visible in Baseer" widget="boolean_toggle" readonly="1"/>
                                     <button name="action_hide_from_basser" type="object" string="Hide"
                                             icon="fa-eye-slash" invisible="not active"/>
                                     <button name="action_show_in_basser" type="object" string="Show"
                                             icon="fa-eye" invisible="active"/>
                                 </list>
-                                <form string="BASSER workspace item">
+                                <form string="Baseer workspace item">
                                     <group>
                                         <field name="name" placeholder="Use the original menu name if left empty"/>
                                         <field name="description"/>
                                         <field name="allowed_menu_ids" invisible="True"/>
                                         <field name="menu_id" domain="[('id', 'in', allowed_menu_ids)]" options="{'no_create': True}"/>
                                         <field name="sequence"/>
-                                        <field name="active" string="Visible in BASSER" widget="boolean_toggle" readonly="1"/>
+                                        <field name="active" string="Visible in Baseer" widget="boolean_toggle" readonly="1"/>
                                     </group>
                                     <div class="oe_button_box" name="button_box">
                                         <button name="action_hide_from_basser" type="object" class="oe_stat_button"
                                                 icon="fa-eye-slash" invisible="not active">
-                                            <div class="o_stat_info"><span class="o_stat_text">Hide from BASSER</span></div>
+                                            <div class="o_stat_info"><span class="o_stat_text">Hide from Baseer</span></div>
                                         </button>
                                         <button name="action_show_in_basser" type="object" class="oe_stat_button"
                                                 icon="fa-eye" invisible="active">
-                                            <div class="o_stat_info"><span class="o_stat_text">Show in BASSER</span></div>
+                                            <div class="o_stat_info"><span class="o_stat_text">Show in Baseer</span></div>
                                         </button>
                                     </div>
                                 </form>
@@ -96,39 +96,39 @@
         <field name="name">baseer.basser.workspace.item.list</field>
         <field name="model">baseer.basser.workspace.item</field>
         <field name="arch" type="xml">
-            <list string="BASSER commands" create="0" delete="0">
+            <list string="Baseer commands" create="0" delete="0">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="description" optional="hide"/>
                 <field name="section_id" readonly="1"/>
                 <field name="menu_id" readonly="1"/>
-                <field name="active" string="Visible in BASSER" widget="boolean_toggle" readonly="1"/>
-                <button name="action_hide_from_basser" type="object" string="Hide from BASSER"
+                <field name="active" string="Visible in Baseer" widget="boolean_toggle" readonly="1"/>
+                <button name="action_hide_from_basser" type="object" string="Hide from Baseer"
                         icon="fa-eye-slash" invisible="not active"/>
-                <button name="action_show_in_basser" type="object" string="Show in BASSER"
+                <button name="action_show_in_basser" type="object" string="Show in Baseer"
                         icon="fa-eye" invisible="active"/>
             </list>
         </field>
     </record>
     <record id="action_workspace_section" model="ir.actions.act_window">
-        <field name="name">BASSER operations</field>
+        <field name="name">Baseer operations</field>
         <field name="res_model">baseer.basser.workspace.section</field>
         <field name="view_mode">list,form</field>
         <field name="context">{'active_test': False}</field>
     </record>
     <record id="action_workspace_item" model="ir.actions.act_window">
-        <field name="name">BASSER commands</field>
+        <field name="name">Baseer commands</field>
         <field name="res_model">baseer.basser.workspace.item</field>
         <field name="view_mode">list</field>
         <field name="context">{'active_test': False}</field>
     </record>
     <record id="action_basser_workspace" model="ir.actions.client">
-        <field name="name">BASSER</field>
+        <field name="name">Baseer</field>
         <field name="tag">baseer_basser_workspace.workspace</field>
     </record>
-    <menuitem id="menu_basser_root" name="BASSER" action="action_basser_workspace" sequence="8"
+    <menuitem id="menu_basser_root" name="Baseer" action="action_basser_workspace" sequence="8"
               groups="base.group_system,baseer_access_roles.group_owner,baseer_access_roles.group_accountant,baseer_access_roles.group_cashier"/>
-    <menuitem id="menu_basser_configuration" name="BASSER configuration" parent="menu_basser_root"
+    <menuitem id="menu_basser_configuration" name="Baseer configuration" parent="menu_basser_root"
               action="action_workspace_section" sequence="90" groups="baseer_access_roles.group_owner"/>
     <menuitem id="menu_basser_operational_policies" name="Operational policies" parent="menu_basser_root"
               action="baseer_access_roles.action_baseer_operations_settings" sequence="91"

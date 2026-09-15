@@ -1,7 +1,7 @@
 {
-    'name': 'BASSER Workspace',
+    'name': 'Baseer Workspace',
     'summary': 'Role-curated navigation to approved Baseer operations',
-    'version': '19.0.1.0.6',
+    'version': '19.0.1.0.7',
     'category': 'Productivity',
     'author': 'Baseer',
     'license': 'LGPL-3',

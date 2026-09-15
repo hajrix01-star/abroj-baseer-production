@@ -28,14 +28,14 @@ export class BasserWorkspace extends Component {
             openingItemId: false,
         });
         this.labels = {
-            title: _t("BASSER"),
+            title: _t("Baseer"),
             description: _t("Your approved operational workspace."),
             loading: _t("Loading your workspace…"),
             empty: _t("No operational items are configured for your role and active company."),
             noAccess: _t("You are not allowed to use this workspace."),
-            error: _t("BASSER could not be loaded."),
+            error: _t("Baseer could not be loaded."),
             retry: _t("Retry"),
-            manage: _t("Manage BASSER"),
+            manage: _t("Manage Baseer"),
             opening: _t("Opening…"),
         };
         onWillStart(() => this.loadWorkspace());
@@ -99,7 +99,7 @@ export class BasserWorkspace extends Component {
             );
             await this.action.doAction(result.action_id);
         } catch (_error) {
-            this.notification.add(_t("BASSER configuration is not available."), { type: "danger" });
+            this.notification.add(_t("Baseer configuration is not available."), { type: "danger" });
             await this.loadWorkspace();
         } finally {
             this.state.openingItemId = false;

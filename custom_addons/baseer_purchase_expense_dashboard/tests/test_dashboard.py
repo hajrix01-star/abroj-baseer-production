@@ -140,7 +140,9 @@ class PurchaseExpenseDashboardCase(TransactionCase):
                 line['product_id'] = product.id
             move = self.env['account.move'].create({
                 'move_type': move_type, 'partner_id': partner.id, 'journal_id': journal.id,
-                'invoice_date': '2026-09-15', 'invoice_line_ids': [Command.create(line)],
+                # Keep the fixture outside operating periods: production-like rehearsal
+                # databases can already contain genuine unclassified expense lines.
+                'invoice_date': '2099-09-15', 'invoice_line_ids': [Command.create(line)],
             })
             move.action_post()
 
@@ -149,7 +151,7 @@ class PurchaseExpenseDashboardCase(TransactionCase):
         post('in_invoice', 10, with_product=False)
         with self.assertQueryCount(1):
             rows = self.dashboard.sudo()._baseer_category_rows(
-                self.company_a, self.company_a.currency_id, date(2026, 9, 1), date(2026, 9, 30), Decimal('200.00'),
+                self.company_a, self.company_a.currency_id, date(2099, 9, 1), date(2099, 9, 30), Decimal('200.00'),
             )
         by_id = {row['id']: row for row in rows}
         by_name = {row['name']: row for row in rows}
@@ -158,7 +160,7 @@ class PurchaseExpenseDashboardCase(TransactionCase):
         self.assertEqual(by_name['Unclassified']['total']['value'], '10.00')
         with self.assertQueryCount(1):
             timeline = self.dashboard.sudo()._baseer_monthly_movement(
-                self.company_a, self.company_a.currency_id, date(2026, 8, 1), date(2026, 9, 30),
+                self.company_a, self.company_a.currency_id, date(2099, 8, 1), date(2099, 9, 30),
             )
         self.assertEqual(len(timeline), 2)
         # Both movement and categories are gross; the product-less expense stays unclassified.

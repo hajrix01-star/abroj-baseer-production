@@ -52,10 +52,21 @@
                     </div>
                     <p t-if="state.payload.foreign_currency_count" class="alert alert-warning"><strong class="o_baseer_purchase_numeric" t-esc="state.payload.foreign_currency_count"/> <span t-esc="labels.currencyNotice"/></p>
                     <p t-if="!hasData" class="alert alert-secondary" t-esc="labels.empty"/>
-                    <section class="o_baseer_purchase_panel o_baseer_purchase_movement">
+                    <section class="o_baseer_purchase_movement">
                         <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.timeline"/><p class="text-muted mb-0" t-esc="labels.timelineNote"/></div></div>
-                        <div class="o_baseer_purchase_canvas_wrap"><canvas t-ref="movementChart" t-att-aria-label="labels.timelineAccessible" role="img"/></div>
-                        <div class="table-responsive o_baseer_purchase_chart_fallback">
+                        <div t-if="hasData and canRenderChart" class="o_baseer_purchase_canvas_wrap"><canvas t-ref="movementChart" t-att-aria-label="labels.timelineAccessible" role="img"/></div>
+                        <div t-elif="!hasData" class="o_baseer_purchase_preview" role="status">
+                            <div class="o_baseer_purchase_preview_legend text-muted">
+                                <span><i class="o_baseer_purchase_legend_bar" aria-hidden="true"/><span t-esc="labels.total"/></span>
+                                <span><i class="o_baseer_purchase_legend_line" aria-hidden="true"/><span t-esc="labels.paid"/></span>
+                            </div>
+                            <svg class="o_baseer_purchase_preview_art" viewBox="0 0 900 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                                <g fill="#69afe5"><rect x="35" y="125" width="48" height="75" rx="2"/><rect x="110" y="90" width="48" height="110" rx="2"/><rect x="185" y="115" width="48" height="85" rx="2"/><rect x="260" y="65" width="48" height="135" rx="2"/><rect x="335" y="95" width="48" height="105" rx="2"/><rect x="410" y="45" width="48" height="155" rx="2"/><rect x="485" y="70" width="48" height="130" rx="2"/><rect x="560" y="35" width="48" height="165" rx="2"/><rect x="635" y="75" width="48" height="125" rx="2"/><rect x="710" y="45" width="48" height="155" rx="2"/><rect x="785" y="20" width="48" height="180" rx="2"/></g>
+                                <polyline points="59,135 134,110 209,120 284,80 359,105 434,70 509,90 584,50 659,65 734,40 809,55" fill="none" stroke="#ba7428" stroke-width="3" vector-effect="non-scaling-stroke"/>
+                            </svg>
+                            <p class="text-muted mb-0" t-esc="labels.empty"/>
+                        </div>
+                        <div t-else="" class="table-responsive o_baseer_purchase_chart_fallback">
                             <table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.month"/><th scope="col" class="text-end" t-esc="labels.total"/><th scope="col" class="text-end" t-esc="labels.paid"/></tr></thead><tbody>
                                 <tr t-foreach="state.payload.timeline" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_purchase_numeric" t-esc="row.label"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.paid.display"/> <small t-esc="state.payload.company.currency"/></td></tr>
                             </tbody></table>

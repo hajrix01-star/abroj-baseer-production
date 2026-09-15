@@ -32,9 +32,17 @@
     .o_baseer_purchase_panel { background: #fff; border: 1px solid var(--o-baseer-purchase-border); border-radius: .65rem; padding: 1rem; }
     .o_baseer_purchase_panel_heading { align-items: flex-start; display: flex; justify-content: space-between; margin-bottom: 1rem; }
     .o_baseer_purchase_panel_heading p { font-size: .82rem; }
-    .o_baseer_purchase_movement { margin-bottom: 1rem; }
-    .o_baseer_purchase_canvas_wrap { height: 19rem; position: relative; }
+    .o_baseer_purchase_movement { background: var(--view-bg, #fff); margin-bottom: 1rem; min-width: 0; padding: .9rem 1rem; }
+    .o_baseer_purchase_movement .o_baseer_purchase_panel_heading { border-bottom: 1px solid var(--o-baseer-purchase-border); margin-bottom: .5rem; padding-bottom: .5rem; }
+    .o_baseer_purchase_canvas_wrap { height: 19rem; min-width: 0; position: relative; }
     .o_baseer_purchase_chart_fallback { margin-top: .9rem; }
+    .o_baseer_purchase_preview { padding: .6rem 0 .25rem; text-align: center; }
+    .o_baseer_purchase_preview_legend { display: flex; flex-wrap: wrap; gap: .5rem 1.15rem; justify-content: center; margin-bottom: .5rem; }
+    .o_baseer_purchase_preview_legend > span { align-items: center; display: inline-flex; gap: .4rem; }
+    .o_baseer_purchase_preview_legend i { display: inline-block; opacity: .35; width: 1.125rem; }
+    .o_baseer_purchase_legend_bar { background: #69afe5; height: .625rem; }
+    .o_baseer_purchase_legend_line { border-top: 3px solid #ba7428; height: 0; }
+    .o_baseer_purchase_preview_art { display: block; height: 13.75rem; opacity: .22; pointer-events: none; width: 100%; }
     .o_baseer_purchase_rankings { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .o_baseer_purchase_table { font-size: .88rem; }
     .o_baseer_purchase_table thead { color: var(--o-baseer-purchase-muted); font-size: .77rem; text-transform: uppercase; }
@@ -56,7 +64,7 @@
         .o_baseer_purchase_actions { width: 100%; }
         .o_baseer_purchase_actions .btn { flex: 1 1 auto; }
         .o_baseer_purchase_card { min-height: 8rem; }
-        .o_baseer_purchase_canvas_wrap { height: 16rem; }
+        .o_baseer_purchase_canvas_wrap { height: 17.5rem; }
         .o_baseer_purchase_rankings { grid-template-columns: 1fr; }
     }
 }

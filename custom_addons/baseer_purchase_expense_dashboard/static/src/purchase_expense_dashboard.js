@@ -57,6 +57,7 @@ export class BaseerPurchaseExpenseDashboard extends Component {
     }
 
     get hasData() { return (this.state.payload?.cards?.count?.value || 0) > 0; }
+    get canRenderChart() { return Boolean(globalThis.Chart); }
     get period() {
         const value = this.state.payload?.filters;
         return value ? `${value.date_from} — ${value.date_to}` : "";
@@ -90,7 +91,7 @@ export class BaseerPurchaseExpenseDashboard extends Component {
         this.destroyChart();
         const ChartConstructor = globalThis.Chart;
         const rows = this.state.payload?.timeline || [];
-        if (!ChartConstructor || !this.movementRef.el || !rows.length || this.disposed) { return; }
+        if (!ChartConstructor || !this.movementRef.el || !this.hasData || !rows.length || this.disposed) { return; }
         const rtl = localization.direction === "rtl";
         const font = getComputedStyle(this.rootRef.el).fontFamily;
         const currency = this.state.payload.company.currency;

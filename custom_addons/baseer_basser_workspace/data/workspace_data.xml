@@ -80,4 +80,11 @@
         <field name="menu_id" ref="baseer_procurement_requests.menu_procurement_custody_monthly_statement"/>
         <field name="sequence">40</field>
     </record>
+    <record id="workspace_item_accountant_supplier_bills" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_accountant_operations"/>
+        <field name="name">Supplier bills and expenses</field>
+        <field name="description">Review posted supplier bills, refunds, and expenses in the active company.</field>
+        <field name="menu_id" ref="spreadsheet_dashboard.spreadsheet_dashboard_menu_dashboard"/>
+        <field name="sequence">50</field>
+    </record>
 </odoo>

@@ -191,3 +191,54 @@ msgstr "ظاهر في BASSER"
 #: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
 msgid "Operations"
 msgstr "العمليات"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_supplier_bills
+msgid "Supplier bills and expenses"
+msgstr "فواتير الموردين والمصروفات"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_supplier_bills
+msgid "Review posted supplier bills, refunds, and expenses in the active company."
+msgstr "مراجعة فواتير الموردين والمرتجعات والمصروفات المرحلة في الشركة النشطة."
+
+#. module: baseer_basser_workspace
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_section__role
+msgid "Role"
+msgstr "الدور"
+
+#. module: baseer_basser_workspace
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_section__sequence
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_item__sequence
+msgid "Sequence"
+msgstr "الترتيب"
+
+#. module: baseer_basser_workspace
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_section__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_basser_workspace
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_item__menu_id
+msgid "Menu"
+msgstr "القائمة"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "BASSER operations section"
+msgstr "قسم عمليات BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "BASSER workspace item"
+msgstr "عنصر مساحة عمل BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Section name"
+msgstr "اسم القسم"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Use the original menu name if left empty"
+msgstr "استخدم اسم القائمة الأصلي عند ترك الحقل فارغًا"

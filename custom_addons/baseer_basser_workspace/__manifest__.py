@@ -1,11 +1,15 @@
 {
     'name': 'BASSER Workspace',
     'summary': 'Role-curated navigation to approved Baseer operations',
-    'version': '19.0.1.0.2',
+    'version': '19.0.1.0.3',
     'category': 'Productivity',
     'author': 'Baseer',
     'license': 'LGPL-3',
-    'depends': ['baseer_access_roles', 'baseer_sales_heat_calendar'],
+    'depends': [
+        'baseer_access_roles',
+        'baseer_sales_heat_calendar',
+        'baseer_purchase_expense_dashboard',
+    ],
     'data': [
         'security/ir.model.access.csv',
         'data/workspace_data.xml',

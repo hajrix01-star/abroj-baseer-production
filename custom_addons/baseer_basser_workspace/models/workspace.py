@@ -47,6 +47,17 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         },
     },
     'accountant': {
+        # The native dashboard root is deliberately hidden after BASSER is
+        # installed, so this explicit, read-only shortcut is the accountant's
+        # approved route to supplier bills and expenses.  Its fixed dashboard
+        # XML id prevents a browser from selecting a different dashboard.
+        'spreadsheet_dashboard.spreadsheet_dashboard_menu_dashboard': {
+            'action_type': 'ir.actions.client',
+            'tag': 'action_spreadsheet_dashboard',
+            'dashboard_xmlid': 'baseer_purchase_expense_dashboard.dashboard_supplier_bills',
+            'dashboard_kind': 'supplier_bills',
+            'icon': 'fa fa-pie-chart',
+        },
         'baseer_purchase_batch.menu_purchase_batches': {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-file-text-o',

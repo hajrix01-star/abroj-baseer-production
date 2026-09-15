@@ -264,3 +264,21 @@ msgstr "إخفاء"
 #: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
 msgid "Show"
 msgstr "إظهار"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_list
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Manage commands"
+msgstr "إدارة الأوامر"
+
+#. module: baseer_basser_workspace
+#: model:ir.actions.act_window,name:baseer_basser_workspace.action_workspace_item
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_item_list
+msgid "BASSER commands"
+msgstr "أوامر BASSER"
+
+#. module: baseer_basser_workspace
+#: code:addons/baseer_basser_workspace/models/workspace.py:0
+#, python-format
+msgid "BASSER commands: %(section)s"
+msgstr "أوامر BASSER: %(section)s"

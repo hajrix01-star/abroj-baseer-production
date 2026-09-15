@@ -183,6 +183,17 @@ class BasserWorkspaceCase(TransactionCase):
         }
         self.assertIn(item.id, restored_ids)
 
+    def test_basser_t03c_owner_opens_only_the_selected_section_commands(self):
+        owner = self._user('owner')
+        cashier = self._user('cashier')
+        section = self.env.ref('baseer_basser_workspace.workspace_section_cashier_operations')
+
+        action = section.with_user(owner).action_open_workspace_items()
+        self.assertEqual(action['res_model'], 'baseer.basser.workspace.item')
+        self.assertEqual(action['domain'], [('section_id', '=', section.id)])
+        with self.assertRaises(AccessError):
+            section.with_user(cashier).action_open_workspace_items()
+
     def test_basser_t04_company_scope_uses_server_active_company_only(self):
         company_a = self.env.company
         company_b = self.env['res.company'].create({

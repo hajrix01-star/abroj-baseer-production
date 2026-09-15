@@ -323,6 +323,21 @@ class BasserWorkspaceSection(models.Model):
             raise AccessError(_('Only the owner can manage BASSER.'))
         return {'action_id': self.env.ref('baseer_basser_workspace.action_workspace_section').id}
 
+    def action_open_workspace_items(self):
+        """Open the approved commands for this section without exposing others."""
+        self._require_workspace_owner()
+        self.ensure_one()
+        action = self.env.ref('baseer_basser_workspace.action_workspace_item').read()[0]
+        action.update({
+            'name': _('BASSER commands: %(section)s', section=self.name),
+            'domain': [('section_id', '=', self.id)],
+            'context': {
+                'active_test': False,
+                'default_section_id': self.id,
+            },
+        })
+        return action
+
     def _require_workspace_owner(self):
         if self._current_workspace_role() != 'owner':
             raise AccessError(_('Only the owner can change BASSER visibility.'))

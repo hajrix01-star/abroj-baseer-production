@@ -412,10 +412,16 @@ class ProcurementRequest(models.Model):
             request.requested_total = float(requested.quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP))
             request.actual_total = float(actual.quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP))
 
-    @api.depends('name', 'line_ids.option_id', 'line_ids.requested_qty', 'line_ids.requested_price')
+    @api.depends('request_date', 'line_ids.option_id', 'line_ids.requested_qty', 'line_ids.requested_price')
     def _compute_whatsapp_text(self):
         for request in self:
-            lines = [_('Procurement request: %s') % request.name]
+            request_date = fields.Datetime.context_timestamp(
+                request, request.request_date
+            ).date()
+            lines = [
+                _('Purchase request'),
+                _('Date: %s') % fields.Date.to_string(request_date),
+            ]
             for line in request.line_ids:
                 lines.append('- %s: %s %s' % (line.option_id.product_id.display_name,
                                                _decimal_text(line.requested_qty), line.option_id.name))

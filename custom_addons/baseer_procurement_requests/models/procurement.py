@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import hashlib
 import json
 import math
+import re
 import unicodedata
 from urllib.parse import quote
 from uuid import UUID
@@ -19,6 +20,7 @@ IDENTITY_SYSTEM_WRITE = '_baseer_procurement_identity_system_write'
 MONEY_QUANTUM = Decimal('0.01')
 MAX_CATALOG_LINES = 200
 MAX_CATALOG_HIGHLIGHTS = 12
+NOORIX_MESSAGE_PREFIX_RE = re.compile(r'^\s*\[NOORIX(?:-[A-Z0-9]+)*\]\s*', re.IGNORECASE)
 
 
 def _is_finite_number(value):
@@ -50,6 +52,13 @@ def _decimal_total(quantity, price):
 
 def _decimal_text(value):
     return format(Decimal(value).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP), ',.2f')
+
+
+def _whatsapp_product_label(product):
+    """Keep migrated source IDs out of the customer-facing WhatsApp text."""
+    display_name = product.display_name or ''
+    cleaned_name = NOORIX_MESSAGE_PREFIX_RE.sub('', display_name).strip()
+    return cleaned_name or display_name
 
 
 class ResPartner(models.Model):
@@ -437,7 +446,7 @@ class ProcurementRequest(models.Model):
                 line_total = _decimal_total(line.requested_qty, line.requested_price)
                 lines.append(
                     '• %s (%s): %s × %s = %s %s' % (
-                        line.option_id.product_id.display_name,
+                        _whatsapp_product_label(line.option_id.product_id),
                         line.option_id.name,
                         _decimal_text(line.requested_qty),
                         _decimal_text(line.requested_price),

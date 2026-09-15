@@ -210,8 +210,10 @@ class ProcurementFlowCase(TransactionCase):
         self.assertIn(self.option.id, [row['id'] for row in self.env['baseer.procurement.request'].catalog_options('tomato')])
 
     def test_whatsapp_can_be_resent_during_every_active_request_stage(self):
+        self.product.name = '[NOORIX-D6FF9A261F210586] PRC tomato'
         request = self._request()
         self.assertNotIn(request.name, request.whatsapp_text)
+        self.assertNotIn('[NOORIX-D6FF9A261F210586]', request.whatsapp_text)
         self.assertIn('طلب مشتريات', request.whatsapp_text)
         self.assertIn('التاريخ:', request.whatsapp_text)
         self.assertIn('مندوب المشتريات: PRC standard buyer', request.whatsapp_text)

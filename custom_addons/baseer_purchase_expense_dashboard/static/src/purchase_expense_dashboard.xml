@@ -52,34 +52,32 @@
                     </div>
                     <p t-if="state.payload.foreign_currency_count" class="alert alert-warning"><strong class="o_baseer_purchase_numeric" t-esc="state.payload.foreign_currency_count"/> <span t-esc="labels.currencyNotice"/></p>
                     <p t-if="!hasData" class="alert alert-secondary" t-esc="labels.empty"/>
-                    <t t-else="">
-                        <section class="o_baseer_purchase_panel o_baseer_purchase_movement">
-                            <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.timeline"/><p class="text-muted mb-0" t-esc="labels.timelineNote"/></div></div>
-                            <div class="o_baseer_purchase_canvas_wrap"><canvas t-ref="movementChart" t-att-aria-label="labels.timelineAccessible" role="img"/></div>
-                            <div class="table-responsive o_baseer_purchase_chart_fallback">
-                                <table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.month"/><th scope="col" class="text-end" t-esc="labels.total"/><th scope="col" class="text-end" t-esc="labels.paid"/></tr></thead><tbody>
-                                    <tr t-foreach="state.payload.timeline" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_purchase_numeric" t-esc="row.label"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.paid.display"/> <small t-esc="state.payload.company.currency"/></td></tr>
-                                </tbody></table>
-                            </div>
-                        </section>
-                        <p t-if="!state.payload.ratios.available" class="alert alert-info o_baseer_purchase_ratio_notice" t-esc="labels.ratioUnavailable"/>
-                        <div class="o_baseer_purchase_rankings">
-                            <section class="o_baseer_purchase_panel">
-                                <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.vendors"/><p class="text-muted mb-0" t-esc="labels.ratioBasis"/></div></div>
-                                <p t-if="!state.payload.vendors.length" class="text-muted mb-0" t-esc="labels.noVendors"/>
-                                <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.vendor"/><th scope="col" class="text-end" t-esc="labels.netAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
-                                    <tr t-foreach="state.payload.vendors" t-as="vendor" t-key="vendor.id"><th scope="row" t-esc="vendor.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.sales_ratio.display"/><span t-if="vendor.sales_ratio.available">%</span></td></tr>
-                                </tbody></table></div>
-                            </section>
-                            <section class="o_baseer_purchase_panel">
-                                <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.categories"/><p class="text-muted mb-0" t-esc="labels.categoryNote"/></div></div>
-                                <p t-if="!state.payload.categories.length" class="text-muted mb-0" t-esc="labels.noCategories"/>
-                                <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.category"/><th scope="col" class="text-end" t-esc="labels.netAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
-                                    <tr t-foreach="state.payload.categories" t-as="category" t-key="category.id || category.name"><th scope="row" t-esc="category.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.sales_ratio.display"/><span t-if="category.sales_ratio.available">%</span></td></tr>
-                                </tbody></table></div>
-                            </section>
+                    <section class="o_baseer_purchase_panel o_baseer_purchase_movement">
+                        <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.timeline"/><p class="text-muted mb-0" t-esc="labels.timelineNote"/></div></div>
+                        <div class="o_baseer_purchase_canvas_wrap"><canvas t-ref="movementChart" t-att-aria-label="labels.timelineAccessible" role="img"/></div>
+                        <div class="table-responsive o_baseer_purchase_chart_fallback">
+                            <table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.month"/><th scope="col" class="text-end" t-esc="labels.total"/><th scope="col" class="text-end" t-esc="labels.paid"/></tr></thead><tbody>
+                                <tr t-foreach="state.payload.timeline" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_purchase_numeric" t-esc="row.label"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="row.paid.display"/> <small t-esc="state.payload.company.currency"/></td></tr>
+                            </tbody></table>
                         </div>
-                    </t>
+                    </section>
+                    <p t-if="!state.payload.ratios.available" class="alert alert-info o_baseer_purchase_ratio_notice" t-esc="labels.ratioUnavailable"/>
+                    <div class="o_baseer_purchase_rankings">
+                        <section class="o_baseer_purchase_panel">
+                            <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.vendors"/><p class="text-muted mb-0" t-esc="labels.ratioBasis"/></div></div>
+                            <p t-if="!state.payload.vendors.length" class="text-muted mb-0" t-esc="labels.noVendors"/>
+                            <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.vendor"/><th scope="col" class="text-end" t-esc="labels.netAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
+                                <tr t-foreach="state.payload.vendors" t-as="vendor" t-key="vendor.id"><th scope="row" t-esc="vendor.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.sales_ratio.display"/><span t-if="vendor.sales_ratio.available">%</span></td></tr>
+                            </tbody></table></div>
+                        </section>
+                        <section class="o_baseer_purchase_panel">
+                            <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.categories"/><p class="text-muted mb-0" t-esc="labels.categoryNote"/></div></div>
+                            <p t-if="!state.payload.categories.length" class="text-muted mb-0" t-esc="labels.noCategories"/>
+                            <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.category"/><th scope="col" class="text-end" t-esc="labels.netAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
+                                <tr t-foreach="state.payload.categories" t-as="category" t-key="category.id || category.name"><th scope="row" t-esc="category.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.sales_ratio.display"/><span t-if="category.sales_ratio.available">%</span></td></tr>
+                            </tbody></table></div>
+                        </section>
+                    </div>
                 </t>
             </div>
         </section>

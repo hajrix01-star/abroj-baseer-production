@@ -90,7 +90,7 @@ export class BaseerPurchaseExpenseDashboard extends Component {
         this.destroyChart();
         const ChartConstructor = globalThis.Chart;
         const rows = this.state.payload?.timeline || [];
-        if (!ChartConstructor || !this.movementRef.el || !this.hasData || !rows.length || this.disposed) { return; }
+        if (!ChartConstructor || !this.movementRef.el || !rows.length || this.disposed) { return; }
         const rtl = localization.direction === "rtl";
         const font = getComputedStyle(this.rootRef.el).fontFamily;
         const currency = this.state.payload.company.currency;

@@ -6,9 +6,7 @@
             <header class="o_baseer_sales_header">
                 <div class="o_baseer_sales_heading">
                     <h1 t-esc="title"/>
-                    <p class="text-muted mb-0" t-esc="labels.subtitle"/>
                     <div t-if="state.payload" class="o_baseer_sales_scope">
-                        <span class="o_baseer_sales_company" t-esc="state.payload.company.name"/>
                         <span class="o_baseer_sales_numeric text-muted" t-esc="periodLabel"/>
                     </div>
                 </div>

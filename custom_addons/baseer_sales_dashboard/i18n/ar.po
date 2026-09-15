@@ -13,6 +13,48 @@ msgid "Applications share of total sales (%)"
 msgstr "نسبة التطبيقات من إجمالي المبيعات (%)"
 
 #. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Sales distribution by category"
+msgstr "توزيع المبيعات حسب الفئات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Highest category"
+msgstr "الفئة الأعلى"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Lowest category"
+msgstr "الفئة الأقل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Share (%)"
+msgstr "النسبة (%)"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Category amounts"
+msgstr "مبالغ الفئات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Category percentages and rankings are unavailable until all payment allocations are complete."
+msgstr "نسب الفئات وترتيبها غير متاحين حتى تكتمل جميع توزيعات الدفع."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/dashboard.py:0
+msgid "Other"
+msgstr "أخرى"
+
+#. module: baseer_sales_dashboard
 #. odoo-python
 #: code:addons/baseer_sales_dashboard/models/dashboard.py:0
 msgid "Approved payment allocations"

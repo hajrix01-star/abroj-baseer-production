@@ -3,6 +3,10 @@ import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
 import { localization } from "@web/core/l10n/localization";
 
+// Odoo-inspired data palette. It is visual only: the server owns all numbers,
+// ordering, ratios, and the optional Other bucket.
+const CATEGORY_COLORS = ["#714B67", "#017E84", "#F06050", "#F4A460", "#6CC1ED", "#814968", "#21B799", "#D6145F", "#9E7A5F", "#875A7B", "#4C4C4C", "#6A9C89"];
+
 // Business values, periods, coverage and comparisons are all server-owned.
 // Number conversion below is exclusively the canvas coordinate adapter.
 export function chartCoordinate(value) {
@@ -23,6 +27,7 @@ export class BaseerSalesDashboard extends Component {
         this.salesRef = useRef("salesChart");
         this.shiftRef = useRef("shiftChart");
         this.paymentRef = useRef("paymentChart");
+        this.categoryRef = useRef("categoryChart");
         this.rootRef = useRef("dashboard");
         this.requestGeneration = 0;
         this.charts = [];
@@ -98,6 +103,10 @@ export class BaseerSalesDashboard extends Component {
             payments: _t("Sales by payment method"), paymentMethod: _t("Payment method"),
             paymentShare: _t("Share of total sales (%)"),
             categorySales: _t("Sales by category"),
+            categoryDistribution: _t("Sales distribution by category"),
+            highestCategory: _t("Highest category"), lowestCategory: _t("Lowest category"),
+            categoryShare: _t("Share (%)"), categoryAmounts: _t("Category amounts"),
+            categoryUnavailable: _t("Category percentages and rankings are unavailable until all payment allocations are complete."),
             paymentEmpty: _t("No payment allocations recorded in this period"),
             paymentIncomplete: _t("Some approved summaries have missing or inconsistent payment allocations. The breakdown is partial and percentages are unavailable."),
             applicationShare: _t("Applications share of total sales (%)"),
@@ -182,6 +191,9 @@ export class BaseerSalesDashboard extends Component {
     get paymentCoverage() { return this.state.payload?.payment_performance?.coverage; }
     get applicationShare() { return this.state.payload?.payment_performance?.application_share; }
     get categoryRows() { return this.state.payload?.payment_performance?.categories || []; }
+    get categoryChartRows() { return this.state.payload?.payment_performance?.chart_categories || []; }
+    get categoryPerformance() { return this.state.payload?.payment_performance?.category_performance || { available: false }; }
+    categoryColor(index) { return CATEGORY_COLORS[index % CATEGORY_COLORS.length]; }
 
     get tabs() { return [{ key: "chart", label: _t("Chart view") }, { key: "details", label: _t("Details") }]; }
     tabId(section, tab) { return `baseer_sales_${this.props.dashboardId}_${section}_${tab}`; }
@@ -295,6 +307,7 @@ export class BaseerSalesDashboard extends Component {
             this.charts.push(chart);
         this.drawShiftChart(font, rtl);
         this.drawPaymentChart(font, rtl);
+        this.drawCategoryChart(font, rtl);
     }
 
     drawShiftChart(font, rtl) {
@@ -368,6 +381,40 @@ export class BaseerSalesDashboard extends Component {
                         ticks: { callback: (value) => String(value), font: { family: font, size: 11 } },
                     },
                     y: { grid: { display: false }, ticks: { font: { family: font, size: 11 } } },
+                },
+            },
+        }));
+    }
+
+    drawCategoryChart(font, rtl) {
+        const rows = this.categoryChartRows;
+        if (!this.categoryPerformance.available || !this.categoryRef.el || !rows.length) { return; }
+        this.charts.push(new Chart(this.categoryRef.el, {
+            type: "doughnut",
+            data: {
+                labels: rows.map((row) => row.name),
+                datasets: [{
+                    label: this.labels.categoryShare,
+                    data: rows.map((row) => chartCoordinate(row.share.value)),
+                    backgroundColor: rows.map((_row, index) => this.categoryColor(index)),
+                    borderColor: "#fff", borderWidth: 2, hoverOffset: 4,
+                }],
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                font: { family: font },
+                plugins: {
+                    legend: {
+                        position: "bottom", rtl, textDirection: rtl ? "rtl" : "ltr",
+                        labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { family: font, size: 11 } },
+                    },
+                    tooltip: {
+                        rtl, textDirection: rtl ? "rtl" : "ltr",
+                        titleFont: { family: font }, bodyFont: { family: font },
+                        callbacks: {
+                            label: (context) => `${rows[context.dataIndex].share.display}% — ${rows[context.dataIndex].sales.display} ${this.state.payload.company.currency}`,
+                        },
+                    },
                 },
             },
         }));

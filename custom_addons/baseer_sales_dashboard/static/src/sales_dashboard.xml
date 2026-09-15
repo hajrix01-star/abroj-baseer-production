@@ -221,6 +221,45 @@
                     </article>
                 </div>
 
+                <section t-if="categoryRows.length" class="o_baseer_sales_categories" t-att-aria-label="labels.categoryDistribution">
+                    <header>
+                        <div>
+                            <h2 t-esc="labels.categoryDistribution"/>
+                            <p class="text-muted mb-0" t-esc="labels.categorySales"/>
+                        </div>
+                    </header>
+                    <t t-if="categoryPerformance.available">
+                        <div class="o_baseer_sales_category_highlights">
+                            <article class="o_baseer_sales_category_highlight o_baseer_sales_category_highlight_high">
+                                <span t-esc="labels.highestCategory"/>
+                                <strong t-esc="categoryPerformance.highest.name"/>
+                                <div><span class="o_baseer_sales_numeric" t-esc="categoryPerformance.highest.sales.display"/> <span t-esc="state.payload.company.currency"/></div>
+                                <small><span class="o_baseer_sales_numeric" t-esc="categoryPerformance.highest.share.display"/>%</small>
+                            </article>
+                            <article class="o_baseer_sales_category_highlight o_baseer_sales_category_highlight_low">
+                                <span t-esc="labels.lowestCategory"/>
+                                <strong t-esc="categoryPerformance.lowest.name"/>
+                                <div><span class="o_baseer_sales_numeric" t-esc="categoryPerformance.lowest.sales.display"/> <span t-esc="state.payload.company.currency"/></div>
+                                <small><span class="o_baseer_sales_numeric" t-esc="categoryPerformance.lowest.share.display"/>%</small>
+                            </article>
+                        </div>
+                        <div class="o_baseer_sales_category_canvas">
+                            <canvas t-ref="categoryChart" role="img" t-att-aria-label="labels.categoryDistribution"/>
+                        </div>
+                    </t>
+                    <div t-else="" class="alert alert-warning o_baseer_sales_notice mb-3" role="status" t-esc="labels.categoryUnavailable"/>
+                    <div class="o_baseer_sales_category_list" t-att-aria-label="labels.categoryAmounts">
+                        <div t-foreach="categoryRows" t-as="category" t-key="category.category_id" class="o_baseer_sales_category_row">
+                            <span class="o_baseer_sales_category_swatch" t-att-style="'--baseer-category-color: ' + categoryColor(category_index)" aria-hidden="true"/>
+                            <strong t-esc="category.name"/>
+                            <span class="o_baseer_sales_numeric" t-esc="category.sales.display"/>
+                            <span t-esc="state.payload.company.currency"/>
+                            <span t-if="category.share.available" class="o_baseer_sales_numeric o_baseer_sales_category_share"><t t-esc="category.share.display"/>%</span>
+                            <span t-else="" class="text-muted">—</span>
+                        </div>
+                    </div>
+                </section>
+
                 <details class="o_baseer_sales_details">
                     <summary><span t-esc="labels.details"/><span class="text-muted" t-esc="granularityLabel"/></summary>
                     <div class="o_baseer_sales_detail_header text-muted" aria-hidden="true">
@@ -235,15 +274,6 @@
                         </li>
                     </ul>
                 </details>
-                <footer t-if="categoryRows.length" class="o_baseer_sales_category_footer" t-att-aria-label="labels.categorySales">
-                    <strong t-esc="labels.categorySales"/>
-                    <dl class="mb-0">
-                        <div t-foreach="categoryRows" t-as="category" t-key="category.category_id">
-                            <dt t-esc="category.name"/>
-                            <dd class="mb-0"><span class="o_baseer_sales_numeric" t-esc="category.sales.display"/> <span t-esc="state.payload.company.currency"/></dd>
-                        </div>
-                    </dl>
-                </footer>
             </t>
             </div>
         </section>

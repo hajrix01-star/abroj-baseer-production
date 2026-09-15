@@ -14,6 +14,8 @@ from odoo.addons.baseer_pos_summary.models.operations import checked_range
 MAX_REPORT_YEARS = 100
 MAX_MONTH_POINTS = 1201
 MAX_SOURCE_ROWS = 100000
+MAX_CATEGORY_CHART_ROWS = 12
+HUNDRED = Decimal('100')
 
 
 def _display(value, integer=False):
@@ -36,6 +38,11 @@ def _card(value, available=True, integer=False):
     available = bool(available and value is not None)
     return {'value': (int(value) if integer else str(money(value))) if available else None,
             'display': _display(value, integer) if available else '—', 'available': available}
+
+
+def _category_name_key(value):
+    """Stable, locale-neutral tie-breaker for server-owned category rankings."""
+    return (value or '').casefold()
 
 
 class SalesDashboard(models.Model):
@@ -349,18 +356,62 @@ class SalesDashboard(models.Model):
                          'sales': _card(bucket['sales']),
                          'share': _card(bucket['sales'] * Decimal(100) / recorded_sales if recorded_sales > ZERO else None, complete),
                          'source_action': action})
-        categories = [{'category_id': category_id, 'name': bucket['name'], 'kind': bucket['kind'],
-                       'sales': _card(bucket['sales'])}
-                      for category_id, bucket in sorted(by_category.items())]
+        categories = self._baseer_category_performance(by_category, recorded_sales, complete)
         application_sales = sum((bucket['sales'] for bucket in by_category.values()
                                  if bucket['kind'] == 'platform'), ZERO)
         application_share = _card(application_sales * Decimal(100) / recorded_sales
                                   if recorded_sales > ZERO else None, complete)
-        return {'rows': rows, 'categories': categories, 'application_share': application_share,
+        return {'rows': rows, 'categories': categories['rows'], 'chart_categories': categories['chart_rows'],
+                'category_performance': categories['performance'], 'application_share': application_share,
                 'coverage': {'complete': complete, 'summary_count': len(records),
                 'covered_summary_count': covered_count, 'missing_summary_count': missing,
                 'mismatched_summary_count': mismatched, 'covered_sales': _card(covered_sales),
                 'uncovered_sales': _card(recorded_sales - covered_sales)}}
+
+    def _baseer_category_performance(self, by_category, recorded_sales, complete):
+        """Build the category report without letting the browser derive business values."""
+        rows = [
+            {'category_id': category_id, 'name': bucket['name'], 'kind': bucket['kind'], 'amount': money(bucket['sales'])}
+            for category_id, bucket in by_category.items()
+        ]
+        highest_order = lambda row: (-row['amount'], _category_name_key(row['name']), row['category_id'])
+        lowest_order = lambda row: (row['amount'], _category_name_key(row['name']), row['category_id'])
+        rows.sort(key=highest_order)
+        available = bool(complete and recorded_sales > ZERO)
+        if available:
+            shares = {row['category_id']: money(row['amount'] * HUNDRED / recorded_sales) for row in rows}
+            # Preserve a truthful 100.00 total despite decimal display rounding.
+            remainder = money(HUNDRED - sum(shares.values(), ZERO))
+            if remainder:
+                shares[rows[0]['category_id']] = money(shares[rows[0]['category_id']] + remainder)
+        else:
+            shares = {}
+        result_rows = [
+            {'category_id': row['category_id'], 'name': row['name'], 'kind': row['kind'],
+             'sales': _card(row['amount']), 'share': _card(shares.get(row['category_id']), available)}
+            for row in rows
+        ]
+        if len(result_rows) <= MAX_CATEGORY_CHART_ROWS:
+            chart_rows = list(result_rows)
+        else:
+            visible = result_rows[:MAX_CATEGORY_CHART_ROWS - 1]
+            hidden = result_rows[MAX_CATEGORY_CHART_ROWS - 1:]
+            other_amount = sum((Decimal(row['sales']['value']) for row in hidden), ZERO)
+            other_share = sum((Decimal(row['share']['value']) for row in hidden), ZERO) if available else None
+            chart_rows = visible + [{
+                'category_id': 'other', 'name': _('Other'), 'kind': 'other',
+                'sales': _card(other_amount), 'share': _card(other_share, available), 'is_other': True,
+            }]
+        def serialize(row):
+            return {'category_id': row['category_id'], 'name': row['name'], 'kind': row['kind'],
+                    'sales': row['sales'], 'share': row['share']}
+        performance = {'available': available, 'highest': None, 'lowest': None}
+        if available and result_rows:
+            performance['highest'] = serialize(result_rows[0])
+            performance['lowest'] = serialize(min(result_rows, key=lambda row: lowest_order({
+                'amount': Decimal(row['sales']['value']), 'name': row['name'], 'category_id': row['category_id'],
+            })))
+        return {'rows': result_rows, 'chart_rows': chart_rows, 'performance': performance}
 
     def _baseer_comparison(self, current, previous, has_sample):
         result = {'direction': 'none', 'display': _('Not available'), 'available': False,

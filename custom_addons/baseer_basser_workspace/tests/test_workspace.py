@@ -144,6 +144,16 @@ class BasserWorkspaceCase(TransactionCase):
                 self.env.ref('baseer_basser_workspace.workspace_item_accountant_purchase_batches').id,
             )
 
+    def test_basser_t03a_system_administrator_can_open_and_manage_workspace(self):
+        administrator = self.env.ref('base.user_admin')
+        self.assertTrue(administrator.has_group('base.group_system'))
+        self.assertFalse(administrator.baseer_access_role)
+
+        workspace = self.env['baseer.basser.workspace.section'].with_user(administrator).get_workspace()
+        self.assertEqual(workspace['role'], 'owner')
+        self.assertTrue(workspace['can_manage'])
+        self.env['baseer.basser.workspace.section'].with_user(administrator).check_access('write')
+
     def test_basser_t04_company_scope_uses_server_active_company_only(self):
         company_a = self.env.company
         company_b = self.env['res.company'].create({

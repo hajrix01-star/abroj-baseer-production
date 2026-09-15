@@ -102,6 +102,13 @@ class BasserWorkspaceSection(models.Model):
     @api.model
     def _current_workspace_role(self):
         user = self.env.user
+        # A technical Odoo administrator is the system owner of the workspace
+        # even when no Baseer preset was assigned to that user.  Otherwise the
+        # BASSER root menu can be visible only to an administrator who was also
+        # manually given the Owner preset, which is needlessly confusing and
+        # prevents safe workspace administration.
+        if self.env.su or user.has_group('base.group_system'):
+            return 'owner'
         if user.has_group('baseer_access_roles.group_owner'):
             return 'owner'
         if user.has_group('baseer_access_roles.group_cashier'):

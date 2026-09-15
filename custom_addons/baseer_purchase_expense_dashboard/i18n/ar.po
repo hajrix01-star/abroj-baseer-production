@@ -119,14 +119,26 @@ msgstr "اختر مرشحات صالحة للوحة البيانات."
 #. module: baseer_purchase_expense_dashboard
 #. odoo-javascript
 #: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
-msgid "Total purchases and expenses (tax included)"
-msgstr "إجمالي المشتريات والمصروفات (شامل الضريبة)"
+msgid "Total purchases and expenses"
+msgstr "إجمالي المشتريات والمصروفات"
 
 #. module: baseer_purchase_expense_dashboard
 #. odoo-javascript
 #: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
-msgid "Tax-included posted purchase totals and paid amounts"
-msgstr "إجمالي المشتريات المرحلة والمدفوعات شاملة الضريبة"
+msgid "All amounts include tax"
+msgstr "جميع الأرقام شاملة الضريبة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Posted purchase totals and paid amounts"
+msgstr "إجمالي المشتريات المرحلة والمدفوعات"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Monthly purchases and paid amounts"
+msgstr "المشتريات والمدفوعات الشهرية"
 
 #. module: baseer_purchase_expense_dashboard
 #. odoo-javascript

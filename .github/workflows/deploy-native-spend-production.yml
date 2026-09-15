@@ -1,0 +1,106 @@
+name: Deploy approved native-spend bridge to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DEPLOY to publish the independently reviewed bridge
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baseer-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # The workflow is deliberately not a general-purpose deployer.  Expansion
+    # beyond this reviewed SHA/module pair needs a fresh release review.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirmation == 'DEPLOY'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: production
+    env:
+      APPROVED_COMMIT: 5e73e6bb8b293b5d4adc0e39092777eaf2b3723f
+      PRODUCTION_HOST: 77.37.51.67
+      PRODUCTION_USER: baseer_deploy
+      PRODUCTION_KNOWN_HOST: >-
+        77.37.51.67 ssh-ed25519
+        AAAAC3NzaC1lZDI1NTE5AAAAILVPUAdMD2GfvCIP4FKhR56bANBLqdct93RllVDUdy4x
+
+    steps:
+      - name: Check out deployment workflow source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Verify the reviewed source remains on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$APPROVED_COMMIT" origin/main
+          git checkout --detach "$APPROVED_COMMIT"
+          test "$(git rev-parse HEAD)" = "$APPROVED_COMMIT"
+          test -f custom_addons/baseer_native_spend/__manifest__.py
+
+      - name: Build immutable source archive
+        id: package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          package_dir="$(mktemp -d)"
+          trap 'rm -rf -- "$package_dir"' EXIT
+          mkdir -p "$package_dir/source"
+          git archive --format=tar "$APPROVED_COMMIT" | tar -x -C "$package_dir/source"
+          test ! -e "$package_dir/source/.env"
+          test -f "$package_dir/source/compose.production.yaml"
+          test -f "$package_dir/source/custom_addons/baseer_native_spend/__manifest__.py"
+          archive="baseer-${APPROVED_COMMIT}.tar.gz"
+          tar --sort=name --mtime='UTC 2026-09-16' --owner=0 --group=0 --numeric-owner \
+            -C "$package_dir" -czf "$archive" source
+          archive_sha="$(sha256sum "$archive" | awk '{print $1}')"
+          printf 'archive=%s\narchive_sha=%s\n' "$archive" "$archive_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Configure restricted SSH identity
+        shell: bash
+        env:
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$PRODUCTION_SSH_KEY"
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$PRODUCTION_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 0600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$PRODUCTION_KNOWN_HOST" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+
+      - name: Upload reviewed archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          remote_archive="/srv/abroj-baseer-production/deploy-inbox/${{ steps.package.outputs.archive }}"
+          scp -q \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "${{ steps.package.outputs.archive }}" \
+            "$PRODUCTION_USER@$PRODUCTION_HOST:$remote_archive"
+
+      - name: Run the constrained production wrapper
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          remote_archive="/srv/abroj-baseer-production/deploy-inbox/${{ steps.package.outputs.archive }}"
+          ssh \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$PRODUCTION_USER@$PRODUCTION_HOST" \
+            "sudo -n /usr/local/sbin/baseer-production-deploy '$remote_archive' '$APPROVED_COMMIT' '$GITHUB_RUN_ID' '${{ steps.package.outputs.archive_sha }}'"

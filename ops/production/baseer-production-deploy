@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+# Root-owned production deploy wrapper.  Its contract is intentionally narrow:
+# it accepts only the independently reviewed native-spend bridge release.
+set -Eeuo pipefail
+umask 027
+
+readonly BASE=/srv/abroj-baseer-production
+readonly RELEASES="$BASE/releases"
+readonly BACKUPS="$BASE/backups"
+readonly INBOX="$BASE/deploy-inbox"
+readonly DB_CONTAINER=baseer-odoo-prod-db-1
+readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
+readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
+readonly APPROVED_COMMIT=5e73e6bb8b293b5d4adc0e39092777eaf2b3723f
+readonly APPROVED_MODULE=baseer_native_spend
+
+die() {
+    printf 'DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
+    exit 1
+}
+
+require_root() {
+    [ "$(id -u)" -eq 0 ] || die 'root is required'
+}
+
+validate_arguments() {
+    [ "$#" -eq 4 ] || die 'expected: archive commit run_id archive_sha256'
+    archive=$1
+    commit=$2
+    run_id=$3
+    archive_sha=$4
+
+    [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'invalid commit'
+    [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid run id'
+    [[ "$archive_sha" =~ ^[a-f0-9]{64}$ ]] || die 'invalid archive SHA-256'
+    [ "$commit" = "$APPROVED_COMMIT" ] || die 'commit is not approved for this deploy bridge'
+    [ "$archive" = "$INBOX/baseer-$commit.tar.gz" ] || die 'archive path violates deploy contract'
+    [ -f "$archive" ] || die 'archive is missing'
+    [ "$(sha256sum "$archive" | awk '{print $1}')" = "$archive_sha" ] || die 'archive SHA-256 mismatch'
+}
+
+validate_archive() {
+    local entry type
+    while IFS= read -r entry; do
+        case "$entry" in
+            source/|source/*) ;;
+            *) die 'archive contains a path outside source/' ;;
+        esac
+        case "$entry" in
+            *//*|*/../*|../*|*/..|/*) die 'archive path is unsafe' ;;
+        esac
+    done < <(tar -tzf "$archive")
+
+    # Git source must not contain links in this deployment channel.  Links make
+    # archive extraction and the source/secret boundary needlessly ambiguous.
+    while IFS= read -r type; do
+        case "$type" in
+            l*|h*) die 'archive links are not accepted' ;;
+        esac
+    done < <(tar -tvzf "$archive" | awk '{print substr($0, 1, 1)}')
+}
+
+snapshot_sql=$(cat <<'SQL'
+SELECT jsonb_build_object(
+  'account.move', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_move),
+  'account.move.line', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_move_line),
+  'account.payment', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_payment),
+  'purchase.order', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM purchase_order),
+  'purchase.order.line', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM purchase_order_line),
+  'sale.order', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM sale_order),
+  'sale.order.line', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM sale_order_line),
+  'stock.picking', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM stock_picking),
+  'stock.move', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM stock_move),
+  'hr.employee', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM hr_employee),
+  'hr.payslip', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM hr_payslip),
+  'res.partner.non_user', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(p.id), 0), 'w', coalesce(max(p.write_date)::text, '')) FROM res_partner p WHERE NOT EXISTS (SELECT 1 FROM res_users u WHERE u.partner_id = p.id)),
+  'baseer.pos.summary', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_pos_summary),
+  'baseer.pos.summary.allocation', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_pos_summary_allocation),
+  'baseer.heat.target', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_heat_calendar_target),
+  'baseer.occasion', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_official_occasion)
+);
+SQL
+)
+
+snapshot() {
+    printf '%s\n' "$snapshot_sql" | docker exec -i "$DB_CONTAINER" sh -lc 'psql -U "$POSTGRES_USER" -d baseer_prod -Atq'
+}
+
+wait_for_login() {
+    local attempt
+    for attempt in $(seq 1 90); do
+        curl -fsS --max-time 10 http://127.0.0.1:18069/web/login >/dev/null && return 0
+        sleep 1
+    done
+    return 1
+}
+
+wait_for_data_init() {
+    local attempt status exit_code
+    for attempt in $(seq 1 30); do
+        status="$("${compose[@]}" ps -a --format json odoo_data_init 2>/dev/null | jq -r '.State // empty' || true)"
+        [ "$status" = exited ] && break
+        sleep 1
+    done
+    exit_code="$("${compose[@]}" ps -a --format json odoo_data_init | jq -r '.ExitCode // empty')"
+    [ "$exit_code" = 0 ]
+}
+
+restore_pair() {
+    sha256sum -c "$backup/recovery.sha256"
+    docker exec "$DB_CONTAINER" sh -lc 'dropdb -U "$POSTGRES_USER" --if-exists baseer_prod'
+    docker exec "$DB_CONTAINER" sh -lc 'createdb -U "$POSTGRES_USER" baseer_prod'
+    docker exec -i "$DB_CONTAINER" sh -lc 'pg_restore -U "$POSTGRES_USER" --no-owner --no-privileges -d baseer_prod' < "$backup/baseer_prod.dump"
+    docker run --rm --network none -v "$ODOO_VOLUME":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
+        set -eu
+        rm -rf -- /target/filestore/baseer_prod
+        mkdir -p /target/filestore
+        tar -xf /backup/filestore-baseer_prod.tar -C /target
+        test -d /target/filestore/baseer_prod
+    '
+}
+
+rollback() {
+    local status=$?
+    trap - ERR
+    set +e
+
+    if [ -n "${backup:-}" ] && [ -d "$backup" ]; then
+        printf 'LIVE=ROLLING_BACK\n' > "$backup/result.env"
+    fi
+
+    if [ "${release_switched:-0}" -eq 1 ]; then
+        "${compose[@]}" stop odoo >/dev/null 2>&1 || true
+        if [ "${database_mutated:-0}" -eq 1 ]; then
+            restore_pair >/dev/null 2>&1 || true
+        fi
+        ln -sfn "$old_release" "$BASE/current"
+        "${compose_old[@]}" up -d odoo_data_init >/dev/null 2>&1 || true
+        "${compose_old[@]}" up -d odoo >/dev/null 2>&1 || true
+        wait_for_login >/dev/null 2>&1 || true
+    fi
+
+    if [ -n "${backup:-}" ] && [ -d "$backup" ]; then
+        printf 'LIVE=ROLLED_BACK\nPREVIOUS_RELEASE=%s\n' "$old_release" >> "$backup/result.env"
+    fi
+    exit "$status"
+}
+
+require_root
+validate_arguments "$@"
+exec 9>"$LOCK_FILE"
+flock -n 9 || die 'another production deployment is already running'
+
+old_release="$(readlink -f "$BASE/current")"
+[ -d "$old_release" ] || die 'current release cannot be resolved'
+[ -f "$old_release/.env" ] || die 'current .env is missing'
+[ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
+compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
+
+archive_kb="$(du -sk "$archive" | awk '{print $1}')"
+db_bytes="$(docker exec "$DB_CONTAINER" sh -lc 'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT pg_database_size(current_database())"')"
+db_kb=$(( (db_bytes + 1023) / 1024 ))
+filestore_kb="$(docker run --rm --network none -v "$ODOO_VOLUME":/source:ro alpine:3.20 sh -lc 'du -sk /source/filestore/baseer_prod | awk "{print \$1}"')"
+available_kb="$(df --output=avail -k "$BASE" | tail -n 1 | tr -d ' ')"
+required_kb=$(( 2 * (archive_kb + db_kb + filestore_kb) + 1024 * 1024 ))
+[ "$available_kb" -gt "$required_kb" ] || die 'insufficient disk space for a recoverable deployment'
+
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+backup="$BACKUPS/pre-${commit:0:12}-${run_id}-$stamp"
+release="$RELEASES/${commit:0:12}-run-${run_id}-$stamp"
+stage="$RELEASES/.stage-${commit:0:12}-${run_id}-$stamp"
+release_switched=0
+database_mutated=0
+compose=()
+trap rollback ERR
+
+mkdir -p "$BACKUPS" "$RELEASES" "$backup" "$stage"
+validate_archive
+tar -xzf "$archive" -C "$stage" --no-same-owner --no-same-permissions
+source_dir="$stage/source"
+[ -d "$source_dir" ] || die 'archive does not have source/'
+[ ! -e "$source_dir/.env" ] || die 'archive must not contain .env'
+[ -f "$source_dir/compose.production.yaml" ] || die 'release compose file is missing'
+[ -f "$source_dir/custom_addons/$APPROVED_MODULE/__manifest__.py" ] || die 'approved module is missing from release'
+mv "$source_dir" "$release"
+rmdir "$stage"
+install -D -m 0600 "$old_release/.env" "$release/.env"
+install -D -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
+docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release" config --quiet
+
+# Capture a recovery pair while the current application still serves users.
+docker exec "$DB_CONTAINER" sh -lc 'pg_dump -Fc -U "$POSTGRES_USER" -d baseer_prod' > "$backup/baseer_prod.dump"
+docker run --rm --network none -v "$ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore-baseer_prod.tar filestore/baseer_prod'
+sha256sum "$backup/baseer_prod.dump" "$backup/filestore-baseer_prod.tar" > "$backup/recovery.sha256"
+snapshot > "$backup/protected-before.json"
+
+"${compose_old[@]}" stop odoo
+ln -sfn "$release" "$BASE/current"
+release_switched=1
+compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release")
+
+module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$APPROVED_MODULE'\"")"
+case "$module_state" in
+    installed) module_action=u ;;
+    ''|uninstalled) module_action=i ;;
+    *) die "module is in an unsafe state: $module_state" ;;
+esac
+odoo_command='odoo --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19 -d baseer_prod'
+odoo_command+=" -${module_action} ${APPROVED_MODULE} --stop-after-init --workers=0 --max-cron-threads=0"
+database_mutated=1
+"${compose[@]}" run --rm --no-deps --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-${module_action}.log" 2>&1
+
+snapshot > "$backup/protected-after.json"
+cmp "$backup/protected-before.json" "$backup/protected-after.json"
+wait_for_data_init
+"${compose[@]}" up -d odoo
+wait_for_login
+
+module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$APPROVED_MODULE'\"")"
+[ "$module_state" = installed ] || die 'approved module is not installed after deployment'
+"${compose[@]}" logs --no-color --tail=300 odoo > "$backup/odoo-smoke.log"
+! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
+
+printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULE=%s\n' "$release" "$backup" "$commit" "$APPROVED_MODULE" > "$backup/result.env"
+printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

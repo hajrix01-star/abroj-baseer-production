@@ -4,12 +4,12 @@
         <field name="name">baseer.basser.workspace.section.list</field>
         <field name="model">baseer.basser.workspace.section</field>
         <field name="arch" type="xml">
-            <list string="BASSER workspace" editable="bottom">
+            <list string="BASSER operations" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="role"/>
                 <field name="company_id" groups="base.group_multi_company"/>
-                <field name="active"/>
+                <field name="active" string="Visible in BASSER" widget="boolean_toggle"/>
             </list>
         </field>
     </record>
@@ -17,7 +17,7 @@
         <field name="name">baseer.basser.workspace.section.form</field>
         <field name="model">baseer.basser.workspace.section</field>
         <field name="arch" type="xml">
-            <form string="BASSER workspace section">
+            <form string="BASSER operations section">
                 <sheet>
                     <div class="oe_title"><h1><field name="name" placeholder="Section name"/></h1></div>
                     <group>
@@ -27,19 +27,19 @@
                         </group>
                         <group>
                             <field name="sequence"/>
-                            <field name="active"/>
+                            <field name="active" string="Visible in BASSER" widget="boolean_toggle"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Items">
-                            <field name="item_ids">
+                        <page string="Operations">
+                            <field name="item_ids" context="{'active_test': False}">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
                                     <field name="description" optional="hide"/>
                                     <field name="allowed_menu_ids" column_invisible="True"/>
                                     <field name="menu_id" domain="[('id', 'in', allowed_menu_ids)]" options="{'no_create': True}"/>
-                                    <field name="active"/>
+                                    <field name="active" string="Visible in BASSER" widget="boolean_toggle"/>
                                 </list>
                                 <form string="BASSER workspace item">
                                     <group>
@@ -48,7 +48,7 @@
                                         <field name="allowed_menu_ids" invisible="True"/>
                                         <field name="menu_id" domain="[('id', 'in', allowed_menu_ids)]" options="{'no_create': True}"/>
                                         <field name="sequence"/>
-                                        <field name="active"/>
+                                        <field name="active" string="Visible in BASSER" widget="boolean_toggle"/>
                                     </group>
                                 </form>
                             </field>
@@ -59,9 +59,10 @@
         </field>
     </record>
     <record id="action_workspace_section" model="ir.actions.act_window">
-        <field name="name">BASSER workspace</field>
+        <field name="name">BASSER operations</field>
         <field name="res_model">baseer.basser.workspace.section</field>
         <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
     </record>
     <record id="action_basser_workspace" model="ir.actions.client">
         <field name="name">BASSER</field>

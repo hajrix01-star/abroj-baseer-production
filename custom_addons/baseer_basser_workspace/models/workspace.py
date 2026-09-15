@@ -2,7 +2,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
 
-MAX_ACTIVE_CONFIGURATION_RECORDS = 100
+MAX_CONFIGURATION_RECORDS = 100
 MAX_WORKSPACE_ITEMS = 40
 
 
@@ -85,7 +85,7 @@ class BasserWorkspaceSection(models.Model):
     role = fields.Selection(ROLE_SELECTION, required=True, default='cashier', index=True)
     company_id = fields.Many2one('res.company', index=True, ondelete='cascade')
     sequence = fields.Integer(default=10, index=True)
-    active = fields.Boolean(default=True, index=True)
+    active = fields.Boolean(string='Visible in BASSER', default=True, index=True)
     item_ids = fields.One2many('baseer.basser.workspace.item', 'section_id', string='Items')
 
     @api.model
@@ -117,16 +117,25 @@ class BasserWorkspaceSection(models.Model):
         self._check_company_scope()
         self._enforce_configuration_limits()
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._enforce_configuration_limits(enforce_total=True)
+        return records
+
     @api.model
-    def _enforce_configuration_limits(self):
+    def _enforce_configuration_limits(self, enforce_total=False):
         section_model = self.sudo()
         item_model = self.env['baseer.basser.workspace.item'].sudo()
-        active_total = section_model.search_count([('active', '=', True)])
-        active_total += item_model.search_count([('active', '=', True)])
-        if active_total > MAX_ACTIVE_CONFIGURATION_RECORDS:
+        if enforce_total:
+            total = section_model.with_context(active_test=False).search_count([])
+            total += item_model.with_context(active_test=False).search_count([])
+        else:
+            total = 0
+        if total > MAX_CONFIGURATION_RECORDS:
             raise ValidationError(_(
-                'BASSER allows at most %(limit)s active configuration records.',
-                limit=MAX_ACTIVE_CONFIGURATION_RECORDS,
+                'BASSER allows at most %(limit)s configuration records.',
+                limit=MAX_CONFIGURATION_RECORDS,
             ))
 
         companies = self.env['res.company'].sudo().search([])
@@ -315,7 +324,13 @@ class BasserWorkspaceItem(models.Model):
     menu_id = fields.Many2one('ir.ui.menu', required=True, ondelete='restrict')
     allowed_menu_ids = fields.Many2many('ir.ui.menu', compute='_compute_allowed_menu_ids')
     sequence = fields.Integer(default=10, index=True)
-    active = fields.Boolean(default=True, index=True)
+    active = fields.Boolean(string='Visible in BASSER', default=True, index=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.section_id._enforce_configuration_limits(enforce_total=True)
+        return records
 
     @api.depends('section_id.role')
     def _compute_allowed_menu_ids(self):

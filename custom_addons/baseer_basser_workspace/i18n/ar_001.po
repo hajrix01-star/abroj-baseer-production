@@ -175,3 +175,19 @@ msgstr "السياسات التشغيلية"
 #: model:ir.ui.menu,name:baseer_basser_workspace.menu_basser_cashier_batch_approval_audit
 msgid "Cashier batch approval audit"
 msgstr "سجل اعتماد دفعات الكاشير"
+
+#. module: baseer_basser_workspace
+#: model:ir.actions.act_window,name:baseer_basser_workspace.action_workspace_section
+msgid "BASSER operations"
+msgstr "عمليات BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_item__active
+#: model:ir.model.fields,field_description:baseer_basser_workspace.field_baseer_basser_workspace_section__active
+msgid "Visible in BASSER"
+msgstr "ظاهر في BASSER"
+
+#. module: baseer_basser_workspace
+#: model:ir.ui.view,arch_db:baseer_basser_workspace.view_workspace_section_form
+msgid "Operations"
+msgstr "العمليات"

@@ -225,22 +225,22 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
         self.assertTrue(sar, 'Cashier batch approval tests require SAR.')
         if not sar.active:
             sar.active = True
-        purchase_company_ids = self.env['account.journal'].search([
-            ('type', '=', 'purchase'),
-        ]).mapped('company_id').ids
-        self.company_a = self.env['res.company'].search([
-            ('currency_id', '=', sar.id), ('id', 'in', purchase_company_ids),
-        ], limit=1)
-        self.assertTrue(
-            self.company_a,
-            'Cashier batch approval tests require one SAR company with a purchase journal.',
-        )
+        self.company_a = self.env['res.company'].create({
+            'name': 'Cashier batch approval A',
+            'currency_id': sar.id,
+        })
         self.env.user.company_ids |= self.company_a
         self.env = self.env(context={
             **self.env.context,
             'allowed_company_ids': [self.company_a.id],
         })
         self.env.user.group_ids |= self.env.ref('account.group_account_invoice')
+        self.purchase_journal = self.env['account.journal'].create({
+            'name': 'Cashier batch purchases %s' % uuid4().hex,
+            'code': 'CBP%s' % uuid4().hex[:7].upper(),
+            'type': 'purchase',
+            'company_id': self.company_a.id,
+        })
         self.owner = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Cashier batch owner',
             'login': 'cashier-batch-owner-%s' % uuid4().hex,
@@ -252,6 +252,12 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
             'name': 'Cashier batch expense',
             'code': 'CBA%s' % uuid4().hex[:7].upper(),
             'account_type': 'expense',
+            'company_ids': [Command.set(self.company_a.ids)],
+        })
+        self.payable_account = self.env['account.account'].create({
+            'name': 'Cashier batch payable',
+            'code': 'CBL%s' % uuid4().hex[:7].upper(),
+            'account_type': 'liability_payable',
             'company_ids': [Command.set(self.company_a.ids)],
         })
         self.category = self.env['product.category'].create({
@@ -271,6 +277,7 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
         self.supplier = self.env['res.partner'].create({
             'name': 'Cashier batch supplier %s' % uuid4().hex,
             'supplier_rank': 1,
+            'property_account_payable_id': self.payable_account.id,
         })
 
     def _cashier(self, company_ids=None):

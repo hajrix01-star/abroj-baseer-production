@@ -238,6 +238,33 @@ class ProcurementCustody(models.Model):
                     ))
         return super().create(vals_list)
 
+    @api.model
+    def action_open_company_pool(self):
+        """Open the active company's shared fund instead of a confusing new form."""
+        self.check_access('read')
+        company = self.env.company
+        custody = self.search([
+            ('company_id', '=', company.id),
+            ('is_company_pool', '=', True),
+        ], limit=1)
+        form_view = self.env.ref(
+            'baseer_procurement_requests.view_procurement_custody_form'
+        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Petty Cash'),
+            'res_model': self._name,
+            'view_mode': 'form',
+            'views': [(form_view.id, 'form')],
+            'res_id': custody.id or False,
+            'target': 'current',
+            'context': {
+                **self.env.context,
+                'default_company_id': company.id,
+                'default_is_company_pool': True,
+            },
+        }
+
     def _lock(self):
         self.flush_recordset(['state'])
         ids = tuple(sorted(self.ids))

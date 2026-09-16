@@ -120,6 +120,16 @@ class CustodyRemediationCase(TransactionCase):
         with self.assertRaisesRegex(ValidationError, 'already exists'):
             Custody.create({'company_id': self.company.id})
 
+    def test_menu_action_opens_the_existing_company_pool(self):
+        """The operational entry point should not send users to duplicate New."""
+        pool = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id,
+            'is_company_pool': True,
+        })
+        action = self.env['baseer.procurement.custody'].action_open_company_pool()
+        self.assertEqual(action['res_id'], pool.id)
+        self.assertEqual(action['context']['default_company_id'], self.company.id)
+
     def _post_funding(self, amount=100):
         event = self.env['baseer.procurement.custody.event'].create({
             'custody_id': self.custody.id,

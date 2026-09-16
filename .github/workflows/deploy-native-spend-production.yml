@@ -27,9 +27,9 @@ jobs:
     environment:
       name: production
     env:
-      # NBT dashboard reporting only. It never writes vendor bills, historic
-      # lines, analytic accounts, or native distribution models.
-      APPROVED_COMMIT: 977e21fe26619d1311809cb62c2de9e2d25aee8b
+      # UIV1 is presentation-only: it never writes vendor bills, historic
+      # lines, analytic accounts, native distribution models, or dashboard data.
+      APPROVED_COMMIT: f8dfb315ba4744098bca641deed3bbcabf265665
       PRODUCTION_HOST: 77.37.51.67
       PRODUCTION_USER: baseer_deploy
       PRODUCTION_KNOWN_HOST: >-

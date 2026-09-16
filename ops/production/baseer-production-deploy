@@ -13,7 +13,7 @@ readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
-readonly APPROVED_COMMIT=977e21fe26619d1311809cb62c2de9e2d25aee8b
+readonly APPROVED_COMMIT=f8dfb315ba4744098bca641deed3bbcabf265665
 readonly APPROVED_MODULE=baseer_purchase_expense_dashboard
 
 die() {

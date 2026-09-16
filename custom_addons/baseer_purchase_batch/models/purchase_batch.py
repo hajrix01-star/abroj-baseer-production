@@ -367,6 +367,10 @@ class BaseerPurchaseBatch(models.Model):
             ])
             bill_rows = list(zip(prepared, bills))
             for (line, values), bill in bill_rows:
+                items = bill.invoice_line_ids.filtered(lambda item: item.display_type == 'product')
+                line._validate_native_expense_account(items.account_id)
+                if len(items) != 1 or items.product_id or items.account_id != values['account']:
+                    raise ValidationError(_('Review the supplier bill account before approving this batch.'))
                 if bill._get_violated_lock_dates(line.invoice_date, bool(line.tax_id)):
                     raise ValidationError(_('The invoice date is locked; the batch will not shift accounting dates automatically.'))
                 if monetary(bill.amount_total) != values['quote']['gross']:
@@ -433,7 +437,7 @@ class BaseerPurchaseBatch(models.Model):
             rows.append({
                 'date': fields.Date.to_string(line.invoice_date), 'supplier': line.partner_id.display_name,
                 'reference': line.supplier_ref,
-                'category': line.category_map_id.display_name, 'description': line.description or line.category_map_id.display_name,
+                'description': line.description or _('Supplier bill'),
                 'gross': format(monetary(line.gross_amount), '.2f'), 'net': format(monetary(line.net_amount), '.2f'),
                 'tax': format(monetary(line.tax_amount), '.2f'), 'tax_name': line.tax_id.name or _('No tax'),
                 'payment': line.payment_method_line_id.display_name or _('Credit'),
@@ -469,7 +473,10 @@ class BaseerPurchaseBatchLine(models.Model):
         readonly=True,
         copy=False,
     )
-    category_map_id = fields.Many2one('baseer.purchase.category.map', required=True, ondelete='restrict', check_company=True)
+    # Historical evidence only. New entry/approval uses native productless
+    # invoice lines; HR services still owns legitimate uses of the map model.
+    category_map_id = fields.Many2one('baseer.purchase.category.map', readonly=True,
+                                      copy=False, ondelete='restrict', check_company=True)
     description = fields.Char()
     gross_amount = fields.Monetary(required=True, currency_field='currency_id')
     tax_id = fields.Many2one('account.tax', ondelete='restrict', check_company=True)
@@ -487,27 +494,23 @@ class BaseerPurchaseBatchLine(models.Model):
     _PROTECTED = frozenset({'company_id', 'currency_id', 'batch_state', 'net_amount', 'tax_amount',
                             'move_id', 'payment_id', 'bill_payment_state', 'vat_is_custom', 'is_current_company'})
 
-    def _supplier_default_category(self, partner):
+    def _posting_product(self):
+        """Preserve the product solely when quoting an existing native bill."""
         self.ensure_one()
-        require_active_company(self, self.company_id)
-        scoped = company_scope(self, self.company_id)
-        partner = partner.with_env(scoped.env)
-        partner.check_access('read')
-        if not partner or any(record.company_id and record.company_id != scoped.company_id
-                              for record in partner | partner.commercial_partner_id):
-            return scoped.env['baseer.purchase.category.map']
-        mapping = partner.baseer_purchase_category_map_id
-        if mapping:
-            mapping.check_access('read')
-            if mapping.company_id != scoped.company_id or not mapping.active:
-                raise ValidationError(_('The supplier default category must be active and belong to the batch company.'))
-        return mapping
+        return self.move_id.invoice_line_ids.filtered(
+            lambda item: item.display_type == 'product'
+        ).product_id if self.move_id else self.env['product.product']
 
-    @api.onchange('partner_id')
-    def _onchange_partner_default_category(self):
-        for line in self:
-            if line.company_id:
-                line.category_map_id = line._supplier_default_category(line.partner_id)
+    def _validate_native_expense_account(self, account):
+        self.ensure_one()
+        account.check_access('read')
+        if (len(account) != 1 or not account.active or self.company_id not in account.company_ids
+                or account.account_type not in ('expense', 'expense_direct_cost', 'expense_depreciation')):
+            raise ValidationError(_(
+                'Odoo could not select a valid expense account for %(supplier)s. '
+                'Review the supplier bill in Accounting or the purchase journal default account before approving.',
+                supplier=self.partner_id.display_name,
+            ))
 
     @api.onchange('is_credit')
     def _onchange_is_credit(self):
@@ -525,11 +528,8 @@ class BaseerPurchaseBatchLine(models.Model):
             raise ValidationError(_('A credit row cannot also specify a payment method.'))
         if result.get('is_credit'):
             result['payment_method_line_id'] = False
-        if creating and 'category_map_id' not in result:
-            partner = self.env['res.partner'].browse(result.get('partner_id'))
-            mapping = self._supplier_default_category(partner)
-            if mapping:
-                result['category_map_id'] = mapping.id
+        if 'category_map_id' in result:
+            raise ValidationError(_('Category selection is no longer used in purchase batch entry.'))
         return result
 
     @api.depends('tax_id', 'tax_id.active', 'tax_id.amount', 'tax_id.amount_type',
@@ -591,7 +591,7 @@ class BaseerPurchaseBatchLine(models.Model):
             enabled = line.vat_enabled
             line.write({'tax_id': line._vat_tax_for_value(enabled).id or False})
 
-    @api.depends('gross_amount', 'tax_id', 'category_map_id', 'partner_id', 'company_id')
+    @api.depends('gross_amount', 'tax_id', 'move_id', 'partner_id', 'company_id')
     def _compute_amounts(self):
         for line in self:
             if not line.gross_amount or not line.company_id:
@@ -600,7 +600,7 @@ class BaseerPurchaseBatchLine(models.Model):
                 continue
             scoped = company_scope(line, line.company_id)
             quote = native_quote(checked_gross(scoped.gross_amount, self.env), scoped.tax_id,
-                                 scoped.category_map_id.product_id, scoped.partner_id, scoped.company_id)
+                                 scoped._posting_product(), scoped.partner_id, scoped.company_id)
             line.net_amount = float(quote['net'])
             line.tax_amount = float(quote['tax'])
 
@@ -609,9 +609,6 @@ class BaseerPurchaseBatchLine(models.Model):
             checked_gross(line.gross_amount, self.env)
             normalized_reference(line.supplier_ref, self.env)
             scoped = company_scope(line, line.company_id)
-            if scoped.category_map_id.company_id != scoped.company_id:
-                raise ValidationError(_('Choose a category mapping from the batch company.'))
-            scoped.category_map_id._validated_expense_account()
             partner = scoped.partner_id
             partner.check_access('read')
             if strict_supplier and partner.company_id and partner.company_id != scoped.company_id:
@@ -620,7 +617,7 @@ class BaseerPurchaseBatchLine(models.Model):
                                          for record in partner | partner.commercial_partner_id):
                 raise ValidationError(_('Choose an active supplier accessible to the batch company.'))
             native_quote(checked_gross(scoped.gross_amount, self.env), scoped.tax_id,
-                         scoped.category_map_id.product_id, partner, scoped.company_id)
+                         scoped._posting_product(), partner, scoped.company_id)
             if scoped.is_credit and scoped.payment_method_line_id:
                 raise ValidationError(_('A credit row cannot also specify a payment method.'))
             if not scoped.is_credit and not scoped.payment_method_line_id:
@@ -704,19 +701,25 @@ class BaseerPurchaseBatchLine(models.Model):
         self._validate_inputs(strict_supplier=True)
         line = company_scope(self, self.company_id)
         quote = native_quote(checked_gross(line.gross_amount, self.env), line.tax_id,
-                             line.category_map_id.product_id, line.partner_id, line.company_id)
-        account = line.category_map_id._validated_expense_account()
-        return {'quote': quote, 'bill': {
+                             line.env['product.product'], line.partner_id, line.company_id)
+        values = {
             'move_type': 'in_invoice', 'company_id': line.company_id.id, 'currency_id': line.currency_id.id,
             'partner_id': line.partner_id.id, 'ref': line.supplier_ref.strip(),
             'invoice_date': line.invoice_date, 'date': line.invoice_date, 'auto_post': 'no',
             'invoice_line_ids': [Command.create({
-                'product_id': line.category_map_id.product_id.id,
-                'name': line.description or line.category_map_id.category_id.complete_name,
-                'quantity': 1.0, 'price_unit': float(quote['unit_price']), 'account_id': account.id,
+                'name': line.description or _('Supplier bill'),
+                'quantity': 1.0, 'price_unit': float(quote['unit_price']),
                 'tax_ids': [Command.set(line.tax_id.ids)],
             })],
-        }}
+        }
+        # A non-persistent native invoice uses exactly Odoo's account/journal
+        # computation. This catches missing setup before SQL constraints fire;
+        # it neither creates a bill nor stores a parallel supplier mapping.
+        preview = line.env['account.move'].new(values)
+        account = preview.invoice_line_ids.account_id
+        line._validate_native_expense_account(account)
+        values['journal_id'] = preview.journal_id.id
+        return {'quote': quote, 'bill': values, 'account': account}
 
     def _verify_native_payment(self, bill, payment, gross):
         self.ensure_one()

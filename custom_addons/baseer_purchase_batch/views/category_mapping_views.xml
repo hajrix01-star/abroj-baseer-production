@@ -37,7 +37,4 @@
         <field name="res_model">baseer.purchase.category.map</field>
         <field name="view_mode">list,form</field>
     </record>
-    <menuitem id="menu_purchase_category_maps" name="Purchase Category Mappings"
-              parent="account.menu_finance_payables" action="action_purchase_category_maps"
-              sequence="36" groups="account.group_account_manager"/>
 </odoo>

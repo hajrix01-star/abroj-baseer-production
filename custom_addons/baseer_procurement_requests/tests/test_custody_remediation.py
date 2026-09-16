@@ -69,6 +69,11 @@ class CustodyRemediationCase(TransactionCase):
             'company_ids': [Command.set(self.company.ids)],
         })
         Journal = self.env['account.journal']
+        self.purchase_journal = Journal.create({
+            'name': 'Remediation purchases', 'code': 'RMDP', 'type': 'purchase',
+            'company_id': self.company.id, 'sequence': -100,
+            'default_account_id': self.expense_account.id,
+        })
         self.general_journal = Journal.create({
             'name': 'Remediation custody entries',
             'code': 'RMDG',
@@ -128,7 +133,6 @@ class CustodyRemediationCase(TransactionCase):
                 'partner_id': supplier.id,
                 'supplier_ref': 'RMD-HISTORICAL-1',
                 'entry_type': 'purchase',
-                'category_map_id': mapping.id,
                 'gross_amount': 40,
                 'is_credit': True,
                 'procurement_custody_id': self.custody.id,

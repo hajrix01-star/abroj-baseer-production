@@ -254,6 +254,7 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
             'account_type': 'expense',
             'company_ids': [Command.set(self.company_a.ids)],
         })
+        self.purchase_journal.write({'default_account_id': self.expense_account.id, 'sequence': -100})
         self.payable_account = self.env['account.account'].create({
             'name': 'Cashier batch payable',
             'code': 'CBL%s' % uuid4().hex[:7].upper(),
@@ -279,6 +280,16 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
             'supplier_rank': 1,
             'property_account_payable_id': self.payable_account.id,
         })
+        spend_plan = self.env.ref('baseer_native_spend.spend_plan', raise_if_not_found=False)
+        if spend_plan:
+            analytic = self.env['account.analytic.account'].create({
+                'name': 'Cashier batch native spend', 'plan_id': spend_plan.id,
+                'company_id': self.company_a.id,
+            })
+            self.env['account.analytic.distribution.model'].create({
+                'partner_id': self.supplier.id, 'company_id': self.company_a.id,
+                'analytic_distribution': {str(analytic.id): 100},
+            })
 
     def _cashier(self, company_ids=None):
         company_ids = company_ids or self.company_a
@@ -290,9 +301,8 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
             'baseer_access_role': 'cashier',
         })
 
-    def _draft_batch(self, cashier, company=None, mapping=None):
+    def _draft_batch(self, cashier, company=None):
         company = company or self.company_a
-        mapping = mapping or self.mapping_a
         return self.env['baseer.purchase.batch'].with_user(cashier).with_context(
             allowed_company_ids=[company.id],
         ).create({
@@ -301,7 +311,6 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
                 'partner_id': self.supplier.id,
                 'supplier_ref': 'CBA-%s' % uuid4().hex,
                 'entry_type': 'purchase',
-                'category_map_id': mapping.id,
                 'gross_amount': 40,
                 'is_credit': True,
             })],
@@ -358,6 +367,8 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
         self.assertEqual(batch.state, 'approved')
         self.assertEqual(batch.approved_by_id, cashier)
         self.assertTrue(batch.line_ids.move_id)
+        self.assertFalse(batch.sudo().line_ids.move_id.invoice_line_ids.product_id)
+        self.assertEqual(batch.sudo().line_ids.move_id.invoice_line_ids.account_id, self.expense_account)
         self.assertFalse(cashier.has_group('account.group_account_invoice'))
         with self.assertRaises(AccessError):
             batch.with_user(cashier).action_view_bills()
@@ -413,7 +424,7 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
             'category_id': category_b.id,
             'product_id': service_b.id,
         })
-        batch_b = self._draft_batch(cashier, company_b, mapping_b)
+        batch_b = self._draft_batch(cashier, company_b)
         with self.assertRaises(AccessError):
             batch_b.with_user(cashier).with_context(
                 allowed_company_ids=[self.company_a.id, company_b.id],

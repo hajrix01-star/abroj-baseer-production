@@ -97,6 +97,7 @@ msgstr "النوع"
 #. module: baseer_purchase_batch
 #: model_terms:ir.ui.view,arch_db:baseer_purchase_batch.view_purchase_batch_line_form
 #: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_batch_line__description
+#: model_terms:ir.ui.view,arch_db:baseer_purchase_batch.report_purchase_batch_document
 msgid "Description"
 msgstr "الوصف"
 
@@ -946,11 +947,29 @@ msgstr "يجب أن تكون الفئة الافتراضية للمورد نشط
 
 #. module: baseer_purchase_batch
 #: model:ir.model.fields,help:baseer_purchase_batch.field_res_partner__baseer_purchase_category_map_id
-msgid "Suggested category for new purchase batch rows in the active company. You can change it on each row."
-msgstr "الفئة المقترحة لصفوف دفعات المشتريات الجديدة في الشركة النشطة. يمكنك تغييرها في كل صف."
+msgid "Legacy configuration retained for compatibility. New purchase batch bills use native Odoo accounting and analytic distribution models."
+msgstr "إعداد قديم محفوظ للتوافق. تستخدم فواتير الإدخال الجماعي الجديدة المحاسبة ونماذج التوزيع التحليلي الأصلية في أودو."
 
 #. module: baseer_purchase_batch
 #. odoo-python
 #: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
 msgid "Add at least one invoice before saving this batch, or discard it to leave without saving."
 msgstr "أضف فاتورة واحدة على الأقل قبل حفظ الدفعة، أو تجاهل التغييرات للخروج دون حفظ."
+
+#. module: baseer_purchase_batch
+#. odoo-python
+#: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
+msgid "Category selection is no longer used in purchase batch entry."
+msgstr "لم يعد اختيار الفئة مستخدماً في الإدخال الجماعي للمشتريات."
+
+#. module: baseer_purchase_batch
+#. odoo-python
+#: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
+msgid "Odoo could not select a valid expense account for %(supplier)s. Review the supplier bill in Accounting or the purchase journal default account before approving."
+msgstr "لم يتمكن أودو من اختيار حساب مصروف صالح للمورد %(supplier)s. راجع فاتورة المورد في المحاسبة أو الحساب الافتراضي ليومية المشتريات قبل الاعتماد."
+
+#. module: baseer_purchase_batch
+#. odoo-python
+#: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
+msgid "Review the supplier bill account before approving this batch."
+msgstr "راجع حساب فاتورة المورد قبل اعتماد هذه الدفعة."

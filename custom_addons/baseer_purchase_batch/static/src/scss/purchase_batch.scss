@@ -74,7 +74,7 @@
             }
         }
 
-        td[name="category_map_id"], td[name="supplier_ref"] {
+        td[name="supplier_ref"] {
             overflow-wrap: anywhere;
         }
     }
@@ -111,9 +111,6 @@
             overflow-wrap: anywhere;
         }
 
-        .baseer_batch_card_category {
-            grid-column: 1 / -1;
-        }
     }
 
     .baseer_batch_card_footer {

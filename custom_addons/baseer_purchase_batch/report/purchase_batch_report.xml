@@ -54,7 +54,7 @@
                         <tr>
                             <th style="width:10%">Invoice Date</th>
                             <th style="width:23%">Supplier / Reference</th>
-                            <th style="width:24%">Category / Description</th>
+                            <th style="width:24%">Description</th>
                             <th style="width:13%">Payment Method</th>
                             <th style="width:10%">Amount incl. VAT</th>
                             <th style="width:10%">Tax Amount</th>
@@ -70,7 +70,6 @@
                                 <div t-if="line['invoice']" class="baseer_batch_detail" t-out="line['invoice']"/>
                             </td>
                             <td>
-                                <span t-out="line['category']"/>
                                 <div t-if="line['description']" class="baseer_batch_detail" t-out="line['description']"/>
                             </td>
                             <td t-out="line['payment']"/>

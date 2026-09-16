@@ -1,4 +1,6 @@
 """Keep one approved input row consistent with its corrected native documents."""
+import json
+
 from odoo import _, api, Command, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.addons.baseer_purchase_batch.models.purchase_batch import (
@@ -71,11 +73,15 @@ class CorrectionBatchAdapter(models.Model):
             raise AccessError(_('The correction must belong to this approved row and its original documents.'))
         self.move_id._baseer_assert_correction_eligible()
         lines = self.move_id.invoice_line_ids.filtered(lambda line: line.display_type == 'product')
-        account = self.category_map_id._validated_expense_account()
         if (len(lines) != 1 or lines.quantity != 1 or lines.discount != 0
-                or lines.product_id != self.category_map_id.product_id or lines.account_id != account
                 or lines.tax_ids != self.tax_id):
-            raise UserError(_('The batch invoice no longer matches its original single-line category and tax. Use the native source review.'))
+            raise UserError(_('The batch invoice no longer matches its original single line and tax. Use the native source review.'))
+        self._validate_native_expense_account(lines.account_id)
+        # Historical product-based bills keep their original compatibility guard.
+        # Productless bills never consult a legacy category, even on old drafts.
+        if lines.product_id and (lines.product_id != self.category_map_id.product_id
+                or lines.account_id != self.category_map_id._validated_expense_account()):
+            raise UserError(_('The historical batch invoice requires native source review.'))
         return lines
 
     def _baseer_prepare_correction_values(self, wizard):
@@ -86,7 +92,7 @@ class CorrectionBatchAdapter(models.Model):
         if (not partner.active or any(record.company_id and record.company_id != self.company_id
                                      for record in partner | partner.commercial_partner_id)):
             raise ValidationError(_('Choose an active supplier accessible to the batch company.'))
-        quote = native_quote(gross, self.tax_id, self.category_map_id.product_id, partner, self.company_id)
+        quote = native_quote(gross, self.tax_id, line.product_id, partner, self.company_id)
         # Keep the reviewed native batch reference rule, excluding this same bill.
         reference = normalized_reference(self.supplier_ref, self.env)
         candidates = self.env['account.move'].search([
@@ -100,17 +106,24 @@ class CorrectionBatchAdapter(models.Model):
             raise ValidationError(_('A supplier document already uses this reference in this company.'))
         return {'partner_id': partner.id, 'invoice_line_ids': [Command.update(line.id, {
             'price_unit': float(quote['unit_price']),
+            'account_id': line.account_id.id,
         })]}
 
     def _baseer_apply_invoice_correction(self, wizard, capability):
         from .correction import CORRECTION_CAPABILITY
         if capability is not CORRECTION_CAPABILITY:
             raise AccessError(_('Approved purchase rows can only be updated by the reviewed correction.'))
-        self._baseer_check_correction_source(wizard)
+        line = self._baseer_check_correction_source(wizard)
+        baseline = json.loads(wizard.baseline_json)
+        original_account = next((item['account'] for move in baseline['moves']
+                                 if move['id'] == self.move_id.id for item in move['lines']
+                                 if item['id'] == line.id), False)
+        if line.account_id.id != original_account:
+            raise ValidationError(_('A batch correction must preserve the original expense account.'))
         self.batch_id._lock_batches()
         gross = checked_gross(wizard.gross_amount_input, self.env)
         bill, payment = self.move_id, self.payment_id
-        quote = native_quote(gross, self.tax_id, self.category_map_id.product_id,
+        quote = native_quote(gross, self.tax_id, line.product_id,
                              wizard.partner_id, self.company_id)
         if (bill.state != 'posted' or bill.partner_id != wizard.partner_id
                 or bill.invoice_date != self.invoice_date or bill.date != self.invoice_date

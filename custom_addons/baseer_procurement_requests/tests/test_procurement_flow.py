@@ -38,6 +38,29 @@ class ProcurementFlowCase(TransactionCase):
             'line_ids': [(0, 0, {'option_id': self.option.id, 'requested_qty': 5, 'requested_price': 4})],
         })
 
+    def _native_batch_accounting_fixture(self, company, expense, supplier):
+        """Supply native journal/account and analytics for productless bills."""
+        env = self.env(context={**self.env.context, 'allowed_company_ids': company.ids})
+        env['account.journal'].create({
+            'name': 'PRC native batch purchases', 'code': 'PRCNP', 'type': 'purchase',
+            'company_id': company.id, 'sequence': -100, 'default_account_id': expense.id,
+        })
+        payable = env['account.account'].create({
+            'name': 'PRC native supplier payable', 'code': 'PRCNP210',
+            'account_type': 'liability_payable', 'reconcile': True,
+            'company_ids': [Command.set(company.ids)],
+        })
+        supplier.with_env(env).property_account_payable_id = payable
+        spend_plan = env.ref('baseer_native_spend.spend_plan', raise_if_not_found=False)
+        if spend_plan:
+            analytic = env['account.analytic.account'].create({
+                'name': 'PRC native batch spend', 'plan_id': spend_plan.id, 'company_id': company.id,
+            })
+            env['account.analytic.distribution.model'].create({
+                'partner_id': supplier.id, 'company_id': company.id,
+                'analytic_distribution': {str(analytic.id): 100},
+            })
+
     def _custody_accounting_fixture(self, code_prefix='PRC9', company=None):
         """Create only the native accounting primitives used by custody tests."""
         company = company or self.company
@@ -124,6 +147,10 @@ class ProcurementFlowCase(TransactionCase):
     def _complete_company_request(self, company, purchaser, actual_quantity=5, actual_price=4):
         env = self.env(context={**self.env.context, 'allowed_company_ids': company.ids})
         warehouse = env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
+        if not warehouse:
+            warehouse = env['stock.warehouse'].create({
+                'name': 'PRC header test warehouse', 'code': 'PRCHW', 'company_id': company.id,
+            })
         self.assertTrue(warehouse)
         category_values = {'name': 'PRC header quantity category'}
         if 'property_cost_method' in env['product.category']._fields:
@@ -745,6 +772,7 @@ class ProcurementFlowCase(TransactionCase):
             'name': 'PRC header supplier',
             'supplier_rank': 1,
         })
+        self._native_batch_accounting_fixture(company, expense_account, supplier)
         category = env['product.category'].create({'name': 'PRC94 supplier category'})
         service = env['product.product'].create({
             'name': 'PRC94 supplier service',
@@ -765,7 +793,6 @@ class ProcurementFlowCase(TransactionCase):
                 'partner_id': supplier.id,
                 'supplier_ref': 'PRC-HEADER-ACTUAL-1',
                 'entry_type': 'purchase',
-                'category_map_id': mapping.id,
                 'gross_amount': 20,
                 'is_credit': True,
             })],
@@ -784,6 +811,8 @@ class ProcurementFlowCase(TransactionCase):
 
         batch.action_approve()
         line = batch.line_ids
+        self.assertFalse(line.move_id.invoice_line_ids.product_id)
+        self.assertEqual(line.move_id.invoice_line_ids.account_id, expense_account)
         self.assertEqual(line.move_id.payment_state, 'paid')
         self.assertFalse(line.payment_id)
         self.assertTrue(line.procurement_settlement_id)
@@ -801,7 +830,6 @@ class ProcurementFlowCase(TransactionCase):
                 'partner_id': supplier.id,
                 'supplier_ref': 'PRC-HEADER-MISMATCH-1',
                 'entry_type': 'purchase',
-                'category_map_id': mapping.id,
                 'gross_amount': 9,
                 'is_credit': True,
             })],
@@ -1021,6 +1049,10 @@ class ProcurementFlowCase(TransactionCase):
         })
         funding.action_post()
         warehouse = self.env['stock.warehouse'].with_company(company).search([('company_id', '=', company.id)], limit=1)
+        if not warehouse:
+            warehouse = self.env['stock.warehouse'].with_company(company).create({
+                'name': 'PRC batch test warehouse', 'code': 'PRCBW', 'company_id': company.id,
+            })
         self.assertTrue(warehouse)
         uom = self.env.ref('uom.product_uom_unit')
         category_values = {'name': 'PRC batch raw category'}
@@ -1050,6 +1082,7 @@ class ProcurementFlowCase(TransactionCase):
         second_request.line_ids.write({'actual_qty': 3, 'actual_price': 4})
         second_request.action_confirm_actual_purchase()
         supplier = self.env['res.partner'].with_company(company).create({'name': 'PRC batch supplier', 'supplier_rank': 1})
+        self._native_batch_accounting_fixture(company, expense_account, supplier)
         service_category = self.env['product.category'].with_company(company).create({'name': 'PRC batch expense category'})
         service = self.env['product.product'].with_company(company).create({
             'name': 'PRC batch expense service', 'type': 'service', 'categ_id': service_category.id,
@@ -1066,7 +1099,7 @@ class ProcurementFlowCase(TransactionCase):
             'company_id': company.id,
             'line_ids': [Command.create({
                 'partner_id': supplier.id, 'supplier_ref': 'PRC-QA-INTEGRATION-INCOMPLETE', 'entry_type': 'purchase',
-                'category_map_id': mapping.id, 'gross_amount': 20, 'is_credit': True,
+                'gross_amount': 20, 'is_credit': True,
                 'procurement_custody_id': custody.id,
                 'procurement_allocation_ids': [Command.create({'request_id': request.id, 'amount': 8})],
             })],
@@ -1089,7 +1122,7 @@ class ProcurementFlowCase(TransactionCase):
             'company_id': company.id,
             'line_ids': [Command.create({
                 'partner_id': supplier.id, 'supplier_ref': 'PRC-QA-INTEGRATION-1', 'entry_type': 'purchase',
-                'category_map_id': mapping.id, 'gross_amount': 20, 'is_credit': True,
+                'gross_amount': 20, 'is_credit': True,
                 'procurement_custody_id': custody.id,
                 'procurement_allocation_ids': [
                     Command.create({'request_id': request.id, 'amount': 8}),
@@ -1103,6 +1136,8 @@ class ProcurementFlowCase(TransactionCase):
             batch.line_ids.write({'procurement_custody_id': other_custody.id})
         batch.action_approve()
         line = batch.line_ids
+        self.assertFalse(line.move_id.invoice_line_ids.product_id)
+        self.assertEqual(line.move_id.invoice_line_ids.account_id, expense_account)
         self.assertFalse(line.payment_id)
         self.assertTrue(line.is_credit)
         self.assertTrue(line.procurement_settlement_move_id)
@@ -1178,7 +1213,6 @@ class ProcurementFlowCase(TransactionCase):
                 'partner_id': supplier.id,
                 'supplier_ref': 'PRC-QA-DIRECT-CASH-1',
                 'entry_type': 'purchase',
-                'category_map_id': mapping.id,
                 'gross_amount': 1,
                 'payment_method_line_id': cash_method.id,
                 'is_credit': False,

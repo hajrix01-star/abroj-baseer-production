@@ -1433,3 +1433,21 @@ msgstr "<span>المبلغ المسجل: </span>"
 #: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
 msgid "<span>Correct amount: </span>"
 msgstr "<span>المبلغ الصحيح: </span>"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/batch_adapter.py:0
+msgid "The batch invoice no longer matches its original single line and tax. Use the native source review."
+msgstr "لم تعد فاتورة الدفعة تطابق سطرها الأصلي وضريبته. راجع الفاتورة الأصلية في أودو."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/batch_adapter.py:0
+msgid "The historical batch invoice requires native source review."
+msgstr "تحتاج فاتورة الدفعة القديمة إلى مراجعة مستندها الأصلي في أودو."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/batch_adapter.py:0
+msgid "A batch correction must preserve the original expense account."
+msgstr "يجب أن يحافظ تصحيح الدفعة على حساب المصروف الأصلي."

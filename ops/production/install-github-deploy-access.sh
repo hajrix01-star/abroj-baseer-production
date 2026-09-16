@@ -21,6 +21,13 @@ case "$public_key" in
     *) echo 'only an ed25519 public key is accepted' >&2; exit 1 ;;
 esac
 [ -f "$wrapper_source" ] || { echo 'wrapper source is missing' >&2; exit 1; }
+# Do not create an SSH identity or a sudo rule until the host's global SSH
+# policy is proven compatible with the restricted-account contract.
+sshd -t
+sshd -T | grep -qx 'permituserenvironment no' || {
+    echo 'PermitUserEnvironment must be globally disabled before enabling deploy access' >&2
+    exit 1
+}
 
 id "$DEPLOY_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash --user-group "$DEPLOY_USER"
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "/home/$DEPLOY_USER/.ssh"
@@ -49,10 +56,6 @@ Match User baseer_deploy
     AllowAgentForwarding no
 EOF
 sshd -t
-sshd -T | grep -qx 'permituserenvironment no' || {
-    echo 'PermitUserEnvironment must be globally disabled before enabling deploy access' >&2
-    exit 1
-}
 systemctl reload ssh
 
 printf 'DEPLOY_ACCESS=READY\nUSER=%s\nINBOX=%s\nWRAPPER=%s\n' "$DEPLOY_USER" "$INBOX" "$WRAPPER_DEST"

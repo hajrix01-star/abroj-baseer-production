@@ -1,7 +1,7 @@
 """Read-only, company-scoped supplier-bill analytics for Baseer dashboards."""
 import calendar
 from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_HALF_UP
 
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, ValidationError
@@ -36,6 +36,53 @@ def _month_start(value, offset=0):
     index = value.year * 12 + value.month - 1 + offset
     year, month = divmod(index, 12)
     return date(year, month + 1, 1)
+
+
+def _spend_percentages(distribution, spend_ids):
+    """Project joint native dimensions onto spend; malformed lines stay unclassified."""
+    if not isinstance(distribution, dict):
+        return {False: HUNDRED}
+    shares = {}
+    try:
+        for key, raw_percentage in distribution.items():
+            identities = key.split(',')
+            if any(not value or not value.isascii() or not value.isdecimal() for value in identities):
+                return {False: HUNDRED}
+            ids = {int(value) for value in identities}
+            if len(ids) != len(identities):
+                return {False: HUNDRED}
+            percentage = Decimal(str(raw_percentage))
+            if not ids or any(value <= 0 for value in ids) or not percentage.is_finite() or percentage < ZERO:
+                return {False: HUNDRED}
+            selected = ids & spend_ids
+            if len(selected) > 1 or percentage > HUNDRED:
+                return {False: HUNDRED}
+            if selected:
+                account_id = next(iter(selected))
+                shares[account_id] = shares.get(account_id, ZERO) + percentage
+    except (AttributeError, TypeError, ValueError, InvalidOperation):
+        return {False: HUNDRED}
+    total = sum(shares.values(), ZERO)
+    if total > HUNDRED:
+        return {False: HUNDRED}
+    if total < HUNDRED:
+        shares[False] = HUNDRED - total
+    return {key: value for key, value in shares.items() if value}
+
+
+def _allocate_spend(gross, shares, currency):
+    """Allocate integer currency units with stable largest remainders, then restore sign."""
+    quantum = Decimal(str(currency.rounding or 0.01))
+    units = (abs(gross) / quantum).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    exact = {key: units * percentage / HUNDRED for key, percentage in shares.items()}
+    allocated = {key: value.quantize(Decimal('1'), rounding=ROUND_DOWN) for key, value in exact.items()}
+    remaining = int(units - sum(allocated.values(), ZERO))
+    # Tie-break by native account identity; residual is last. Never use binary floats.
+    order = sorted(exact, key=lambda key: (-(exact[key] - allocated[key]), key is False, key))
+    for key in order[:remaining]:
+        allocated[key] += 1
+    sign = -1 if gross < ZERO else 1
+    return {key: value * quantum * sign for key, value in allocated.items()}
 
 
 class PurchaseExpenseDashboard(models.Model):
@@ -189,7 +236,7 @@ class PurchaseExpenseDashboard(models.Model):
         return rows
 
     def _baseer_category_rows(self, company, currency, first, last, gross_sales):
-        """Group native product lines by gross category cost; display-only lines stay out."""
+        """Read stored native spend allocations without consulting current supplier defaults."""
         Line = self.env['account.move.line']
         line_query = Line._search([
             ('move_id.company_id', '=', company.id),
@@ -200,32 +247,101 @@ class PurchaseExpenseDashboard(models.Model):
             ('move_id.currency_id', '=', currency.id),
             ('display_type', '=', 'product'),
         ])
+        # Move and line record rules are independent: both must authorize the
+        # source, even when a user's line rules are less restrictive than bills.
+        move_query = self.env['account.move']._search(
+            self._baseer_purchase_domain(company, first, last),
+        )
+        Line.flush_model(['analytic_distribution', 'balance', 'price_subtotal', 'price_total'])
         self.env.cr.execute(SQL("""
-            SELECT COALESCE(product_category.id, 0),
-                   COALESCE(NULLIF(product_category.complete_name, ''), 'Unclassified'),
-                   COALESCE(SUM(CASE
-                       WHEN COALESCE(move_line.price_subtotal, 0) = 0 THEN move_line.balance
-                       ELSE move_line.balance * move_line.price_total / move_line.price_subtotal
-                   END), 0)
-              FROM account_move_line AS move_line
-              JOIN account_move AS move ON move.id = move_line.move_id
-         LEFT JOIN product_product AS product ON product.id = move_line.product_id
-         LEFT JOIN product_template AS template ON template.id = product.product_tmpl_id
-         LEFT JOIN product_category ON product_category.id = template.categ_id
-             WHERE move_line.id IN (%s)
-             GROUP BY product_category.id, product_category.complete_name
-             ORDER BY SUM(CASE
-                 WHEN COALESCE(move_line.price_subtotal, 0) = 0 THEN move_line.balance
-                 ELSE move_line.balance * move_line.price_total / move_line.price_subtotal
-             END) DESC, product_category.complete_name ASC
-             LIMIT %s
-        """, line_query.select(), TOP_ROWS))
-        return [{
-            'id': category_id or False,
-            'name': name,
-            'total': _card(_amount(total, currency)),
-            'sales_ratio': _ratio(_amount(total, currency), gross_sales),
-        } for category_id, name, total in self.env.cr.fetchall()]
+            WITH visible_lines AS (
+                SELECT id, move_id, analytic_distribution, balance, price_subtotal, price_total
+                  FROM account_move_line WHERE id IN (%s) AND move_id IN (%s)
+            ), visible_counts AS (
+                SELECT move_id, COUNT(*) AS line_count FROM visible_lines GROUP BY move_id
+            )
+            SELECT line.id, line.move_id, line.analytic_distribution,
+                   line.balance, line.price_subtotal, line.price_total,
+                   CASE WHEN visible.line_count = (
+                       SELECT COUNT(*) FROM account_move_line AS all_lines
+                        WHERE all_lines.move_id = line.move_id AND all_lines.display_type = 'product'
+                   ) THEN -move.amount_total_signed ELSE NULL END
+              FROM visible_lines AS line
+              JOIN visible_counts AS visible ON visible.move_id = line.move_id
+              JOIN account_move AS move ON move.id = line.move_id
+        """, line_query.select(), move_query.select()))
+        source_rows = self.env.cr.fetchall()
+        if not source_rows:
+            return []
+        root = self.env.ref('baseer_native_spend.spend_plan', raise_if_not_found=False)
+        # Only dictionary names are elevated, after the caller's secured line query.
+        # Ordinary bill accountants have no analytic-plan administration ACL.
+        Account = self.env['account.analytic.account'].sudo().with_context(active_test=False)
+        accounts = Account.search([
+            ('plan_id', 'child_of', root.id),
+            ('company_id', 'in', [False, company.id]),
+        ]) if root else Account.browse()
+        spend_ids = set(accounts.ids)
+        metadata = {}
+        for account in accounts:
+            plan = account.plan_id
+            # The existing two-level view retains deeper plan names as a path.
+            path = [plan.name]
+            ancestor = plan.parent_id
+            while ancestor and ancestor != root:
+                path.insert(0, ancestor.name)
+                ancestor = ancestor.parent_id
+            metadata[account.id] = (plan.id, ' / '.join(path), account.name)
+        bills = {}
+        quantum = Decimal(str(currency.rounding or 0.01))
+        for line_id, move_id, distribution, balance, subtotal, total, bill_total in source_rows:
+            balance = Decimal(str(balance or 0))
+            subtotal = Decimal(str(subtotal or 0))
+            gross = balance if not subtotal else balance * Decimal(str(total or 0)) / subtotal
+            gross = (gross / quantum).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * quantum
+            bill = bills.setdefault(move_id, {'total': bill_total, 'lines': []})
+            bill['lines'].append({'id': line_id, 'gross': gross, 'distribution': distribution})
+        totals = {}
+        for bill in bills.values():
+            if bill['total'] is not None:
+                # Native global VAT rounding may leave a cent between summed line
+                # gross amounts and the posted invoice. Preserve that invoice's
+                # signed authority on the largest line, with stable ID tie-break.
+                # The SQL intentionally withholds totals for partially visible bills.
+                residual = Decimal(str(bill['total'])) - sum(line['gross'] for line in bill['lines'])
+                largest = min(bill['lines'], key=lambda line: (-abs(line['gross']), line['id']))
+                largest['gross'] += residual
+            for line in bill['lines']:
+                shares = _spend_percentages(line['distribution'], spend_ids)
+                for account_id, amount in _allocate_spend(line['gross'], shares, currency).items():
+                    totals[account_id] = totals.get(account_id, ZERO) + amount
+        parents = {}
+        for account_id, amount in totals.items():
+            parent_id, parent_name, child_name = metadata.get(
+                account_id, (False, self.env._('Unclassified'), None),
+            )
+            parent = parents.setdefault(parent_id, {
+                'id': parent_id, 'name': parent_name, 'amount': ZERO, 'children': [],
+            })
+            parent['amount'] += amount
+            if account_id:
+                parent['children'].append({
+                    'id': account_id, 'name': child_name, 'amount': amount,
+                })
+        rows = []
+        for parent in sorted(parents.values(), key=lambda item: (-item['amount'], item['name'])):
+            amount = _amount(parent['amount'], currency)
+            children = [{
+                'id': child['id'], 'name': child['name'],
+                'total': _card(_amount(child['amount'], currency)),
+                'sales_ratio': _ratio(_amount(child['amount'], currency), gross_sales),
+            } for child in sorted(parent['children'], key=lambda item: (-item['amount'], item['name']))]
+            rows.append({
+                'id': parent['id'], 'name': parent['name'],
+                'total': _card(amount), 'sales_ratio': _ratio(amount, gross_sales),
+                'children': children,
+            })
+        return rows
 
     @api.readonly
     def get_baseer_supplier_bill_metrics(self, filters=None):

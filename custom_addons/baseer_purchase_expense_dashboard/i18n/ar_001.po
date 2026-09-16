@@ -260,5 +260,34 @@ msgstr "فئات المنتجات الأصلية؛ تستبعد أسطر الع�
 #. module: baseer_purchase_expense_dashboard
 #. odoo-javascript
 #: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Classified purchase lines, grouped by parent category then child category"
+msgstr "أسطر المشتريات المصنفة، مجمعة بالفئة الأم ثم الفئة الابن"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "No classified purchase lines in the selected period."
+msgstr "لا توجد أسطر مشتريات مصنفة في الفترة المحددة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
 msgid "No approved gross sales were recorded for this period, so purchase-to-sales percentages are unavailable."
 msgstr "لا توجد مبيعات معتمدة شاملة الضريبة مسجلة لهذه الفترة، لذا لا تتوفر نسب المشتريات إلى المبيعات."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Stored spend allocations, grouped by analytic plan and account; missing shares remain unclassified"
+msgstr "توزيعات الإنفاق المحفوظة حسب الخطة والحساب التحليلي؛ تظهر الحصص الناقصة ضمن غير المصنف"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "No purchase lines in the selected period."
+msgstr "لا توجد أسطر مشتريات في الفترة المحددة."
+
+#. module: baseer_purchase_expense_dashboard
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "Unclassified"
+msgstr "غير مصنف"

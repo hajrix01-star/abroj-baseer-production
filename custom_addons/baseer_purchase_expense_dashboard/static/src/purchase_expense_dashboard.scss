@@ -48,6 +48,8 @@
     .o_baseer_purchase_table thead { color: var(--o-baseer-purchase-muted); font-size: .77rem; text-transform: uppercase; }
     .o_baseer_purchase_table th, .o_baseer_purchase_table td { border-color: var(--o-baseer-purchase-border); padding: .65rem .4rem; vertical-align: middle; }
     .o_baseer_purchase_table tbody th { font-weight: 600; max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .o_baseer_purchase_parent_row > * { background: color-mix(in srgb, var(--o-baseer-purchase-primary) 6%, transparent); font-weight: 700; }
+    .o_baseer_purchase_child_row { color: var(--o-baseer-purchase-muted); padding-inline-start: 1.35rem !important; }
     .o_baseer_purchase_ratio_notice { margin-bottom: 1rem; }
     .o_baseer_purchase_numeric { direction: ltr; font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
 }

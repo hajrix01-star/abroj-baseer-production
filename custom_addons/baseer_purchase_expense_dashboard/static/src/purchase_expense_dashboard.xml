@@ -84,7 +84,10 @@
                             <div class="o_baseer_purchase_panel_heading"><div><h2 t-esc="labels.categories"/><p class="text-muted mb-0" t-esc="labels.categoryNote"/></div></div>
                             <p t-if="!state.payload.categories.length" class="text-muted mb-0" t-esc="labels.noCategories"/>
                             <div t-else="" class="table-responsive"><table class="table table-sm o_baseer_purchase_table mb-0"><thead><tr><th scope="col" t-esc="labels.category"/><th scope="col" class="text-end" t-esc="labels.grossAmount"/><th scope="col" class="text-end" t-esc="labels.salesRatio"/></tr></thead><tbody>
-                                <tr t-foreach="state.payload.categories" t-as="category" t-key="category.id || category.name"><th scope="row" t-esc="category.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.sales_ratio.display"/><span t-if="category.sales_ratio.available">%</span></td></tr>
+                                <t t-foreach="state.payload.categories" t-as="category" t-key="category.id || category.name">
+                                    <tr class="o_baseer_purchase_parent_row"><th scope="row" t-esc="category.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="category.sales_ratio.display"/><span t-if="category.sales_ratio.available">%</span></td></tr>
+                                    <tr t-foreach="category.children" t-as="child" t-key="child.id"><td class="o_baseer_purchase_child_row"><i class="fa fa-level-up fa-rotate-90 me-1" aria-hidden="true"/><span t-esc="child.name"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="child.total.display"/> <small t-esc="state.payload.company.currency"/></td><td class="text-end o_baseer_purchase_numeric"><span t-esc="child.sales_ratio.display"/><span t-if="child.sales_ratio.available">%</span></td></tr>
+                                </t>
                             </tbody></table></div>
                         </section>
                     </div>

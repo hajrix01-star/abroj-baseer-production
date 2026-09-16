@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Root-owned production deploy wrapper.  Its contract is intentionally narrow:
-# it accepts only the independently reviewed native-analytics dashboard release.
+# Root-owned production deploy wrapper. Its contract is intentionally narrow:
+# it accepts only the independently reviewed NBC1/HRN1 release.
 set -Eeuo pipefail
 umask 027
 
@@ -13,8 +13,13 @@ readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
-readonly APPROVED_COMMIT=f8dfb315ba4744098bca641deed3bbcabf265665
-readonly APPROVED_MODULE=baseer_purchase_expense_dashboard
+readonly APPROVED_COMMIT=9d65cc605a9583d326a4f9db0f85b5737e456761
+readonly APPROVED_MODULES=(
+    baseer_purchase_batch
+    baseer_financial_correction
+    baseer_service_seed
+    baseer_hr_services
+)
 
 die() {
     printf 'DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
@@ -240,7 +245,9 @@ source_dir="$stage/source"
 [ -d "$source_dir" ] || die 'archive does not have source/'
 [ ! -e "$source_dir/.env" ] || die 'archive must not contain .env'
 [ -f "$source_dir/compose.production.yaml" ] || die 'release compose file is missing'
-[ -f "$source_dir/custom_addons/$APPROVED_MODULE/__manifest__.py" ] || die 'approved module is missing from release'
+for approved_module in "${APPROVED_MODULES[@]}"; do
+    [ -f "$source_dir/custom_addons/$approved_module/__manifest__.py" ] || die "approved module is missing from release: $approved_module"
+done
 mv "$source_dir" "$release"
 rmdir "$stage"
 # The release source is mounted into the unprivileged Odoo container.  It must
@@ -269,16 +276,28 @@ ln -sfn "$release" "$BASE/current"
 release_switched=1
 compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release")
 
-module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$APPROVED_MODULE'\"")"
-case "$module_state" in
-    installed) module_action=u ;;
-    ''|uninstalled) module_action=i ;;
-    *) die "module is in an unsafe state: $module_state" ;;
-esac
+upgrade_modules=()
+install_modules=()
+for approved_module in "${APPROVED_MODULES[@]}"; do
+    module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$approved_module'\"")"
+    case "$module_state" in
+        installed) upgrade_modules+=("$approved_module") ;;
+        ''|uninstalled) install_modules+=("$approved_module") ;;
+        *) die "module is in an unsafe state: $approved_module=$module_state" ;;
+    esac
+done
 odoo_command='odoo --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19 -d baseer_prod'
-odoo_command+=" -${module_action} ${APPROVED_MODULE} --stop-after-init --workers=0 --max-cron-threads=0"
+if [ "${#upgrade_modules[@]}" -gt 0 ]; then
+    upgrade_csv="$(IFS=,; printf '%s' "${upgrade_modules[*]}")"
+    odoo_command+=" -u $upgrade_csv"
+fi
+if [ "${#install_modules[@]}" -gt 0 ]; then
+    install_csv="$(IFS=,; printf '%s' "${install_modules[*]}")"
+    odoo_command+=" -i $install_csv"
+fi
+odoo_command+=' --stop-after-init --workers=0 --max-cron-threads=0'
 database_mutated=1
-"${compose[@]}" run --rm --no-deps --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-${module_action}.log" 2>&1
+"${compose[@]}" run --rm --no-deps --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-nbc1-hrn1.log" 2>&1
 
 snapshot > "$backup/protected-after.json"
 cmp "$backup/protected-before.json" "$backup/protected-after.json"
@@ -286,10 +305,12 @@ wait_for_data_init
 "${compose[@]}" up -d odoo
 wait_for_login
 
-module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$APPROVED_MODULE'\"")"
-[ "$module_state" = installed ] || die 'approved module is not installed after deployment'
+for approved_module in "${APPROVED_MODULES[@]}"; do
+    module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$approved_module'\"")"
+    [ "$module_state" = installed ] || die "approved module is not installed after deployment: $approved_module"
+done
 "${compose[@]}" logs --no-color --tail=300 odoo > "$backup/odoo-smoke.log"
 ! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
 
-printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULE=%s\n' "$release" "$backup" "$commit" "$APPROVED_MODULE" > "$backup/result.env"
+printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\n' "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" > "$backup/result.env"
 printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

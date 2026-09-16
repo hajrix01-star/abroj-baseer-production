@@ -1,4 +1,4 @@
-name: Deploy approved native-analytics dashboard to production
+name: Deploy approved native Odoo batch and employee-services release
 
 on:
   workflow_dispatch:
@@ -17,8 +17,8 @@ concurrency:
 
 jobs:
   deploy:
-    # The workflow is deliberately not a general-purpose deployer.  Expansion
-    # beyond this reviewed SHA/module pair needs a fresh release review.
+    # The workflow is deliberately not a general-purpose deployer. Expansion
+    # beyond this reviewed SHA/module set needs a fresh release review.
     if: >-
       github.ref == 'refs/heads/main' &&
       inputs.confirmation == 'DEPLOY'
@@ -27,9 +27,9 @@ jobs:
     environment:
       name: production
     env:
-      # UIV1 is presentation-only: it never writes vendor bills, historic
-      # lines, analytic accounts, native distribution models, or dashboard data.
-      APPROVED_COMMIT: f8dfb315ba4744098bca641deed3bbcabf265665
+      # NBC1/HRN1 changes future entry paths only. Historic vendor bills,
+      # analytic distributions, mapping records and dashboard data stay intact.
+      APPROVED_COMMIT: 9d65cc605a9583d326a4f9db0f85b5737e456761
       PRODUCTION_HOST: 77.37.51.67
       PRODUCTION_USER: baseer_deploy
       PRODUCTION_KNOWN_HOST: >-
@@ -50,7 +50,10 @@ jobs:
           git merge-base --is-ancestor "$APPROVED_COMMIT" origin/main
           git checkout --detach "$APPROVED_COMMIT"
           test "$(git rev-parse HEAD)" = "$APPROVED_COMMIT"
-          test -f custom_addons/baseer_purchase_expense_dashboard/__manifest__.py
+          test -f custom_addons/baseer_purchase_batch/__manifest__.py
+          test -f custom_addons/baseer_financial_correction/__manifest__.py
+          test -f custom_addons/baseer_service_seed/__manifest__.py
+          test -f custom_addons/baseer_hr_services/__manifest__.py
 
       - name: Build immutable source archive
         id: package
@@ -63,7 +66,10 @@ jobs:
           git archive --format=tar "$APPROVED_COMMIT" | tar -x -C "$package_dir/source"
           test ! -e "$package_dir/source/.env"
           test -f "$package_dir/source/compose.production.yaml"
-          test -f "$package_dir/source/custom_addons/baseer_purchase_expense_dashboard/__manifest__.py"
+          test -f "$package_dir/source/custom_addons/baseer_purchase_batch/__manifest__.py"
+          test -f "$package_dir/source/custom_addons/baseer_financial_correction/__manifest__.py"
+          test -f "$package_dir/source/custom_addons/baseer_service_seed/__manifest__.py"
+          test -f "$package_dir/source/custom_addons/baseer_hr_services/__manifest__.py"
           archive="baseer-${APPROVED_COMMIT}.tar.gz"
           tar --sort=name --mtime='UTC 2026-09-16' --owner=0 --group=0 --numeric-owner \
             -C "$package_dir" -czf "$archive" source

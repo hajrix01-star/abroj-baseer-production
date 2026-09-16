@@ -33,6 +33,7 @@ class Company(models.Model):
                 raise ValidationError(_('A referenced service seed record was deleted: %s', name))
             owned = (self in existing.company_ids if model == 'account.account' else
                      existing.company_id in (self, self.env['res.company']) if kind == 'provider' and model == 'res.partner' else
+                     existing.company_id in (self, self.env['res.company']) if model == 'product.product' else
                      existing.company_id == self)
             if not owned:
                 raise ValidationError(_('The service seed reference belongs to another company: %s', name))

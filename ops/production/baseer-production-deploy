@@ -208,8 +208,10 @@ docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$r
 
 # Quiesce first: DB, filestore and the protected snapshot must describe the
 # same instant.  The trap restarts this exact release if capture fails.
-"${compose_old[@]}" stop odoo
+# Mark it before issuing stop: a transport/compose error can occur after Docker
+# has already stopped the container, and the ERR trap must still revive it.
 service_quiesced=1
+"${compose_old[@]}" stop odoo
 snapshot > "$backup/protected-before.json"
 docker exec "$DB_CONTAINER" sh -lc 'pg_dump -Fc -U "$POSTGRES_USER" -d baseer_prod' > "$backup/baseer_prod.dump"
 docker run --rm --network none -v "$ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore-baseer_prod.tar filestore/baseer_prod'

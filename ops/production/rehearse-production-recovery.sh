@@ -90,8 +90,10 @@ mkdir -p "$backup"
 # Quiesce production only long enough to capture one consistent DB/filestore
 # pair.  The isolated restore and Odoo boot happen after production is healthy
 # again, so the rehearsal does not prolong customer downtime.
-"${compose_old[@]}" stop odoo
+# Mark it before issuing stop so cleanup revives production even if Docker
+# reports an error after having stopped the container.
 service_quiesced=1
+"${compose_old[@]}" stop odoo
 snapshot_for_db baseer_prod > "$backup/protected-live.json"
 docker exec "$DB_CONTAINER" sh -lc 'pg_dump -Fc -U "$POSTGRES_USER" -d baseer_prod' > "$backup/baseer_prod.dump"
 docker run --rm --network none -v "$ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore-baseer_prod.tar filestore/baseer_prod'

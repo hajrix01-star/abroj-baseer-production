@@ -245,7 +245,10 @@ rmdir "$stage"
 # their restrictive modes and are deliberately excluded from the archive.
 chmod -R a+rX -- "$release"
 install -D -m 0600 "$old_release/.env" "$release/.env"
-install -D -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
+# The Odoo container runs as its unprivileged `odoo` user and the established
+# production release exposes this non-secret configuration as 0644.  Keep the
+# new release compatible; `.env` above remains root-only.
+install -D -m 0644 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
 docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release" config --quiet
 
 # Quiesce first: DB, filestore and the protected snapshot must describe the

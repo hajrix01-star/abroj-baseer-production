@@ -87,8 +87,9 @@ class BaseerSpendMapRule(models.Model):
         if not kind or not selector_id:
             raise ValidationError(_('Choose exactly one selector that matches the rule type.'))
         company_id = values.get('company_id') or False
+        catalog_version = values.get('catalog_version') or 'noorix-v1'
         scope = 'company:%s' % company_id if company_id else 'shared'
-        return '%s:%s:%s' % (scope, kind, selector_id)
+        return '%s:%s:%s:%s' % (catalog_version, scope, kind, selector_id)
 
     def _baseer_rule_values(self):
         self.ensure_one()
@@ -99,6 +100,7 @@ class BaseerSpendMapRule(models.Model):
             'partner_tag_id': self.partner_tag_id.id,
             'product_id': self.product_id.id,
             'product_category_id': self.product_category_id.id,
+            'catalog_version': self.catalog_version,
         }
         return values
 
@@ -294,8 +296,9 @@ class BaseerSpendMapRun(models.Model):
                                r.analytic_distribution) for r in native_models],
             'accounts': [(r.id, str(r.write_date), r.company_id.id, r.active) for r in accounts],
             'supplier_product_pairs': sorted([
-                (partner_id, product_id, source['kind'], source['id'], source['write_date'])
-                for (partner_id, product_id), source in pair_sources.items()
+                (partner_id, product_id, tuple(
+                    (item['kind'], item['id'], item['write_date']) for item in sources
+                )) for (partner_id, product_id), sources in pair_sources.items()
             ]),
         }
         encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str, separators=(',', ':'))
@@ -334,20 +337,23 @@ class BaseerSpendMapRun(models.Model):
             if (partner.company_id and partner.company_id != self.company_id
                     or product.company_id and product.company_id != self.company_id):
                 continue
-            sources[(partner.id, product.id)] = {
+            sources.setdefault((partner.id, product.id), []).append({
                 'kind': 'posted_bill', 'id': line.id, 'write_date': str(line.write_date),
-            }
-        for info in self.env['product.supplierinfo'].sudo().search([('partner_id', '!=', False)]):
+            })
+        for info in self.env['product.supplierinfo'].sudo().search([
+            ('partner_id', '!=', False), ('company_id', 'in', [False, self.company_id.id]),
+        ]):
             partner = info.partner_id
-            if partner.company_id and partner.company_id != self.company_id:
+            if (info.company_id and info.company_id != self.company_id
+                    or partner.company_id and partner.company_id != self.company_id):
                 continue
             for product in (info.product_id or info.product_tmpl_id.product_variant_ids):
                 if not product.active or (product.company_id and product.company_id != self.company_id):
                     continue
-                sources.setdefault((partner.id, product.id), {
+                sources.setdefault((partner.id, product.id), []).append({
                     'kind': 'supplierinfo', 'id': info.id, 'write_date': str(info.write_date),
                 })
-        return sources
+        return {key: sorted(value, key=lambda item: (item['kind'], item['id'])) for key, value in sources.items()}
 
     def _baseer_native_destinations(self, model, root):
         destinations = set()
@@ -542,7 +548,7 @@ class BaseerSpendMapRun(models.Model):
                 continue
             row = self._baseer_evaluate_context(partner=partner, product=product, category=product.categ_id)
             row.update(context_kind='supplier_product')
-            row['evidence_json']['relationship_source'] = source
+            row['evidence_json']['relationship_sources'] = source
             encoded = json.dumps(row['evidence_json'], ensure_ascii=False, sort_keys=True,
                                  default=str, separators=(',', ':'))
             row['evidence_hash'] = hashlib.sha256(encoded.encode()).hexdigest()

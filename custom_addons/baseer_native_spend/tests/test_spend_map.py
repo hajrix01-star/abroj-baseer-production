@@ -82,6 +82,16 @@ class SpendMapPreviewCase(TransactionCase):
         self.assertEqual(outcome['outcome'], 'unmapped')
         self.assertFalse(outcome['candidate_rule_ids'][0][2])
 
+    def test_catalog_versions_preserve_old_rule_and_allow_same_selector(self):
+        old = self.rule('partner_tag', self.leaf_a, catalog_version='noorix-v1')
+        old.action_retire()
+        new = self.rule('partner_tag', self.leaf_b, catalog_version='noorix-v2')
+        self.assertNotEqual(old.natural_key, new.natural_key)
+        self.assertEqual(self.readiness_run()._baseer_evaluate_context(partner=self.supplier)['outcome'], 'unmapped')
+        v2 = self.readiness_run()
+        v2.catalog_version = 'noorix-v2'
+        self.assertEqual(v2._baseer_evaluate_context(partner=self.supplier)['selected_analytic_account_id'], self.leaf_b.id)
+
     def test_multiple_tags_with_different_leaves_are_ambiguous(self):
         self.supplier.category_id = self.tag_a | self.tag_b
         self.rule('partner_tag', self.leaf_a)
@@ -117,7 +127,7 @@ class SpendMapPreviewCase(TransactionCase):
                     and value.get('product_id') == self.product.id)
         self.assertEqual(pair['selected_analytic_account_id'], self.leaf_b.id)
         self.assertEqual(pair['outcome'], 'resolved')
-        self.assertEqual(pair['evidence_json']['relationship_source']['kind'], 'supplierinfo')
+        self.assertEqual(pair['evidence_json']['relationship_sources'][0]['kind'], 'supplierinfo')
         self.assertTrue(pair['evidence_hash'])
 
     def test_untagged_vendor_uses_explicit_vendor_rule_only(self):
@@ -246,6 +256,22 @@ class SpendMapPreviewCase(TransactionCase):
         })
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             self.rule('partner', self.leaf_a, partner_id=scoped_supplier.id)
+
+    def test_other_company_supplierinfo_is_not_previewed_or_hashed(self):
+        other_company = self.env['res.company'].create({'name': 'MAP supplierinfo other company'})
+        info = self.env['product.supplierinfo'].create({
+            'partner_id': self.supplier.id,
+            'product_tmpl_id': self.product.product_tmpl_id.id,
+            'company_id': other_company.id,
+        })
+        run = self.readiness_run()
+        before = run._baseer_snapshot_hash()
+        values = run._baseer_preview_values()
+        self.assertFalse(any(value.get('context_kind') == 'supplier_product'
+                             and value.get('partner_id') == self.supplier.id
+                             and value.get('product_id') == self.product.id for value in values))
+        info.price = 99
+        self.assertEqual(before, run._baseer_snapshot_hash())
 
     def test_preview_does_not_write_native_distribution_models(self):
         native = self.env['account.analytic.distribution.model'].create({

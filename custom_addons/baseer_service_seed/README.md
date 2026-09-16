@@ -80,10 +80,10 @@ Uninstall is therefore not a preservation-safe reversal of this additive setup.
 
 ## Input and language behavior
 
-Selecting a seeded leaf (including a supplier's default leaf) suggests Expense
-on a new purchase-batch form; the user may change the type afterward. Backend
-creation preserves any explicitly supplied `entry_type`, and only defaults a
-missing type. Existing lines are never migrated or rewritten by setup.
+The former purchase-batch `entry_type` presentation marker is retired.  A
+seeded leaf now supplies only the native product/account and analytic
+classification; it does not assign a manual purchase-or-expense label. Existing
+historical lines are never migrated or rewritten by setup.
 
 Odoo category and contact names are not translated native fields. Categories use
 Arabic names. New canonical contacts use `Arabic | English`, with available

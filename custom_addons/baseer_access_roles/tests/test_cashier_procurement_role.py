@@ -6,6 +6,19 @@ from odoo.tests.common import TransactionCase
 
 
 class CashierProcurementRoleCase(TransactionCase):
+    def test_cpr_t00_owner_preset_keeps_the_only_system_administrator(self):
+        """Owner promotion must not demote the sole native administrator."""
+        administrator = self.env.ref('base.user_admin')
+        system_group = self.env.ref('base.group_system')
+        owner_group = self.env.ref('baseer_access_roles.group_owner')
+
+        self.assertIn(system_group, administrator.group_ids)
+        administrator.write({'baseer_access_role': 'owner'})
+
+        self.assertEqual(administrator.baseer_access_role, 'owner')
+        self.assertIn(owner_group, administrator.group_ids)
+        self.assertIn(system_group, administrator.group_ids)
+
     def _fixture(self, company, suffix):
         """Create the minimum company-local operational request fixture."""
         company_env = self.env(context={

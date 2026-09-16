@@ -135,7 +135,7 @@ GitHub: نشر release_id نفسه
   و`0 failed, 0 error(s)` في قاعدة QA `baseer_cashier_workflow_qa_20260916`.
 - **مرشح التسليم:** سياسة الإصدار المسماة
   `baseer-2026-09-17-owner-procurement` تقصر الترقية على
-  `baseer_access_roles` في commit `27aeec8eb331bd41bd320d9606244346d09b70cd`.
+  `baseer_access_roles` في commit `27aeec87f4efaeb15c1b52af5edc17f54569f0f8`.
 - **الحالة:** G0-G8 مقفلة للنطاق المحدود؛ جاهز للاعتماد والنشر عبر المسار
   المحمي.
 

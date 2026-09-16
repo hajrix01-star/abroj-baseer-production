@@ -14,6 +14,12 @@ OWNER_GROUP_XMLIDS = (
     'om_hr_payroll.group_hr_payroll_manager',
     'hr_payroll_community.group_hr_payroll_community_manager',
     'spreadsheet_dashboard.group_dashboard_manager', 'website.group_website_designer',
+    # Custom procurement capabilities are deliberately inherited directly.
+    # Do not inherit Baseer's limited accountant/cashier presets: they carry
+    # record-denial rules intended only for those restricted roles.
+    'baseer_procurement_requests.group_procurement_manager',
+    'baseer_procurement_requests.group_procurement_accountant',
+    'baseer_procurement_requests.group_procurement_cashier',
 )
 
 DENIED_MODELS = (

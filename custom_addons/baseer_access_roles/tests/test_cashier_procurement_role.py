@@ -19,6 +19,21 @@ class CashierProcurementRoleCase(TransactionCase):
         self.assertIn(owner_group, administrator.group_ids)
         self.assertIn(system_group, administrator.group_ids)
 
+    def test_cpr_t00a_owner_preset_inherits_all_procurement_capabilities(self):
+        """The owner sees every custom procurement surface without limited-role isolation."""
+        administrator = self.env.ref('base.user_admin')
+        administrator.write({'baseer_access_role': 'owner'})
+
+        for xmlid in (
+            'baseer_procurement_requests.group_procurement_manager',
+            'baseer_procurement_requests.group_procurement_accountant',
+            'baseer_procurement_requests.group_procurement_cashier',
+        ):
+            self.assertTrue(administrator.has_group(xmlid))
+
+        self.assertFalse(administrator.has_group('baseer_access_roles.group_accountant'))
+        self.assertFalse(administrator.has_group('baseer_access_roles.group_cashier'))
+
     def _fixture(self, company, suffix):
         """Create the minimum company-local operational request fixture."""
         company_env = self.env(context={

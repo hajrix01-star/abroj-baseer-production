@@ -140,6 +140,7 @@ odoo_image="$(docker inspect baseer-odoo-prod-odoo-1 --format '{{.Config.Image}}
 docker run --rm --network baseer-odoo-prod-backend \
     --env-file "$old_release/.env" \
     -e REHEARSAL_DB="$rehearsal_db" \
+    -e REHEARSAL_MODULES="$REHEARSAL_MODULES" \
     -v "$rehearsal_volume":/var/lib/odoo \
     -v "$old_release/config/odoo.conf":/etc/odoo/odoo.conf:ro \
     -v "$candidate_source/custom_addons":/mnt/baseer-addons:ro \

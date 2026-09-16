@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Root-owned production deploy wrapper.  Its contract is intentionally narrow:
-# it accepts only the independently reviewed native-spend bridge release.
+# it accepts only the independently reviewed native-spend readiness release.
 set -Eeuo pipefail
 umask 027
 
@@ -13,7 +13,7 @@ readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
-readonly APPROVED_COMMIT=5e73e6bb8b293b5d4adc0e39092777eaf2b3723f
+readonly APPROVED_COMMIT=6e7fb874d343bc4e0451dfdb0dc372eed0cc8f72
 readonly APPROVED_MODULE=baseer_native_spend
 
 die() {

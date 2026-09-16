@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="baseer_spend_map_rule_company_rule" model="ir.rule">
+        <field name="name">Spend map rules: allowed companies</field>
+        <field name="model_id" ref="model_baseer_spend_map_rule"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('account.group_account_manager'))]"/>
+    </record>
+    <record id="baseer_spend_map_run_company_rule" model="ir.rule">
+        <field name="name">Spend map runs: allowed companies</field>
+        <field name="model_id" ref="model_baseer_spend_map_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('account.group_account_manager'))]"/>
+    </record>
+    <record id="baseer_spend_map_preview_company_rule" model="ir.rule">
+        <field name="name">Spend map evidence: allowed companies</field>
+        <field name="model_id" ref="model_baseer_spend_map_preview_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('account.group_account_manager'))]"/>
+    </record>
+</odoo>

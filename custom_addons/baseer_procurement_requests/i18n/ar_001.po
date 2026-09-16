@@ -779,6 +779,26 @@ msgid "Current balance"
 msgstr "الرصيد الحالي"
 
 #. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Funding"
+msgstr "تمويل"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Spent"
+msgstr "مصروف"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Returned"
+msgstr "مرتجع"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Balance"
+msgstr "الرصيد"
+
+#. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 msgid "Petty Cash movement"
 msgstr "حركة صندوق العهدة"
@@ -850,6 +870,51 @@ msgstr "إغلاق الصندوق"
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 msgid "Funding and returns"
 msgstr "التحويلات والمبالغ المستلمة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Movements"
+msgstr "الحركات"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Funding and returns."
+msgstr "التمويل والمرتجعات."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Save Petty Cash first to add movements."
+msgstr "احفظ صندوق العهدة أولًا لإضافة الحركات."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Type"
+msgstr "النوع"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Representative"
+msgstr "المندوب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Request"
+msgstr "الطلب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Account"
+msgstr "الحساب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Reference"
+msgstr "المرجع"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+msgid "Entry"
+msgstr "القيد"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form

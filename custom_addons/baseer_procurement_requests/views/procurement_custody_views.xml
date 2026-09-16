@@ -30,7 +30,7 @@
                             groups="baseer_procurement_requests.group_procurement_accountant"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
                 </header>
-                <sheet>
+                <sheet class="baseer-petty-cash-sheet">
                     <field name="currency_id" invisible="1"/>
                     <field name="company_id" invisible="1"/>
                     <group>
@@ -73,7 +73,7 @@
             <form string="Petty Cash">
                 <header>
                     <button name="action_close" type="object" string="Close Petty Cash" class="oe_highlight"
-                            invisible="state != 'open'" groups="baseer_procurement_requests.group_procurement_manager"/>
+                            invisible="not id or state != 'open'" groups="baseer_procurement_requests.group_procurement_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="open,closed"/>
                 </header>
                 <sheet>
@@ -97,65 +97,65 @@
                     <div class="row g-3 my-3">
                         <div class="col-6 col-xl-3">
                             <div class="card h-100 border-0 bg-light"><div class="card-body">
-                                <div class="text-muted">Funds received</div>
+                                <div class="text-muted">Funding</div>
                                 <div class="fs-3 fw-bold" dir="ltr"><field name="funded_amount" readonly="1"/></div>
                             </div></div>
                         </div>
                         <div class="col-6 col-xl-3">
                             <div class="card h-100 border-0 bg-light"><div class="card-body">
-                                <div class="text-muted">Purchases paid</div>
+                                <div class="text-muted">Spent</div>
                                 <div class="fs-3 fw-bold" dir="ltr"><field name="settled_amount" readonly="1"/></div>
                             </div></div>
                         </div>
                         <div class="col-6 col-xl-3">
                             <div class="card h-100 border-0 bg-light"><div class="card-body">
-                                <div class="text-muted">Cash received back</div>
+                                <div class="text-muted">Returned</div>
                                 <div class="fs-3 fw-bold" dir="ltr"><field name="returned_amount" readonly="1"/></div>
                             </div></div>
                         </div>
                         <div class="col-6 col-xl-3">
                             <div class="card h-100 border-0 bg-primary-subtle"><div class="card-body">
-                                <div class="text-muted">Current balance</div>
+                                <div class="text-muted">Balance</div>
                                 <div class="fs-3 fw-bold" dir="ltr"><field name="balance" readonly="1"/></div>
                             </div></div>
                         </div>
                     </div>
 
                     <notebook>
-                        <page string="Funding and returns" name="custody_movements">
-                            <p class="text-muted">
-                                Funding transfers money from the selected bank or cash journal into Petty Cash.
-                                A return receives money back into the selected journal.
-                            </p>
+                        <page string="Movements" name="custody_movements" invisible="not id">
+                            <p class="text-muted">Funding and returns.</p>
                             <field name="event_ids" context="{'default_custody_id': id, 'default_is_company_pool': is_company_pool}" readonly="state == 'closed'">
                                 <list editable="bottom" open_form_view="True" default_order="event_date desc, id desc">
                                     <field name="company_id" column_invisible="1"/>
                                     <field name="currency_id" column_invisible="1"/>
                                     <field name="event_date" string="Date" readonly="state == 'posted'"/>
-                                    <field name="event_type" string="Movement" readonly="state == 'posted'"/>
-                                    <field name="representative_partner_id" string="Purchase representative"
+                                    <field name="event_type" string="Type" readonly="state == 'posted'"/>
+                                    <field name="representative_partner_id" string="Representative"
                                            options="{'no_create': True}" readonly="state == 'posted'"
                                            domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('active', '=', True)]"/>
-                                    <field name="procurement_request_id" string="Funded procurement request"
+                                    <field name="procurement_request_id" string="Request"
                                            options="{'no_create': True}" readonly="state == 'posted'"
                                            required="event_type == 'funding' and context.get('default_is_company_pool')"
                                            invisible="event_type != 'funding' or not context.get('default_is_company_pool')"
                                            domain="[('company_id', '=', company_id), ('state', 'not in', ['draft', 'cancel']), ('representative_partner_id', '=', representative_partner_id)]"/>
                                     <field name="amount" string="Amount" readonly="state == 'posted'"/>
-                                    <field name="cash_journal_id" string="Bank / cash journal"
+                                    <field name="cash_journal_id" string="Account"
                                            options="{'no_create': True}" readonly="state == 'posted'"
                                            domain="[('company_id', '=', company_id), ('active', '=', True), ('type', 'in', ['bank', 'cash'])]"/>
-                                    <field name="custody_account_id" string="Petty Cash destination / source account" readonly="1" optional="show"/>
-                                    <field name="reference" string="Transfer reference" readonly="state == 'posted'"/>
+                                    <field name="custody_account_id" string="Petty Cash account" readonly="1" optional="hide"/>
+                                    <field name="reference" string="Reference" readonly="state == 'posted'" optional="hide"/>
                                     <button name="action_post" type="object" string="Post" class="btn-primary"
                                             invisible="state == 'posted'"
                                             groups="baseer_procurement_requests.group_procurement_accountant"/>
-                                    <field name="move_id" string="Journal entry" readonly="1" optional="hide"/>
+                                    <field name="move_id" string="Entry" readonly="1" optional="hide"/>
                                     <field name="state" widget="badge"/>
                                 </list>
                             </field>
                         </page>
                     </notebook>
+                    <p class="text-muted text-center my-4" invisible="id">
+                        Save Petty Cash first to add movements.
+                    </p>
                 </sheet>
                 <chatter/>
             </form>

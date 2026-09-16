@@ -1,0 +1,14 @@
+// Keep the operational Petty Cash form readable on wide screens.  The
+// full history remains available in the chatter, but it must not consume the
+// working area used for movements and balances.
+@media (min-width: 1200px) {
+    .o_form_view:has(.baseer-petty-cash-sheet) .o-mail-Form-chatter {
+        flex: 0 0 22rem;
+        max-width: 22rem;
+    }
+
+    .o_form_view:has(.baseer-petty-cash-sheet) .o_form_sheet_bg {
+        flex: 1 1 auto;
+        max-width: none;
+    }
+}

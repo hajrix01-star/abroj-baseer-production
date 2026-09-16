@@ -20,6 +20,7 @@
             'baseer_procurement_requests/static/src/procurement_catalog.js',
             'baseer_procurement_requests/static/src/procurement_catalog.xml',
             'baseer_procurement_requests/static/src/procurement_catalog.scss',
+            'baseer_procurement_requests/static/src/procurement_custody.scss',
         ],
     },
     'application': True,

@@ -221,11 +221,21 @@ class ProcurementCustody(models.Model):
                 raise AccessError(_('Custody state is controlled by the server.'))
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('baseer.procurement.custody') or _('New')
-            if vals.get('is_company_pool'):
+            # The operational action supplies this default through context, so it
+            # is not necessarily present in ``vals`` when the user presses New.
+            # Resolve it here before the database constraint can expose a raw
+            # PostgreSQL duplicate-key message.
+            is_company_pool = vals.get(
+                'is_company_pool', self.env.context.get('default_is_company_pool', False)
+            )
+            if is_company_pool:
                 company_id = vals.get('company_id') or self.env.company.id
                 self.env.cr.execute('SELECT id FROM res_company WHERE id = %s FOR UPDATE', [company_id])
                 if self.search_count([('company_id', '=', company_id), ('is_company_pool', '=', True)]):
-                    raise ValidationError(_('This company already has a petty-cash pool.'))
+                    raise ValidationError(_(
+                        'A Petty Cash fund already exists for this company. '
+                        'Open the current fund and use Add a line to record funding or returns.'
+                    ))
         return super().create(vals_list)
 
     def _lock(self):

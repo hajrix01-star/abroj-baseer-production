@@ -1,5 +1,5 @@
 from odoo import Command, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -110,6 +110,15 @@ class CustodyRemediationCase(TransactionCase):
         self.assertEqual(petty_cash.returned_amount, 0)
         self.assertEqual(petty_cash.settled_amount, 0)
         self.assertEqual(petty_cash.balance, 0)
+
+    def test_duplicate_company_pool_from_action_context_has_a_clear_error(self):
+        """The New action defaults the pool through context, not vals."""
+        Custody = self.env['baseer.procurement.custody'].with_context(
+            default_is_company_pool=True
+        )
+        Custody.create({'company_id': self.company.id})
+        with self.assertRaisesRegex(ValidationError, 'already exists'):
+            Custody.create({'company_id': self.company.id})
 
     def _post_funding(self, amount=100):
         event = self.env['baseer.procurement.custody.event'].create({

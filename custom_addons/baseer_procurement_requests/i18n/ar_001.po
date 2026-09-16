@@ -1236,3 +1236,7 @@ msgstr "يوجد منتج بهذا الاسم لكنه غير مؤهل لإعا�
 #. module: baseer_procurement_requests
 msgid "This product is used in a procurement request or purchase-price history. Archive it instead of deleting it."
 msgstr "هذا المنتج مستخدم في طلب مشتريات أو سجل أسعار شراء. أرشفه بدلًا من حذفه."
+
+#. module: baseer_procurement_requests
+msgid "A Petty Cash fund already exists for this company. Open the current fund and use Add a line to record funding or returns."
+msgstr "يوجد صندوق عهدة لهذه الشركة. افتح الصندوق الحالي ثم اختر «إضافة بند» لتسجيل التمويل أو المرتجع."

@@ -28,14 +28,13 @@ export class BasserWorkspace extends Component {
             openingItemId: false,
         });
         this.labels = {
-            title: _t("Baseer"),
+            title: _t("Baseer | بصير"),
             description: _t("Your approved operational workspace."),
             loading: _t("Loading your workspace…"),
             empty: _t("No operational items are configured for your role and active company."),
             noAccess: _t("You are not allowed to use this workspace."),
             error: _t("Baseer could not be loaded."),
             retry: _t("Retry"),
-            manage: _t("Manage Baseer"),
             opening: _t("Opening…"),
         };
         onWillStart(() => this.loadWorkspace());
@@ -59,6 +58,13 @@ export class BasserWorkspace extends Component {
             }
             this.state.sections = workspace.sections || [];
             this.state.canManage = Boolean(workspace.can_manage);
+            if (this.state.canManage && !this.state.sections.length) {
+                // Owners have a configuration destination rather than an
+                // operational card. Open it immediately and avoid a blank
+                // landing page plus an extra management click.
+                await this.openManagement(false);
+                return;
+            }
             this.state.status = this.state.sections.length || this.state.canManage ? "ready" : "empty";
         } catch (error) {
             if (sequence !== this.requestSequence) {
@@ -88,7 +94,7 @@ export class BasserWorkspace extends Component {
         }
     }
 
-    async openManagement() {
+    async openManagement(reloadOnError = true) {
         if (this.state.openingItemId) {
             return;
         }
@@ -100,7 +106,11 @@ export class BasserWorkspace extends Component {
             await this.action.doAction(result.action_id);
         } catch (_error) {
             this.notification.add(_t("Baseer configuration is not available."), { type: "danger" });
-            await this.loadWorkspace();
+            if (reloadOnError) {
+                await this.loadWorkspace();
+            } else {
+                this.state.status = "error";
+            }
         } finally {
             this.state.openingItemId = false;
         }

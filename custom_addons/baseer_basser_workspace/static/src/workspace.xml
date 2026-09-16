@@ -7,13 +7,6 @@
                     <h1 t-esc="labels.title"/>
                     <p class="text-muted mb-0" t-esc="labels.description"/>
                 </div>
-                <button t-if="state.status === 'ready' and state.canManage" type="button" class="btn btn-primary"
-                        t-att-disabled="state.openingItemId ? true : undefined"
-                        t-att-aria-disabled="state.openingItemId ? 'true' : 'false'"
-                        t-on-click="openManagement">
-                    <i class="fa fa-cog me-1" aria-hidden="true"/>
-                    <span t-esc="labels.manage"/>
-                </button>
             </header>
 
             <section t-if="state.status === 'loading'" class="o_basser_workspace_state" role="status" aria-live="polite">

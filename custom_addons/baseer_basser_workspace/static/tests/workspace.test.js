@@ -26,6 +26,7 @@ function makeWorkspaceContext(call, doAction = () => {}, notify = () => {}) {
         notification: { add: notify },
     };
     context.loadWorkspace = () => BasserWorkspace.prototype.loadWorkspace.call(context);
+    context.openManagement = (reloadOnError) => BasserWorkspace.prototype.openManagement.call(context, reloadOnError);
     return context;
 }
 
@@ -75,6 +76,22 @@ test("BASSER recovers from a temporary workspace load failure", async () => {
     expect(calls).toBe(2);
     expect(context.state.status).toBe("ready");
     expect(context.state.sections[0].items[0].name).toBe("Cashier operation");
+});
+
+
+test.tags("desktop");
+test("BASSER opens owner management directly when there are no operational cards", async () => {
+    const context = makeWorkspaceContext(async (_model, method) => {
+        expect(method).toBe("get_workspace");
+        return { can_manage: true, sections: [] };
+    });
+    context.openManagement = async (reloadOnError) => {
+        expect(reloadOnError).toBe(false);
+        expect.step("open management");
+    };
+
+    await BasserWorkspace.prototype.loadWorkspace.call(context);
+    expect.verifySteps(["open management"]);
 });
 
 

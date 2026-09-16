@@ -48,27 +48,27 @@
         <field name="domain_force">[('user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
     </record>
     <record id="rule_procurement_custody_company" model="ir.rule">
-        <field name="name">Procurement custody: allowed companies</field>
+        <field name="name">Procurement Petty Cash: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
     <record id="rule_procurement_custody_event_company" model="ir.rule">
-        <field name="name">Procurement custody events: allowed companies</field>
+        <field name="name">Procurement Petty Cash events: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody_event"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
     <record id="rule_procurement_custody_settlement_company" model="ir.rule">
-        <field name="name">Procurement custody settlements: allowed companies</field>
+        <field name="name">Procurement petty-cash settlements: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody_settlement"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
     <record id="rule_procurement_custody_monthly_company" model="ir.rule">
-        <field name="name">Procurement custody monthly statement: allowed companies</field>
+        <field name="name">Procurement petty-cash monthly statement: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody_monthly_statement"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
     <record id="rule_procurement_custody_period_close_company" model="ir.rule">
-        <field name="name">Procurement custody period closes: allowed companies</field>
+        <field name="name">Procurement Petty Cash period closes: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody_period_close"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>

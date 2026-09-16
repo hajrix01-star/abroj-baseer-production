@@ -2,6 +2,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_cashier_batch,Cashier purchase batch draft,baseer_purchase_batch.model_baseer_purchase_batch,group_cashier,1,1,1,1
 access_cashier_batch_line,Cashier purchase batch line draft,baseer_purchase_batch.model_baseer_purchase_batch_line,group_cashier,1,1,1,1
 access_cashier_category,Cashier purchase category reader,baseer_purchase_batch.model_baseer_purchase_category_map,group_cashier,1,0,0,0
+access_owner_procurement_custody,Owner petty cash fund,baseer_procurement_requests.model_baseer_procurement_custody,group_owner,1,1,1,1
 access_owner_cashier_purchase_batch_approval_audit,Owner cashier purchase batch approval audit,model_baseer_purchase_batch_cashier_approval_audit,group_owner,1,0,0,0
 access_accountant_cashier_purchase_batch_approval_audit,Retired accountant cashier purchase batch approval audit,model_baseer_purchase_batch_cashier_approval_audit,group_accountant,0,0,0,0
 access_owner_advance_entry,Owner advance entries,model_baseer_advance_entry,group_owner,1,1,1,1

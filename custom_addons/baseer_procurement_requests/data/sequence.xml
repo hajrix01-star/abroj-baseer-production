@@ -8,7 +8,7 @@
         <field name="company_id" eval="False"/>
     </record>
     <record id="seq_procurement_custody" model="ir.sequence">
-        <field name="name">Purchasing custody</field>
+        <field name="name">Petty Cash</field>
         <field name="code">baseer.procurement.custody</field>
         <field name="prefix">PCUST/%(year)s/</field>
         <field name="padding">5</field>

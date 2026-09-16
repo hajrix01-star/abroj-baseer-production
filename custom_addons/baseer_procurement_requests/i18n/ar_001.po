@@ -47,7 +47,7 @@ msgstr "استلام المشتريات"
 #: model:ir.ui.menu,name:baseer_procurement_requests.menu_procurement_custody
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_list
-msgid "Purchasing custody"
+msgid "Petty Cash"
 msgstr "عهدة المشتريات"
 
 #. module: baseer_procurement_requests
@@ -55,7 +55,7 @@ msgstr "عهدة المشتريات"
 #: model:ir.ui.menu,name:baseer_procurement_requests.menu_procurement_custody_monthly_statement
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_monthly_statement_list
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_monthly_statement_pivot
-msgid "Monthly custody reconciliation"
+msgid "Monthly Petty Cash reconciliation"
 msgstr "تسوية العهدة الشهرية"
 
 #. module: baseer_procurement_requests
@@ -730,14 +730,14 @@ msgstr "يجب ألا يتجاوز نص البحث 128 حرفًا."
 #: model:ir.actions.act_window,name:baseer_procurement_requests.action_procurement_custody
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_list
-msgid "Purchasing custody fund"
+msgid "Petty Cash"
 msgstr "صندوق العهدة"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_list
-msgid "Custody fund"
+msgid "Petty Cash"
 msgstr "صندوق العهدة"
 
 #. module: baseer_procurement_requests
@@ -780,7 +780,7 @@ msgstr "الرصيد الحالي"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
-msgid "Custody fund movement"
+msgid "Petty Cash movement"
 msgstr "حركة صندوق العهدة"
 
 #. module: baseer_procurement_requests
@@ -843,7 +843,7 @@ msgstr "القيد المحاسبي"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
-msgid "Close fund"
+msgid "Close Petty Cash"
 msgstr "إغلاق الصندوق"
 
 #. module: baseer_procurement_requests
@@ -854,7 +854,7 @@ msgstr "التحويلات والمبالغ المستلمة"
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 msgid ""
-"Funding transfers money from the selected bank or cash journal into custody.\n"
+"Funding transfers money from the selected bank or cash journal into Petty Cash.\n"
 "                                A return receives money back into the selected journal."
 msgstr ""
 "يحوّل التمويل المبلغ من حساب البنك أو الصندوق المختار إلى صندوق العهدة،\n"
@@ -862,7 +862,7 @@ msgstr ""
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.actions.act_window,help:baseer_procurement_requests.action_procurement_custody
-msgid "Create the single purchasing custody fund for this company."
+msgid "Create the single Petty Cash fund for this company."
 msgstr "أنشئ صندوق العهدة الموحد لهذه الشركة."
 
 #. module: baseer_procurement_requests
@@ -888,17 +888,17 @@ msgstr "رصيد الإقفال"
 #. module: baseer_procurement_requests
 #: model:ir.actions.act_window,name:baseer_procurement_requests.action_procurement_custody_period_close
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_period_close_list
-msgid "Custody month closes"
+msgid "Petty Cash monthly closes"
 msgstr "إقفالات عهدة المشتريات"
 
 #. module: baseer_procurement_requests
 #: model:ir.ui.menu,name:baseer_procurement_requests.menu_procurement_custody_period_close
-msgid "Custody month closing"
+msgid "Petty Cash monthly closing"
 msgstr "إقفال عهدة المشتريات"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_period_close_form
-msgid "Custody month close"
+msgid "Petty Cash monthly close"
 msgstr "إقفال شهر العهدة"
 
 #. module: baseer_procurement_requests
@@ -938,17 +938,17 @@ msgstr "مجموع فواتير الموردين"
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_representative_balance
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
-msgid "Representative custody balance"
+msgid "Representative Petty Cash balance"
 msgstr "المتبقي مع مندوب المشتريات"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_resettle
-msgid "Resettle custody bills"
+msgid "Resettle Petty Cash bills"
 msgstr "إعادة تسوية فواتير العهدة"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_settlement_form
-msgid "Custody settlement"
+msgid "Petty Cash settlement"
 msgstr "تسوية العهدة"
 
 #. module: baseer_procurement_requests
@@ -958,19 +958,19 @@ msgstr "عكس التسوية"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_company_procurement_custody
-msgid "Purchasing custody account"
+msgid "Petty Cash account"
 msgstr "حساب عهد المشتريات"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_company_procurement_custody
-msgid "Custody journal"
+msgid "Petty Cash journal"
 msgstr "يومية عهد المشتريات"
 
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__custody_account_id
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
-msgid "Custody destination / source account"
+msgid "Petty Cash destination / source account"
 msgstr "حساب صندوق العهدة (من/إلى)"
 
 #. module: baseer_procurement_requests

@@ -344,7 +344,7 @@ class ProcurementRequest(models.Model):
                                    domain="[('company_id', '=', company_id)]", tracking=True)
     # Kept for existing employee-based requests.  New requests use the Contact
     # field below, so a purchasing representative does not need an employee or
-    # supplier record merely to hold purchasing custody.
+    # supplier record merely to hold petty cash.
     purchaser_id = fields.Many2one(
         'hr.employee.public', string='Legacy purchasing employee', check_company=True,
         ondelete='restrict', tracking=True,

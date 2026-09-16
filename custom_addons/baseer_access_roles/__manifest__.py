@@ -13,6 +13,7 @@
         'security/advance_entry.xml',
         'views/res_users_views.xml',
         'views/settings_views.xml',
+        'views/procurement_custody_views.xml',
         'views/purchase_batch_views.xml',
         'views/purchase_batch_approval_audit_views.xml',
         'views/advance_entry_views.xml',

@@ -34,6 +34,44 @@ class CashierProcurementRoleCase(TransactionCase):
         self.assertFalse(administrator.has_group('baseer_access_roles.group_accountant'))
         self.assertFalse(administrator.has_group('baseer_access_roles.group_cashier'))
 
+    def test_cpr_t00b_accountant_creates_petty_cash_owner_controls_it(self):
+        """Accountants create the fund; only the owner can alter or remove it."""
+        company = self.env['res.company'].create({'name': 'Petty Cash ACL company'})
+        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Petty Cash accountant',
+            'login': 'petty-cash-accountant-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('baseer_procurement_requests.group_procurement_accountant').id,
+            ])],
+        })
+        custody_model = self.env['baseer.procurement.custody']
+        accountant_custody = custody_model.with_user(accountant).with_company(company)
+
+        self.assertTrue(accountant_custody.check_access_rights('create', raise_exception=False))
+        self.assertFalse(accountant_custody.check_access_rights('write', raise_exception=False))
+        self.assertFalse(accountant_custody.check_access_rights('unlink', raise_exception=False))
+        petty_cash = accountant_custody.create({
+            'company_id': company.id,
+            'is_company_pool': True,
+        })
+        with self.assertRaises(AccessError):
+            petty_cash.with_user(accountant).write({'name': 'Not allowed'})
+        with self.assertRaises(AccessError):
+            petty_cash.with_user(accountant).unlink()
+        with self.assertRaises(AccessError):
+            petty_cash.with_user(accountant).action_close()
+
+        owner = self.env.ref('base.user_admin')
+        owner.write({'baseer_access_role': 'owner'})
+        owner_custody = custody_model.with_user(owner).with_company(company)
+        for operation in ('create', 'write', 'unlink'):
+            self.assertTrue(owner_custody.check_access_rights(operation, raise_exception=False))
+        petty_cash.with_user(owner).with_company(company).action_close()
+        self.assertEqual(petty_cash.state, 'closed')
+
     def _fixture(self, company, suffix):
         """Create the minimum company-local operational request fixture."""
         company_env = self.env(context={

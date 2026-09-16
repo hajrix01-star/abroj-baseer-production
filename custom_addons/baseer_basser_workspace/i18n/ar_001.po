@@ -122,12 +122,12 @@ msgstr "مراجعة سلف الموظفين في الشركة النشطة."
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_procurement_custody
-msgid "Purchasing custody"
+msgid "Petty Cash"
 msgstr "عهدة المشتريات"
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_procurement_custody
-msgid "Review purchasing custody balances and movements."
+msgid "Review purchasing Petty Cash balances and movements."
 msgstr "مراجعة أرصدة وحركات عهدة المشتريات."
 
 #. module: baseer_basser_workspace
@@ -137,7 +137,7 @@ msgstr "تسوية العهدة الشهرية"
 
 #. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_monthly_custody_reconciliation
-msgid "Review the monthly purchasing-custody reconciliation."
+msgid "Review the monthly petty-cash reconciliation."
 msgstr "مراجعة تسوية عهدة المشتريات الشهرية."
 
 #. module: baseer_basser_workspace

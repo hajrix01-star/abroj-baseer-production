@@ -1189,7 +1189,7 @@ class ProcurementFlowCase(TransactionCase):
         }).action_post()
         custody.action_close()
         line.procurement_settlement_id.write({'reversal_reason': 'closed-custody rejection'})
-        with self.assertRaisesRegex(Exception, 'closed purchasing custody'):
+        with self.assertRaisesRegex(Exception, 'closed petty cash'):
             line.procurement_settlement_id.action_reverse()
         self.assertEqual(custody.state, 'closed')
         open_custody_lines = self.env['account.move.line'].search([

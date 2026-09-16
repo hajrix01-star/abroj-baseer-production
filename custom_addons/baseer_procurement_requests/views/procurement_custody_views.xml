@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- One shared, company-scoped purchasing custody pool. Legacy employee
+    <!-- One shared, company-scoped petty cash pool. Legacy employee
          custodies remain in the database but outside this operational action. -->
     <record id="view_procurement_custody_list" model="ir.ui.view">
         <field name="name">baseer.procurement.custody.list</field>
         <field name="model">baseer.procurement.custody</field>
         <field name="arch" type="xml">
-            <list string="Purchasing custody fund" default_order="company_id, opened_on desc">
-                <field name="name" string="Custody fund"/>
+            <list string="Petty Cash" default_order="company_id, opened_on desc">
+                <field name="name" string="Petty Cash"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="opened_on" string="Opened on"/>
                 <field name="funded_amount" string="Funds received" sum="Funds received"/>
@@ -23,7 +23,7 @@
         <field name="name">baseer.procurement.custody.event.form</field>
         <field name="model">baseer.procurement.custody.event</field>
         <field name="arch" type="xml">
-            <form string="Custody fund movement">
+            <form string="Petty Cash movement">
                 <header>
                     <button name="action_post" type="object" string="Post movement"
                             class="oe_highlight" invisible="state == 'posted'"
@@ -35,7 +35,7 @@
                     <field name="company_id" invisible="1"/>
                     <group>
                         <group>
-                            <field name="custody_id" string="Custody fund" options="{'no_create': True}"
+                            <field name="custody_id" string="Petty Cash" options="{'no_create': True}"
                                    readonly="state == 'posted'"/>
                             <field name="event_date" string="Date" readonly="state == 'posted'"/>
                             <field name="event_type" string="Movement" readonly="state == 'posted'"/>
@@ -53,7 +53,7 @@
                             <field name="cash_journal_id" string="Bank / cash journal"
                                    options="{'no_create': True}" readonly="state == 'posted'"
                                    domain="[('company_id', '=', company_id), ('active', '=', True), ('type', 'in', ['bank', 'cash'])]"/>
-                            <field name="custody_account_id" string="Custody destination / source account" readonly="1"/>
+                            <field name="custody_account_id" string="Petty Cash destination / source account" readonly="1"/>
                             <field name="reference" string="Transfer reference" placeholder="Bank transfer or receipt reference"
                                    readonly="state == 'posted'"/>
                         </group>
@@ -70,9 +70,9 @@
         <field name="name">baseer.procurement.custody.form</field>
         <field name="model">baseer.procurement.custody</field>
         <field name="arch" type="xml">
-            <form string="Purchasing custody fund">
+            <form string="Petty Cash">
                 <header>
-                    <button name="action_close" type="object" string="Close fund" class="oe_highlight"
+                    <button name="action_close" type="object" string="Close Petty Cash" class="oe_highlight"
                             invisible="state != 'open'" groups="baseer_procurement_requests.group_procurement_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="open,closed"/>
                 </header>
@@ -80,7 +80,7 @@
                     <field name="currency_id" invisible="1"/>
                     <field name="is_company_pool" invisible="1"/>
                     <div class="oe_title">
-                        <label for="name" string="Custody fund"/>
+                        <label for="name" string="Petty Cash"/>
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
@@ -124,7 +124,7 @@
                     <notebook>
                         <page string="Funding and returns" name="custody_movements">
                             <p class="text-muted">
-                                Funding transfers money from the selected bank or cash journal into custody.
+                                Funding transfers money from the selected bank or cash journal into Petty Cash.
                                 A return receives money back into the selected journal.
                             </p>
                             <field name="event_ids" context="{'default_custody_id': id, 'default_is_company_pool': is_company_pool}" readonly="state == 'closed'">
@@ -145,7 +145,7 @@
                                     <field name="cash_journal_id" string="Bank / cash journal"
                                            options="{'no_create': True}" readonly="state == 'posted'"
                                            domain="[('company_id', '=', company_id), ('active', '=', True), ('type', 'in', ['bank', 'cash'])]"/>
-                                    <field name="custody_account_id" string="Custody destination / source account" readonly="1" optional="show"/>
+                                    <field name="custody_account_id" string="Petty Cash destination / source account" readonly="1" optional="show"/>
                                     <field name="reference" string="Transfer reference" readonly="state == 'posted'"/>
                                     <button name="action_post" type="object" string="Post" class="btn-primary"
                                             invisible="state == 'posted'"
@@ -177,14 +177,14 @@
     </record>
 
     <record id="action_procurement_custody" model="ir.actions.act_window">
-        <field name="name">Purchasing custody fund</field>
+        <field name="name">Petty Cash</field>
         <field name="res_model">baseer.procurement.custody</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_procurement_custody_search"/>
         <field name="domain">[('is_company_pool', '=', True), ('company_id', 'in', allowed_company_ids)]</field>
         <field name="context">{'default_is_company_pool': True}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Create the single purchasing custody fund for this company.</p>
+            <p class="o_view_nocontent_smiling_face">Create the single Petty Cash fund for this company.</p>
             <p>Funding, supplier purchases, returns, and the current balance remain traceable in Odoo accounting.</p>
         </field>
     </record>
@@ -193,7 +193,7 @@
         <field name="name">baseer.procurement.custody.settlement.form</field>
         <field name="model">baseer.procurement.custody.settlement</field>
         <field name="arch" type="xml">
-            <form string="Custody settlement">
+            <form string="Petty Cash settlement">
                 <header>
                     <button name="action_reverse" type="object" string="Reverse settlement" class="btn-danger"
                             invisible="state != 'active'" groups="baseer_procurement_requests.group_procurement_accountant"/>
@@ -220,7 +220,7 @@
         <field name="name">baseer.procurement.custody.monthly.statement.list</field>
         <field name="model">baseer.procurement.custody.monthly.statement</field>
         <field name="arch" type="xml">
-            <list string="Monthly custody reconciliation" create="0" edit="0" delete="0"
+            <list string="Monthly Petty Cash reconciliation" create="0" edit="0" delete="0"
                   default_order="month_start desc, representative_partner_id">
                 <field name="month_start" string="Month"/>
                 <field name="representative_partner_id" string="Purchase representative"/>
@@ -240,7 +240,7 @@
         <field name="name">baseer.procurement.custody.monthly.statement.pivot</field>
         <field name="model">baseer.procurement.custody.monthly.statement</field>
         <field name="arch" type="xml">
-            <pivot string="Monthly custody reconciliation">
+            <pivot string="Monthly Petty Cash reconciliation">
                 <field name="representative_partner_id" type="row"/>
                 <field name="month_start" interval="month" type="col"/>
                 <field name="opening_balance" type="measure"/>
@@ -271,7 +271,7 @@
     </record>
 
     <record id="action_procurement_custody_monthly_statement" model="ir.actions.act_window">
-        <field name="name">Monthly custody reconciliation</field>
+        <field name="name">Monthly Petty Cash reconciliation</field>
         <field name="res_model">baseer.procurement.custody.monthly.statement</field>
         <field name="view_mode">list,pivot</field>
         <field name="search_view_id" ref="view_procurement_custody_monthly_statement_search"/>
@@ -282,12 +282,12 @@
         <field name="name">baseer.procurement.custody.period.close.list</field>
         <field name="model">baseer.procurement.custody.period.close</field>
         <field name="arch" type="xml">
-            <list string="Custody month closes" default_order="month_start desc, representative_partner_id"
+            <list string="Petty Cash monthly closes" default_order="month_start desc, representative_partner_id"
                   editable="bottom" open_form_view="True" delete="0">
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="month_start" string="Month" readonly="state == 'closed'"/>
-                <field name="custody_id" string="Custody fund" options="{'no_create': True}"
+                <field name="custody_id" string="Petty Cash" options="{'no_create': True}"
                        readonly="state == 'closed'"
                        domain="[('company_id', '=', company_id), ('is_company_pool', '=', True), ('state', '=', 'open')]"/>
                 <field name="representative_partner_id" string="Purchase representative"
@@ -310,7 +310,7 @@
         <field name="name">baseer.procurement.custody.period.close.form</field>
         <field name="model">baseer.procurement.custody.period.close</field>
         <field name="arch" type="xml">
-            <form string="Custody month close">
+            <form string="Petty Cash monthly close">
                 <header>
                     <button name="action_close" type="object" string="Close and carry forward"
                             class="oe_highlight" invisible="state == 'closed'"
@@ -323,7 +323,7 @@
                         <group>
                             <field name="company_id" readonly="1" groups="base.group_multi_company"/>
                             <field name="month_start" string="Month" readonly="state == 'closed'"/>
-                            <field name="custody_id" string="Custody fund" options="{'no_create': True}"
+                            <field name="custody_id" string="Petty Cash" options="{'no_create': True}"
                                    readonly="state == 'closed'"
                                    domain="[('company_id', '=', company_id), ('is_company_pool', '=', True), ('state', '=', 'open')]"/>
                             <field name="representative_partner_id" string="Purchase representative"
@@ -378,7 +378,7 @@
     </record>
 
     <record id="action_procurement_custody_period_close" model="ir.actions.act_window">
-        <field name="name">Custody month closes</field>
+        <field name="name">Petty Cash monthly closes</field>
         <field name="res_model">baseer.procurement.custody.period.close</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_procurement_custody_period_close_search"/>
@@ -391,13 +391,13 @@
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page name="baseer_procurement_custody" string="Purchasing custody"
+                <page name="baseer_procurement_custody" string="Petty Cash"
                       groups="baseer_procurement_requests.group_procurement_manager">
                     <group>
-                        <field name="baseer_procurement_custody_account_id" string="Purchasing custody account"
+                        <field name="baseer_procurement_custody_account_id" string="Petty Cash account"
                                domain="[('company_ids', 'in', [id]), ('active', '=', True), ('reconcile', '=', True), ('account_type', 'in', ['asset_receivable', 'asset_current'])]"
                                options="{'no_create': True}"/>
-                        <field name="baseer_procurement_custody_journal_id" string="Custody journal"
+                        <field name="baseer_procurement_custody_journal_id" string="Petty Cash journal"
                                domain="[('company_id', '=', id), ('active', '=', True), ('type', '=', 'general')]"
                                options="{'no_create': True}"/>
                     </group>
@@ -407,7 +407,7 @@
     </record>
 
     <!-- Legacy row allocation is read-only in the normal interface. New
-         custody settlements are linked once from the batch header. -->
+         Petty Cash settlements are linked once from the batch header. -->
     <record id="view_purchase_batch_line_procurement_link" model="ir.ui.view">
         <field name="name">baseer.purchase.batch.line.procurement.link</field>
         <field name="model">baseer.purchase.batch.line</field>
@@ -465,8 +465,8 @@
             </xpath>
             <xpath expr="//field[@name='line_ids']" position="before">
                 <div class="alert alert-info mb-3" role="status" invisible="not procurement_custody_id">
-                    Payment source: <strong>Purchasing custody fund</strong>.
-                    Supplier rows are settled from custody after approval and their total must equal the received request total.
+                    Payment source: <strong>Petty Cash</strong>.
+                    Supplier rows are settled from Petty Cash after approval and their total must equal the received request total.
                 </div>
                 <div class="row g-3 mb-3" invisible="not procurement_custody_id">
                     <div class="col-12 col-md-4">
@@ -483,7 +483,7 @@
                     </div>
                     <div class="col-12 col-md-4">
                         <div class="card h-100 border-0 bg-primary-subtle"><div class="card-body">
-                            <div class="text-muted">Representative custody balance</div>
+                            <div class="text-muted">Representative Petty Cash balance</div>
                             <div class="fs-4 fw-bold" dir="ltr"><field name="procurement_representative_balance" readonly="1"/></div>
                         </div></div>
                     </div>
@@ -499,7 +499,7 @@
                 <attribute name="column_invisible">parent.procurement_custody_id</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='move_id']" position="after">
-                <field name="procurement_settlement_move_id" string="Custody settlement" optional="hide" readonly="1"/>
+                <field name="procurement_settlement_move_id" string="Petty Cash settlement" optional="hide" readonly="1"/>
             </xpath>
             <xpath expr="//field[@name='line_ids']/following-sibling::p[1]" position="attributes">
                 <attribute name="invisible">procurement_custody_id</attribute>
@@ -513,7 +513,7 @@
         <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header/button[@name='action_approve']" position="after">
-                <button name="action_resettle_custody" type="object" string="Resettle custody bills"
+                <button name="action_resettle_custody" type="object" string="Resettle Petty Cash bills"
                         invisible="state != 'approved' or not procurement_custody_id"
                         groups="baseer_procurement_requests.group_procurement_accountant"/>
             </xpath>

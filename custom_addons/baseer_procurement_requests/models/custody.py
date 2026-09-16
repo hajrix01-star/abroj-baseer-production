@@ -27,7 +27,7 @@ class AccountMove(models.Model):
         ])
         if protected:
             raise UserError(_(
-                'Purchasing-custody entries cannot be reset, cancelled, or deleted. '
+                'Petty Cash entries cannot be reset, cancelled, or deleted. '
                 'Use the documented custody return or settlement-reversal action.'
             ))
 
@@ -51,17 +51,17 @@ class AccountMove(models.Model):
 class ResCompany(models.Model):
     _inherit = 'res.company'
 
-    baseer_procurement_custody_account_id = fields.Many2one('account.account', string='Purchasing custody receivable', check_company=True)
-    baseer_procurement_custody_journal_id = fields.Many2one('account.journal', string='Purchasing custody journal', check_company=True)
+    baseer_procurement_custody_account_id = fields.Many2one('account.account', string='Petty Cash receivable', check_company=True)
+    baseer_procurement_custody_journal_id = fields.Many2one('account.journal', string='Petty Cash journal', check_company=True)
 
     def _baseer_procurement_custody_ready(self):
         self.ensure_one()
         account, journal = self.baseer_procurement_custody_account_id, self.baseer_procurement_custody_journal_id
         if (not account or self not in account.company_ids or not account.active or not account.reconcile
                 or account.account_type not in ('asset_receivable', 'asset_current')):
-            raise UserError(_('Configure an active reconcilable purchasing-custody receivable account first.'))
+            raise UserError(_('Configure an active reconcilable petty-cash receivable account first.'))
         if not journal or journal.company_id != self or not journal.active or journal.type != 'general':
-            raise UserError(_('Configure an active general purchasing-custody journal first.'))
+            raise UserError(_('Configure an active general petty-cash journal first.'))
         return account, journal
 
 
@@ -78,7 +78,7 @@ class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
     baseer_procurement_custody_id = fields.Many2one(
-        'baseer.procurement.custody', string='Purchasing custody source',
+        'baseer.procurement.custody', string='Petty Cash source',
         readonly=True, copy=False, index=True, ondelete='restrict',
         check_company=True,
     )
@@ -86,18 +86,18 @@ class AccountMoveLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         if any('baseer_procurement_custody_id' in vals for vals in vals_list) and not (self.env.su and self.env.context.get(INTERNAL)):
-            raise AccessError(_('Purchasing-custody source links are controlled by the server.'))
+            raise AccessError(_('Petty Cash source links are controlled by the server.'))
         return super().create(vals_list)
 
     def write(self, vals):
         if 'baseer_procurement_custody_id' in vals:
-            raise AccessError(_('Purchasing-custody source links are immutable.'))
+            raise AccessError(_('Petty Cash source links are immutable.'))
         return super().write(vals)
 
 
 class ProcurementCustody(models.Model):
     _name = 'baseer.procurement.custody'
-    _description = 'Purchasing representative custody'
+    _description = 'Purchase representative Petty Cash'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'opened_on desc, id desc'
     _check_company_auto = True
@@ -105,8 +105,8 @@ class ProcurementCustody(models.Model):
     name = fields.Char(required=True, readonly=True, default=lambda self: _('New'), copy=False, index=True)
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, index=True, ondelete='restrict', tracking=True)
     is_company_pool = fields.Boolean(
-        string='Company custody pool', default=False, readonly=True, copy=False,
-        help='The one shared purchasing-custody pool for a company. Legacy employee custodies remain individual records.',
+        string='Company Petty Cash pool', default=False, readonly=True, copy=False,
+        help='The one shared petty-cash pool for a company. Legacy employee custodies remain individual records.',
     )
     # `employee_id` is kept for the original employee-custody records.  New
     # purchase representatives are external contacts and must not be created
@@ -190,7 +190,7 @@ class ProcurementCustody(models.Model):
         return bool(legacy_contact and legacy_contact.commercial_partner_id == representative)
 
     def _representative_balance(self, representative_partner=False):
-        """Open custody balance for one representative within the shared pool."""
+        """Open Petty Cash balance for one representative within the shared pool."""
         self.ensure_one()
         representative = self._representative_partner(representative_partner)
         Event = self.env['baseer.procurement.custody.event']
@@ -225,7 +225,7 @@ class ProcurementCustody(models.Model):
                 company_id = vals.get('company_id') or self.env.company.id
                 self.env.cr.execute('SELECT id FROM res_company WHERE id = %s FOR UPDATE', [company_id])
                 if self.search_count([('company_id', '=', company_id), ('is_company_pool', '=', True)]):
-                    raise ValidationError(_('This company already has a purchasing-custody pool.'))
+                    raise ValidationError(_('This company already has a petty-cash pool.'))
         return super().create(vals_list)
 
     def _lock(self):
@@ -281,7 +281,7 @@ class ProcurementCustody(models.Model):
 
     def _require_manager(self):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_manager'):
-            raise AccessError(_('Only a procurement manager can manage purchasing custody.'))
+            raise AccessError(_('Only a procurement manager can manage petty cash.'))
 
     def action_close(self):
         self._require_manager()
@@ -308,7 +308,7 @@ class ProcurementCustodyMonthlyStatement(models.Model):
     """Read-only monthly reconciliation from posted native source documents."""
 
     _name = 'baseer.procurement.custody.monthly.statement'
-    _description = 'Purchasing custody monthly statement'
+    _description = 'Petty Cash monthly statement'
     _auto = False
     _order = 'month_start desc, id desc'
     _check_company_auto = True
@@ -428,7 +428,7 @@ class ProcurementCustodyPeriodClose(models.Model):
     """
 
     _name = 'baseer.procurement.custody.period.close'
-    _description = 'Purchasing custody month close'
+    _description = 'Petty Cash monthly close'
     _order = 'month_start desc, id desc'
     _check_company_auto = True
 
@@ -479,7 +479,7 @@ class ProcurementCustodyPeriodClose(models.Model):
 
     def _require_accountant(self):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant'):
-            raise AccessError(_('Only a procurement accountant can close a custody month.'))
+            raise AccessError(_('Only a procurement accountant can close a petty-cash month.'))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -488,7 +488,7 @@ class ProcurementCustodyPeriodClose(models.Model):
             'returned_amount', 'carry_forward_amount', 'state', 'closed_by_id', 'closed_at',
         }
         if any(protected & set(values) for values in vals_list):
-            raise AccessError(_('Custody month-close totals and state are controlled by the server.'))
+            raise AccessError(_('Petty Cash month-close totals and state are controlled by the server.'))
         normalized = []
         for values in vals_list:
             values = dict(values)
@@ -508,7 +508,7 @@ class ProcurementCustodyPeriodClose(models.Model):
             ('representative_partner_id', '=', representative_partner.commercial_partner_id.id),
             ('month_start', '=', month_start), ('state', '=', 'closed'),
         ]):
-            raise ValidationError(_('This representative custody month is closed. Record any correction in an open month.'))
+            raise ValidationError(_('This representative petty-cash month is closed. Record any correction in an open month.'))
 
     def _snapshot(self):
         self.ensure_one()
@@ -615,20 +615,20 @@ class ProcurementCustodyPeriodClose(models.Model):
             'carry_forward_amount', 'state', 'closed_by_id', 'closed_at',
         }
         if self.filtered(lambda close: close.state == 'closed') and protected & set(values):
-            raise UserError(_('A closed custody month is immutable. Record corrections in a later open month.'))
+            raise UserError(_('A closed petty-cash month is immutable. Record corrections in a later open month.'))
         if {'state', 'closed_by_id', 'closed_at'} & set(values):
             raise AccessError(_('Custody close state is controlled by the server.'))
         return super().write(values)
 
     def unlink(self):
         if self.filtered(lambda close: close.state == 'closed'):
-            raise UserError(_('A closed custody month cannot be deleted.'))
+            raise UserError(_('A closed petty-cash month cannot be deleted.'))
         return super().unlink()
 
 
 class ProcurementCustodyEvent(models.Model):
     _name = 'baseer.procurement.custody.event'
-    _description = 'Purchasing custody event'
+    _description = 'Petty Cash event'
     _order = 'event_date desc, id desc'
     _check_company_auto = True
 
@@ -641,7 +641,7 @@ class ProcurementCustodyEvent(models.Model):
     cash_journal_id = fields.Many2one('account.journal', required=True, check_company=True, ondelete='restrict')
     custody_account_id = fields.Many2one(
         related='company_id.baseer_procurement_custody_account_id',
-        string='Custody destination / source account', readonly=True,
+        string='Petty Cash destination / source account', readonly=True,
     )
     representative_partner_id = fields.Many2one(
         'res.partner', string='Purchase representative', ondelete='restrict',
@@ -679,7 +679,7 @@ class ProcurementCustodyEvent(models.Model):
             if event.custody_id.is_company_pool and event.event_type == 'funding':
                 request = event.procurement_request_id
                 if not request:
-                    raise ValidationError(_('Shared custody funding must be linked to a completed purchase request.'))
+                    raise ValidationError(_('Shared Petty Cash funding must be linked to a completed purchase request.'))
                 if request.company_id != event.company_id:
                     raise ValidationError(_('The funding request must belong to the custody company.'))
                 if request.state != 'purchased':
@@ -707,7 +707,7 @@ class ProcurementCustodyEvent(models.Model):
 
     def _require_accountant(self):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant'):
-            raise AccessError(_('Only a procurement accountant can post purchasing-custody transfers.'))
+            raise AccessError(_('Only a procurement accountant can post petty-cash transfers.'))
 
     def _cash_account(self):
         self.ensure_one()
@@ -755,7 +755,7 @@ class ProcurementCustodyEvent(models.Model):
                 # unique source link is the durable duplicate guard.
                 if (request.company_id != event.company_id or request.state != 'purchased'
                         or not event.custody_id._representative_matches_request(request, partner)):
-                    raise ValidationError(_('The shared custody funding no longer matches its completed purchase request.'))
+                    raise ValidationError(_('The shared Petty Cash funding no longer matches its completed purchase request.'))
                 self.env.cr.execute(
                     '''SELECT id FROM baseer_procurement_custody_event
                          WHERE procurement_request_id = %s AND id != %s AND state = 'posted'
@@ -772,7 +772,7 @@ class ProcurementCustodyEvent(models.Model):
             label = '%s — %s' % (event.custody_id.name, event_label)
             if (event.event_type == 'return'
                     and event.currency_id.compare_amounts(event.amount, event.custody_id._representative_balance(partner)) > 0):
-                raise ValidationError(_('Returned cash cannot exceed the available custody balance.'))
+                raise ValidationError(_('Returned cash cannot exceed the available Petty Cash balance.'))
             debit, credit = (account, cash) if event.event_type == 'funding' else (cash, account)
             move = self.env['account.move'].sudo().with_company(event.company_id).with_context(**{INTERNAL: True}).create({
                 'move_type': 'entry', 'company_id': event.company_id.id, 'journal_id': journal.id, 'date': event.event_date, 'ref': label,
@@ -812,12 +812,12 @@ class BaseerPurchaseBatchLine(models.Model):
     _inherit = 'baseer.purchase.batch.line'
 
     procurement_request_id = fields.Many2one('baseer.procurement.request', string='Procurement request', ondelete='restrict', check_company=True, index=True, copy=False)
-    procurement_custody_id = fields.Many2one('baseer.procurement.custody', string='Purchasing custody', ondelete='restrict', check_company=True, index=True, copy=False)
+    procurement_custody_id = fields.Many2one('baseer.procurement.custody', string='Petty Cash', ondelete='restrict', check_company=True, index=True, copy=False)
     procurement_allocation_ids = fields.One2many('baseer.procurement.bill.allocation', 'batch_line_id', string='Request allocations', copy=False)
     procurement_allocated_amount = fields.Monetary(compute='_compute_procurement_allocation_totals', currency_field='currency_id', readonly=True)
     procurement_unallocated_amount = fields.Monetary(compute='_compute_procurement_allocation_totals', currency_field='currency_id', readonly=True)
     procurement_settlement_id = fields.Many2one('baseer.procurement.custody.settlement', compute='_compute_procurement_settlement', readonly=True)
-    procurement_settlement_move_id = fields.Many2one('account.move', string='Custody settlement entry', compute='_compute_procurement_settlement', readonly=True)
+    procurement_settlement_move_id = fields.Many2one('account.move', string='Petty Cash settlement entry', compute='_compute_procurement_settlement', readonly=True)
 
     def _compute_procurement_settlement(self):
         records = self.env['baseer.procurement.custody.settlement'].sudo().search([('batch_line_id', 'in', self.ids)])
@@ -863,7 +863,7 @@ class BaseerPurchaseBatchLine(models.Model):
         if self.filtered(lambda line: line.batch_state == 'approved') and protected & set(values):
             raise UserError(_('Approved procurement links are immutable.'))
         if 'procurement_custody_id' in values and self.filtered('procurement_allocation_ids'):
-            raise UserError(_('Clear request allocations before changing the purchasing custody.'))
+            raise UserError(_('Clear request allocations before changing the petty cash.'))
         return super().write(self._normalize_procurement_custody_values(values))
 
     def _baseer_existing_request_allocations(self, request_ids):
@@ -957,7 +957,7 @@ class BaseerPurchaseBatchLine(models.Model):
             # Financial ordering is then custody -> requests -> source work.
             custody._lock()
             if custody.state != 'open':
-                raise UserError(_('The purchasing custody must remain open for settlement.'))
+                raise UserError(_('The petty cash must remain open for settlement.'))
             requests = self.env['baseer.procurement.request'].browse(sorted({
                 request.id for request, amount in allocation_amounts
             }))
@@ -993,12 +993,12 @@ class BaseerPurchaseBatchLine(models.Model):
                 custody, partner, line.invoice_date
             )
             if line.company_id._get_violated_lock_dates(line.invoice_date, False, journal):
-                raise ValidationError(_('The custody settlement date is locked. Choose an open accounting period.'))
+                raise ValidationError(_('The Petty Cash settlement date is locked. Choose an open accounting period.'))
             if line.company_id.currency_id.compare_amounts(custody._representative_balance(partner), line.gross_amount) < 0:
-                raise UserError(_('The available custody balance is not sufficient for this supplier bill.'))
+                raise UserError(_('The available Petty Cash balance is not sufficient for this supplier bill.'))
             payable = line.move_id.line_ids.filtered(lambda entry: entry.account_id.account_type == 'liability_payable' and not entry.reconciled)
             if len(payable) != 1 or currency.compare_amounts(abs(payable.amount_residual), line.gross_amount):
-                raise UserError(_('The supplier bill payable is not available for a full custody settlement.'))
+                raise UserError(_('The supplier bill payable is not available for a full Petty Cash settlement.'))
             label = '%s — %s' % (custody.name, line.move_id.name)
             move = self.env['account.move'].sudo().with_company(line.company_id).with_context(**{INTERNAL: True}).create({
                 'move_type': 'entry', 'company_id': line.company_id.id, 'journal_id': journal.id, 'date': line.invoice_date, 'ref': label,
@@ -1012,7 +1012,7 @@ class BaseerPurchaseBatchLine(models.Model):
             settlement_payable = move.line_ids.filtered(lambda entry: entry.account_id == payable.account_id)
             (payable | settlement_payable).reconcile()
             if line.move_id.payment_state != 'paid':
-                raise UserError(_('The native supplier bill did not reconcile after custody settlement.'))
+                raise UserError(_('The native supplier bill did not reconcile after Petty Cash settlement.'))
             custody_line = move.line_ids.filtered(lambda entry: entry.account_id == account and entry.partner_id == partner)
             open_custody = self.env['account.move.line'].search([
                 ('account_id', '=', account.id), ('partner_id', '=', partner.id), ('reconciled', '=', False),
@@ -1029,7 +1029,7 @@ class BaseerPurchaseBatchLine(models.Model):
 class ProcurementBillAllocation(models.Model):
     """Immutable amount allocation of one supplier-bill row across requests.
 
-    The native bill and its custody settlement still exist once per batch row.
+    The native bill and its Petty Cash settlement still exist once per batch row.
     These rows only define which completed operational requests consume that
     amount, so an invoice may be partial or shared without duplicate bills.
     """
@@ -1060,7 +1060,7 @@ class ProcurementBillAllocation(models.Model):
             if line.batch_state != 'draft':
                 raise UserError(_('Approved supplier-bill allocations are immutable.'))
             if not custody:
-                raise ValidationError(_('Choose the purchasing custody before allocating supplier-bill requests.'))
+                raise ValidationError(_('Choose the petty cash before allocating supplier-bill requests.'))
             if line.procurement_request_id:
                 raise ValidationError(_('Clear the single procurement-request link before using request allocations.'))
             if request.company_id != line.company_id:
@@ -1085,7 +1085,7 @@ class ProcurementBillAllocation(models.Model):
 
 class ProcurementCustodySettlement(models.Model):
     _name = 'baseer.procurement.custody.settlement'
-    _description = 'Purchasing custody supplier settlement'
+    _description = 'Petty Cash supplier settlement'
     _order = 'id desc'
     _check_company_auto = True
 
@@ -1109,31 +1109,31 @@ class ProcurementCustodySettlement(models.Model):
                     or settlement.batch_line_id.company_id != settlement.company_id
                     or settlement.move_id.company_id != settlement.company_id
                     or (settlement.reversal_move_id and settlement.reversal_move_id.company_id != settlement.company_id)):
-                raise ValidationError(_('Custody settlement records must stay within one company.'))
+                raise ValidationError(_('Petty Cash settlement records must stay within one company.'))
 
     def write(self, vals):
         allowed = {'reversal_reason'}
         if set(vals) - allowed or self.filtered(lambda settlement: settlement.state != 'active'):
-            raise UserError(_('Custody settlements are immutable native-accounting links.'))
+            raise UserError(_('Petty Cash settlements are immutable native-accounting links.'))
         return super().write(vals)
 
     def unlink(self):
-        raise UserError(_('Custody settlements cannot be deleted. Reverse the native accounting correction instead.'))
+        raise UserError(_('Petty Cash settlements cannot be deleted. Reverse the native accounting correction instead.'))
 
     def action_reverse(self):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant'):
-            raise AccessError(_('Only a procurement accountant can reverse a custody settlement.'))
+            raise AccessError(_('Only a procurement accountant can reverse a Petty Cash settlement.'))
         for settlement in self:
             with self.env.cr.savepoint():
                 settlement.custody_id._lock()
                 self.env.cr.execute('SELECT id FROM baseer_procurement_custody_settlement WHERE id = %s FOR UPDATE', [settlement.id])
                 settlement.invalidate_recordset()
                 if settlement.state != 'active' or settlement.reversal_move_id:
-                    raise UserError(_('This custody settlement has already been reversed.'))
+                    raise UserError(_('This Petty Cash settlement has already been reversed.'))
                 if settlement.custody_id.state != 'open':
-                    raise UserError(_('A settlement on a closed purchasing custody cannot be reversed. Contact the procurement accountant for an authorized correction.'))
+                    raise UserError(_('A settlement on a closed petty cash cannot be reversed. Contact the procurement accountant for an authorized correction.'))
                 if not settlement.reversal_reason or not settlement.reversal_reason.strip():
-                    raise ValidationError(_('Enter a reversal reason before reversing the custody settlement.'))
+                    raise ValidationError(_('Enter a reversal reason before reversing the Petty Cash settlement.'))
                 if settlement.move_id.state != 'posted':
                     raise UserError(_('Only a posted native custody-settlement entry can be reversed.'))
                 account, journal = settlement.company_id._baseer_procurement_custody_ready()
@@ -1149,7 +1149,7 @@ class ProcurementCustodySettlement(models.Model):
                 if len(original_payable) != 1 or len(original_custody) != 1:
                     raise UserError(_('The native custody-settlement entry is incomplete and cannot be reversed automatically.'))
                 (original_payable | original_custody).remove_move_reconcile()
-                label = '%s — %s' % (settlement.custody_id.name, _('Custody settlement reversal'))
+                label = '%s — %s' % (settlement.custody_id.name, _('Petty Cash settlement reversal'))
                 reversal = self.env['account.move'].sudo().with_company(settlement.company_id).with_context(**{INTERNAL: True}).create({
                 'move_type': 'entry', 'company_id': settlement.company_id.id, 'journal_id': journal.id,
                 'date': reversal_date, 'ref': '%s — %s' % (label, settlement.reversal_reason.strip()),
@@ -1189,7 +1189,7 @@ class BaseerPurchaseBatch(models.Model):
         ondelete='restrict', check_company=True, index=True, copy=False,
     )
     procurement_custody_id = fields.Many2one(
-        'baseer.procurement.custody', string='Purchasing custody',
+        'baseer.procurement.custody', string='Petty Cash',
         ondelete='restrict', check_company=True, index=True, copy=False,
     )
     procurement_representative_partner_id = fields.Many2one(
@@ -1203,7 +1203,7 @@ class BaseerPurchaseBatch(models.Model):
     )
     procurement_representative_balance = fields.Monetary(
         compute='_compute_procurement_representative_balance',
-        string='Representative custody balance', currency_field='currency_id', readonly=True,
+        string='Representative Petty Cash balance', currency_field='currency_id', readonly=True,
     )
 
     @api.depends(
@@ -1247,9 +1247,9 @@ class BaseerPurchaseBatch(models.Model):
             if request and request.company_id != batch.company_id:
                 raise ValidationError(_('The received procurement request must belong to the batch company.'))
             if custody and custody.company_id != batch.company_id:
-                raise ValidationError(_('The purchasing custody must belong to the batch company.'))
+                raise ValidationError(_('The petty cash must belong to the batch company.'))
             if custody and custody.state != 'open':
-                raise ValidationError(_('Only an open purchasing custody can be used by a supplier batch.'))
+                raise ValidationError(_('Only an open petty cash can be used by a supplier batch.'))
             if custody and custody.is_company_pool and not batch.procurement_representative_partner_id:
                 raise ValidationError(_('Choose the purchase representative for a shared custody-pool batch.'))
             if request and custody and not custody._representative_matches_request(request, batch.procurement_representative_partner_id):
@@ -1290,7 +1290,7 @@ class BaseerPurchaseBatch(models.Model):
         for batch in self:
             request, custody = batch.procurement_request_id, batch.procurement_custody_id
             if custody and not request:
-                raise ValidationError(_('Choose the received purchase request before using purchasing custody.'))
+                raise ValidationError(_('Choose the received purchase request before using petty cash.'))
             if custody and custody.is_company_pool and not batch.procurement_representative_partner_id:
                 raise ValidationError(_('Choose the purchase representative for a shared custody-pool batch.'))
             if not request:
@@ -1298,7 +1298,7 @@ class BaseerPurchaseBatch(models.Model):
             if custody:
                 custody._lock()
                 if custody.state != 'open':
-                    raise ValidationError(_('Only an open purchasing custody can be used by a supplier batch.'))
+                    raise ValidationError(_('Only an open petty cash can be used by a supplier batch.'))
             self.env.cr.execute(
                 'SELECT id FROM baseer_procurement_request WHERE id = %s FOR UPDATE', [request.id]
             )
@@ -1307,7 +1307,7 @@ class BaseerPurchaseBatch(models.Model):
             )
             request.invalidate_recordset()
             if request.state != 'purchased':
-                raise ValidationError(_('Only a completed quantity receipt can be entered through purchasing custody.'))
+                raise ValidationError(_('Only a completed quantity receipt can be entered through petty cash.'))
             if request.company_id != batch.company_id:
                 raise ValidationError(_('The received purchase request must belong to the batch company.'))
             if custody and not custody._representative_matches_request(request, batch.procurement_representative_partner_id):

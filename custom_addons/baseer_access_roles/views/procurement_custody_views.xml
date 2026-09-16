@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_procurement_custody_owner_controls" model="ir.ui.view">
+        <field name="name">baseer.procurement.custody.owner.controls</field>
+        <field name="model">baseer.procurement.custody</field>
+        <field name="inherit_id" ref="baseer_procurement_requests.view_procurement_custody_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_close']" position="attributes">
+                <attribute name="groups">baseer_access_roles.group_owner</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -89,7 +89,7 @@ def _financial_snapshot():
     return {'move_lines': move_lines, 'moves': moves}
 
 
-def _assert_no_live_account_references(source_ids):
+def _assert_no_live_account_references(source_ids, expected_native_model_refs):
     """Reject archiving if a source dimension occurs outside retained evidence."""
     # Direct FKs are discovered from PostgreSQL's own catalog so a future Odoo
     # module cannot silently add a reference we forgot to enumerate.
@@ -129,7 +129,14 @@ def _assert_no_live_account_references(source_ids):
     source_keys = [str(source_id) for source_id in source_ids]
     for table_name, column_name in env.cr.fetchall():
         env.cr.execute(
-            'SELECT count(*) FROM "%s" WHERE "%s"::jsonb ?| %%s' % (table_name, column_name),
+            '''SELECT count(*)
+                 FROM "%s"
+                WHERE EXISTS (
+                    SELECT 1
+                      FROM jsonb_object_keys(coalesce("%s"::jsonb, '{}'::jsonb)) AS item(key)
+                      CROSS JOIN LATERAL unnest(string_to_array(item.key, ',')) AS part(value)
+                     WHERE btrim(part.value) = ANY(%%s)
+                )''' % (table_name, column_name),
             [source_keys],
         )
         count = env.cr.fetchone()[0]
@@ -137,10 +144,23 @@ def _assert_no_live_account_references(source_ids):
         # inspected separately and is deliberately the only JSON reference
         # that will be rewritten in this transition.
         if table_name == 'account_analytic_distribution_model':
-            if count != len(source_ids):
-                raise RuntimeError('Expected one native distribution model per archived source.')
+            if count != expected_native_model_refs:
+                raise RuntimeError('Unexpected native distribution references to archived sources.')
         elif count:
             raise RuntimeError('Live analytic distribution blocks archival: %s.%s.' % (table_name, column_name))
+
+
+def _tag_only_model(Model, tag, expected_analytic_account_id):
+    """Return the only shared tag-only model and verify its full shape."""
+    models = Model.search([
+        ('company_id', '=', False),
+        ('partner_category_id', '=', tag.id),
+    ])
+    if (len(models) != 1 or models.partner_id or models.product_id
+            or models.product_categ_id or models.account_prefix
+            or _distribution_as_int_keys(models) != {expected_analytic_account_id: 100.0}):
+        raise RuntimeError('Expected one 100%% shared tag-only native model for %s.' % tag.display_name)
+    return models
 
 
 def _assert_steady_state(receipt_before=None):
@@ -172,11 +192,24 @@ def _assert_steady_state(receipt_before=None):
     actual_successors = {rule.natural_key: rule.analytic_account_id.id for rule in rules}
     if actual_successors != expected_successors:
         raise RuntimeError('The v2 successors do not exactly match retired v1 rules.')
-    sources = env['account.analytic.account'].sudo().browse(list(EXPECTED_ACCOUNT_PAIRS))
+    Account = env['account.analytic.account'].sudo()
+    Model = env['account.analytic.distribution.model'].sudo()
+    sources = Account.browse(list(EXPECTED_ACCOUNT_PAIRS))
     if len(sources) != 3 or any(source.active for source in sources):
         raise RuntimeError('The three superseded accounts are not archived.')
     if receipt_before and _financial_snapshot() != receipt_before:
         raise RuntimeError('Accounting snapshot changed during an analytic-only transition.')
+    tag_index = _tag_index()
+    for source_name, target_name in MERGED_TAGS.items():
+        source_tag = _one_tag(tag_index, source_name)
+        source_rule = retired.filtered(lambda rule: rule.partner_tag_id == source_tag)
+        if len(source_rule) != 1:
+            raise RuntimeError('A retired v1 source rule is missing for %s.' % source_name)
+        target_id = EXPECTED_ACCOUNT_PAIRS.get(source_rule.analytic_account_id.id)
+        if not target_id:
+            raise RuntimeError('A reviewed source rule does not match the merge manifest.')
+        _tag_only_model(Model, source_tag, target_id)
+    _assert_no_live_account_references(list(EXPECTED_ACCOUNT_PAIRS), expected_native_model_refs=0)
     return {
         'status': 'already_applied',
         'v2_rules': len(rules),
@@ -232,20 +265,13 @@ def transition():
         for account in accounts
     ):
         raise RuntimeError('Every merged account must be an active shared spend leaf.')
-    _assert_no_live_account_references(list(EXPECTED_ACCOUNT_PAIRS))
+    _assert_no_live_account_references(list(EXPECTED_ACCOUNT_PAIRS), expected_native_model_refs=3)
 
     # Repoint only the three reviewed tag-only native models before retiring
     # v1; they govern future vendor bills, not posted accounting lines.
     for source_id, target_id in source_to_target.items():
         source_tag = source_tags[source_id]
-        models = Model.search([
-            ('company_id', '=', False),
-            ('partner_category_id', '=', source_tag.id),
-        ])
-        if (len(models) != 1 or models.partner_id or models.product_id
-                or models.product_categ_id or models.account_prefix
-                or _distribution_as_int_keys(models) != {source_id: 100.0}):
-            raise RuntimeError('Expected one 100%% tag-only native model for %s.' % source_tag.display_name)
+        models = _tag_only_model(Model, source_tag, source_id)
         models.write({'analytic_distribution': {str(target_id): 100.0}})
 
     # Clone every reviewed selector.  The three semantic duplicates receive

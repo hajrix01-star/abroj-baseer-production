@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_purchase_tag_posting_map_list" model="ir.ui.view">
+        <field name="name">baseer.purchase.tag.posting.map.list</field>
+        <field name="model">baseer.purchase.tag.posting.map</field>
+        <field name="arch" type="xml">
+            <list string="Supplier Tag Posting Profiles">
+                <field name="company_id" string="Company"/>
+                <field name="partner_tag_id" string="Supplier Tag"/>
+                <field name="category_map_id" string="Posting Profile"/>
+                <field name="category_id" string="Product Category"/>
+                <field name="product_id" string="Posting Product"/>
+                <field name="active" string="Active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_purchase_tag_posting_map_form" model="ir.ui.view">
+        <field name="name">baseer.purchase.tag.posting.map.form</field>
+        <field name="model">baseer.purchase.tag.posting.map</field>
+        <field name="arch" type="xml">
+            <form string="Supplier Tag Posting Profile">
+                <sheet>
+                    <group>
+                        <field name="company_id" string="Company" options="{'no_create': True}"/>
+                        <field name="partner_tag_id" string="Supplier Tag" options="{'no_create': True}"/>
+                        <field name="category_map_id" string="Posting Profile" options="{'no_create': True}"
+                               domain="[('company_id', '=', company_id), ('active', '=', True)]"/>
+                        <field name="category_id" string="Product Category"/>
+                        <field name="product_id" string="Posting Product"/>
+                        <field name="active" string="Active"/>
+                    </group>
+                    <p class="text-muted">This is configured once by accounting. When a supplier is chosen in batch entry, its tag selects this posting profile automatically. The tag remains the analytic classification; the profile supplies the required Odoo product and expense account.</p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_purchase_tag_posting_maps" model="ir.actions.act_window">
+        <field name="name">Supplier Tag Posting Profiles</field>
+        <field name="res_model">baseer.purchase.tag.posting.map</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_purchase_tag_posting_maps" name="Supplier Tag Posting Profiles"
+              parent="account.menu_finance_payables" action="action_purchase_tag_posting_maps"
+              sequence="37" groups="account.group_account_manager"/>
+</odoo>

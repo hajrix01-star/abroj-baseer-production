@@ -155,6 +155,59 @@ class BaseerPurchaseCategoryMap(models.Model):
         return super().write(values)
 
 
+class BaseerPurchaseTagPostingMap(models.Model):
+    """The single, company-scoped posting profile for a supplier tag.
+
+    Supplier tags are the operational classification selected by users.  A
+    batch bill still needs an Odoo product and an expense account to post, so
+    this model deliberately connects the tag to a validated posting profile
+    instead of treating the analytic tag itself as a ledger account.
+    """
+    _name = 'baseer.purchase.tag.posting.map'
+    _rec_name = 'partner_tag_id'
+    _description = 'Supplier tag posting profile'
+    _order = 'company_id, partner_tag_id, id'
+    _check_company_auto = True
+
+    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company,
+                                 ondelete='restrict')
+    partner_tag_id = fields.Many2one('res.partner.category', required=True, ondelete='restrict',
+                                     string='Supplier Tag')
+    category_map_id = fields.Many2one('baseer.purchase.category.map', required=True, ondelete='restrict',
+                                      check_company=True, string='Posting Profile')
+    category_id = fields.Many2one(related='category_map_id.category_id', readonly=True,
+                                  string='Product Category')
+    product_id = fields.Many2one(related='category_map_id.product_id', readonly=True,
+                                 string='Posting Product')
+    active = fields.Boolean(default=True)
+    _company_tag_unique = models.Constraint(
+        'unique(company_id, partner_tag_id)',
+        'Each supplier tag can have only one posting profile per company.',
+    )
+
+    @api.constrains('company_id', 'category_map_id', 'active')
+    def _check_posting_profile(self):
+        for record in self:
+            scoped = company_scope(record, record.company_id)
+            mapping = scoped.category_map_id
+            if mapping.company_id != scoped.company_id or not mapping.active:
+                raise ValidationError(_('The posting profile must be active and belong to the same company.'))
+            mapping._validated_expense_account()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            company_scope(self, self.env['res.company'].browse(values.get('company_id') or self.env.company.id))
+        return super().create(vals_list)
+
+    def write(self, values):
+        for record in self:
+            company_scope(record, record.company_id)
+        if values.get('company_id'):
+            company_scope(self, self.env['res.company'].browse(values['company_id']))
+        return super().write(values)
+
+
 class BaseerPurchaseBatch(models.Model):
     _name = 'baseer.purchase.batch'
     _description = 'Purchase entry batch'
@@ -469,7 +522,11 @@ class BaseerPurchaseBatchLine(models.Model):
         readonly=True,
         copy=False,
     )
-    category_map_id = fields.Many2one('baseer.purchase.category.map', required=True, ondelete='restrict', check_company=True)
+    # Filled exclusively from the supplier's tag posting profile.  It remains
+    # stored for a complete audit trail of the native product/account used on
+    # the resulting bill, but it is intentionally not an entry field.
+    category_map_id = fields.Many2one('baseer.purchase.category.map', ondelete='restrict', check_company=True,
+                                      readonly=True, copy=False)
     description = fields.Char()
     gross_amount = fields.Monetary(required=True, currency_field='currency_id')
     tax_id = fields.Many2one('account.tax', ondelete='restrict', check_company=True)
@@ -487,7 +544,7 @@ class BaseerPurchaseBatchLine(models.Model):
     _PROTECTED = frozenset({'company_id', 'currency_id', 'batch_state', 'net_amount', 'tax_amount',
                             'move_id', 'payment_id', 'bill_payment_state', 'vat_is_custom', 'is_current_company'})
 
-    def _supplier_default_category(self, partner):
+    def _supplier_posting_category(self, partner):
         self.ensure_one()
         require_active_company(self, self.company_id)
         scoped = company_scope(self, self.company_id)
@@ -496,18 +553,39 @@ class BaseerPurchaseBatchLine(models.Model):
         if not partner or any(record.company_id and record.company_id != scoped.company_id
                               for record in partner | partner.commercial_partner_id):
             return scoped.env['baseer.purchase.category.map']
-        mapping = partner.baseer_purchase_category_map_id
-        if mapping:
-            mapping.check_access('read')
-            if mapping.company_id != scoped.company_id or not mapping.active:
-                raise ValidationError(_('The supplier default category must be active and belong to the batch company.'))
+        profiles = scoped.env['baseer.purchase.tag.posting.map'].search([
+            ('company_id', '=', scoped.company_id.id),
+            ('partner_tag_id', 'in', partner.category_id.ids),
+            ('active', '=', True),
+        ])
+        if len(profiles) > 1:
+            raise ValidationError(_(
+                'The supplier has more than one active posting profile. Keep one supplier tag or ask accounting to resolve its posting profiles.'
+            ))
+        if not profiles:
+            return scoped.env['baseer.purchase.category.map']
+        mapping = profiles.category_map_id
+        mapping.check_access('read')
+        if mapping.company_id != scoped.company_id or not mapping.active:
+            raise ValidationError(_('The supplier tag posting profile must be active and belong to the batch company.'))
         return mapping
+
+    def _require_supplier_posting_category(self, partner=None):
+        self.ensure_one()
+        partner = partner or self.partner_id
+        mapping = self._supplier_posting_category(partner)
+        if mapping:
+            return mapping
+        tags = ', '.join(partner.category_id.mapped('display_name')) or _('no supplier tag')
+        raise ValidationError(_(
+            'No posting profile is configured for this supplier tag (%s). Ask an accounting manager to configure Supplier Tag Posting Profiles before saving the invoice.'
+        ) % tags)
 
     @api.onchange('partner_id')
     def _onchange_partner_default_category(self):
         for line in self:
             if line.company_id:
-                line.category_map_id = line._supplier_default_category(line.partner_id)
+                line.category_map_id = line._supplier_posting_category(line.partner_id)
 
     @api.onchange('is_credit')
     def _onchange_is_credit(self):
@@ -525,11 +603,18 @@ class BaseerPurchaseBatchLine(models.Model):
             raise ValidationError(_('A credit row cannot also specify a payment method.'))
         if result.get('is_credit'):
             result['payment_method_line_id'] = False
-        if creating and 'category_map_id' not in result:
+        if creating:
             partner = self.env['res.partner'].browse(result.get('partner_id'))
-            mapping = self._supplier_default_category(partner)
-            if mapping:
-                result['category_map_id'] = mapping.id
+            mapping = self._require_supplier_posting_category(partner)
+            result['category_map_id'] = mapping.id
+        elif 'partner_id' in result:
+            partner = self.env['res.partner'].browse(result['partner_id'])
+            mapping = self._require_supplier_posting_category(partner)
+            result['category_map_id'] = mapping.id
+        elif 'category_map_id' in result:
+            # An RPC caller cannot choose a different financial route after
+            # the server has resolved it from the supplier tag.
+            result.pop('category_map_id')
         return result
 
     @api.depends('tax_id', 'tax_id.active', 'tax_id.amount', 'tax_id.amount_type',

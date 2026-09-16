@@ -884,6 +884,61 @@ msgid "Default Purchase Category"
 msgstr "فئة المشتريات الافتراضية"
 
 #. module: baseer_purchase_batch
+#: model:ir.actions.act_window,name:baseer_purchase_batch.action_purchase_tag_posting_maps
+#: model:ir.ui.menu,name:baseer_purchase_batch.menu_purchase_tag_posting_maps
+#: model_terms:ir.ui.view,arch_db:baseer_purchase_batch.view_purchase_tag_posting_map_list
+msgid "Supplier Tag Posting Profiles"
+msgstr "ملفات ترحيل علامات الموردين"
+
+#. module: baseer_purchase_batch
+#: model_terms:ir.ui.view,arch_db:baseer_purchase_batch.view_purchase_tag_posting_map_form
+msgid "Supplier Tag Posting Profile"
+msgstr "ملف ترحيل علامة المورد"
+
+#. module: baseer_purchase_batch
+#: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_tag_posting_map__partner_tag_id
+msgid "Supplier Tag"
+msgstr "علامة المورد"
+
+#. module: baseer_purchase_batch
+#: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_tag_posting_map__category_map_id
+msgid "Posting Profile"
+msgstr "ملف الترحيل"
+
+#. module: baseer_purchase_batch
+#: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_tag_posting_map__category_id
+msgid "Product Category"
+msgstr "فئة المنتج"
+
+#. module: baseer_purchase_batch
+#: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_tag_posting_map__product_id
+msgid "Posting Product"
+msgstr "منتج الترحيل"
+
+#. module: baseer_purchase_batch
+#: model_terms:ir.ui.view,arch_db:baseer_purchase_batch.view_purchase_tag_posting_map_form
+msgid "This is configured once by accounting. When a supplier is chosen in batch entry, its tag selects this posting profile automatically. The tag remains the analytic classification; the profile supplies the required Odoo product and expense account."
+msgstr "يُعد هذا مرة واحدة من الإدارة المالية. عند اختيار المورد في الإدخال الجماعي، تحدد علامته ملف الترحيل تلقائياً. تبقى العلامة للتصنيف التحليلي، ويوفر الملف منتج أودو المطلوب وحساب المصروف."
+
+#. module: baseer_purchase_batch
+#: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
+#, python-format
+msgid "No posting profile is configured for this supplier tag (%s). Ask an accounting manager to configure Supplier Tag Posting Profiles before saving the invoice."
+msgstr "لا يوجد ملف ترحيل مُعد لعلامة هذا المورد (%s). اطلب من مدير الحسابات إعداد ملفات ترحيل علامات الموردين قبل حفظ الفاتورة."
+
+#. module: baseer_purchase_batch
+msgid "The supplier has more than one active posting profile. Keep one supplier tag or ask accounting to resolve its posting profiles."
+msgstr "للمورد أكثر من ملف ترحيل نشط. أبقِ علامة مورد واحدة أو اطلب من الحسابات معالجة ملفات الترحيل."
+
+#. module: baseer_purchase_batch
+msgid "The posting profile must be active and belong to the same company."
+msgstr "يجب أن يكون ملف الترحيل نشطاً ويتبع للشركة نفسها."
+
+#. module: baseer_purchase_batch
+msgid "The supplier tag posting profile must be active and belong to the batch company."
+msgstr "يجب أن يكون ملف ترحيل علامة المورد نشطاً ويتبع لشركة الدفعة."
+
+#. module: baseer_purchase_batch
 #: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_batch__is_current_company
 #: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_batch_line__is_current_company
 msgid "Is Current Company"

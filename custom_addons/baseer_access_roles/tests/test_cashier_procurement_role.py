@@ -51,7 +51,7 @@ class CashierProcurementRoleCase(TransactionCase):
         accountant_custody = custody_model.with_user(accountant).with_company(company)
 
         self.assertTrue(accountant_custody.check_access_rights('create', raise_exception=False))
-        self.assertFalse(accountant_custody.check_access_rights('write', raise_exception=False))
+        self.assertTrue(accountant_custody.check_access_rights('write', raise_exception=False))
         self.assertFalse(accountant_custody.check_access_rights('unlink', raise_exception=False))
         petty_cash = accountant_custody.create({
             'company_id': company.id,

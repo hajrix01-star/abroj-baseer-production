@@ -734,6 +734,11 @@ msgid "Petty Cash"
 msgstr "صندوق العهدة"
 
 #. module: baseer_procurement_requests
+#: model:ir.model,name:baseer_procurement_requests.model_baseer_procurement_custody
+msgid "Purchase representative Petty Cash"
+msgstr "عهدة المشتريات"
+
+#. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_list

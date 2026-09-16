@@ -939,6 +939,10 @@ msgid "The supplier tag posting profile must be active and belong to the batch c
 msgstr "يجب أن يكون ملف ترحيل علامة المورد نشطاً ويتبع لشركة الدفعة."
 
 #. module: baseer_purchase_batch
+msgid "The supplier tag posting profile changed after this draft row was created. Refresh the supplier before approving the batch."
+msgstr "تغير ملف ترحيل علامة المورد بعد إنشاء صف المسودة. حدّث المورد قبل اعتماد الدفعة."
+
+#. module: baseer_purchase_batch
 #: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_batch__is_current_company
 #: model:ir.model.fields,field_description:baseer_purchase_batch.field_baseer_purchase_batch_line__is_current_company
 msgid "Is Current Company"

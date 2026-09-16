@@ -240,6 +240,10 @@ source_dir="$stage/source"
 [ -f "$source_dir/custom_addons/$APPROVED_MODULE/__manifest__.py" ] || die 'approved module is missing from release'
 mv "$source_dir" "$release"
 rmdir "$stage"
+# The release source is mounted into the unprivileged Odoo container.  It must
+# be traversable and readable there; the sensitive files copied below retain
+# their restrictive modes and are deliberately excluded from the archive.
+chmod -R a+rX -- "$release"
 install -D -m 0600 "$old_release/.env" "$release/.env"
 install -D -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
 docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release" config --quiet

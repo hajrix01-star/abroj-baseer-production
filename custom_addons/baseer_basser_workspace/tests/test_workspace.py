@@ -100,6 +100,16 @@ class BasserWorkspaceCase(TransactionCase):
             supplier_dashboard_opened['action']['params']['dashboard_id'],
             self.env.ref('baseer_purchase_expense_dashboard.dashboard_supplier_bills').id,
         )
+        pool = self.env['baseer.procurement.custody'].create({
+            'company_id': accountant.company_id.id,
+            'is_company_pool': True,
+        })
+        custody_opened = self.env['baseer.basser.workspace.section'].with_user(
+            accountant
+        ).open_workspace_item(
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_procurement_custody').id,
+        )
+        self.assertEqual(custody_opened['action']['res_id'], pool.id)
 
     def test_basser_t02_configuration_cannot_expose_unapproved_or_server_actions(self):
         owner = self._user('owner')

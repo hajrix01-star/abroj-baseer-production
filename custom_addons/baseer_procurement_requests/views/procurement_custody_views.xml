@@ -122,8 +122,7 @@
                         </div>
                     </div>
 
-                    <notebook>
-                        <page string="Movements" name="custody_movements" invisible="not id">
+                    <group string="Movements" invisible="not id">
                             <p class="text-muted">Funding and returns.</p>
                             <field name="event_ids" context="{'default_custody_id': id, 'default_is_company_pool': is_company_pool}" readonly="state == 'closed'">
                                 <list editable="bottom" open_form_view="True" default_order="event_date desc, id desc">
@@ -152,8 +151,7 @@
                                     <field name="state" widget="badge"/>
                                 </list>
                             </field>
-                        </page>
-                    </notebook>
+                    </group>
                     <p class="text-muted text-center my-4" invisible="id">
                         Save Petty Cash first to add movements.
                     </p>
@@ -188,13 +186,6 @@
             <p class="o_view_nocontent_smiling_face">Create the single Petty Cash fund for this company.</p>
             <p>Funding, supplier purchases, returns, and the current balance remain traceable in Odoo accounting.</p>
         </field>
-    </record>
-
-    <record id="action_open_procurement_custody" model="ir.actions.server">
-        <field name="name">Petty Cash</field>
-        <field name="model_id" ref="model_baseer_procurement_custody"/>
-        <field name="state">code</field>
-        <field name="code">action = model.action_open_company_pool()</field>
     </record>
 
     <record id="view_procurement_custody_settlement_form" model="ir.ui.view">

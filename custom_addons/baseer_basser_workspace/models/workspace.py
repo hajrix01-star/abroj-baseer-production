@@ -73,6 +73,7 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         'baseer_procurement_requests.menu_procurement_custody': {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-briefcase',
+            'open_company_pool': True,
         },
         'baseer_procurement_requests.menu_procurement_custody_monthly_statement': {
             'action_type': 'ir.actions.act_window',
@@ -314,6 +315,12 @@ class BasserWorkspaceSection(models.Model):
                 client_action['params'] = {'dashboard_id': dashboard.id}
             return {
                 'action': client_action,
+            }
+        if spec.get('open_company_pool'):
+            # The company and target are derived server-side from this fixed,
+            # allowlisted workspace card; the browser cannot select either.
+            return {
+                'action': self.env['baseer.procurement.custody'].action_open_company_pool(),
             }
         return {'action_id': action.id}
 

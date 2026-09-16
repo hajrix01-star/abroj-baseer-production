@@ -251,6 +251,16 @@ class ProcurementCustody(models.Model):
     def _compute_totals(self):
         if not self:
             return
+        # A form-onchange record has no database id yet.  Querying it with
+        # ``IN ()`` is invalid PostgreSQL syntax, while all of its totals are
+        # necessarily zero until it is saved and has movements.
+        if not self.ids:
+            for custody in self:
+                custody.funded_amount = 0
+                custody.returned_amount = 0
+                custody.settled_amount = 0
+                custody.balance = 0
+            return
         Event = self.env['baseer.procurement.custody.event']
         Settlement = self.env['baseer.procurement.custody.settlement']
         Event.flush_model(['custody_id', 'state', 'event_type', 'amount'])

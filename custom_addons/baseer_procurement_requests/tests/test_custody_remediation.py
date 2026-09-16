@@ -100,6 +100,17 @@ class CustodyRemediationCase(TransactionCase):
             'employee_id': self.employee.id,
         })
 
+    def test_new_petty_cash_totals_are_zero_before_save(self):
+        """Opening a new Petty Cash form must not issue an empty SQL IN clause."""
+        petty_cash = self.env['baseer.procurement.custody'].new({
+            'company_id': self.company.id,
+            'is_company_pool': True,
+        })
+        self.assertEqual(petty_cash.funded_amount, 0)
+        self.assertEqual(petty_cash.returned_amount, 0)
+        self.assertEqual(petty_cash.settled_amount, 0)
+        self.assertEqual(petty_cash.balance, 0)
+
     def _post_funding(self, amount=100):
         event = self.env['baseer.procurement.custody.event'].create({
             'custody_id': self.custody.id,

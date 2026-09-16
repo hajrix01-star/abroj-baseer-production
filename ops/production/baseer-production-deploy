@@ -10,6 +10,7 @@ readonly BACKUPS="$BASE/backups"
 readonly INBOX="$BASE/deploy-inbox"
 readonly STAGING="$BASE/deploy-staging"
 readonly DB_CONTAINER=baseer-odoo-prod-db-1
+readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
 readonly APPROVED_COMMIT=5e73e6bb8b293b5d4adc0e39092777eaf2b3723f
@@ -211,6 +212,8 @@ old_release="$(readlink -f "$BASE/current")"
 [ -f "$old_release/.env" ] || die 'current .env is missing'
 [ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
 compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
+odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"
+[[ "$odoo_config_gid" =~ ^[0-9]+$ ]] || die 'could not resolve the Odoo configuration group'
 
 archive_kb="$(du -sk "$archive" | awk '{print $1}')"
 db_bytes="$(docker exec "$DB_CONTAINER" sh -lc 'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT pg_database_size(current_database())"')"
@@ -245,10 +248,10 @@ rmdir "$stage"
 # their restrictive modes and are deliberately excluded from the archive.
 chmod -R a+rX -- "$release"
 install -D -m 0600 "$old_release/.env" "$release/.env"
-# The Odoo container runs as its unprivileged `odoo` user and the established
-# production release exposes this non-secret configuration as 0644.  Keep the
-# new release compatible; `.env` above remains root-only.
-install -D -m 0644 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
+# Odoo runs without root.  Let its *current numeric group* read the config
+# without exposing `admin_passwd` to the constrained deploy account; `.env`
+# above remains root-only.
+install -D -o root -g "$odoo_config_gid" -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
 docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release" config --quiet
 
 # Quiesce first: DB, filestore and the protected snapshot must describe the

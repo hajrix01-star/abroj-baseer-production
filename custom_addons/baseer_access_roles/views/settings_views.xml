@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app string="Baseer" name="baseer_access_roles" groups="baseer_access_roles.group_owner">
+                <app string="Baseer | بصير" name="baseer_access_roles" groups="baseer_access_roles.group_owner">
                     <block title="Operational policies" name="baseer_operational_policies">
                         <setting id="cashier_purchase_batch_approval"
                                  string="Allow cashier self-approval for purchase batches"

@@ -316,6 +316,11 @@ msgstr "اعتمادات دفعات مشتريات الكاشير"
 
 #. module: baseer_access_roles
 #: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_baseer_operations_settings
+msgid "Baseer | بصير"
+msgstr "بصير | Baseer"
+
+#. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_baseer_operations_settings
 msgid "Operational policies"
 msgstr "السياسات التشغيلية"
 

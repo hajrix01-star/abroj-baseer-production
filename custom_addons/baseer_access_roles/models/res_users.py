@@ -28,7 +28,15 @@ class ResUsers(models.Model):
                 raise ValidationError(self.env._('Unknown access role.'))
             group = self.env.ref('baseer_access_roles.group_' + role)
             # Reset the explicit grants atomically, including grants left by an old administrator preset.
-            values['group_ids'] = [Command.set(group.ids)]
+            role_group_ids = group.ids
+            if role == 'owner':
+                # Odoo's last-system-administrator guard checks direct group
+                # membership while saving. Keep it explicit for an administrator
+                # promoted through the owner preset; the owner group already
+                # implies it functionally, but that implication is not enough
+                # during the native guard's transition check.
+                role_group_ids = (group | self.env.ref('base.group_system')).ids
+            values['group_ids'] = [Command.set(role_group_ids)]
             values.pop('role', None)
             if role == 'owner':
                 values['company_ids'] = [Command.set(self.env['res.company'].sudo().search([]).ids)]

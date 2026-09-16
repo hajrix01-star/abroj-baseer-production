@@ -129,11 +129,12 @@ cmp "$backup/protected-live.json" "$backup/protected-restored.json"
 
 docker volume create "$rehearsal_volume" >/dev/null
 created_volume=1
-docker run --rm --network none -v "$rehearsal_volume":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
+docker run --rm --network none -e REHEARSAL_DB="$rehearsal_db" -v "$rehearsal_volume":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
     set -eu
     mkdir -p /target/filestore
     tar -xf /backup/filestore-baseer_prod.tar -C /target
-    test -d /target/filestore/baseer_prod
+    mv /target/filestore/baseer_prod "/target/filestore/$REHEARSAL_DB"
+    test -d "/target/filestore/$REHEARSAL_DB"
 '
 
 odoo_image="$(docker inspect baseer-odoo-prod-odoo-1 --format '{{.Config.Image}}')"

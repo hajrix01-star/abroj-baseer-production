@@ -127,6 +127,7 @@
         <field name="tag">baseer_basser_workspace.workspace</field>
     </record>
     <menuitem id="menu_basser_root" name="Baseer" action="action_basser_workspace" sequence="8"
+              web_icon="baseer_basser_workspace,static/description/icon.svg"
               groups="base.group_system,baseer_access_roles.group_owner,baseer_access_roles.group_accountant,baseer_access_roles.group_cashier"/>
     <menuitem id="menu_basser_configuration" name="Baseer configuration" parent="menu_basser_root"
               action="action_workspace_section" sequence="90" groups="baseer_access_roles.group_owner"/>

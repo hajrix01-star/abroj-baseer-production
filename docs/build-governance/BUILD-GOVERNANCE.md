@@ -212,6 +212,8 @@ GitHub: نشر release_id نفسه
   إقفال؛ ولم تُنشأ أي حركة مالية أثناء الفحص. نُشر الإصدار المعتمد عبر
   [اعتماد الإصدار](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35155215602)
   ثم [النشر](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35155255635).
+  كما نُشر ضبط اسم الشركة كنص غير قابل للانتقال عبر
+  [نشر العرض](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35156054823).
 
 ## BWS-1 — تسمية بصير والدخول المباشر (2026-09-16)
 

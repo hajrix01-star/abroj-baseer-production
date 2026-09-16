@@ -217,9 +217,11 @@ class NativeSpendCase(TransactionCase):
         company = self.env['res.company'].create({'name': 'NAF new company', 'currency_id': self.env.ref('base.SAR').id})
         domain = [('analytic_plan_id', '=', self.plan.id), ('company_id', '=', company.id), ('business_domain', '=', 'bill')]
         records = self.env['account.analytic.applicability'].search(domain)
-        self.assertFalse(records)
-        # Provisioning is an explicit post-map approval step.  Creating an
-        # empty company cannot silently stop its vendor-bill workflow.
+        # The shared vendor-tag template from setUpClass is already complete,
+        # so later companies inherit the guard at creation.  There is no
+        # per-company copying of distribution models to drift over time.
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records.applicability, 'mandatory')
         company._baseer_ensure_spend_applicability()
         records = self.env['account.analytic.applicability'].search(domain)
         self.assertEqual(len(records), 1)

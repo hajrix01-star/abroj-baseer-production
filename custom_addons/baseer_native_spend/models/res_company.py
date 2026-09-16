@@ -7,11 +7,33 @@ class ResCompany(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         companies = super().create(vals_list)
-        # A company remains on Odoo's normal optional workflow until its
-        # approved analytic map is provisioned.  The mapping wave enables the
-        # mandatory rule explicitly; creating an empty company must not make
-        # vendor bills fail before the company has a chart and map.
+        # The catalog is shared: a company created after the reviewed native
+        # template exists must get the same posting guard as every existing
+        # company.  Before that point we deliberately keep Odoo optional, so
+        # installing the technical module cannot strand a newly-created
+        # company without an approved classification route.
+        if companies._baseer_has_shared_spend_template():
+            companies._baseer_ensure_spend_applicability()
         return companies
+
+    def _baseer_has_shared_spend_template(self):
+        """Whether a reusable native Odoo spend mapping is available.
+
+        A shared analytic account by itself is not enough: the template must
+        contain a shared native distribution model that routes a vendor bill
+        into the Spend Classification root.  This makes creating a later
+        company deterministic without copying per-company configuration.
+        """
+        root = self.env.ref('baseer_native_spend.spend_plan', raise_if_not_found=False)
+        if not root:
+            return False
+        models = self.env['account.analytic.distribution.model'].sudo().search([
+            ('company_id', '=', False),
+        ])
+        return any(
+            root in model.distribution_analytic_account_ids.root_plan_id
+            for model in models
+        )
 
     def _baseer_ensure_spend_applicability(self):
         """Fill absent native setup only; preserve reviewed applicability rules."""

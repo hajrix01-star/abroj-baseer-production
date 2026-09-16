@@ -11,7 +11,7 @@ readonly STAGING="$BASE/deploy-staging"
 readonly SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
 readonly SOURCE_SSH_KEY=/etc/baseer-production/source-readonly.key
 readonly SOURCE_KNOWN_HOSTS=/etc/baseer-production/github-known_hosts
-readonly GITHUB_ED25519_HOST_KEY='ssh.github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
+readonly GITHUB_ED25519_HOST_KEY='[ssh.github.com]:443 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
 
 die() {

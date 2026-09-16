@@ -47,9 +47,12 @@ Match User baseer_deploy
     AllowTcpForwarding no
     X11Forwarding no
     AllowAgentForwarding no
-    PermitUserEnvironment no
 EOF
 sshd -t
+sshd -T | grep -qx 'permituserenvironment no' || {
+    echo 'PermitUserEnvironment must be globally disabled before enabling deploy access' >&2
+    exit 1
+}
 systemctl reload ssh
 
 printf 'DEPLOY_ACCESS=READY\nUSER=%s\nINBOX=%s\nWRAPPER=%s\n' "$DEPLOY_USER" "$INBOX" "$WRAPPER_DEST"

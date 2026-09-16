@@ -1,4 +1,4 @@
-name: Deploy approved native-spend bridge to production
+name: Deploy approved native-analytics dashboard to production
 
 on:
   workflow_dispatch:
@@ -27,9 +27,9 @@ jobs:
     environment:
       name: production
     env:
-      # S2 readiness preview only.  It never writes vendor bills, historic
+      # NBT dashboard reporting only. It never writes vendor bills, historic
       # lines, analytic accounts, or native distribution models.
-      APPROVED_COMMIT: e2897885b8173a9d0cda89ef3120fa7dc5dac9a7
+      APPROVED_COMMIT: 977e21fe26619d1311809cb62c2de9e2d25aee8b
       PRODUCTION_HOST: 77.37.51.67
       PRODUCTION_USER: baseer_deploy
       PRODUCTION_KNOWN_HOST: >-
@@ -50,7 +50,7 @@ jobs:
           git merge-base --is-ancestor "$APPROVED_COMMIT" origin/main
           git checkout --detach "$APPROVED_COMMIT"
           test "$(git rev-parse HEAD)" = "$APPROVED_COMMIT"
-          test -f custom_addons/baseer_native_spend/__manifest__.py
+          test -f custom_addons/baseer_purchase_expense_dashboard/__manifest__.py
 
       - name: Build immutable source archive
         id: package
@@ -63,7 +63,7 @@ jobs:
           git archive --format=tar "$APPROVED_COMMIT" | tar -x -C "$package_dir/source"
           test ! -e "$package_dir/source/.env"
           test -f "$package_dir/source/compose.production.yaml"
-          test -f "$package_dir/source/custom_addons/baseer_native_spend/__manifest__.py"
+          test -f "$package_dir/source/custom_addons/baseer_purchase_expense_dashboard/__manifest__.py"
           archive="baseer-${APPROVED_COMMIT}.tar.gz"
           tar --sort=name --mtime='UTC 2026-09-16' --owner=0 --group=0 --numeric-owner \
             -C "$package_dir" -czf "$archive" source

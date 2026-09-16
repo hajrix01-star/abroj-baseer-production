@@ -3,6 +3,4 @@ access_purchase_batch_operator,Purchase batch operator,model_baseer_purchase_bat
 access_purchase_batch_line_operator,Purchase batch line operator,model_baseer_purchase_batch_line,account.group_account_invoice,1,1,1,1
 access_purchase_batch_category_reader,Purchase batch category reader,model_baseer_purchase_category_map,account.group_account_invoice,1,0,0,0
 access_purchase_batch_category_manager,Purchase batch category manager,model_baseer_purchase_category_map,account.group_account_manager,1,1,1,1
-access_purchase_batch_tag_posting_reader,Supplier tag posting profile reader,model_baseer_purchase_tag_posting_map,account.group_account_invoice,1,0,0,0
-access_purchase_batch_tag_posting_manager,Supplier tag posting profile manager,model_baseer_purchase_tag_posting_map,account.group_account_manager,1,1,1,1
 

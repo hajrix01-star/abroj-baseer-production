@@ -1,4 +1,4 @@
-"""Compatibility storage for retired per-supplier batch category settings."""
+"""Native, company-dependent supplier category suggestion for batch entry."""
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
@@ -9,7 +9,7 @@ class ResPartner(models.Model):
     baseer_purchase_category_map_id = fields.Many2one(
         'baseer.purchase.category.map', string='Default Purchase Category',
         company_dependent=True, check_company=True, copy=False, ondelete='restrict',
-        help='Retained for audit of legacy batch configuration. New batch rows use supplier tag posting profiles.',
+        help='Suggested category for new purchase batch rows in the active company. You can change it on each row.',
     )
 
     def _check_purchase_category_configuration_rights(self):

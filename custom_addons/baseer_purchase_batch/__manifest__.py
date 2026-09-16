@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Purchase Batch',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.2.4',
     'category': 'Accounting/Accounting',
     'summary': 'Approve supplier bill batches using native Odoo accounting',
     'license': 'LGPL-3',
@@ -11,7 +11,7 @@
         'data/sequence.xml',
         'views/purchase_batch_views.xml',
         'views/category_mapping_views.xml',
-        'views/tag_posting_mapping_views.xml',
+        'views/res_partner_views.xml',
         'report/purchase_batch_report.xml',
     ],
     'application': False,

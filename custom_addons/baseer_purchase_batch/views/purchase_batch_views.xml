@@ -19,7 +19,8 @@
                                    domain="[('company_id', 'in', [False, company_id]), ('active', '=', True)]"/>
                             <field name="invoice_date" string="Invoice Date" widget="baseer_latin_date" readonly="batch_state == 'approved' or (batch_id and not is_current_company)" options="{'numeric': True}"/>
                             <field name="supplier_ref" string="Invoice Reference" readonly="batch_state == 'approved' or (batch_id and not is_current_company)"/>
-                            <field name="category_map_id" invisible="True"/>
+                            <field name="category_map_id" string="Category" options="{'no_create': True}" readonly="batch_state == 'approved' or (batch_id and not is_current_company)"
+                                   domain="[('company_id', '=', company_id), ('active', '=', True)]"/>
                             <field name="description" string="Description" placeholder="Optional description" readonly="batch_state == 'approved' or (batch_id and not is_current_company)"/>
                         </group>
                         <group string="Amount and Payment">
@@ -107,7 +108,8 @@
                                    domain="[('company_id', 'in', [False, company_id]), ('active', '=', True)]"/>
                             <field name="invoice_date" string="Invoice Date" widget="baseer_latin_date" options="{'numeric': True}" width="114px"/>
                             <field name="supplier_ref" string="Invoice Ref." width="120px"/>
-                            <field name="category_map_id" column_invisible="True"/>
+                            <field name="category_map_id" string="Category" options="{'no_create': True}" width="142px"
+                                   domain="[('company_id', '=', company_id), ('active', '=', True)]"/>
                             <field name="description" optional="hide"/>
                             <field name="gross_amount" string="Amount incl. VAT" width="138px" options="{'no_symbol': True}"/>
                             <field name="vat_enabled" string="VAT 15%" widget="boolean_toggle" options="{'autosave': False}" invisible="vat_is_custom" width="76px"/>
@@ -135,6 +137,7 @@
                                     <div class="baseer_batch_card_details">
                                         <div><div class="text-muted">Invoice Date</div><field name="invoice_date" widget="baseer_latin_date" options="{'numeric': True}"/></div>
                                         <div><div class="text-muted">Invoice Reference</div><field name="supplier_ref"/></div>
+                                        <div class="baseer_batch_card_category"><div class="text-muted">Category</div><field name="category_map_id"/></div>
                                     </div>
                                     <div class="baseer_batch_card_footer">
                                         <span class="text-muted">

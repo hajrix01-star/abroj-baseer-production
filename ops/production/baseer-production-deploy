@@ -40,10 +40,11 @@ validate_arguments() {
 }
 
 secure_archive() {
-    # The SSH upload account owns INBOX.  Move the uploaded inode atomically
-    # before hashing, validating, or extracting it; every later read uses the
-    # root-owned private copy so there is no upload-time TOCTOU window.
-    local incoming_archive=$archive private_archive actual_sha
+    # The SSH upload account owns INBOX.  First move its directory entry into
+    # root-only quarantine, then copy the bytes into a *new* root-created
+    # inode.  A caller can retain an FD to the uploaded inode, but it can never
+    # modify the private copy that is hashed, validated, and extracted.
+    local incoming_archive=$archive quarantine_archive private_archive actual_sha
 
     if [ -e "$STAGING" ] && { [ ! -d "$STAGING" ] || [ -L "$STAGING" ]; }; then
         die 'private staging path is unsafe'
@@ -51,12 +52,20 @@ secure_archive() {
     install -d -o root -g root -m 0700 "$STAGING"
     chown root:root -- "$STAGING"
     chmod 0700 -- "$STAGING"
+    quarantine_archive="$STAGING/.incoming-${commit}-${run_id}.tar.gz"
     private_archive="$STAGING/baseer-${commit}-${run_id}.tar.gz"
+    [ ! -e "$quarantine_archive" ] || die 'private quarantine archive already exists'
     [ ! -e "$private_archive" ] || die 'private staging archive already exists'
     [ -f "$incoming_archive" ] && [ ! -L "$incoming_archive" ] || die 'incoming archive is not a regular file'
 
-    mv -T -- "$incoming_archive" "$private_archive" || die 'could not secure uploaded archive'
-    chown root:root -- "$private_archive"
+    mv -T -- "$incoming_archive" "$quarantine_archive" || die 'could not quarantine uploaded archive'
+    if [ -L "$quarantine_archive" ] || [ ! -f "$quarantine_archive" ]; then
+        rm -f -- "$quarantine_archive"
+        die 'quarantined archive is not a regular file'
+    fi
+    install -o root -g root -m 0600 /dev/null "$private_archive"
+    cat -- "$quarantine_archive" > "$private_archive"
+    rm -f -- "$quarantine_archive"
     chmod 0400 -- "$private_archive"
     [ -f "$private_archive" ] && [ ! -L "$private_archive" ] || die 'private staging archive is unsafe'
     actual_sha="$(sha256sum "$private_archive" | awk '{print $1}')"

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Payroll</title>
+  <path fill="#7c4e78" d="M53 14h42l19 19v64a13 13 0 0 1-13 13H53a13 13 0 0 1-13-13V27a13 13 0 0 1 13-13z"/>
+  <path fill="#f3e9f2" d="M95 14v19h19z"/>
+  <path fill="#fff" d="M62 49h33v7H62zm0 16h33v7H62zm0 16h19v7H62z" opacity=".96"/>
+  <circle cx="32" cy="46" r="15" fill="#22b8b0"/>
+  <path fill="#22b8b0" d="M9 99c0-18 10-30 23-30s23 12 23 30z"/>
+  <circle cx="98" cy="94" r="20" fill="#f6b73c"/>
+  <path fill="#7c4e78" d="M99 80c-7 0-11 3-11 8 0 10 15 5 15 11 0 2-2 3-5 3-3 0-6-1-8-3l-3 5c3 3 7 5 11 5v5h4v-5c7-1 11-5 11-11 0-10-15-6-15-11 0-2 2-3 5-3 2 0 5 1 7 2l3-5c-3-2-6-3-10-3v-5h-4z"/>
+</svg>

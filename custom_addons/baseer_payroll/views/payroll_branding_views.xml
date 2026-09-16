@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Keep the upstream payroll module intact; the Baseer extension owns its app identity. -->
+    <record id="om_hr_payroll.menu_hr_payroll_root" model="ir.ui.menu">
+        <field name="web_icon">baseer_payroll,static/description/payroll-icon.svg</field>
+    </record>
+</odoo>

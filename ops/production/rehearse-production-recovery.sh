@@ -8,6 +8,7 @@ readonly BASE=/srv/abroj-baseer-production
 readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly BACKUPS="$BASE/backups"
+readonly REHEARSAL_MODULES=baseer_purchase_batch,baseer_financial_correction,baseer_service_seed,baseer_hr_services
 
 die() { printf 'REHEARSAL=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" -eq 0 ] || die 'root is required'
@@ -16,6 +17,13 @@ old_release="$(readlink -f "$BASE/current")"
 [ -d "$old_release" ] || die 'current release cannot be resolved'
 [ -f "$old_release/.env" ] || die 'current .env is missing'
 [ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
+candidate_source="${1:-}"
+[ -n "$candidate_source" ] || die 'expected one candidate source directory argument'
+[ -d "$candidate_source" ] && [ ! -L "$candidate_source" ] || die 'candidate source directory is unsafe'
+candidate_source="$(readlink -f "$candidate_source")"
+for candidate_module in baseer_purchase_batch baseer_financial_correction baseer_service_seed baseer_hr_services; do
+    [ -f "$candidate_source/custom_addons/$candidate_module/__manifest__.py" ] || die "candidate module is missing: $candidate_module"
+done
 compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
 
 wait_for_login() {
@@ -41,6 +49,15 @@ SELECT jsonb_build_object(
   'hr.employee', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM hr_employee),
   'hr.payslip', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM hr_payslip),
   'res.partner.non_user', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(p.id), 0), 'w', coalesce(max(p.write_date)::text, '')) FROM res_partner p WHERE NOT EXISTS (SELECT 1 FROM res_users u WHERE u.partner_id = p.id)),
+  'product.template', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM product_template),
+  'product.product', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM product_product),
+  'product.category', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM product_category),
+  'account.analytic.account', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_analytic_account),
+  'account.analytic.plan', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_analytic_plan),
+  'account.analytic.distribution.model', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_analytic_distribution_model),
+  'baseer.purchase.category.map', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_purchase_category_map),
+  'baseer.purchase.batch', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_purchase_batch),
+  'baseer.hr.service', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_hr_service),
   'baseer.pos.summary', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_pos_summary),
   'baseer.pos.summary.allocation', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_pos_summary_allocation),
   'baseer.heat.target', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_heat_calendar_target),
@@ -125,12 +142,12 @@ docker run --rm --network baseer-odoo-prod-backend \
     -e REHEARSAL_DB="$rehearsal_db" \
     -v "$rehearsal_volume":/var/lib/odoo \
     -v "$old_release/config/odoo.conf":/etc/odoo/odoo.conf:ro \
-    -v "$old_release/custom_addons":/mnt/baseer-addons:ro \
+    -v "$candidate_source/custom_addons":/mnt/baseer-addons:ro \
     -v "$old_release/third_party_addons":/mnt/third-party-addons:ro \
     --entrypoint sh "$odoo_image" -lc '
         odoo --config=/etc/odoo/odoo.conf --db_host=db --db_user="$POSTGRES_USER" --db_password="$POSTGRES_PASSWORD" \
           --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19 \
-          -d "$REHEARSAL_DB" --db-filter="^${REHEARSAL_DB}$" --stop-after-init --workers=0 --max-cron-threads=0
+          -d "$REHEARSAL_DB" --db-filter="^${REHEARSAL_DB}$" -u "$REHEARSAL_MODULES" --stop-after-init --workers=0 --max-cron-threads=0
     ' > "$backup/odoo-rehearsal.log" 2>&1
 snapshot_for_db "$rehearsal_db" > "$backup/protected-after-odoo.json"
 cmp "$backup/protected-live.json" "$backup/protected-after-odoo.json"

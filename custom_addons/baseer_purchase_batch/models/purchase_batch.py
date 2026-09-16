@@ -694,14 +694,6 @@ class BaseerPurchaseBatchLine(models.Model):
             checked_gross(line.gross_amount, self.env)
             normalized_reference(line.supplier_ref, self.env)
             scoped = company_scope(line, line.company_id)
-            # Resolve again at the authoritative approval boundary.  Drafts
-            # may predate a tag/profile change, and must never post using a
-            # stale financial route merely because it was resolved earlier.
-            expected_mapping = scoped._require_supplier_posting_category(scoped.partner_id)
-            if scoped.category_map_id != expected_mapping:
-                raise ValidationError(_(
-                    'The supplier tag posting profile changed after this draft row was created. Refresh the supplier before approving the batch.'
-                ))
             if scoped.category_map_id.company_id != scoped.company_id:
                 raise ValidationError(_('Choose a category mapping from the batch company.'))
             scoped.category_map_id._validated_expense_account()

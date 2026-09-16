@@ -69,7 +69,16 @@ def _one_tag(index, name):
 
 
 def _distribution_as_int_keys(model):
-    return {int(key): value for key, value in (model.analytic_distribution or {}).items()}
+    distribution = {}
+    for key, value in (model.analytic_distribution or {}).items():
+        parts = [part.strip() for part in str(key).split(',') if part.strip()]
+        # A native tag template must contain one and only one leaf.  Preserve
+        # a compound/invalid key as nonmatching evidence instead of raising a
+        # conversion error; the caller will stop before any write.
+        if len(parts) != 1 or not parts[0].isdigit():
+            return {'__non_single_leaf__:%s' % key: value}
+        distribution[int(parts[0])] = value
+    return distribution
 
 
 def _financial_snapshot():

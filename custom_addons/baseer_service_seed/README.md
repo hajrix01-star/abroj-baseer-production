@@ -107,6 +107,7 @@ Platform subscription products do not represent every license/visa fee paid via
 that platform. No final-exit product is provided. One Visas leaf/product is used;
 later HR detail may distinguish issue/extension of exit-and-return.
 
-Approved catalog/account/VAT evidence: repository documents
-`COMMON-SERVICES-SEED.md`, `COMMON-SERVICES-SEED-GATE-REVIEW.md`, and
-`COMMON-SERVICE-PARTIES-SEED-DECISIONS.md` dated 2026-09-08.
+The canonical catalog, accounting identities and VAT behavior are defined in the
+module data and validated by this module's tests. Former standalone catalog
+notes are not present in this repository and are not an operational source of
+truth.

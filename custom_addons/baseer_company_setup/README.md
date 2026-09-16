@@ -8,4 +8,4 @@ An empty manual outbound payment account is filled with native liquidity only if
 
 The private initializer runs on module installation/update and is idempotent. It never reloads an established chart. Invalid remembered seed identities/types require accounting review; they are not silently recreated. Administrative edits remain possible in native Payroll Settings and Accounting. Do not uninstall a seed owner after accounts/journals enter use; rollback uses a coherent database/source backup.
 
-Arabic/English names for newly created seed records, native translated chart names and settings. No custom financial UI, new ledger, tax policy, business schema or third-party runtime dependency. QA acceptance evidence: docs/build-governance/COMPANY-ACCOUNTING-SEED.md in the parent repository.
+Arabic/English names for newly created seed records, native translated chart names and settings. No custom financial UI, new ledger, tax policy, business schema or third-party runtime dependency. The current operational contract is `docs/build-governance/BUILD-GOVERNANCE.md`; the former external QA note is not part of this repository.

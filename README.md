@@ -1,41 +1,35 @@
-# مرشح أبرج وبصير للإنتاج
+# بصير أودو للإنتاج
 
-هذا المستودع يحمل **الكود وإعدادات النشر فقط**. لا يضم قاعدة البيانات أو
-filestore أو النسخ الاحتياطية أو أسرار التشغيل أو إضافة `baseer_noorix_rehearsal_replay`.
+هذا المستودع هو مصدر كود وإعدادات بصير أودو فقط. لا يحتوي قاعدة البيانات أو
+`filestore` أو الأسرار أو النسخ الاحتياطية.
 
-## نطاق الإصدار
+## النشر المعتمد
 
-- `abroj.sa` موقع أبرج.
-- `www.abroj.sa` يعيد توجيهه إلى `abroj.sa`.
-- `baseer.abroj.sa` يحول الجذر إلى صفحة دخول Odoo الأصلية `/web/login`.
-- Odoo وPostgreSQL وvolumes وشبكة Docker تخص هذا الإصدار وحده. PostgreSQL بلا
-  منفذ مضيف، وOdoo متاح محلياً فقط على `127.0.0.1:18069` وراء Nginx.
+النشر لا يتم من طرفية Hostinger ولا يعمل تلقائيًا عند `push`. بعد دمج التغيير
+في `main` شغّل من GitHub Actions بالترتيب:
 
-## تجهيز المضيف
+1. **Approve a named Baseer Odoo production release** مع `release_id` المعتمد.
+2. **Deploy an approved Baseer Odoo production release** بالـ`release_id` نفسه.
 
-1. انسخ `.env.example` إلى `.env` وأنشئ كلمات مرور طويلة عشوائية.
-2. انسخ `config/odoo.conf.example` إلى `config/odoo.conf` واستبدل
-   `admin_passwd` بقيمة عشوائية. لا ترفع هذين الملفين إلى Git.
-3. شغّل `docker compose -f compose.production.yaml config -q` ثم
-   `docker compose -f compose.production.yaml up -d`.
-4. انقل dump المرشح وfilestore إلى `secure-input/` عبر قناة إدارية منفصلة؛ لا
-   تضعهما في Git. استعد dump إلى `baseer_prod` ثم انسخ filestore إلى
-   `baseer-odoo-prod-odoo-data:/var/lib/odoo/filestore/baseer_prod` مع المالك
-   `100:101` قبل تشغيل Odoo النهائي.
-5. ركب `deploy/nginx/abroj-baseer-bootstrap.conf`، احصل على شهادة تشمل
-   `abroj.sa`, `www.abroj.sa`, `baseer.abroj.sa`، ثم استبدله بملف
-   `abroj-baseer.conf`. نفذ `nginx -t` قبل كل reload.
+مدخل القرار في الـActions هو معرف الإصدار فقط، مع كلمة التأكيد الثابتة
+`APPROVE` أو `DEPLOY`. الخادم يتحقق من السياسة المحفوظة لديه،
+يجلب commit والموديولات بنفسه، يأخذ زوج استرجاع متسق، ثم يحدّث الموديولات
+المعتمدة ويتحقق من الصحة أو يتراجع تلقائيًا.
 
-## قبول التشغيل
+## الاسترجاع والبيانات
 
-- `https://abroj.sa/` يعرض واجهة أبرج.
-- `https://www.abroj.sa/` يعيد إلى النطاق الأساسي.
-- `https://baseer.abroj.sa/` يعيد `302` إلى `/web/login` ثم صفحة دخول بصير.
-- `https://baseer.abroj.sa/web/database/manager` يعيد `404`.
-- لا يستمع PostgreSQL علنًا، ولا يستمع Odoo إلا على loopback.
+- GitHub ليس نسخة احتياطية لبيانات أودو؛ هو نسخة للكود فقط.
+- كل نشر يأخذ زوجًا متسقًا: PostgreSQL + `filestore`.
+- يحتفظ الخادم بالإصدار الحي، إصدار رجوع واحد، وآخر زوجين للاسترجاع.
+- توجد نسخة استرجاع محلية كاملة واحدة خارج Git للمراجعة الطارئة؛ لا تحفظ
+  أسرارها أو مسارها في المستودع.
 
-## الاستعادة والتراجع
+## مصدر التحليل والتقارير
 
-قبل أي ترقية، أوقف compose الخاص بهذا الإصدار فقط وخذ dump ونسخة متسقة من
-filestore. التراجع هو إعادة آخر زوج متسق DB+filestore ثم `docker compose up -d`؛
-لا تعدل أو تعيد تشغيل مشاريع Hostinger الأخرى.
+تصنيف إنفاق فواتير الموردين في لوحة بصير مصدره التوزيع التحليلي الأصلي في
+`account.move.line.analytic_distribution`. اختيار المورد في الإدخال الجماعي
+لا يحتاج فئة إضافية للوحة؛ لا تستخدم لوحة التقارير علامة المورد أو فئة المنتج
+كبديل عن التوزيع التحليلي المخزن.
+
+تفاصيل القرار والعقد التشغيلي موجودة في
+[سجل المعمارية](docs/architecture/registry/INDEX.md) و[حوكمة النشر](docs/build-governance/BUILD-GOVERNANCE.md).

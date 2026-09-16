@@ -38,8 +38,11 @@ The A4 landscape summary groups invoice date, supplier/reference, description, p
 
 Installation and acceptance in the main database are outside this QA delivery.
 
-## Historical compatibility (NBC1)
+## Historical compatibility
 
 The optional readonly `category_map_id` remains for historical evidence only. New public entry/write cannot set it. Old drafts also use productless posting, ignoring their old mapping. Existing bills and distributions are not rewritten. The supplier's old selector and batch category setup menu are removed by migration.
 
-The old mapping model is retained because HR services use it for their own invoices and historical bills retain references. Removing that separate dependency requires a tested migration, not deletion of business data. Decision and evidence: `docs/build-governance/BUILD-GOVERNANCE.md`, NBC1.
+The old mapping model is retained because historical bills retain references.
+Employee services do not use it. Removing that separate dependency requires a
+tested migration, not deletion of business data. The operational source of truth
+is `docs/build-governance/BUILD-GOVERNANCE.md`.

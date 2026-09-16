@@ -647,3 +647,33 @@ msgstr "إصدار رخصة عمل"
 #: model:ir.model.fields.selection,name:baseer_hr_services.selection__baseer_hr_service__service_type__work_permit_renewal
 msgid "Work permit renewal"
 msgstr "تجديد رخصة عمل"
+
+#. module: baseer_hr_services
+#. odoo-python
+#: code:addons/baseer_hr_services/models/service.py:0
+msgid "Choose a valid employee service type."
+msgstr "اختر نوع خدمة موظف صالحاً."
+
+#. module: baseer_hr_services
+#. odoo-python
+#: code:addons/baseer_hr_services/models/service.py:0
+msgid "Prepare the active native service product for this company before approval."
+msgstr "جهّز منتج الخدمة الأصلي النشط لهذه الشركة قبل الاعتماد."
+
+#. module: baseer_hr_services
+#. odoo-python
+#: code:addons/baseer_hr_services/models/service.py:0
+msgid "Review the active native service product for this company before approval."
+msgstr "راجع منتج الخدمة الأصلي النشط لهذه الشركة قبل الاعتماد."
+
+#. module: baseer_hr_services
+#. odoo-python
+#: code:addons/baseer_hr_services/models/service.py:0
+msgid "Odoo could not select a valid expense account for this employee service. Review the native service product or purchase journal before approval."
+msgstr "لم يتمكن أودو من اختيار حساب مصروف صالح لخدمة الموظف. راجع منتج الخدمة الأصلي أو يومية المشتريات قبل الاعتماد."
+
+#. module: baseer_hr_services
+#. odoo-python
+#: code:addons/baseer_hr_services/models/service.py:0
+msgid "Review the native employee-service bill account before approval."
+msgstr "راجع حساب فاتورة خدمة الموظف الأصلية قبل الاعتماد."

@@ -5,8 +5,9 @@ and `baseer_purchase_batch`; neither dependency nor native code is modified.
 
 ## Result
 
-* 20 shared canonical supplier contacts, 26 company-private service products,
-  one native purchase-category mapping per selectable leaf.
+* 20 shared canonical supplier contacts and 26 company-private Odoo service
+  products. Employee services use those products directly; no new
+  purchase-category mapping is created.
 * Shared Arabic category hierarchy and translated supplier tags, owned by
   stable XML IDs under `noupdate`. Existing categories are not renamed/moved.
 * Expense accounts reuse valid native Saudi XML identities. Missing purposes
@@ -29,18 +30,18 @@ no commits occur inside the seed. A transaction failure rolls back the seed.
 
 `res.company._baseer_seed_services()` prepares a recordset; the model method
 `_baseer_initialize_services()` prepares all eligible companies. Stable identities
-are `<kind>_<key>_company_<id>` for `product`, `mapping` and `account`.
+are `<kind>_<key>_company_<id>` for `product` and `account`.
 Canonical suppliers use `provider_<key>`; `provider_<key>_company_<id>` remains
 a compatible company alias. Catalog constants are `PROVIDERS`, `SERVICES`,
 `ACCOUNT_PURPOSES`.
 
 Existing identity-owned records (including archived or renamed choices) are
-preserved. Existing company/category mappings win. No arbitrary existing contact
-is adopted by name or VAT. A missing identity target raises instead of silently
-recreating a deleted record. Canonical records retain manual names, archive state,
-VAT and settings. Category suggestions fill only an absent company property key;
-an explicit empty value is also preserved. Accounting properties remain native
-company-dependent fields and never become global financial settings.
+preserved. No arbitrary existing contact is adopted by name or VAT. A missing
+identity target raises instead of silently recreating a deleted record. Canonical
+records retain manual names, archive state, VAT and settings. Accounting
+properties remain native company-dependent fields and never become global
+financial settings. Existing historical category mappings and supplier category
+properties are not changed or deleted by this seed update.
 
 ## Explicit legacy consolidation
 
@@ -80,10 +81,11 @@ Uninstall is therefore not a preservation-safe reversal of this additive setup.
 
 ## Input and language behavior
 
-The former purchase-batch `entry_type` presentation marker is retired.  A
-seeded leaf now supplies only the native product/account and analytic
-classification; it does not assign a manual purchase-or-expense label. Existing
-historical lines are never migrated or rewritten by setup.
+The former purchase-batch `entry_type` presentation marker is retired. A seeded
+product supplies its native product/account behavior; analytic classification
+comes from native Odoo analytic-distribution models for the supplier. It does not
+assign a manual purchase-or-expense label. Existing historical lines are never
+migrated or rewritten by setup.
 
 Odoo category and contact names are not translated native fields. Categories use
 Arabic names. New canonical contacts use `Arabic | English`, with available

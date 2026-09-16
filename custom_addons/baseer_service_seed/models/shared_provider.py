@@ -79,10 +79,10 @@ class Company(models.Model):
                                 SQL(', ').join(SQL.identifier(name) for name in names), tuple(partners.ids)))
         return names, {row[0]: dict(zip(names, row[1:])) for row in self.env.cr.fetchall()}
 
-    def _baseer_shared_service_provider(self, provider, mappings):
+    def _baseer_shared_service_provider(self, provider):
         self.ensure_one()
         self._baseer_lock_shared_providers()
-        key, arabic, aliases, tag_key, vat, default_leaf = provider
+        key, arabic, aliases, tag_key, vat, _default_leaf = provider
         alias = f'provider_{key}_company_{self.id}'
         existing = self._baseer_provider_xmlid(alias)
         if existing and existing.company_id:
@@ -94,13 +94,6 @@ class Company(models.Model):
         if existing and existing != partner:
             raise ValidationError(_('The company provider alias conflicts with the canonical provider: %s', alias))
         self._baseer_provider_xmlid(alias, partner)
-        mapping = mappings.get(default_leaf) if default_leaf else None
-        if mapping and mapping.active and partner.active:
-            names, properties = self._baseer_provider_properties(partner)
-            current = properties[partner.id]['baseer_purchase_category_map_id'] or {}
-            # Explicit False is a deliberate company preference too.
-            if str(self.id) not in current:
-                partner.with_company(self).write({'baseer_purchase_category_map_id': mapping.id})
         return partner
 
     @api.model

@@ -38,7 +38,6 @@ class EmployeeService(models.Model):
     currency_id = fields.Many2one(related='company_id.currency_id')
     employee_id = fields.Many2one('hr.employee', required=True, check_company=True, ondelete='restrict', index=True, context={'active_test': False}, tracking=True)
     service_type = fields.Selection(SERVICE_TYPES, required=True, default='iqama_renewal', index=True, tracking=True)
-    category_map_id = fields.Many2one('baseer.purchase.category.map', compute='_compute_category_map', compute_sudo=False)
     visa_type = fields.Selection(VISA_TYPES)
     partner_id = fields.Many2one('res.partner', string='Service Provider', required=True, check_company=True, ondelete='restrict', index=True, tracking=True)
     service_reference = fields.Char(string='Service Reference', size=240)
@@ -64,7 +63,7 @@ class EmployeeService(models.Model):
     approved_at = fields.Datetime(readonly=True, copy=False)
 
     _CONTROL = {'name', 'company_id', 'currency_id', 'state', 'bill_id', 'bill_name', 'bill_state', 'payment_state',
-                'balance', 'approved_by_id', 'approved_at', 'tax_id', 'net_amount', 'tax_amount', 'category_map_id', 'has_posted_refund'}
+                'balance', 'approved_by_id', 'approved_at', 'tax_id', 'net_amount', 'tax_amount', 'has_posted_refund'}
     _BUSINESS = {'employee_id', 'service_type', 'visa_type', 'partner_id', 'service_reference', 'issue_date',
                  'invoice_date', 'expiry_date', 'gross_amount', 'vat_enabled', 'notes'}
 
@@ -88,13 +87,34 @@ class EmployeeService(models.Model):
             self.env.cr.execute('UPDATE baseer_hr_service SET id=id WHERE id IN %s', [tuple(sorted(self.ids))])
             self.invalidate_recordset()
 
-    @api.depends('company_id', 'service_type')
-    def _compute_category_map(self):
-        for record in self:
-            record.category_map_id = self.env.ref(
-                f'baseer_service_seed.mapping_{record.service_type}_company_{record.company_id.id}',
-                raise_if_not_found=False,
-            ) if record.company_id and record.service_type else False
+    def _service_product(self, required=True):
+        """Return the native service product for this company and service type.
+
+        The product is Odoo's financial source for the service type.  It replaces
+        the retired category-to-product posting map; it is not a user-selected
+        accounting field.
+        """
+        self.ensure_one()
+        Product = self.env['product.product']
+        if not self.company_id or self.service_type not in dict(SERVICE_TYPES):
+            if required:
+                raise ValidationError(_('Choose a valid employee service type.'))
+            return Product
+        product = self.env.ref(
+            f'baseer_service_seed.product_{self.service_type}_company_{self.company_id.id}',
+            raise_if_not_found=False,
+        )
+        if not product or product._name != Product._name or not product.exists():
+            if required:
+                raise ValidationError(_('Prepare the active native service product for this company before approval.'))
+            return Product
+        product.check_access('read')
+        if (not product.active or product.company_id != self.company_id
+                or not product.purchase_ok or product.type != 'service'):
+            if required:
+                raise ValidationError(_('Review the active native service product for this company before approval.'))
+            return Product
+        return product
 
     @api.onchange('service_type')
     def _onchange_service_type(self):
@@ -151,13 +171,13 @@ class EmployeeService(models.Model):
         for record in self:
             record.tax_id = record._configured_tax(record.vat_enabled, record.company_id)
 
-    @api.depends('gross_amount', 'tax_id', 'category_map_id', 'partner_id', 'bill_id')
+    @api.depends('gross_amount', 'tax_id', 'company_id', 'service_type', 'partner_id', 'bill_id')
     def _compute_amounts(self):
         for record in self:
             if record.bill_id:
                 bill = record._summary_bill()
                 record.net_amount, record.tax_amount = bill.amount_untaxed, bill.amount_tax
-            elif record.gross_amount and record.category_map_id and record.partner_id:
+            elif record.gross_amount and record.partner_id:
                 # An unsaved form can contain intermediate amounts while the user
                 # edits it. Persistence and approval retain strict validation.
                 try:
@@ -165,9 +185,12 @@ class EmployeeService(models.Model):
                 except ValidationError:
                     record.net_amount, record.tax_amount = 0, 0
                     continue
-                quote = native_quote(gross, record.tax_id,
-                                     record.category_map_id.product_id, record.partner_id, record.company_id)
-                record.net_amount, record.tax_amount = float(quote['net']), float(quote['tax'])
+                product = record._service_product(required=False)
+                if product:
+                    quote = native_quote(gross, record.tax_id, product, record.partner_id, record.company_id)
+                    record.net_amount, record.tax_amount = float(quote['net']), float(quote['tax'])
+                else:
+                    record.net_amount, record.tax_amount = record.gross_amount or 0, 0
             else:
                 record.net_amount, record.tax_amount = record.gross_amount or 0, 0
 
@@ -230,11 +253,7 @@ class EmployeeService(models.Model):
                     or any(party.company_id and party.company_id != record.company_id
                            for party in partner | partner.commercial_partner_id)):
                 raise ValidationError(_('Choose an active shared provider or one from the service company.'))
-            mapping = record.category_map_id
-            if (not mapping or mapping.company_id != record.company_id or not mapping.active
-                    or record.service_type not in dict(SERVICE_TYPES)):
-                raise ValidationError(_('Prepare the active employee-service category mapping for this company.'))
-            mapping._validated_expense_account()
+            product = record._service_product()
             if record.service_type == 'visa' and record.visa_type not in dict(VISA_TYPES):
                 raise ValidationError(_('Choose whether to issue or extend the exit-and-return visa.'))
             if record.service_type != 'visa' and record.visa_type:
@@ -246,7 +265,7 @@ class EmployeeService(models.Model):
             if record.tax_id != record._configured_tax(record.vat_enabled, record.company_id):
                 raise ValidationError(_('The purchase tax changed. Review the VAT switch before approval.'))
             native_quote(checked_gross(record.gross_amount, record.env), record.tax_id,
-                         mapping.product_id, partner, record.company_id)
+                         product, partner, record.company_id)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -317,6 +336,33 @@ class EmployeeService(models.Model):
             parts.append(self.service_reference)
         return ' / '.join(parts)
 
+    def _native_bill_preview(self, product, journal):
+        """Let Odoo resolve the account and analytic distribution before SQL."""
+        self.ensure_one()
+        values = {
+            'move_type': 'in_invoice', 'company_id': self.company_id.id,
+            'currency_id': self.company_id.currency_id.id, 'journal_id': journal.id,
+            'partner_id': self.partner_id.id, 'invoice_date': self.invoice_date,
+            'date': self.invoice_date, 'invoice_date_due': self.invoice_date,
+            'invoice_payment_term_id': False, 'fiscal_position_id': False,
+            'invoice_line_ids': [Command.create({
+                'name': self._service_bill_description(), 'product_id': product.id,
+                'quantity': 1, 'price_unit': float(native_quote(
+                    checked_gross(self.gross_amount, self.env), self.tax_id,
+                    product, self.partner_id, self.company_id)['unit_price']),
+                'discount': 0, 'tax_ids': [Command.set(self.tax_id.ids)],
+            })],
+        }
+        preview = self.env['account.move'].new(values)
+        account = preview.invoice_line_ids.account_id
+        if (len(account) != 1 or not account.active or self.company_id not in account.company_ids
+                or account.account_type not in ('expense', 'expense_direct_cost', 'expense_depreciation')):
+            raise ValidationError(_(
+                'Odoo could not select a valid expense account for this employee service. '
+                'Review the native service product or purchase journal before approval.'
+            ))
+        return values, account
+
     def action_approve(self):
         self.ensure_one()
         self._require_hr(manager=True)
@@ -329,28 +375,22 @@ class EmployeeService(models.Model):
             raise UserError(_('Only a draft employee service can be approved.'))
         record = self._scoped()
         record._validate_inputs()
-        mapping, company = record.category_map_id, record.company_id
-        account = mapping._validated_expense_account()
+        company = record.company_id
+        product = record._service_product()
         quote = native_quote(checked_gross(record.gross_amount, record.env), record.tax_id,
-                             mapping.product_id, record.partner_id, company)
+                             product, record.partner_id, company)
         journal = record.env['account.journal'].search([('company_id', '=', company.id), ('type', '=', 'purchase'), ('active', '=', True)], order='sequence,id', limit=1)
         if not journal or journal.currency_id and journal.currency_id != company.currency_id:
             raise ValidationError(_('Configure an active purchase journal in the company currency.'))
         if company._get_violated_lock_dates(record.invoice_date, bool(record.tax_id), journal):
             raise ValidationError(_('The invoice date is in a locked accounting period.'))
+        values, account = record._native_bill_preview(product, journal)
+        values.update(baseer_hr_service_id=record.id, ref=record.name)
         with self.env.cr.savepoint():
-            bill = record.env['account.move'].with_context(baseer_hr_service_internal=INTERNAL).create({
-                'move_type': 'in_invoice', 'company_id': company.id, 'currency_id': company.currency_id.id,
-                'journal_id': journal.id, 'partner_id': record.partner_id.id,
-                'invoice_date': record.invoice_date, 'date': record.invoice_date,
-                'invoice_date_due': record.invoice_date, 'invoice_payment_term_id': False,
-                'fiscal_position_id': False, 'baseer_hr_service_id': record.id, 'ref': record.name,
-                'invoice_line_ids': [Command.create({
-                    'name': record._service_bill_description(), 'product_id': mapping.product_id.id,
-                    'account_id': account.id, 'quantity': 1, 'price_unit': float(quote['unit_price']),
-                    'discount': 0, 'tax_ids': [Command.set(record.tax_id.ids)],
-                })],
-            })
+            bill = record.env['account.move'].with_context(baseer_hr_service_internal=INTERNAL).create(values)
+            line = bill.invoice_line_ids.filtered(lambda item: item.display_type == 'product')
+            if len(line) != 1 or line.product_id != product or line.account_id != account:
+                raise ValidationError(_('Review the native employee-service bill account before approval.'))
             bill.action_post()
             if (bill.state != 'posted' or bill.date != record.invoice_date or bill.invoice_date != record.invoice_date
                     or monetary(bill.amount_total) != quote['gross']

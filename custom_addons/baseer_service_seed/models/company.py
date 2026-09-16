@@ -64,17 +64,9 @@ class Company(models.Model):
             })
         return self._baseer_service_identity('account', purpose, 'account.account', account)
 
-    def _baseer_service_mapping(self, service, accounts):
+    def _baseer_service_product(self, service, accounts):
         key, english, arabic, purpose = service
         category = self.env.ref(f'baseer_service_seed.category_{key}')
-        mapper = self.env['baseer.purchase.category.map']
-        mapped = self._baseer_service_identity('mapping', key, mapper._name)
-        if mapped:
-            return mapped
-        # Existing choices, including archived mappings, remain authoritative.
-        mapped = mapper.search([('company_id', '=', self.id), ('category_id', '=', category.id)], limit=1)
-        if mapped:
-            return self._baseer_service_identity('mapping', key, mapper._name, mapped)
         product = self._baseer_service_identity('product', key, 'product.product')
         if not product:
             account = accounts.get(purpose)
@@ -93,14 +85,10 @@ class Company(models.Model):
             for language in self.env['res.lang'].search([('code', 'in', ['ar_001', 'ar']), ('active', '=', True)]):
                 product.with_context(lang=language.code).name = arabic
             self._baseer_service_identity('product', key, product._name, product)
-        if not product.active:
-            # An archived seed is a deliberate choice, not permission to replace it.
-            return mapper
-        mapped = mapper.create({'company_id': self.id, 'category_id': category.id, 'product_id': product.id})
-        return self._baseer_service_identity('mapping', key, mapper._name, mapped)
+        return product
 
-    def _baseer_service_provider(self, provider, mappings):
-        return self._baseer_shared_service_provider(provider, mappings)
+    def _baseer_service_provider(self, provider):
+        return self._baseer_shared_service_provider(provider)
 
     def _baseer_seed_services(self):
         for original in self.sorted('id'):
@@ -116,6 +104,7 @@ class Company(models.Model):
             company.env.cr.execute('UPDATE res_company SET id = id WHERE id = %s', [company.id])
             company.invalidate_recordset()
             accounts = {}
-            mappings = {service[0]: company._baseer_service_mapping(service, accounts) for service in SERVICES}
+            for service in SERVICES:
+                company._baseer_service_product(service, accounts)
             for provider in PROVIDERS:
-                company._baseer_service_provider(provider, mappings)
+                company._baseer_service_provider(provider)

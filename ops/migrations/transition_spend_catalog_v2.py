@@ -100,6 +100,13 @@ def _financial_snapshot():
 
 def _assert_no_live_account_references(source_ids, expected_native_model_refs):
     """Reject archiving if a source dimension occurs outside retained evidence."""
+    # Odoo batches ORM writes.  The transition repoints the three reviewed
+    # distribution models immediately before this guard, while the guard uses
+    # SQL for exhaustive schema discovery.  Flush first so SQL observes the
+    # in-transaction values rather than the pre-transition JSON payloads.
+    env['account.analytic.distribution.model'].sudo().flush_model([
+        'analytic_distribution',
+    ])
     # Direct FKs are discovered from PostgreSQL's own catalog so a future Odoo
     # module cannot silently add a reference we forgot to enumerate.
     env.cr.execute("""

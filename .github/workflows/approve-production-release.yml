@@ -1,0 +1,71 @@
+name: Approve a named Baseer Odoo production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Release identifier already committed under ops/production/release-policies
+        required: true
+        type: string
+      confirmation:
+        description: Type APPROVE to store this policy on the production server
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baseer-production-policy
+  cancel-in-progress: false
+
+jobs:
+  approve:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirmation == 'APPROVE'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: production
+    env:
+      PRODUCTION_HOST: 77.37.51.67
+      PRODUCTION_USER: baseer_deploy
+      PRODUCTION_KNOWN_HOST: >-
+        77.37.51.67 ssh-ed25519
+        AAAAC3NzaC1lZDI1NTE5AAAAILVPUAdMD2GfvCIP4FKhR56bANBLqdct93RllVDUdy4x
+
+    steps:
+      - name: Validate the bounded release identifier
+        shell: bash
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$RELEASE_ID" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]]
+
+      - name: Configure restricted SSH identity
+        shell: bash
+        env:
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$PRODUCTION_SSH_KEY"
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$PRODUCTION_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 0600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$PRODUCTION_KNOWN_HOST" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+
+      - name: Store the reviewed policy as root-owned server state
+        shell: bash
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -Eeuo pipefail
+          ssh \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$PRODUCTION_USER@$PRODUCTION_HOST" \
+            "sudo -n /usr/local/sbin/baseer-production-approve-release '$RELEASE_ID' '$GITHUB_RUN_ID' '$GITHUB_SHA'"

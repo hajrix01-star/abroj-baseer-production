@@ -1,26 +1,21 @@
 #!/usr/bin/env bash
-# Root-owned production deploy wrapper. Its contract is intentionally narrow:
-# it accepts only the independently reviewed NBC1/HRN1 release.
+# Root-owned production deploy wrapper.  GitHub may select a reviewed release
+# identifier only; this wrapper owns the corresponding commit and module list.
 set -Eeuo pipefail
 umask 027
 
 readonly BASE=/srv/abroj-baseer-production
 readonly RELEASES="$BASE/releases"
 readonly BACKUPS="$BASE/backups"
-readonly INBOX="$BASE/deploy-inbox"
 readonly STAGING="$BASE/deploy-staging"
+readonly POLICY_DIR=/etc/baseer-production/release-policies
+readonly SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
+readonly SOURCE_SSH_KEY=/etc/baseer-production/source-readonly.key
+readonly SOURCE_KNOWN_HOSTS=/etc/baseer-production/github-known_hosts
 readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
-readonly APPROVED_COMMIT=496e0a40fad2419d634e282922adf905e0fc2741
-readonly APPROVED_MODULES=(
-    baseer_purchase_batch
-    baseer_financial_correction
-    baseer_service_seed
-    baseer_hr_services
-)
-
 die() {
     printf 'DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
     exit 1
@@ -31,76 +26,56 @@ require_root() {
 }
 
 validate_arguments() {
-    [ "$#" -eq 4 ] || die 'expected: archive commit run_id archive_sha256'
-    archive=$1
-    commit=$2
-    run_id=$3
-    archive_sha=$4
+    [ "$#" -eq 2 ] || die 'expected: release_id run_id'
+    release_id=$1
+    run_id=$2
 
-    [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'invalid commit'
+    [[ "$release_id" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]] || die 'invalid release id'
     [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid run id'
-    [[ "$archive_sha" =~ ^[a-f0-9]{64}$ ]] || die 'invalid archive SHA-256'
-    [ "$commit" = "$APPROVED_COMMIT" ] || die 'commit is not approved for this deploy bridge'
-    [ "$archive" = "$INBOX/baseer-$commit.tar.gz" ] || die 'archive path violates deploy contract'
-    [ -f "$archive" ] && [ ! -L "$archive" ] || die 'archive is not a regular file'
 }
 
-secure_archive() {
-    # The SSH upload account owns INBOX.  First move its directory entry into
-    # root-only quarantine, then copy the bytes into a *new* root-created
-    # inode.  A caller can retain an FD to the uploaded inode, but it can never
-    # modify the private copy that is hashed, validated, and extracted.
-    local incoming_archive=$archive quarantine_archive private_archive actual_sha
+load_policy() {
+    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0
+    policy="$POLICY_DIR/$release_id.env"
+    [ -f "$policy" ] && [ ! -L "$policy" ] || die 'release policy is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$policy")" = 'root:root:600' ] || die 'release policy ownership or mode is unsafe'
 
-    if [ -e "$STAGING" ] && { [ ! -d "$STAGING" ] || [ -L "$STAGING" ]; }; then
-        die 'private staging path is unsafe'
-    fi
-    install -d -o root -g root -m 0700 "$STAGING"
-    chown root:root -- "$STAGING"
-    chmod 0700 -- "$STAGING"
-    quarantine_archive="$STAGING/.incoming-${commit}-${run_id}.tar.gz"
-    private_archive="$STAGING/baseer-${commit}-${run_id}.tar.gz"
-    [ ! -e "$quarantine_archive" ] || die 'private quarantine archive already exists'
-    [ ! -e "$private_archive" ] || die 'private staging archive already exists'
-    [ -f "$incoming_archive" ] && [ ! -L "$incoming_archive" ] || die 'incoming archive is not a regular file'
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+        case "$key" in
+            RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate policy release id'; policy_release_id=$value; seen_release=1 ;;
+            COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
+            MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
+            ''|'#'*) ;;
+            *) die 'policy has an unknown key' ;;
+        esac
+    done < "$policy"
 
-    mv -T -- "$incoming_archive" "$quarantine_archive" || die 'could not quarantine uploaded archive'
-    if [ -L "$quarantine_archive" ] || [ ! -f "$quarantine_archive" ]; then
-        rm -f -- "$quarantine_archive"
-        die 'quarantined archive is not a regular file'
-    fi
-    install -o root -g root -m 0600 /dev/null "$private_archive"
-    cat -- "$quarantine_archive" > "$private_archive"
-    rm -f -- "$quarantine_archive"
-    chmod 0400 -- "$private_archive"
-    [ -f "$private_archive" ] && [ ! -L "$private_archive" ] || die 'private staging archive is unsafe'
-    actual_sha="$(sha256sum "$private_archive" | awk '{print $1}')"
-    if [ "$actual_sha" != "$archive_sha" ]; then
-        rm -f -- "$private_archive"
-        die 'archive SHA-256 mismatch'
-    fi
-    archive="$private_archive"
+    [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules_field" -eq 1 ] || die 'policy is incomplete'
+    [ "$policy_release_id" = "$release_id" ] || die 'policy release id mismatch'
+    [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'policy commit is invalid'
+    IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
+    [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
+    declare -A seen_module_names=()
+    for approved_module in "${APPROVED_MODULES[@]}"; do
+        [[ "$approved_module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'policy module is invalid'
+        [ -z "${seen_module_names[$approved_module]+x}" ] || die 'policy repeats a module'
+        seen_module_names[$approved_module]=1
+    done
 }
 
-validate_archive() {
-    local entry type
-    while IFS= read -r entry; do
-        case "$entry" in
-            source/|source/*) ;;
-            *) die 'archive contains a path outside source/' ;;
-        esac
-        case "$entry" in
-            *//*|*/../*|../*|*/..|/*) die 'archive path is unsafe' ;;
-        esac
-    done < <(tar -tzf "$archive")
-
-    # Git source must not contain links in this deployment channel.  Links make
-    # archive extraction and the source/secret boundary needlessly ambiguous.
-    while IFS= read -r type; do
-        case "$type" in
-            l*|h*) die 'archive links are not accepted' ;;
-        esac
-    done < <(tar -tvzf "$archive" | awk '{print substr($0, 1, 1)}')
+fetch_reviewed_source() {
+    local fetch_repo fetched_commit
+    fetch_repo="$stage/fetch.git"
+    install -d -o root -g root -m 0700 "$stage"
+    git init --bare --quiet "$fetch_repo"
+    git -C "$fetch_repo" remote add origin "$SOURCE_REMOTE"
+    GIT_SSH_COMMAND="ssh -i $SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$SOURCE_KNOWN_HOSTS" \
+        git -C "$fetch_repo" fetch --no-tags --quiet origin "$commit"
+    fetched_commit="$(git -C "$fetch_repo" rev-parse FETCH_HEAD^{commit})"
+    [ "$fetched_commit" = "$commit" ] || die 'fetched source does not match the approved commit'
+    mkdir -m 0700 "$stage/source"
+    git -C "$fetch_repo" archive --format=tar "$commit" | tar -x -C "$stage/source" --no-same-owner --no-same-permissions
+    rm -rf -- "$fetch_repo"
 }
 
 snapshot_sql=$(cat <<'SQL'
@@ -210,7 +185,23 @@ require_root
 validate_arguments "$@"
 exec 9>"$LOCK_FILE"
 flock -n 9 || die 'another production deployment is already running'
-secure_archive
+load_policy
+
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+stage="$RELEASES/.stage-${commit:0:12}-${run_id}-$stamp"
+mkdir -p "$RELEASES"
+[ ! -e "$stage" ] || die 'private source staging path already exists'
+fetch_reviewed_source
+source_dir="$stage/source"
+[ -d "$source_dir" ] || die 'fetched source is missing'
+[ ! -e "$source_dir/.env" ] || die 'fetched source must not contain .env'
+[ -f "$source_dir/compose.production.yaml" ] || die 'release compose file is missing'
+if find "$source_dir" -type l -print -quit | grep -q .; then
+    die 'fetched source contains a link'
+fi
+for approved_module in "${APPROVED_MODULES[@]}"; do
+    [ -f "$source_dir/custom_addons/$approved_module/__manifest__.py" ] || die "approved module is missing from release: $approved_module"
+done
 
 old_release="$(readlink -f "$BASE/current")"
 [ -d "$old_release" ] || die 'current release cannot be resolved'
@@ -220,34 +211,24 @@ compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_rel
 odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"
 [[ "$odoo_config_gid" =~ ^[0-9]+$ ]] || die 'could not resolve the Odoo configuration group'
 
-archive_kb="$(du -sk "$archive" | awk '{print $1}')"
+source_kb="$(du -sk "$source_dir" | awk '{print $1}')"
 db_bytes="$(docker exec "$DB_CONTAINER" sh -lc 'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT pg_database_size(current_database())"')"
 db_kb=$(( (db_bytes + 1023) / 1024 ))
 filestore_kb="$(docker run --rm --network none -v "$ODOO_VOLUME":/source:ro alpine:3.20 sh -lc 'du -sk /source/filestore/baseer_prod | awk "{print \$1}"')"
 available_kb="$(df --output=avail -k "$BASE" | tail -n 1 | tr -d ' ')"
-required_kb=$(( 2 * (archive_kb + db_kb + filestore_kb) + 1024 * 1024 ))
+required_kb=$(( 2 * (source_kb + db_kb + filestore_kb) + 1024 * 1024 ))
 [ "$available_kb" -gt "$required_kb" ] || die 'insufficient disk space for a recoverable deployment'
 
-stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup="$BACKUPS/pre-${commit:0:12}-${run_id}-$stamp"
 release="$RELEASES/${commit:0:12}-run-${run_id}-$stamp"
-stage="$RELEASES/.stage-${commit:0:12}-${run_id}-$stamp"
 release_switched=0
 database_mutated=0
 service_quiesced=0
 compose=()
 trap rollback ERR
 
-mkdir -p "$BACKUPS" "$RELEASES" "$backup" "$stage"
-validate_archive
-tar -xzf "$archive" -C "$stage" --no-same-owner --no-same-permissions
-source_dir="$stage/source"
-[ -d "$source_dir" ] || die 'archive does not have source/'
-[ ! -e "$source_dir/.env" ] || die 'archive must not contain .env'
-[ -f "$source_dir/compose.production.yaml" ] || die 'release compose file is missing'
-for approved_module in "${APPROVED_MODULES[@]}"; do
-    [ -f "$source_dir/custom_addons/$approved_module/__manifest__.py" ] || die "approved module is missing from release: $approved_module"
-done
+mkdir -p "$BACKUPS" "$backup"
+[ ! -e "$release" ] || die 'release path already exists'
 mv "$source_dir" "$release"
 rmdir "$stage"
 # The release source is mounted into the unprivileged Odoo container.  It must
@@ -297,7 +278,7 @@ if [ "${#install_modules[@]}" -gt 0 ]; then
 fi
 odoo_command+=' --stop-after-init --workers=0 --max-cron-threads=0'
 database_mutated=1
-"${compose[@]}" run --rm --no-deps --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-nbc1-hrn1.log" 2>&1
+"${compose[@]}" run --rm --no-deps --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
 
 snapshot > "$backup/protected-after.json"
 cmp "$backup/protected-before.json" "$backup/protected-after.json"
@@ -312,5 +293,5 @@ done
 "${compose[@]}" logs --no-color --tail=300 odoo > "$backup/odoo-smoke.log"
 ! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
 
-printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\n' "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" > "$backup/result.env"
+printf 'LIVE=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" > "$backup/result.env"
 printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

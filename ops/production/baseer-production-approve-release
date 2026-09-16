@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Root-owned release-policy registrar.  The restricted SSH account supplies
+# only a release identifier and GitHub run id; this command fetches policy and
+# source facts from the fixed read-only repository remote itself.
+set -Eeuo pipefail
+umask 077
+
+readonly BASE=/srv/abroj-baseer-production
+readonly POLICY_DIR=/etc/baseer-production/release-policies
+readonly STAGING="$BASE/deploy-staging"
+readonly SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
+readonly SOURCE_SSH_KEY=/etc/baseer-production/source-readonly.key
+readonly SOURCE_KNOWN_HOSTS=/etc/baseer-production/github-known_hosts
+
+die() {
+    printf 'APPROVAL=FAILED\nREASON=%s\n' "$*" >&2
+    exit 1
+}
+
+require_root() {
+    [ "$(id -u)" -eq 0 ] || die 'root is required'
+}
+
+validate_arguments() {
+    [ "$#" -eq 3 ] || die 'expected: release_id run_id policy_revision'
+    release_id=$1
+    run_id=$2
+    policy_revision=$3
+    [[ "$release_id" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]] || die 'invalid release id'
+    [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid run id'
+    [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy revision'
+}
+
+parse_policy() {
+    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules_field=0
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+        case "$key" in
+            RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate policy release id'; policy_release_id=$value; seen_release=1 ;;
+            COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
+            MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
+            ''|'#'*) ;;
+            *) die 'policy has an unknown key' ;;
+        esac
+    done < "$policy"
+    [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules_field" -eq 1 ] || die 'policy is incomplete'
+    [ "$policy_release_id" = "$release_id" ] || die 'policy release id mismatch'
+    [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'policy commit is invalid'
+    IFS=',' read -r -a modules <<< "$policy_modules"
+    [ "${#modules[@]}" -gt 0 ] || die 'policy has no modules'
+    declare -A names=()
+    for module in "${modules[@]}"; do
+        [[ "$module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'policy module is invalid'
+        [ -z "${names[$module]+x}" ] || die 'policy repeats a module'
+        names[$module]=1
+    done
+}
+
+require_root
+validate_arguments "$@"
+
+install -d -o root -g root -m 0700 "$POLICY_DIR" "$STAGING"
+fetch_repo="$STAGING/.policy-fetch-${release_id}-${run_id}"
+candidate="$POLICY_DIR/.${release_id}.${run_id}.new"
+[ ! -e "$fetch_repo" ] && [ ! -e "$candidate" ] || die 'private approval staging path already exists'
+trap 'rm -rf -- "$fetch_repo" "$candidate"' EXIT
+
+git init --bare --quiet "$fetch_repo"
+git -C "$fetch_repo" remote add origin "$SOURCE_REMOTE"
+GIT_SSH_COMMAND="ssh -i $SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$SOURCE_KNOWN_HOSTS" \
+    git -C "$fetch_repo" fetch --no-tags --quiet origin \
+    main:refs/heads/policy-main \
+    "$policy_revision":refs/heads/policy-revision
+[ "$(git -C "$fetch_repo" rev-parse refs/heads/policy-revision^{commit})" = "$policy_revision" ] || die 'fetched policy revision does not match'
+git -C "$fetch_repo" merge-base --is-ancestor "$policy_revision" refs/heads/policy-main || die 'policy revision is not an ancestor of main'
+git -C "$fetch_repo" show "$policy_revision:ops/production/release-policies/$release_id.env" > "$candidate" || die 'release policy is absent from the reviewed revision'
+parse_policy "$candidate"
+
+git -C "$fetch_repo" cat-file -e "$commit^{commit}" || die 'policy commit is not available from main'
+git -C "$fetch_repo" merge-base --is-ancestor "$commit" refs/heads/policy-main || die 'policy commit is not an ancestor of main'
+for module in "${modules[@]}"; do
+    git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "policy module is absent from commit: $module"
+done
+
+printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules" > "$candidate.canonical"
+mv "$candidate.canonical" "$candidate"
+chown root:root "$candidate"
+chmod 0600 "$candidate"
+policy="$POLICY_DIR/$release_id.env"
+if [ -e "$policy" ]; then
+    [ -f "$policy" ] && [ ! -L "$policy" ] || die 'existing policy is unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$policy")" = 'root:root:600' ] || die 'existing policy ownership or mode is unsafe'
+    cmp -s "$candidate" "$policy" || die 'release id is already approved with a different policy'
+    printf 'APPROVAL=ALREADY_APPROVED\nRELEASE_ID=%s\nCOMMIT=%s\n' "$release_id" "$commit"
+    exit 0
+fi
+mv "$candidate" "$policy"
+printf 'APPROVAL=GO\nRELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"

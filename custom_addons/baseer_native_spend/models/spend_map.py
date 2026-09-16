@@ -117,8 +117,8 @@ class BaseerSpendMapRule(models.Model):
             if rule.analytic_account_id.company_id and rule.analytic_account_id.company_id != rule.company_id:
                 raise ValidationError(_('A company rule may only use a shared leaf or a leaf of the same company.'))
             selector = rule._baseer_selector_record()
-            if (rule.company_id and hasattr(selector, 'company_id') and selector.company_id
-                    and selector.company_id != rule.company_id):
+            if (hasattr(selector, 'company_id') and selector.company_id
+                    and (not rule.company_id or selector.company_id != rule.company_id)):
                 raise ValidationError(_('A company rule may only select a record of the same company or a shared record.'))
 
     def _baseer_require_shared_scope_authority(self):
@@ -222,6 +222,7 @@ class BaseerSpendMapRun(models.Model):
     approved_at = fields.Datetime(readonly=True, copy=False)
     approved_by_id = fields.Many2one('res.users', readonly=True, copy=False)
     line_ids = fields.One2many('baseer.spend.map.preview.line', 'run_id', readonly=True)
+    freshness_check_ids = fields.One2many('baseer.spend.map.freshness.check', 'run_id', readonly=True)
     total_count = fields.Integer(readonly=True)
     resolved_count = fields.Integer(readonly=True)
     blocked_count = fields.Integer(readonly=True)
@@ -278,6 +279,7 @@ class BaseerSpendMapRun(models.Model):
         categories = Category.search([])
         native_models = Native.search([('company_id', 'in', [False, company.id])])
         accounts = Account.search([('root_plan_id', '=', root.id)]) if root else Account.browse()
+        pair_sources = self._baseer_pair_sources()
 
         payload = {
             'company': [company.id, str(company.write_date)],
@@ -291,6 +293,10 @@ class BaseerSpendMapRun(models.Model):
                                r.partner_category_id.id, r.product_id.id, r.product_categ_id.id,
                                r.analytic_distribution) for r in native_models],
             'accounts': [(r.id, str(r.write_date), r.company_id.id, r.active) for r in accounts],
+            'supplier_product_pairs': sorted([
+                (partner_id, product_id, source['kind'], source['id'], source['write_date'])
+                for (partner_id, product_id), source in pair_sources.items()
+            ]),
         }
         encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str, separators=(',', ':'))
         return hashlib.sha256(encoded.encode()).hexdigest()
@@ -306,6 +312,42 @@ class BaseerSpendMapRun(models.Model):
                     str(rule.write_date)) for rule in rules]
         encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
         return hashlib.sha256(encoded.encode()).hexdigest()
+
+    def _baseer_pair_sources(self):
+        """Return only evidence that belongs to this company.
+
+        Both this function and the preview use this exact source, keeping the
+        snapshot freshness guarantee aligned with supplier-product evidence.
+        """
+        self.ensure_one()
+        sources = {}
+        MoveLine = self.env['account.move.line'].sudo()
+        for line in MoveLine.search([
+            ('move_id.company_id', '=', self.company_id.id),
+            ('move_id.state', '=', 'posted'),
+            ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
+            ('display_type', '=', 'product'),
+            ('move_id.partner_id', '!=', False), ('product_id', '!=', False),
+        ]):
+            partner = line.move_id.partner_id
+            product = line.product_id
+            if (partner.company_id and partner.company_id != self.company_id
+                    or product.company_id and product.company_id != self.company_id):
+                continue
+            sources[(partner.id, product.id)] = {
+                'kind': 'posted_bill', 'id': line.id, 'write_date': str(line.write_date),
+            }
+        for info in self.env['product.supplierinfo'].sudo().search([('partner_id', '!=', False)]):
+            partner = info.partner_id
+            if partner.company_id and partner.company_id != self.company_id:
+                continue
+            for product in (info.product_id or info.product_tmpl_id.product_variant_ids):
+                if not product.active or (product.company_id and product.company_id != self.company_id):
+                    continue
+                sources.setdefault((partner.id, product.id), {
+                    'kind': 'supplierinfo', 'id': info.id, 'write_date': str(info.write_date),
+                })
+        return sources
 
     def _baseer_native_destinations(self, model, root):
         destinations = set()
@@ -492,23 +534,7 @@ class BaseerSpendMapRun(models.Model):
         # evidence from posted vendor bills and supplierinfo, never a guessed
         # Cartesian product.  This is the context Odoo will use when a bill
         # has both a supplier and a product.
-        pair_sources = {}
-        MoveLine = self.env['account.move.line'].sudo()
-        move_lines = MoveLine.search([
-            ('move_id.company_id', '=', self.company_id.id),
-            ('move_id.state', '=', 'posted'),
-            ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
-            ('display_type', '=', 'product'),
-            ('move_id.partner_id', '!=', False),
-            ('product_id', '!=', False),
-        ])
-        for line in move_lines:
-            pair_sources[(line.move_id.partner_id.id, line.product_id.id)] = 'posted_bill'
-        for info in self.env['product.supplierinfo'].sudo().search([('partner_id', '!=', False)]):
-            products_for_info = info.product_id or info.product_tmpl_id.product_variant_ids
-            for item in products_for_info:
-                if item.active and (not item.company_id or item.company_id == self.company_id):
-                    pair_sources.setdefault((info.partner_id.id, item.id), 'supplierinfo')
+        pair_sources = self._baseer_pair_sources()
         for (partner_id, product_id), source in sorted(pair_sources.items()):
             partner = Supplier.browse(partner_id).exists()
             product = Product.browse(product_id).exists()
@@ -579,11 +605,20 @@ class BaseerSpendMapRun(models.Model):
         for run in self:
             if not run.snapshot_hash:
                 raise UserError(_('Generate the preview before checking its freshness.'))
-            if run.snapshot_hash != run._baseer_snapshot_hash():
-                values = {'is_stale': True, 'stale_at': fields.Datetime.now()}
-                if run.state != 'approved':
-                    values['state'] = 'stale'
-                super(BaseerSpendMapRun, run).write(values)
+            current_hash = run._baseer_snapshot_hash()
+            stale = run.snapshot_hash != current_hash or run.catalog_hash != run._baseer_catalog_hash()
+            Check = self.env['baseer.spend.map.freshness.check']
+            super(BaseerSpendMapFreshnessCheck, Check).create({
+                'run_id': run.id, 'snapshot_hash': current_hash, 'is_stale': stale,
+                'checked_at': fields.Datetime.now(), 'checked_by_id': self.env.user.id,
+            })
+            # Approved evidence is immutable forever.  A fresh check is a
+            # separate audit record; only a non-approved working run may move
+            # to stale and require regeneration.
+            if stale and run.state != 'approved':
+                super(BaseerSpendMapRun, run).write({
+                    'state': 'stale', 'is_stale': True, 'stale_at': fields.Datetime.now(),
+                })
 
     def action_approve(self):
         self._baseer_require_manager()
@@ -601,6 +636,31 @@ class BaseerSpendMapRun(models.Model):
                 'approved_by_id': self.env.user.id,
                 'approved_at': fields.Datetime.now(),
             })
+
+
+class BaseerSpendMapFreshnessCheck(models.Model):
+    """Append-only freshness evidence; it never changes an approved run."""
+
+    _name = 'baseer.spend.map.freshness.check'
+    _description = 'Spend Map Freshness Check'
+    _order = 'checked_at desc, id desc'
+
+    run_id = fields.Many2one('baseer.spend.map.run', required=True, ondelete='restrict', index=True)
+    company_id = fields.Many2one(related='run_id.company_id', store=True, readonly=True)
+    snapshot_hash = fields.Char(required=True, readonly=True, copy=False)
+    is_stale = fields.Boolean(required=True, readonly=True, copy=False)
+    checked_at = fields.Datetime(required=True, readonly=True, copy=False)
+    checked_by_id = fields.Many2one('res.users', required=True, readonly=True, copy=False)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        raise AccessError(_('Freshness checks are created by the readiness action only.'))
+
+    def write(self, vals):
+        raise AccessError(_('Freshness checks are append-only audit evidence.'))
+
+    def unlink(self):
+        raise AccessError(_('Freshness checks are retained as audit evidence.'))
 
 
 class BaseerSpendMapPreviewLine(models.Model):

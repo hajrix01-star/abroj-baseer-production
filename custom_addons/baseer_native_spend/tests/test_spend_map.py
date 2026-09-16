@@ -1,6 +1,7 @@
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.addons.baseer_native_spend.models.spend_map import BaseerSpendMapRun
 
 
 @tagged('post_install', '-at_install')
@@ -116,7 +117,7 @@ class SpendMapPreviewCase(TransactionCase):
                     and value.get('product_id') == self.product.id)
         self.assertEqual(pair['selected_analytic_account_id'], self.leaf_b.id)
         self.assertEqual(pair['outcome'], 'resolved')
-        self.assertEqual(pair['evidence_json']['relationship_source'], 'supplierinfo')
+        self.assertEqual(pair['evidence_json']['relationship_source']['kind'], 'supplierinfo')
         self.assertTrue(pair['evidence_hash'])
 
     def test_untagged_vendor_uses_explicit_vendor_rule_only(self):
@@ -144,6 +145,31 @@ class SpendMapPreviewCase(TransactionCase):
         self.supplier.category_id = self.tag_a | self.tag_b
         run.action_check_stale()
         self.assertEqual(run.state, 'stale')
+        self.assertTrue(run.freshness_check_ids.is_stale)
+
+    def test_run_becomes_stale_after_supplier_product_relationship_changes(self):
+        run = self.readiness_run()
+        run.action_generate_preview()
+        self.env['product.supplierinfo'].create({
+            'partner_id': self.supplier.id,
+            'product_tmpl_id': self.product.product_tmpl_id.id,
+        })
+        run.action_check_stale()
+        self.assertEqual(run.state, 'stale')
+        self.assertTrue(run.freshness_check_ids.is_stale)
+
+    def test_stale_check_never_changes_approved_run(self):
+        run = self.readiness_run()
+        run.action_generate_preview()
+        super(BaseerSpendMapRun, run).write({
+            'state': 'approved', 'approved_by_id': self.env.user.id,
+        })
+        before = (run.state, run.is_stale, run.stale_at, run.write_date)
+        self.supplier.category_id = self.tag_a | self.tag_b
+        run.action_check_stale()
+        run.invalidate_recordset()
+        self.assertEqual((run.state, run.is_stale, run.stale_at, run.write_date), before)
+        self.assertTrue(run.freshness_check_ids[:1].is_stale)
 
     def test_context_flag_cannot_modify_evidence_or_approved_run(self):
         run = self.readiness_run()
@@ -212,6 +238,14 @@ class SpendMapPreviewCase(TransactionCase):
                 'selector_kind': 'partner_tag', 'partner_tag_id': self.tag_a.id,
                 'analytic_account_id': self.leaf_a.id,
             })
+
+    def test_shared_rule_cannot_reference_company_specific_selector(self):
+        other_company = self.env['res.company'].create({'name': 'MAP selector other company'})
+        scoped_supplier = self.env['res.partner'].create({
+            'name': 'MAP scoped supplier', 'supplier_rank': 1, 'company_id': other_company.id,
+        })
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.rule('partner', self.leaf_a, partner_id=scoped_supplier.id)
 
     def test_preview_does_not_write_native_distribution_models(self):
         native = self.env['account.analytic.distribution.model'].create({

@@ -2,3 +2,4 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_baseer_spend_map_rule_manager,baseer.spend.map.rule.manager,model_baseer_spend_map_rule,account.group_account_manager,1,1,1,1
 access_baseer_spend_map_run_manager,baseer.spend.map.run.manager,model_baseer_spend_map_run,account.group_account_manager,1,1,1,1
 access_baseer_spend_map_preview_line_manager,baseer.spend.map.preview.line.manager,model_baseer_spend_map_preview_line,account.group_account_manager,1,1,1,1
+access_baseer_spend_map_freshness_check_manager,baseer.spend.map.freshness.check.manager,model_baseer_spend_map_freshness_check,account.group_account_manager,1,1,1,1

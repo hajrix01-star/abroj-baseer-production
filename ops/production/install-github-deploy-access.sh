@@ -29,6 +29,8 @@ esac
 [ -f "$SOURCE_KEY" ] && [ ! -L "$SOURCE_KEY" ] || { echo 'root-only GitHub source key is missing' >&2; exit 1; }
 [ -f "$SOURCE_KNOWN_HOSTS" ] && [ ! -L "$SOURCE_KNOWN_HOSTS" ] || { echo 'GitHub known-hosts file is missing' >&2; exit 1; }
 [ "$(stat -c '%U:%G:%a' "$SOURCE_KEY")" = 'root:root:600' ] || { echo 'GitHub source key ownership or mode is unsafe' >&2; exit 1; }
+[ "$(stat -c '%U:%G:%a' "$SOURCE_KNOWN_HOSTS")" = 'root:root:644' ] || { echo 'GitHub known-hosts ownership or mode is unsafe' >&2; exit 1; }
+grep -Fqx 'ssh.github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' "$SOURCE_KNOWN_HOSTS" || { echo 'GitHub host key is not pinned' >&2; exit 1; }
 # Do not create an SSH identity or a sudo rule until the host's global SSH
 # policy is proven compatible with the restricted-account contract.
 sshd -t

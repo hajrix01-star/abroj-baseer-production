@@ -11,6 +11,8 @@ readonly STAGING="$BASE/deploy-staging"
 readonly SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
 readonly SOURCE_SSH_KEY=/etc/baseer-production/source-readonly.key
 readonly SOURCE_KNOWN_HOSTS=/etc/baseer-production/github-known_hosts
+readonly GITHUB_ED25519_HOST_KEY='ssh.github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
+readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
 
 die() {
     printf 'APPROVAL=FAILED\nREASON=%s\n' "$*" >&2
@@ -19,6 +21,14 @@ die() {
 
 require_root() {
     [ "$(id -u)" -eq 0 ] || die 'root is required'
+}
+
+verify_source_identity() {
+    [ -f "$SOURCE_SSH_KEY" ] && [ ! -L "$SOURCE_SSH_KEY" ] || die 'GitHub source key is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$SOURCE_SSH_KEY")" = 'root:root:600' ] || die 'GitHub source key ownership or mode is unsafe'
+    [ -f "$SOURCE_KNOWN_HOSTS" ] && [ ! -L "$SOURCE_KNOWN_HOSTS" ] || die 'GitHub known-hosts file is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$SOURCE_KNOWN_HOSTS")" = 'root:root:644' ] || die 'GitHub known-hosts ownership or mode is unsafe'
+    grep -Fqx "$GITHUB_ED25519_HOST_KEY" "$SOURCE_KNOWN_HOSTS" || die 'GitHub host key is not pinned'
 }
 
 validate_arguments() {
@@ -57,12 +67,15 @@ parse_policy() {
 
 require_root
 validate_arguments "$@"
+verify_source_identity
+exec 9>"$LOCK_FILE"
+flock -n 9 || die 'another production deployment or approval is already running'
 
 install -d -o root -g root -m 0700 "$POLICY_DIR" "$STAGING"
 fetch_repo="$STAGING/.policy-fetch-${release_id}-${run_id}"
 candidate="$POLICY_DIR/.${release_id}.${run_id}.new"
 [ ! -e "$fetch_repo" ] && [ ! -e "$candidate" ] || die 'private approval staging path already exists'
-trap 'rm -rf -- "$fetch_repo" "$candidate"' EXIT
+trap 'rm -rf -- "$fetch_repo" "$candidate" "${candidate}.legacy"' EXIT
 
 git init --bare --quiet "$fetch_repo"
 git -C "$fetch_repo" remote add origin "$SOURCE_REMOTE"
@@ -81,7 +94,7 @@ for module in "${modules[@]}"; do
     git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "policy module is absent from commit: $module"
 done
 
-printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules" > "$candidate.canonical"
+printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$commit" "$policy_modules" "$policy_revision" "$run_id" > "$candidate.canonical"
 mv "$candidate.canonical" "$candidate"
 chown root:root "$candidate"
 chmod 0600 "$candidate"
@@ -89,9 +102,15 @@ policy="$POLICY_DIR/$release_id.env"
 if [ -e "$policy" ]; then
     [ -f "$policy" ] && [ ! -L "$policy" ] || die 'existing policy is unsafe'
     [ "$(stat -c '%U:%G:%a' -- "$policy")" = 'root:root:600' ] || die 'existing policy ownership or mode is unsafe'
-    cmp -s "$candidate" "$policy" || die 'release id is already approved with a different policy'
-    printf 'APPROVAL=ALREADY_APPROVED\nRELEASE_ID=%s\nCOMMIT=%s\n' "$release_id" "$commit"
+    if cmp -s "$candidate" "$policy"; then
+        printf 'APPROVAL=ALREADY_APPROVED\nRELEASE_ID=%s\nCOMMIT=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$commit" "$policy_revision" "$run_id"
+        exit 0
+    fi
+    printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules" > "$candidate.legacy"
+    cmp -s "$candidate.legacy" "$policy" || die 'release id is already approved with a different policy'
+    mv "$candidate" "$policy"
+    printf 'APPROVAL=UPGRADED_LEGACY_POLICY\nRELEASE_ID=%s\nCOMMIT=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$commit" "$policy_revision" "$run_id"
     exit 0
 fi
 mv "$candidate" "$policy"
-printf 'APPROVAL=GO\nRELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"
+printf 'APPROVAL=GO\nRELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$commit" "$policy_modules" "$policy_revision" "$run_id"

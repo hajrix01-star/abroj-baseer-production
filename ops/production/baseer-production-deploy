@@ -12,6 +12,7 @@ readonly POLICY_DIR=/etc/baseer-production/release-policies
 readonly SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
 readonly SOURCE_SSH_KEY=/etc/baseer-production/source-readonly.key
 readonly SOURCE_KNOWN_HOSTS=/etc/baseer-production/github-known_hosts
+readonly GITHUB_ED25519_HOST_KEY='ssh.github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
 readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
@@ -25,6 +26,14 @@ require_root() {
     [ "$(id -u)" -eq 0 ] || die 'root is required'
 }
 
+verify_source_identity() {
+    [ -f "$SOURCE_SSH_KEY" ] && [ ! -L "$SOURCE_SSH_KEY" ] || die 'GitHub source key is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$SOURCE_SSH_KEY")" = 'root:root:600' ] || die 'GitHub source key ownership or mode is unsafe'
+    [ -f "$SOURCE_KNOWN_HOSTS" ] && [ ! -L "$SOURCE_KNOWN_HOSTS" ] || die 'GitHub known-hosts file is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$SOURCE_KNOWN_HOSTS")" = 'root:root:644' ] || die 'GitHub known-hosts ownership or mode is unsafe'
+    grep -Fqx "$GITHUB_ED25519_HOST_KEY" "$SOURCE_KNOWN_HOSTS" || die 'GitHub host key is not pinned'
+}
+
 validate_arguments() {
     [ "$#" -eq 2 ] || die 'expected: release_id run_id'
     release_id=$1
@@ -35,7 +44,7 @@ validate_arguments() {
 }
 
 load_policy() {
-    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0
+    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_revision=0 seen_approval_run=0
     policy="$POLICY_DIR/$release_id.env"
     [ -f "$policy" ] && [ ! -L "$policy" ] || die 'release policy is missing or unsafe'
     [ "$(stat -c '%U:%G:%a' -- "$policy")" = 'root:root:600' ] || die 'release policy ownership or mode is unsafe'
@@ -45,14 +54,18 @@ load_policy() {
             RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate policy release id'; policy_release_id=$value; seen_release=1 ;;
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
+            POLICY_REVISION) [ "$seen_revision" -eq 0 ] || die 'duplicate policy revision'; policy_revision=$value; seen_revision=1 ;;
+            APPROVED_RUN_ID) [ "$seen_approval_run" -eq 0 ] || die 'duplicate policy approval run'; approved_run_id=$value; seen_approval_run=1 ;;
             ''|'#'*) ;;
             *) die 'policy has an unknown key' ;;
         esac
     done < "$policy"
 
-    [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules_field" -eq 1 ] || die 'policy is incomplete'
+    [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules_field" -eq 1 ] && [ "$seen_revision" -eq 1 ] && [ "$seen_approval_run" -eq 1 ] || die 'policy is incomplete'
     [ "$policy_release_id" = "$release_id" ] || die 'policy release id mismatch'
     [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'policy commit is invalid'
+    [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'policy revision is invalid'
+    [[ "$approved_run_id" =~ ^[0-9]+$ ]] || die 'policy approval run is invalid'
     IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
     [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
     declare -A seen_module_names=()
@@ -64,15 +77,34 @@ load_policy() {
 }
 
 fetch_reviewed_source() {
-    local fetch_repo fetched_commit
+    local fetch_repo fetched_commit changed_path changed_module
     fetch_repo="$stage/fetch.git"
     install -d -o root -g root -m 0700 "$stage"
     git init --bare --quiet "$fetch_repo"
     git -C "$fetch_repo" remote add origin "$SOURCE_REMOTE"
     GIT_SSH_COMMAND="ssh -i $SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$SOURCE_KNOWN_HOSTS" \
-        git -C "$fetch_repo" fetch --no-tags --quiet origin "$commit"
-    fetched_commit="$(git -C "$fetch_repo" rev-parse FETCH_HEAD^{commit})"
+        git -C "$fetch_repo" fetch --no-tags --quiet origin main:refs/heads/source-main "$commit"
+    if [ -n "${live_commit_prefix:-}" ]; then
+        live_commit="$(git -C "$fetch_repo" rev-parse "${live_commit_prefix}^{commit}")" || die 'could not resolve legacy live commit'
+    else
+        git -C "$fetch_repo" cat-file -e "$live_commit^{commit}" || die 'live release commit is absent from source remote'
+    fi
+    git -C "$fetch_repo" merge-base --is-ancestor "$live_commit" "$commit" || die 'approved commit does not advance from the live release'
+    fetched_commit="$(git -C "$fetch_repo" rev-parse "${commit}^{commit}")"
     [ "$fetched_commit" = "$commit" ] || die 'fetched source does not match the approved commit'
+    declare -A allowed_modules=()
+    for approved_module in "${APPROVED_MODULES[@]}"; do allowed_modules[$approved_module]=1; done
+    while IFS= read -r changed_path; do
+        case "$changed_path" in
+            custom_addons/*/*)
+                changed_module="${changed_path#custom_addons/}"
+                changed_module="${changed_module%%/*}"
+                [ -n "${allowed_modules[$changed_module]+x}" ] || die "custom module changed outside release policy: $changed_module"
+                ;;
+            custom_addons/*) die 'custom-addons root file changed outside release policy' ;;
+            third_party_addons/*|compose.production.yaml|config/*) die "runtime source changed outside release policy: $changed_path" ;;
+        esac
+    done < <(git -C "$fetch_repo" diff --name-only "$live_commit" "$commit" -- custom_addons third_party_addons compose.production.yaml config)
     mkdir -m 0700 "$stage/source"
     git -C "$fetch_repo" archive --format=tar "$commit" | tar -x -C "$stage/source" --no-same-owner --no-same-permissions
     rm -rf -- "$fetch_repo"
@@ -185,7 +217,21 @@ require_root
 validate_arguments "$@"
 exec 9>"$LOCK_FILE"
 flock -n 9 || die 'another production deployment is already running'
+verify_source_identity
 load_policy
+
+old_release="$(readlink -f "$BASE/current")"
+[ -d "$old_release" ] || die 'current release cannot be resolved'
+[ -f "$old_release/.env" ] || die 'current .env is missing'
+[ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
+if [ -f "$old_release/RELEASE_COMMIT" ]; then
+    live_commit="$(tr -d '\r\n' < "$old_release/RELEASE_COMMIT")"
+    [[ "$live_commit" =~ ^[a-f0-9]{40}$ ]] || die 'current release commit marker is invalid'
+else
+    current_release_name="$(basename "$old_release")"
+    [[ "$current_release_name" =~ ^([a-f0-9]{12})-run- ]] || die 'legacy current release name has no commit prefix'
+    live_commit_prefix="${BASH_REMATCH[1]}"
+fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 stage="$RELEASES/.stage-${commit:0:12}-${run_id}-$stamp"
@@ -203,10 +249,6 @@ for approved_module in "${APPROVED_MODULES[@]}"; do
     [ -f "$source_dir/custom_addons/$approved_module/__manifest__.py" ] || die "approved module is missing from release: $approved_module"
 done
 
-old_release="$(readlink -f "$BASE/current")"
-[ -d "$old_release" ] || die 'current release cannot be resolved'
-[ -f "$old_release/.env" ] || die 'current .env is missing'
-[ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
 compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
 odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"
 [[ "$odoo_config_gid" =~ ^[0-9]+$ ]] || die 'could not resolve the Odoo configuration group'
@@ -231,6 +273,7 @@ mkdir -p "$BACKUPS" "$backup"
 [ ! -e "$release" ] || die 'release path already exists'
 mv "$source_dir" "$release"
 rmdir "$stage"
+printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"
 # The release source is mounted into the unprivileged Odoo container.  It must
 # be traversable and readable there; the sensitive files copied below retain
 # their restrictive modes and are deliberately excluded from the archive.
@@ -293,5 +336,5 @@ done
 "${compose[@]}" logs --no-color --tail=300 odoo > "$backup/odoo-smoke.log"
 ! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
 
-printf 'LIVE=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" > "$backup/result.env"
+printf 'LIVE=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" "$policy_revision" "$approved_run_id" > "$backup/result.env"
 printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

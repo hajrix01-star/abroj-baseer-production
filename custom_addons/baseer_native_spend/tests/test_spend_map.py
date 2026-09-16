@@ -1,7 +1,10 @@
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
-from odoo.addons.baseer_native_spend.models.spend_map import BaseerSpendMapRun
+from odoo.addons.baseer_native_spend.models.spend_map import (
+    BaseerSpendMapRun,
+    _ACTIVE_CATALOG_VERSION_PARAM,
+)
 
 
 @tagged('post_install', '-at_install')
@@ -23,6 +26,9 @@ class SpendMapPreviewCase(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        self.env['ir.config_parameter'].sudo().set_param(
+            _ACTIVE_CATALOG_VERSION_PARAM, 'noorix-v1',
+        )
         self.tag_a = self.env['res.partner.category'].create({'name': 'MAP tag A %s' % self._testMethodName})
         self.tag_b = self.env['res.partner.category'].create({'name': 'MAP tag B %s' % self._testMethodName})
         self.supplier = self.env['res.partner'].create({
@@ -61,6 +67,15 @@ class SpendMapPreviewCase(TransactionCase):
         return self.env['baseer.spend.map.run'].create({
             'name': 'MAP preview', 'company_id': self.company.id,
         })
+
+    def test_active_catalog_parameter_controls_new_rules_and_previews(self):
+        self.env['ir.config_parameter'].sudo().set_param(
+            _ACTIVE_CATALOG_VERSION_PARAM, 'baseer-v2',
+        )
+        rule = self.rule('partner_tag', self.leaf_a)
+        run = self.readiness_run()
+        self.assertEqual(rule.catalog_version, 'baseer-v2')
+        self.assertEqual(run.catalog_version, 'baseer-v2')
 
     def test_same_scope_selector_is_rejected_even_when_destination_matches(self):
         self.rule('partner_tag', self.leaf_a)

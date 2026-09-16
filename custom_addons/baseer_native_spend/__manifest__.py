@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Native Spend Foundation',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Accounting/Accounting',
     'summary': 'Native spend analytics setup and vendor bill enforcement',
     'license': 'LGPL-3',

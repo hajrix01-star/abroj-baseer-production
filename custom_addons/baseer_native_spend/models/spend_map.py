@@ -18,6 +18,21 @@ _SELECTOR_PRIORITY = {
     'partner_tag': 3,
 }
 _BLOCKING_OUTCOMES = {'ambiguous', 'unmapped', 'conflict', 'reconcile', 'coverage_gap', 'catalog_mismatch'}
+_ACTIVE_CATALOG_VERSION_PARAM = 'baseer_native_spend.active_catalog_version'
+_LEGACY_CATALOG_VERSION = 'noorix-v1'
+
+
+def _baseer_active_catalog_version(env):
+    """Return the reviewed catalog used for newly-created rules and previews.
+
+    The parameter is deliberately changed only by the controlled catalog
+    transition.  Keeping the legacy default until that transaction commits
+    prevents a deployed module from pointing at a catalog that is not ready.
+    """
+    return env['ir.config_parameter'].sudo().get_param(
+        _ACTIVE_CATALOG_VERSION_PARAM,
+        _LEGACY_CATALOG_VERSION,
+    )
 
 
 class BaseerSpendMapRule(models.Model):
@@ -46,7 +61,11 @@ class BaseerSpendMapRule(models.Model):
     product_category_id = fields.Many2one('product.category', string='Product Category', ondelete='restrict')
     analytic_account_id = fields.Many2one('account.analytic.account', string='Spend Leaf',
                                           required=True, ondelete='restrict')
-    catalog_version = fields.Char(required=True, default='noorix-v1', copy=False)
+    catalog_version = fields.Char(
+        required=True,
+        default=lambda self: _baseer_active_catalog_version(self.env),
+        copy=False,
+    )
     state = fields.Selection([
         ('draft', 'Draft'),
         ('approved', 'Approved'),
@@ -87,7 +106,7 @@ class BaseerSpendMapRule(models.Model):
         if not kind or not selector_id:
             raise ValidationError(_('Choose exactly one selector that matches the rule type.'))
         company_id = values.get('company_id') or False
-        catalog_version = values.get('catalog_version') or 'noorix-v1'
+        catalog_version = values.get('catalog_version') or _baseer_active_catalog_version(self.env)
         scope = 'company:%s' % company_id if company_id else 'shared'
         return '%s:%s:%s:%s' % (catalog_version, scope, kind, selector_id)
 
@@ -137,6 +156,7 @@ class BaseerSpendMapRule(models.Model):
         natural_keys = set()
         for values in vals_list:
             values = dict(values)
+            values.setdefault('catalog_version', _baseer_active_catalog_version(self.env))
             if values.get('state', 'draft') != 'draft':
                 raise AccessError(_('Rules must be created in draft.'))
             if not values.get('company_id'):
@@ -206,7 +226,11 @@ class BaseerSpendMapRun(models.Model):
 
     name = fields.Char(required=True, default=lambda self: _('Spend map preview'))
     company_id = fields.Many2one('res.company', required=True, index=True, ondelete='restrict')
-    catalog_version = fields.Char(required=True, default='noorix-v1', copy=False)
+    catalog_version = fields.Char(
+        required=True,
+        default=lambda self: _baseer_active_catalog_version(self.env),
+        copy=False,
+    )
     state = fields.Selection([
         ('draft', 'Draft'),
         ('generated', 'Generated'),

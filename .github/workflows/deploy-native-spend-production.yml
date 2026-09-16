@@ -29,7 +29,7 @@ jobs:
     env:
       # S2 readiness preview only.  It never writes vendor bills, historic
       # lines, analytic accounts, or native distribution models.
-      APPROVED_COMMIT: fb894620b3c7b8ce3d63191d5b1676c30e3e480b
+      APPROVED_COMMIT: e2897885b8173a9d0cda89ef3120fa7dc5dac9a7
       PRODUCTION_HOST: 77.37.51.67
       PRODUCTION_USER: baseer_deploy
       PRODUCTION_KNOWN_HOST: >-

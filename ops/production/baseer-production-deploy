@@ -106,7 +106,11 @@ wait_for_data_init() {
     [ "$exit_code" = 0 ]
 }
 
-restore_pair() {
+restore_pair() (
+    # Rollback calls this while its own error trap is intentionally disabled.
+    # Run the recovery pair in a strict subshell so an early database or
+    # filestore failure cannot be hidden by a later successful command.
+    set -Eeuo pipefail
     sha256sum -c "$backup/recovery.sha256"
     docker exec "$DB_CONTAINER" sh -lc 'dropdb -U "$POSTGRES_USER" --if-exists baseer_prod'
     docker exec "$DB_CONTAINER" sh -lc 'createdb -U "$POSTGRES_USER" baseer_prod'
@@ -118,10 +122,11 @@ restore_pair() {
         tar -xf /backup/filestore-baseer_prod.tar -C /target
         test -d /target/filestore/baseer_prod
     '
-}
+)
 
 rollback() {
     local status=$?
+    local rollback_failed=0
     trap - ERR
     set +e
 
@@ -129,19 +134,31 @@ rollback() {
         printf 'LIVE=ROLLING_BACK\n' > "$backup/result.env"
     fi
 
+    if [ "${release_switched:-0}" -eq 1 ] && [ "${#compose[@]}" -gt 0 ]; then
+        "${compose[@]}" stop odoo >/dev/null 2>&1 || rollback_failed=1
+    fi
+    if [ "${database_mutated:-0}" -eq 1 ]; then
+        restore_pair >/dev/null 2>&1 || rollback_failed=1
+    fi
     if [ "${release_switched:-0}" -eq 1 ]; then
-        "${compose[@]}" stop odoo >/dev/null 2>&1 || true
-        if [ "${database_mutated:-0}" -eq 1 ]; then
-            restore_pair >/dev/null 2>&1 || true
-        fi
-        ln -sfn "$old_release" "$BASE/current"
-        "${compose_old[@]}" up -d odoo_data_init >/dev/null 2>&1 || true
-        "${compose_old[@]}" up -d odoo >/dev/null 2>&1 || true
-        wait_for_login >/dev/null 2>&1 || true
+        ln -sfn "$old_release" "$BASE/current" || rollback_failed=1
+    fi
+    if [ "${service_quiesced:-0}" -eq 1 ]; then
+        "${compose_old[@]}" up -d odoo_data_init >/dev/null 2>&1 || rollback_failed=1
+        "${compose_old[@]}" up -d odoo >/dev/null 2>&1 || rollback_failed=1
+        wait_for_login >/dev/null 2>&1 || rollback_failed=1
     fi
 
     if [ -n "${backup:-}" ] && [ -d "$backup" ]; then
-        printf 'LIVE=ROLLED_BACK\nPREVIOUS_RELEASE=%s\n' "$old_release" >> "$backup/result.env"
+        if [ "$rollback_failed" -eq 0 ]; then
+            printf 'LIVE=ROLLED_BACK\nPREVIOUS_RELEASE=%s\n' "$old_release" >> "$backup/result.env"
+        else
+            printf 'LIVE=ROLLBACK_FAILED\nPREVIOUS_RELEASE=%s\n' "$old_release" >> "$backup/result.env"
+        fi
+    fi
+    if [ "$rollback_failed" -ne 0 ]; then
+        printf 'LIVE=ROLLBACK_FAILED\nPREVIOUS_RELEASE=%s\n' "$old_release" >&2
+        exit 70
     fi
     exit "$status"
 }
@@ -171,6 +188,7 @@ release="$RELEASES/${commit:0:12}-run-${run_id}-$stamp"
 stage="$RELEASES/.stage-${commit:0:12}-${run_id}-$stamp"
 release_switched=0
 database_mutated=0
+service_quiesced=0
 compose=()
 trap rollback ERR
 
@@ -188,13 +206,15 @@ install -D -m 0600 "$old_release/.env" "$release/.env"
 install -D -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
 docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release" config --quiet
 
-# Capture a recovery pair while the current application still serves users.
+# Quiesce first: DB, filestore and the protected snapshot must describe the
+# same instant.  The trap restarts this exact release if capture fails.
+"${compose_old[@]}" stop odoo
+service_quiesced=1
+snapshot > "$backup/protected-before.json"
 docker exec "$DB_CONTAINER" sh -lc 'pg_dump -Fc -U "$POSTGRES_USER" -d baseer_prod' > "$backup/baseer_prod.dump"
 docker run --rm --network none -v "$ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore-baseer_prod.tar filestore/baseer_prod'
 sha256sum "$backup/baseer_prod.dump" "$backup/filestore-baseer_prod.tar" > "$backup/recovery.sha256"
-snapshot > "$backup/protected-before.json"
 
-"${compose_old[@]}" stop odoo
 ln -sfn "$release" "$BASE/current"
 release_switched=1
 compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release")

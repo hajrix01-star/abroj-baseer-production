@@ -16,6 +16,16 @@ old_release="$(readlink -f "$BASE/current")"
 [ -d "$old_release" ] || die 'current release cannot be resolved'
 [ -f "$old_release/.env" ] || die 'current .env is missing'
 [ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
+compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
+
+wait_for_login() {
+    local attempt
+    for attempt in $(seq 1 90); do
+        curl -fsS --max-time 10 http://127.0.0.1:18069/web/login >/dev/null && return 0
+        sleep 1
+    done
+    return 1
+}
 
 snapshot_sql=$(cat <<'SQL'
 SELECT jsonb_build_object(
@@ -50,27 +60,47 @@ rehearsal_volume="baseer-production-rehearsal-${stamp,,}"
 backup="$BACKUPS/rehearsal-$stamp"
 created_db=0
 created_volume=0
+service_quiesced=0
 
 cleanup() {
     local status=$?
+    local restart_failed=0
     trap - EXIT
     set +e
+    if [ "$service_quiesced" -eq 1 ]; then
+        "${compose_old[@]}" up -d odoo_data_init >/dev/null 2>&1 || restart_failed=1
+        "${compose_old[@]}" up -d odoo >/dev/null 2>&1 || restart_failed=1
+        wait_for_login >/dev/null 2>&1 || restart_failed=1
+    fi
     if [ "$created_db" -eq 1 ]; then
         docker exec "$DB_CONTAINER" sh -lc "dropdb -U \"\$POSTGRES_USER\" --if-exists '$rehearsal_db'" >/dev/null 2>&1 || true
     fi
     if [ "$created_volume" -eq 1 ] && [[ "$rehearsal_volume" == baseer-production-rehearsal-* ]]; then
         docker volume inspect "$rehearsal_volume" >/dev/null 2>&1 && docker volume rm "$rehearsal_volume" >/dev/null 2>&1 || true
     fi
+    if [ "$restart_failed" -ne 0 ]; then
+        [ -d "$backup" ] && printf 'REHEARSAL=SERVICE_RESTART_FAILED\n' >> "$backup/result.env"
+        exit 70
+    fi
     exit "$status"
 }
 trap cleanup EXIT
 
 mkdir -p "$backup"
+# Quiesce production only long enough to capture one consistent DB/filestore
+# pair.  The isolated restore and Odoo boot happen after production is healthy
+# again, so the rehearsal does not prolong customer downtime.
+"${compose_old[@]}" stop odoo
+service_quiesced=1
 snapshot_for_db baseer_prod > "$backup/protected-live.json"
 docker exec "$DB_CONTAINER" sh -lc 'pg_dump -Fc -U "$POSTGRES_USER" -d baseer_prod' > "$backup/baseer_prod.dump"
 docker run --rm --network none -v "$ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore-baseer_prod.tar filestore/baseer_prod'
 sha256sum "$backup/baseer_prod.dump" "$backup/filestore-baseer_prod.tar" > "$backup/recovery.sha256"
 sha256sum -c "$backup/recovery.sha256"
+"${compose_old[@]}" up -d odoo_data_init
+"${compose_old[@]}" up -d odoo
+wait_for_login
+service_quiesced=0
 
 docker exec "$DB_CONTAINER" sh -lc "createdb -U \"\$POSTGRES_USER\" '$rehearsal_db'"
 created_db=1

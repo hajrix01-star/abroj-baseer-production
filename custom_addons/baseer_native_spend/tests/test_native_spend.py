@@ -250,6 +250,14 @@ class NativeSpendCase(TransactionCase):
             ('business_domain', '=', 'bill'),
         ])
         self.assertFalse(records)
+        self.model_b.analytic_distribution = {str(self.b.id): 100}
+        self.model_b.product_id = self.product.id
+        company = self.env['res.company'].create({'name': 'NAF constrained template company', 'currency_id': self.env.ref('base.SAR').id})
+        records = self.env['account.analytic.applicability'].search([
+            ('analytic_plan_id', '=', self.plan.id), ('company_id', '=', company.id),
+            ('business_domain', '=', 'bill'),
+        ])
+        self.assertFalse(records)
 
     def test_optional_or_missing_company_configuration_keeps_native_optional_workflow(self):
         applicability = self.env['account.analytic.applicability'].search([('analytic_plan_id', '=', self.plan.id), ('company_id', '=', self.company.id), ('business_domain', '=', 'bill')])

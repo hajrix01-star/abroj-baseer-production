@@ -75,6 +75,13 @@ class ResCompany(models.Model):
             if len(matching_models) != 1:
                 return False
             model = matching_models
+            # The reusable catalog row is deliberately tag-only.  A product,
+            # product-category, partner or account-prefix condition makes the
+            # row narrower than a normal supplier bill, so it cannot prove
+            # the company-wide posting guard is safe to enable.
+            if (model.partner_id or model.product_id or model.product_categ_id
+                    or model.account_prefix):
+                return False
             spend_accounts = model.distribution_analytic_account_ids.filtered(
                 lambda candidate: candidate.root_plan_id == root
             )

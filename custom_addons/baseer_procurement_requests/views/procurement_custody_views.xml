@@ -85,8 +85,8 @@
                     </div>
                     <group>
                         <group>
-                            <field name="company_id" readonly="event_ids" options="{'no_create': True}"/>
-                            <field name="opened_on" readonly="event_ids"/>
+                            <field name="company_id" readonly="id or event_ids" options="{'no_create': True}"/>
+                            <field name="opened_on" readonly="id or event_ids"/>
                         </group>
                         <group invisible="is_company_pool">
                             <field name="employee_id" readonly="event_ids"/>

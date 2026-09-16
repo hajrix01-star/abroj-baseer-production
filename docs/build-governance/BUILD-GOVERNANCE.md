@@ -131,3 +131,10 @@ GitHub: نشر release_id نفسه
   commit `d028e0c86708e044e5df086019244c0963759e89` المبني من النسخة الحية
   وموديول `baseer_basser_workspace` فقط. نجحت اختبارات الموديول المحلية: 0
   فشل و0 خطأ.
+- **دليل الحي:** نجحت موافقة الإصدار
+  [`35147144763`](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35147144763)
+  ثم النشر
+  [`35147181603`](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35147181603).
+  التحقق في المتصفح بحساب المالك أثبت ظهور `بصير | Baseer` في قائمة التطبيقات
+  والانتقال المباشر إلى «عمليات BASSER» بلا شاشة فارغة ولا زر `Manage Baseer`؛
+  وفحص صحة الموقع أعاد HTTP 200.

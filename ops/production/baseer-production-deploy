@@ -8,6 +8,7 @@ readonly BASE=/srv/abroj-baseer-production
 readonly RELEASES="$BASE/releases"
 readonly BACKUPS="$BASE/backups"
 readonly INBOX="$BASE/deploy-inbox"
+readonly STAGING="$BASE/deploy-staging"
 readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
@@ -35,8 +36,35 @@ validate_arguments() {
     [[ "$archive_sha" =~ ^[a-f0-9]{64}$ ]] || die 'invalid archive SHA-256'
     [ "$commit" = "$APPROVED_COMMIT" ] || die 'commit is not approved for this deploy bridge'
     [ "$archive" = "$INBOX/baseer-$commit.tar.gz" ] || die 'archive path violates deploy contract'
-    [ -f "$archive" ] || die 'archive is missing'
-    [ "$(sha256sum "$archive" | awk '{print $1}')" = "$archive_sha" ] || die 'archive SHA-256 mismatch'
+    [ -f "$archive" ] && [ ! -L "$archive" ] || die 'archive is not a regular file'
+}
+
+secure_archive() {
+    # The SSH upload account owns INBOX.  Move the uploaded inode atomically
+    # before hashing, validating, or extracting it; every later read uses the
+    # root-owned private copy so there is no upload-time TOCTOU window.
+    local incoming_archive=$archive private_archive actual_sha
+
+    if [ -e "$STAGING" ] && { [ ! -d "$STAGING" ] || [ -L "$STAGING" ]; }; then
+        die 'private staging path is unsafe'
+    fi
+    install -d -o root -g root -m 0700 "$STAGING"
+    chown root:root -- "$STAGING"
+    chmod 0700 -- "$STAGING"
+    private_archive="$STAGING/baseer-${commit}-${run_id}.tar.gz"
+    [ ! -e "$private_archive" ] || die 'private staging archive already exists'
+    [ -f "$incoming_archive" ] && [ ! -L "$incoming_archive" ] || die 'incoming archive is not a regular file'
+
+    mv -T -- "$incoming_archive" "$private_archive" || die 'could not secure uploaded archive'
+    chown root:root -- "$private_archive"
+    chmod 0400 -- "$private_archive"
+    [ -f "$private_archive" ] && [ ! -L "$private_archive" ] || die 'private staging archive is unsafe'
+    actual_sha="$(sha256sum "$private_archive" | awk '{print $1}')"
+    if [ "$actual_sha" != "$archive_sha" ]; then
+        rm -f -- "$private_archive"
+        die 'archive SHA-256 mismatch'
+    fi
+    archive="$private_archive"
 }
 
 validate_archive() {
@@ -167,6 +195,7 @@ require_root
 validate_arguments "$@"
 exec 9>"$LOCK_FILE"
 flock -n 9 || die 'another production deployment is already running'
+secure_archive
 
 old_release="$(readlink -f "$BASE/current")"
 [ -d "$old_release" ] || die 'current release cannot be resolved'

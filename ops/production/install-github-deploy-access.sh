@@ -6,6 +6,7 @@ set -Eeuo pipefail
 readonly DEPLOY_USER=baseer_deploy
 readonly BASE=/srv/abroj-baseer-production
 readonly INBOX="$BASE/deploy-inbox"
+readonly STAGING="$BASE/deploy-staging"
 readonly WRAPPER_DEST=/usr/local/sbin/baseer-production-deploy
 readonly SUDOERS_DEST=/etc/sudoers.d/baseer-deploy
 readonly SSHD_DROPIN=/etc/ssh/sshd_config.d/90-baseer-deploy.conf
@@ -29,6 +30,7 @@ chmod 0600 "/home/$DEPLOY_USER/.ssh/authorized_keys"
 grep -Fqx "$public_key" "/home/$DEPLOY_USER/.ssh/authorized_keys" || printf '%s\n' "$public_key" >> "/home/$DEPLOY_USER/.ssh/authorized_keys"
 
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "$INBOX"
+install -d -o root -g root -m 0700 "$STAGING"
 install -o root -g root -m 0750 "$wrapper_source" "$WRAPPER_DEST"
 
 cat > "$SUDOERS_DEST" <<'EOF'

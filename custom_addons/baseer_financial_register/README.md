@@ -8,6 +8,6 @@ Invoice indicators are separated into customer and supplier sections, and by com
 
 General journal entries, including sales summary postings and their collection entries, appear in the table but never inflate the invoice indicators. The generic entry amount is its native debit turnover, not revenue or net cash flow. Invoice rows display their document currency; indicators use company currency without combining different currencies.
 
-Requires `account`, `baseer_access_roles` and `baseer_report_layout`. Existing accounting permissions, payroll privacy and company restrictions remain in force. The cashier preset cannot open the register or request its indicators; its existing POS permissions are unchanged. No users are automatically assigned permissions.
+Requires `account`, `baseer_access_roles`, `baseer_report_layout` and `baseer_cash_categories`. Existing accounting permissions, payroll privacy and company restrictions remain in force. The cashier preset cannot open the register or request its indicators; its existing POS permissions are unchanged. No users are automatically assigned permissions.
 
 Verification uses isolated native accounting fixtures and browser checks. The bounded performance sample is documented in the private release evidence; it is not certification for larger installations.

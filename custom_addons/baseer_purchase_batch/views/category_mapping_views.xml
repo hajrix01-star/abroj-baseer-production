@@ -27,7 +27,7 @@
                                domain="[('type', '=', 'service'), ('categ_id', '=', category_id), ('active', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
                         <field name="active" string="Active"/>
                     </group>
-                    <p class="text-muted">Choose an existing service product in this category with a configured expense account. Batch invoices use this product for accounting and report classification; they do not receive inventory.</p>
+                    <p class="text-muted">This legacy mapping is retained for historical compatibility only. New purchase batches do not use it for accounting or analytic classification.</p>
                 </sheet>
             </form>
         </field>

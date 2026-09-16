@@ -432,7 +432,7 @@ class BaseerPurchaseBatch(models.Model):
         for line in batch.line_ids.sorted(lambda line: (line.sequence, line.id)):
             rows.append({
                 'date': fields.Date.to_string(line.invoice_date), 'supplier': line.partner_id.display_name,
-                'reference': line.supplier_ref, 'type': _('Purchase') if line.entry_type == 'purchase' else _('Expense'),
+                'reference': line.supplier_ref,
                 'category': line.category_map_id.display_name, 'description': line.description or line.category_map_id.display_name,
                 'gross': format(monetary(line.gross_amount), '.2f'), 'net': format(monetary(line.net_amount), '.2f'),
                 'tax': format(monetary(line.tax_amount), '.2f'), 'tax_name': line.tax_id.name or _('No tax'),
@@ -461,7 +461,14 @@ class BaseerPurchaseBatchLine(models.Model):
     invoice_date = fields.Date(required=True, default=fields.Date.context_today)
     partner_id = fields.Many2one('res.partner', required=True, ondelete='restrict', check_company=True)
     supplier_ref = fields.Char(required=True, size=128)
-    entry_type = fields.Selection([('purchase', 'Purchase'), ('expense', 'Expense')], required=True, default='purchase')
+    # Retained only so approved historical batches remain auditable.  New
+    # vendor-bill rows use Odoo's native product/account and analytic
+    # classification; this old presentation-only flag is no longer assigned.
+    entry_type = fields.Selection(
+        [('purchase', 'Purchase'), ('expense', 'Expense')],
+        readonly=True,
+        copy=False,
+    )
     category_map_id = fields.Many2one('baseer.purchase.category.map', required=True, ondelete='restrict', check_company=True)
     description = fields.Char()
     gross_amount = fields.Monetary(required=True, currency_field='currency_id')

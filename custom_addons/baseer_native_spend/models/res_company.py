@@ -1,5 +1,15 @@
+from decimal import Decimal, InvalidOperation
+
 from odoo import api, models
 
+
+_PARENT_PLAN_ALIASES = {
+    # These two source taxonomy labels deliberately have business-friendly
+    # plan names.  Keep the mapping here instead of relying on an installed
+    # UI language during a background company-creation transaction.
+    'الموظفون والقوى العاملة': 'تكاليف الموظفين والتزامات نظامية',
+    'الجهات الحكومية والامتثال': 'جهات حكومية',
+}
 
 class ResCompany(models.Model):
     _inherit = 'res.company'
@@ -19,21 +29,68 @@ class ResCompany(models.Model):
     def _baseer_has_shared_spend_template(self):
         """Whether a reusable native Odoo spend mapping is available.
 
-        A shared analytic account by itself is not enough: the template must
-        contain a shared native distribution model that routes a vendor bill
-        into the Spend Classification root.  This makes creating a later
-        company deterministic without copying per-company configuration.
+        A shared analytic account or an arbitrary distribution model is not
+        enough.  Every leaf tag under a configured spend parent must have one
+        approved shared map and one valid 100% native Odoo model pointing to
+        the same active shared leaf.  This keeps a partial seed from silently
+        turning a new company's bill workflow mandatory.
         """
         root = self.env.ref('baseer_native_spend.spend_plan', raise_if_not_found=False)
         if not root:
             return False
+        Plan = self.env['account.analytic.plan'].sudo()
+        Category = self.env['res.partner.category'].sudo()
+        plans = Plan.search([('parent_id', '=', root.id)])
+        if not plans:
+            return False
+        plans_by_name = {plan.name: plan for plan in plans}
+        parent_plans = {}
+        for category in Category.search([('parent_id', '=', False)]):
+            plan = plans_by_name.get(category.name) or plans_by_name.get(
+                _PARENT_PLAN_ALIASES.get(category.name)
+            )
+            if plan:
+                parent_plans[category.id] = plan
+        leaves = Category.search([('parent_id', 'in', list(parent_plans))])
+        if not leaves:
+            return False
+
+        rules = self.env['baseer.spend.map.rule'].sudo().search([
+            ('company_id', '=', False), ('selector_kind', '=', 'partner_tag'),
+            ('state', '=', 'approved'),
+        ])
         models = self.env['account.analytic.distribution.model'].sudo().search([
             ('company_id', '=', False),
         ])
-        return any(
-            root in model.distribution_analytic_account_ids.root_plan_id
-            for model in models
-        )
+        for leaf in leaves:
+            plan = parent_plans[leaf.parent_id.id]
+            matching_rules = rules.filtered(lambda rule: rule.partner_tag_id == leaf)
+            if len(matching_rules) != 1:
+                return False
+            account = matching_rules.analytic_account_id
+            if (not account.active or account.company_id or account.plan_id != plan
+                    or account.root_plan_id != root):
+                return False
+            matching_models = models.filtered(lambda model: model.partner_category_id == leaf)
+            if len(matching_models) != 1:
+                return False
+            model = matching_models
+            spend_accounts = model.distribution_analytic_account_ids.filtered(
+                lambda candidate: candidate.root_plan_id == root
+            )
+            if spend_accounts.ids != account.ids:
+                return False
+            total = Decimal('0')
+            try:
+                for key, percentage in (model.analytic_distribution or {}).items():
+                    ids = {int(part) for part in str(key).split(',')}
+                    if account.id in ids:
+                        total += Decimal(str(percentage))
+            except (InvalidOperation, TypeError, ValueError):
+                return False
+            if total != Decimal('100'):
+                return False
+        return True
 
     def _baseer_ensure_spend_applicability(self):
         """Fill absent native setup only; preserve reviewed applicability rules."""

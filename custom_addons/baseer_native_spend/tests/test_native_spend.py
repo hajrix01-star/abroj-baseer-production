@@ -31,8 +31,9 @@ class NativeSpendCase(TransactionCase):
         cls.subplan = cls.env['account.analytic.plan'].create({'name': 'NAF Food', 'parent_id': cls.plan.id})
         cls.a = cls.env['account.analytic.account'].create({'name': 'NAF Chicken', 'plan_id': cls.subplan.id, 'company_id': False})
         cls.b = cls.env['account.analytic.account'].create({'name': 'NAF Vegetables', 'plan_id': cls.subplan.id, 'company_id': False})
-        cls.tag_a = cls.env['res.partner.category'].create({'name': 'NAF chicken tag'})
-        cls.tag_b = cls.env['res.partner.category'].create({'name': 'NAF vegetables tag'})
+        cls.tag_parent = cls.env['res.partner.category'].create({'name': 'NAF Food'})
+        cls.tag_a = cls.env['res.partner.category'].create({'name': 'NAF chicken tag', 'parent_id': cls.tag_parent.id})
+        cls.tag_b = cls.env['res.partner.category'].create({'name': 'NAF vegetables tag', 'parent_id': cls.tag_parent.id})
         cls.supplier = cls.env['res.partner'].create({
             'name': 'NAF supplier', 'supplier_rank': 1, 'category_id': [Command.set(cls.tag_a.ids)],
             'property_account_payable_id': cls.payable.id,
@@ -50,6 +51,17 @@ class NativeSpendCase(TransactionCase):
             'company_id': False, 'partner_category_id': cls.tag_a.id, 'sequence': 100,
             'analytic_distribution': {str(cls.a.id): 100},
         })
+        cls.model_b = cls.env['account.analytic.distribution.model'].create({
+            'company_id': False, 'partner_category_id': cls.tag_b.id, 'sequence': 100,
+            'analytic_distribution': {str(cls.b.id): 100},
+        })
+        Rule = cls.env['baseer.spend.map.rule']
+        for tag, account in ((cls.tag_a, cls.a), (cls.tag_b, cls.b)):
+            Rule.create({
+                'name': 'NAF approved %s' % tag.name,
+                'selector_kind': 'partner_tag', 'partner_tag_id': tag.id,
+                'analytic_account_id': account.id, 'catalog_version': 'NAF-v1',
+            }).action_approve()
         # The normal suite exercises the protected, post-mapping state.  A
         # company is deliberately *not* made mandatory at installation: the
         # mapping wave must finish first.  See the dedicated test below.
@@ -229,6 +241,15 @@ class NativeSpendCase(TransactionCase):
         records.applicability = 'optional'
         company._baseer_ensure_spend_applicability()
         self.assertEqual(records.applicability, 'optional')
+
+    def test_partial_or_invalid_shared_template_does_not_guard_new_company(self):
+        self.model_b.analytic_distribution = {str(self.b.id): 50}
+        company = self.env['res.company'].create({'name': 'NAF partial template company', 'currency_id': self.env.ref('base.SAR').id})
+        records = self.env['account.analytic.applicability'].search([
+            ('analytic_plan_id', '=', self.plan.id), ('company_id', '=', company.id),
+            ('business_domain', '=', 'bill'),
+        ])
+        self.assertFalse(records)
 
     def test_optional_or_missing_company_configuration_keeps_native_optional_workflow(self):
         applicability = self.env['account.analytic.applicability'].search([('analytic_plan_id', '=', self.plan.id), ('company_id', '=', self.company.id), ('business_domain', '=', 'bill')])

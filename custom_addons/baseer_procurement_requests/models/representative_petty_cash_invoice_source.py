@@ -271,6 +271,56 @@ class BaseerPurchaseBatchLine(models.Model):
         ondelete='restrict', check_company=True,
     )
 
+    @api.model
+    def payment_settlement_choices(self, company_id):
+        """Return one safe, presentation-only choice list for invoice settlement.
+
+        A payment-method line and a purchasing representative belong to two
+        different Odoo models.  The UI may present them together, but the
+        stored financial contract remains explicit and is still verified by
+        ``_baseer_validate_payment_source`` before saving and approving.
+        """
+        can_use_representative = self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_accountant'
+        )
+        if not (can_use_representative or self.env.user.has_group('account.group_account_invoice')):
+            raise AccessError(_('Only an invoice accountant can choose an invoice settlement method.'))
+        try:
+            company_id = int(company_id)
+        except (TypeError, ValueError):
+            raise ValidationError(_('Choose the active batch company.')) from None
+        company = self.env['res.company'].browse(company_id).exists()
+        if len(company) != 1 or company != self.env.company or company not in self.env.user.company_ids:
+            raise AccessError(_('Switch to an authorized batch company before choosing a settlement method.'))
+
+        methods = self.env['account.payment.method.line'].search([
+            ('company_id', '=', company.id), ('payment_type', '=', 'outbound'), ('code', '=', 'manual'),
+            ('journal_id.active', '=', True), ('journal_id.type', 'in', ['bank', 'cash']),
+            ('payment_account_id.account_type', '=', 'asset_cash'),
+        ], order='journal_id, id').filtered(lambda method: (
+            method.payment_account_id == method.journal_id.default_account_id
+            and (not method.journal_id.currency_id or method.journal_id.currency_id == company.currency_id)
+        ))
+        representatives = self.env['res.partner']
+        if can_use_representative:
+            representatives = representatives.with_company(company).search([
+                ('is_purchase_representative', '=', True), ('company_id', 'in', [False, company.id]),
+                ('is_company', '=', False), ('parent_id', '=', False), ('active', '=', True),
+            ], order='name, id')
+        Advance = self.env['baseer.procurement.representative.advance']
+        return {
+            'payment_points': [{
+                'id': method.id,
+                'name': method.journal_id.display_name or method.display_name,
+            } for method in methods],
+            'representatives': [{
+                'id': representative.id,
+                'name': representative.display_name,
+                'available_balance': float(Advance._baseer_representative_available_amount(company, representative)),
+            } for representative in representatives],
+            'can_use_representative': can_use_representative,
+        }
+
     @api.depends('company_id', 'representative_petty_cash_representative_id')
     def _compute_representative_petty_cash_available_amount(self):
         Advance = self.env['baseer.procurement.representative.advance']
@@ -296,6 +346,9 @@ class BaseerPurchaseBatchLine(models.Model):
                       'payment_method')
             values['payment_source_type'] = source
         if source == 'representative_petty_cash':
+            if not self.env.su and not self.env.user.has_group(
+                    'baseer_procurement_requests.group_procurement_accountant'):
+                raise AccessError(_('Only a procurement accountant can use Representative Petty Cash.'))
             if values.get('payment_method_line_id'):
                 raise ValidationError(_('Choose either a payment point or Representative Petty Cash for an invoice, not both.'))
             values.update({'is_credit': True, 'payment_method_line_id': False})

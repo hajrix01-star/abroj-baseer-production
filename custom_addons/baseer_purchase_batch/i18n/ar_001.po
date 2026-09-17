@@ -433,6 +433,11 @@ msgid "Credit"
 msgstr "آجل"
 
 #. module: baseer_purchase_batch
+#: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
+msgid "Representative Petty Cash — %(representative)s"
+msgstr "عهدة مندوب المشتريات — %(representative)s"
+
+#. module: baseer_purchase_batch
 #. odoo-python
 #: code:addons/baseer_purchase_batch/models/purchase_batch.py:0
 msgid "Each row must belong to a saved draft batch."

@@ -1,0 +1,28 @@
+.o_baseer_settlement_picker {
+    min-width: 12rem;
+
+    .o_baseer_settlement_picker__trigger {
+        align-items: center;
+        display: flex;
+        gap: .5rem;
+        justify-content: space-between;
+        min-height: 2.25rem;
+        text-align: start;
+        width: 100%;
+    }
+
+    .o_baseer_settlement_picker__balance {
+        color: var(--text-muted, #6c757d);
+        margin-inline-start: .5rem;
+    }
+
+    .o_baseer_settlement_picker__current-balance {
+        color: var(--text-muted, #6c757d);
+        display: block;
+        margin-top: .25rem;
+    }
+}
+
+.dropdown-menu .o_baseer_settlement_picker__balance {
+    float: inline-end;
+}

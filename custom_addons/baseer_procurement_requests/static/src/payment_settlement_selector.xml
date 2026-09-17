@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_procurement_requests.PaymentSettlementSelector">
+        <div class="o_baseer_settlement_picker">
+            <Dropdown>
+                <button type="button" class="btn btn-light o_baseer_settlement_picker__trigger"
+                        t-att-disabled="props.readonly or state.loading" t-att-title="label">
+                    <span t-if="state.loading" class="text-muted">Loading…</span>
+                    <span t-else="" t-esc="label"/>
+                    <i class="fa fa-chevron-down" aria-hidden="true"/>
+                </button>
+                <t t-set-slot="content">
+                    <div class="dropdown-header">Payment points</div>
+                    <DropdownItem t-foreach="state.choices.payment_points" t-as="point" t-key="point.id"
+                                  onSelected="() => this.choosePaymentPoint(point)">
+                        <t t-esc="point.name"/>
+                    </DropdownItem>
+                    <t t-if="state.choices.can_use_representative">
+                        <div class="dropdown-header">Purchasing representatives</div>
+                        <DropdownItem t-foreach="state.choices.representatives" t-as="representative" t-key="representative.id"
+                                      onSelected="() => this.chooseRepresentative(representative)">
+                            <span t-esc="representative.name"/>
+                            <small class="o_baseer_settlement_picker__balance" dir="ltr"><t t-esc="formatAmount(representative.available_balance)"/></small>
+                        </DropdownItem>
+                    </t>
+                    <div class="dropdown-divider"/>
+                    <DropdownItem onSelected="() => this.chooseCredit()">Credit</DropdownItem>
+                </t>
+            </Dropdown>
+            <small t-if="representativeBalance !== false" class="o_baseer_settlement_picker__current-balance" dir="ltr">
+                Available balance: <t t-esc="representativeBalance"/>
+            </small>
+        </div>
+    </t>
+</templates>

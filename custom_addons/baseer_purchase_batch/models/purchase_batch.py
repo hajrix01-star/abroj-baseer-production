@@ -434,13 +434,17 @@ class BaseerPurchaseBatch(models.Model):
         batch = company_scope(self, self.company_id)
         rows = []
         for line in batch.line_ids.sorted(lambda line: (line.sequence, line.id)):
+            payment = line.payment_method_line_id.display_name or _('Credit')
+            if getattr(line, 'payment_source_type', False) == 'representative_petty_cash':
+                payment = _('Representative Petty Cash — %(representative)s',
+                            representative=line.representative_petty_cash_representative_id.display_name)
             rows.append({
                 'date': fields.Date.to_string(line.invoice_date), 'supplier': line.partner_id.display_name,
                 'reference': line.supplier_ref,
                 'description': line.description or _('Supplier bill'),
                 'gross': format(monetary(line.gross_amount), '.2f'), 'net': format(monetary(line.net_amount), '.2f'),
                 'tax': format(monetary(line.tax_amount), '.2f'), 'tax_name': line.tax_id.name or _('No tax'),
-                'payment': line.payment_method_line_id.display_name or _('Credit'),
+                'payment': payment,
                 'invoice': line.move_id.name or '',
             })
         return {'name': batch.name, 'company': batch.company_id.name, 'entry_date': fields.Date.to_string(batch.entry_date),

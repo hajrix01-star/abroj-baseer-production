@@ -1229,6 +1229,59 @@ class ProcurementFlowCase(TransactionCase):
         )
         self.assertEqual(-sum(liquidity.mapped('balance')), 1)
 
+    def test_payment_settlement_choices_combine_safe_payment_points_and_representatives(self):
+        """The unified picker is presentation only and respects company eligibility."""
+        _advance, cash_account, bank_account, _general, cash, bank = self._custody_accounting_fixture('PRAUI')
+        cash_method = cash.outbound_payment_method_line_ids.filtered(lambda method: method.code == 'manual')[:1]
+        bank_method = bank.outbound_payment_method_line_ids.filtered(lambda method: method.code == 'manual')[:1]
+        self.assertTrue(cash_method)
+        self.assertTrue(bank_method)
+        bank_method.payment_account_id = bank_account
+        # The cash method is technically an outbound cash method, but points
+        # at the wrong liquidity account and must never reach the picker.
+        cash_method.payment_account_id = bank_account
+        representative = self.env['res.partner'].create({'name': 'PRA UI representative'})
+        representative.with_company(self.company).is_purchase_representative = True
+        unrelated = self.env['res.partner'].create({'name': 'PRA UI unrelated'})
+
+        choices = self.env['baseer.purchase.batch.line'].payment_settlement_choices(self.company.id)
+
+        point_ids = {point['id'] for point in choices['payment_points']}
+        self.assertIn(bank_method.id, point_ids)
+        self.assertNotIn(cash_method.id, point_ids)
+        representative_choice = next(
+            choice for choice in choices['representatives'] if choice['id'] == representative.id
+        )
+        self.assertEqual(representative_choice['available_balance'], 0.0)
+        self.assertNotIn(unrelated.id, {choice['id'] for choice in choices['representatives']})
+        viewer = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRA UI viewer', 'login': 'pra-ui-viewer@example.test',
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaisesRegex(AccessError, 'Only an invoice accountant'):
+            self.env['baseer.purchase.batch.line'].with_user(viewer).with_company(self.company).payment_settlement_choices(self.company.id)
+
+        invoice_accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRA invoice accountant', 'login': 'pra-invoice-accountant@example.test',
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_invoice').id,
+            ])],
+        })
+        invoice_choices = self.env['baseer.purchase.batch.line'].with_user(invoice_accountant).with_company(
+            self.company
+        ).payment_settlement_choices(self.company.id)
+        self.assertIn(bank_method.id, {point['id'] for point in invoice_choices['payment_points']})
+        self.assertFalse(invoice_choices['representatives'])
+        self.assertFalse(invoice_choices['can_use_representative'])
+        with self.assertRaisesRegex(AccessError, 'Only a procurement accountant can use Representative Petty Cash'):
+            self.env['baseer.purchase.batch.line'].with_user(invoice_accountant)._baseer_source_values({
+                'payment_source_type': 'representative_petty_cash',
+                'representative_petty_cash_representative_id': representative.id,
+            }, creating=True)
+
     def test_purchase_batch_settles_from_representative_petty_cash_without_payment(self):
         """Each invoice chooses its source; representative spend is cumulative."""
         sar = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'SAR')], limit=1)

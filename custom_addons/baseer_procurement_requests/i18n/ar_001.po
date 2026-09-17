@@ -1553,3 +1553,49 @@ msgstr "راجع حساب عهدة مندوبي المشتريات المؤرش�
 #: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
 msgid "Review the archived or modified Representative Petty Cash general journal."
 msgstr "راجع دفتر اليومية العام لعهدة مندوبي المشتريات المؤرشف أو المعدّل قبل التهيئة."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_line_representative_petty_cash
+msgid "Settlement method"
+msgstr "طريقة السداد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.xml:0
+msgid "Payment points"
+msgstr "نقاط الدفع"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.js:0
+#: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.xml:0
+msgid "Purchasing representatives"
+msgstr "مندوبي المشتريات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.js:0
+msgid "Choose a settlement method"
+msgstr "اختر طريقة السداد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.xml:0
+msgid "Available balance:"
+msgstr "الرصيد المتاح:"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Representative Petty Cash — "
+msgstr "عهدة مندوب المشتريات — "
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Credit — pay later"
+msgstr "آجل — الدفع لاحقًا"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Payment method required"
+msgstr "اختر طريقة السداد"

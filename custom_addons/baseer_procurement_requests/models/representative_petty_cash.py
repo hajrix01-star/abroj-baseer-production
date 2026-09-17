@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
@@ -12,6 +13,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 INTERNAL = 'baseer_representative_petty_cash_internal'
 MONEY_QUANTUM = Decimal('0.01')
+_logger = logging.getLogger(__name__)
 
 
 class ResCompany(models.Model):
@@ -211,6 +213,18 @@ class RepresentativePettyCash(models.Model):
     @api.model
     def dashboard_data(self, representative_id=False, month_start=False):
         self._require_reader()
+        try:
+            return self._dashboard_data(representative_id, month_start)
+        except Exception as error:
+            _logger.exception('Representative Petty Cash dashboard failed for company %s', self.env.company.id)
+            if self.env.user.has_group('base.group_system'):
+                raise UserError(_(
+                    'تعذر تحميل لوحة عهدة مندوب المشتريات: %(type)s — %(message)s',
+                    type=type(error).__name__, message=str(error),
+                )) from error
+            raise UserError(_('تعذر تحميل لوحة عهدة مندوب المشتريات. تم تسجيل الخطأ للمراجعة.')) from error
+
+    def _dashboard_data(self, representative_id=False, month_start=False):
         start, end = self._month_range(month_start)
         company = self.env.company
         read_model = self.sudo().with_company(company)

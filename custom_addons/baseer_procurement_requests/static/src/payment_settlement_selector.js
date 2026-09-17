@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, useState } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
@@ -44,7 +44,11 @@ export class PaymentSettlementSelector extends Component {
             unlockingCredit: false,
             choices: { payment_points: [], representatives: [], can_use_representative: false },
         });
-        onWillStart(async () => {
+        // Do not block a newly-created inline x2many record from rendering
+        // while its presentation-only choices are fetched.  In particular,
+        // the parent batch can be saved immediately before Odoo mounts the
+        // new row, so this request belongs after the row is mounted.
+        onMounted(async () => {
             const companyId = relationId(this.props.record.data.company_id);
             if (!companyId) {
                 this.state.loading = false;

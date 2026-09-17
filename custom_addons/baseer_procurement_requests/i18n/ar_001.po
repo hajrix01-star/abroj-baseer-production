@@ -1561,6 +1561,11 @@ msgid "Settlement method"
 msgstr "طريقة السداد"
 
 #. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Choose a settlement method for each invoice. Enable Credit to pay later; while it is enabled, settlement choices are unavailable. The payment date is the invoice date."
+msgstr "اختر طريقة السداد لكل فاتورة. فعّل «آجل» للدفع لاحقًا؛ وعند تفعيله تتعطل خيارات السداد. تاريخ السداد هو تاريخ الفاتورة."
+
+#. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.xml:0
 msgid "Payment points"

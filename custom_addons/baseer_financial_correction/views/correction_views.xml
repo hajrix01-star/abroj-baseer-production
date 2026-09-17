@@ -140,7 +140,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='line_ids']/list" position="inside">
                 <field name="baseer_can_correct_operation" column_invisible="True"/>
-                <field name="baseer_cancelled" string="Cancelled" readonly="True" optional="show"/>
+                <!-- This is a correction-audit flag, not the purchase "Credit"
+                     choice.  A draft batch cannot be corrected, so keeping this
+                     column there makes the payment-entry screen look as if the
+                     Credit control were missing. -->
+                <field name="baseer_cancelled" string="Cancelled" readonly="True"
+                       column_invisible="parent.state != 'approved'" optional="show"/>
                 <button name="action_baseer_correct_operation" type="object" icon="fa-pencil" title="Correct operation" invisible="baseer_cancelled or parent.state != 'approved' or not baseer_can_correct_operation" groups="baseer_access_roles.group_owner,baseer_access_roles.group_accountant,account.group_account_manager"/>
                 <button name="action_baseer_cancel_operation" type="object" icon="fa-ban" title="Cancel operation" invisible="baseer_cancelled or parent.state != 'approved' or not baseer_can_correct_operation" groups="baseer_access_roles.group_owner,baseer_access_roles.group_accountant,account.group_account_manager"/>
             </xpath>

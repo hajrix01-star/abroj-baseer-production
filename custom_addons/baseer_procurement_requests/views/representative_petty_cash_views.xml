@@ -111,8 +111,10 @@
                 <field name="representative_petty_cash_available_amount" string="Available balance" width="140px"
                        column_invisible="True" readonly="1" invisible="True"/>
             </xpath>
-            <xpath expr="//field[@name='line_ids']/following-sibling::p[1]" position="attributes">
-                <attribute name="invisible">procurement_custody_id or representative_petty_cash_id</attribute>
+            <xpath expr="//field[@name='line_ids']/following-sibling::p[1]" position="replace">
+                <p class="text-muted mt-2" invisible="procurement_custody_id or representative_petty_cash_id">
+                    Choose a settlement method for each invoice. Enable Credit to pay later; while it is enabled, settlement choices are unavailable. The payment date is the invoice date.
+                </p>
             </xpath>
             <xpath expr="//field[@name='line_ids']/kanban/field[@name='is_credit']" position="after">
                 <field name="payment_source_type"/>

@@ -19,11 +19,14 @@ class CompanySetupCase(TransactionCase):
         self.assertFalse(self.env['account.move'].search([('company_id', '=', company.id)]))
         self.assertFalse(self.env['account.payment'].search([('company_id', '=', company.id)]))
 
-    def test_empty_root_defaults_to_saudi_chart_and_seed_once(self):
+    def test_empty_root_create_lifecycle_defaults_to_saudi_chart_and_seed_once(self):
         company = self._new_company()
+        # `flush()` runs the same precommit callback that a real create/commit
+        # cycle runs, without committing any QA test fixture.
+        self.env.cr.flush()
+        company.invalidate_recordset()
         self.assertEqual(company.country_id, self.saudi)
         self.assertEqual(company.currency_id, self.sar)
-        company._baseer_prepare_accounting()
         self.assertEqual(company.chart_template, 'sa')
         self.assertTrue(company.baseer_salary_expense_id)
         self.assertTrue(company.baseer_salary_payable_id)
@@ -62,6 +65,19 @@ class CompanySetupCase(TransactionCase):
         self._assert_no_financial_documents(company)
         self.assertFalse(untouched.chart_template)
         self._assert_no_financial_documents(untouched)
+
+    def test_non_erp_manager_cannot_create_or_initialize_company_accounting(self):
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Company setup unprivileged',
+            'login': 'company_setup_unprivileged_' + self._testMethodName,
+            'company_id': self.env.company.id,
+            'company_ids': [(6, 0, self.env.company.ids)],
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            self.env['res.company'].with_user(user).create({
+                'name': 'Unprivileged company ' + self._testMethodName,
+            })
 
     def test_targeted_saudi_action_requires_erp_manager(self):
         company = self._new_company()

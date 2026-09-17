@@ -31,10 +31,12 @@ class Company(models.Model):
                 values.update(country_id=saudi.id, currency_id=sar.id)
             values_list.append(values)
         companies = super().create(values_list)
-        # Native create is authorized first. Native localization callbacks run first.
-        @self.env.cr.precommit.add
-        def complete_created_companies():
-            companies.exists().sudo()._baseer_prepare_accounting()
+        # Native create is authorized first. Automatic accounting setup stays
+        # within the same ERP-manager authority; no elevation occurs here.
+        if self.env.user.has_group('base.group_erp_manager'):
+            @self.env.cr.precommit.add
+            def complete_created_companies():
+                companies.exists()._baseer_prepare_accounting()
         return companies
 
     def action_baseer_initialize_saudi_accounting(self):
@@ -60,7 +62,10 @@ class Company(models.Model):
             if company.chart_template or not company._baseer_chart_is_empty():
                 raise ValidationError(_('Saudi accounting initialization requires an empty company chart.'))
             company.write({'country_id': saudi.id, 'currency_id': sar.id})
-            company._baseer_prepare_accounting()
+            # This action is intentionally accounting-only.  Add-ons may
+            # extend the broad creation hook with service or POS seeds, but
+            # must not run from a targeted company accounting action.
+            company._baseer_prepare_company_accounting()
             company.invalidate_recordset()
             if company.chart_template != 'sa':
                 raise ValidationError(_('Saudi accounting initialization did not load the Saudi chart.'))
@@ -139,6 +144,11 @@ class Company(models.Model):
         return journal
 
     def _baseer_prepare_accounting(self):
+        """Broad hook for new companies; companion modules may extend it."""
+        return self._baseer_prepare_company_accounting()
+
+    def _baseer_prepare_company_accounting(self):
+        """Baseer accounting seeds only; safe for a targeted ERP action."""
         for original in self.sorted('id'):
             company = original.with_context(dict(clean_context(self.env.context), allowed_company_ids=[original.id], active_test=False)).with_company(original)
             if company.parent_id:
@@ -148,8 +158,12 @@ class Company(models.Model):
             if not company.chart_template:
                 if company.country_id.code == 'SA' and company.currency_id == company.country_id.currency_id and company._baseer_chart_is_empty():
                     # Dependency already installed; this never installs a module or commits.
-                    company.env['account.chart.template']._load('sa', company, install_demo=False)
-                continue
+                    company.env['account.chart.template'].with_context(
+                        baseer_company_setup_accounting_only=True,
+                    )._load('sa', company, install_demo=False)
+                    company.invalidate_recordset()
+                if not company.chart_template:
+                    continue
             updates = {}
             for definition in ACCOUNT_DEFAULTS:
                 if not company[definition[0]]:
@@ -186,5 +200,8 @@ class ChartTemplate(models.AbstractModel):
 
     def _load(self, template_code, company, install_demo, force_create=True):
         result = super()._load(template_code, company, install_demo, force_create)
-        self.env['res.company'].browse(company if isinstance(company, int) else company.id).sudo()._baseer_prepare_accounting()
+        if not self.env.context.get('baseer_company_setup_accounting_only'):
+            self.env['res.company'].browse(
+                company if isinstance(company, int) else company.id
+            )._baseer_prepare_accounting()
         return result

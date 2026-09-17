@@ -1,3 +1,4 @@
+from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -51,6 +52,7 @@ class CompanySetupCase(TransactionCase):
 
     def test_targeted_saudi_action_only_initializes_its_company(self):
         company = self._new_company()
+        untouched = self._new_company(name='Saudi untouched %s' % self._testMethodName)
         company.write({'country_id': False})
         action = company.action_baseer_initialize_saudi_accounting()
         self.assertEqual(action['tag'], 'display_notification')
@@ -58,3 +60,17 @@ class CompanySetupCase(TransactionCase):
         self.assertEqual(company.currency_id, self.sar)
         self.assertEqual(company.chart_template, 'sa')
         self._assert_no_financial_documents(company)
+        self.assertFalse(untouched.chart_template)
+        self._assert_no_financial_documents(untouched)
+
+    def test_targeted_saudi_action_requires_erp_manager(self):
+        company = self._new_company()
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Company setup no ERP manager',
+            'login': 'company_setup_no_erp_' + self._testMethodName,
+            'company_id': self.env.company.id,
+            'company_ids': [(6, 0, self.env.company.ids)],
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            company.with_user(user).action_baseer_initialize_saudi_accounting()

@@ -42,5 +42,7 @@ class BaseerWebsiteBrandingLeadCase(TransactionCase):
             self.env["website.page"]._sync_abroj_contact_page()
             copied_page.invalidate_recordset(["view_id"])
             self.assertIn("abroj-contact-name", copied_page.view_id.arch_db)
+            # The public interaction only binds to forms inside this wrapper.
+            self.assertIn('class="s_website_form"', copied_page.view_id.arch_db)
         finally:
             website.domain = original_domain

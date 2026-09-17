@@ -5,13 +5,16 @@
             <header class="o_rep_pc_header">
                 <div><h1>Representative Petty Cash</h1><p>Record a transfer from a company payment point to a purchasing representative.</p></div>
                 <div class="o_rep_pc_filters"><label>Representative
-                    <select t-on-change="onRepresentativeChange" t-att-value="state.representativeId">
-                        <option value="">All representatives</option>
-                        <option t-foreach="state.data?.representatives || []" t-as="representative" t-key="representative.id" t-att-value="representative.id"><t t-esc="representative.display_name"/></option>
-                    </select>
-                </label><label>Month<input type="month" t-att-value="state.monthStart ? state.monthStart.slice(0, 7) : ''" t-on-change="onMonthChange"/></label></div>
+                    <Dropdown>
+                        <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="representativeLabel()"><span t-esc="representativeLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                        <t t-set-slot="content">
+                            <DropdownItem onSelected="() => this.selectRepresentative(false)">All representatives</DropdownItem>
+                            <DropdownItem t-foreach="state.data?.representatives || []" t-as="representative" t-key="representative.id" onSelected="() => this.selectRepresentative(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
+                        </t>
+                    </Dropdown>
+                </label><label>Month<input class="form-control" type="month" t-att-value="state.monthStart ? state.monthStart.slice(0, 7) : ''" t-on-change="onMonthChange"/></label></div>
             </header>
-            <section t-if="state.loading" class="o_rep_pc_empty">Loading…</section>
+            <section t-if="state.loading" class="o_rep_pc_empty" aria-live="polite"><i class="fa fa-spinner fa-spin me-2" aria-hidden="true"/>Loading…</section>
             <section t-elif="state.error" class="alert alert-danger"><t t-esc="state.error"/></section>
             <t t-else="">
                 <section class="o_rep_pc_cards" aria-label="Monthly summary">
@@ -23,29 +26,35 @@
                     <h2>Add petty cash</h2>
                     <div class="o_rep_pc_grid">
                         <label>Purchase request
-                            <select t-on-change="onRequestChange" t-att-value="state.requestId">
-                                <option value="">Choose a purchase request</option>
-                                <option t-foreach="state.data.requests" t-as="request" t-key="request.id" t-att-value="request.id"><t t-esc="request.name"/> — <t t-esc="request.representative_name"/></option>
-                            </select>
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="requestLabel()"><span t-esc="requestLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.requests" t-as="request" t-key="request.id" onSelected="() => this.selectRequest(request.id)"><t t-esc="request.name"/> — <t t-esc="request.representative_name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
                         </label>
                         <div class="o_rep_pc_request_total" t-if="selectedRequest()">Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></div>
                         <label>From
-                            <select t-on-change="onPaymentPointChange" t-att-value="state.paymentPointId">
-                                <option value="">Choose a bank or cash point</option>
-                                <option t-foreach="state.data.payment_points" t-as="point" t-key="point.id" t-att-value="point.id"><t t-esc="point.name"/></option>
-                            </select>
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="paymentPointLabel()"><span t-esc="paymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.payment_points" t-as="point" t-key="point.id" onSelected="() => this.selectPaymentPoint(point.id)"><t t-esc="point.name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
                         </label>
                         <label>To
-                            <select t-att-value="state.destinationId" t-on-change="(event) => state.destinationId = event.target.value">
-                                <option value="">Choose a purchasing representative</option>
-                                <option t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" t-att-value="representative.id"><t t-esc="representative.display_name"/></option>
-                            </select>
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="destinationLabel()"><span t-esc="destinationLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" onSelected="() => this.selectDestination(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
                         </label>
                         <label>Amount
-                            <input type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.amount" t-on-input="onAmountInput"/>
+                            <input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.amount" t-on-input="onAmountInput"/>
                         </label>
                         <label>Transfer date
-                            <input type="date" t-att-value="state.movementDate" t-on-input="onMovementDateInput"/>
+                            <input class="form-control" type="date" t-att-value="state.movementDate" t-on-input="onMovementDateInput"/>
                         </label>
                         <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving"><t t-if="state.saving">Saving…</t><t t-else="">Save</t></button>
                     </div>
@@ -54,18 +63,22 @@
                     <h2>Return remaining</h2>
                     <div class="o_rep_pc_grid">
                         <label>Original movement
-                            <select t-att-value="state.returnOriginId" t-on-change="(event) => state.returnOriginId = event.target.value">
-                                <option value="">Choose an existing petty cash movement</option>
-                                <option t-foreach="state.data.open_fundings" t-as="funding" t-key="funding.id" t-att-value="funding.id"><t t-esc="funding.name"/> — <t t-esc="funding.representative_name"/> (<t t-esc="money(funding.remaining)"/>)</option>
-                            </select>
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="returnOriginLabel()"><span t-esc="returnOriginLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.open_fundings" t-as="funding" t-key="funding.id" onSelected="() => this.selectReturnOrigin(funding.id)"><t t-esc="funding.name"/> — <t t-esc="funding.representative_name"/> (<t t-esc="money(funding.remaining)"/>)</DropdownItem>
+                                </t>
+                            </Dropdown>
                         </label>
                         <label>To
-                            <select t-att-value="state.returnPaymentPointId" t-on-change="(event) => state.returnPaymentPointId = event.target.value">
-                                <option value="">Choose a bank or cash point</option>
-                                <option t-foreach="state.data.payment_points" t-as="point" t-key="point.id" t-att-value="point.id"><t t-esc="point.name"/></option>
-                            </select>
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="returnPaymentPointLabel()"><span t-esc="returnPaymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.payment_points" t-as="point" t-key="point.id" onSelected="() => this.selectReturnPaymentPoint(point.id)"><t t-esc="point.name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
                         </label>
-                        <label>Amount<input type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.returnAmount" t-on-input="(event) => state.returnAmount = event.target.value"/></label>
+                        <label>Amount<input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.returnAmount" t-on-input="(event) => state.returnAmount = event.target.value"/></label>
                         <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving">Save return</button>
                     </div>
                 </section>

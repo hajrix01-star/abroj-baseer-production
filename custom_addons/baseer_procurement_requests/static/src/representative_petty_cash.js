@@ -1,6 +1,8 @@
 /** @odoo-module **/
 
 import { Component, onMounted, useState } from "@odoo/owl";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { localization } from "@web/core/l10n/localization";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
@@ -20,6 +22,7 @@ function today() {
 export class RepresentativePettyCash extends Component {
     static template = "baseer_procurement_requests.RepresentativePettyCash";
     static props = ["*"];
+    static components = { Dropdown, DropdownItem };
 
     setup() {
         this.orm = useService("orm");
@@ -51,8 +54,8 @@ export class RepresentativePettyCash extends Component {
         }
     }
 
-    onRepresentativeChange(event) {
-        this.state.representativeId = event.target.value;
+    selectRepresentative(representativeId) {
+        this.state.representativeId = representativeId ? String(representativeId) : "";
         this.state.destinationId = "";
         this.state.requestId = "";
         this.load();
@@ -63,14 +66,45 @@ export class RepresentativePettyCash extends Component {
         this.load();
     }
 
-    onRequestChange(event) {
-        this.state.requestId = event.target.value;
+    selectRequest(requestId) {
+        this.state.requestId = requestId ? String(requestId) : "";
         const request = this.selectedRequest();
         if (request) this.state.destinationId = String(request.representative_id);
     }
 
     selectedRequest() {
         return this.state.data?.requests.find((request) => request.id === Number(this.state.requestId));
+    }
+
+    selectionLabel(items, id, placeholder, field = "display_name") {
+        const selected = (items || []).find((item) => item.id === Number(id));
+        return selected ? selected[field] : placeholder;
+    }
+
+    representativeLabel() {
+        return this.selectionLabel(this.state.data?.representatives, this.state.representativeId, _t("All representatives"));
+    }
+
+    requestLabel() {
+        const request = this.selectedRequest();
+        return request ? `${request.name} — ${request.representative_name}` : _t("Choose a purchase request");
+    }
+
+    paymentPointLabel() {
+        return this.selectionLabel(this.state.data?.payment_points, this.state.paymentPointId, _t("Choose a bank or cash point"), "name");
+    }
+
+    destinationLabel() {
+        return this.selectionLabel(this.state.data?.representatives, this.state.destinationId, _t("Choose a purchasing representative"));
+    }
+
+    returnOriginLabel() {
+        const funding = (this.state.data?.open_fundings || []).find((item) => item.id === Number(this.state.returnOriginId));
+        return funding ? `${funding.name} — ${funding.representative_name}` : _t("Choose an existing petty cash movement");
+    }
+
+    returnPaymentPointLabel() {
+        return this.selectionLabel(this.state.data?.payment_points, this.state.returnPaymentPointId, _t("Choose a bank or cash point"), "name");
     }
 
     money(amount) {
@@ -94,7 +128,10 @@ export class RepresentativePettyCash extends Component {
         };
     }
 
-    onPaymentPointChange(event) { this.state.paymentPointId = event.target.value; }
+    selectPaymentPoint(paymentPointId) { this.state.paymentPointId = String(paymentPointId); }
+    selectDestination(destinationId) { this.state.destinationId = String(destinationId); }
+    selectReturnOrigin(originId) { this.state.returnOriginId = String(originId); }
+    selectReturnPaymentPoint(paymentPointId) { this.state.returnPaymentPointId = String(paymentPointId); }
     onAmountInput(event) { this.state.amount = event.target.value; }
     onMovementDateInput(event) { this.state.movementDate = event.target.value; }
     async save() {

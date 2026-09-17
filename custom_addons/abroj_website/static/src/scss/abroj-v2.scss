@@ -1,7 +1,4 @@
 /* Abroj v2: editorial construction identity, scoped so it does not alter Odoo's Website editor. */
-/* The corporate home supplies its own branded navigation inside .abroj-v2. */
-#wrapwrap:has(.abroj-v2) > #top { display: none !important; }
-
 .abroj-v2 {
   --abroj-navy: #0a2638;
   --abroj-ink: #10212e;

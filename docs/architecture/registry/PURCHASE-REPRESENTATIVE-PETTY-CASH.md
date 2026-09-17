@@ -215,3 +215,9 @@ Odoo عامًّا.
   `baseer-2026-09-17-representative-petty-cash-payment-points`: نجح
   [الاعتماد](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35205563525)
   ثم [النشر](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35205600576).
+
+أضيفت لاحقًا حالة إعداد مقروءة في اللوحة: لا تبدأ عملية حفظ إذا غاب حساب العهدة
+أو دفتر اليومية، وتظهر الرسالة العربية المناسبة داخل الشاشة. نجح اختبار الحزمة
+بعدها بـ`64` اختبارًا بلا فشل أو خطأ، ثم نجح
+[اعتماد الإصدار](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35206352934)
+و[نشره](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35206384810).

@@ -82,6 +82,11 @@ msgid "Only the accountant or owner can approve purchase batches."
 msgstr "يمكن للمحاسب أو المالك فقط اعتماد دفعات فواتير المشتريات."
 
 #. module: baseer_access_roles
+#: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_cashier_batch_form
+msgid "Save and approve"
+msgstr "حفظ واعتماد"
+
+#. module: baseer_access_roles
 #. odoo-python
 #: code:addons/baseer_access_roles/models/purchase_batch.py:0
 msgid "Cashiers can view their batch details, not the accounting documents."

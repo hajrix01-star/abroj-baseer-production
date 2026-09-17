@@ -143,6 +143,7 @@ class RepresentativePettyCashCase(TransactionCase):
 
     def test_system_administrator_can_review_dashboard(self):
         administrator = self.env.ref('base.user_admin')
+        administrator.group_ids |= self.env.ref('base.group_system')
         dashboard = self.env['baseer.procurement.representative.advance'].with_user(administrator).dashboard_data()
         self.assertIn('summary', dashboard)
 

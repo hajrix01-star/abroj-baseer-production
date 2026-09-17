@@ -28,7 +28,17 @@ class WebsitePage(models.Model):
         )
         if not template:
             return
-        arch = template.with_context(lang=None).arch_db.replace(
-            template.key, page.view_id.key,
-        )
-        page.view_id.with_context(lang=None).write({"arch_db": arch})
+        key = f"{page.view_id.key}.abroj_contact"
+        view = self.env["ir.ui.view"].sudo().search([
+            ("key", "=", key),
+            ("website_id", "=", website.id),
+        ], limit=1)
+        if not view:
+            view = template.copy({
+                "website_id": website.id,
+                "key": key,
+                "name": "Abroj contact page",
+            })
+        arch = template.with_context(lang=None).arch_db.replace(template.key, key)
+        view.with_context(lang=None).write({"arch_db": arch})
+        page.write({"view_id": view.id})

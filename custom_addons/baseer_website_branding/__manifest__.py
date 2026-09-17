@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Website Branding',
-    'version': '19.0.2.1.0',
+    'version': '19.0.2.2.0',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'depends': ['website_crm'],

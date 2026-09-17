@@ -199,3 +199,17 @@ Odoo عامًّا.
   `baseer-2026-09-17-representative-petty-cash-settlement`: نجح
   [الاعتماد](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35202184835)
   ثم [النشر](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35202266077).
+
+## 12. ضبط نقاط الدفع والإصدار — 2026-09-17
+
+- لا ينشئ الإصدار طرق دفع أو دفاترًا أو حسابات. يضيف فقط اختيارًا في إعدادات
+  الشركة لمسؤول الإعداد لاعتماد دفاتر بنك/نقد قائمة للعهدة.
+- لا تعرض رحلة المحاسب إلا أسماء النقاط المعتمدة، ويرفض الخادم أي دفتر خارج
+  الإعداد أو من شركة أخرى، سواءً جاء من الواجهة أو RPC مباشر.
+- رسائل الحفظ تعرض أخطاء العمل الآمنة فقط؛ الاستثناءات التقنية تبقى في سجل
+  الخادم ولا تظهر للمستخدم.
+- اختبرت الحزمة في قاعدة معزولة: `63` اختبارًا، `0` فشل، `0` خطأ. نُشر commit
+  `db5d1e4` بموجب سياسة
+  `baseer-2026-09-17-representative-petty-cash-payment-points`: نجح
+  [الاعتماد](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35205563525)
+  ثم [النشر](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35205600576).

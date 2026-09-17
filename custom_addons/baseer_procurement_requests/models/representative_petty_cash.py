@@ -28,6 +28,145 @@ class ResCompany(models.Model):
         help='Existing company bank or cash points that accountants may use for Representative Petty Cash.',
     )
 
+    def _baseer_representative_petty_cash_seed_record(self, key, model):
+        """Return the one record this module has created for this company."""
+        self.ensure_one()
+        data = self.env['ir.model.data'].sudo().search([
+            ('module', '=', 'baseer_procurement_requests'),
+            ('name', '=', '%s_company_%s' % (key, self.id)),
+        ], limit=1)
+        if not data:
+            return self.env[model]
+        if data.model != model:
+            raise ValidationError(_('The Representative Petty Cash setup reference is invalid.'))
+        record = self.env[model].browse(data.res_id).exists()
+        if not record:
+            raise ValidationError(_('The Representative Petty Cash setup reference is invalid.'))
+        if model == 'account.account' and self not in record.company_ids:
+            raise ValidationError(_('The Representative Petty Cash setup reference is invalid.'))
+        if model == 'account.journal' and record.company_id != self:
+            raise ValidationError(_('The Representative Petty Cash setup reference is invalid.'))
+        return record
+
+    def _baseer_remember_representative_petty_cash_seed(self, key, record):
+        self.ensure_one()
+        self.env['ir.model.data'].sudo().create({
+            'module': 'baseer_procurement_requests',
+            'name': '%s_company_%s' % (key, self.id),
+            'model': record._name,
+            'res_id': record.id,
+            'noupdate': True,
+        })
+        return record
+
+    def _baseer_representative_petty_cash_next_journal_code(self):
+        self.ensure_one()
+        used_codes = set(self.env['account.journal'].with_context(active_test=False).search([
+            ('company_id', '=', self.id),
+        ]).mapped('code'))
+        for code in ('RPCA',) + tuple('RP%03d' % number for number in range(1, 1000)):
+            if code not in used_codes:
+                return code
+        raise ValidationError(_('No available company journal code for Representative Petty Cash.'))
+
+    def _baseer_validate_representative_petty_cash_seed(self, account, journal):
+        """Reject an altered module-owned seed before creating either side.
+
+        A missing field plus an archived or modified recorded seed must not
+        result in a newly-created account/journal counterpart.  That would
+        leave a company half-configured and conceal an accounting decision.
+        """
+        self.ensure_one()
+        if account and (not account.active or not account.reconcile or account.account_type != 'asset_current'):
+            raise ValidationError(_('Review the archived or modified Representative Petty Cash account.'))
+        if journal and (not journal.active or journal.type != 'general'):
+            raise ValidationError(_('Review the archived or modified Representative Petty Cash general journal.'))
+
+    def _baseer_ensure_representative_petty_cash_setup(self, require_chart=False, raise_on_missing_chart=False):
+        """Create the one shared account and general journal only when absent.
+
+        An existing configured value is never replaced.  This preserves manual
+        accounting choices and means a modified or archived configuration is
+        surfaced to the manager as an issue instead of being silently changed.
+        """
+        for original in self.sorted('id'):
+            company = original.sudo().with_company(original)
+            self.env.cr.execute('SELECT id FROM res_company WHERE id = %s FOR UPDATE', [company.id])
+            company.invalidate_recordset()
+            if require_chart and not company.chart_template:
+                if raise_on_missing_chart:
+                    raise UserError(_('Configure the company chart of accounts before initializing Representative Petty Cash.'))
+                continue
+
+            # A partially configured company is an intentional accounting
+            # decision until its manager completes it; do not fill one side
+            # silently and make that decision harder to audit.
+            account = company.baseer_procurement_representative_petty_cash_account_id
+            journal = company.baseer_procurement_representative_petty_cash_journal_id
+            if bool(account) != bool(journal) or (account and journal):
+                continue
+
+            seed_account = company._baseer_representative_petty_cash_seed_record(
+                'representative_petty_cash_account', 'account.account'
+            ) if not account else self.env['account.account']
+            seed_journal = company._baseer_representative_petty_cash_seed_record(
+                'representative_petty_cash_journal', 'account.journal'
+            ) if not journal else self.env['account.journal']
+            company._baseer_validate_representative_petty_cash_seed(seed_account, seed_journal)
+
+            updates = {}
+            if not account:
+                account = seed_account
+                if not account:
+                    Account = company.env['account.account']
+                    account = Account.create({
+                        'name': 'Representative Petty Cash | عهدة مندوبي المشتريات',
+                        'code': Account._search_new_account_code('108990', cache=set()),
+                        'account_type': 'asset_current',
+                        'reconcile': True,
+                        'company_ids': [Command.set(company.ids)],
+                    })
+                    company._baseer_remember_representative_petty_cash_seed(
+                        'representative_petty_cash_account', account,
+                    )
+                if account.active and account.reconcile and account.account_type == 'asset_current':
+                    updates['baseer_procurement_representative_petty_cash_account_id'] = account.id
+
+            if not journal:
+                journal = seed_journal
+                if not journal:
+                    journal = company.env['account.journal'].create({
+                        'name': 'Representative Petty Cash | عهدة مندوبي المشتريات',
+                        'code': company._baseer_representative_petty_cash_next_journal_code(),
+                        'type': 'general',
+                        'company_id': company.id,
+                    })
+                    company._baseer_remember_representative_petty_cash_seed(
+                        'representative_petty_cash_journal', journal,
+                    )
+                if journal.active and journal.type == 'general':
+                    updates['baseer_procurement_representative_petty_cash_journal_id'] = journal.id
+
+            if updates:
+                company.write(updates)
+        return True
+
+    def action_baseer_initialize_representative_petty_cash(self):
+        if not self.env.user.has_group('base.group_erp_manager'):
+            raise AccessError(_('Only an ERP manager can initialize Representative Petty Cash.'))
+        for company in self:
+            if bool(company.baseer_procurement_representative_petty_cash_account_id) != bool(
+                company.baseer_procurement_representative_petty_cash_journal_id
+            ):
+                raise UserError(_(
+                    'Complete or clear the existing Representative Petty Cash account and journal setup first.'
+                ))
+        self.sudo()._baseer_ensure_representative_petty_cash_setup(
+            require_chart=True, raise_on_missing_chart=True,
+        )
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
+
     @api.constrains('baseer_procurement_representative_petty_cash_payment_journal_ids')
     def _check_baseer_representative_petty_cash_payment_points(self):
         for company in self:
@@ -85,6 +224,22 @@ class ResCompany(models.Model):
         account = self.baseer_procurement_representative_petty_cash_account_id
         journal = self.baseer_procurement_representative_petty_cash_journal_id
         return account, journal
+
+
+class AccountChartTemplate(models.AbstractModel):
+    _inherit = 'account.chart.template'
+
+    def _load(self, template_code, company, install_demo, force_create=True):
+        """Attach setup to Odoo's definitive chart-of-accounts completion hook.
+
+        The callback runs after the native chart is present, for both a newly
+        created company and a chart loaded later.  It avoids relying on the
+        ordering of unrelated company-create precommit callbacks.
+        """
+        result = super()._load(template_code, company, install_demo, force_create)
+        company = self.env['res.company'].browse(company if isinstance(company, int) else company.id)
+        company.sudo()._baseer_ensure_representative_petty_cash_setup(require_chart=True)
+        return result
 
 
 class AccountMove(models.Model):

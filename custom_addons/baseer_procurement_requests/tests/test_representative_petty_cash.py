@@ -12,6 +12,7 @@ class RepresentativePettyCashCase(TransactionCase):
         super().setUp()
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_accountant')
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_manager')
+        self.env.user.group_ids |= self.env.ref('base.group_erp_manager')
         self.company = self.env.company
         self.warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
         category = self.env['product.category'].create({'name': 'Representative petty cash test category'})
@@ -137,6 +138,88 @@ class RepresentativePettyCashCase(TransactionCase):
             dashboard['setup_issue'],
             'Configure an active reconcilable Representative Petty Cash account first.',
         )
+
+    def test_manager_initializes_one_shared_company_setup_without_payment_points(self):
+        company = self.env['res.company'].create({
+            'name': 'New representative petty cash company',
+            'currency_id': self.company.currency_id.id,
+        })
+        payment_point_ids_before = company.baseer_procurement_representative_petty_cash_payment_journal_ids.ids
+
+        # This is the real native completion event for a new company, not a
+        # write simulation: the chart loader runs and our inherited hook then
+        # creates the one shared account and general journal.
+        self.env['account.chart.template']._load(
+            self.company.chart_template, company, install_demo=False,
+        )
+        account = company.baseer_procurement_representative_petty_cash_account_id
+        journal = company.baseer_procurement_representative_petty_cash_journal_id
+        self.assertTrue(account.active)
+        self.assertTrue(account.reconcile)
+        self.assertEqual(account.account_type, 'asset_current')
+        self.assertIn(company, account.company_ids)
+        self.assertTrue(journal.active)
+        self.assertEqual(journal.type, 'general')
+        self.assertEqual(company.baseer_procurement_representative_petty_cash_payment_journal_ids.ids, payment_point_ids_before)
+
+        company.action_baseer_initialize_representative_petty_cash()
+        self.assertEqual(company.baseer_procurement_representative_petty_cash_account_id, account)
+        self.assertEqual(company.baseer_procurement_representative_petty_cash_journal_id, journal)
+
+        first = self.env['res.partner'].create({'name': 'First representative', 'company_id': company.id})
+        second = self.env['res.partner'].create({'name': 'Second representative', 'company_id': company.id})
+        first.with_company(company).is_purchase_representative = True
+        second.with_company(company).is_purchase_representative = True
+        self.assertEqual(company.baseer_procurement_representative_petty_cash_account_id, account)
+        self.assertEqual(company.baseer_procurement_representative_petty_cash_journal_id, journal)
+
+    def test_invalid_module_owned_seed_never_creates_the_other_setup_side(self):
+        company = self.company
+        company.write({
+            'baseer_procurement_representative_petty_cash_account_id': False,
+            'baseer_procurement_representative_petty_cash_journal_id': False,
+        })
+        company.action_baseer_initialize_representative_petty_cash()
+        account = company.baseer_procurement_representative_petty_cash_account_id
+        journal = company.baseer_procurement_representative_petty_cash_journal_id
+        account.active = False
+        company.write({
+            'baseer_procurement_representative_petty_cash_account_id': False,
+            'baseer_procurement_representative_petty_cash_journal_id': False,
+        })
+        with self.assertRaises(ValidationError):
+            company.action_baseer_initialize_representative_petty_cash()
+        self.assertFalse(company.baseer_procurement_representative_petty_cash_account_id)
+        self.assertFalse(company.baseer_procurement_representative_petty_cash_journal_id)
+        self.assertTrue(journal.exists())
+
+    def test_manager_setup_does_not_complete_a_partial_manual_configuration(self):
+        company = self.company
+        account = self.env['account.account'].create({
+            'name': 'Partial representative petty cash account', 'code': 'RPA80',
+            'account_type': 'asset_current', 'reconcile': True,
+            'company_ids': [Command.set(company.ids)],
+        })
+        company.write({
+            'baseer_procurement_representative_petty_cash_account_id': account.id,
+            'baseer_procurement_representative_petty_cash_journal_id': False,
+        })
+        with self.assertRaises(UserError):
+            company.action_baseer_initialize_representative_petty_cash()
+        self.assertEqual(company.baseer_procurement_representative_petty_cash_account_id, account)
+        self.assertFalse(company.baseer_procurement_representative_petty_cash_journal_id)
+
+    def test_only_erp_manager_can_initialize_company_setup(self):
+        company = self.company
+        accountant = self.env['res.users'].create({
+            'name': 'Representative petty cash accountant setup',
+            'login': 'representative-petty-cash-accountant-setup',
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_accountant').id,
+            ])],
+        })
+        with self.assertRaises(AccessError):
+            company.with_user(accountant).action_baseer_initialize_representative_petty_cash()
 
     def test_only_configured_existing_payment_points_are_listed_and_accepted(self):
         other_cash_account = self.env['account.account'].create({

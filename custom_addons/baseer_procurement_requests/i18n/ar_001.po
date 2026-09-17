@@ -9,6 +9,41 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_company_representative_petty_cash
+msgid "Initialize Representative Petty Cash"
+msgstr "تهيئة عهدة مندوبي المشتريات"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_company_representative_petty_cash
+msgid "Creates the missing shared account and general journal once for this company. It does not create a payment point or an account for each representative."
+msgstr "ينشئ الحساب المشترك ودفتر اليومية العام المفقودين لهذه الشركة مرة واحدة. لا ينشئ نقطة دفع أو حسابًا مستقلًا لكل مندوب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "The Representative Petty Cash setup reference is invalid."
+msgstr "مرجع إعداد عهدة مندوبي المشتريات غير صالح."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "No available company journal code for Representative Petty Cash."
+msgstr "لا يوجد رمز متاح لدفتر يومية عهدة مندوبي المشتريات في الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Configure the company chart of accounts before initializing Representative Petty Cash."
+msgstr "أكمل إعداد دليل حسابات الشركة قبل تهيئة عهدة مندوبي المشتريات."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Only an ERP manager can initialize Representative Petty Cash."
+msgstr "فقط مدير نظام ERP يستطيع تهيئة عهدة مندوبي المشتريات."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Complete or clear the existing Representative Petty Cash account and journal setup first."
+msgstr "أكمل إعداد حساب ودفتر عهدة مندوبي المشتريات القائم أو أزله أولًا."
+
+#. module: baseer_procurement_requests
 #: model:ir.ui.menu,name:baseer_procurement_requests.menu_procurement_root
 msgid "Procurement Requests"
 msgstr "طلبات المشتريات"
@@ -1491,3 +1526,13 @@ msgstr "أكمل إعداد الشركة: اختر حساب عهدة مندوب�
 #: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
 msgid "Configure an active Representative Petty Cash general journal first."
 msgstr "أكمل إعداد الشركة: اختر دفتر يومية عامًّا ونشطًا لعهدة مندوبي المشتريات أولًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Review the archived or modified Representative Petty Cash account."
+msgstr "راجع حساب عهدة مندوبي المشتريات المؤرشف أو المعدّل قبل التهيئة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Review the archived or modified Representative Petty Cash general journal."
+msgstr "راجع دفتر اليومية العام لعهدة مندوبي المشتريات المؤرشف أو المعدّل قبل التهيئة."

@@ -14,6 +14,11 @@
                 <page name="baseer_representative_petty_cash" string="عهدة مندوب المشتريات"
                       groups="base.group_erp_manager">
                     <group>
+                        <button name="action_baseer_initialize_representative_petty_cash" type="object"
+                                string="Initialize Representative Petty Cash" class="btn-primary"/>
+                        <div class="text-muted">
+                            Creates the missing shared account and general journal once for this company. It does not create a payment point or an account for each representative.
+                        </div>
                         <field name="baseer_procurement_representative_petty_cash_account_id"
                                string="حساب عهدة مندوب المشتريات"
                                domain="[('company_ids', 'in', [id]), ('active', '=', True), ('reconcile', '=', True), ('account_type', 'in', ['asset_receivable', 'asset_current'])]"

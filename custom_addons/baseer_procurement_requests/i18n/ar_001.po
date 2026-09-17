@@ -419,7 +419,10 @@ msgid "Date: %s"
 msgstr "التاريخ: %s"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Purchase request"
 msgstr "طلب مشتريات"
 
@@ -897,7 +900,9 @@ msgid "Type"
 msgstr "النوع"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Representative"
 msgstr "المندوب"
 

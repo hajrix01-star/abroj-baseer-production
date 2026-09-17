@@ -1334,7 +1334,7 @@ msgstr "من"
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Choose a bank or cash point"
-msgstr "اختر بنكًا أو كاشًا"
+msgstr "اختر بنكًا أو نقدًا"
 
 #. module: baseer_procurement_requests
 #. odoo-javascript

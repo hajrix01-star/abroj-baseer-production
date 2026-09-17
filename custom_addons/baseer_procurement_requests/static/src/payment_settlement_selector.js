@@ -41,7 +41,6 @@ export class PaymentSettlementSelector extends Component {
         this.orm = useService("orm");
         this.state = useState({
             loading: true,
-            unlockingCredit: false,
             choices: { payment_points: [], representatives: [], can_use_representative: false },
         });
         // Do not block a newly-created inline x2many record from rendering
@@ -91,10 +90,6 @@ export class PaymentSettlementSelector extends Component {
         return this.selectedPaymentPoint?.name || _t("Choose a settlement method");
     }
 
-    get isCredit() {
-        return this.props.record.data.payment_source_type === "credit" && !this.state.unlockingCredit;
-    }
-
     get representativeBalance() {
         const amount = this.selectedRepresentative?.available_balance;
         if (amount === undefined) {
@@ -111,7 +106,6 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async choosePaymentPoint(point) {
-        this.state.unlockingCredit = false;
         await this.props.record.update({
             payment_source_type: "payment_method",
             payment_method_line_id: [point.id, point.name],
@@ -121,7 +115,6 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async chooseRepresentative(representative) {
-        this.state.unlockingCredit = false;
         await this.props.record.update({
             payment_source_type: "representative_petty_cash",
             payment_method_line_id: false,
@@ -130,14 +123,25 @@ export class PaymentSettlementSelector extends Component {
         });
     }
 
+}
+
+// The credit switch has its own table cell so it can remain visible without
+// competing with the settlement picker.  Unticking only unlocks the picker;
+// the server keeps the saved credit source unless the accountant selects a
+// complete replacement, which prevents an invalid half-saved invoice row.
+export class PaymentCreditToggle extends Component {
+    static template = "baseer_procurement_requests.PaymentCreditToggle";
+    static props = { ...standardFieldProps };
+
+    get isCredit() {
+        return this.props.record.data.is_credit;
+    }
+
     async toggleCredit(event) {
         if (!event.target.checked) {
-            // Preserve the saved credit source until the accountant actually
-            // picks a replacement. This avoids an invalid half-saved row.
-            this.state.unlockingCredit = true;
+            await this.props.record.update({ is_credit: false });
             return;
         }
-        this.state.unlockingCredit = false;
         await this.props.record.update({
             payment_source_type: "credit",
             payment_method_line_id: false,
@@ -150,4 +154,9 @@ export class PaymentSettlementSelector extends Component {
 registry.category("fields").add("baseer_payment_settlement_selector", {
     component: PaymentSettlementSelector,
     supportedTypes: ["selection"],
+});
+
+registry.category("fields").add("baseer_payment_credit_toggle", {
+    component: PaymentCreditToggle,
+    supportedTypes: ["boolean"],
 });

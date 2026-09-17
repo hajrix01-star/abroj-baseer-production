@@ -94,7 +94,9 @@
                 <attribute name="readonly">True</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='is_credit']" position="attributes">
-                <attribute name="column_invisible">True</attribute>
+                <attribute name="column_invisible">False</attribute>
+                <attribute name="widget">baseer_payment_credit_toggle</attribute>
+                <attribute name="width">80px</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="attributes">
                 <attribute name="column_invisible">True</attribute>

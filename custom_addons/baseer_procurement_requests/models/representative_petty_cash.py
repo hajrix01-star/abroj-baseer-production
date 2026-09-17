@@ -215,6 +215,8 @@ class RepresentativePettyCash(models.Model):
         self._require_reader()
         try:
             return self._dashboard_data(representative_id, month_start)
+        except UserError:
+            raise
         except Exception as error:
             _logger.exception('Representative Petty Cash dashboard failed for company %s', self.env.company.id)
             if self.env.user.has_group('base.group_system'):
@@ -225,46 +227,57 @@ class RepresentativePettyCash(models.Model):
             raise UserError(_('تعذر تحميل لوحة عهدة مندوب المشتريات. تم تسجيل الخطأ للمراجعة.')) from error
 
     def _dashboard_data(self, representative_id=False, month_start=False):
-        start, end = self._month_range(month_start)
-        company = self.env.company
-        read_model = self.sudo().with_company(company)
-        partner_domain = [('active', '=', True), ('is_purchase_representative', '=', True), ('is_company', '=', False), ('parent_id', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company.id)]
-        representatives = self.env['res.partner'].sudo().with_company(company).search_read(partner_domain, ['display_name'], order='display_name')
-        request_domain = [('company_id', '=', company.id), ('state', 'in', ['sent', 'received', 'purchased'])]
-        if representative_id:
-            request_domain.append(('representative_partner_id', '=', int(representative_id)))
-        requests = self.env['baseer.procurement.request'].sudo().with_company(company).search(request_domain, order='request_date desc, id desc', limit=100)
-        request_rows = [{
-            'id': request.id, 'name': request.name, 'representative_id': request.representative_partner_id.id,
-            'representative_name': request.representative_partner_id.display_name,
-            'amount': request.actual_total if request.state == 'purchased' else request.requested_total,
-            'currency_symbol': request.currency_id.symbol, 'currency_position': request.currency_id.position,
-        } for request in requests]
-        movement_domain = [('company_id', '=', company.id), ('movement_date', '>=', start), ('movement_date', '<', end)]
-        if representative_id:
-            movement_domain.append(('representative_partner_id', '=', int(representative_id)))
-        movements = read_model.search(movement_domain, limit=100)
-        open_funding_domain = [
-            ('company_id', '=', company.id), ('movement_type', '=', 'funding'), ('state', '=', 'posted'),
-        ]
-        if representative_id:
-            open_funding_domain.append(('representative_partner_id', '=', int(representative_id)))
-        open_fundings = read_model.search(open_funding_domain, order='movement_date desc, id desc', limit=200)
-        funded = sum((Decimal(str(amount)) for amount in movements.filtered(
-            lambda row: row.movement_type == 'funding'
-        ).mapped('amount')), Decimal('0.00'))
-        returned = sum((Decimal(str(amount)) for amount in movements.filtered(
-            lambda row: row.movement_type == 'return'
-        ).mapped('amount')), Decimal('0.00'))
-        can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
-        payment_points = []
-        if can_record:
-            journals = self.env['account.journal'].sudo().search([
-                ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
-            ], order='sequence, name')
-            payment_points = [{
-                'id': journal.id, 'name': journal.name, 'type': journal.type,
-            } for journal in journals if journal.default_account_id and journal.default_account_id.account_type == 'asset_cash']
+        stage = _('إعداد الفترة')
+        try:
+            start, end = self._month_range(month_start)
+            company = self.env.company
+            read_model = self.sudo().with_company(company)
+            stage = _('قائمة المندوبين')
+            partner_domain = [('active', '=', True), ('is_purchase_representative', '=', True), ('is_company', '=', False), ('parent_id', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company.id)]
+            representatives = self.env['res.partner'].sudo().with_company(company).search_read(partner_domain, ['display_name'], order='display_name')
+            stage = _('طلبات الشراء')
+            request_domain = [('company_id', '=', company.id), ('state', 'in', ['sent', 'received', 'purchased'])]
+            if representative_id:
+                request_domain.append(('representative_partner_id', '=', int(representative_id)))
+            requests = self.env['baseer.procurement.request'].sudo().with_company(company).search(request_domain, order='request_date desc, id desc', limit=100)
+            request_rows = [{
+                'id': request.id, 'name': request.name, 'representative_id': request.representative_partner_id.id,
+                'representative_name': request.representative_partner_id.display_name,
+                'amount': request.actual_total if request.state == 'purchased' else request.requested_total,
+                'currency_symbol': request.currency_id.symbol, 'currency_position': request.currency_id.position,
+            } for request in requests]
+            stage = _('حركات العهدة')
+            movement_domain = [('company_id', '=', company.id), ('movement_date', '>=', start), ('movement_date', '<', end)]
+            if representative_id:
+                movement_domain.append(('representative_partner_id', '=', int(representative_id)))
+            movements = read_model.search(movement_domain, limit=100)
+            open_funding_domain = [
+                ('company_id', '=', company.id), ('movement_type', '=', 'funding'), ('state', '=', 'posted'),
+            ]
+            if representative_id:
+                open_funding_domain.append(('representative_partner_id', '=', int(representative_id)))
+            open_fundings = read_model.search(open_funding_domain, order='movement_date desc, id desc', limit=200)
+            funded = sum((Decimal(str(amount)) for amount in movements.filtered(
+                lambda row: row.movement_type == 'funding'
+            ).mapped('amount')), Decimal('0.00'))
+            returned = sum((Decimal(str(amount)) for amount in movements.filtered(
+                lambda row: row.movement_type == 'return'
+            ).mapped('amount')), Decimal('0.00'))
+            stage = _('نقاط الدفع')
+            can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
+            payment_points = []
+            if can_record:
+                journals = self.env['account.journal'].sudo().search([
+                    ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
+                ], order='sequence, name')
+                payment_points = [{
+                    'id': journal.id, 'name': journal.name, 'type': journal.type,
+                } for journal in journals if journal.default_account_id and journal.default_account_id.account_type == 'asset_cash']
+        except Exception as error:
+            _logger.exception('Representative Petty Cash dashboard failed at %s for company %s', stage, self.env.company.id)
+            raise UserError(_('تعذر تحميل %(stage)s في لوحة العهدة (%(type)s).') % {
+                'stage': stage, 'type': type(error).__name__,
+            }) from error
         return {
             'month_start': fields.Date.to_string(start), 'currency_symbol': company.currency_id.symbol,
             'currency_position': company.currency_id.position, 'representatives': representatives,

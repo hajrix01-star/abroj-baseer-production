@@ -13,7 +13,7 @@
           <div class="abroj-v2__hero-veil"/>
           <header class="abroj-v2__header">
             <a class="abroj-v2__brand" href="#home" aria-label="Abroj home">
-              <img src="/abroj_website/static/src/img/abroj-logo.png" alt="أبرج للمشاريع المتكاملة | Abroj Integrated Construction"/>
+              <img src="/abroj_website/static/src/img/abroj-logo.png" alt="أبرج للإنشاءات المتكاملة | Abroj Integrated Construction"/>
             </a>
             <nav class="abroj-v2__nav" aria-label="Primary navigation">
               <a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a>
@@ -33,7 +33,7 @@
             </details>
           </header>
           <div class="abroj-v2__hero-content">
-            <p class="abroj-v2__eyebrow"><t t-if="is_ar">أبرج للمشاريع المتكاملة · الخبر · منذ 2018</t><t t-else="">ABROJ INTEGRATED CONSTRUCTION · AL KHOBAR · EST. 2018</t></p>
+            <p class="abroj-v2__eyebrow"><t t-if="is_ar">أبرج للإنشاءات المتكاملة · الخبر · منذ 2018</t><t t-else="">ABROJ INTEGRATED CONSTRUCTION · AL KHOBAR · EST. 2018</t></p>
             <h1><t t-if="is_ar">من المخطط إلى<br/>تنفيذٍ واضح.</t><t t-else="">Clear execution,<br/>from drawing to delivery.</t></h1>
             <p class="abroj-v2__hero-lead"><t t-if="is_ar">أبرج شركة مقاولات في الخبر منذ 2018. ننفذ أعمال المباني والطرق والأسفلت والتكييف وتجهيز المتاجر، ضمن نطاق عمل واضح من بداية المشروع حتى التسليم.</t><t t-else="">Based in Al Khobar since 2018, Abroj delivers buildings, roads and asphalt, HVAC, and retail fit-outs through one clear scope from mobilisation to handover.</t></p>
             <div class="abroj-v2__hero-actions">
@@ -81,8 +81,54 @@
           <div class="abroj-v2__contact-content"><p class="abroj-v2__eyebrow"><t t-if="is_ar">لنبدأ من نطاق مشروعك</t><t t-else="">START WITH YOUR PROJECT SCOPE</t></p><h2><t t-if="is_ar">أخبرنا بما يحتاجه موقعك.</t><t t-else="">Tell us what your site needs.</t></h2><p><t t-if="is_ar">شاركنا نوع المشروع وموقعه وما يتوفر من مخططات أو متطلبات، لنبدأ بفهم نطاق العمل وتحديد الخطوة المناسبة.</t><t t-else="">Share the project type, location, and any available drawings or requirements. We will begin by understanding the scope and defining the next step.</t></p></div>
           <a class="abroj-v2__button abroj-v2__button--light" href="/contactus"><t t-if="is_ar">اطلب عرض سعر لمشروعك</t><t t-else="">Request a project quote</t><span aria-hidden="true">←</span></a>
         </section>
-        <footer class="abroj-v2__footer"><img src="/abroj_website/static/src/img/abroj-logo.png" alt="Abroj Integrated Construction"/><div><a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">الخدمات</t><t t-else="">Services</t></a><a href="#contact"><t t-if="is_ar">تواصل</t><t t-else="">Contact</t></a><a href="https://baseer.abroj.sa/web/login"><t t-if="is_ar">دخول بصير</t><t t-else="">Baseer login</t></a></div><small>© <t t-if="is_ar">أبرج للمشاريع المتكاملة</t><t t-else="">Abroj Integrated Construction</t></small></footer>
+        <footer class="abroj-v2__footer"><img src="/abroj_website/static/src/img/abroj-logo.png" alt="Abroj Integrated Construction"/><div><a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">الخدمات</t><t t-else="">Services</t></a><a href="#contact"><t t-if="is_ar">تواصل</t><t t-else="">Contact</t></a><a href="https://baseer.abroj.sa/web/login"><t t-if="is_ar">دخول بصير</t><t t-else="">Baseer login</t></a></div><small>© <t t-if="is_ar">أبرج للإنشاءات المتكاملة</t><t t-else="">Abroj Integrated Construction</t></small></footer>
       </main>
     </xpath>
   </template>
+
+  <template id="contactus" inherit_id="website.contactus" name="Abroj contact page" priority="100">
+    <xpath expr="//t[@t-call='website.layout']/div[@id='wrap']" position="before">
+      <t t-set="no_header" t-value="True"/>
+      <t t-set="no_footer" t-value="True"/>
+    </xpath>
+    <xpath expr="//div[@id='wrap']" position="replace">
+      <t t-set="is_ar" t-value="request.env.lang.startswith('ar')"/>
+      <main id="wrap" class="abroj-contact" t-att-dir="'rtl' if is_ar else 'ltr'" t-att-lang="'ar' if is_ar else 'en'">
+        <header class="abroj-contact__header container py-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <a href="/" class="d-inline-flex align-items-center text-decoration-none"><img src="/abroj_website/static/src/img/abroj-logo.png" alt="Abroj Integrated Construction" style="height: 48px; width: auto;"/></a>
+          <nav class="d-flex align-items-center gap-3" aria-label="Primary navigation"><a href="/" class="text-decoration-none"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="https://instagram.com/abroj.sa" target="_blank" rel="noopener" class="text-decoration-none">Instagram</a><a href="https://wa.me/966533507223" target="_blank" rel="noopener" class="btn btn-primary"><t t-if="is_ar">واتساب</t><t t-else="">WhatsApp</t></a></nav>
+        </header>
+        <section class="border-top border-bottom bg-light py-5">
+          <div class="container"><p class="text-uppercase small text-muted mb-2"><t t-if="is_ar">أبرج للإنشاءات المتكاملة · الخبر</t><t t-else="">ABROJ INTEGRATED CONSTRUCTION · AL KHOBAR</t></p><h1 class="display-6 mb-0"><t t-if="is_ar">تواصل معنا</t><t t-else="">Contact us</t></h1></div>
+        </section>
+        <section class="container py-5 py-lg-6">
+          <div class="row g-5">
+            <div class="col-lg-7">
+              <p class="lead"><t t-if="is_ar">أرسل تفاصيل مشروعك أو طلب عرض السعر، وسيصل مباشرة إلى فريق أبرج لمتابعته.</t><t t-else="">Send your project details or quote request directly to the Abroj team.</t></p>
+              <form id="contactus_form" action="/website/form/" method="post" enctype="multipart/form-data" class="o_mark_required" data-mark="*" data-model_name="crm.lead" data-success-mode="redirect" data-success-page="/contactus-thank-you" data-pre-fill="true">
+                <div class="s_website_form_rows row g-3 s_col_no_bgcolor">
+                  <div class="col-md-6 s_website_form_field s_website_form_required s_website_form_model_required" data-type="char" data-name="Field"><label class="form-label" for="abroj-contact-name"><t t-if="is_ar">الاسم</t><t t-else="">Name</t> <span class="s_website_form_mark">*</span></label><input id="abroj-contact-name" type="text" class="form-control s_website_form_input" name="contact_name" required="" data-fill-with="name"/></div>
+                  <div class="col-md-6 s_website_form_field s_website_form_custom" data-type="char" data-name="Field"><label class="form-label" for="abroj-contact-phone"><t t-if="is_ar">رقم الجوال</t><t t-else="">Mobile</t></label><input id="abroj-contact-phone" type="tel" class="form-control s_website_form_input" name="phone" data-fill-with="phone"/></div>
+                  <div class="col-md-6 s_website_form_field s_website_form_required s_website_form_model_required" data-type="email" data-name="Field"><label class="form-label" for="abroj-contact-email"><t t-if="is_ar">البريد الإلكتروني</t><t t-else="">Email</t> <span class="s_website_form_mark">*</span></label><input id="abroj-contact-email" type="email" class="form-control s_website_form_input" name="email_from" required="" data-fill-with="email"/></div>
+                  <div class="col-md-6 s_website_form_field s_website_form_custom" data-type="char" data-name="Field"><label class="form-label" for="abroj-contact-company"><t t-if="is_ar">الشركة</t><t t-else="">Company</t></label><input id="abroj-contact-company" type="text" class="form-control s_website_form_input" name="partner_name" data-fill-with="commercial_company_name"/></div>
+                  <div class="col-12 s_website_form_field s_website_form_required s_website_form_model_required" data-type="char" data-name="Field"><label class="form-label" for="abroj-contact-subject"><t t-if="is_ar">الموضوع</t><t t-else="">Subject</t> <span class="s_website_form_mark">*</span></label><input id="abroj-contact-subject" type="text" class="form-control s_website_form_input" name="name" required=""/></div>
+                  <div class="col-12 s_website_form_field s_website_form_required s_website_form_model_required" data-type="text" data-name="Field"><label class="form-label" for="abroj-contact-message"><t t-if="is_ar">تفاصيل الطلب</t><t t-else="">Request details</t> <span class="s_website_form_mark">*</span></label><textarea id="abroj-contact-message" class="form-control s_website_form_input" name="description" required="" rows="7"/></div>
+                  <div class="col-12 s_website_form_submit text-end" data-name="Submit Button"><a href="#" role="button" class="btn btn-primary s_website_form_send"><t t-if="is_ar">إرسال الطلب</t><t t-else="">Send request</t></a><span id="s_website_form_result"/></div>
+                </div>
+              </form>
+            </div>
+            <aside class="col-lg-4 offset-lg-1"><h2 class="h4"><t t-if="is_ar">بيانات التواصل</t><t t-else="">Contact details</t></h2><ul class="list-unstyled fs-5"><li class="mb-3"><i class="fa fa-map-marker fa-fw me-2" aria-hidden="true"/><t t-if="is_ar">الخبر، المملكة العربية السعودية</t><t t-else="">Al Khobar, Saudi Arabia</t></li><li class="mb-3"><i class="fa fa-whatsapp fa-fw me-2" aria-hidden="true"/><a href="https://wa.me/966533507223" target="_blank" rel="noopener" class="text-decoration-none" dir="ltr">0533507223</a></li><li class="mb-3"><i class="fa fa-instagram fa-fw me-2" aria-hidden="true"/><a href="https://instagram.com/abroj.sa" target="_blank" rel="noopener" class="text-decoration-none">@ABROJ.SA</a></li></ul></aside>
+          </div>
+        </section>
+      </main>
+    </xpath>
+  </template>
+
+  <record id="website.contactus_thanks" model="website.page">
+    <field name="arch" type="xml">
+      <t name="Abroj contact confirmation" t-name="website.contactus_thanks">
+        <t t-call="website.layout"><t t-set="no_header" t-value="True"/><t t-set="no_footer" t-value="True"/><t t-set="is_ar" t-value="request.env.lang.startswith('ar')"/><main id="wrap" class="abroj-contact" t-att-dir="'rtl' if is_ar else 'ltr'"><section class="container py-5 text-center"><a href="/"><img src="/abroj_website/static/src/img/abroj-logo.png" alt="Abroj Integrated Construction" style="height: 56px; width: auto;"/></a><div class="mx-auto mt-5" style="max-width: 38rem;"><i class="fa fa-paper-plane fa-2x text-success mb-3" aria-hidden="true"/><h1><t t-if="is_ar">شكرًا لك</t><t t-else="">Thank you</t></h1><p class="lead"><t t-if="is_ar">تم استلام طلبك، وسيقوم فريق أبرج بالتواصل معك قريبًا.</t><t t-else="">Your request has been received. The Abroj team will contact you shortly.</t></p><a href="/" class="btn btn-primary"><t t-if="is_ar">العودة للرئيسية</t><t t-else="">Back to home</t></a></div></section></main></t>
+      </t>
+    </field>
+  </record>
 </odoo>

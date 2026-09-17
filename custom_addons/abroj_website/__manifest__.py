@@ -1,8 +1,8 @@
 {
     'name': 'Abroj Corporate Website',
-    'version': '19.0.1.5.1',
+    'version': '19.0.1.6.0',
     'license': 'LGPL-3',
-    'depends': ['website'],
+    'depends': ['website_crm'],
     'data': ['views/abroj_templates.xml', 'data/website_data.xml'],
     'assets': {'web.assets_frontend': ['abroj_website/static/src/scss/abroj-v2.scss']},
     'installable': True,

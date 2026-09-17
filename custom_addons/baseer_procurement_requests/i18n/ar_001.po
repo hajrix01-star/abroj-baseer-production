@@ -1240,3 +1240,178 @@ msgstr "هذا المنتج مستخدم في طلب مشتريات أو سجل 
 #. module: baseer_procurement_requests
 msgid "A Petty Cash fund already exists for this company. Open the current fund and use Add a line to record funding or returns."
 msgstr "يوجد صندوق عهدة لهذه الشركة. افتح الصندوق الحالي ثم اختر «إضافة بند» لتسجيل التمويل أو المرتجع."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Representative Petty Cash"
+msgstr "عهدة مندوب المشتريات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Record a transfer from a company payment point to a purchasing representative."
+msgstr "سجّل تحويلًا من نقطة دفع المؤسسة إلى مندوب المشتريات."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "All representatives"
+msgstr "كل المندوبين"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Month"
+msgstr "الشهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Loading…"
+msgstr "جارٍ التحميل…"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Monthly summary"
+msgstr "ملخص الشهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Transferred to representative"
+msgstr "المحوّل للمندوب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Settled against purchases"
+msgstr "المسدّد للمشتريات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Completed during invoice entry"
+msgstr "يُستكمل في مرحلة الفواتير"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Remaining"
+msgstr "المتبقي"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Add petty cash"
+msgstr "إضافة عهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Choose a purchase request"
+msgstr "اختر طلب الشراء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Purchase request value:"
+msgstr "قيمة طلب الشراء:"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "From"
+msgstr "من"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Choose a bank or cash point"
+msgstr "اختر بنكًا أو كاشًا"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "To"
+msgstr "إلى"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Choose a purchasing representative"
+msgstr "اختر مندوب المشتريات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Transfer date"
+msgstr "تاريخ الحوالة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Saving…"
+msgstr "جارٍ الحفظ…"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Save"
+msgstr "حفظ"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Return remaining"
+msgstr "إرجاع متبقي"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Original movement"
+msgstr "الحركة الأصلية"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Choose an existing petty cash movement"
+msgstr "اختر عهدة قائمة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Save return"
+msgstr "حفظ المرتجع"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "This is a review screen. Only the accountant can record petty cash or a return."
+msgstr "هذه شاشة مراجعة. تسجيل العهدة أو المرتجع متاح للمحاسب فقط."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "This month's movements"
+msgstr "حركات هذا الشهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "No movements in the selected month."
+msgstr "لا توجد حركات في الشهر المختار."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Movement number"
+msgstr "رقم الحركة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Return"
+msgstr "مرتجع"

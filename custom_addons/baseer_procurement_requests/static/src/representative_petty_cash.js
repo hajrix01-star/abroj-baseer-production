@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { Component, onWillStart, useState } from "@odoo/owl";
+import { localization } from "@web/core/l10n/localization";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
@@ -74,6 +75,21 @@ export class RepresentativePettyCash extends Component {
         const value = Number(amount || 0).toLocaleString("en-US-u-nu-latn", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const { currency_symbol: symbol, currency_position: position } = this.state.data || {};
         return position === "before" ? `${symbol} ${value}` : `${value} ${symbol || ""}`;
+    }
+
+    languageDirection() {
+        return localization.direction === "rtl" ? "rtl" : "ltr";
+    }
+
+    get movementColumnLabels() {
+        return {
+            date: _t("Date"),
+            movement: _t("Movement number"),
+            request: _t("Purchase request"),
+            from: _t("From"),
+            to: _t("To"),
+            amount: _t("Amount"),
+        };
     }
 
     onPaymentPointChange(event) { this.state.paymentPointId = event.target.value; }

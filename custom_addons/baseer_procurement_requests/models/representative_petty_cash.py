@@ -1,9 +1,6 @@
 import logging
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from pathlib import Path
-from urllib.parse import quote
-
 from dateutil.relativedelta import relativedelta
 from psycopg2 import IntegrityError
 
@@ -158,15 +155,6 @@ class RepresentativePettyCash(models.Model):
                 if record.procurement_request_id:
                     raise ValidationError(_('A return does not carry a purchase request.'))
 
-    @api.constrains('movement_type', 'movement_date', 'external_reference', 'transfer_proof')
-    def _check_funding_evidence(self):
-        for record in self:
-            if record.movement_type == 'funding' and (not record.external_reference or not record.transfer_proof):
-                raise ValidationError(_('Enter the transfer date and reference, then attach its proof before saving.'))
-            if record.transfer_proof and Path(record.transfer_proof_filename or '').suffix.lower() not in {
-                    '.pdf', '.png', '.jpg', '.jpeg', '.webp'}:
-                raise ValidationError(_('Attach the transfer proof as a PDF or image file.'))
-
     @api.constrains('payment_journal_id')
     def _check_payment_journal(self):
         for record in self:
@@ -306,12 +294,6 @@ class RepresentativePettyCash(models.Model):
                 'representative_name': movement.representative_partner_id.display_name,
                 'request_name': movement.procurement_request_id.name,
                 'payment_point_name': movement.payment_journal_id.display_name,
-                'external_reference': movement.external_reference or '',
-                'proof_filename': movement.transfer_proof_filename or '',
-                'proof_url': (
-                    '/web/content/baseer.procurement.representative.advance/%s/transfer_proof/%s?download=false'
-                    % (movement.id, quote(movement.transfer_proof_filename))
-                ) if movement.transfer_proof and movement.transfer_proof_filename else False,
             } for movement in movements],
         }
 
@@ -341,9 +323,8 @@ class RepresentativePettyCash(models.Model):
         token = (client_token or '').strip()
         if not token:
             raise ValidationError(_('Reload the page and try saving again.'))
-        reference = (external_reference or '').strip()
-        if not movement_date or not reference or not transfer_proof:
-            raise ValidationError(_('Enter the transfer date and reference, then attach its proof before saving.'))
+        if not movement_date:
+            raise ValidationError(_('Enter the transfer date before saving.'))
         company = self.env.company
         existing = self.search([('company_id', '=', company.id), ('created_by_id', '=', self.env.user.id), ('client_token', '=', token)], limit=1)
         if existing:
@@ -362,8 +343,6 @@ class RepresentativePettyCash(models.Model):
             'representative_partner_id': representative.id,
             'procurement_request_id': request.id, 'payment_journal_id': payment_journal.id,
             'movement_date': movement_date, 'amount': amount,
-            'external_reference': reference,
-            'transfer_proof': transfer_proof, 'transfer_proof_filename': (transfer_proof_filename or '').strip() or False,
             'client_token': token, 'created_by_id': self.env.user.id,
         }
         try:
@@ -375,7 +354,7 @@ class RepresentativePettyCash(models.Model):
             ], limit=1)
             if existing:
                 return existing.id
-            raise ValidationError(_('This external transfer reference was already used for the selected payment point.'))
+            raise ValidationError(_('This save request was already recorded.'))
 
     @api.model
     def submit_return(self, origin_id, payment_journal_id, amount, client_token, movement_date=False, external_reference=False):

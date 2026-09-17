@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useRef, useState } from "@odoo/owl";
+import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
@@ -23,10 +23,9 @@ export class RepresentativePettyCash extends Component {
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
-        this.proofInput = useRef("proofInput");
         this.state = useState({
             loading: true, saving: false, error: false, data: false,
-            representativeId: "", monthStart: "", destinationId: "", requestId: "", paymentPointId: "", amount: "", movementDate: today(), externalReference: "", proof: false, proofName: "", proofLoading: false, clientToken: newClientToken(),
+            representativeId: "", monthStart: "", destinationId: "", requestId: "", paymentPointId: "", amount: "", movementDate: today(), clientToken: newClientToken(),
             returnOriginId: "", returnPaymentPointId: "", returnAmount: "", returnClientToken: newClientToken(),
         });
         onWillStart(() => this.load());
@@ -80,48 +79,23 @@ export class RepresentativePettyCash extends Component {
     onPaymentPointChange(event) { this.state.paymentPointId = event.target.value; }
     onAmountInput(event) { this.state.amount = event.target.value; }
     onMovementDateInput(event) { this.state.movementDate = event.target.value; }
-    onExternalReferenceInput(event) { this.state.externalReference = event.target.value; }
-
-    onProofChange(event) {
-        const [file] = event.target.files || [];
-        this.state.proof = false;
-        this.state.proofName = file?.name || "";
-        if (!file) return;
-        this.state.proofLoading = true;
-        const reader = new FileReader();
-        reader.onload = () => {
-            this.state.proof = String(reader.result || "").split(",")[1] || false;
-            this.state.proofLoading = false;
-        };
-        reader.onerror = () => {
-            this.state.proof = false;
-            this.state.proofLoading = false;
-            this.notification.add(_t("Could not read the transfer proof."), { type: "danger" });
-        };
-        reader.readAsDataURL(file);
-    }
-
     async save() {
         if (this.state.saving) return;
-        if (!this.state.requestId || !this.state.paymentPointId || !this.state.destinationId || !this.state.amount || !this.state.movementDate || !this.state.externalReference || !this.state.proof || this.state.proofLoading) {
-            this.notification.add(_t("Complete the request, payment point, destination, amount, transfer date, reference, and proof."), { type: "warning" });
+        if (!this.state.requestId || !this.state.paymentPointId || !this.state.destinationId || !this.state.amount || !this.state.movementDate) {
+            this.notification.add(_t("Complete the request, payment point, destination, amount, and transfer date."), { type: "warning" });
             return;
         }
         this.state.saving = true;
         try {
             await this.orm.call("baseer.procurement.representative.advance", "submit_funding", [
                 Number(this.state.requestId), Number(this.state.paymentPointId), Number(this.state.destinationId), this.state.amount, this.state.clientToken,
-                this.state.movementDate, this.state.externalReference, this.state.proof, this.state.proofName,
+                this.state.movementDate,
             ]);
             this.state.requestId = "";
             this.state.paymentPointId = "";
             this.state.destinationId = "";
             this.state.amount = "";
             this.state.movementDate = today();
-            this.state.externalReference = "";
-            this.state.proof = false;
-            this.state.proofName = "";
-            if (this.proofInput.el) this.proofInput.el.value = "";
             this.state.clientToken = newClientToken();
             await this.load();
             this.notification.add(_t("Representative Petty Cash was saved."), { type: "success" });

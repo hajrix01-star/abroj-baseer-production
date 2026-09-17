@@ -227,10 +227,6 @@ class BaseerPurchaseBatch(models.Model):
         if any(len(batch.line_ids) > MAX_ROWS for batch in self):
             raise ValidationError(_('A purchase batch supports at most 50 rows.'))
 
-    def _check_has_invoice_rows(self):
-        if any(not batch.line_ids for batch in self):
-            raise UserError(_('Add at least one invoice before saving this batch, or discard it to leave without saving.'))
-
     @api.model_create_multi
     def create(self, vals_list):
         values_to_create = []
@@ -249,7 +245,6 @@ class BaseerPurchaseBatch(models.Model):
             # Caller default_state/default_approved_by/default_name cannot
             # populate otherwise protected fields through ORM defaults.
             records = super(BaseerPurchaseBatch, clean_self).create(values_to_create)
-            records._check_has_invoice_rows()
             for batch in records:
                 scoped = company_scope(batch, batch.company_id)
                 name = scoped.env['ir.sequence'].next_by_code('baseer.purchase.batch')
@@ -268,7 +263,6 @@ class BaseerPurchaseBatch(models.Model):
             if 'company_id' in values and any(batch.company_id.id != values['company_id'] for batch in self):
                 raise UserError(_('The batch company cannot be changed. Create a new batch in the active company.'))
             result = super().write(values)
-            self._check_has_invoice_rows()
             self._check_row_limit()
             return result
 

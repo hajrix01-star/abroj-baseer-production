@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Purchase Batch',
-    'version': '19.0.1.3.6',
+    'version': '19.0.1.3.7',
     'category': 'Accounting/Accounting',
     'summary': 'Approve supplier bill batches using native Odoo accounting',
     'license': 'LGPL-3',
@@ -18,6 +18,7 @@
     'assets': {
         'web.assets_backend': [
             'baseer_purchase_batch/static/src/js/latin_date_field.js',
+            'baseer_purchase_batch/static/src/js/purchase_batch_lines_field.js',
             'baseer_purchase_batch/static/src/scss/purchase_batch.scss',
         ],
     },

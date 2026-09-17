@@ -47,6 +47,11 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         },
     },
     'accountant': {
+        'baseer_procurement_requests.menu_procurement_representative_petty_cash': {
+            'action_type': 'ir.actions.client',
+            'tag': 'baseer_procurement_requests.representative_petty_cash',
+            'icon': 'fa fa-exchange',
+        },
         # The native dashboard root is deliberately hidden after BASSER is
         # installed, so this explicit, read-only shortcut is the accountant's
         # approved route to supplier bills and expenses.  Its fixed dashboard

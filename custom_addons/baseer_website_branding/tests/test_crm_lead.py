@@ -14,3 +14,27 @@ class BaseerWebsiteBrandingLeadCase(TransactionCase):
 
         self.assertNotEqual(filtered.get("team_id"), 999999)
         self.assertNotEqual(filtered.get("user_id"), 999998)
+
+    def test_sync_replaces_a_website_specific_contact_copy(self):
+        website = self.env.ref("website.default_website")
+        original_domain = website.domain
+        generic_page = self.env["website.page"].search([
+            ("url", "=", "/contactus"),
+            ("website_id", "=", False),
+        ], limit=1)
+        copied_view = generic_page.view_id.copy({
+            "website_id": website.id,
+            "key": f"{generic_page.view_id.key}.test_copy",
+        })
+        copied_page = self.env["website.page"].create({
+            "url": "/contactus",
+            "website_id": website.id,
+            "view_id": copied_view.id,
+            "is_published": True,
+        })
+        try:
+            website.domain = "https://abroj.sa"
+            self.env["website.page"]._sync_abroj_contact_page()
+            self.assertIn("abroj-contact-name", copied_page.view_id.arch_db)
+        finally:
+            website.domain = original_domain

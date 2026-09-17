@@ -199,7 +199,8 @@ class RepresentativePettyCash(models.Model):
 
     def _require_reader(self):
         if not (self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
-                or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')):
+                or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')
+                or self.env.user.has_group('base.group_system')):
             raise AccessError(_('You are not allowed to view Representative Petty Cash.'))
 
     @api.model

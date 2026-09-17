@@ -141,6 +141,11 @@ class RepresentativePettyCashCase(TransactionCase):
         dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
         self.assertIn(self.bank_journal.id, [point['id'] for point in dashboard['payment_points']])
 
+    def test_system_administrator_can_review_dashboard(self):
+        administrator = self.env.ref('base.user_admin')
+        dashboard = self.env['baseer.procurement.representative.advance'].with_user(administrator).dashboard_data()
+        self.assertIn('summary', dashboard)
+
     def test_funding_requires_transfer_evidence(self):
         request = self._sent_request()
         Model = self.env['baseer.procurement.representative.advance']

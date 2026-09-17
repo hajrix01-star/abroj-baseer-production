@@ -13,7 +13,7 @@
     <menuitem id="menu_procurement_options" name="Raw-material catalogue" parent="menu_procurement_root" action="action_procurement_option" sequence="30"
               groups="baseer_procurement_requests.group_procurement_manager"/>
     <menuitem id="menu_procurement_representative_petty_cash" name="عهدة مندوب المشتريات" parent="menu_procurement_root" action="action_representative_petty_cash" sequence="20"
-              groups="baseer_procurement_requests.group_procurement_manager,baseer_procurement_requests.group_procurement_accountant"/>
+              groups="base.group_system,baseer_procurement_requests.group_procurement_manager,baseer_procurement_requests.group_procurement_accountant"/>
     <!-- Legacy menus are hidden after the live zero-movement check. The technical
          models remain temporarily because phase two still reads their links. -->
     <record id="menu_procurement_custody" model="ir.ui.menu"><field name="active">False</field></record>

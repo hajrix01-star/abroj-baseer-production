@@ -68,11 +68,17 @@ class RepresentativePettyCashCase(TransactionCase):
         request = self._sent_request()
         token = str(uuid4())
         Model = self.env['baseer.procurement.representative.advance']
-        record_id = Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token)
-        self.assertEqual(record_id, Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token))
+        record_id = Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token, '2026-09-17', 'BANK-001', 'cHJvb2Y=', 'proof.pdf')
+        self.assertEqual(record_id, Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token, '2026-09-17', 'BANK-001', 'cHJvb2Y=', 'proof.pdf'))
         record = Model.browse(record_id)
         self.assertEqual(record.move_id.state, 'posted')
         self.assertEqual(record.amount, 20)
+        self.assertEqual(str(record.movement_date), '2026-09-17')
+        self.assertEqual(record.external_reference, 'BANK-001')
+        self.assertTrue(record.transfer_proof)
+        dashboard_movement = next(row for row in Model.dashboard_data()['movements'] if row['id'] == record.id)
+        self.assertEqual(dashboard_movement['external_reference'], 'BANK-001')
+        self.assertIn('/web/content/baseer.procurement.representative.advance/%s/' % record.id, dashboard_movement['proof_url'])
         line = record.move_id.line_ids.filtered(lambda row: row.account_id == self.petty_cash_account)
         self.assertEqual(line.baseer_representative_petty_cash_id, record)
         self.assertEqual(line.partner_id, self.representative)
@@ -93,22 +99,22 @@ class RepresentativePettyCashCase(TransactionCase):
         request = self._request()
         Model = self.env['baseer.procurement.representative.advance']
         with self.assertRaises(ValidationError):
-            Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()))
+            Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-001', 'cHJvb2Y=', 'proof.pdf')
         request.action_mark_sent()
         other = self.env['res.partner'].create({'name': 'Other representative', 'company_id': self.company.id})
         other.with_company(self.company).write({'is_purchase_representative': True})
         with self.assertRaises(ValidationError):
-            Model.submit_funding(request.id, self.bank_journal.id, other.id, 20, str(uuid4()))
+            Model.submit_funding(request.id, self.bank_journal.id, other.id, 20, str(uuid4()), '2026-09-17', 'BANK-001', 'cHJvb2Y=', 'proof.pdf')
 
     def test_external_reference_cannot_be_reused_for_a_payment_point(self):
         request = self._sent_request()
         Model = self.env['baseer.procurement.representative.advance']
         Model.submit_funding(
-            request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), False, 'BANK-REF-1',
+            request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-REF-1', 'cHJvb2Y=', 'proof.pdf',
         )
         with self.assertRaises(ValidationError):
             Model.submit_funding(
-                request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), False, 'BANK-REF-1',
+                request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-REF-1', 'cHJvb2Y=', 'proof.pdf',
             )
 
     def test_cashier_cannot_record_a_movement(self):
@@ -119,5 +125,17 @@ class RepresentativePettyCashCase(TransactionCase):
         })
         with self.assertRaises(AccessError):
             self.env['baseer.procurement.representative.advance'].with_user(cashier).submit_funding(
-                request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()),
+                request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-001', 'cHJvb2Y=', 'proof.pdf',
+            )
+
+    def test_funding_requires_transfer_evidence(self):
+        request = self._sent_request()
+        Model = self.env['baseer.procurement.representative.advance']
+        with self.assertRaises(ValidationError):
+            Model.submit_funding(
+                request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-001',
+            )
+        with self.assertRaises(ValidationError):
+            Model.submit_funding(
+                request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-002', 'cHJvb2Y=', 'proof.txt',
             )

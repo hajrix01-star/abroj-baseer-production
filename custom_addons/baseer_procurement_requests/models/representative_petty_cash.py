@@ -1,5 +1,7 @@
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from pathlib import Path
+from urllib.parse import quote
 
 from dateutil.relativedelta import relativedelta
 from psycopg2 import IntegrityError
@@ -89,6 +91,8 @@ class RepresentativePettyCash(models.Model):
     movement_date = fields.Date(required=True, readonly=True, default=fields.Date.context_today, index=True)
     amount = fields.Monetary(required=True, readonly=True, currency_field='currency_id')
     external_reference = fields.Char(readonly=True, copy=False)
+    transfer_proof = fields.Binary(readonly=True, copy=False, attachment=True)
+    transfer_proof_filename = fields.Char(readonly=True, copy=False)
     client_token = fields.Char(required=True, readonly=True, copy=False, index=True)
     state = fields.Selection([('posted', 'Posted')], default='posted', required=True, readonly=True, index=True)
     move_id = fields.Many2one('account.move', readonly=True, copy=False, ondelete='restrict', check_company=True)
@@ -151,6 +155,15 @@ class RepresentativePettyCash(models.Model):
                     raise ValidationError(_('A return must be linked to its original representative petty-cash movement.'))
                 if record.procurement_request_id:
                     raise ValidationError(_('A return does not carry a purchase request.'))
+
+    @api.constrains('movement_type', 'movement_date', 'external_reference', 'transfer_proof')
+    def _check_funding_evidence(self):
+        for record in self:
+            if record.movement_type == 'funding' and (not record.external_reference or not record.transfer_proof):
+                raise ValidationError(_('Enter the transfer date and reference, then attach its proof before saving.'))
+            if record.transfer_proof and Path(record.transfer_proof_filename or '').suffix.lower() not in {
+                    '.pdf', '.png', '.jpg', '.jpeg', '.webp'}:
+                raise ValidationError(_('Attach the transfer proof as a PDF or image file.'))
 
     @api.constrains('payment_journal_id')
     def _check_payment_journal(self):
@@ -215,11 +228,12 @@ class RepresentativePettyCash(models.Model):
         if representative_id:
             movement_domain.append(('representative_partner_id', '=', int(representative_id)))
         movements = self.search(movement_domain, limit=100)
-        open_fundings = self.search([
+        open_funding_domain = [
             ('company_id', '=', company.id), ('movement_type', '=', 'funding'), ('state', '=', 'posted'),
-        ], order='movement_date desc, id desc', limit=200)
+        ]
         if representative_id:
-            open_fundings = open_fundings.filtered(lambda row: row.representative_partner_id.id == int(representative_id))
+            open_funding_domain.append(('representative_partner_id', '=', int(representative_id)))
+        open_fundings = self.search(open_funding_domain, order='movement_date desc, id desc', limit=200)
         funded = sum((Decimal(str(amount)) for amount in movements.filtered(
             lambda row: row.movement_type == 'funding'
         ).mapped('amount')), Decimal('0.00'))
@@ -229,9 +243,11 @@ class RepresentativePettyCash(models.Model):
         return {
             'month_start': fields.Date.to_string(start), 'currency_symbol': company.currency_id.symbol,
             'currency_position': company.currency_id.position, 'representatives': representatives,
+            'can_record': self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant'),
             'requests': request_rows,
             'payment_points': self.env['account.journal'].search_read([
                 ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
+                ('default_account_id', '!=', False), ('default_account_id.account_type', '=', 'asset_cash'),
             ], ['name', 'type'], order='sequence, name'),
             'summary': {
                 'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': 0.0,
@@ -247,6 +263,12 @@ class RepresentativePettyCash(models.Model):
                 'representative_name': movement.representative_partner_id.display_name,
                 'request_name': movement.procurement_request_id.name,
                 'payment_point_name': movement.payment_journal_id.display_name,
+                'external_reference': movement.external_reference or '',
+                'proof_filename': movement.transfer_proof_filename or '',
+                'proof_url': (
+                    '/web/content/baseer.procurement.representative.advance/%s/transfer_proof/%s?download=false'
+                    % (movement.id, quote(movement.transfer_proof_filename))
+                ) if movement.transfer_proof and movement.transfer_proof_filename else False,
             } for movement in movements],
         }
 
@@ -270,11 +292,15 @@ class RepresentativePettyCash(models.Model):
         return advance
 
     @api.model
-    def submit_funding(self, request_id, payment_journal_id, representative_partner_id, amount, client_token, movement_date=False, external_reference=False):
+    def submit_funding(self, request_id, payment_journal_id, representative_partner_id, amount, client_token,
+                       movement_date=False, external_reference=False, transfer_proof=False, transfer_proof_filename=False):
         self._require_accountant()
         token = (client_token or '').strip()
         if not token:
             raise ValidationError(_('Reload the page and try saving again.'))
+        reference = (external_reference or '').strip()
+        if not movement_date or not reference or not transfer_proof:
+            raise ValidationError(_('Enter the transfer date and reference, then attach its proof before saving.'))
         company = self.env.company
         existing = self.search([('company_id', '=', company.id), ('created_by_id', '=', self.env.user.id), ('client_token', '=', token)], limit=1)
         if existing:
@@ -292,8 +318,9 @@ class RepresentativePettyCash(models.Model):
             'company_id': company.id, 'movement_type': 'funding',
             'representative_partner_id': representative.id,
             'procurement_request_id': request.id, 'payment_journal_id': payment_journal.id,
-            'movement_date': movement_date or fields.Date.context_today(self), 'amount': amount,
-            'external_reference': (external_reference or '').strip() or False,
+            'movement_date': movement_date, 'amount': amount,
+            'external_reference': reference,
+            'transfer_proof': transfer_proof, 'transfer_proof_filename': (transfer_proof_filename or '').strip() or False,
             'client_token': token, 'created_by_id': self.env.user.id,
         }
         try:

@@ -19,7 +19,7 @@
                     <article><span>المسدّد للمشتريات</span><strong dir="ltr"><t t-esc="money(state.data.summary.settled)"/></strong><small>يُستكمل في مرحلة الفواتير</small></article>
                     <article class="is_total"><span>المتبقي</span><strong dir="ltr"><t t-esc="money(state.data.summary.remaining)"/></strong></article>
                 </section>
-                <section class="o_rep_pc_entry" aria-label="إضافة عهدة">
+                <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="إضافة عهدة">
                     <h2>إضافة عهدة</h2>
                     <div class="o_rep_pc_grid">
                         <label>طلب الشراء
@@ -44,10 +44,20 @@
                         <label>المبلغ
                             <input type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.amount" t-on-input="onAmountInput"/>
                         </label>
-                        <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving"><t t-if="state.saving">جارٍ الحفظ…</t><t t-else="">حفظ</t></button>
+                        <label>تاريخ الحوالة
+                            <input type="date" t-att-value="state.movementDate" t-on-input="onMovementDateInput"/>
+                        </label>
+                        <label>مرجع الحوالة
+                            <input type="text" placeholder="رقم الحوالة أو المرجع البنكي" t-att-value="state.externalReference" t-on-input="onExternalReferenceInput"/>
+                        </label>
+                        <label>إثبات الحوالة
+                            <input type="file" accept="image/*,.pdf" t-ref="proofInput" t-on-change="onProofChange"/>
+                            <small t-if="state.proofName"><t t-esc="state.proofName"/></small>
+                        </label>
+                        <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving || state.proofLoading"><t t-if="state.saving || state.proofLoading">جارٍ الحفظ…</t><t t-else="">حفظ</t></button>
                     </div>
                 </section>
-                <section class="o_rep_pc_entry" aria-label="إرجاع عهدة">
+                <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="إرجاع عهدة">
                     <h2>إرجاع متبقي</h2>
                     <div class="o_rep_pc_grid">
                         <label>الحركة الأصلية
@@ -66,11 +76,12 @@
                         <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving">حفظ المرتجع</button>
                     </div>
                 </section>
+                <section t-if="!state.data.can_record" class="o_rep_pc_empty">هذه شاشة مراجعة. تسجيل العهدة أو المرتجع متاح للمحاسب فقط.</section>
                 <section class="o_rep_pc_rows">
                     <h2>حركات هذا الشهر</h2>
                     <p t-if="!state.data.movements.length" class="o_rep_pc_empty">لا توجد حركات في الشهر المختار.</p>
-                    <table t-else=""><thead><tr><th>التاريخ</th><th>رقم الحركة</th><th>طلب الشراء</th><th>من</th><th>إلى</th><th>المبلغ</th></tr></thead><tbody>
-                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id"><td><t t-esc="movement.date"/></td><td><t t-esc="movement.name"/></td><td><t t-esc="movement.request_name || 'مرتجع'"/></td><td><t t-esc="movement.payment_point_name"/></td><td><t t-esc="movement.representative_name"/></td><td dir="ltr"><t t-esc="money(movement.amount)"/></td></tr>
+                    <table t-else=""><thead><tr><th>التاريخ</th><th>رقم الحركة</th><th>طلب الشراء</th><th>من</th><th>إلى</th><th>المرجع</th><th>الإثبات</th><th>المبلغ</th></tr></thead><tbody>
+                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id"><td><t t-esc="movement.date"/></td><td><t t-esc="movement.name"/></td><td><t t-esc="movement.request_name || 'مرتجع'"/></td><td><t t-esc="movement.payment_point_name"/></td><td><t t-esc="movement.representative_name"/></td><td dir="ltr"><t t-esc="movement.external_reference || '—'"/></td><td><a t-if="movement.proof_url" t-att-href="movement.proof_url" target="_blank" rel="noopener">عرض الإثبات</a><t t-else="">—</t></td><td dir="ltr"><t t-esc="money(movement.amount)"/></td></tr>
                     </tbody></table>
                 </section>
             </t>

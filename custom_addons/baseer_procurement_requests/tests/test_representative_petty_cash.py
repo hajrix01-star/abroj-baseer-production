@@ -128,6 +128,15 @@ class RepresentativePettyCashCase(TransactionCase):
                 request.id, self.bank_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17', 'BANK-001', 'cHJvb2Y=', 'proof.pdf',
             )
 
+    def test_manager_dashboard_is_read_only_without_payment_point_access(self):
+        manager = self.env['res.users'].create({
+            'name': 'Representative petty cash manager', 'login': 'representative-petty-cash-manager',
+            'groups_id': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_manager').id])],
+        })
+        dashboard = self.env['baseer.procurement.representative.advance'].with_user(manager).dashboard_data()
+        self.assertFalse(dashboard['can_record'])
+        self.assertEqual(dashboard['payment_points'], [])
+
     def test_funding_requires_transfer_evidence(self):
         request = self._sent_request()
         Model = self.env['baseer.procurement.representative.advance']

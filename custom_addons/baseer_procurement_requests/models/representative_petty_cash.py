@@ -240,15 +240,19 @@ class RepresentativePettyCash(models.Model):
         returned = sum((Decimal(str(amount)) for amount in movements.filtered(
             lambda row: row.movement_type == 'return'
         ).mapped('amount')), Decimal('0.00'))
+        can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
+        payment_points = []
+        if can_record:
+            payment_points = self.env['account.journal'].search_read([
+                ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
+                ('default_account_id', '!=', False), ('default_account_id.account_type', '=', 'asset_cash'),
+            ], ['name', 'type'], order='sequence, name')
         return {
             'month_start': fields.Date.to_string(start), 'currency_symbol': company.currency_id.symbol,
             'currency_position': company.currency_id.position, 'representatives': representatives,
-            'can_record': self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant'),
+            'can_record': can_record,
             'requests': request_rows,
-            'payment_points': self.env['account.journal'].search_read([
-                ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
-                ('default_account_id', '!=', False), ('default_account_id.account_type', '=', 'asset_cash'),
-            ], ['name', 'type'], order='sequence, name'),
+            'payment_points': payment_points,
             'summary': {
                 'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': 0.0,
                 'remaining': float((funded - returned).quantize(MONEY_QUANTUM)),

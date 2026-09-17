@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from odoo.tests.common import TransactionCase
 
 
-class AbrojWebsiteLeadCase(TransactionCase):
+class BaseerWebsiteBrandingLeadCase(TransactionCase):
     def test_public_form_cannot_assign_team_or_user(self):
         website = self.env.ref("website.default_website")
         values = {"team_id": 999999, "user_id": 999998}

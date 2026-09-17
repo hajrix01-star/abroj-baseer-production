@@ -66,15 +66,24 @@ class ResCompany(models.Model):
             ))
         return journal
 
-    def _baseer_representative_petty_cash_ready(self):
+    def _baseer_representative_petty_cash_setup_issue(self):
         self.ensure_one()
         account = self.baseer_procurement_representative_petty_cash_account_id
         journal = self.baseer_procurement_representative_petty_cash_journal_id
         if (not account or self not in account.company_ids or not account.active or not account.reconcile
                 or account.account_type not in ('asset_receivable', 'asset_current')):
-            raise UserError(_('Configure an active reconcilable Representative Petty Cash account first.'))
+            return _('Configure an active reconcilable Representative Petty Cash account first.')
         if not journal or journal.company_id != self or not journal.active or journal.type != 'general':
-            raise UserError(_('Configure an active Representative Petty Cash general journal first.'))
+            return _('Configure an active Representative Petty Cash general journal first.')
+        return False
+
+    def _baseer_representative_petty_cash_ready(self):
+        self.ensure_one()
+        issue = self._baseer_representative_petty_cash_setup_issue()
+        if issue:
+            raise UserError(issue)
+        account = self.baseer_procurement_representative_petty_cash_account_id
+        journal = self.baseer_procurement_representative_petty_cash_journal_id
         return account, journal
 
 
@@ -331,6 +340,7 @@ class RepresentativePettyCash(models.Model):
             'requests': request_rows,
             'payment_points': payment_points,
             'payment_points_configured': bool(payment_points),
+            'setup_issue': company._baseer_representative_petty_cash_setup_issue() if can_record else False,
             'summary': {
                 'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': float(settled.quantize(MONEY_QUANTUM)),
                 'remaining': float((funded - returned - settled).quantize(MONEY_QUANTUM)),

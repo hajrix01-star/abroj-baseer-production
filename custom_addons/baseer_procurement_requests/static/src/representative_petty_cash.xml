@@ -24,7 +24,8 @@
                 </section>
                 <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="Add petty cash">
                     <h2>Add petty cash</h2>
-                    <p t-if="!state.data.payment_points_configured" class="alert alert-warning mb-3">
+                    <p t-if="state.data.setup_issue" class="alert alert-warning mb-3"><t t-esc="state.data.setup_issue"/></p>
+                    <p t-elif="!state.data.payment_points_configured" class="alert alert-warning mb-3">
                         No payment point is configured for Representative Petty Cash. Ask a manager to select the existing company payment points in the company settings.
                     </p>
                     <div class="o_rep_pc_grid">
@@ -59,7 +60,7 @@
                         <label>Transfer date
                             <input class="form-control" type="date" t-att-value="state.movementDate" t-on-input="onMovementDateInput"/>
                         </label>
-                        <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving or !state.data.payment_points_configured"><t t-if="state.saving">Saving…</t><t t-else="">Save</t></button>
+                        <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured"><t t-if="state.saving">Saving…</t><t t-else="">Save</t></button>
                     </div>
                 </section>
                 <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="Return petty cash">
@@ -82,7 +83,7 @@
                             </Dropdown>
                         </label>
                         <label>Amount<input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.returnAmount" t-on-input="(event) => state.returnAmount = event.target.value"/></label>
-                        <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving or !state.data.payment_points_configured">Save return</button>
+                        <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured">Save return</button>
                     </div>
                 </section>
                 <section t-if="!state.data.can_record" class="o_rep_pc_empty">This is a review screen. Only the accountant can record petty cash or a return.</section>

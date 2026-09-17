@@ -1481,3 +1481,13 @@ msgstr "اختر نقطة دفع معتمدة لعهدة المندوب من إ�
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "No payment point is configured for Representative Petty Cash. Ask a manager to select the existing company payment points in the company settings."
 msgstr "لا توجد نقطة دفع معتمدة لعهدة المندوب. اطلب من المدير اختيار نقاط الدفع الحالية من إعدادات الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Configure an active reconcilable Representative Petty Cash account first."
+msgstr "أكمل إعداد الشركة: اختر حساب عهدة مندوبي المشتريات النشط والقابل للمطابقة أولًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Configure an active Representative Petty Cash general journal first."
+msgstr "أكمل إعداد الشركة: اختر دفتر يومية عامًّا ونشطًا لعهدة مندوبي المشتريات أولًا."

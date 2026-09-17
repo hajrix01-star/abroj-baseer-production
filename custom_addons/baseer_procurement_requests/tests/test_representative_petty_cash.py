@@ -128,6 +128,15 @@ class RepresentativePettyCashCase(TransactionCase):
     def test_accountant_dashboard_lists_only_valid_company_payment_points(self):
         dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
         self.assertIn(self.bank_journal.id, [point['id'] for point in dashboard['payment_points']])
+        self.assertFalse(dashboard['setup_issue'])
+
+    def test_dashboard_reports_missing_company_accounting_setup_before_save(self):
+        self.company.baseer_procurement_representative_petty_cash_account_id = False
+        dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
+        self.assertEqual(
+            dashboard['setup_issue'],
+            'Configure an active reconcilable Representative Petty Cash account first.',
+        )
 
     def test_only_configured_existing_payment_points_are_listed_and_accepted(self):
         other_cash_account = self.env['account.account'].create({

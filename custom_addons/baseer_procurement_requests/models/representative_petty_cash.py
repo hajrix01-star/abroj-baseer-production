@@ -213,12 +213,13 @@ class RepresentativePettyCash(models.Model):
         self._require_reader()
         start, end = self._month_range(month_start)
         company = self.env.company
+        read_model = self.sudo().with_company(company)
         partner_domain = [('active', '=', True), ('is_purchase_representative', '=', True), ('is_company', '=', False), ('parent_id', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company.id)]
-        representatives = self.env['res.partner'].with_company(company).search_read(partner_domain, ['display_name'], order='display_name')
+        representatives = self.env['res.partner'].sudo().with_company(company).search_read(partner_domain, ['display_name'], order='display_name')
         request_domain = [('company_id', '=', company.id), ('state', 'in', ['sent', 'received', 'purchased'])]
         if representative_id:
             request_domain.append(('representative_partner_id', '=', int(representative_id)))
-        requests = self.env['baseer.procurement.request'].search(request_domain, order='request_date desc, id desc', limit=100)
+        requests = self.env['baseer.procurement.request'].sudo().with_company(company).search(request_domain, order='request_date desc, id desc', limit=100)
         request_rows = [{
             'id': request.id, 'name': request.name, 'representative_id': request.representative_partner_id.id,
             'representative_name': request.representative_partner_id.display_name,
@@ -228,13 +229,13 @@ class RepresentativePettyCash(models.Model):
         movement_domain = [('company_id', '=', company.id), ('movement_date', '>=', start), ('movement_date', '<', end)]
         if representative_id:
             movement_domain.append(('representative_partner_id', '=', int(representative_id)))
-        movements = self.search(movement_domain, limit=100)
+        movements = read_model.search(movement_domain, limit=100)
         open_funding_domain = [
             ('company_id', '=', company.id), ('movement_type', '=', 'funding'), ('state', '=', 'posted'),
         ]
         if representative_id:
             open_funding_domain.append(('representative_partner_id', '=', int(representative_id)))
-        open_fundings = self.search(open_funding_domain, order='movement_date desc, id desc', limit=200)
+        open_fundings = read_model.search(open_funding_domain, order='movement_date desc, id desc', limit=200)
         funded = sum((Decimal(str(amount)) for amount in movements.filtered(
             lambda row: row.movement_type == 'funding'
         ).mapped('amount')), Decimal('0.00'))

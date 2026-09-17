@@ -96,7 +96,7 @@
                     <p class="text-muted d-md-none baseer_batch_mobile_hint">Add an invoice, or tap a card to edit its details.</p>
                     <field name="line_ids" mode="list,kanban" readonly="state != 'draft' or not is_current_company" class="baseer_batch_lines"
                            context="{'default_company_id': company_id, 'default_invoice_date': entry_date, 'form_view_ref': 'baseer_purchase_batch.view_purchase_batch_line_form'}">
-                        <list string="Invoices" editable="bottom" create="1" default_order="sequence, id" limit="50">
+                        <list string="Invoices" editable="bottom" open_form_view="True" default_order="sequence, id" limit="50">
                             <control><create string="Add invoice"/></control>
                             <field name="company_id" column_invisible="True"/>
                             <field name="currency_id" column_invisible="True"/>

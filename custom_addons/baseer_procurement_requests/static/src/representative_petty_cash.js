@@ -40,7 +40,10 @@ export class RepresentativePettyCash extends Component {
             );
             this.state.error = false;
         } catch (error) {
-            this.state.error = error.message || _t("Could not load Representative Petty Cash.");
+            // Odoo wraps a UserError in a generic RPC "Odoo Server Error". Keep
+            // the safe server-side message visible instead of discarding it.
+            this.state.error = error?.data?.message || error?.data?.arguments?.[0]
+                || error.message || _t("Could not load Representative Petty Cash.");
         } finally {
             this.state.loading = false;
         }

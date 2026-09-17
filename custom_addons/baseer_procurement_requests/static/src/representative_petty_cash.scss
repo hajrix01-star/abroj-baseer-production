@@ -1,4 +1,7 @@
-.o_rep_pc { max-width: 1120px; width: 100%; min-width: 0; box-sizing: border-box; margin: 0 auto; padding: 1.25rem; color: #34313a; overflow-x: clip; }
+/* Odoo keeps the action manager at a fixed viewport height.  This screen is
+   intentionally longer than one viewport, so it must be its own scroll owner. */
+.o_action_manager > .o_rep_pc { height: 100%; max-height: 100%; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+.o_rep_pc { max-width: 1120px; width: 100%; min-width: 0; box-sizing: border-box; margin: 0 auto; padding: 1.25rem 1.25rem 2rem; color: #34313a; overflow-x: clip; }
 .o_rep_pc *, .o_rep_pc *::before, .o_rep_pc *::after { box-sizing: border-box; }
 .o_rep_pc_header, .o_rep_pc_grid, .o_rep_pc_filters, .o_rep_pc_cards, .o_rep_pc_entry, .o_rep_pc_rows { min-width: 0; }
 .o_rep_pc_header, .o_rep_pc_grid { display: grid; gap: 1rem; align-items: end; }

@@ -48,6 +48,7 @@ class RepresentativePettyCashCase(TransactionCase):
         self.company.write({
             'baseer_procurement_representative_petty_cash_account_id': self.petty_cash_account.id,
             'baseer_procurement_representative_petty_cash_journal_id': self.general_journal.id,
+            'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([self.bank_journal.id])],
         })
 
     def _request(self):
@@ -127,6 +128,23 @@ class RepresentativePettyCashCase(TransactionCase):
     def test_accountant_dashboard_lists_only_valid_company_payment_points(self):
         dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
         self.assertIn(self.bank_journal.id, [point['id'] for point in dashboard['payment_points']])
+
+    def test_only_configured_existing_payment_points_are_listed_and_accepted(self):
+        other_cash_account = self.env['account.account'].create({
+            'name': 'Other cash point', 'code': 'RPA703', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        other_journal = self.env['account.journal'].create({
+            'name': 'Unapproved cash point', 'code': 'RPAU', 'type': 'cash',
+            'company_id': self.company.id, 'default_account_id': other_cash_account.id,
+        })
+        dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
+        self.assertEqual([point['id'] for point in dashboard['payment_points']], [self.bank_journal.id])
+        request = self._sent_request()
+        with self.assertRaises(ValidationError):
+            self.env['baseer.procurement.representative.advance'].submit_funding(
+                request.id, other_journal.id, self.representative.id, 20, str(uuid4()), '2026-09-17',
+            )
 
     def test_system_administrator_can_review_dashboard(self):
         administrator = self.env.ref('base.user_admin')

@@ -12,7 +12,7 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page name="baseer_representative_petty_cash" string="عهدة مندوب المشتريات"
-                      groups="baseer_procurement_requests.group_procurement_manager">
+                      groups="base.group_erp_manager">
                     <group>
                         <field name="baseer_procurement_representative_petty_cash_account_id"
                                string="حساب عهدة مندوب المشتريات"
@@ -22,6 +22,12 @@
                                string="دفتر يومية عهدة مندوب المشتريات"
                                domain="[('company_id', '=', id), ('active', '=', True), ('type', '=', 'general')]"
                                options="{'no_create': True}"/>
+                        <field name="baseer_procurement_representative_petty_cash_payment_journal_ids"
+                               string="نقاط دفع عهدة مندوب المشتريات"
+                               domain="[('company_id', '=', id), ('active', '=', True), ('type', 'in', ['bank', 'cash']), ('default_account_id.account_type', '=', 'asset_cash')]"
+                               options="{'no_create': True, 'no_open': True}" widget="many2many_tags"/>
+                        <label for="baseer_procurement_representative_petty_cash_payment_journal_ids"
+                               string="اختر نقاط الدفع الحالية التي يسمح استخدامها للعهدة. لا ينشئ هذا الإعداد دفترًا أو طريقة دفع جديدة."/>
                     </group>
                 </page>
             </xpath>

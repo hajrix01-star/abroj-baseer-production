@@ -22,6 +22,49 @@ class ResCompany(models.Model):
     baseer_procurement_representative_petty_cash_journal_id = fields.Many2one(
         'account.journal', string='Representative Petty Cash journal', check_company=True,
     )
+    baseer_procurement_representative_petty_cash_payment_journal_ids = fields.Many2many(
+        'account.journal', 'baseer_rep_pc_company_payment_journal_rel', 'company_id', 'journal_id',
+        string='Representative Petty Cash payment points', check_company=True, copy=False,
+        help='Existing company bank or cash points that accountants may use for Representative Petty Cash.',
+    )
+
+    @api.constrains('baseer_procurement_representative_petty_cash_payment_journal_ids')
+    def _check_baseer_representative_petty_cash_payment_points(self):
+        for company in self:
+            invalid = company.baseer_procurement_representative_petty_cash_payment_journal_ids.filtered(
+                lambda journal: (
+                    journal.company_id != company
+                    or not journal.active
+                    or journal.type not in ('bank', 'cash')
+                    or not journal.default_account_id
+                    or journal.default_account_id.account_type != 'asset_cash'
+                ),
+            )
+            if invalid:
+                raise ValidationError(_(
+                    'Representative Petty Cash payment points must be active company bank or cash points.'
+                ))
+
+    def _baseer_representative_petty_cash_payment_points(self):
+        """Return only the explicitly approved, usable existing payment journals."""
+        self.ensure_one()
+        return self.baseer_procurement_representative_petty_cash_payment_journal_ids.filtered(
+            lambda journal: (
+                journal.company_id == self
+                and journal.active
+                and journal.type in ('bank', 'cash')
+                and journal.default_account_id
+                and journal.default_account_id.account_type == 'asset_cash'
+            ),
+        )
+
+    def _baseer_validate_representative_petty_cash_payment_point(self, journal):
+        self.ensure_one()
+        if journal not in self._baseer_representative_petty_cash_payment_points():
+            raise ValidationError(_(
+                'Choose a payment point configured for Representative Petty Cash in the company settings.'
+            ))
+        return journal
 
     def _baseer_representative_petty_cash_ready(self):
         self.ensure_one()
@@ -162,6 +205,7 @@ class RepresentativePettyCash(models.Model):
             if (journal.company_id != record.company_id or not journal.active or journal.type not in ('bank', 'cash')
                     or not journal.default_account_id or journal.default_account_id.account_type != 'asset_cash'):
                 raise ValidationError(_('Choose an active company bank or cash payment point.'))
+            record.company_id._baseer_validate_representative_petty_cash_payment_point(journal)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -271,12 +315,10 @@ class RepresentativePettyCash(models.Model):
             can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             payment_points = []
             if can_record:
-                journals = self.env['account.journal'].sudo().search([
-                    ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
-                ], order='sequence, name')
+                journals = company.sudo()._baseer_representative_petty_cash_payment_points()
                 payment_points = [{
                     'id': journal.id, 'name': journal.name, 'type': journal.type,
-                } for journal in journals if journal.default_account_id and journal.default_account_id.account_type == 'asset_cash']
+                } for journal in journals.sorted(lambda journal: (journal.sequence, journal.name))]
         except Exception as error:
             _logger.exception('Representative Petty Cash dashboard failed at %s for company %s', stage, self.env.company.id)
             raise UserError(_('تعذر تحميل %(stage)s في لوحة العهدة (%(type)s).') % {
@@ -288,6 +330,7 @@ class RepresentativePettyCash(models.Model):
             'can_record': can_record,
             'requests': request_rows,
             'payment_points': payment_points,
+            'payment_points_configured': bool(payment_points),
             'summary': {
                 'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': float(settled.quantize(MONEY_QUANTUM)),
                 'remaining': float((funded - returned - settled).quantize(MONEY_QUANTUM)),
@@ -342,6 +385,7 @@ class RepresentativePettyCash(models.Model):
         representative = self.env['res.partner'].browse(int(representative_partner_id)).exists()
         if not request or not payment_journal or not representative:
             raise ValidationError(_('Choose the purchase request, payment point, and purchase representative.'))
+        company._baseer_validate_representative_petty_cash_payment_point(payment_journal)
         if representative != request.representative_partner_id:
             raise ValidationError(_('The transfer destination must match the purchase representative on the selected request.'))
         if request.company_id != company or request.state not in ('sent', 'received', 'purchased'):
@@ -378,6 +422,7 @@ class RepresentativePettyCash(models.Model):
         payment_journal = self.env['account.journal'].browse(int(payment_journal_id)).exists()
         if (not origin or origin.company_id != company or origin.movement_type != 'funding' or not payment_journal):
             raise ValidationError(_('Choose an open original movement and a company payment point.'))
+        company._baseer_validate_representative_petty_cash_payment_point(payment_journal)
         try:
             return_amount = Decimal(str(amount))
         except (InvalidOperation, TypeError):

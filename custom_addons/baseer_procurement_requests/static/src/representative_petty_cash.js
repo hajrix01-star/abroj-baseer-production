@@ -19,6 +19,22 @@ function today() {
     return `${values.year}-${values.month}-${values.day}`;
 }
 
+function serverErrorMessage(error, fallback) {
+    // The RPC title is often just "Odoo Server Error". Only display the
+    // deliberate business errors emitted by Odoo; never expose a technical
+    // exception message, traceback, SQL detail, or debug payload.
+    const safeExceptions = new Set([
+        "odoo.exceptions.AccessError",
+        "odoo.exceptions.UserError",
+        "odoo.exceptions.ValidationError",
+    ]);
+    if (!safeExceptions.has(error?.data?.name)) return fallback;
+    const candidates = [error?.data?.arguments?.[0], error?.data?.message, error?.message];
+    return candidates.find((message) => (
+        typeof message === "string" && message.trim() && message !== "Odoo Server Error"
+    )) || fallback;
+}
+
 export class RepresentativePettyCash extends Component {
     static template = "baseer_procurement_requests.RepresentativePettyCash";
     static props = ["*"];
@@ -47,8 +63,7 @@ export class RepresentativePettyCash extends Component {
         } catch (error) {
             // Odoo wraps a UserError in a generic RPC "Odoo Server Error". Keep
             // the safe server-side message visible instead of discarding it.
-            this.state.error = error?.data?.message || error?.data?.arguments?.[0]
-                || error.message || _t("Could not load Representative Petty Cash.");
+            this.state.error = serverErrorMessage(error, _t("Could not load Representative Petty Cash."));
         } finally {
             this.state.loading = false;
         }
@@ -155,7 +170,7 @@ export class RepresentativePettyCash extends Component {
             await this.load();
             this.notification.add(_t("Representative Petty Cash was saved."), { type: "success" });
         } catch (error) {
-            this.notification.add(error.message || _t("Could not save Representative Petty Cash."), { type: "danger" });
+            this.notification.add(serverErrorMessage(error, _t("Could not save Representative Petty Cash.")), { type: "danger" });
         } finally {
             this.state.saving = false;
         }
@@ -179,7 +194,7 @@ export class RepresentativePettyCash extends Component {
             await this.load();
             this.notification.add(_t("Returned cash was saved."), { type: "success" });
         } catch (error) {
-            this.notification.add(error.message || _t("Could not save returned cash."), { type: "danger" });
+            this.notification.add(serverErrorMessage(error, _t("Could not save returned cash.")), { type: "danger" });
         } finally {
             this.state.saving = false;
         }

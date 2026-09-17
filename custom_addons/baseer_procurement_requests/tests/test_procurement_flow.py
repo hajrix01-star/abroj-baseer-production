@@ -1264,6 +1264,7 @@ class ProcurementFlowCase(TransactionCase):
         self.company.write({
             'baseer_procurement_representative_petty_cash_account_id': advance_account.id,
             'baseer_procurement_representative_petty_cash_journal_id': general.id,
+            'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([bank.id])],
         })
         representative = self.env['res.partner'].create({'name': 'PRA21 representative'})
         request = self._complete_external_request(representative)

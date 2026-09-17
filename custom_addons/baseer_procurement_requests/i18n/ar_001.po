@@ -1460,3 +1460,24 @@ msgstr "إجمالي الطلب المستلم"
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
 msgid "Supplier invoices entered"
 msgstr "إجمالي فواتير الموردين"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_res_company__baseer_procurement_representative_petty_cash_payment_journal_ids
+msgid "Representative Petty Cash payment points"
+msgstr "نقاط دفع عهدة مندوب المشتريات"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Representative Petty Cash payment points must be active company bank or cash points."
+msgstr "يجب أن تكون نقاط دفع العهدة بنوكًا أو نقاط نقد نشطة تابعة للشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash.py:0
+msgid "Choose a payment point configured for Representative Petty Cash in the company settings."
+msgstr "اختر نقطة دفع معتمدة لعهدة المندوب من إعدادات الشركة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "No payment point is configured for Representative Petty Cash. Ask a manager to select the existing company payment points in the company settings."
+msgstr "لا توجد نقطة دفع معتمدة لعهدة المندوب. اطلب من المدير اختيار نقاط الدفع الحالية من إعدادات الشركة."

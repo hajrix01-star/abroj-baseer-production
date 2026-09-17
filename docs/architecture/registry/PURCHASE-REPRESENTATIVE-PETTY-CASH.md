@@ -222,7 +222,7 @@ Odoo عامًّا.
 [اعتماد الإصدار](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35206352934)
 و[نشره](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35206384810).
 
-## 13. إعداد الشركة التلقائي — مرشح إصدار
+## 13. إعداد الشركة التلقائي — منشور
 
 - تنشئ كل شركة حسابًا واحدًا قابلًا للمطابقة ودفتر يومية عام واحدًا لعهد
   مندوبي المشتريات. لا ينشأ حساب أو دفتر عند تفعيل شخص كمندوب مشتريات.
@@ -242,3 +242,9 @@ Odoo عامًّا.
   حساب مشترك واحد ودفتر عام واحد من دون أي نقطة دفع، ثم أثبت بقاءهما نفسيهما
   عند تفعيل مندوبين. كما يرفض النظام seed مملوكًا مؤرشفًا أو معدلًا قبل أن
   ينشئ أي طرف مقابل.
+- نُشر commit `d0e1b3c` بموجب سياسة
+  `baseer-2026-09-17-representative-petty-cash-company-setup`: نجح
+  [الاعتماد](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35209687165)
+  ثم [النشر](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/35209718953).
+  لا ينفذ النشر تهيئة صامتة لشركة قائمة؛ يظل زر مدير ERP هو مسار التهيئة
+  المقصود للشركة الحالية.

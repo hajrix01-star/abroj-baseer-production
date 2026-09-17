@@ -510,6 +510,18 @@ class RepresentativePettyCash(models.Model):
                 'representative_name': movement.representative_partner_id.display_name,
                 'request_name': movement.procurement_request_id.name,
                 'payment_point_name': movement.payment_journal_id.display_name,
+                # Funding leaves the company payment point.  A return comes
+                # back from the representative to that same payment point.
+                'from_name': (
+                    movement.representative_partner_id.display_name
+                    if movement.movement_type == 'return'
+                    else movement.payment_journal_id.display_name
+                ),
+                'to_name': (
+                    movement.payment_journal_id.display_name
+                    if movement.movement_type == 'return'
+                    else movement.representative_partner_id.display_name
+                ),
             } for movement in movements],
         }
 

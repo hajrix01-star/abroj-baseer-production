@@ -91,7 +91,7 @@
                     <h2>This month's movements</h2>
                     <p t-if="!state.data.movements.length" class="o_rep_pc_empty">No movements in the selected month.</p>
                     <table t-else=""><thead><tr><th>Date</th><th>Movement number</th><th>Purchase request</th><th>From</th><th>To</th><th>Amount</th></tr></thead><tbody>
-                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id"><td t-att-data-label="movementColumnLabels.date"><t t-esc="movement.date"/></td><td t-att-data-label="movementColumnLabels.movement"><t t-esc="movement.name"/></td><td t-att-data-label="movementColumnLabels.request"><t t-esc="movement.request_name || 'Return'"/></td><td t-att-data-label="movementColumnLabels.from"><t t-esc="movement.payment_point_name"/></td><td t-att-data-label="movementColumnLabels.to"><t t-esc="movement.representative_name"/></td><td t-att-data-label="movementColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td></tr>
+                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id"><td t-att-data-label="movementColumnLabels.date"><t t-esc="movement.date"/></td><td t-att-data-label="movementColumnLabels.movement"><t t-esc="movement.name"/></td><td t-att-data-label="movementColumnLabels.request"><t t-esc="movement.request_name || 'Return'"/></td><td t-att-data-label="movementColumnLabels.from"><t t-esc="movement.from_name"/></td><td t-att-data-label="movementColumnLabels.to"><t t-esc="movement.to_name"/></td><td t-att-data-label="movementColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td></tr>
                     </tbody></table>
                 </section>
             </t>

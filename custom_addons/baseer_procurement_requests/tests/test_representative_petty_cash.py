@@ -14,6 +14,7 @@ class RepresentativePettyCashCase(TransactionCase):
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_manager')
         self.env.user.group_ids |= self.env.ref('base.group_erp_manager')
         self.company = self.env.company
+        self.company.currency_id.active = True
         self.warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
         category = self.env['product.category'].create({'name': 'Representative petty cash test category'})
         product = self.env['product.product'].create({
@@ -79,11 +80,16 @@ class RepresentativePettyCashCase(TransactionCase):
         dashboard_movement = next(row for row in Model.dashboard_data()['movements'] if row['id'] == record.id)
         self.assertNotIn('external_reference', dashboard_movement)
         self.assertNotIn('proof_url', dashboard_movement)
+        self.assertEqual(dashboard_movement['from_name'], self.bank_journal.display_name)
+        self.assertEqual(dashboard_movement['to_name'], self.representative.display_name)
         line = record.move_id.line_ids.filtered(lambda row: row.account_id == self.petty_cash_account)
         self.assertEqual(line.baseer_representative_petty_cash_id, record)
         self.assertEqual(line.partner_id, self.representative)
         returned_id = Model.submit_return(record.id, self.bank_journal.id, 5, str(uuid4()))
         returned = Model.browse(returned_id)
+        dashboard_return = next(row for row in Model.dashboard_data()['movements'] if row['id'] == returned.id)
+        self.assertEqual(dashboard_return['from_name'], self.representative.display_name)
+        self.assertEqual(dashboard_return['to_name'], self.bank_journal.display_name)
         self.assertEqual(record.remaining_amount, 15)
         returned_line = returned.move_id.line_ids.filtered(lambda row: row.account_id == self.petty_cash_account)
         self.assertEqual(returned_line.baseer_representative_petty_cash_id, record)

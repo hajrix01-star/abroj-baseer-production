@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Procurement Requests',
-    'version': '19.0.13.0.6',
+    'version': '19.0.13.0.7',
     'category': 'Inventory/Purchase',
     'summary': 'Company-product procurement requests, price history, and optional stock receipts',
     'author': 'Baseer',

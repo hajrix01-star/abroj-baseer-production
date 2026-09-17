@@ -94,7 +94,7 @@
                     </group>
                     <div class="text-muted mb-3" invisible="state != 'draft'">Save keeps a draft. Save and approve creates the vendor bills and records the selected payments. The entry date is administrative; each row uses its invoice date.</div>
                     <p class="text-muted d-md-none baseer_batch_mobile_hint">Add an invoice, or tap a card to edit its details.</p>
-                    <field name="line_ids" mode="list,kanban" readonly="state != 'draft' or not is_current_company" class="baseer_batch_lines"
+                    <field name="line_ids" mode="list,kanban" options="{'edit': True}" readonly="state != 'draft' or not is_current_company" class="baseer_batch_lines"
                            context="{'default_company_id': company_id, 'default_invoice_date': entry_date, 'form_view_ref': 'baseer_purchase_batch.view_purchase_batch_line_form'}">
                         <list string="Invoices" editable="bottom" open_form_view="True" default_order="sequence, id" limit="50">
                             <control><create string="Add invoice"/></control>

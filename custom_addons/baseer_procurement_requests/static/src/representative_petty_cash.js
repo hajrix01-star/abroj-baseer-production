@@ -46,7 +46,7 @@ export class RepresentativePettyCash extends Component {
         this.state = useState({
             loading: true, saving: false, error: false, data: false,
             representativeId: "", monthStart: "", destinationId: "", requestId: "", paymentPointId: "", amount: "", movementDate: today(), clientToken: newClientToken(),
-            returnOriginId: "", returnPaymentPointId: "", returnAmount: "", returnClientToken: newClientToken(),
+            returnRepresentativeId: "", returnPaymentPointId: "", returnAmount: "", returnClientToken: newClientToken(),
         });
         // Render the shell and its loading state immediately. Waiting in
         // onWillStart leaves a blank mobile page until the dashboard RPC ends.
@@ -113,9 +113,8 @@ export class RepresentativePettyCash extends Component {
         return this.selectionLabel(this.state.data?.representatives, this.state.destinationId, _t("Choose a purchasing representative"));
     }
 
-    returnOriginLabel() {
-        const funding = (this.state.data?.open_fundings || []).find((item) => item.id === Number(this.state.returnOriginId));
-        return funding ? `${funding.name} — ${funding.representative_name}` : _t("Choose an existing petty cash movement");
+    returnRepresentativeLabel() {
+        return this.selectionLabel(this.state.data?.representatives, this.state.returnRepresentativeId, _t("Choose a purchasing representative"));
     }
 
     returnPaymentPointLabel() {
@@ -145,7 +144,7 @@ export class RepresentativePettyCash extends Component {
 
     selectPaymentPoint(paymentPointId) { this.state.paymentPointId = String(paymentPointId); }
     selectDestination(destinationId) { this.state.destinationId = String(destinationId); }
-    selectReturnOrigin(originId) { this.state.returnOriginId = String(originId); }
+    selectReturnRepresentative(representativeId) { this.state.returnRepresentativeId = String(representativeId); }
     selectReturnPaymentPoint(paymentPointId) { this.state.returnPaymentPointId = String(paymentPointId); }
     onAmountInput(event) { this.state.amount = event.target.value; }
     onMovementDateInput(event) { this.state.movementDate = event.target.value; }
@@ -178,16 +177,16 @@ export class RepresentativePettyCash extends Component {
 
     async saveReturn() {
         if (this.state.saving) return;
-        if (!this.state.returnOriginId || !this.state.returnPaymentPointId || !this.state.returnAmount) {
-            this.notification.add(_t("Choose the original movement, payment point, and amount."), { type: "warning" });
+        if (!this.state.returnRepresentativeId || !this.state.returnPaymentPointId || !this.state.returnAmount) {
+            this.notification.add(_t("Choose the purchasing representative, payment point, and amount."), { type: "warning" });
             return;
         }
         this.state.saving = true;
         try {
-            await this.orm.call("baseer.procurement.representative.advance", "submit_return", [
-                Number(this.state.returnOriginId), Number(this.state.returnPaymentPointId), this.state.returnAmount, this.state.returnClientToken,
+            await this.orm.call("baseer.procurement.representative.advance", "submit_aggregate_return", [
+                Number(this.state.returnRepresentativeId), Number(this.state.returnPaymentPointId), this.state.returnAmount, this.state.returnClientToken,
             ]);
-            this.state.returnOriginId = "";
+            this.state.returnRepresentativeId = "";
             this.state.returnPaymentPointId = "";
             this.state.returnAmount = "";
             this.state.returnClientToken = newClientToken();

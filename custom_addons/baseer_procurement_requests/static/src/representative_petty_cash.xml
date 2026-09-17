@@ -66,11 +66,11 @@
                 <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="Return petty cash">
                     <h2>Return remaining</h2>
                     <div class="o_rep_pc_grid">
-                        <label>Original movement
+                        <label>Purchasing representative
                             <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="returnOriginLabel()"><span t-esc="returnOriginLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="returnRepresentativeLabel()"><span t-esc="returnRepresentativeLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
                                 <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.open_fundings" t-as="funding" t-key="funding.id" onSelected="() => this.selectReturnOrigin(funding.id)"><t t-esc="funding.name"/> — <t t-esc="funding.representative_name"/> (<t t-esc="money(funding.remaining)"/>)</DropdownItem>
+                                    <DropdownItem t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" onSelected="() => this.selectReturnRepresentative(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
                                 </t>
                             </Dropdown>
                         </label>

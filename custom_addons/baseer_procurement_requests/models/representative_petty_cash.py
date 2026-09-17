@@ -356,8 +356,8 @@ class RepresentativePettyCash(models.Model):
                     raise ValidationError(_('A funding movement cannot have an original movement.'))
             else:
                 origin = record.origin_id
-                if (not origin or origin.company_id != record.company_id or origin.movement_type != 'funding'
-                        or origin.representative_partner_id != record.representative_partner_id):
+                if (origin and (origin.company_id != record.company_id or origin.movement_type != 'funding'
+                               or origin.representative_partner_id != record.representative_partner_id)):
                     raise ValidationError(_('A return must be linked to its original representative petty-cash movement.'))
                 if record.procurement_request_id:
                     raise ValidationError(_('A return does not carry a purchase request.'))
@@ -617,15 +617,18 @@ class RepresentativePettyCash(models.Model):
         account, journal = company._baseer_representative_petty_cash_ready()
         record = self.sudo().with_company(company).with_context(**{INTERNAL: True}).create(values)
         self._lock_advance(record.id)
-        original = record.origin_id if record.movement_type == 'return' else record
-        if record.movement_type == 'return':
+        original = record.origin_id if record.movement_type == 'return' and record.origin_id else record
+        if record.movement_type == 'return' and record.origin_id:
             original = self._lock_advance(record.origin_id.id)
             if Decimal(str(record.amount)) > Decimal(str(original.remaining_amount)).quantize(MONEY_QUANTUM):
                 raise ValidationError(_('Returned cash cannot exceed the remaining amount of the original movement.'))
         if company._get_violated_lock_dates(record.movement_date, False, journal):
             raise ValidationError(_('The movement date is in a locked accounting period.'))
         source_account = record.payment_journal_id.default_account_id
-        label = '%s — %s' % (record.name, record.procurement_request_id.name or record.origin_id.name)
+        label = '%s — %s' % (
+            record.name,
+            record.procurement_request_id.name or record.origin_id.name or record.representative_partner_id.display_name,
+        )
         debit, credit = (account, source_account) if record.movement_type == 'funding' else (source_account, account)
         move = self.env['account.move'].sudo().with_company(company).with_context(**{INTERNAL: True}).create({
             'move_type': 'entry', 'company_id': company.id, 'journal_id': journal.id,
@@ -640,12 +643,21 @@ class RepresentativePettyCash(models.Model):
         move.action_post()
         petty_cash_line = move.line_ids.filtered(lambda line: line.account_id == account and line.partner_id == record.representative_partner_id)
         if petty_cash_line.credit:
-            open_lines = self.env['account.move.line'].search([
+            funding_domain = [
                 ('account_id', '=', account.id), ('partner_id', '=', record.representative_partner_id.id),
-                ('parent_state', '=', 'posted'), ('reconciled', '=', False),
-                ('baseer_representative_petty_cash_id', '=', original.id), ('id', '!=', petty_cash_line.id),
+                ('parent_state', '=', 'posted'), ('reconciled', '=', False), ('debit', '>', 0),
+            ]
+            # Historical returns remain tied to a particular funding movement.
+            # New aggregate returns reconcile only real, marked funding debits
+            # for that representative, never unrelated manual entries.
+            if record.origin_id:
+                funding_domain.append(('baseer_representative_petty_cash_id', '=', original.id))
+            else:
+                funding_domain.append(('baseer_representative_petty_cash_id', '!=', False))
+            open_lines = self.env['account.move.line'].search([
+                *funding_domain, ('id', '!=', petty_cash_line.id),
             ])
-            (open_lines.filtered(lambda line: line.debit > 0) | petty_cash_line).reconcile()
+            (open_lines | petty_cash_line).reconcile()
         record.sudo().with_context(**{INTERNAL: True}).write({'move_id': move.id})
         if record.movement_type == 'return':
             original.invalidate_recordset(['return_ids', 'returned_amount', 'remaining_amount'])

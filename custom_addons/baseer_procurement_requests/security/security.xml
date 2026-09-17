@@ -62,6 +62,11 @@
         <field name="model_id" ref="model_baseer_procurement_representative_advance_settlement"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
+    <record id="rule_representative_petty_cash_invoice_settlement_company" model="ir.rule">
+        <field name="name">Representative Petty Cash invoice settlements: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_representative_petty_cash_invoice_settlement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
     <record id="rule_procurement_custody_event_company" model="ir.rule">
         <field name="name">Procurement Petty Cash events: allowed companies</field>
         <field name="model_id" ref="model_baseer_procurement_custody_event"/>

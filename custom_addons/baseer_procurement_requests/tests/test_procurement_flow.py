@@ -1230,7 +1230,7 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(-sum(liquidity.mapped('balance')), 1)
 
     def test_purchase_batch_settles_from_representative_petty_cash_without_payment(self):
-        """A bill is paid by the selected representative advance, never a second bank payment."""
+        """Each invoice chooses its source; representative spend is cumulative."""
         sar = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'SAR')], limit=1)
         if not sar:
             sar = self.env['res.currency'].create({'name': 'SAR', 'symbol': 'SR', 'active': True})
@@ -1260,7 +1260,7 @@ class ProcurementFlowCase(TransactionCase):
             'name': 'Piece', 'company_id': self.company.id, 'product_id': self.product.id,
             'uom_id': self.uom.id,
         })
-        advance_account, _cash_account, _bank_account, general, _cash, bank = self._custody_accounting_fixture('PRA21')
+        advance_account, _cash_account, bank_account, general, _cash, bank = self._custody_accounting_fixture('PRA21')
         self.company.write({
             'baseer_procurement_representative_petty_cash_account_id': advance_account.id,
             'baseer_procurement_representative_petty_cash_journal_id': general.id,
@@ -1288,29 +1288,21 @@ class ProcurementFlowCase(TransactionCase):
         self.env['baseer.purchase.category.map'].create({
             'company_id': self.company.id, 'category_id': service_category.id, 'product_id': service.id,
         })
-        legacy_employee = self.env['hr.employee'].create({
-            'name': 'PRA21 legacy buyer', 'company_id': self.company.id,
-        })
-        legacy_custody = self.env['baseer.procurement.custody'].create({
-            'company_id': self.company.id, 'employee_id': legacy_employee.id,
-        })
-        with self.assertRaisesRegex(ValidationError, 'historical Petty Cash row links'):
+        with self.assertRaisesRegex(ValidationError, 'each invoice'):
             self.env['baseer.purchase.batch'].create({
                 'company_id': self.company.id,
-                'procurement_request_id': request.id,
                 'representative_petty_cash_id': advance.id,
                 'line_ids': [Command.create({
-                    'partner_id': supplier.id, 'supplier_ref': 'PRA21-LEGACY', 'entry_type': 'purchase',
-                    'gross_amount': 20, 'is_credit': True, 'procurement_custody_id': legacy_custody.id,
+                    'partner_id': supplier.id, 'supplier_ref': 'PRA21-HEADER', 'entry_type': 'purchase',
+                    'gross_amount': 20, 'is_credit': True,
                 })],
             })
         excessive_batch = self.env['baseer.purchase.batch'].create({
             'company_id': self.company.id,
-            'procurement_request_id': request.id,
-            'representative_petty_cash_id': advance.id,
             'line_ids': [Command.create({
                 'partner_id': supplier.id, 'supplier_ref': 'PRA21-OVER', 'entry_type': 'purchase',
-                'gross_amount': 26, 'is_credit': True,
+                'gross_amount': 26, 'payment_source_type': 'representative_petty_cash',
+                'representative_petty_cash_representative_id': representative.id,
             })],
         })
         with self.assertRaisesRegex(UserError, 'exceed the available'):
@@ -1320,26 +1312,89 @@ class ProcurementFlowCase(TransactionCase):
         excessive_batch.unlink()
         batch = self.env['baseer.purchase.batch'].create({
             'company_id': self.company.id,
-            'procurement_request_id': request.id,
-            'representative_petty_cash_id': advance.id,
             'line_ids': [Command.create({
                 'partner_id': supplier.id, 'supplier_ref': 'PRA21-1', 'entry_type': 'purchase',
-                'gross_amount': 20, 'is_credit': True,
+                'gross_amount': 20, 'payment_source_type': 'representative_petty_cash',
+                'representative_petty_cash_representative_id': representative.id,
             })],
         })
+        self.assertEqual(batch.line_ids.representative_petty_cash_available_amount, 25)
         batch.action_approve()
-        batch.invalidate_recordset(['representative_petty_cash_settlement_id'])
-        advance.invalidate_recordset(['settlement_ids', 'settled_amount', 'remaining_amount'])
+        batch.invalidate_recordset()
         self.assertEqual(batch.state, 'approved')
-        self.assertTrue(batch.representative_petty_cash_settlement_id)
-        self.assertEqual(batch.representative_petty_cash_settlement_id.amount, 20)
-        self.assertEqual(batch.representative_petty_cash_settlement_move_id.state, 'posted')
+        self.assertTrue(batch.line_ids.representative_petty_cash_invoice_settlement_id)
+        self.assertEqual(batch.line_ids.representative_petty_cash_invoice_settlement_id.amount, 20)
+        self.assertEqual(batch.line_ids.representative_petty_cash_invoice_settlement_id.move_id.state, 'posted')
         self.assertEqual(batch.line_ids.move_id.payment_state, 'paid')
         self.assertFalse(batch.line_ids.payment_id)
-        self.assertEqual(advance.settled_amount, 20)
-        self.assertEqual(advance.remaining_amount, 5)
-        settlement_credit = batch.representative_petty_cash_settlement_move_id.line_ids.filtered(
-            lambda line: line.account_id == advance_account and line.credit > 0
+        self.assertEqual(
+            self.env['baseer.procurement.representative.advance']._baseer_representative_available_amount(
+                self.company, representative,
+            ), 5,
+        )
+        settlement_credit = batch.line_ids.representative_petty_cash_invoice_settlement_id.move_id.line_ids.filtered(
+            lambda line: line.account_id == advance_account and line.credit > 0 and line.partner_id == representative
         )
         self.assertEqual(len(settlement_credit), 1)
-        self.assertEqual(settlement_credit.baseer_representative_petty_cash_id, advance)
+
+        # A client/RPC caller cannot attach an existing settlement link to a
+        # new invoice line to make it look funded without consuming balance.
+        with self.assertRaises(AccessError):
+            self.env['baseer.purchase.batch'].create({
+                'company_id': self.company.id,
+                'line_ids': [Command.create({
+                    'partner_id': supplier.id, 'supplier_ref': 'PRA21-RPC-BYPASS', 'entry_type': 'purchase',
+                    'gross_amount': 1, 'payment_source_type': 'representative_petty_cash',
+                    'representative_petty_cash_representative_id': representative.id,
+                    'representative_petty_cash_invoice_settlement_id': batch.line_ids.representative_petty_cash_invoice_settlement_id.id,
+                })],
+            })
+
+        # Returns use the representative's aggregate balance, not a selected
+        # historical funding movement.  Five remains from the first funding;
+        # add ten, then return eight from the combined fifteen.
+        self.env['baseer.procurement.representative.advance'].with_company(self.company).submit_funding(
+            request.id, bank.id, representative.id, 10, str(uuid4()), fields.Date.context_today(self),
+        )
+        aggregate_return_id = self.env['baseer.procurement.representative.advance'].with_company(self.company).submit_aggregate_return(
+            representative.id, bank.id, 8, str(uuid4()), fields.Date.context_today(self),
+        )
+        aggregate_return = self.env['baseer.procurement.representative.advance'].browse(aggregate_return_id)
+        self.assertFalse(aggregate_return.origin_id)
+        self.assertEqual(
+            self.env['baseer.procurement.representative.advance']._baseer_representative_available_amount(
+                self.company, representative,
+            ), 7,
+        )
+
+        bank_method = bank.outbound_payment_method_line_ids.filtered(lambda method: method.code == 'manual')[:1]
+        self.assertTrue(bank_method)
+        bank_method.payment_account_id = bank_account
+        mixed_batch = self.env['baseer.purchase.batch'].create({
+            'company_id': self.company.id,
+            'line_ids': [
+                Command.create({
+                    'partner_id': supplier.id, 'supplier_ref': 'PRA21-MIX-REP', 'entry_type': 'purchase',
+                    'gross_amount': 3, 'payment_source_type': 'representative_petty_cash',
+                    'representative_petty_cash_representative_id': representative.id,
+                }),
+                Command.create({
+                    'partner_id': supplier.id, 'supplier_ref': 'PRA21-MIX-BANK', 'entry_type': 'purchase',
+                    'gross_amount': 1, 'payment_source_type': 'payment_method',
+                    'payment_method_line_id': bank_method.id,
+                }),
+            ],
+        })
+        mixed_batch.action_approve()
+        representative_line = mixed_batch.line_ids.filtered(
+            lambda line: line.payment_source_type == 'representative_petty_cash'
+        )
+        direct_line = mixed_batch.line_ids.filtered(lambda line: line.payment_source_type == 'payment_method')
+        self.assertTrue(representative_line.representative_petty_cash_invoice_settlement_id)
+        self.assertFalse(representative_line.payment_id)
+        self.assertTrue(direct_line.payment_id)
+        self.assertEqual(
+            self.env['baseer.procurement.representative.advance']._baseer_representative_available_amount(
+                self.company, representative,
+            ), 4,
+        )

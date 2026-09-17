@@ -53,7 +53,7 @@
             <xpath expr="//field[@name='procurement_custody_id']" position="after">
                 <field name="representative_petty_cash_id" string="Representative Petty Cash"
                        options="{'no_create': True}"
-                       readonly="state != 'draft'"
+                       invisible="state == 'draft' or not representative_petty_cash_id" readonly="True"
                        context="{'baseer_representative_petty_cash_request_id': procurement_request_id, 'baseer_representative_petty_cash_company_id': company_id}"
                        domain="[('company_id', '=', company_id), ('movement_type', '=', 'funding'), ('state', '=', 'posted'), ('procurement_request_id', '=', procurement_request_id)]"/>
                 <field name="representative_petty_cash_representative_id" string="Selected advance representative"
@@ -87,13 +87,29 @@
                 </div>
             </xpath>
             <xpath expr="//field[@name='line_ids']" position="attributes">
-                <attribute name="context">{'default_company_id': company_id, 'default_invoice_date': entry_date, 'default_is_credit': representative_petty_cash_id and True or (procurement_custody_id and True or False), 'default_procurement_request_id': procurement_request_id, 'form_view_ref': 'baseer_purchase_batch.view_purchase_batch_line_form', 'baseer_custody_route': procurement_custody_id, 'baseer_representative_petty_cash_route': representative_petty_cash_id}</attribute>
+                <attribute name="context">{'default_company_id': company_id, 'default_invoice_date': entry_date, 'default_payment_source_type': 'payment_method', 'form_view_ref': 'baseer_purchase_batch.view_purchase_batch_line_form', 'baseer_custody_route': procurement_custody_id}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='procurement_request_id']" position="attributes">
+                <attribute name="invisible">state == 'draft' or not procurement_request_id</attribute>
+                <attribute name="readonly">True</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='is_credit']" position="attributes">
                 <attribute name="column_invisible">parent.procurement_custody_id or parent.representative_petty_cash_id</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="attributes">
                 <attribute name="column_invisible">parent.procurement_custody_id or parent.representative_petty_cash_id</attribute>
+                <attribute name="invisible">payment_source_type != 'payment_method'</attribute>
+                <attribute name="required">payment_source_type == 'payment_method'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="before">
+                <field name="payment_source_type" string="Payment source" width="160px"/>
+                <field name="representative_petty_cash_representative_id" string="Representative Petty Cash"
+                       width="190px" options="{'no_create': True}"
+                       invisible="payment_source_type != 'representative_petty_cash'"
+                       required="payment_source_type == 'representative_petty_cash'"
+                       domain="[('active', '=', True), ('is_company', '=', False), ('parent_id', '=', False)]"/>
+                <field name="representative_petty_cash_available_amount" string="Available balance" width="140px"
+                       readonly="1" invisible="payment_source_type != 'representative_petty_cash'"/>
             </xpath>
             <xpath expr="//field[@name='line_ids']/following-sibling::p[1]" position="attributes">
                 <attribute name="invisible">procurement_custody_id or representative_petty_cash_id</attribute>
@@ -107,13 +123,25 @@
         <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_line_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='is_credit']" position="attributes">
-                <attribute name="invisible">context.get('baseer_representative_petty_cash_route') or context.get('baseer_custody_route')</attribute>
+                <attribute name="invisible">True</attribute>
             </xpath>
             <xpath expr="//field[@name='payment_method_line_id']" position="attributes">
-                <attribute name="invisible">context.get('baseer_representative_petty_cash_route') or context.get('baseer_custody_route')</attribute>
+                <attribute name="invisible">payment_source_type != 'payment_method'</attribute>
+                <attribute name="required">payment_source_type == 'payment_method'</attribute>
             </xpath>
             <xpath expr="//field[@name='payment_method_line_id']/following-sibling::div[1]" position="attributes">
-                <attribute name="invisible">context.get('baseer_representative_petty_cash_route') or context.get('baseer_custody_route')</attribute>
+                <attribute name="invisible">payment_source_type != 'payment_method'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_method_line_id']" position="before">
+                <field name="payment_source_type" string="Payment source" readonly="batch_state == 'approved' or (batch_id and not is_current_company)"/>
+                <field name="representative_petty_cash_representative_id" string="Representative Petty Cash"
+                       options="{'no_create': True}"
+                       invisible="payment_source_type != 'representative_petty_cash'"
+                       required="payment_source_type == 'representative_petty_cash'"
+                       readonly="batch_state == 'approved' or (batch_id and not is_current_company)"
+                       domain="[('active', '=', True), ('is_company', '=', False), ('parent_id', '=', False)]"/>
+                <field name="representative_petty_cash_available_amount" string="Available balance" readonly="1"
+                       invisible="payment_source_type != 'representative_petty_cash'"/>
             </xpath>
         </field>
     </record>

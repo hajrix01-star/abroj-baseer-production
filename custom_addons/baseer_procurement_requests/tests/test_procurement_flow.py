@@ -1282,6 +1282,18 @@ class ProcurementFlowCase(TransactionCase):
                 'representative_petty_cash_representative_id': representative.id,
             }, creating=True)
 
+    def test_new_purchase_invoice_defaults_to_company_vat_and_not_credit(self):
+        tax = self.env['account.tax'].create({
+            'name': 'PRA default VAT 15%', 'company_id': self.company.id,
+            'type_tax_use': 'purchase', 'amount_type': 'percent', 'amount': 15,
+        })
+        self.company.account_purchase_tax_id = tax
+
+        defaults = self.env['baseer.purchase.batch.line'].default_get(['tax_id', 'is_credit'])
+
+        self.assertEqual(defaults['tax_id'], tax.id)
+        self.assertFalse(defaults['is_credit'])
+
     def test_purchase_batch_settles_from_representative_petty_cash_without_payment(self):
         """Each invoice chooses its source; representative spend is cumulative."""
         sar = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'SAR')], limit=1)

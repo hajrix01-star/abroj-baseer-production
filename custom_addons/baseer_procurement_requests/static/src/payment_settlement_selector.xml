@@ -2,9 +2,15 @@
 <templates xml:space="preserve">
     <t t-name="baseer_procurement_requests.PaymentSettlementSelector">
         <div class="o_baseer_settlement_picker">
+            <label class="form-check form-switch o_baseer_settlement_picker__credit">
+                <input class="form-check-input" type="checkbox" t-att-checked="isCredit"
+                       t-att-disabled="props.readonly or state.loading"
+                       t-on-change="toggleCredit"/>
+                <span class="form-check-label">Credit</span>
+            </label>
             <Dropdown>
                 <button type="button" class="btn btn-light o_baseer_settlement_picker__trigger"
-                        t-att-disabled="props.readonly or state.loading" t-att-title="label">
+                        t-att-disabled="props.readonly or state.loading or isCredit" t-att-title="label">
                     <span t-if="state.loading" class="text-muted">Loading…</span>
                     <span t-else="" t-esc="label"/>
                     <i class="fa fa-chevron-down" aria-hidden="true"/>
@@ -23,8 +29,6 @@
                             <small class="o_baseer_settlement_picker__balance" dir="ltr"><t t-esc="formatAmount(representative.available_balance)"/></small>
                         </DropdownItem>
                     </t>
-                    <div class="dropdown-divider"/>
-                    <DropdownItem onSelected="() => this.chooseCredit()">Credit</DropdownItem>
                 </t>
             </Dropdown>
             <small t-if="representativeBalance !== false" class="o_baseer_settlement_picker__current-balance" dir="ltr">

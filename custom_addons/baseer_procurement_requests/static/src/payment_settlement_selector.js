@@ -41,6 +41,7 @@ export class PaymentSettlementSelector extends Component {
         this.orm = useService("orm");
         this.state = useState({
             loading: true,
+            unlockingCredit: false,
             choices: { payment_points: [], representatives: [], can_use_representative: false },
         });
         onWillStart(async () => {
@@ -74,6 +75,9 @@ export class PaymentSettlementSelector extends Component {
     }
 
     get label() {
+        if (this.state.unlockingCredit) {
+            return _t("Choose a settlement method");
+        }
         if (this.props.record.data.payment_source_type === "representative_petty_cash") {
             return this.selectedRepresentative?.name || _t("Purchasing representative");
         }
@@ -81,6 +85,10 @@ export class PaymentSettlementSelector extends Component {
             return _t("Credit");
         }
         return this.selectedPaymentPoint?.name || _t("Choose a settlement method");
+    }
+
+    get isCredit() {
+        return this.props.record.data.payment_source_type === "credit" && !this.state.unlockingCredit;
     }
 
     get representativeBalance() {
@@ -99,6 +107,7 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async choosePaymentPoint(point) {
+        this.state.unlockingCredit = false;
         await this.props.record.update({
             payment_source_type: "payment_method",
             payment_method_line_id: [point.id, point.name],
@@ -108,6 +117,7 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async chooseRepresentative(representative) {
+        this.state.unlockingCredit = false;
         await this.props.record.update({
             payment_source_type: "representative_petty_cash",
             payment_method_line_id: false,
@@ -116,7 +126,14 @@ export class PaymentSettlementSelector extends Component {
         });
     }
 
-    async chooseCredit() {
+    async toggleCredit(event) {
+        if (!event.target.checked) {
+            // Preserve the saved credit source until the accountant actually
+            // picks a replacement. This avoids an invalid half-saved row.
+            this.state.unlockingCredit = true;
+            return;
+        }
+        this.state.unlockingCredit = false;
         await this.props.record.update({
             payment_source_type: "credit",
             payment_method_line_id: false,

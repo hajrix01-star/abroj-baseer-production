@@ -483,7 +483,13 @@ class BaseerPurchaseBatchLine(models.Model):
                                       copy=False, ondelete='restrict', check_company=True)
     description = fields.Char()
     gross_amount = fields.Monetary(required=True, currency_field='currency_id')
-    tax_id = fields.Many2one('account.tax', ondelete='restrict', check_company=True)
+    def _default_purchase_tax(self):
+        """Preselect the company's normal 15% purchase tax for new rows."""
+        tax = self.env.company.account_purchase_tax_id
+        return tax if is_principal_purchase_vat(tax, self.env.company) else self.env['account.tax']
+
+    tax_id = fields.Many2one('account.tax', ondelete='restrict', check_company=True,
+                             default=_default_purchase_tax)
     vat_enabled = fields.Boolean(string='VAT 15%', compute='_compute_vat_selection',
                                  inverse='_inverse_vat_enabled', readonly=False, copy=False)
     vat_is_custom = fields.Boolean(compute='_compute_vat_selection', readonly=True)

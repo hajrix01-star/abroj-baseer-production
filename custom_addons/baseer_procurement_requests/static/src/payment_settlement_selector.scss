@@ -1,6 +1,13 @@
 .o_baseer_settlement_picker {
     min-width: 12rem;
 
+    .o_baseer_settlement_picker__credit {
+        align-items: center;
+        display: flex;
+        gap: .45rem;
+        margin: 0 0 .35rem;
+    }
+
     .o_baseer_settlement_picker__trigger {
         align-items: center;
         display: flex;

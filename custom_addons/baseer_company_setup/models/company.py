@@ -1,6 +1,6 @@
 """Fill-only native accounting defaults; never replace an established chart."""
 from odoo import api, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tools.misc import clean_context
 
 
@@ -18,16 +18,55 @@ class Company(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        companies = super().create(vals_list)
+        saudi = self.env.ref('base.sa')
+        sar = self.env.ref('base.SAR')
+        values_list = []
+        for values in vals_list:
+            values = dict(values)
+            # A root company with no localization choice starts with the
+            # supported Saudi baseline. Any explicit country or currency is
+            # authoritative and must never be replaced here.
+            if (not values.get('parent_id') and not values.get('country_id')
+                    and not values.get('currency_id')):
+                values.update(country_id=saudi.id, currency_id=sar.id)
+            values_list.append(values)
+        companies = super().create(values_list)
         # Native create is authorized first. Native localization callbacks run first.
         @self.env.cr.precommit.add
         def complete_created_companies():
             companies.exists().sudo()._baseer_prepare_accounting()
         return companies
 
-    @api.model
-    def _baseer_initialize_accounting(self):
-        self.sudo().with_context(active_test=False).search([])._baseer_prepare_accounting()
+    def action_baseer_initialize_saudi_accounting(self):
+        """Initialize one empty root company; never scan or alter other companies."""
+        if not self.env.user.has_group('base.group_erp_manager'):
+            raise AccessError(_('Only ERP managers can initialize company accounting.'))
+        saudi = self.env.ref('base.sa')
+        sar = self.env.ref('base.SAR')
+        for original in self:
+            company = original.with_context(
+                dict(clean_context(self.env.context), allowed_company_ids=[original.id], active_test=False)
+            ).with_company(original)
+            if company.parent_id:
+                raise ValidationError(_('A branch shares its parent accounting and cannot receive a separate Saudi chart.'))
+            if company.country_id and company.country_id != saudi:
+                raise ValidationError(_('Set the company country to Saudi Arabia before Saudi accounting initialization.'))
+            if company.currency_id and company.currency_id != sar:
+                raise ValidationError(_('Set the company currency to SAR before Saudi accounting initialization.'))
+            self.env.cr.execute('SELECT id FROM res_company WHERE id = %s FOR UPDATE', [company.id])
+            company.invalidate_recordset()
+            if company.chart_template == 'sa':
+                continue
+            if company.chart_template or not company._baseer_chart_is_empty():
+                raise ValidationError(_('Saudi accounting initialization requires an empty company chart.'))
+            company.write({'country_id': saudi.id, 'currency_id': sar.id})
+            company._baseer_prepare_accounting()
+            company.invalidate_recordset()
+            if company.chart_template != 'sa':
+                raise ValidationError(_('Saudi accounting initialization did not load the Saudi chart.'))
+        return {'type': 'ir.actions.client', 'tag': 'display_notification', 'params': {
+            'type': 'success', 'message': _('Saudi accounting is ready for this company.'), 'sticky': False,
+        }}
 
     def _baseer_chart_is_empty(self):
         self.ensure_one()

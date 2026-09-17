@@ -36,3 +36,50 @@ msgstr "راجع دفتر يومية الرواتب المؤرشف للشركة:
 #: code:addons/baseer_company_setup/models/company.py:0
 msgid "No available company journal code."
 msgstr "لا يوجد رمز متاح لدفتر يومية الشركة."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "Only ERP managers can initialize company accounting."
+msgstr "مديرو تخطيط موارد المؤسسة فقط يمكنهم تهيئة حسابات الشركة."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "A branch shares its parent accounting and cannot receive a separate Saudi chart."
+msgstr "الفرع يشارك حسابات شركته الرئيسية ولا يمكنه أخذ شجرة سعودية مستقلة."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "Set the company country to Saudi Arabia before Saudi accounting initialization."
+msgstr "عيّن بلد الشركة إلى المملكة العربية السعودية قبل تهيئة الحسابات السعودية."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "Set the company currency to SAR before Saudi accounting initialization."
+msgstr "عيّن عملة الشركة إلى الريال السعودي قبل تهيئة الحسابات السعودية."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "Saudi accounting initialization requires an empty company chart."
+msgstr "تهيئة الحسابات السعودية تتطلب أن تكون شجرة الشركة فارغة."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "Saudi accounting initialization did not load the Saudi chart."
+msgstr "لم تتمكن تهيئة الحسابات السعودية من تحميل الشجرة السعودية."
+
+#. module: baseer_company_setup
+#. odoo-python
+#: code:addons/baseer_company_setup/models/company.py:0
+msgid "Saudi accounting is ready for this company."
+msgstr "أصبحت الحسابات السعودية جاهزة لهذه الشركة."
+
+#. module: baseer_company_setup
+#: model_terms:ir.ui.view,arch_db:baseer_company_setup.view_company_form_saudi_accounting_setup
+msgid "Initialize Saudi Accounting"
+msgstr "تهيئة الحسابات السعودية"

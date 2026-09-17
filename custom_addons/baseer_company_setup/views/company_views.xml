@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_saudi_accounting_setup" model="ir.ui.view">
+        <field name="name">res.company.form.saudi.accounting.setup</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_baseer_initialize_saudi_accounting" type="object"
+                        class="oe_stat_button" icon="fa-sitemap"
+                        string="Initialize Saudi Accounting"
+                        invisible="parent_id or chart_template"
+                        groups="base.group_erp_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

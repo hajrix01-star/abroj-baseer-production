@@ -13,6 +13,7 @@
         'views/procurement_request_views.xml',
         'views/procurement_option_views.xml',
         'views/procurement_custody_views.xml',
+        'views/representative_petty_cash_views.xml',
         'views/procurement_menus.xml',
     ],
     'assets': {
@@ -21,6 +22,9 @@
             'baseer_procurement_requests/static/src/procurement_catalog.xml',
             'baseer_procurement_requests/static/src/procurement_catalog.scss',
             'baseer_procurement_requests/static/src/procurement_custody.scss',
+            'baseer_procurement_requests/static/src/representative_petty_cash.js',
+            'baseer_procurement_requests/static/src/representative_petty_cash.xml',
+            'baseer_procurement_requests/static/src/representative_petty_cash.scss',
         ],
     },
     'application': True,

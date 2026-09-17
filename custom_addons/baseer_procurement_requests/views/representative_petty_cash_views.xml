@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_representative_petty_cash" model="ir.actions.client">
+        <field name="name">عهدة مندوب المشتريات</field>
+        <field name="tag">baseer_procurement_requests.representative_petty_cash</field>
+    </record>
+
+    <record id="view_company_representative_petty_cash" model="ir.ui.view">
+        <field name="name">res.company.representative.petty.cash</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="baseer_representative_petty_cash" string="عهدة مندوب المشتريات"
+                      groups="baseer_procurement_requests.group_procurement_manager">
+                    <group>
+                        <field name="baseer_procurement_representative_petty_cash_account_id"
+                               string="حساب عهدة مندوب المشتريات"
+                               domain="[('company_ids', 'in', [id]), ('active', '=', True), ('reconcile', '=', True), ('account_type', 'in', ['asset_receivable', 'asset_current'])]"
+                               options="{'no_create': True}"/>
+                        <field name="baseer_procurement_representative_petty_cash_journal_id"
+                               string="دفتر يومية عهدة مندوب المشتريات"
+                               domain="[('company_id', '=', id), ('active', '=', True), ('type', '=', 'general')]"
+                               options="{'no_create': True}"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

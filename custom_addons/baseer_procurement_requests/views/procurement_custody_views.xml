@@ -390,7 +390,7 @@
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page name="baseer_procurement_custody" string="Petty Cash"
+                <page name="baseer_procurement_custody" string="Petty Cash" invisible="1"
                       groups="baseer_procurement_requests.group_procurement_manager">
                     <group>
                         <field name="baseer_procurement_custody_account_id" string="Petty Cash account"

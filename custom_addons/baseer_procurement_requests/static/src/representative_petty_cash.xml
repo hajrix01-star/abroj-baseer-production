@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_procurement_requests.RepresentativePettyCash">
+        <main class="o_rep_pc" dir="rtl">
+            <header class="o_rep_pc_header">
+                <div><h1>عهدة مندوب المشتريات</h1><p>تحويل موثق من نقطة دفع المؤسسة إلى مندوب المشتريات.</p></div>
+                <div class="o_rep_pc_filters"><label>المندوب
+                    <select t-on-change="onRepresentativeChange" t-att-value="state.representativeId">
+                        <option value="">كل المندوبين</option>
+                        <option t-foreach="state.data?.representatives || []" t-as="representative" t-key="representative.id" t-att-value="representative.id"><t t-esc="representative.display_name"/></option>
+                    </select>
+                </label><label>الشهر<input type="month" t-att-value="state.monthStart ? state.monthStart.slice(0, 7) : ''" t-on-change="onMonthChange"/></label></div>
+            </header>
+            <section t-if="state.loading" class="o_rep_pc_empty">جارٍ التحميل…</section>
+            <section t-elif="state.error" class="alert alert-danger"><t t-esc="state.error"/></section>
+            <t t-else="">
+                <section class="o_rep_pc_cards" aria-label="ملخص الشهر">
+                    <article><span>المحوّل للمندوب</span><strong dir="ltr"><t t-esc="money(state.data.summary.funded)"/></strong></article>
+                    <article><span>المسدّد للمشتريات</span><strong dir="ltr"><t t-esc="money(state.data.summary.settled)"/></strong><small>يُستكمل في مرحلة الفواتير</small></article>
+                    <article class="is_total"><span>المتبقي</span><strong dir="ltr"><t t-esc="money(state.data.summary.remaining)"/></strong></article>
+                </section>
+                <section class="o_rep_pc_entry" aria-label="إضافة عهدة">
+                    <h2>إضافة عهدة</h2>
+                    <div class="o_rep_pc_grid">
+                        <label>طلب الشراء
+                            <select t-on-change="onRequestChange" t-att-value="state.requestId">
+                                <option value="">اختر طلب الشراء</option>
+                                <option t-foreach="state.data.requests" t-as="request" t-key="request.id" t-att-value="request.id"><t t-esc="request.name"/> — <t t-esc="request.representative_name"/></option>
+                            </select>
+                        </label>
+                        <div class="o_rep_pc_request_total" t-if="selectedRequest()">قيمة طلب الشراء: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></div>
+                        <label>من
+                            <select t-on-change="onPaymentPointChange" t-att-value="state.paymentPointId">
+                                <option value="">اختر بنكًا أو كاشًا</option>
+                                <option t-foreach="state.data.payment_points" t-as="point" t-key="point.id" t-att-value="point.id"><t t-esc="point.name"/></option>
+                            </select>
+                        </label>
+                        <label>إلى
+                            <select t-att-value="state.destinationId" t-on-change="(event) => state.destinationId = event.target.value">
+                                <option value="">اختر مندوب المشتريات</option>
+                                <option t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" t-att-value="representative.id"><t t-esc="representative.display_name"/></option>
+                            </select>
+                        </label>
+                        <label>المبلغ
+                            <input type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.amount" t-on-input="onAmountInput"/>
+                        </label>
+                        <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving"><t t-if="state.saving">جارٍ الحفظ…</t><t t-else="">حفظ</t></button>
+                    </div>
+                </section>
+                <section class="o_rep_pc_entry" aria-label="إرجاع عهدة">
+                    <h2>إرجاع متبقي</h2>
+                    <div class="o_rep_pc_grid">
+                        <label>الحركة الأصلية
+                            <select t-att-value="state.returnOriginId" t-on-change="(event) => state.returnOriginId = event.target.value">
+                                <option value="">اختر عهدة قائمة</option>
+                                <option t-foreach="state.data.open_fundings" t-as="funding" t-key="funding.id" t-att-value="funding.id"><t t-esc="funding.name"/> — <t t-esc="funding.representative_name"/> (<t t-esc="money(funding.remaining)"/>)</option>
+                            </select>
+                        </label>
+                        <label>إلى
+                            <select t-att-value="state.returnPaymentPointId" t-on-change="(event) => state.returnPaymentPointId = event.target.value">
+                                <option value="">اختر بنكًا أو كاشًا</option>
+                                <option t-foreach="state.data.payment_points" t-as="point" t-key="point.id" t-att-value="point.id"><t t-esc="point.name"/></option>
+                            </select>
+                        </label>
+                        <label>المبلغ<input type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.returnAmount" t-on-input="(event) => state.returnAmount = event.target.value"/></label>
+                        <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving">حفظ المرتجع</button>
+                    </div>
+                </section>
+                <section class="o_rep_pc_rows">
+                    <h2>حركات هذا الشهر</h2>
+                    <p t-if="!state.data.movements.length" class="o_rep_pc_empty">لا توجد حركات في الشهر المختار.</p>
+                    <table t-else=""><thead><tr><th>التاريخ</th><th>رقم الحركة</th><th>طلب الشراء</th><th>من</th><th>إلى</th><th>المبلغ</th></tr></thead><tbody>
+                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id"><td><t t-esc="movement.date"/></td><td><t t-esc="movement.name"/></td><td><t t-esc="movement.request_name || 'مرتجع'"/></td><td><t t-esc="movement.payment_point_name"/></td><td><t t-esc="movement.representative_name"/></td><td dir="ltr"><t t-esc="money(movement.amount)"/></td></tr>
+                    </tbody></table>
+                </section>
+            </t>
+        </main>
+    </t>
+</templates>

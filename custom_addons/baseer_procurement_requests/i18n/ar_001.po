@@ -1037,8 +1037,11 @@ msgstr "قيمة الطلب المستلم"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch_line__payment_source_type
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_line_representative_petty_cash
 msgid "Payment source"
-msgstr "طريقة السداد"
+msgstr "مصدر السداد"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
@@ -1284,8 +1287,27 @@ msgstr "يوجد صندوق عهدة لهذه الشركة. افتح الصند�
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_id
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch_line__representative_petty_cash_representative_id
 msgid "Representative Petty Cash"
 msgstr "عهدة مندوب المشتريات"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch_line__representative_petty_cash_available_amount
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_line_representative_petty_cash
+msgid "Available balance"
+msgstr "الرصيد المتاح"
+
+#. module: baseer_procurement_requests
+#: selection:baseer.purchase.batch.line,payment_source_type:0
+msgid "Payment point"
+msgstr "نقطة دفع"
+
+#. module: baseer_procurement_requests
+#: selection:baseer.purchase.batch.line,payment_source_type:0
+msgid "Credit"
+msgstr "آجل"
 
 #. module: baseer_procurement_requests
 #. odoo-javascript
@@ -1455,11 +1477,6 @@ msgstr "رقم الحركة"
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Return"
 msgstr "مرتجع"
-
-#. module: baseer_procurement_requests
-#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_id
-msgid "Representative Petty Cash"
-msgstr "عهدة مندوب المشتريات"
 
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_available_amount

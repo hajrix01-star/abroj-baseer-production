@@ -107,7 +107,7 @@
                        width="190px" options="{'no_create': True}"
                        invisible="payment_source_type != 'representative_petty_cash'"
                        required="payment_source_type == 'representative_petty_cash'"
-                       domain="[('active', '=', True), ('is_company', '=', False), ('parent_id', '=', False)]"/>
+                       domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('parent_id', '=', False), ('active', '=', True)]"/>
                 <field name="representative_petty_cash_available_amount" string="Available balance" width="140px"
                        readonly="1" invisible="payment_source_type != 'representative_petty_cash'"/>
             </xpath>
@@ -139,7 +139,7 @@
                        invisible="payment_source_type != 'representative_petty_cash'"
                        required="payment_source_type == 'representative_petty_cash'"
                        readonly="batch_state == 'approved' or (batch_id and not is_current_company)"
-                       domain="[('active', '=', True), ('is_company', '=', False), ('parent_id', '=', False)]"/>
+                       domain="[('is_purchase_representative', '=', True), ('company_id', 'in', [False, company_id]), ('is_company', '=', False), ('parent_id', '=', False), ('active', '=', True)]"/>
                 <field name="representative_petty_cash_available_amount" string="Available balance" readonly="1"
                        invisible="payment_source_type != 'representative_petty_cash'"/>
             </xpath>

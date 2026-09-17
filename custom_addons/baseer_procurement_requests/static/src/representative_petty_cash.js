@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, useState } from "@odoo/owl";
 import { localization } from "@web/core/l10n/localization";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
@@ -29,7 +29,9 @@ export class RepresentativePettyCash extends Component {
             representativeId: "", monthStart: "", destinationId: "", requestId: "", paymentPointId: "", amount: "", movementDate: today(), clientToken: newClientToken(),
             returnOriginId: "", returnPaymentPointId: "", returnAmount: "", returnClientToken: newClientToken(),
         });
-        onWillStart(() => this.load());
+        // Render the shell and its loading state immediately. Waiting in
+        // onWillStart leaves a blank mobile page until the dashboard RPC ends.
+        onMounted(() => this.load());
     }
 
     async load() {

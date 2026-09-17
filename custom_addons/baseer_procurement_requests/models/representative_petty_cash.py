@@ -259,6 +259,14 @@ class RepresentativePettyCash(models.Model):
             returned = sum((Decimal(str(amount)) for amount in movements.filtered(
                 lambda row: row.movement_type == 'return'
             ).mapped('amount')), Decimal('0.00'))
+            settlement_domain = [
+                ('company_id', '=', company.id), ('state', '=', 'posted'),
+                ('move_id.date', '>=', start), ('move_id.date', '<', end),
+            ]
+            if representative_id:
+                settlement_domain.append(('advance_id.representative_partner_id', '=', int(representative_id)))
+            settlements = self.env['baseer.procurement.representative.advance.settlement'].sudo().search(settlement_domain)
+            settled = sum((Decimal(str(amount)) for amount in settlements.mapped('amount')), Decimal('0.00'))
             stage = _('نقاط الدفع')
             can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             payment_points = []
@@ -281,8 +289,8 @@ class RepresentativePettyCash(models.Model):
             'requests': request_rows,
             'payment_points': payment_points,
             'summary': {
-                'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': 0.0,
-                'remaining': float((funded - returned).quantize(MONEY_QUANTUM)),
+                'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': float(settled.quantize(MONEY_QUANTUM)),
+                'remaining': float((funded - returned - settled).quantize(MONEY_QUANTUM)),
             },
             'open_fundings': [{
                 'id': funding.id, 'name': funding.name, 'representative_name': funding.representative_partner_id.display_name,

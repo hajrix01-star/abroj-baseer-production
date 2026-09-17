@@ -1420,3 +1420,43 @@ msgstr "رقم الحركة"
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Return"
 msgstr "مرتجع"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_id
+msgid "Representative Petty Cash"
+msgstr "عهدة مندوب المشتريات"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_available_amount
+msgid "Available Representative Petty Cash"
+msgstr "المتاح من عهدة المندوب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_settlement_move_id
+msgid "Representative Petty Cash settlement"
+msgstr "قيد تسوية عهدة المندوب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Payment source:"
+msgstr "مصدر السداد:"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Supplier bills are settled from the selected advance after approval; no new bank or cash payment is created."
+msgstr "تُسوّى فواتير الموردين من العهدة المختارة بعد الاعتماد؛ ولا يُنشأ أي دفع جديد من البنك أو النقد."
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__representative_petty_cash_representative_id
+msgid "Selected advance representative"
+msgstr "مندوب العهدة المختارة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Received request total"
+msgstr "إجمالي الطلب المستلم"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
+msgid "Supplier invoices entered"
+msgstr "إجمالي فواتير الموردين"

@@ -27,4 +27,83 @@
             </xpath>
         </field>
     </record>
+
+    <!-- The historical PCUST field remains visible only on historical batches.
+         New batches choose the immutable representative advance instead. -->
+    <record id="view_purchase_batch_representative_petty_cash" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.representative.petty.cash</field>
+        <field name="model">baseer.purchase.batch</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='procurement_custody_id']" position="attributes">
+                <attribute name="invisible">state == 'draft' and not procurement_custody_id</attribute>
+                <attribute name="readonly">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='procurement_custody_id']" position="after">
+                <field name="representative_petty_cash_id" string="Representative Petty Cash"
+                       options="{'no_create': True}"
+                       readonly="state != 'draft'"
+                       context="{'baseer_representative_petty_cash_request_id': procurement_request_id, 'baseer_representative_petty_cash_company_id': company_id}"
+                       domain="[('company_id', '=', company_id), ('movement_type', '=', 'funding'), ('state', '=', 'posted'), ('procurement_request_id', '=', procurement_request_id)]"/>
+                <field name="representative_petty_cash_representative_id" string="Selected advance representative"
+                       invisible="not representative_petty_cash_id" readonly="True"/>
+                <field name="representative_petty_cash_settlement_move_id" string="Representative Petty Cash settlement"
+                       invisible="not representative_petty_cash_settlement_move_id" readonly="True"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="before">
+                <div class="alert alert-info mb-3" role="status" invisible="not representative_petty_cash_id">
+                    Payment source: <strong>Representative Petty Cash</strong>. Supplier bills are settled from the selected advance after approval; no new bank or cash payment is created.
+                </div>
+                <div class="row g-3 mb-3" invisible="not representative_petty_cash_id">
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Received request total</div>
+                            <div class="fs-4 fw-bold" dir="ltr"><field name="procurement_request_actual_total" readonly="1"/></div>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 bg-light"><div class="card-body">
+                            <div class="text-muted">Supplier invoices entered</div>
+                            <div class="fs-4 fw-bold" dir="ltr"><field name="amount_gross" readonly="1"/></div>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 bg-primary-subtle"><div class="card-body">
+                            <div class="text-muted">Available Representative Petty Cash</div>
+                            <div class="fs-4 fw-bold" dir="ltr"><field name="representative_petty_cash_available_amount" readonly="1"/></div>
+                        </div></div>
+                    </div>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="attributes">
+                <attribute name="context">{'default_company_id': company_id, 'default_invoice_date': entry_date, 'default_is_credit': representative_petty_cash_id and True or (procurement_custody_id and True or False), 'default_procurement_request_id': procurement_request_id, 'form_view_ref': 'baseer_purchase_batch.view_purchase_batch_line_form', 'baseer_custody_route': procurement_custody_id, 'baseer_representative_petty_cash_route': representative_petty_cash_id}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='is_credit']" position="attributes">
+                <attribute name="column_invisible">parent.procurement_custody_id or parent.representative_petty_cash_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="attributes">
+                <attribute name="column_invisible">parent.procurement_custody_id or parent.representative_petty_cash_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/following-sibling::p[1]" position="attributes">
+                <attribute name="invisible">procurement_custody_id or representative_petty_cash_id</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_batch_line_representative_petty_cash" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.line.representative.petty.cash</field>
+        <field name="model">baseer.purchase.batch.line</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_line_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_credit']" position="attributes">
+                <attribute name="invisible">context.get('baseer_representative_petty_cash_route') or context.get('baseer_custody_route')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_method_line_id']" position="attributes">
+                <attribute name="invisible">context.get('baseer_representative_petty_cash_route') or context.get('baseer_custody_route')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_method_line_id']/following-sibling::div[1]" position="attributes">
+                <attribute name="invisible">context.get('baseer_representative_petty_cash_route') or context.get('baseer_custody_route')</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>

@@ -108,7 +108,7 @@ class RepresentativePettyCashCase(TransactionCase):
         request = self._sent_request()
         cashier = self.env['res.users'].create({
             'name': 'Representative petty cash cashier', 'login': 'representative-petty-cash-cashier',
-            'groups_id': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_cashier').id])],
+            'group_ids': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_cashier').id])],
         })
         with self.assertRaises(AccessError):
             self.env['baseer.procurement.representative.advance'].with_user(cashier).submit_funding(
@@ -118,7 +118,7 @@ class RepresentativePettyCashCase(TransactionCase):
     def test_manager_dashboard_is_read_only_without_payment_point_access(self):
         manager = self.env['res.users'].create({
             'name': 'Representative petty cash manager', 'login': 'representative-petty-cash-manager',
-            'groups_id': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_manager').id])],
+            'group_ids': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_manager').id])],
         })
         dashboard = self.env['baseer.procurement.representative.advance'].with_user(manager).dashboard_data()
         self.assertFalse(dashboard['can_record'])

@@ -602,7 +602,7 @@ class ProcurementFlowCase(TransactionCase):
             'company_id': self.company.id,
             'is_company_pool': True,
         })
-        with self.assertRaisesRegex(ValidationError, 'already has'):
+        with self.assertRaisesRegex(ValidationError, 'already exists'):
             self.env['baseer.procurement.custody'].create({
                 'company_id': self.company.id,
                 'is_company_pool': True,
@@ -1228,3 +1228,117 @@ class ProcurementFlowCase(TransactionCase):
             lambda account_line: account_line.account_id == cash_account
         )
         self.assertEqual(-sum(liquidity.mapped('balance')), 1)
+
+    def test_purchase_batch_settles_from_representative_petty_cash_without_payment(self):
+        """A bill is paid by the selected representative advance, never a second bank payment."""
+        sar = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'SAR')], limit=1)
+        if not sar:
+            sar = self.env['res.currency'].create({'name': 'SAR', 'symbol': 'SR', 'active': True})
+        sar.active = True
+        self.company = self.env['res.company'].create({
+            'name': 'PRA21 SAR company', 'currency_id': sar.id,
+        })
+        self.env.user.company_ids |= self.company
+        company_env = self.env['res.company'].with_company(self.company).env
+        self.env = company_env
+        self.warehouse = company_env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        if not self.warehouse:
+            self.warehouse = company_env['stock.warehouse'].create({
+                'name': 'PRA21 warehouse', 'code': 'PRA21', 'company_id': self.company.id,
+            })
+        category_values = {'name': 'PRA21 quantity category'}
+        if 'property_cost_method' in company_env['product.category']._fields:
+            category_values['property_cost_method'] = 'standard'
+        if 'property_valuation' in company_env['product.category']._fields:
+            category_values['property_valuation'] = 'periodic'
+        self.category = company_env['product.category'].create(category_values)
+        self.product = company_env['product.product'].create({
+            'name': 'PRA21 stock product', 'company_id': self.company.id,
+            'categ_id': self.category.id, 'uom_id': self.uom.id, 'is_storable': True,
+        })
+        self.option = company_env['baseer.procurement.purchase.option'].create({
+            'name': 'Piece', 'company_id': self.company.id, 'product_id': self.product.id,
+            'uom_id': self.uom.id,
+        })
+        advance_account, _cash_account, _bank_account, general, _cash, bank = self._custody_accounting_fixture('PRA21')
+        self.company.write({
+            'baseer_procurement_representative_petty_cash_account_id': advance_account.id,
+            'baseer_procurement_representative_petty_cash_journal_id': general.id,
+        })
+        representative = self.env['res.partner'].create({'name': 'PRA21 representative'})
+        request = self._complete_external_request(representative)
+        advance_id = self.env['baseer.procurement.representative.advance'].with_company(self.company).submit_funding(
+            request.id, bank.id, representative.id, 25, str(uuid4()), fields.Date.context_today(self),
+        )
+        advance = self.env['baseer.procurement.representative.advance'].browse(advance_id)
+        self.assertEqual(advance.remaining_amount, 25)
+
+        expense_account = self.env['account.account'].create({
+            'name': 'PRA21 purchase expense', 'code': 'PRA211', 'account_type': 'expense',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        supplier = self.env['res.partner'].create({'name': 'PRA21 supplier', 'supplier_rank': 1})
+        self._native_batch_accounting_fixture(self.company, expense_account, supplier)
+        service_category = self.env['product.category'].create({'name': 'PRA21 expense category'})
+        service = self.env['product.product'].create({
+            'name': 'PRA21 expense service', 'type': 'service', 'categ_id': service_category.id,
+            'property_account_expense_id': expense_account.id,
+        })
+        self.env['baseer.purchase.category.map'].create({
+            'company_id': self.company.id, 'category_id': service_category.id, 'product_id': service.id,
+        })
+        legacy_employee = self.env['hr.employee'].create({
+            'name': 'PRA21 legacy buyer', 'company_id': self.company.id,
+        })
+        legacy_custody = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'employee_id': legacy_employee.id,
+        })
+        with self.assertRaisesRegex(ValidationError, 'historical Petty Cash row links'):
+            self.env['baseer.purchase.batch'].create({
+                'company_id': self.company.id,
+                'procurement_request_id': request.id,
+                'representative_petty_cash_id': advance.id,
+                'line_ids': [Command.create({
+                    'partner_id': supplier.id, 'supplier_ref': 'PRA21-LEGACY', 'entry_type': 'purchase',
+                    'gross_amount': 20, 'is_credit': True, 'procurement_custody_id': legacy_custody.id,
+                })],
+            })
+        excessive_batch = self.env['baseer.purchase.batch'].create({
+            'company_id': self.company.id,
+            'procurement_request_id': request.id,
+            'representative_petty_cash_id': advance.id,
+            'line_ids': [Command.create({
+                'partner_id': supplier.id, 'supplier_ref': 'PRA21-OVER', 'entry_type': 'purchase',
+                'gross_amount': 26, 'is_credit': True,
+            })],
+        })
+        with self.assertRaisesRegex(UserError, 'exceed the available'):
+            excessive_batch.action_approve()
+        self.assertEqual(excessive_batch.state, 'draft')
+        self.assertFalse(excessive_batch.line_ids.move_id)
+        excessive_batch.unlink()
+        batch = self.env['baseer.purchase.batch'].create({
+            'company_id': self.company.id,
+            'procurement_request_id': request.id,
+            'representative_petty_cash_id': advance.id,
+            'line_ids': [Command.create({
+                'partner_id': supplier.id, 'supplier_ref': 'PRA21-1', 'entry_type': 'purchase',
+                'gross_amount': 20, 'is_credit': True,
+            })],
+        })
+        batch.action_approve()
+        batch.invalidate_recordset(['representative_petty_cash_settlement_id'])
+        advance.invalidate_recordset(['settlement_ids', 'settled_amount', 'remaining_amount'])
+        self.assertEqual(batch.state, 'approved')
+        self.assertTrue(batch.representative_petty_cash_settlement_id)
+        self.assertEqual(batch.representative_petty_cash_settlement_id.amount, 20)
+        self.assertEqual(batch.representative_petty_cash_settlement_move_id.state, 'posted')
+        self.assertEqual(batch.line_ids.move_id.payment_state, 'paid')
+        self.assertFalse(batch.line_ids.payment_id)
+        self.assertEqual(advance.settled_amount, 20)
+        self.assertEqual(advance.remaining_amount, 5)
+        settlement_credit = batch.representative_petty_cash_settlement_move_id.line_ids.filtered(
+            lambda line: line.account_id == advance_account and line.credit > 0
+        )
+        self.assertEqual(len(settlement_credit), 1)
+        self.assertEqual(settlement_credit.baseer_representative_petty_cash_id, advance)

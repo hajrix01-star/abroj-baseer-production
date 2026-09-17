@@ -506,16 +506,4 @@
         </field>
     </record>
 
-    <record id="view_purchase_batch_procurement_resettle" model="ir.ui.view">
-        <field name="name">baseer.purchase.batch.procurement.resettle</field>
-        <field name="model">baseer.purchase.batch</field>
-        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//header/button[@name='action_approve']" position="after">
-                <button name="action_resettle_custody" type="object" string="Resettle Petty Cash bills"
-                        invisible="state != 'approved' or not procurement_custody_id"
-                        groups="baseer_procurement_requests.group_procurement_accountant"/>
-            </xpath>
-        </field>
-    </record>
 </odoo>

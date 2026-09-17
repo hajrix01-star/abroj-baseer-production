@@ -243,7 +243,7 @@ class RepresentativePettyCash(models.Model):
         can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
         payment_points = []
         if can_record:
-            payment_points = self.env['account.journal'].search_read([
+            payment_points = self.env['account.journal'].sudo().search_read([
                 ('company_id', '=', company.id), ('active', '=', True), ('type', 'in', ['bank', 'cash']),
                 ('default_account_id', '!=', False), ('default_account_id.account_type', '=', 'asset_cash'),
             ], ['name', 'type'], order='sequence, name')

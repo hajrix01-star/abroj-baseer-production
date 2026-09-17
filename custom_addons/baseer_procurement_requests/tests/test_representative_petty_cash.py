@@ -137,6 +137,10 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertFalse(dashboard['can_record'])
         self.assertEqual(dashboard['payment_points'], [])
 
+    def test_accountant_dashboard_lists_only_valid_company_payment_points(self):
+        dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
+        self.assertIn(self.bank_journal.id, [point['id'] for point in dashboard['payment_points']])
+
     def test_funding_requires_transfer_evidence(self):
         request = self._sent_request()
         Model = self.env['baseer.procurement.representative.advance']

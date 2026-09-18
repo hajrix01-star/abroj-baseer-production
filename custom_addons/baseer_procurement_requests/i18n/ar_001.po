@@ -139,14 +139,9 @@ msgstr "الطلب"
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
-msgid "Manager receipt"
-msgstr "استلام المدير"
-
-#. module: baseer_procurement_requests
-#. odoo-javascript
-#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
-msgid "Cashier confirmation"
-msgstr "تأكيد الكاشير"
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_line_report_list
+msgid "Representative handover"
+msgstr "تسليم المندوب"
 
 #. module: baseer_procurement_requests
 #. odoo-javascript
@@ -409,8 +404,8 @@ msgstr "المطلوب:"
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
-msgid "Manager received:"
-msgstr "استلام المدير:"
+msgid "Representative handed over:"
+msgstr "الكمية التي سلّمها المندوب:"
 
 #. module: baseer_procurement_requests
 #. odoo-javascript
@@ -435,6 +430,13 @@ msgstr "سعر الوحدة الفعلي"
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Confirm quantity receipt and update latest prices"
 msgstr "اعتماد الاستلام الكمي وتحديث آخر الأسعار"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Confirm representative handover"
+msgstr "تأكيد تسليم المندوب"
 
 #. module: baseer_procurement_requests
 #. odoo-javascript
@@ -492,7 +494,8 @@ msgid "Receipt confirmation cart"
 msgstr "سلة تأكيد الاستلام"
 
 #. module: baseer_procurement_requests
-#: code:addons/baseer_procurement_requests/models/procurement.py:0
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/models/procurement.py:0 code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Cashier receipt"
 msgstr "استلام الكاشير"
 

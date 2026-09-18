@@ -12,8 +12,8 @@
                 </div>
                 <div class="o_prc_pos_steps" aria-label="Request workflow">
                     <span class="is_active"><b>1</b> Request</span>
-                    <span><b>2</b> Manager receipt</span>
-                    <span><b>3</b> Cashier confirmation</span>
+                    <span><b>2</b> Representative handover</span>
+                    <span><b>3</b> Cashier receipt</span>
                 </div>
             </header>
 
@@ -271,20 +271,20 @@
     <t t-name="baseer_procurement_requests.ProcurementActualCatalog">
         <main class="o_prc_actual_pos">
             <header class="o_prc_actual_header">
-                <div><span class="o_prc_eyebrow">Cashier confirmation</span><h1>Confirm actual purchase</h1><p><t t-esc="state.request.name"/> · <t t-esc="state.request.warehouse_id[1]"/></p></div>
+                <div><span class="o_prc_eyebrow">Cashier receipt</span><h1>Confirm actual purchase</h1><p><t t-esc="state.request.name"/> · <t t-esc="state.request.warehouse_id[1]"/></p></div>
                 <div class="o_prc_actual_total"><span>Actual purchase total</span><strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/><small>This updates quantities and the latest price only.</small></div>
             </header>
             <section class="o_prc_actual_notice"><i class="fa fa-info-circle"/><span>This confirmation creates a quantity-only stock receipt. It does not create accounting inventory value.</span></section>
             <section class="o_prc_actual_lines">
                 <article t-foreach="state.lines" t-as="line" t-key="line.id">
-                    <div class="o_prc_actual_name"><strong t-esc="line.option.product_id[1]"/><span class="o_prc_actual_variant"><i class="fa fa-cube" aria-hidden="true"/> <t t-esc="optionLabel(line.option)"/></span><small>Requested: <t t-esc="line.requested_qty"/> · Manager received: <t t-esc="line.manager_received_qty"/></small><small t-if="state.mode !== 'manager_receipt'">Latest price: <t t-esc="line.option.last_price"/></small></div>
+                    <div class="o_prc_actual_name"><strong t-esc="line.option.product_id[1]"/><span class="o_prc_actual_variant"><i class="fa fa-cube" aria-hidden="true"/> <t t-esc="optionLabel(line.option)"/></span><small>Requested: <t t-esc="line.requested_qty"/> · Representative handed over: <t t-esc="line.manager_received_qty"/></small><small t-if="state.mode !== 'manager_receipt'">Latest price: <t t-esc="line.option.last_price"/></small></div>
                     <label t-if="state.mode === 'manager_receipt'"><span>Received quantity</span><input type="number" min="0" t-att-max="line.requested_qty" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.manager_received_qty" t-on-input="(event) => this.setManagerReceipt(line, event.target.value)"/></label>
                     <label t-else=""><span>Actual quantity</span><input type="number" min="0" t-att-max="line.manager_received_qty" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_qty" t-on-input="(event) => this.setActual(line, 'actual_qty', event.target.value)"/></label>
                     <label t-if="state.mode !== 'manager_receipt'"><span>Actual unit price</span><input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-on-input="(event) => this.setActual(line, 'actual_price', event.target.value)"/></label>
                     <strong class="o_prc_actual_line_total" t-if="state.mode !== 'manager_receipt' and quoteLine(line)" t-esc="moneyText(quoteLine(line).line_total_text)"/>
                 </article>
             </section>
-            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm manager receipt</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
+            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm representative handover</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
         </main>
     </t>
 </templates>

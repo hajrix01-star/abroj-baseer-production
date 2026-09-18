@@ -26,7 +26,7 @@
                     <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="state == 'cancel'" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_mark_sent" type="object" string="Confirm sent" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>
-                    <button name="action_open_manager_receipt_catalog" type="object" string="Confirm manager receipt" class="oe_highlight" invisible="state != 'sent'" groups="baseer_procurement_requests.group_procurement_manager"/>
+                    <button name="action_open_manager_receipt_catalog" type="object" string="Confirm representative handover" class="oe_highlight" invisible="state != 'sent'" groups="baseer_procurement_requests.group_procurement_manager"/>
                     <button name="action_open_actual_catalog" type="object" string="Cashier purchase receipt" class="oe_highlight" invisible="state not in ('sent', 'received')" groups="baseer_procurement_requests.group_procurement_cashier"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,sent,received,purchased"/>
                 </header>
@@ -79,7 +79,7 @@
                 <field name="request_id"/>
                 <field name="option_id"/>
                 <field name="requested_qty" sum="Requested"/>
-                <field name="manager_received_qty" sum="Manager receipt"/>
+                <field name="manager_received_qty" sum="Representative handover"/>
                 <field name="manager_shortage_qty" sum="Not received"/>
                 <field name="actual_qty" sum="Cashier confirmed"/>
                 <field name="cashier_shortage_qty" sum="Not confirmed"/>

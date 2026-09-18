@@ -58,7 +58,7 @@ export class ProcurementCatalog extends Component {
                 const [page, categories, warehouses, representatives] = await Promise.all([
                     this.orm.call("baseer.procurement.request", "catalog_page", ["", false, 0, CATALOG_PAGE_SIZE]),
                     this.orm.call("baseer.procurement.request", "catalog_categories", []),
-                    this.orm.searchRead("stock.warehouse", [], ["name"], { limit: 100 }),
+                    this.orm.call("baseer.procurement.request", "catalog_warehouses", []),
                     this.orm.call("baseer.procurement.request", "catalog_representatives", []),
                 ]);
                 this.applyCataloguePage(page, true);
@@ -425,6 +425,10 @@ export class ProcurementCatalog extends Component {
 
     onRepresentativeChange(event) {
         this.state.representativePartnerId = Number(event.target.value) || false;
+    }
+
+    onWarehouseChange(event) {
+        this.state.warehouseId = Number(event.target.value) || false;
     }
 
     selectCategory(categoryId) {

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_company_onboarding_procurement" model="ir.ui.view">
+        <field name="name">baseer.company.onboarding.procurement</field>
+        <field name="model">baseer.company.onboarding</field>
+        <field name="inherit_id" ref="baseer_company_setup.view_baseer_company_onboarding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='baseer_onboarding_operations_options']" position="inside">
+                <group class="baseer_onboarding_section" string="المخزون وطلبات الشراء">
+                    <field name="procurement_stock_mode" widget="radio"/>
+                    <field name="procurement_stock_state" widget="badge" invisible="procurement_stock_mode == 'none'"/>
+                    <field name="procurement_stock_message" nolabel="1" readonly="1" invisible="procurement_stock_mode == 'none'"/>
+                    <field name="setup_main_warehouse" invisible="procurement_stock_mode == 'none'"/>
+                    <field name="procurement_warehouse_id" invisible="procurement_stock_mode == 'none'"/>
+                </group>
+                <group class="baseer_onboarding_section" string="عهدة مندوبي المشتريات">
+                    <field name="setup_representative_petty_cash"/>
+                    <field name="representative_petty_cash_state" widget="badge" invisible="not setup_representative_petty_cash"/>
+                    <field name="representative_petty_cash_message" nolabel="1" readonly="1" invisible="not setup_representative_petty_cash"/>
+                    <field name="representative_petty_cash_payment_journal_ids" widget="many2many_tags"
+                           invisible="not setup_representative_petty_cash" options="{'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

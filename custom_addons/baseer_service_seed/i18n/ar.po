@@ -78,6 +78,31 @@ msgid "Only independent private legacy providers can be consolidated: %s"
 msgstr "يمكن توحيد مقدمي الخدمات السابقين المستقلين والخاصين بالشركة فقط: %s"
 
 #. module: baseer_service_seed
+#: code:addons/baseer_service_seed/models/company.py:0
+msgid "Install and configure the native Spend Classification root before employee-service analytics."
+msgstr "ثبّت وأعدّ جذر تصنيف الإنفاق الأصلي قبل التحليل الخاص بخدمات الموظفين."
+
+#. module: baseer_service_seed
+#: code:addons/baseer_service_seed/models/company.py:0
+msgid "Ready: 100% allocation is expected."
+msgstr "جاهز: التوزيع المتوقع 100%."
+
+#. module: baseer_service_seed
+#: code:addons/baseer_service_seed/models/hr_service_analytic_readiness.py:0
+msgid "Employee Service Readiness"
+msgstr "جاهزية خدمات الموظفين"
+
+#. module: baseer_service_seed
+#: code:addons/baseer_service_seed/models/hr_service_analytic_readiness.py:0
+msgid "Only Accounting Managers can review employee-service analytic readiness."
+msgstr "مديرو الحسابات فقط يمكنهم مراجعة جاهزية التحليل لخدمات الموظفين."
+
+#. module: baseer_service_seed
+#: code:addons/baseer_service_seed/models/company.py:0
+msgid "Only Accounting Managers can prepare employee-service analytic rules."
+msgstr "مديرو الحسابات فقط يمكنهم تجهيز قواعد التحليل لخدمات الموظفين."
+
+#. module: baseer_service_seed
 #: code:addons/baseer_service_seed/models/shared_provider.py:0
 msgid "Provider %s has non-creation chatter. Review it separately before consolidation."
 msgstr "مقدم الخدمة %s لديه مراسلات إضافية. راجعه منفصلًا قبل التوحيد."

@@ -69,7 +69,12 @@
                     <field name="company_id" invisible="1"/>
                     <field name="bill_id" invisible="1"/>
                     <field name="has_posted_refund" invisible="1"/>
+                    <field name="analytic_readiness" invisible="1"/>
+                    <field name="analytic_readiness_message" invisible="1"/>
                     <div class="alert alert-info" role="status" invisible="not has_posted_refund">This bill has a credit note. Review the bill for correction details.</div>
+                    <div class="alert alert-warning" role="status" invisible="analytic_readiness == 'ready'">
+                        <field name="analytic_readiness_message" nolabel="1" readonly="1"/>
+                    </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-secondary" invisible="active"/>
                     <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
                     <group>
@@ -89,6 +94,8 @@
                             <field name="vat_enabled" widget="boolean_toggle" readonly="state != 'draft' or bill_id"/>
                             <field name="net_amount" readonly="1"/>
                             <field name="tax_amount" readonly="1"/>
+                            <separator string="Expected Spend Classification"/>
+                            <field name="expected_analytic_account_id" readonly="1"/>
                             <separator string="Bill and Payment" invisible="not bill_id"/>
                             <field name="bill_state" invisible="not bill_id"/>
                             <field name="payment_state" widget="badge" invisible="not bill_id"/>

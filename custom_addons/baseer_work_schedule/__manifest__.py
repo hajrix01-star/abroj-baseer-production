@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Simple Work Schedules',
-    'version': '19.0.1.1.2',
+    'version': '19.0.1.1.3',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'depends': ['baseer_payroll', 'hr_attendance'],

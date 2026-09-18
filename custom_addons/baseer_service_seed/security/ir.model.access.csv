@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_baseer_hr_service_analytic_readiness_manager,baseer.hr.service.analytic.readiness.manager,model_baseer_hr_service_analytic_readiness,account.group_account_manager,1,1,1,1
+access_baseer_hr_service_analytic_readiness_line_manager,baseer.hr.service.analytic.readiness.line.manager,model_baseer_hr_service_analytic_readiness_line,account.group_account_manager,1,1,1,1

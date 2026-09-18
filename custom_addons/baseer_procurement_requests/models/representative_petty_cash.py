@@ -27,6 +27,10 @@ class ResCompany(models.Model):
         string='Representative Petty Cash payment points', check_company=True, copy=False,
         help='Existing company bank or cash points that accountants may use for Representative Petty Cash.',
     )
+    baseer_procurement_default_warehouse_id = fields.Many2one(
+        'stock.warehouse', string='Default procurement warehouse', check_company=True,
+        help='Used for new procurement requests when this company has one selected main warehouse.',
+    )
 
     def _baseer_representative_petty_cash_seed_record(self, key, model):
         """Return the one record this module has created for this company."""
@@ -166,7 +170,6 @@ class ResCompany(models.Model):
         )
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
-
     @api.constrains('baseer_procurement_representative_petty_cash_payment_journal_ids')
     def _check_baseer_representative_petty_cash_payment_points(self):
         for company in self:
@@ -226,19 +229,22 @@ class ResCompany(models.Model):
         return account, journal
 
 
-class AccountChartTemplate(models.AbstractModel):
+class BaseerRepresentativePettyCashChartTemplate(models.AbstractModel):
     _inherit = 'account.chart.template'
 
     def _load(self, template_code, company, install_demo, force_create=True):
-        """Attach setup to Odoo's definitive chart-of-accounts completion hook.
+        """Attach the seed to Odoo's definitive chart-completion boundary.
 
-        The callback runs after the native chart is present, for both a newly
-        created company and a chart loaded later.  It avoids relying on the
-        ordering of unrelated company-create precommit callbacks.
+        A module-local class name is deliberate: it avoids colliding with
+        Odoo's own `AccountChartTemplate` Python class during model assembly.
+        This runs after the native chart is present; payment points and every
+        operational movement remain explicit choices.
         """
         result = super()._load(template_code, company, install_demo, force_create)
-        company = self.env['res.company'].browse(company if isinstance(company, int) else company.id)
-        company.sudo()._baseer_ensure_representative_petty_cash_setup(require_chart=True)
+        company_id = company if isinstance(company, int) else company.id
+        self.env['res.company'].browse(company_id).sudo()._baseer_ensure_representative_petty_cash_setup(
+            require_chart=True,
+        )
         return result
 
 

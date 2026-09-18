@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Employee Services',
     'summary': 'Employee services linked to native supplier bills and payments',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'license': 'LGPL-3',
     'depends': ['baseer_service_seed', 'baseer_payroll'],
     'data': [

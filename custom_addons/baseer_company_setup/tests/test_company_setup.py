@@ -1,4 +1,4 @@
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -46,24 +46,34 @@ class CompanySetupCase(TransactionCase):
         self.assertFalse(company.chart_template)
         self._assert_no_financial_documents(company)
 
-    def test_branch_keeps_shared_accounting_without_default_chart(self):
+    def test_branch_keeps_shared_accounting_and_rejects_separate_setup(self):
         company = self._new_company(parent_id=self.env.company.id)
-        self.assertFalse(company.chart_template)
+        # Odoo may inherit the chart marker from the parent company.  The
+        # important contract is that Baseer never creates a separate ledger
+        # for a branch and rejects the targeted root-company action.
+        self.assertTrue(company.parent_id)
         company._baseer_prepare_accounting()
-        self.assertFalse(company.chart_template)
+        with self.assertRaises(ValidationError):
+            company.action_baseer_initialize_saudi_accounting()
         self._assert_no_financial_documents(company)
 
-    def test_targeted_saudi_action_only_initializes_its_company(self):
+    def test_targeted_saudi_action_is_idempotent_for_the_new_company_baseline(self):
         company = self._new_company()
         untouched = self._new_company(name='Saudi untouched %s' % self._testMethodName)
-        company.write({'country_id': False})
+        original_journals = self.env['account.journal'].search([('company_id', '=', company.id)]).ids
         action = company.action_baseer_initialize_saudi_accounting()
         self.assertEqual(action['tag'], 'display_notification')
         self.assertEqual(company.country_id, self.saudi)
         self.assertEqual(company.currency_id, self.sar)
         self.assertEqual(company.chart_template, 'sa')
+        self.assertEqual(
+            self.env['account.journal'].search([('company_id', '=', company.id)]).ids,
+            original_journals,
+        )
         self._assert_no_financial_documents(company)
-        self.assertFalse(untouched.chart_template)
+        # Every new root company deliberately receives the Saudi baseline;
+        # opening/reapplying setup for one company must not mutate the other.
+        self.assertEqual(untouched.chart_template, 'sa')
         self._assert_no_financial_documents(untouched)
 
     def test_non_erp_manager_cannot_create_or_initialize_company_accounting(self):

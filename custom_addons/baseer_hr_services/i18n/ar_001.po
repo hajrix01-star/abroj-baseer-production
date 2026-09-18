@@ -80,6 +80,17 @@ msgid "Bill and Payment"
 msgstr "الفاتورة والسداد"
 
 #. module: baseer_hr_services
+#: model:ir.model.fields,field_description:baseer_hr_services.field_baseer_hr_service__expected_spend_analytic_account_id
+#: model_terms:ir.ui.view,arch_db:baseer_hr_services.view_baseer_hr_service_form
+msgid "Expected Spend Classification"
+msgstr "تصنيف الإنفاق المتوقع"
+
+#. module: baseer_hr_services
+#: code:addons/baseer_hr_services/models/service.py:0
+msgid "Employee-service analytic setup needs review."
+msgstr "إعداد التحليل لخدمة الموظف يحتاج إلى مراجعة."
+
+#. module: baseer_hr_services
 #: model_terms:ir.ui.view,arch_db:baseer_hr_services.view_baseer_hr_service_form
 msgid "Cancel"
 msgstr "إلغاء"

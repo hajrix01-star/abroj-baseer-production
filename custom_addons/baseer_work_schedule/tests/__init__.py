@@ -1,0 +1,1 @@
+from . import test_future_schedule_after_attendance

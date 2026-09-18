@@ -99,13 +99,15 @@
                 <attribute name="width">80px</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="attributes">
-                <attribute name="column_invisible">True</attribute>
-                <attribute name="invisible">True</attribute>
+                <attribute name="column_invisible">False</attribute>
+                <attribute name="invisible">False</attribute>
                 <attribute name="required">False</attribute>
+                <attribute name="widget">baseer_payment_settlement_selector</attribute>
+                <attribute name="width">220px</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="before">
                 <field name="company_id" column_invisible="True"/>
-                <field name="payment_source_type" string="Settlement method" widget="baseer_payment_settlement_selector" width="220px"/>
+                <field name="payment_source_type" invisible="True" column_invisible="True"/>
                 <field name="representative_petty_cash_representative_id" string="Representative Petty Cash"
                        column_invisible="True" options="{'no_create': True}"
                        invisible="True" required="False"
@@ -144,15 +146,16 @@
                 <attribute name="invisible">True</attribute>
             </xpath>
             <xpath expr="//field[@name='payment_method_line_id']" position="attributes">
-                <attribute name="invisible">True</attribute>
+                <attribute name="invisible">False</attribute>
                 <attribute name="required">False</attribute>
+                <attribute name="widget">baseer_payment_settlement_selector</attribute>
             </xpath>
             <xpath expr="//field[@name='payment_method_line_id']/following-sibling::div[1]" position="attributes">
                 <attribute name="invisible">True</attribute>
             </xpath>
             <xpath expr="//field[@name='payment_method_line_id']" position="before">
                 <field name="company_id" invisible="True"/>
-                <field name="payment_source_type" string="Settlement method" widget="baseer_payment_settlement_selector" readonly="batch_state == 'approved' or (batch_id and not is_current_company)"/>
+                <field name="payment_source_type" invisible="True"/>
                 <field name="representative_petty_cash_representative_id" string="Representative Petty Cash"
                        options="{'no_create': True}"
                        invisible="True" required="False"

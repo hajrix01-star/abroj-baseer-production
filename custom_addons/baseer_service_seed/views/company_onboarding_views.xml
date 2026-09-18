@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_company_onboarding_employee_services" model="ir.ui.view">
+        <field name="name">baseer.company.onboarding.employee.services</field>
+        <field name="model">baseer.company.onboarding</field>
+        <field name="inherit_id" ref="baseer_company_setup.view_baseer_company_onboarding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='baseer_onboarding_foundation_options']" position="inside">
+                <group class="baseer_onboarding_section" string="خدمات الموظفين الأساسية">
+                    <field name="setup_employee_services" invisible="1"/>
+                    <field name="employee_services_state" widget="badge"/>
+                    <field name="employee_services_message" nolabel="1" readonly="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -341,7 +341,8 @@ class ProcurementRequest(models.Model):
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company,
                                  index=True, ondelete='restrict', tracking=True)
     warehouse_id = fields.Many2one('stock.warehouse', required=True, check_company=True, ondelete='restrict',
-                                   domain="[('company_id', '=', company_id)]", tracking=True)
+                                   domain="[('company_id', '=', company_id)]", tracking=True,
+                                   default=lambda self: self.env.company.baseer_procurement_default_warehouse_id)
     # Kept for existing employee-based requests.  New requests use the Contact
     # field below, so a purchasing representative does not need an employee or
     # supplier record merely to hold petty cash.
@@ -367,7 +368,7 @@ class ProcurementRequest(models.Model):
     actual_confirmed_by_id = fields.Many2one('res.users', readonly=True, copy=False, ondelete='restrict')
     cancellation_reason = fields.Text(copy=False, readonly=True)
     state = fields.Selection([
-        ('draft', 'Draft'), ('sent', 'Sent for purchase'), ('received', 'Manager receipt confirmed'),
+        ('draft', 'Draft'), ('sent', 'Sent for purchase'), ('received', 'Cashier receipt confirmed'),
         ('purchased', 'Quantity receipt completed'), ('cancel', 'Cancelled'),
     ], default='draft', required=True, readonly=True, tracking=True, index=True)
     line_ids = fields.One2many('baseer.procurement.request.line', 'request_id', copy=True)
@@ -1356,6 +1357,24 @@ class ProcurementRequest(models.Model):
         return [{'id': partner.id, 'name': partner.display_name} for partner in partners]
 
     @api.model
+    def catalog_warehouses(self):
+        """Return warehouses owned by the active company, default first.
+
+        The cashier catalogue must never pick the first warehouse readable in
+        another company.  It has no warehouse selector for a one-warehouse
+        business, so the result also supplies the authoritative default.
+        """
+        self._check_catalog_access()
+        company = self.env.company
+        warehouses = self.env['stock.warehouse'].search([
+            ('company_id', '=', company.id),
+        ], order='name, id')
+        default = company.baseer_procurement_default_warehouse_id
+        if default and default in warehouses:
+            warehouses = default | (warehouses - default)
+        return [{'id': warehouse.id, 'name': warehouse.display_name} for warehouse in warehouses]
+
+    @api.model
     def quote_catalog_cart(self, lines):
         """Return the authoritative decimal estimate without writing a request."""
         self._check_catalog_access()
@@ -1552,8 +1571,19 @@ class ProcurementRequest(models.Model):
                 'res_id': self.id,
                 'target': 'current',
             }
-        return {'type': 'ir.actions.act_window', 'name': _('Receipt'), 'res_model': 'stock.picking',
-                'view_mode': 'form', 'res_id': self.picking_id.id, 'target': 'current'}
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Receipt'),
+            'res_model': 'stock.picking',
+            'res_id': self.picking_id.id,
+            # ``action.doAction`` receives this descriptor directly from the
+            # cashier catalogue.  It requires an explicit views array; without
+            # one Odoo's action service attempts ``undefined.map`` *after*
+            # the receipt has safely been confirmed on the server.
+            'views': [[False, 'form']],
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def write(self, vals):
         self._require_active_company_for_cashier()
@@ -1589,7 +1619,7 @@ class ProcurementRequest(models.Model):
         return super().unlink()
 
     @api.model
-    def create_from_catalog(self, lines, warehouse_id, purchaser_id=False, whatsapp_number=False,
+    def create_from_catalog(self, lines, warehouse_id=False, purchaser_id=False, whatsapp_number=False,
                             client_token=False, representative_partner_id=False):
         """Narrow RPC boundary used by the standalone POS-style catalogue."""
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
@@ -1635,7 +1665,9 @@ class ProcurementRequest(models.Model):
             values.append(Command.create({'option_id': option.id, 'requested_qty': float(quantity),
                                           'requested_price': option.last_price}))
             canonical_lines.append({'option_id': option.id, 'quantity': _decimal_text(quantity).replace(',', '')})
-        warehouse = self.env['stock.warehouse'].browse(int(warehouse_id)).exists()
+        warehouse = self.env['stock.warehouse'].browse(
+            int(warehouse_id or self.env.company.baseer_procurement_default_warehouse_id.id)
+        ).exists()
         purchaser = self.env['hr.employee.public'].browse(int(purchaser_id)).exists() if purchaser_id else self.env['hr.employee.public']
         representative = (
             self.env['res.partner'].with_company(self.env.company).browse(int(representative_partner_id)).exists()

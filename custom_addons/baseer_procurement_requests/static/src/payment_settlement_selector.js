@@ -106,20 +106,37 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async choosePaymentPoint(point) {
+        // A fresh invoice row already has this source.  Do not call its
+        // onchange again: it validates the incomplete row and can discard a
+        // concurrently selected payment point.  When switching from credit
+        // or representative cash, complete that source transition first.
+        if (this.props.record.data.payment_source_type !== "payment_method"
+                || this.props.record.data.is_credit
+                || this.representativeId) {
+            await this.props.record.update({
+                payment_source_type: "payment_method",
+                representative_petty_cash_representative_id: false,
+                is_credit: false,
+            });
+        }
         await this.props.record.update({
-            payment_source_type: "payment_method",
-            payment_method_line_id: [point.id, point.name],
-            representative_petty_cash_representative_id: false,
-            is_credit: false,
+            payment_method_line_id: { id: point.id, display_name: point.name },
         });
     }
 
     async chooseRepresentative(representative) {
+        // As above, let the source onchange clear the incompatible payment
+        // point before assigning the representative selection itself.
         await this.props.record.update({
             payment_source_type: "representative_petty_cash",
             payment_method_line_id: false,
-            representative_petty_cash_representative_id: [representative.id, representative.name],
             is_credit: true,
+        });
+        await this.props.record.update({
+            representative_petty_cash_representative_id: {
+                id: representative.id,
+                display_name: representative.name,
+            },
         });
     }
 
@@ -153,7 +170,7 @@ export class PaymentCreditToggle extends Component {
 
 registry.category("fields").add("baseer_payment_settlement_selector", {
     component: PaymentSettlementSelector,
-    supportedTypes: ["selection"],
+    supportedTypes: ["many2one"],
 });
 
 registry.category("fields").add("baseer_payment_credit_toggle", {

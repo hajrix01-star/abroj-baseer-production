@@ -12,8 +12,27 @@ class ProcurementFlowCase(TransactionCase):
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_cashier')
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_accountant')
         self.env.user.group_ids |= self.env.ref('account.group_account_invoice')
-        self.company = self.env.company
+        # Run each flow against a dedicated company.  QA intentionally has
+        # real exploratory records, including historic petty-cash pools;
+        # reusing the active QA company made a test's setup collide with
+        # those records instead of testing the workflow in isolation.
+        test_company = self.env['res.company'].create({
+            'name': 'PRC flow %s' % self._testMethodName,
+        })
+        self.env.cr.flush()
+        self.env.user.company_ids |= test_company
+        self.env = self.env(context={
+            **self.env.context,
+            'allowed_company_ids': [test_company.id],
+        })
+        self.company = test_company
         self.warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        if not self.warehouse:
+            self.warehouse = self.env['stock.warehouse'].create({
+                'name': 'PRC flow warehouse %s' % self._testMethodName,
+                'code': 'PF%s' % str(self.company.id)[-3:],
+                'company_id': self.company.id,
+            })
         self.uom = self.env.ref('uom.product_uom_unit')
         category_values = {'name': 'PRC QA quantity only'}
         if 'property_cost_method' in self.env['product.category']._fields:
@@ -733,41 +752,40 @@ class ProcurementFlowCase(TransactionCase):
                 'cash_journal_id': cash.id, 'representative_partner_id': representative.id,
             }).action_post()
 
-    def test_batch_header_reserves_completed_request_and_uses_actual_total_not_custody(self):
-        """PRC-CUSTODY2 selects one receipt in the batch header, once only.
+    def test_new_batch_uses_invoice_level_representative_petty_cash_not_historical_header(self):
+        """New supplier batches settle each invoice from the representative.
 
-        The header amount is validated against the completed operational
-        request.  It is deliberately *not* validated against the larger
-        advance: remaining custody stays with the representative.
+        Historic custody headers remain readable, but a new batch must use
+        the invoice-level representative source.  This keeps a fresh invoice
+        from being bound to a legacy custody record and preserves the
+        representative's remaining balance.
         """
-        company = self.env['res.company'].search([('currency_id.name', '=', 'SAR')], limit=1)
-        if not company:
-            self.skipTest('No SAR company is available for the purchase-batch header integration test.')
-        env = self.env(context={**self.env.context, 'allowed_company_ids': company.ids})
-        custody_account, _cash_account, _bank_account, _general, cash, _bank = self._custody_accounting_fixture('PRC94', company)
+        company = self.company
+        env = self.env
+        custody_account, _cash_account, _bank_account, general, cash, _bank = self._custody_accounting_fixture('PRC94', company)
         expense_account = env['account.account'].create({
             'name': 'PRC94 purchase expense',
             'code': 'PRC9404',
             'account_type': 'expense',
             'company_ids': [Command.set(company.ids)],
         })
-        employee = env['hr.employee'].create({
-            'name': 'PRC header purchasing representative',
-            'company_id': company.id,
-        })
-        request = self._complete_company_request(company, employee, actual_quantity=5, actual_price=4)
+        representative = env['res.partner'].create({'name': 'PRC94 purchasing representative'})
+        request = self._complete_external_request(representative, actual_quantity=5, actual_price=4)
         self.assertEqual(request.actual_total, 20)
+        company.write({
+            'baseer_procurement_representative_petty_cash_account_id': custody_account.id,
+            'baseer_procurement_representative_petty_cash_journal_id': general.id,
+            'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([cash.id])],
+        })
+        advance_id = env['baseer.procurement.representative.advance'].submit_funding(
+            request.id, cash.id, representative.id, 25, str(uuid4()), fields.Date.context_today(self),
+        )
+        advance = env['baseer.procurement.representative.advance'].browse(advance_id)
+        self.assertEqual(advance.remaining_amount, 25)
         custody = env['baseer.procurement.custody'].create({
             'company_id': company.id,
-            'employee_id': employee.id,
+            'employee_id': self.purchaser.id,
         })
-        env['baseer.procurement.custody.event'].create({
-            'custody_id': custody.id,
-            'event_type': 'funding',
-            'amount': 25,
-            'cash_journal_id': cash.id,
-            'reference': 'PRC header funding larger than actual receipt',
-        }).action_post()
         supplier = env['res.partner'].create({
             'name': 'PRC header supplier',
             'supplier_rank': 1,
@@ -785,29 +803,24 @@ class ProcurementFlowCase(TransactionCase):
             'category_id': category.id,
             'product_id': service.id,
         })
+        with self.assertRaisesRegex(ValidationError, 'Historical Petty Cash'):
+            env['baseer.purchase.batch'].create({
+                'company_id': company.id,
+                'procurement_custody_id': custody.id,
+            })
         batch = env['baseer.purchase.batch'].create({
             'company_id': company.id,
-            'procurement_request_id': request.id,
-            'procurement_custody_id': custody.id,
             'line_ids': [Command.create({
                 'partner_id': supplier.id,
                 'supplier_ref': 'PRC-HEADER-ACTUAL-1',
                 'entry_type': 'purchase',
                 'gross_amount': 20,
-                'is_credit': True,
+                'payment_source_type': 'representative_petty_cash',
+                'representative_petty_cash_representative_id': representative.id,
             })],
         })
         self.assertTrue(batch.line_ids.is_credit)
         self.assertFalse(batch.line_ids.payment_method_line_id)
-
-        # Reservation is durable at draft time, so a second batch cannot win
-        # a race merely because the first batch is not approved yet.
-        with self.env.cr.savepoint():
-            with self.assertRaises(Exception):
-                env['baseer.purchase.batch'].create({
-                    'company_id': company.id,
-                    'procurement_request_id': request.id,
-                })
 
         batch.action_approve()
         line = batch.line_ids
@@ -815,29 +828,14 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(line.move_id.invoice_line_ids.account_id, expense_account)
         self.assertEqual(line.move_id.payment_state, 'paid')
         self.assertFalse(line.payment_id)
-        self.assertTrue(line.procurement_settlement_id)
-        self.assertEqual(line.procurement_settlement_id.amount, request.actual_total)
-        self.assertEqual(custody.balance, 5)
-        self.assertEqual(sum(line.procurement_settlement_move_id.line_ids.filtered(
-            lambda account_line: account_line.account_id == custody_account
-        ).mapped('credit')), request.actual_total)
-
-        mismatched_request = self._complete_company_request(company, employee, actual_quantity=2, actual_price=5)
-        mismatched_batch = env['baseer.purchase.batch'].create({
-            'company_id': company.id,
-            'procurement_request_id': mismatched_request.id,
-            'line_ids': [Command.create({
-                'partner_id': supplier.id,
-                'supplier_ref': 'PRC-HEADER-MISMATCH-1',
-                'entry_type': 'purchase',
-                'gross_amount': 9,
-                'is_credit': True,
-            })],
-        })
-        with self.assertRaisesRegex(ValidationError, 'must equal'):
-            mismatched_batch.action_approve()
-        self.assertEqual(mismatched_batch.state, 'draft')
-        self.assertFalse(mismatched_batch.line_ids.move_id)
+        self.assertTrue(line.representative_petty_cash_invoice_settlement_id)
+        self.assertEqual(line.representative_petty_cash_invoice_settlement_id.amount, request.actual_total)
+        self.assertEqual(
+            env['baseer.procurement.representative.advance']._baseer_representative_available_amount(
+                company, representative,
+            ),
+            5,
+        )
 
     def test_catalog_representative_is_company_scoped_and_creates_request(self):
         """PRC-CUSTODY2 exposes standalone contacts only in their company.

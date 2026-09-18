@@ -195,6 +195,14 @@
                     </header>
 
                     <div class="o_prc_request_fields">
+                        <label t-if="!state.existingRequest and state.warehouses.length > 1">
+                            <span>Warehouse <b>*</b></span>
+                            <select t-att-value="state.warehouseId || ''" t-on-change="onWarehouseChange" aria-label="Warehouse">
+                                <option value="">Choose a warehouse</option>
+                                <option t-foreach="state.warehouses" t-as="warehouse" t-key="warehouse.id" t-att-value="warehouse.id" t-esc="warehouse.name"/>
+                            </select>
+                        </label>
+                        <p t-elif="!state.existingRequest and !state.warehouses.length" class="o_prc_field_error" role="alert">No warehouse is configured for this company. Ask the company manager to add one before saving a purchase request.</p>
                         <label t-if="!state.existingRequest">
                             <span>Purchase representative <b>*</b></span>
                             <select t-att-value="state.representativePartnerId || ''" t-on-change="onRepresentativeChange" aria-label="Purchase representative">

@@ -61,6 +61,16 @@ class EmployeeService(models.Model):
     has_posted_refund = fields.Boolean(compute='_compute_bill_summary', compute_sudo=True)
     approved_by_id = fields.Many2one('res.users', readonly=True, copy=False)
     approved_at = fields.Datetime(readonly=True, copy=False)
+    analytic_readiness = fields.Selection([
+        ('ready', 'Ready'), ('missing', 'Missing'), ('blocked', 'Blocked'),
+    ], compute='_compute_analytic_readiness', compute_sudo=True, readonly=True)
+    expected_analytic_account_id = fields.Many2one(
+        'account.analytic.account', string='Expected Spend Classification',
+        compute='_compute_analytic_readiness', compute_sudo=True, readonly=True,
+    )
+    analytic_readiness_message = fields.Char(
+        compute='_compute_analytic_readiness', compute_sudo=True, readonly=True,
+    )
 
     _CONTROL = {'name', 'company_id', 'currency_id', 'state', 'bill_id', 'bill_name', 'bill_state', 'payment_state',
                 'balance', 'approved_by_id', 'approved_at', 'tax_id', 'net_amount', 'tax_amount', 'has_posted_refund'}
@@ -170,6 +180,28 @@ class EmployeeService(models.Model):
     def _onchange_vat_enabled(self):
         for record in self:
             record.tax_id = record._configured_tax(record.vat_enabled, record.company_id)
+
+    @api.depends('company_id', 'service_type')
+    def _compute_analytic_readiness(self):
+        for record in self:
+            record.analytic_readiness = 'blocked'
+            record.expected_analytic_account_id = False
+            record.analytic_readiness_message = _('Employee-service analytic setup needs review.')
+        grouped = {}
+        for record in self.filtered(lambda item: item.company_id and item.service_type):
+            grouped.setdefault(record.company_id, set()).add(record.service_type)
+        for company, service_types in grouped.items():
+            statuses = {
+                line['service_type']: line
+                for line in company._baseer_hr_service_analytic_status(service_types)
+            }
+            for record in self.filtered(lambda item: item.company_id == company):
+                line = statuses.get(record.service_type)
+                if not line:
+                    continue
+                record.analytic_readiness = line['state']
+                record.expected_analytic_account_id = line.get('leaf')
+                record.analytic_readiness_message = line['message']
 
     @api.depends('gross_amount', 'tax_id', 'company_id', 'service_type', 'partner_id', 'bill_id')
     def _compute_amounts(self):

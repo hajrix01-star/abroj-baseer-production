@@ -63,6 +63,30 @@ class EmployeeServiceNativePathCase(TransactionCase):
                        'property_account_expense_id': expense.id})
         return product
 
+    def setUp(self):
+        """Refresh shared fixture records after each transaction rollback.
+
+        A few cases deliberately archive or alter the same native product.  A
+        TransactionCase rollback restores the database, but not the recordset
+        kept on the class; reload and normalize it for the next case.
+        """
+        super().setUp()
+        self.env.invalidate_all()
+        self.iqama_product = self.env.ref(
+            f'baseer_service_seed.product_iqama_renewal_company_{self.company.id}'
+        )
+        self.visa_product = self.env.ref(
+            f'baseer_service_seed.product_visa_company_{self.company.id}'
+        )
+        self.iqama_product.write({
+            'company_id': self.company.id, 'active': True, 'purchase_ok': True, 'type': 'service',
+            'property_account_expense_id': self.expense.id,
+        })
+        self.visa_product.write({
+            'company_id': self.company.id, 'active': True, 'purchase_ok': True, 'type': 'service',
+            'property_account_expense_id': self.visa_expense.id,
+        })
+
     def _service(self, service_type='iqama_renewal', amount=100, partner=None):
         values = {}
         if service_type == 'visa':

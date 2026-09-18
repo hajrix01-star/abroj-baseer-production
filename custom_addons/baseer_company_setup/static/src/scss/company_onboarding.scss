@@ -1,0 +1,188 @@
+/* The setup wizard is used in a modal.  Default nested Odoo groups keep a
+   desktop minimum width, which can make Arabic labels disappear off-screen. */
+.o_dialog:has(.baseer_company_onboarding_form) .modal-dialog {
+    width: calc(100vw - 2rem);
+    max-width: 70rem;
+    height: 44rem;
+    max-height: calc(100vh - 2rem);
+    margin-inline: auto;
+}
+
+/* Company-form stat buttons are intentionally collapsed by Odoo on narrow
+   displays.  This is the same onboarding action, shown only where the stat
+   button is not discoverable. */
+.baseer_company_onboarding_mobile_entry {
+    display: none;
+}
+
+/* Keep the dialog frame still as the user changes steps.  Only the stage
+   body scrolls when it contains more controls than the available height. */
+.o_dialog:has(.baseer_company_onboarding_form) .modal-content,
+.o_dialog:has(.baseer_company_onboarding_form) .baseer_company_onboarding_form {
+    height: 100%;
+    min-height: 0;
+}
+
+.o_dialog:has(.baseer_company_onboarding_form) .baseer_company_onboarding_form {
+    display: flex;
+    flex-direction: column;
+}
+
+.o_dialog:has(.baseer_company_onboarding_form) .baseer_company_onboarding_form .o_form_sheet_bg {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.baseer_company_onboarding_form,
+.baseer_company_onboarding_form .o_form_sheet_bg,
+.baseer_company_onboarding_form .o_form_sheet,
+.baseer_company_onboarding_form .o_group,
+.baseer_company_onboarding_form .o_inner_group {
+    min-width: 0;
+}
+
+.baseer_company_onboarding_form .o_form_sheet_bg,
+.baseer_company_onboarding_form .o_form_sheet {
+    width: 100%;
+    max-width: none;
+}
+
+/* Each wizard stage is deliberately one readable column; optional controls
+   within a section keep Odoo's normal field alignment without forcing width. */
+.baseer_company_onboarding_form .baseer_onboarding_meta,
+.baseer_company_onboarding_form .baseer_onboarding_stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+}
+
+.baseer_company_onboarding_form .baseer_onboarding_section {
+    min-width: 0;
+    width: 100%;
+}
+
+.baseer_company_onboarding_form .o_field_widget,
+.baseer_company_onboarding_form .o_form_label,
+.baseer_company_onboarding_form .o_field_widget .text-muted {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+    .baseer_company_onboarding_mobile_entry {
+        display: block;
+        margin: .75rem 0;
+    }
+
+    .baseer_company_onboarding_mobile_entry > .btn {
+        width: 100%;
+    }
+
+    .o_dialog:has(.baseer_company_onboarding_form) .modal-dialog {
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+        height: calc(100vh - 1rem);
+        max-height: calc(100vh - 1rem);
+        margin-inline: .5rem;
+    }
+
+    .baseer_company_onboarding_form .o_form_sheet {
+        padding-inline: .75rem;
+    }
+
+    .baseer_company_onboarding_form .o_group .o_td_label,
+    .baseer_company_onboarding_form .o_group .o_wrap_field {
+        width: 100%;
+        max-width: none;
+    }
+
+    /* Do not leave the next-step action in Odoo's overflow dots. */
+    .baseer_company_onboarding_form .o_form_statusbar {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: .75rem;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_buttons {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: .5rem;
+        width: 100%;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_buttons > button[name="action_previous_step"],
+    .baseer_company_onboarding_form .o_statusbar_buttons > button[name="action_next_step"] {
+        display: inline-flex !important;
+        justify-content: center;
+        align-items: center;
+        min-height: 2.75rem;
+        white-space: normal;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_buttons > button[name="action_refresh"] {
+        display: inline-flex !important;
+        grid-column: 1 / -1;
+        justify-content: center;
+        align-items: center;
+        min-height: 2.5rem;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_buttons > .dropdown,
+    .baseer_company_onboarding_form .o_statusbar_buttons > .dropdown-toggle {
+        display: none !important;
+    }
+
+    /* A phone needs orientation, not four compressed arrows.  Show only the
+       active stage as a full-width, plain label. */
+    .baseer_company_onboarding_form .o_field_statusbar {
+        width: 100%;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_status {
+        display: block;
+        width: 100%;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_status > .o_arrow_button:not(.o_arrow_button_current),
+    .baseer_company_onboarding_form .o_statusbar_status > .dropdown-toggle {
+        display: none !important;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_status > .o_arrow_button_current {
+        display: block !important;
+        width: 100%;
+        min-height: 2.5rem;
+        border-radius: .375rem;
+        text-align: center;
+    }
+
+    .baseer_company_onboarding_form .o_statusbar_status > .o_arrow_button_current::before,
+    .baseer_company_onboarding_form .o_statusbar_status > .o_arrow_button_current::after {
+        display: none !important;
+    }
+
+    .baseer_company_onboarding_form .o_form_uri.text-truncate {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }
+
+    /* Odoo moves header actions into an overflow menu at phone width.  Wizard
+       navigation belongs in the persistent dialog footer instead, one clear
+       full-width action per row. */
+    .baseer_company_onboarding_form .baseer_onboarding_footer {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr);
+        gap: .5rem;
+        padding: .75rem;
+    }
+
+    .baseer_company_onboarding_form .baseer_onboarding_footer > .btn {
+        width: 100%;
+        min-height: 2.75rem;
+        margin: 0 !important;
+    }
+}

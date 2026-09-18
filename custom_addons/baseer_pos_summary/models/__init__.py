@@ -9,3 +9,4 @@ from . import day_archive
 from . import accounting
 from . import correction
 from . import payment_seed
+from . import company_onboarding

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_company_onboarding_form" model="ir.ui.view">
+        <field name="name">baseer.company.onboarding.form</field>
+        <field name="model">baseer.company.onboarding</field>
+        <field name="arch" type="xml">
+            <form string="تهيئة الشركة" class="baseer_company_onboarding_form">
+                <header>
+                    <field name="setup_step" widget="statusbar" statusbar_visible="foundation,sales,operations,review"/>
+                    <field name="state" invisible="1"/>
+                </header>
+                <sheet class="baseer_company_onboarding_sheet">
+                    <group class="baseer_onboarding_meta">
+                        <field name="company_id"/>
+                        <field name="summary" nolabel="1" readonly="1"/>
+                    </group>
+                    <group name="baseer_onboarding_foundation" class="baseer_onboarding_stage" invisible="setup_step != 'foundation'">
+                        <group class="baseer_onboarding_section" string="الأساس السعودي وخدمات الموظفين">
+                            <field name="setup_core" readonly="1"/>
+                            <field name="accounting_state" widget="badge"/>
+                            <field name="accounting_message" nolabel="1" readonly="1"/>
+                        </group>
+                        <group name="baseer_onboarding_foundation_options" class="baseer_onboarding_section" string="الخدمات الأساسية"/>
+                    </group>
+                    <group name="baseer_onboarding_sales" class="baseer_onboarding_stage" invisible="setup_step != 'sales'">
+                        <group name="baseer_onboarding_sales_options" class="baseer_onboarding_section"/>
+                    </group>
+                    <group name="baseer_onboarding_operations" class="baseer_onboarding_stage" invisible="setup_step != 'operations'">
+                        <group name="baseer_onboarding_operations_options" class="baseer_onboarding_section"/>
+                    </group>
+                    <group name="baseer_onboarding_review" class="baseer_onboarding_stage" invisible="setup_step != 'review'">
+                        <field name="plan_preview" nolabel="1" readonly="1"/>
+                        <div class="o_form_label">
+                            لن تنشئ هذه النافذة فاتورة أو دفعة أو قيداً أو تمويلاً. الخيارات غير المختارة لا تتغير.
+                        </div>
+                    </group>
+                </sheet>
+                <footer class="baseer_onboarding_footer">
+                    <button name="action_previous_step" type="object" string="السابق" class="btn-secondary"
+                            invisible="setup_step == 'foundation'"/>
+                    <button name="action_next_step" type="object" string="التالي" class="btn-primary"
+                            invisible="setup_step == 'review'"/>
+                    <button name="action_refresh" type="object" string="فحص الجاهزية" class="btn-secondary"
+                            invisible="setup_step != 'review'"/>
+                    <button name="action_apply_selected" type="object" string="تطبيق الإعدادات" class="btn-primary"
+                            invisible="setup_step != 'review' or state == 'blocked'"/>
+                    <button string="إغلاق" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_company_form_onboarding" model="ir.ui.view">
+        <field name="name">res.company.form.baseer.onboarding</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_baseer_open_onboarding" type="object"
+                        class="oe_stat_button" icon="fa-sliders"
+                        string="تهيئة الشركة" groups="base.group_erp_manager"/>
+            </xpath>
+            <!-- Odoo collapses stat buttons in the narrow company form.  Keep
+                 one visible entry point for phone users without duplicating it
+                 on desktop. -->
+            <xpath expr="//div[@name='button_box']" position="after">
+                <div class="baseer_company_onboarding_mobile_entry">
+                    <button name="action_baseer_open_onboarding" type="object"
+                            string="تهيئة الشركة" icon="fa-sliders"
+                            class="btn-primary" groups="base.group_erp_manager"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

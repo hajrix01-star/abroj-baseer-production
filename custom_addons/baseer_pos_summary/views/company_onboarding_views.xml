@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_company_onboarding_pos_summary" model="ir.ui.view">
+        <field name="name">baseer.company.onboarding.pos.summary</field>
+        <field name="model">baseer.company.onboarding</field>
+        <field name="inherit_id" ref="baseer_company_setup.view_baseer_company_onboarding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='baseer_onboarding_sales_options']" position="inside">
+                <group class="baseer_onboarding_section" string="المبيعات والتحصيل">
+                    <field name="sales_mode" widget="radio"/>
+                    <field name="sales_summary_state" widget="badge" invisible="sales_mode != 'summary'"/>
+                    <field name="sales_summary_message" nolabel="1" readonly="1" invisible="sales_mode != 'summary'"/>
+                    <group class="baseer_onboarding_section" string="طرق تحصيل ملخصات المبيعات" invisible="sales_mode != 'summary'">
+                        <field name="setup_summary_cash"/>
+                        <field name="setup_summary_bank"/>
+                        <field name="setup_summary_hungerstation"/>
+                        <field name="setup_summary_keeta"/>
+                        <field name="setup_summary_jahez"/>
+                    </group>
+                    <button name="action_open_direct_pos_settings" type="object" string="فتح إعداد نقطة البيع المباشرة"
+                            class="btn-secondary" invisible="sales_mode != 'direct_pos'"/>
+                    <field name="direct_pos_state" widget="badge" invisible="sales_mode != 'direct_pos'"/>
+                    <field name="direct_pos_message" nolabel="1" readonly="1" invisible="sales_mode != 'direct_pos'"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

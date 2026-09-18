@@ -2930,3 +2930,9 @@ msgstr "أدخل المبيعات شاملة الضريبة لكل طريقة د
 #: code:addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml:0
 msgid "No payment methods are configured for this company."
 msgstr "لم تُضبط طرق الدفع لهذه الشركة."
+
+#. module: baseer_pos_summary
+#. odoo-python
+#: code:addons/baseer_pos_summary/models/summary.py:0
+msgid "The sales date cannot be in the future. Choose today or an earlier date."
+msgstr "لا يمكن أن يكون تاريخ المبيعات في المستقبل. اختر تاريخ اليوم أو تاريخًا سابقًا."

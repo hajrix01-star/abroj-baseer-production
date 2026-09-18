@@ -120,12 +120,20 @@ class PosSummary(models.Model):
 
     @api.model
     def _validate_values(self, vals):
+        if 'business_date' in vals:
+            self._validate_business_date(vals['business_date'])
         if 'customer_count' in vals and (not isinstance(vals['customer_count'], int) or isinstance(vals['customer_count'], bool) or not 0 <= vals['customer_count'] <= 10000000):
             raise ValidationError(_('Customer count must be a whole number between 0 and 10000000.'))
         if vals.get('external_reference') and (not isinstance(vals['external_reference'], str) or len(vals['external_reference'].strip()) > 128):
             raise ValidationError(_('The external reference cannot exceed 128 characters.'))
         if 'zero_sales' in vals and not isinstance(vals['zero_sales'], bool):
             raise ValidationError(_('The no-sales declaration must be enabled or disabled.'))
+
+    def _validate_business_date(self, business_date):
+        """A daily sales summary cannot represent a future operation."""
+        business_date = fields.Date.to_date(business_date)
+        if business_date and business_date > fields.Date.context_today(self):
+            raise ValidationError(_('The sales date cannot be in the future. Choose today or an earlier date.'))
 
     def _serialize_company(self):
         self.ensure_one()
@@ -149,6 +157,7 @@ class PosSummary(models.Model):
 
     def _validate_draft(self, allow_empty=False):
         for summary in self:
+            summary._validate_business_date(summary.business_date)
             self._validate_values({'customer_count': summary.customer_count, 'external_reference': summary.external_reference})
             if summary.config_id.company_id != summary.company_id or not summary.config_id.baseer_summary_only:
                 raise ValidationError(_('Select the dedicated external-summary POS for this company.'))

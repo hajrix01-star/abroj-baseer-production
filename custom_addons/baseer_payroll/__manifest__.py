@@ -4,6 +4,7 @@
     'license': 'LGPL-3',
     'depends': ['om_hr_payroll_account', 'hr_holidays', 'baseer_report_layout'],
     'data': [
+        'data/payroll_analytic_data.xml',
         'data/work_schedules.xml',
         'security/security.xml', 'security/ir.model.access.csv',
         'views/payroll_views.xml', 'views/loan_views.xml',

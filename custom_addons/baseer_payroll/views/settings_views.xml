@@ -19,6 +19,16 @@
                             </group>
                         </div>
                     </setting>
+                    <setting id="baseer_payroll_analytics" string="تحليل تكلفة الرواتب" help="يطبّق توزيعاً تحليلياً أصلياً بنسبة 100% على سطور مصروف الراتب في المسيرات الجديدة فقط.">
+                        <div class="content-group">
+                            <group>
+                                <field name="baseer_payroll_analytic_enabled"/>
+                                <field name="baseer_payroll_analytic_account_id"
+                                       domain="[('company_id', '=', company_id), ('active', '=', True)]"
+                                       options="{'no_create':True}"/>
+                            </group>
+                        </div>
+                    </setting>
                     <setting id="baseer_payroll_loans" string="Deductions and Loans">
                         <div class="content-group">
                             <group>

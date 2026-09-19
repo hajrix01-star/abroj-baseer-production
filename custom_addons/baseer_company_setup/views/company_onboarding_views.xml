@@ -19,6 +19,9 @@
                             <field name="setup_core" readonly="1"/>
                             <field name="accounting_state" widget="badge"/>
                             <field name="accounting_message" nolabel="1" readonly="1"/>
+                            <field name="setup_payroll_analytics"/>
+                            <field name="payroll_analytics_state" widget="badge"/>
+                            <field name="payroll_analytics_message" nolabel="1" readonly="1"/>
                         </group>
                         <group name="baseer_onboarding_foundation_options" class="baseer_onboarding_section" string="الخدمات الأساسية"/>
                     </group>

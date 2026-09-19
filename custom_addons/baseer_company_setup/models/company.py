@@ -66,6 +66,7 @@ class Company(models.Model):
             # extend the broad creation hook with service or POS seeds, but
             # must not run from a targeted company accounting action.
             company._baseer_prepare_company_accounting()
+            company._baseer_prepare_payroll_analytics()
             company.invalidate_recordset()
             if company.chart_template != 'sa':
                 raise ValidationError(_('Saudi accounting initialization did not load the Saudi chart.'))
@@ -145,7 +146,12 @@ class Company(models.Model):
 
     def _baseer_prepare_accounting(self):
         """Broad hook for new companies; companion modules may extend it."""
-        return self._baseer_prepare_company_accounting()
+        result = self._baseer_prepare_company_accounting()
+        # This broad lifecycle hook is used for a newly created Saudi company.
+        # A later onboarding refresh of an existing company calls the narrower
+        # accounting hook and cannot silently enable payroll analytics.
+        self._baseer_prepare_payroll_analytics()
+        return result
 
     def _baseer_prepare_company_accounting(self):
         """Baseer accounting seeds only; safe for a targeted ERP action."""

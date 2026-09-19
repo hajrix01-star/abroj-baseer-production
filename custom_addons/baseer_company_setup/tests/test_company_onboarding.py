@@ -29,6 +29,29 @@ class CompanyOnboardingCase(TransactionCase):
         self._assert_no_financial_documents(company)
         self._assert_no_financial_documents(other)
 
+    def test_existing_company_adds_payroll_analytics_only_when_selected(self):
+        company = self._new_company()
+        company.write({
+            'baseer_payroll_analytic_enabled': False,
+            'baseer_payroll_analytic_account_id': False,
+        })
+        before_moves = self.env['account.move'].search_count([('company_id', '=', company.id)])
+        before_payments = self.env['account.payment'].search_count([('company_id', '=', company.id)])
+        action = company.action_baseer_open_onboarding()
+        wizard = self.env[action['res_model']].browse(action['res_id'])
+        self.assertEqual(wizard.payroll_analytics_state, 'missing')
+        self.assertTrue(wizard.setup_payroll_analytics)
+        self.assertFalse(company.baseer_payroll_analytic_account_id)
+        self.assertEqual(self.env['account.move'].search_count([('company_id', '=', company.id)]), before_moves)
+        self.assertEqual(self.env['account.payment'].search_count([('company_id', '=', company.id)]), before_payments)
+        wizard.action_apply_selected()
+        company.invalidate_recordset()
+        self.assertTrue(company.baseer_payroll_analytic_enabled)
+        self.assertTrue(company.baseer_payroll_analytic_account_id)
+        self.assertEqual(wizard.payroll_analytics_state, 'ready')
+        self.assertEqual(self.env['account.move'].search_count([('company_id', '=', company.id)]), before_moves)
+        self.assertEqual(self.env['account.payment'].search_count([('company_id', '=', company.id)]), before_payments)
+
     def test_setup_blocks_explicit_non_saudi_company_without_writing(self):
         company = self._new_company(
             country_id=self.env.ref('base.us').id,

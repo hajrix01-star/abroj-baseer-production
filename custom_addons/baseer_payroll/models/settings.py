@@ -11,3 +11,5 @@ class PayrollSettings(models.TransientModel):
     baseer_deduction_account_id = fields.Many2one(related='company_id.baseer_deduction_account_id', readonly=False)
     baseer_loan_account_id = fields.Many2one(related='company_id.baseer_loan_account_id', readonly=False)
     baseer_proration = fields.Selection(related='company_id.baseer_proration', readonly=False)
+    baseer_payroll_analytic_enabled = fields.Boolean(related='company_id.baseer_payroll_analytic_enabled', readonly=False)
+    baseer_payroll_analytic_account_id = fields.Many2one(related='company_id.baseer_payroll_analytic_account_id', readonly=False)

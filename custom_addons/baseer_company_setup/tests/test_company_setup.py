@@ -31,6 +31,13 @@ class CompanySetupCase(TransactionCase):
         self.assertTrue(company.baseer_salary_expense_id)
         self.assertTrue(company.baseer_salary_payable_id)
         self.assertTrue(company.baseer_payroll_journal_id)
+        self.assertTrue(company.baseer_payroll_analytic_enabled)
+        self.assertTrue(company.baseer_payroll_analytic_account_id)
+        self.assertEqual(
+            company.baseer_payroll_analytic_account_id.plan_id,
+            self.env.ref('baseer_payroll.payroll_cost_plan'),
+        )
+        self.assertEqual(company.baseer_payroll_analytic_account_id.company_id, company)
         journal_ids = self.env['account.journal'].search([('company_id', '=', company.id)]).ids
         company._baseer_prepare_accounting()
         self.assertEqual(self.env['account.journal'].search([('company_id', '=', company.id)]).ids, journal_ids)

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- One shared Odoo dimension.  Company-specific leaves are provisioned
+         explicitly; a root plan must never be created per company. -->
+    <record id="payroll_cost_plan" model="account.analytic.plan">
+        <field name="name">تكلفة الرواتب</field>
+        <field name="description">Native analytical dimension for Baseer payroll expense only.</field>
+        <field name="sequence">30</field>
+        <field name="default_applicability">optional</field>
+    </record>
+</odoo>

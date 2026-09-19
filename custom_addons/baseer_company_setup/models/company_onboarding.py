@@ -34,6 +34,14 @@ class BaseerCompanyOnboarding(models.TransientModel):
         ('blocked', 'متوقف'),
     ], string='حالة الحسابات', readonly=True)
     accounting_message = fields.Char(readonly=True)
+    setup_payroll_analytics = fields.Boolean(string='تجهيز التحليل الافتراضي للرواتب', default=False)
+    payroll_analytics_state = fields.Selection([
+        ('missing', 'ناقص'),
+        ('ready', 'جاهز'),
+        ('disabled', 'متوقف'),
+        ('blocked', 'متوقف'),
+    ], string='حالة تحليل الرواتب', readonly=True)
+    payroll_analytics_message = fields.Char(readonly=True)
 
     @classmethod
     def _baseer_open_for_company(cls, company):
@@ -123,6 +131,12 @@ class Company(models.Model):
     def _baseer_preflight_onboarding_apply(self, wizard):
         """Extension point for stage roles; it must not write data."""
         self.ensure_one()
+        if wizard.setup_payroll_analytics:
+            state, message = self._baseer_payroll_analytic_status()
+            # Missing Saudi accounting is allowed when this same apply action
+            # also prepares the foundational company accounting first.
+            if state == 'blocked':
+                raise ValidationError(message)
         return True
 
     def action_baseer_open_onboarding(self):
@@ -165,16 +179,32 @@ class Company(models.Model):
             'state': 'ready' if state == 'ready' else 'blocked' if state == 'blocked' else 'review',
             'summary': message,
         })
+        analytics_state, analytics_message = self._baseer_payroll_analytic_status()
+        values = {
+            'payroll_analytics_state': analytics_state,
+            'payroll_analytics_message': analytics_message,
+        }
+        if not wizard.setup_configuration_loaded:
+            values['setup_payroll_analytics'] = analytics_state == 'missing'
+        wizard.write(values)
         return True
 
     def _baseer_onboarding_plan_lines(self, wizard):
         """Return the server-authoritative preview for the selected company."""
         self.ensure_one()
         if wizard.accounting_state == 'ready':
-            return [_('الأساس السعودي والدفاتر الأساسية: جاهزة، ولن يعاد إنشاؤها.')]
-        if wizard.accounting_state == 'blocked':
-            return [_('الأساس السعودي والدفاتر الأساسية: متوقف حتى تُصحح بيانات الشركة.')]
-        return [_('الأساس السعودي والدفاتر الأساسية: سيُضاف الناقص للشركة الحالية فقط.')]
+            lines = [_('الأساس السعودي والدفاتر الأساسية: جاهزة، ولن يعاد إنشاؤها.')]
+        elif wizard.accounting_state == 'blocked':
+            lines = [_('الأساس السعودي والدفاتر الأساسية: متوقف حتى تُصحح بيانات الشركة.')]
+        else:
+            lines = [_('الأساس السعودي والدفاتر الأساسية: سيُضاف الناقص للشركة الحالية فقط.')]
+        if wizard.setup_payroll_analytics:
+            lines.append(_('تحليل الرواتب: سيُجهّز الحساب التحليلي الناقص فقط للمسيرات الجديدة؛ لا تتغير المسيرات أو القيود السابقة.'))
+        elif wizard.payroll_analytics_state == 'ready':
+            lines.append(_('تحليل الرواتب: جاهز، ولن يعاد إنشاؤه.'))
+        elif wizard.payroll_analytics_state == 'disabled':
+            lines.append(_('تحليل الرواتب: الحساب جاهز لكن التوزيع التلقائي متوقف.'))
+        return lines
 
     def _baseer_onboarding_plan_preview(self, wizard):
         self.ensure_one()
@@ -191,4 +221,6 @@ class Company(models.Model):
             self.action_baseer_initialize_saudi_accounting()
         else:
             self._baseer_prepare_company_accounting()
+        if wizard.setup_payroll_analytics:
+            self._baseer_prepare_payroll_analytics()
         return True

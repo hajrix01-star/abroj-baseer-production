@@ -17,6 +17,12 @@ class Company(models.Model):
     baseer_payroll_journal_id = fields.Many2one('account.journal', string='Payroll journal')
     baseer_proration = fields.Selection([('calendar','Calendar days'),('fixed30','30-day basis')], default='calendar', required=True, string='Partial-month salary basis')
     baseer_structure_id = fields.Many2one('hr.payroll.structure', copy=False)
+    baseer_payroll_analytic_enabled = fields.Boolean(
+        string='تفعيل التحليل الافتراضي للرواتب', default=False,
+        help='يطبّق 100% على مصروف الرواتب في المسيرات الجديدة فقط.')
+    baseer_payroll_analytic_account_id = fields.Many2one(
+        'account.analytic.account', string='حساب تحليل تكلفة الرواتب', copy=False,
+        help='الحساب التحليلي الافتراضي لمصروف الرواتب في هذه الشركة.')
 
     @api.constrains('baseer_salary_expense_id')
     def _check_baseer_salary_expense(self):
@@ -25,6 +31,112 @@ class Company(models.Model):
             if expense and (not expense.active or company not in expense.company_ids
                             or expense.account_type not in ('expense', 'expense_direct_cost')):
                 raise ValidationError(_('Salary expense must use an active expense or direct-cost account.'))
+
+    def _baseer_payroll_analytic_plan(self):
+        """Return the one reviewed root plan; never adopt a same-named plan."""
+        plan = self.env.ref('baseer_payroll.payroll_cost_plan', raise_if_not_found=False)
+        if not plan or plan.parent_id:
+            raise ValidationError(_('The Baseer payroll analytic plan is unavailable or invalid.'))
+        return plan
+
+    def _baseer_payroll_analytic_identity(self):
+        self.ensure_one()
+        data = self.env['ir.model.data'].sudo().search([
+            ('module', '=', 'baseer_payroll'),
+            ('name', '=', 'payroll_analytic_account_company_%s' % self.id),
+        ], limit=1)
+        if not data:
+            return self.env['account.analytic.account']
+        if data.model != 'account.analytic.account':
+            raise ValidationError(_('The payroll analytic seed reference is invalid.'))
+        account = self.env['account.analytic.account'].sudo().with_context(active_test=False).browse(data.res_id).exists()
+        if not account or account.company_id != self:
+            raise ValidationError(_('The payroll analytic seed reference is invalid.'))
+        return account
+
+    def _baseer_validate_payroll_analytic_account(self, account=None):
+        self.ensure_one()
+        account = account or self.baseer_payroll_analytic_account_id
+        if not account:
+            raise ValidationError(_('اختر حساب التحليل الخاص برواتب الشركة قبل تفعيل تحليل الرواتب.'))
+        plan = self._baseer_payroll_analytic_plan()
+        if not account.active or account.company_id != self or account.plan_id != plan:
+            raise ValidationError(_('يجب أن يكون حساب تحليل الرواتب نشطاً وتابعاً لهذه الشركة وضمن خطة رواتب بصير.'))
+        return account
+
+    @api.constrains('baseer_payroll_analytic_enabled', 'baseer_payroll_analytic_account_id')
+    def _check_baseer_payroll_analytic_configuration(self):
+        for company in self:
+            if company.baseer_payroll_analytic_account_id:
+                company._baseer_validate_payroll_analytic_account()
+            elif company.baseer_payroll_analytic_enabled:
+                company._baseer_validate_payroll_analytic_account()
+
+    def _baseer_payroll_analytic_status(self):
+        """Read-only readiness evidence; it never adopts records by name."""
+        self.ensure_one()
+        if self.parent_id:
+            return 'blocked', _('الفرع يستخدم حسابات الشركة الرئيسية ولا يملك حساب تحليل رواتب مستقلاً.')
+        if self.chart_template != 'sa' or self.currency_id.name != 'SAR':
+            return 'missing', _('Saudi accounting and SAR are required before payroll analytics can be prepared.')
+        try:
+            plan = self._baseer_payroll_analytic_plan()
+        except ValidationError as error:
+            return 'blocked', str(error)
+        account = self.baseer_payroll_analytic_account_id.with_context(active_test=False)
+        if not account:
+            return 'missing', _('حساب تحليل الرواتب الخاص بالشركة غير موجود.')
+        if not account.active or account.company_id != self or account.plan_id != plan:
+            return 'blocked', _('راجع حساب تحليل الرواتب لأنه عُدّل أو أصبح غير صالح.')
+        if not self.baseer_payroll_analytic_enabled:
+            return 'disabled', _('حساب تحليل الرواتب جاهز، لكن التوزيع التلقائي غير مفعّل.')
+        return 'ready', _('يُوزّع مصروف الراتب تلقائياً بنسبة 100%% على حساب تحليل رواتب الشركة.')
+
+    def _baseer_prepare_payroll_analytics(self):
+        """Create only the missing company leaf and enable it for future payroll."""
+        for original in self.sorted('id'):
+            company = original.sudo().with_context(allowed_company_ids=[original.id], active_test=False).with_company(original)
+            if company.parent_id or company.chart_template != 'sa' or company.currency_id.name != 'SAR':
+                continue
+            company.env.cr.execute('SELECT id FROM res_company WHERE id = %s FOR UPDATE', [company.id])
+            company.env.cr.execute('UPDATE res_company SET id = id WHERE id = %s', [company.id])
+            company.invalidate_recordset()
+            plan = company._baseer_payroll_analytic_plan().sudo()
+            account = company.baseer_payroll_analytic_account_id.with_context(active_test=False)
+            seeded = company._baseer_payroll_analytic_identity()
+            if account and seeded and account != seeded:
+                raise ValidationError(_('حساب تحليل الرواتب الحالي لا يطابق البذرة المعتمدة للشركة.'))
+            account = account or seeded
+            if account:
+                company._baseer_validate_payroll_analytic_account(account)
+            else:
+                account = company.env['account.analytic.account'].sudo().create({
+                    'name': _('Payroll cost | تكلفة الرواتب'),
+                    'plan_id': plan.id,
+                    'company_id': company.id,
+                })
+                company.env['ir.model.data'].sudo().create({
+                    'module': 'baseer_payroll',
+                    'name': 'payroll_analytic_account_company_%s' % company.id,
+                    'model': account._name,
+                    'res_id': account.id,
+                    'noupdate': True,
+                })
+            company.write({
+                'baseer_payroll_analytic_account_id': account.id,
+                'baseer_payroll_analytic_enabled': True,
+            })
+            state, message = company._baseer_payroll_analytic_status()
+            if state != 'ready':
+                raise ValidationError(_('لم يكتمل تجهيز تحليل الرواتب إلى حالة جاهزة: %s', message))
+        return True
+
+    def _baseer_payroll_analytic_distribution(self):
+        self.ensure_one()
+        if not self.baseer_payroll_analytic_enabled:
+            return {}
+        account = self._baseer_validate_payroll_analytic_account()
+        return {str(account.id): 100}
 
     def _baseer_check_payroll_configuration(self):
         self.ensure_one()
@@ -520,10 +632,15 @@ class Payslip(models.Model):
                 raise ValidationError(_('This employee already has an approved payslip covering this period.'))
             if slip.baseer_deduction and not slip.baseer_deduction_reason:
                 raise ValidationError(_('Enter a reason for the other deduction.'))
-            super(Payslip,slip.with_context(baseer_payroll_internal=INTERNAL)).action_payslip_done()
+            super(Payslip, slip.with_context(
+                baseer_payroll_internal=INTERNAL,
+                baseer_payroll_analytic_default=INTERNAL,
+                baseer_payroll_analytic_company_id=slip.company_id.id,
+            )).action_payslip_done()
             if slip.move_id.date!=posting_date:
                 raise ValidationError(_('The accounting date changed. Review the payroll period and lock dates.'))
             slip.move_id.with_context(baseer_payroll_internal=INTERNAL).write({'baseer_payslip_id':slip.id})
+            slip._baseer_assert_payroll_analytic_move()
             if slip.baseer_managed:
                 loans=self.env['baseer.hr.loan'].search([('employee_id','=',slip.employee_id.id),('company_id','=',slip.company_id.id),('state','=','running')],order='date,id')
                 if slip.baseer_defer_loan:
@@ -536,6 +653,21 @@ class Payslip(models.Model):
                 # Settle debit deductions against gross credit before cash payments.
                 if payable.filtered(lambda l:l.debit) and payable.filtered(lambda l:l.credit):
                     payable.reconcile()
+        return True
+
+    def _baseer_assert_payroll_analytic_move(self):
+        for slip in self:
+            move = slip.move_id
+            if not move:
+                continue
+            distribution = slip.company_id._baseer_payroll_analytic_distribution()
+            expense = slip.company_id.baseer_salary_expense_id
+            for line in move.line_ids:
+                if line.account_id == expense:
+                    if line.analytic_distribution != distribution:
+                        raise ValidationError(_('Payroll expense analytic allocation is invalid.'))
+                elif line.analytic_distribution:
+                    raise ValidationError(_('Only payroll expense lines may carry the default analytic allocation.'))
         return True
 
     def action_payslip_cancel(self):
@@ -731,6 +863,23 @@ class AccountingMove(models.Model):
     def create(self, vals_list):
         if self.env.context.get('baseer_payroll_internal') is not INTERNAL and any(v.get('baseer_payslip_id',self.env.context.get('default_baseer_payslip_id')) for v in vals_list):
             raise AccessError(_('Payroll source links are set by the payroll workflow.'))
+        if self.env.context.get('baseer_payroll_analytic_default') is INTERNAL:
+            company_id = self.env.context.get('baseer_payroll_analytic_company_id')
+            company = self.env['res.company'].browse(company_id).exists()
+            if not company or company != self.env.company:
+                raise AccessError(_('يجب أن يستخدم توزيع تحليل الرواتب الشركة النشطة للمسير.'))
+            distribution = company._baseer_payroll_analytic_distribution()
+            for values in vals_list:
+                lines = []
+                for command in values.get('line_ids', []):
+                    if command[0] == 0:
+                        line_values = dict(command[2])
+                        line_values['analytic_distribution'] = (
+                            distribution if line_values.get('account_id') == company.baseer_salary_expense_id.id else {}
+                        )
+                        command = (0, 0, line_values)
+                    lines.append(command)
+                values['line_ids'] = lines
         return super().create(vals_list)
     def _baseer_protect(self):
         if self.filtered('baseer_payslip_id') and self.env.context.get('baseer_payroll_internal') is not INTERNAL:
@@ -749,7 +898,7 @@ class AccountingMove(models.Model):
 class AccountingLine(models.Model):
     _inherit='account.move.line'
     def write(self,vals):
-        if {'balance','debit','credit','amount_currency','currency_id','account_id','partner_id','move_id','date_maturity','amount_residual','amount_residual_currency','company_id','matched_debit_ids','matched_credit_ids'}.intersection(vals):
+        if {'balance','debit','credit','amount_currency','currency_id','account_id','partner_id','move_id','date_maturity','amount_residual','amount_residual_currency','company_id','matched_debit_ids','matched_credit_ids','analytic_distribution'}.intersection(vals):
             (self.move_id | self.env['account.move'].browse(vals.get('move_id')))._baseer_protect()
         return super().write(vals)
     def unlink(self): self.move_id._baseer_protect(); return super().unlink()

@@ -58,6 +58,10 @@ point.
   technical marker, and cleared payment point in one update.  This prevents
   the ordinary credit onchange from converting a valid representative route
   into a real credit row between two browser updates.
+- The inline purchase-batch view keeps the technical source field in the
+  browser record (while remaining visually hidden).  It was previously
+  removed by `column_invisible`, so the widgets could not distinguish the
+  representative route from ordinary Credit.
 
 ## Acceptance checks
 

@@ -143,20 +143,20 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async chooseRepresentative(representative) {
-        // As above, let the source onchange clear the incompatible payment
-        // point before assigning the representative selection itself.
         // Refresh here as well: a funding or return may have been posted while
         // this draft batch remained open in the same browser session.
         await this.refreshChoices();
         const currentRepresentative = this.state.choices.representatives.find(
             (item) => item.id === representative.id
         ) || representative;
+        // This is a complete settlement route, so save it atomically.  Saving
+        // its technical is_credit marker before the representative lets the
+        // regular credit onchange normalize the intermediate row back to
+        // actual Credit, which then disables this picker.
         await this.props.record.update({
             payment_source_type: "representative_petty_cash",
             payment_method_line_id: false,
             is_credit: true,
-        });
-        await this.props.record.update({
             representative_petty_cash_representative_id: {
                 id: currentRepresentative.id,
                 display_name: currentRepresentative.name,

@@ -54,6 +54,10 @@ point.
   credit route has neither.
 - Returning a representative row to cash/bank saves the new source and payment
   point atomically, so the server never sees an invalid intermediate row.
+- Selecting a representative now likewise saves the representative, source,
+  technical marker, and cleared payment point in one update.  This prevents
+  the ordinary credit onchange from converting a valid representative route
+  into a real credit row between two browser updates.
 
 ## Acceptance checks
 

@@ -9,11 +9,11 @@
       <t t-set="is_ar" t-value="request.env.lang.startswith('ar')"/>
       <main id="wrap" class="abroj-v2" t-att-dir="'rtl' if is_ar else 'ltr'" t-att-lang="'ar' if is_ar else 'en'">
         <section id="home" class="abroj-v2__hero">
-          <div class="abroj-v2__hero-media" role="img" t-att-aria-label="'تصور توضيحي لفيلا ونظمها الفنية' if is_ar else 'Illustrative villa and technical systems visual'"/>
+          <div class="abroj-v2__hero-media" role="img" t-att-aria-label="'تصور توضيحي لمقهى سعودي من أعمال التجهيز' if is_ar else 'Illustrative Saudi cafe fit-out visual'"/>
           <div class="abroj-v2__hero-veil"/>
           <header class="abroj-v2__header">
             <a class="abroj-v2__brand" href="#home" aria-label="Abroj home">
-              <img src="/abroj_website/static/src/img/abroj-logo.png" alt="أبرج للمشاريع المتكاملة | Abroj Integrated Construction"/>
+              <img src="/abroj_website/static/src/img/abroj-logo.png" alt="أبرج للإنشاءات المتكاملة | Abroj Integrated Construction"/>
             </a>
             <nav class="abroj-v2__nav" aria-label="Primary navigation">
               <a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a>
@@ -33,7 +33,7 @@
             </details>
           </header>
           <div class="abroj-v2__hero-content">
-            <p class="abroj-v2__eyebrow"><t t-if="is_ar">أبرج للمشاريع المتكاملة · الخبر · منذ 2018</t><t t-else="">ABROJ INTEGRATED CONSTRUCTION · AL KHOBAR · EST. 2018</t></p>
+            <p class="abroj-v2__eyebrow"><t t-if="is_ar">أبرج للإنشاءات المتكاملة · الخبر · منذ 2018</t><t t-else="">ABROJ INTEGRATED CONSTRUCTION · AL KHOBAR · EST. 2018</t></p>
             <h1><t t-if="is_ar">من المخطط إلى<br/>تنفيذٍ واضح.</t><t t-else="">Clear execution,<br/>from drawing to delivery.</t></h1>
             <p class="abroj-v2__hero-lead"><t t-if="is_ar">أبرج شركة مقاولات في الخبر منذ 2018. ننفذ أعمال المباني والطرق والأسفلت والتكييف وتجهيز المتاجر، ضمن نطاق عمل واضح من بداية المشروع حتى التسليم.</t><t t-else="">Based in Al Khobar since 2018, Abroj delivers buildings, roads and asphalt, HVAC, and retail fit-outs through one clear scope from mobilisation to handover.</t></p>
             <div class="abroj-v2__hero-actions">
@@ -81,8 +81,21 @@
           <div class="abroj-v2__contact-content"><p class="abroj-v2__eyebrow"><t t-if="is_ar">لنبدأ من نطاق مشروعك</t><t t-else="">START WITH YOUR PROJECT SCOPE</t></p><h2><t t-if="is_ar">أخبرنا بما يحتاجه موقعك.</t><t t-else="">Tell us what your site needs.</t></h2><p><t t-if="is_ar">شاركنا نوع المشروع وموقعه وما يتوفر من مخططات أو متطلبات، لنبدأ بفهم نطاق العمل وتحديد الخطوة المناسبة.</t><t t-else="">Share the project type, location, and any available drawings or requirements. We will begin by understanding the scope and defining the next step.</t></p></div>
           <a class="abroj-v2__button abroj-v2__button--light" href="/contactus"><t t-if="is_ar">اطلب عرض سعر لمشروعك</t><t t-else="">Request a project quote</t><span aria-hidden="true">←</span></a>
         </section>
-        <footer class="abroj-v2__footer"><img src="/abroj_website/static/src/img/abroj-logo.png" alt="Abroj Integrated Construction"/><div><a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">الخدمات</t><t t-else="">Services</t></a><a href="#contact"><t t-if="is_ar">تواصل</t><t t-else="">Contact</t></a><a href="https://baseer.abroj.sa/web/login"><t t-if="is_ar">دخول بصير</t><t t-else="">Baseer login</t></a></div><small>© <t t-if="is_ar">أبرج للمشاريع المتكاملة</t><t t-else="">Abroj Integrated Construction</t></small></footer>
+        <footer class="abroj-v2__footer"><img src="/abroj_website/static/src/img/abroj-logo.png" alt="Abroj Integrated Construction"/><div><a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">الخدمات</t><t t-else="">Services</t></a><a href="#contact"><t t-if="is_ar">تواصل</t><t t-else="">Contact</t></a><a href="https://baseer.abroj.sa/web/login"><t t-if="is_ar">دخول بصير</t><t t-else="">Baseer login</t></a></div><small>© <t t-if="is_ar">أبرج للإنشاءات المتكاملة</t><t t-else="">Abroj Integrated Construction</t></small></footer>
       </main>
     </xpath>
   </template>
+
+  <!-- The default Website-editor footer contains placeholder company details.
+       This website has a complete, branded footer in its home template. -->
+  <record id="abroj_remove_legacy_footer" model="ir.ui.view">
+    <field name="name">Abroj: remove legacy Website footer</field>
+    <field name="type">qweb</field>
+    <field name="inherit_id" ref="website.layout"/>
+    <field name="website_id" ref="website.default_website"/>
+    <field name="priority">99</field>
+    <field name="arch" type="xml">
+      <xpath expr="//footer[@id='bottom']" position="replace"/>
+    </field>
+  </record>
 </odoo>

@@ -75,20 +75,28 @@ class Company(models.Model):
     def _baseer_payroll_analytic_status(self):
         """Read-only readiness evidence; it never adopts records by name."""
         self.ensure_one()
-        if self.parent_id:
+        # Company onboarding may be opened from an assigned company while a
+        # different company is active in the browser.  Resolve this company's
+        # private analytic account in its own company context.  Callers have
+        # already enforced ERP-manager role and assigned-company authority;
+        # this only avoids a false access denial during the read-only preview.
+        company = self.sudo().with_context(
+            allowed_company_ids=[self.id], active_test=False,
+        ).with_company(self)
+        if company.parent_id:
             return 'blocked', _('الفرع يستخدم حسابات الشركة الرئيسية ولا يملك حساب تحليل رواتب مستقلاً.')
-        if self.chart_template != 'sa' or self.currency_id.name != 'SAR':
+        if company.chart_template != 'sa' or company.currency_id.name != 'SAR':
             return 'missing', _('Saudi accounting and SAR are required before payroll analytics can be prepared.')
         try:
-            plan = self._baseer_payroll_analytic_plan()
+            plan = company._baseer_payroll_analytic_plan()
         except ValidationError as error:
             return 'blocked', str(error)
-        account = self.baseer_payroll_analytic_account_id.with_context(active_test=False)
+        account = company.baseer_payroll_analytic_account_id.with_context(active_test=False)
         if not account:
             return 'missing', _('حساب تحليل الرواتب الخاص بالشركة غير موجود.')
-        if not account.active or account.company_id != self or account.plan_id != plan:
+        if not account.active or account.company_id != company or account.plan_id != plan:
             return 'blocked', _('راجع حساب تحليل الرواتب لأنه عُدّل أو أصبح غير صالح.')
-        if not self.baseer_payroll_analytic_enabled:
+        if not company.baseer_payroll_analytic_enabled:
             return 'disabled', _('حساب تحليل الرواتب جاهز، لكن التوزيع التلقائي غير مفعّل.')
         return 'ready', _('يُوزّع مصروف الراتب تلقائياً بنسبة 100% على حساب تحليل رواتب الشركة.')
 

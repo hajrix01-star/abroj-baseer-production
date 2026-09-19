@@ -32,7 +32,7 @@
     </t>
     <t t-name="baseer_procurement_requests.PaymentCreditToggle">
         <span t-if="isRepresentativePettyCash" class="o_baseer_credit_toggle__representative">
-            Settled from Representative Petty Cash
+            مسدد من عهدة مندوب المشتريات
         </span>
         <label t-else="" class="form-check form-switch o_baseer_credit_toggle">
             <input class="form-check-input" type="checkbox" t-att-checked="isCredit"

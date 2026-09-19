@@ -88,9 +88,13 @@ point.
   direct bank/cash payment.
 - The backend loaded the updated module and the browser opened the purchase
   batch screen after the new assets were loaded, without an asset/template
-  failure.  A separate funded representative row remains the required final
-  visual acceptance on the shared Tailscale QA environment before production
-  release.
+  failure.
+- Shared QA visual acceptance completed on TEST3 batch `PB/2026/00071` with a
+  funded representative: the picker displayed `QA Procurement Representative`
+  and SAR 10.00, the credit cell displayed the representative-settlement label
+  rather than Credit, and the picker remained enabled.  It then switched back
+  to the bank point.  The temporary line was discarded; no bill, payment, or
+  accounting entry was saved or approved.
 
 ## Limits
 

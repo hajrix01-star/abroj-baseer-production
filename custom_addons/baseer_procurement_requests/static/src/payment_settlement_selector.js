@@ -80,11 +80,19 @@ export class PaymentSettlementSelector extends Component {
         return this.state.choices.representatives.find((representative) => representative.id === this.representativeId);
     }
 
+    get isRepresentativePettyCash() {
+        return Boolean(this.representativeId) && this.props.record.data.is_credit;
+    }
+
+    get isActualCredit() {
+        return this.props.record.data.payment_source_type === "credit" && !this.representativeId;
+    }
+
     get label() {
         if (this.state.unlockingCredit) {
             return _t("Choose a settlement method");
         }
-        if (this.props.record.data.payment_source_type === "representative_petty_cash") {
+        if (this.isRepresentativePettyCash) {
             return this.selectedRepresentative?.name || _t("Purchasing representative");
         }
         if (this.props.record.data.payment_source_type === "credit") {
@@ -179,7 +187,8 @@ export class PaymentCreditToggle extends Component {
     }
 
     get isRepresentativePettyCash() {
-        return this.props.record.data.payment_source_type === "representative_petty_cash";
+        return Boolean(relationId(this.props.record.data.representative_petty_cash_representative_id))
+            && this.props.record.data.is_credit;
     }
 
     async toggleCredit(event) {

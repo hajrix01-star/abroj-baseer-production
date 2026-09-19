@@ -4,7 +4,7 @@
         <div class="o_baseer_settlement_picker">
             <Dropdown>
                 <button type="button" class="btn btn-light o_baseer_settlement_picker__trigger"
-                        t-att-disabled="props.readonly or state.loading or props.record.data.payment_source_type === 'credit'" t-att-title="label">
+                        t-att-disabled="props.readonly or state.loading or isActualCredit" t-att-title="label">
                     <span t-if="state.loading" class="text-muted">Loading…</span>
                     <span t-else="" t-esc="label"/>
                     <i class="fa fa-chevron-down" aria-hidden="true"/>

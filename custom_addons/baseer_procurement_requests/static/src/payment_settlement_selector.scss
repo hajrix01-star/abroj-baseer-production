@@ -23,6 +23,17 @@
     }
 }
 
+// Support fields must be sent to the inline widgets but are not cashier
+// columns.  Hide the generated list cells while keeping the values client-side.
+.o_list_renderer {
+    th[data-name="payment_source_type"],
+    td[name="payment_source_type"],
+    th[data-name="representative_petty_cash_representative_id"],
+    td[name="representative_petty_cash_representative_id"] {
+        display: none !important;
+    }
+}
+
 .o_baseer_credit_toggle {
     align-items: center;
     display: flex;

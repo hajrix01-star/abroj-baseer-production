@@ -103,6 +103,11 @@
                 <attribute name="invisible">False</attribute>
                 <attribute name="required">False</attribute>
                 <attribute name="widget">baseer_payment_settlement_selector</attribute>
+                <!-- Representative petty cash keeps is_credit=True only as an
+                     internal settlement marker.  It must remain editable in
+                     draft so an accountant can select another representative
+                     or switch the invoice to a real payment point. -->
+                <attribute name="readonly">payment_source_type == 'credit'</attribute>
                 <attribute name="width">220px</attribute>
             </xpath>
             <xpath expr="//field[@name='line_ids']/list/field[@name='payment_method_line_id']" position="before">
@@ -149,6 +154,7 @@
                 <attribute name="invisible">False</attribute>
                 <attribute name="required">False</attribute>
                 <attribute name="widget">baseer_payment_settlement_selector</attribute>
+                <attribute name="readonly">batch_state == 'approved' or (batch_id and not is_current_company) or payment_source_type == 'credit'</attribute>
             </xpath>
             <xpath expr="//field[@name='payment_method_line_id']/following-sibling::div[1]" position="attributes">
                 <attribute name="invisible">True</attribute>

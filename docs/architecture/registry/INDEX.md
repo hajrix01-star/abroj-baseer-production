@@ -106,7 +106,9 @@ live company-scoped balance before assigning a representative. The accounting
 contract is unchanged: the representative route retains its internal
 `is_credit` compatibility marker, but the visible table now shows
 Representative Petty Cash rather than a misleading Credit switch and allows
-changing the settlement route. Focused mirror test passed for funding,
-current-balance RPC and paid no-direct-payment settlement. Shared QA browser
+changing the representative or route. A cash/bank replacement is saved
+atomically with its source, preventing an invalid intermediate row. Focused
+mirror test passed for funding, current-balance RPC, representative change,
+cash/bank change, and paid no-direct-payment settlement. Shared QA browser
 acceptance with a funded representative remains required before any production
 release. [Record](../../build-governance/REPRESENTATIVE-PETTY-CASH-SETTLEMENT-UI-FIX-2026-09-19.md).

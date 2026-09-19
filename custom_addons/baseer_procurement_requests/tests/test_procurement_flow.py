@@ -1348,6 +1348,41 @@ class ProcurementFlowCase(TransactionCase):
         })
         supplier = self.env['res.partner'].create({'name': 'PRA21 supplier', 'supplier_rank': 1})
         self._native_batch_accounting_fixture(self.company, expense_account, supplier)
+
+        # A draft invoice selected for Representative Petty Cash must remain
+        # switchable.  ``is_credit`` is an internal compatibility marker for
+        # this route, not a user-facing lock on changing its representative or
+        # returning it to an ordinary cash/bank payment point.
+        alternate_representative = self.env['res.partner'].create({
+            'name': 'PRA21 alternate representative', 'is_purchase_representative': True,
+        })
+        payment_method = bank.outbound_payment_method_line_ids.filtered(
+            lambda line: line.code == 'manual'
+        )[:1]
+        self.assertTrue(payment_method)
+        payment_method.payment_account_id = bank_account
+        switchable_batch = self.env['baseer.purchase.batch'].create({
+            'company_id': self.company.id,
+            'line_ids': [Command.create({
+                'partner_id': supplier.id, 'supplier_ref': 'PRA21-SWITCH', 'entry_type': 'purchase',
+                'gross_amount': 1, 'payment_source_type': 'representative_petty_cash',
+                'representative_petty_cash_representative_id': representative.id,
+            })],
+        })
+        switchable_line = switchable_batch.line_ids
+        switchable_line.write({'representative_petty_cash_representative_id': alternate_representative.id})
+        self.assertEqual(switchable_line.payment_source_type, 'representative_petty_cash')
+        self.assertEqual(switchable_line.representative_petty_cash_representative_id, alternate_representative)
+        switchable_line.write({
+            'payment_source_type': 'payment_method',
+            'representative_petty_cash_representative_id': False,
+            'payment_method_line_id': payment_method.id,
+        })
+        self.assertEqual(switchable_line.payment_source_type, 'payment_method')
+        self.assertFalse(switchable_line.representative_petty_cash_representative_id)
+        self.assertEqual(switchable_line.payment_method_line_id, payment_method)
+        switchable_batch.unlink()
+
         service_category = self.env['product.category'].create({'name': 'PRA21 expense category'})
         service = self.env['product.product'].create({
             'name': 'PRA21 expense service', 'type': 'service', 'categ_id': service_category.id,

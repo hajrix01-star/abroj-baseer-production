@@ -122,22 +122,24 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async choosePaymentPoint(point) {
-        // A fresh invoice row already has this source.  Do not call its
-        // onchange again: it validates the incomplete row and can discard a
-        // concurrently selected payment point.  When switching from credit
-        // or representative cash, complete that source transition first.
+        // A fresh invoice row already has this source.  When changing from
+        // Credit or Representative Petty Cash, however, the replacement
+        // source and its payment point must be saved together.  Saving the
+        // source first would create an invalid intermediate row (no payment
+        // point) and the server correctly rejects it.
+        const values = {
+            payment_method_line_id: { id: point.id, display_name: point.name },
+        };
         if (this.props.record.data.payment_source_type !== "payment_method"
                 || this.props.record.data.is_credit
                 || this.representativeId) {
-            await this.props.record.update({
+            Object.assign(values, {
                 payment_source_type: "payment_method",
                 representative_petty_cash_representative_id: false,
                 is_credit: false,
             });
         }
-        await this.props.record.update({
-            payment_method_line_id: { id: point.id, display_name: point.name },
-        });
+        await this.props.record.update(values);
     }
 
     async chooseRepresentative(representative) {

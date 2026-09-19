@@ -42,12 +42,13 @@ validate_arguments() {
 }
 
 parse_policy() {
-    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules_field=0
+    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0
     while IFS='=' read -r key value || [ -n "$key" ]; do
         case "$key" in
             RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate policy release id'; policy_release_id=$value; seen_release=1 ;;
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
+            THIRD_PARTY_MODULES) [ "$seen_third_party_modules_field" -eq 0 ] || die 'duplicate policy third-party modules'; policy_third_party_modules=$value; seen_third_party_modules_field=1 ;;
             ''|'#'*) ;;
             *) die 'policy has an unknown key' ;;
         esac
@@ -63,6 +64,16 @@ parse_policy() {
         [ -z "${names[$module]+x}" ] || die 'policy repeats a module'
         names[$module]=1
     done
+    third_party_modules=()
+    if [ -n "${policy_third_party_modules:-}" ]; then
+        IFS=',' read -r -a third_party_modules <<< "$policy_third_party_modules"
+        declare -A third_party_names=()
+        for module in "${third_party_modules[@]}"; do
+            [[ "$module" =~ ^eh_[a-z0-9_]+$ ]] || die 'policy third-party module is invalid'
+            [ -z "${third_party_names[$module]+x}" ] || die 'policy repeats a third-party module'
+            third_party_names[$module]=1
+        done
+    fi
 }
 
 require_root
@@ -93,8 +104,15 @@ git -C "$fetch_repo" merge-base --is-ancestor "$commit" refs/heads/policy-main |
 for module in "${modules[@]}"; do
     git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "policy module is absent from commit: $module"
 done
+for module in "${third_party_modules[@]}"; do
+    git -C "$fetch_repo" cat-file -e "$commit:third_party_addons/erp_heritage_19/$module/__manifest__.py" || die "policy third-party module is absent from commit: $module"
+done
 
-printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$commit" "$policy_modules" "$policy_revision" "$run_id" > "$candidate.canonical"
+{
+    printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"
+    [ -z "${policy_third_party_modules:-}" ] || printf 'THIRD_PARTY_MODULES=%s\n' "$policy_third_party_modules"
+    printf 'POLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$policy_revision" "$run_id"
+} > "$candidate.canonical"
 mv "$candidate.canonical" "$candidate"
 chown root:root "$candidate"
 chmod 0600 "$candidate"

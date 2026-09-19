@@ -44,7 +44,7 @@ validate_arguments() {
 }
 
 load_policy() {
-    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_revision=0 seen_approval_run=0
+    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0 seen_revision=0 seen_approval_run=0
     policy="$POLICY_DIR/$release_id.env"
     [ -f "$policy" ] && [ ! -L "$policy" ] || die 'release policy is missing or unsafe'
     [ "$(stat -c '%U:%G:%a' -- "$policy")" = 'root:root:600' ] || die 'release policy ownership or mode is unsafe'
@@ -54,6 +54,7 @@ load_policy() {
             RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate policy release id'; policy_release_id=$value; seen_release=1 ;;
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
+            THIRD_PARTY_MODULES) [ "$seen_third_party_modules_field" -eq 0 ] || die 'duplicate policy third-party modules'; policy_third_party_modules=$value; seen_third_party_modules_field=1 ;;
             POLICY_REVISION) [ "$seen_revision" -eq 0 ] || die 'duplicate policy revision'; policy_revision=$value; seen_revision=1 ;;
             APPROVED_RUN_ID) [ "$seen_approval_run" -eq 0 ] || die 'duplicate policy approval run'; approved_run_id=$value; seen_approval_run=1 ;;
             ''|'#'*) ;;
@@ -74,6 +75,16 @@ load_policy() {
         [ -z "${seen_module_names[$approved_module]+x}" ] || die 'policy repeats a module'
         seen_module_names[$approved_module]=1
     done
+    APPROVED_THIRD_PARTY_MODULES=()
+    if [ -n "${policy_third_party_modules:-}" ]; then
+        IFS=',' read -r -a APPROVED_THIRD_PARTY_MODULES <<< "$policy_third_party_modules"
+        declare -A seen_third_party_module_names=()
+        for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
+            [[ "$approved_module" =~ ^eh_[a-z0-9_]+$ ]] || die 'policy third-party module is invalid'
+            [ -z "${seen_third_party_module_names[$approved_module]+x}" ] || die 'policy repeats a third-party module'
+            seen_third_party_module_names[$approved_module]=1
+        done
+    fi
 }
 
 fetch_reviewed_source() {
@@ -92,8 +103,9 @@ fetch_reviewed_source() {
     git -C "$fetch_repo" merge-base --is-ancestor "$live_commit" "$commit" || die 'approved commit does not advance from the live release'
     fetched_commit="$(git -C "$fetch_repo" rev-parse "${commit}^{commit}")"
     [ "$fetched_commit" = "$commit" ] || die 'fetched source does not match the approved commit'
-    declare -A allowed_modules=()
+    declare -A allowed_modules=() allowed_third_party_modules=()
     for approved_module in "${APPROVED_MODULES[@]}"; do allowed_modules[$approved_module]=1; done
+    for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do allowed_third_party_modules[$approved_module]=1; done
     while IFS= read -r changed_path; do
         case "$changed_path" in
             custom_addons/*/*)
@@ -102,6 +114,11 @@ fetch_reviewed_source() {
                 [ -n "${allowed_modules[$changed_module]+x}" ] || die "custom module changed outside release policy: $changed_module"
                 ;;
             custom_addons/*) die 'custom-addons root file changed outside release policy' ;;
+            third_party_addons/erp_heritage_19/*/*)
+                changed_module="${changed_path#third_party_addons/erp_heritage_19/}"
+                changed_module="${changed_module%%/*}"
+                [ -n "${allowed_third_party_modules[$changed_module]+x}" ] || die "third-party module changed outside release policy: $changed_module"
+                ;;
             third_party_addons/*|compose.production.yaml|config/*) die "runtime source changed outside release policy: $changed_path" ;;
         esac
     done < <(git -C "$fetch_repo" diff --name-only "$live_commit" "$commit" -- custom_addons third_party_addons compose.production.yaml config)
@@ -248,6 +265,9 @@ fi
 for approved_module in "${APPROVED_MODULES[@]}"; do
     [ -f "$source_dir/custom_addons/$approved_module/__manifest__.py" ] || die "approved module is missing from release: $approved_module"
 done
+for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
+    [ -f "$source_dir/third_party_addons/erp_heritage_19/$approved_module/__manifest__.py" ] || die "approved third-party module is missing from release: $approved_module"
+done
 
 compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
 odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"
@@ -302,7 +322,7 @@ compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.en
 
 upgrade_modules=()
 install_modules=()
-for approved_module in "${APPROVED_MODULES[@]}"; do
+for approved_module in "${APPROVED_MODULES[@]}" "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
     module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$approved_module'\"")"
     case "$module_state" in
         installed) upgrade_modules+=("$approved_module") ;;
@@ -329,12 +349,12 @@ wait_for_data_init
 "${compose[@]}" up -d odoo
 wait_for_login
 
-for approved_module in "${APPROVED_MODULES[@]}"; do
+for approved_module in "${APPROVED_MODULES[@]}" "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
     module_state="$(docker exec "$DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d baseer_prod -Atqc \"SELECT state FROM ir_module_module WHERE name = '$approved_module'\"")"
     [ "$module_state" = installed ] || die "approved module is not installed after deployment: $approved_module"
 done
 "${compose[@]}" logs --no-color --tail=300 odoo > "$backup/odoo-smoke.log"
 ! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
 
-printf 'LIVE=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" "$policy_revision" "$approved_run_id" > "$backup/result.env"
+printf 'LIVE=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nTHIRD_PARTY_MODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$release_id" "$release" "$backup" "$commit" "${APPROVED_MODULES[*]}" "${APPROVED_THIRD_PARTY_MODULES[*]}" "$policy_revision" "$approved_run_id" > "$backup/result.env"
 printf 'LIVE=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

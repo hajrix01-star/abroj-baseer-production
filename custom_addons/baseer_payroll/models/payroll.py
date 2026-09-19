@@ -90,7 +90,7 @@ class Company(models.Model):
             return 'blocked', _('راجع حساب تحليل الرواتب لأنه عُدّل أو أصبح غير صالح.')
         if not self.baseer_payroll_analytic_enabled:
             return 'disabled', _('حساب تحليل الرواتب جاهز، لكن التوزيع التلقائي غير مفعّل.')
-        return 'ready', _('يُوزّع مصروف الراتب تلقائياً بنسبة 100%% على حساب تحليل رواتب الشركة.')
+        return 'ready', _('يُوزّع مصروف الراتب تلقائياً بنسبة 100% على حساب تحليل رواتب الشركة.')
 
     def _baseer_prepare_payroll_analytics(self):
         """Create only the missing company leaf and enable it for future payroll."""

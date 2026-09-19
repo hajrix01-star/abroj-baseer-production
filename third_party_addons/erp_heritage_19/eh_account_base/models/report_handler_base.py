@@ -149,11 +149,18 @@ class EhAccountDynamicReportHandler(models.AbstractModel):
         """
         today = fields.Date.context_today(self)
         first_of_month = today.replace(day=1)
+        last_of_month = today.replace(
+            day=monthrange(today.year, today.month)[1],
+        )
         return {
             'date': {
-                'mode': 'range',
+                # Financial reports open on the current calendar month.  The
+                # explicit preset (rather than a visually identical custom
+                # range) makes the period clear to the accountant and stays
+                # aligned with the web viewer's initial state.
+                'mode': 'this_month',
                 'date_from': first_of_month.isoformat(),
-                'date_to': today.isoformat(),
+                'date_to': last_of_month.isoformat(),
             },
             'company_ids': list(
                 self.env.context.get(

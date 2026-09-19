@@ -148,9 +148,13 @@ export class EhDynamicReportViewer extends Component {
             },
             options: {
                 date: {
-                    mode: "range",
+                    // Keep first render aligned with the server-side default.
+                    // ``this_month`` is a recognisable accounting period,
+                    // unlike a custom-looking range which happens to have
+                    // the same dates.
+                    mode: "this_month",
                     date_from: firstOfMonthStr(),
-                    date_to: todayStr(),
+                    date_to: PRESET_RANGES.this_month()[1],
                 },
                 company_ids: [],
                 journal_ids: [],

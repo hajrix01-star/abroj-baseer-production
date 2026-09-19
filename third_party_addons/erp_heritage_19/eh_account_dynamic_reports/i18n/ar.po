@@ -17,6 +17,54 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
 
 #. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "Company policy"
+msgstr "سياسة الشركة"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "Dividends paid"
+msgstr "توزيعات الأرباح المدفوعة"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "Financing"
+msgstr "تمويلي"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "Interest paid"
+msgstr "الفوائد المدفوعة"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "Next period"
+msgstr "الفترة التالية"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "Operating"
+msgstr "تشغيلي"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "This fiscal quarter"
+msgstr "هذا الربع المالي"
+
+#. module: eh_account_dynamic_reports
+#. odoo-javascript
+#: code:addons/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml:0
+msgid "This fiscal year"
+msgstr "هذه السنة المالية"
+
+#. module: eh_account_dynamic_reports
 #. odoo-python
 #: code:addons/eh_account_dynamic_reports/models/bank_reconciliation_proof.py:0
 msgid "%(journal)s (%(code)s)"

@@ -17,10 +17,12 @@ Covers:
 """
 
 import base64
+import calendar
 from unittest.mock import patch
 
 from datetime import date, timedelta
 
+from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 
@@ -107,6 +109,22 @@ class TestReportWizard(EhAccountUnitTestCase):
         self.assertTrue(options['posted_only'])
         self.assertFalse(options['show_zero'])
         self.assertIn(self.env.company.id, options['company_ids'])
+
+    def test_default_report_period_is_the_current_month(self):
+        """The server default agrees with the viewer's ``This month`` preset."""
+        today = fields.Date.context_today(self.env[WIZARD_TEST_HANDLER])
+        options = self.env[WIZARD_TEST_HANDLER].build_default_options()
+
+        self.assertEqual(options['date']['mode'], 'this_month')
+        self.assertEqual(
+            options['date']['date_from'], today.replace(day=1).isoformat(),
+        )
+        self.assertEqual(
+            options['date']['date_to'],
+            today.replace(
+                day=calendar.monthrange(today.year, today.month)[1],
+            ).isoformat(),
+        )
 
     def test_build_options_includes_partner_and_account_filters(self):
         partner = self.env['res.partner'].create({'name': 'Filtered'})

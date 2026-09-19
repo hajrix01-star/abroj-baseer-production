@@ -95,6 +95,14 @@ point.
   rather than Credit, and the picker remained enabled.  It then switched back
   to the bank point.  The temporary line was discarded; no bill, payment, or
   accounting entry was saved or approved.
+- End-to-end QA accounting acceptance subsequently used the same TEST3 batch
+  with supplier `FIX CAR` and reference `QA-CUSTODY-TEST-001`: a SAR 5.00
+  supplier bill (`BILL/2026/09/0002`) posted and was fully paid.  Its invoice
+  entry debited expense SAR 4.35 and VAT input SAR 0.65, and credited payables
+  SAR 5.00.  The linked immutable representative-settlement move
+  (`RPCA/2026/09/0002`) debited that payable and credited the representative
+  petty-cash account SAR 5.00.  From the posted SAR 10.00 funding less the
+  posted settlement, the server-authoritative remaining balance is SAR 5.00.
 
 ## Limits
 

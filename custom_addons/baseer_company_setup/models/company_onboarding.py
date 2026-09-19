@@ -17,6 +17,10 @@ class BaseerCompanyOnboarding(models.TransientModel):
     ], required=True, default='review', readonly=True)
     summary = fields.Text(readonly=True)
     setup_core = fields.Boolean(string='الحسابات السعودية والدفاتر الأساسية', default=True)
+    setup_configuration_loaded = fields.Boolean(
+        default=False,
+        help='Technical guard: load the current company setup once without overwriting a choice made in this wizard.',
+    )
     setup_step = fields.Selection([
         ('foundation', '1. الأساس والخدمات'),
         ('sales', '2. المبيعات والتحصيل'),
@@ -56,6 +60,10 @@ class BaseerCompanyOnboarding(models.TransientModel):
         for wizard in self:
             wizard.company_id._baseer_refresh_onboarding(wizard)
             wizard.plan_preview = wizard.company_id._baseer_onboarding_plan_preview(wizard)
+            # Extension hooks use this one-time marker to prefill the current
+            # company configuration on opening. Later refreshes must preserve
+            # the manager's explicit transient choices.
+            wizard.setup_configuration_loaded = True
         return True
 
     def _baseer_reopen(self):
@@ -86,6 +94,11 @@ class BaseerCompanyOnboarding(models.TransientModel):
 
     def action_apply_selected(self):
         self._require_manager()
+        # Check every selected stage before the first write. This preserves the
+        # single Odoo transaction and avoids discovering a missing role after a
+        # preceding extension has already prepared master data.
+        for wizard in self:
+            wizard.company_id._baseer_preflight_onboarding_apply(wizard)
         for wizard in self:
             wizard.company_id._baseer_apply_onboarding(wizard)
         self.action_refresh()
@@ -102,6 +115,11 @@ class Company(models.Model):
             raise AccessError(_('مديرو ERP فقط يمكنهم فحص أو تطبيق تهيئة الشركة.'))
         if self not in self.env.companies:
             raise AccessError(_('لا يمكنك تهيئة شركة غير مسموح بها لحسابك.'))
+
+    def _baseer_preflight_onboarding_apply(self, wizard):
+        """Extension point for stage roles; it must not write data."""
+        self.ensure_one()
+        return True
 
     def action_baseer_open_onboarding(self):
         self.ensure_one()
@@ -126,6 +144,12 @@ class Company(models.Model):
         missing = [field for field, *_definition in ACCOUNT_DEFAULTS if not company[field]]
         if missing or not company.baseer_payroll_journal_id or not company.baseer_eos_journal_id:
             return 'missing', _('بعض إعدادات الرواتب أو الدفاتر الأساسية ناقصة.')
+        starter_types = ('sale', 'purchase', 'bank', 'cash')
+        missing_starters = [journal_type for journal_type in starter_types if not company.env['account.journal'].search_count([
+            ('company_id', '=', company.id), ('type', '=', journal_type), ('active', '=', True),
+        ], limit=1)]
+        if missing_starters:
+            return 'missing', _('دفاتر البيع أو الشراء أو البنك أو النقد الأساسية ناقصة أو مؤرشفة.')
         return 'ready', _('الشجرة السعودية والدفاتر الأساسية جاهزة.')
 
     def _baseer_refresh_onboarding(self, wizard):

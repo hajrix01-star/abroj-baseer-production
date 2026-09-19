@@ -67,6 +67,18 @@ class CompanyOnboardingCase(TransactionCase):
         self.assertEqual(wizard.setup_step, 'operations')
         self._assert_no_financial_documents(company)
 
+    def test_readiness_requires_active_starter_journals(self):
+        company = self._new_company()
+        bank = self.env['account.journal'].search([
+            ('company_id', '=', company.id), ('type', '=', 'bank'), ('active', '=', True),
+        ], limit=1)
+        self.assertTrue(bank)
+        bank.active = False
+        action = company.action_baseer_open_onboarding()
+        wizard = self.env[action['res_model']].browse(action['res_id'])
+        self.assertEqual(wizard.accounting_state, 'missing')
+        self._assert_no_financial_documents(company)
+
     def test_setup_preview_reads_target_company_when_another_company_is_active(self):
         company = self._new_company()
         other = self._new_company(name='Other active company %s' % self._testMethodName)

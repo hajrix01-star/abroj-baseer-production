@@ -37,6 +37,15 @@ class SalesSummaryOnboardingCase(TransactionCase):
         wizard.action_apply_selected()
         self.assertEqual(set(config.payment_method_ids.mapped('name')), {
             'نقدي | Cash', 'بنك | Bank', 'جاهز | Jahez'})
+        # A fresh wizard reads the configuration it is about to extend; it
+        # must not present an existing company as "no sales".
+        action = company.action_baseer_open_onboarding()
+        reopened = self.env[action['res_model']].browse(action['res_id'])
+        self.assertEqual(reopened.sales_mode, 'summary')
+        self.assertTrue(reopened.setup_summary_cash)
+        self.assertTrue(reopened.setup_summary_bank)
+        self.assertTrue(reopened.setup_summary_jahez)
+        self.assertFalse(reopened.setup_summary_hungerstation)
         self._assert_no_financial_documents(company)
 
     def test_native_direct_pos_can_start_without_a_financial_document(self):

@@ -83,6 +83,25 @@ class Company(models.Model):
         result = super()._baseer_refresh_onboarding(wizard)
         stock_state, stock_message = self._baseer_procurement_stock_status()
         warehouses = self._baseer_procurement_warehouses()
+        if not wizard.setup_configuration_loaded:
+            values = {}
+            if warehouses:
+                values['procurement_stock_mode'] = 'single' if len(warehouses) == 1 else 'multiple'
+                values['procurement_warehouse_id'] = (
+                    self.baseer_procurement_default_warehouse_id or
+                    (warehouses if len(warehouses) == 1 else self.env['stock.warehouse'])
+                ).id
+            company = self.sudo().with_context(
+                allowed_company_ids=[self.id], active_test=False,
+            ).with_company(self)
+            payment_points = company.baseer_procurement_representative_petty_cash_payment_journal_ids
+            if payment_points:
+                values.update({
+                    'setup_representative_petty_cash': True,
+                    'representative_petty_cash_payment_journal_ids': [Command.set(payment_points.ids)],
+                })
+            if values:
+                wizard.write(values)
         if wizard.procurement_stock_mode == 'none':
             stock_state, stock_message = 'not_selected', _('لم يُختر المخزون؛ لن تُغيّر النافذة إعدادات المستودعات.')
         elif not wizard.procurement_warehouse_id and len(warehouses) == 1:
@@ -96,6 +115,12 @@ class Company(models.Model):
             'representative_petty_cash_state': custody_state,
             'representative_petty_cash_message': custody_message,
         })
+        return result
+
+    def _baseer_preflight_onboarding_apply(self, wizard):
+        result = super()._baseer_preflight_onboarding_apply(wizard)
+        if wizard.procurement_stock_mode != 'none' and not self.env.user.has_group('stock.group_stock_manager'):
+            raise AccessError(_('مدير المخزون فقط يمكنه إعداد مستودع طلبات الشراء.'))
         return result
 
     def _baseer_create_main_procurement_warehouse(self):
@@ -142,9 +167,12 @@ class Company(models.Model):
             self._baseer_ensure_representative_petty_cash_setup(
                 require_chart=True, raise_on_missing_chart=True,
             )
-            self.write({'baseer_procurement_representative_petty_cash_payment_journal_ids': [
-                Command.set(payment_points.ids),
-            ]})
+            existing_points = self.baseer_procurement_representative_petty_cash_payment_journal_ids
+            additions = payment_points - existing_points
+            if additions:
+                self.write({'baseer_procurement_representative_petty_cash_payment_journal_ids': [
+                    Command.link(journal.id) for journal in additions
+                ]})
         return result
 
     def _baseer_onboarding_plan_lines(self, wizard):
@@ -161,7 +189,7 @@ class Company(models.Model):
         if wizard.setup_representative_petty_cash:
             points = wizard.representative_petty_cash_payment_journal_ids
             if points:
-                lines.append(_('عهدة مندوبي المشتريات: سيُربط حساب ودفتر العهدة بنقاط الدفع المختارة فقط.'))
+                lines.append(_('عهدة مندوبي المشتريات: ستُضاف نقاط الدفع المختارة فقط، ولن تُحذف النقاط الحالية.'))
             else:
                 lines.append(_('عهدة مندوبي المشتريات: تحتاج اختيار نقطة دفع نقدية أو بنكية.'))
         else:

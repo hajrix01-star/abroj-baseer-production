@@ -66,6 +66,15 @@ class BaseerCompanyOnboarding(models.TransientModel):
 class Company(models.Model):
     _inherit = 'res.company'
 
+    def _baseer_summary_onboarding_config(self):
+        self.ensure_one()
+        company = self.sudo().with_context(
+            allowed_company_ids=[self.id], active_test=False,
+        ).with_company(self)
+        return company.env['pos.config'].search([
+            ('company_id', '=', self.id), ('baseer_summary_only', '=', True),
+        ], limit=1)
+
     def _baseer_summary_onboarding_status(self):
         self.ensure_one()
         if self.parent_id or self.chart_template != 'sa' or self.currency_id.name != 'SAR':
@@ -73,8 +82,7 @@ class Company(models.Model):
         company = self.sudo().with_context(
             allowed_company_ids=[self.id], active_test=False
         ).with_company(self)
-        config = company.env['pos.config'].search([
-            ('company_id', '=', self.id), ('baseer_summary_only', '=', True)], limit=1)
+        config = self._baseer_summary_onboarding_config()
         owned = company._baseer_pos_identity('config', 'pos.config')
         if config and config != owned:
             return 'blocked', _('يوجد ملخص مبيعات سابق يحتاج مراجعة قبل أن تعدله النافذة.')
@@ -103,6 +111,18 @@ class Company(models.Model):
 
     def _baseer_refresh_onboarding(self, wizard):
         result = super()._baseer_refresh_onboarding(wizard)
+        if not wizard.setup_configuration_loaded:
+            config = self._baseer_summary_onboarding_config()
+            values = {}
+            if config:
+                values['sales_mode'] = 'summary'
+                for key, _label in SUMMARY_METHODS:
+                    method = self._baseer_pos_identity('method_' + key, 'pos.payment.method')
+                    values['setup_summary_' + key] = bool(method and method in config.payment_method_ids)
+            elif self._baseer_direct_pos_onboarding_status()[0] == 'ready':
+                values['sales_mode'] = 'direct_pos'
+            if values:
+                wizard.write(values)
         state, message = self._baseer_summary_onboarding_status()
         if wizard.sales_mode == 'none':
             state, message = 'not_selected', _('لم تُختر ملخصات المبيعات؛ لن يُنشأ أي إعداد تحصيل.')
@@ -113,6 +133,12 @@ class Company(models.Model):
             'direct_pos_state': direct_state,
             'direct_pos_message': direct_message,
         })
+        return result
+
+    def _baseer_preflight_onboarding_apply(self, wizard):
+        result = super()._baseer_preflight_onboarding_apply(wizard)
+        if wizard.sales_mode != 'none' and not self.env.user.has_group('point_of_sale.group_pos_manager'):
+            raise AccessError(_('مدير نقطة البيع فقط يمكنه إعداد نقطة البيع أو ملخصات المبيعات.'))
         return result
 
     def _baseer_apply_onboarding(self, wizard):

@@ -29,7 +29,11 @@ class ProcurementOnboardingCase(TransactionCase):
         self.assertFalse(company.baseer_procurement_representative_petty_cash_payment_journal_ids)
         action = company.action_baseer_open_onboarding()
         wizard = self.env[action['res_model']].browse(action['res_id'])
-        self.assertEqual(wizard.procurement_stock_state, 'not_selected')
+        # A new company may already have Odoo's native warehouse. The
+        # onboarding window must show that fact and ask only for the missing
+        # procurement default, rather than pretending no stock exists.
+        self.assertEqual(wizard.procurement_stock_state, 'missing')
+        self.assertEqual(wizard.procurement_stock_mode, 'single')
         self.assertEqual(wizard.representative_petty_cash_state, 'not_selected')
         payment_point = self.env['account.journal'].search([
             ('company_id', '=', company.id), ('type', 'in', ('bank', 'cash')), ('active', '=', True),
@@ -46,6 +50,62 @@ class ProcurementOnboardingCase(TransactionCase):
         self.assertTrue(company.baseer_procurement_representative_petty_cash_account_id)
         self.assertTrue(company.baseer_procurement_representative_petty_cash_journal_id)
         self.assertEqual(company.baseer_procurement_representative_petty_cash_payment_journal_ids, payment_point)
+        self._assert_no_operational_documents(company)
+
+    def test_reopening_prefills_existing_setup_and_adds_custody_payment_points(self):
+        company = self._new_company()
+        journals = self.env['account.journal'].search([
+            ('company_id', '=', company.id), ('type', 'in', ('bank', 'cash')), ('active', '=', True),
+        ])
+        bank = journals.filtered(lambda journal: journal.type == 'bank')[:1]
+        cash = journals.filtered(lambda journal: journal.type == 'cash')[:1]
+        self.assertTrue(bank and cash)
+        company.write({'baseer_procurement_representative_petty_cash_payment_journal_ids': [
+            Command.set(bank.ids),
+        ]})
+
+        action = company.action_baseer_open_onboarding()
+        wizard = self.env[action['res_model']].browse(action['res_id'])
+        self.assertTrue(wizard.setup_representative_petty_cash)
+        self.assertEqual(wizard.representative_petty_cash_payment_journal_ids, bank)
+
+        # Selecting only cash in the window means "add cash"; it must never
+        # silently remove the bank that was configured before opening it.
+        wizard.write({
+            'representative_petty_cash_payment_journal_ids': [Command.set(cash.ids)],
+        })
+        wizard.action_apply_selected()
+        self.assertEqual(
+            company.baseer_procurement_representative_petty_cash_payment_journal_ids,
+            bank | cash,
+        )
+
+        reopened = self.env[company.action_baseer_open_onboarding()['res_model']].browse(
+            company.action_baseer_open_onboarding()['res_id']
+        )
+        self.assertTrue(reopened.setup_representative_petty_cash)
+        self.assertEqual(
+            reopened.representative_petty_cash_payment_journal_ids,
+            bank | cash,
+        )
+        self._assert_no_operational_documents(company)
+
+    def test_reopening_prefills_single_default_procurement_warehouse(self):
+        company = self._new_company()
+        action = company.action_baseer_open_onboarding()
+        wizard = self.env[action['res_model']].browse(action['res_id'])
+        wizard.write({
+            'procurement_stock_mode': 'single',
+            'setup_main_warehouse': True,
+        })
+        wizard.action_apply_selected()
+        warehouse = company.baseer_procurement_default_warehouse_id
+        self.assertTrue(warehouse)
+
+        action = company.action_baseer_open_onboarding()
+        reopened = self.env[action['res_model']].browse(action['res_id'])
+        self.assertEqual(reopened.procurement_stock_mode, 'single')
+        self.assertEqual(reopened.procurement_warehouse_id, warehouse)
         self._assert_no_operational_documents(company)
 
     def test_current_representative_petty_cash_menu_is_not_legacy_custody(self):

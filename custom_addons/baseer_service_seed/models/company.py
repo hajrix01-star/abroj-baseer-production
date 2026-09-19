@@ -415,10 +415,14 @@ class Company(models.Model):
             message = _('خدمات الموظفين تحتاج مراجعة محاسبية قبل الإضافة.')
         elif all(line['state'] == 'ready' for line in statuses):
             state = 'ready'
-            message = _('خدمات الموظفين الخمس عشرة والتوزيع التحليلي جاهزة.')
+            message = _('خدمات الموظفين الخمس عشرة وتوزيعها التحليلي جاهزة؛ وتبقى %s خدمة تشغيل عامة و%s مزوداً ضمن البذرة.') % (
+                len(SERVICES) - 15, len(PROVIDERS),
+            )
         else:
             state = 'missing'
-            message = _('ستُجهز خدمات الموظفين الخمس عشرة وتوزيعها التحليلي مع الأساس السعودي.')
+            message = _('ستُجهز خدمات الموظفين الخمس عشرة وتوزيعها التحليلي، مع %s خدمة تشغيل عامة و%s مزوداً، مع الأساس السعودي.') % (
+                len(SERVICES) - 15, len(PROVIDERS),
+            )
         wizard.write({
             'employee_services_state': state,
             'employee_services_message': message,
@@ -429,6 +433,12 @@ class Company(models.Model):
             'state': 'blocked' if wizard.accounting_state == 'blocked' else
                      'ready' if wizard.accounting_state == 'ready' and state == 'ready' else 'review',
         })
+        return result
+
+    def _baseer_preflight_onboarding_apply(self, wizard):
+        result = super()._baseer_preflight_onboarding_apply(wizard)
+        if wizard.setup_core:
+            self._baseer_require_hr_service_analytic_manager()
         return result
 
     def _baseer_apply_onboarding(self, wizard):

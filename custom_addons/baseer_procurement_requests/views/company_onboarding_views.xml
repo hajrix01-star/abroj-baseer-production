@@ -17,6 +17,9 @@
                     <field name="setup_representative_petty_cash"/>
                     <field name="representative_petty_cash_state" widget="badge" invisible="not setup_representative_petty_cash"/>
                     <field name="representative_petty_cash_message" nolabel="1" readonly="1" invisible="not setup_representative_petty_cash"/>
+                    <div class="text-muted" invisible="not setup_representative_petty_cash">
+                        اختيار نقطة جديدة يضيفها فقط؛ لا تحذف هذه النافذة نقاط الدفع القائمة.
+                    </div>
                     <field name="representative_petty_cash_payment_journal_ids" widget="many2many_tags"
                            invisible="not setup_representative_petty_cash" options="{'no_create': True}"/>
                 </group>

@@ -9,7 +9,7 @@
                 <button name="action_baseer_initialize_saudi_accounting" type="object"
                         class="oe_stat_button" icon="fa-sitemap"
                         string="Initialize Saudi Accounting"
-                        invisible="parent_id or chart_template"
+                        invisible="1"
                         groups="base.group_erp_manager"/>
             </xpath>
         </field>

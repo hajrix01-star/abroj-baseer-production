@@ -1296,6 +1296,12 @@ msgid "Representative Petty Cash"
 msgstr "عهدة مندوب المشتريات"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/payment_settlement_selector.xml:0
+msgid "Settled from Representative Petty Cash"
+msgstr "تسوية من عهدة مندوب المشتريات"
+
+#. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch_line__representative_petty_cash_available_amount
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_line_representative_petty_cash

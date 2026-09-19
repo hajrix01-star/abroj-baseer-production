@@ -98,3 +98,15 @@
 أزيلت وثائق الإطلاق القديمة والمتعارضة من شجرة المصدر، بما فيها إيصال الإصدار
 المجمد في 2026-09-15 وسجل المسارات المقيدة السابقة. يبقى تاريخها القابل
 للتدقيق في Git، ولا يعد توجيهًا تشغيليًا.
+## RPC-UI-1 — Representative petty-cash settlement picker (2026-09-19; QA-local verification)
+
+The invoice settlement picker no longer keeps a representative balance in a
+browser-lifetime cache. It shares only simultaneous RPCs and refreshes the
+live company-scoped balance before assigning a representative. The accounting
+contract is unchanged: the representative route retains its internal
+`is_credit` compatibility marker, but the visible table now shows
+Representative Petty Cash rather than a misleading Credit switch and allows
+changing the settlement route. Focused mirror test passed for funding,
+current-balance RPC and paid no-direct-payment settlement. Shared QA browser
+acceptance with a funded representative remains required before any production
+release. [Record](../../build-governance/REPRESENTATIVE-PETTY-CASH-SETTLEMENT-UI-FIX-2026-09-19.md).

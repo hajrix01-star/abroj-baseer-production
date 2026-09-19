@@ -4,7 +4,7 @@
         <div class="o_baseer_settlement_picker">
             <Dropdown>
                 <button type="button" class="btn btn-light o_baseer_settlement_picker__trigger"
-                        t-att-disabled="props.readonly or state.loading or props.record.data.is_credit" t-att-title="label">
+                        t-att-disabled="props.readonly or state.loading or props.record.data.payment_source_type === 'credit'" t-att-title="label">
                     <span t-if="state.loading" class="text-muted">Loading…</span>
                     <span t-else="" t-esc="label"/>
                     <i class="fa fa-chevron-down" aria-hidden="true"/>
@@ -31,7 +31,10 @@
         </div>
     </t>
     <t t-name="baseer_procurement_requests.PaymentCreditToggle">
-        <label class="form-check form-switch o_baseer_credit_toggle">
+        <span t-if="isRepresentativePettyCash" class="o_baseer_credit_toggle__representative">
+            Settled from Representative Petty Cash
+        </span>
+        <label t-else="" class="form-check form-switch o_baseer_credit_toggle">
             <input class="form-check-input" type="checkbox" t-att-checked="isCredit"
                    t-att-disabled="props.readonly" t-on-change="toggleCredit"/>
             <span class="form-check-label">Credit</span>

@@ -8,7 +8,10 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
-const settlementChoicesCache = new Map();
+// Share a request while identical picker cells mount together, but never keep
+// monetary balances after it finishes. Funding and returns can happen in
+// another Odoo action without a full browser reload.
+const settlementChoicesInFlight = new Map();
 
 function relationId(value) {
     if (Array.isArray(value)) {
@@ -18,15 +21,15 @@ function relationId(value) {
 }
 
 function fetchChoices(orm, companyId) {
-    if (!settlementChoicesCache.has(companyId)) {
-        const request = orm.call("baseer.purchase.batch.line", "payment_settlement_choices", [companyId])
-            .catch((error) => {
-                settlementChoicesCache.delete(companyId);
-                throw error;
-            });
-        settlementChoicesCache.set(companyId, request);
+    if (!settlementChoicesInFlight.has(companyId)) {
+        const request = orm.call("baseer.purchase.batch.line", "payment_settlement_choices", [companyId]);
+        settlementChoicesInFlight.set(companyId, request);
+        request.then(
+            () => settlementChoicesInFlight.delete(companyId),
+            () => settlementChoicesInFlight.delete(companyId)
+        );
     }
-    return settlementChoicesCache.get(companyId);
+    return settlementChoicesInFlight.get(companyId);
 }
 
 // The picker deliberately translates its single visual choice back to the
@@ -98,6 +101,19 @@ export class PaymentSettlementSelector extends Component {
         return this.formatAmount(amount);
     }
 
+    async refreshChoices() {
+        const companyId = relationId(this.props.record.data.company_id);
+        if (!companyId) {
+            return;
+        }
+        this.state.loading = true;
+        try {
+            this.state.choices = await fetchChoices(this.orm, companyId);
+        } finally {
+            this.state.loading = false;
+        }
+    }
+
     formatAmount(amount) {
         return Number(amount || 0).toLocaleString("en-US-u-nu-latn", {
             minimumFractionDigits: 2,
@@ -127,6 +143,12 @@ export class PaymentSettlementSelector extends Component {
     async chooseRepresentative(representative) {
         // As above, let the source onchange clear the incompatible payment
         // point before assigning the representative selection itself.
+        // Refresh here as well: a funding or return may have been posted while
+        // this draft batch remained open in the same browser session.
+        await this.refreshChoices();
+        const currentRepresentative = this.state.choices.representatives.find(
+            (item) => item.id === representative.id
+        ) || representative;
         await this.props.record.update({
             payment_source_type: "representative_petty_cash",
             payment_method_line_id: false,
@@ -134,8 +156,8 @@ export class PaymentSettlementSelector extends Component {
         });
         await this.props.record.update({
             representative_petty_cash_representative_id: {
-                id: representative.id,
-                display_name: representative.name,
+                id: currentRepresentative.id,
+                display_name: currentRepresentative.name,
             },
         });
     }
@@ -152,6 +174,10 @@ export class PaymentCreditToggle extends Component {
 
     get isCredit() {
         return this.props.record.data.is_credit;
+    }
+
+    get isRepresentativePettyCash() {
+        return this.props.record.data.payment_source_type === "representative_petty_cash";
     }
 
     async toggleCredit(event) {

@@ -30,6 +30,13 @@
     margin: 0;
 }
 
+.o_baseer_credit_toggle__representative {
+    color: var(--text-muted, #6c757d);
+    display: block;
+    text-align: center;
+    white-space: nowrap;
+}
+
 .dropdown-menu .o_baseer_settlement_picker__balance {
     float: inline-end;
 }

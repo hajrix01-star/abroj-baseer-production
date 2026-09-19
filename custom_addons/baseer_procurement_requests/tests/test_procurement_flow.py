@@ -1336,6 +1336,11 @@ class ProcurementFlowCase(TransactionCase):
         )
         advance = self.env['baseer.procurement.representative.advance'].browse(advance_id)
         self.assertEqual(advance.remaining_amount, 25)
+        choices = self.env['baseer.purchase.batch.line'].payment_settlement_choices(self.company.id)
+        representative_choice = next(
+            choice for choice in choices['representatives'] if choice['id'] == representative.id
+        )
+        self.assertEqual(representative_choice['available_balance'], 25.0)
 
         expense_account = self.env['account.account'].create({
             'name': 'PRA21 purchase expense', 'code': 'PRA211', 'account_type': 'expense',

@@ -71,7 +71,7 @@ load_policy() {
     [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
     declare -A seen_module_names=()
     for approved_module in "${APPROVED_MODULES[@]}"; do
-        [[ "$approved_module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'policy module is invalid'
+        [[ "$approved_module" =~ ^(baseer_[a-z0-9_]+|abroj_website)$ ]] || die 'policy module is invalid'
         [ -z "${seen_module_names[$approved_module]+x}" ] || die 'policy repeats a module'
         seen_module_names[$approved_module]=1
     done

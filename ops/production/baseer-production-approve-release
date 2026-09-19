@@ -60,7 +60,7 @@ parse_policy() {
     [ "${#modules[@]}" -gt 0 ] || die 'policy has no modules'
     declare -A names=()
     for module in "${modules[@]}"; do
-        [[ "$module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'policy module is invalid'
+        [[ "$module" =~ ^(baseer_[a-z0-9_]+|abroj_website)$ ]] || die 'policy module is invalid'
         [ -z "${names[$module]+x}" ] || die 'policy repeats a module'
         names[$module]=1
     done

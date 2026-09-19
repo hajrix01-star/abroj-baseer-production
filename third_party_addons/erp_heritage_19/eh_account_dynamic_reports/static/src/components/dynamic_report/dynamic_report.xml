@@ -111,22 +111,26 @@
                         <option value="this_month" t-att-selected="state.options.date.mode === 'this_month'">This month</option>
                         <option value="this_quarter" t-att-selected="state.options.date.mode === 'this_quarter'">This quarter</option>
                         <option value="this_year" t-att-selected="state.options.date.mode === 'this_year'">This year</option>
-                        <option value="this_fiscal_quarter" t-att-selected="state.options.date.mode === 'this_fiscal_quarter'">This fiscal quarter</option>
-                        <option value="this_fiscal_year" t-att-selected="state.options.date.mode === 'this_fiscal_year'">This fiscal year</option>
+                        <option value="this_fiscal_quarter" t-att-selected="state.options.date.mode === 'this_fiscal_quarter'">
+                            <t t-esc="reportLabel('This fiscal quarter')"/>
+                        </option>
+                        <option value="this_fiscal_year" t-att-selected="state.options.date.mode === 'this_fiscal_year'">
+                            <t t-esc="reportLabel('This fiscal year')"/>
+                        </option>
                         <option value="last_month" t-att-selected="state.options.date.mode === 'last_month'">Last month</option>
                         <option value="last_quarter" t-att-selected="state.options.date.mode === 'last_quarter'">Last quarter</option>
                         <option value="last_year" t-att-selected="state.options.date.mode === 'last_year'">Last year</option>
                     </select>
                 </label>
                 <div class="eh_dr_period_nav" role="group"
-                     aria-label="Move report period">
+                     t-att-aria-label="reportLabel('Move report period')">
                     <button type="button" class="btn btn-link btn-sm"
-                            aria-label="Previous period"
+                            t-att-aria-label="reportLabel('Previous period')"
                             t-on-click="() => this.onShiftPeriod(-1)">
                         <i class="fa fa-chevron-left" aria-hidden="true"/>
                     </button>
                     <button type="button" class="btn btn-link btn-sm"
-                            aria-label="Next period"
+                            t-att-aria-label="reportLabel('Next period')"
                             t-on-click="() => this.onShiftPeriod(1)">
                         <i class="fa fa-chevron-right" aria-hidden="true"/>
                     </button>
@@ -219,27 +223,39 @@
                         <span>Reconciliation-accurate</span>
                     </label>
                     <label class="eh_dr_filter">
-                        <span>Interest paid</span>
+                        <span t-esc="reportLabel('Interest paid')"/>
                         <select t-on-change="onCfInterestPaidSectionChange"
                                 t-att-value="state.options.cf_interest_paid_section || ''">
                             <option value=""
-                                    t-att-selected="!state.options.cf_interest_paid_section">Company policy</option>
+                                    t-att-selected="!state.options.cf_interest_paid_section">
+                                <t t-esc="reportLabel('Company policy')"/>
+                            </option>
                             <option value="operating"
-                                    t-att-selected="state.options.cf_interest_paid_section === 'operating'">Operating</option>
+                                    t-att-selected="state.options.cf_interest_paid_section === 'operating'">
+                                <t t-esc="reportLabel('Operating')"/>
+                            </option>
                             <option value="financing"
-                                    t-att-selected="state.options.cf_interest_paid_section === 'financing'">Financing</option>
+                                    t-att-selected="state.options.cf_interest_paid_section === 'financing'">
+                                <t t-esc="reportLabel('Financing')"/>
+                            </option>
                         </select>
                     </label>
                     <label class="eh_dr_filter">
-                        <span>Dividends paid</span>
+                        <span t-esc="reportLabel('Dividends paid')"/>
                         <select t-on-change="onCfDividendsPaidSectionChange"
                                 t-att-value="state.options.cf_dividends_paid_section || ''">
                             <option value=""
-                                    t-att-selected="!state.options.cf_dividends_paid_section">Company policy</option>
+                                    t-att-selected="!state.options.cf_dividends_paid_section">
+                                <t t-esc="reportLabel('Company policy')"/>
+                            </option>
                             <option value="financing"
-                                    t-att-selected="state.options.cf_dividends_paid_section === 'financing'">Financing</option>
+                                    t-att-selected="state.options.cf_dividends_paid_section === 'financing'">
+                                <t t-esc="reportLabel('Financing')"/>
+                            </option>
                             <option value="operating"
-                                    t-att-selected="state.options.cf_dividends_paid_section === 'operating'">Operating</option>
+                                    t-att-selected="state.options.cf_dividends_paid_section === 'operating'">
+                                <t t-esc="reportLabel('Operating')"/>
+                            </option>
                         </select>
                     </label>
                 </t>

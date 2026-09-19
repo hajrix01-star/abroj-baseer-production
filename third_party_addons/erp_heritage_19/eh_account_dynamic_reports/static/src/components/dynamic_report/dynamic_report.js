@@ -86,6 +86,23 @@ const SEARCH_DEBOUNCE_MS = 150;
 // this, so windowing is reserved for an exceptionally large expanded view.
 const VIRTUAL_THRESHOLD = 4000;
 
+// A few cash-flow controls come from static XML attributes that are not
+// consistently collected into Odoo's web translation bundle.  Keep their
+// Arabic labels explicit for the Arabic interface while preserving the usual
+// translation lookup for every other language.
+const ARABIC_REPORT_LABELS = Object.freeze({
+    "Company policy": "سياسة الشركة",
+    "Dividends paid": "توزيعات الأرباح المدفوعة",
+    "Financing": "تمويلي",
+    "Interest paid": "الفوائد المدفوعة",
+    "Move report period": "التنقل بين الفترات",
+    "Next period": "الفترة التالية",
+    "Operating": "تشغيلي",
+    "Previous period": "الفترة السابقة",
+    "This fiscal quarter": "هذا الربع المالي",
+    "This fiscal year": "هذه السنة المالية",
+});
+
 export class EhDynamicReportViewer extends Component {
     static template = "eh_account_dynamic_reports.DynamicReportViewer";
     static components = { EhCellEllipsis };
@@ -250,6 +267,15 @@ export class EhDynamicReportViewer extends Component {
             // into a component that has already left the action stack.
             this._refreshSequence += 1;
         });
+    }
+
+    reportLabel(label) {
+        const language = String(
+            (this.user && this.user.context && this.user.context.lang) || "",
+        );
+        return language.startsWith("ar")
+            ? (ARABIC_REPORT_LABELS[label] || _t(label))
+            : _t(label);
     }
 
     onThemeChange(theme) {

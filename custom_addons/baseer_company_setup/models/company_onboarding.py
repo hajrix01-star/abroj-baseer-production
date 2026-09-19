@@ -113,8 +113,12 @@ class Company(models.Model):
         self.ensure_one()
         if not self.env.user.has_group('base.group_erp_manager'):
             raise AccessError(_('مديرو ERP فقط يمكنهم فحص أو تطبيق تهيئة الشركة.'))
-        if self not in self.env.companies:
-            raise AccessError(_('لا يمكنك تهيئة شركة غير مسموح بها لحسابك.'))
+        # A manager can open setup from the company administration list even
+        # when a different company is active in this browser session.  The
+        # durable authority is the user's assigned companies, not the
+        # transient ``allowed_company_ids`` request context.
+        if self not in self.env.user.company_ids:
+            raise AccessError(_('لا يمكنك تهيئة شركة غير مُعيّنة لحسابك.'))
 
     def _baseer_preflight_onboarding_apply(self, wizard):
         """Extension point for stage roles; it must not write data."""

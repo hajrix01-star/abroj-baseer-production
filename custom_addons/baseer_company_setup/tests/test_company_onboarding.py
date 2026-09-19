@@ -90,6 +90,26 @@ class CompanyOnboardingCase(TransactionCase):
         self.assertIn('الأساس السعودي', wizard.plan_preview)
         self._assert_no_financial_documents(company)
 
+    def test_erp_manager_can_open_an_assigned_company_when_another_company_is_active(self):
+        target = self._new_company()
+        active = self._new_company(name='Active onboarding company %s' % self._testMethodName)
+        manager = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Multi-company onboarding manager',
+            'login': 'multicompany_onboarding_' + self._testMethodName,
+            'company_id': active.id,
+            'company_ids': [(6, 0, [target.id, active.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('base.group_erp_manager').id,
+            ])],
+        })
+        action = target.with_user(manager).with_context(
+            allowed_company_ids=[active.id]
+        ).action_baseer_open_onboarding()
+        wizard = self.env[action['res_model']].with_user(manager).browse(action['res_id'])
+        self.assertEqual(wizard.company_id, target)
+        self._assert_no_financial_documents(target)
+
     def test_erp_manager_cannot_open_or_apply_setup_for_another_company(self):
         company = self._new_company()
         allowed_company = self._new_company(name='Allowed company %s' % self._testMethodName)

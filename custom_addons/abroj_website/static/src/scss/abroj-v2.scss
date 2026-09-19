@@ -17,7 +17,7 @@
 .abroj-v2 a { color: inherit; text-decoration: none; }
 .abroj-v2 a:focus-visible, .abroj-v2 summary:focus-visible { outline: 3px solid #76b6c6; outline-offset: 4px; }
 .abroj-v2__hero { min-height: 710px; position: relative; color: #fff; display: flex; flex-direction: column; isolation: isolate; }
-.abroj-v2__hero-media { position: absolute; inset: 0; z-index: -2; background: url('/abroj_website/static/src/img/visuals/saudi-cafe-xray-hero-v2.png') 43% center / cover no-repeat; }
+.abroj-v2__hero-media { position: absolute; inset: 0; z-index: -2; background: url('/abroj_website/static/src/img/visuals/saudi-cafe-xray-hero-v3.png') 43% center / cover no-repeat; }
 .abroj-v2__hero-veil { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(7, 22, 31, .12), rgba(7, 22, 31, .14) 47%, rgba(7, 22, 31, .76) 100%); }
 [dir='rtl'] .abroj-v2__hero-veil { background: linear-gradient(270deg, rgba(7, 22, 31, .12), rgba(7, 22, 31, .14) 47%, rgba(7, 22, 31, .76) 100%); }
 .abroj-v2__header { width: calc(100% - 80px); max-width: 1420px; min-height: 96px; margin: 0 auto; border-bottom: 1px solid rgba(255, 255, 255, .28); display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; gap: 28px; align-items: center; }

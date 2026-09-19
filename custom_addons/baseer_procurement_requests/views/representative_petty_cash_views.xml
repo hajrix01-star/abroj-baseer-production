@@ -116,7 +116,7 @@
                      column_invisible field is omitted from the record, which
                      makes the settlement widgets mistake a representative
                      route for ordinary Credit after an onchange. -->
-                <field name="payment_source_type" invisible="True" column_invisible="False"/>
+                <field name="payment_source_type" invisible="True"/>
                 <field name="representative_petty_cash_representative_id" string="Representative Petty Cash"
                        column_invisible="True" options="{'no_create': True}"
                        invisible="True" required="False"

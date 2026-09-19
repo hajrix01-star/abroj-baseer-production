@@ -94,6 +94,32 @@ class PayrollAnalyticsCase(TransactionCase):
         move = self._create_payroll_move()
         self.assertFalse(any(line.analytic_distribution for line in move.line_ids))
 
+    def test_ordinary_move_analytics_are_untouched_without_payroll_context(self):
+        """The guarded payroll capability must not affect other workflows."""
+        distribution = {str(self.account.id): 100}
+        move = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry',
+            'journal_id': self.company.baseer_payroll_journal_id.id,
+            'date': fields.Date.today(),
+            'line_ids': [
+                (0, 0, {
+                    'name': 'Ordinary expense',
+                    'account_id': self.company.baseer_salary_expense_id.id,
+                    'debit': 100,
+                    'analytic_distribution': distribution,
+                }),
+                (0, 0, {
+                    'name': 'Ordinary payable',
+                    'account_id': self.company.baseer_salary_payable_id.id,
+                    'credit': 100,
+                    'analytic_distribution': distribution,
+                }),
+            ],
+        })
+        self.assertTrue(all(
+            line.analytic_distribution == distribution for line in move.line_ids
+        ))
+
     def test_foreign_or_archived_account_cannot_enable_payroll_analytics(self):
         other = self.env['res.company'].create({'name': 'Foreign analytic company'})
         foreign = self.env['account.analytic.account'].create({

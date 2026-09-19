@@ -632,16 +632,21 @@ class Payslip(models.Model):
                 raise ValidationError(_('This employee already has an approved payslip covering this period.'))
             if slip.baseer_deduction and not slip.baseer_deduction_reason:
                 raise ValidationError(_('Enter a reason for the other deduction.'))
-            super(Payslip, slip.with_context(
-                baseer_payroll_internal=INTERNAL,
-                baseer_payroll_analytic_default=INTERNAL,
-                baseer_payroll_analytic_company_id=slip.company_id.id,
-            )).action_payslip_done()
+            context = {'baseer_payroll_internal': INTERNAL}
+            # Only managed Baseer slips have the reviewed salary-expense
+            # contract.  External payroll structures may carry their own
+            # legitimate analytic dimensions and must stay untouched.
+            if slip.baseer_managed:
+                context.update(
+                    baseer_payroll_analytic_default=INTERNAL,
+                    baseer_payroll_analytic_company_id=slip.company_id.id,
+                )
+            super(Payslip, slip.with_context(**context)).action_payslip_done()
             if slip.move_id.date!=posting_date:
                 raise ValidationError(_('The accounting date changed. Review the payroll period and lock dates.'))
             slip.move_id.with_context(baseer_payroll_internal=INTERNAL).write({'baseer_payslip_id':slip.id})
-            slip._baseer_assert_payroll_analytic_move()
             if slip.baseer_managed:
+                slip._baseer_assert_payroll_analytic_move()
                 loans=self.env['baseer.hr.loan'].search([('employee_id','=',slip.employee_id.id),('company_id','=',slip.company_id.id),('state','=','running')],order='date,id')
                 if slip.baseer_defer_loan:
                     loans._defer_due(slip.date_to,_('Deferred from payroll %s') % slip.name)

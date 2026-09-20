@@ -49,9 +49,20 @@ def _original_google_review_text(value):
     return GOOGLE_TRANSLATION_TRAILER.sub("", value).rstrip() or False
 
 
+def _environment_secret(name):
+    """Read a direct value or the base64-only production secret variant."""
+    encoded = os.environ.get(name + "_B64")
+    if encoded:
+        try:
+            return base64.b64decode(encoded, validate=True).decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise UserError(_("Google Business server credential configuration is invalid.")) from exc
+    return os.environ.get(name)
+
+
 def _master_key():
     """Return a stable AES-256 key without exposing or persisting the secret."""
-    raw = os.environ.get("BASEER_GBP_CREDENTIAL_MASTER_KEY")
+    raw = _environment_secret("BASEER_GBP_CREDENTIAL_MASTER_KEY")
     if not raw:
         raise UserError(_("Google Business credentials are not configured on this server."))
     return hashlib.sha256(raw.encode("utf-8")).digest()
@@ -192,8 +203,8 @@ class GbpConnection(models.Model):
         self.ensure_one()
         if self.state != "active" or not self.token_ciphertext or not self.token_nonce:
             raise UserError(_("This Google Business connection is not ready for read-only sync."))
-        client_id = os.environ.get("BASEER_GBP_GOOGLE_CLIENT_ID")
-        client_secret = os.environ.get("BASEER_GBP_GOOGLE_CLIENT_SECRET")
+        client_id = _environment_secret("BASEER_GBP_GOOGLE_CLIENT_ID")
+        client_secret = _environment_secret("BASEER_GBP_GOOGLE_CLIENT_SECRET")
         if not client_id or not client_secret:
             raise UserError(_("Google OAuth client credentials are not configured on this server."))
         refresh_token = _decrypt_secret(self.token_nonce, self.token_ciphertext)

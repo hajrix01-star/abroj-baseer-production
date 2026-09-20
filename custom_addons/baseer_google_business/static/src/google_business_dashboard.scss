@@ -30,7 +30,7 @@
     &__trend--up { background: #e7f8ee; color: #137333; } &__trend--down { background: #fff0f0; color: #b42318; } &__trend--flat, &__trend--no_baseline { background: #f2f4f7; color: #475467; }
     &__chart-range { display: inline-flex; background: #f2f4f7; border-radius: .6rem; gap: .15rem; margin-top: 1rem; padding: .2rem; }
     &__chart-range button { background: transparent; border: 0; border-radius: .45rem; color: var(--gbp-muted); font-size: .75rem; padding: .35rem .6rem; }
-    &__chart-range button.active { background: var(--body-bg, #fff); box-shadow: 0 1px 2px rgb(16 24 40 / 10%); color: var(--body-color, #1f2937); font-weight: 650; }
+    &__chart-range button.active { background: var(--body-bg, #fff); box-shadow: 0 1px 2px rgba(16, 24, 40, .10); color: var(--body-color, #1f2937); font-weight: 650; }
     &__chart { align-items: end; border-bottom: 1px solid var(--gbp-border); display: flex; gap: .25rem; height: 13rem; margin-top: .85rem; padding: 0 .15rem; }
     &__bar-slot { align-items: center; display: flex; flex: 1 1 0; flex-direction: column; height: 100%; justify-content: flex-end; min-width: 0; }
     &__bar { background: linear-gradient(180deg, #a06e8d, var(--gbp-accent)); border-radius: .3rem .3rem 0 0; display: block; min-height: 2px; transition: height 180ms cubic-bezier(.23, 1, .32, 1); width: 100%; }

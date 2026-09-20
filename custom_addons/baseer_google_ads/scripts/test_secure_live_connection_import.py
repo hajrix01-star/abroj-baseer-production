@@ -13,7 +13,10 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
-sys.modules.setdefault("psycopg2", types.SimpleNamespace())
+fake_odoo = types.ModuleType("odoo")
+fake_odoo.SUPERUSER_ID = 1
+fake_odoo.api = types.SimpleNamespace()
+sys.modules.setdefault("odoo", fake_odoo)
 SCRIPT = Path(__file__).with_name("secure_live_connection_import.py")
 SPEC = importlib.util.spec_from_file_location("secure_live_connection_import", SCRIPT)
 IMPORTER = importlib.util.module_from_spec(SPEC)
@@ -25,7 +28,7 @@ class EnvelopeContractTest(unittest.TestCase):
         self.plan = IMPORTER.PLANS["ads_arz"]
         self.private = rsa.generate_private_key(public_exponent=65537, key_size=3072)
         private_pem = self.private.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
-        os.environ["BASEER_GINT_IMPORT_PRIVATE_KEY_B64"] = base64.b64encode(private_pem).decode("ascii")
+        self.private_b64 = base64.b64encode(private_pem).decode("ascii")
 
     def envelope(self, aad=None):
         aad = aad or IMPORTER._aad(self.plan)
@@ -40,8 +43,10 @@ class EnvelopeContractTest(unittest.TestCase):
     def read(self, envelope):
         previous = sys.stdin
         try:
-            sys.stdin = io.TextIOWrapper(io.BytesIO(json.dumps(envelope).encode("utf-8")), encoding="utf-8")
-            return IMPORTER._open_envelope(self.plan)
+            frame = {"plan": "ads_arz", "private_key_b64": self.private_b64, "envelope": envelope}
+            sys.stdin = io.TextIOWrapper(io.BytesIO(json.dumps(frame).encode("utf-8")), encoding="utf-8")
+            parsed, plan = IMPORTER._read_frame()
+            return IMPORTER._open_envelope(plan, parsed)
         finally:
             sys.stdin = previous
 

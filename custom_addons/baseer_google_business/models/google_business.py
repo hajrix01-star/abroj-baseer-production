@@ -50,7 +50,22 @@ def _original_google_review_text(value):
 
 
 def _environment_secret(name):
-    """Read a direct value or the base64-only production secret variant."""
+    """Read a secret from the Odoo-only mount, then compatible env fallbacks."""
+    secret_dir = os.environ.get("BASEER_SECRET_DIR", "/run/baseer-google-secrets")
+    for candidate in (name + "_B64", name):
+        path = os.path.join(secret_dir, candidate)
+        try:
+            with open(path, "r", encoding="utf-8") as secret_file:
+                stored = secret_file.read().strip()
+        except FileNotFoundError:
+            continue
+        if candidate.endswith("_B64"):
+            try:
+                return base64.b64decode(stored, validate=True).decode("utf-8")
+            except (ValueError, UnicodeDecodeError) as exc:
+                raise UserError(_("Google Business server credential configuration is invalid.")) from exc
+        if stored:
+            return stored
     encoded = os.environ.get(name + "_B64")
     if encoded:
         try:

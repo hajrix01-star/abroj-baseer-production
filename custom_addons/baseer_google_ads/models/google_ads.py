@@ -215,11 +215,28 @@ def _master_key():
 
 
 def _environment_secret(name):
-    """Read a secret directly or from a base64-only deployment environment.
+    """Read a deployment secret without making it visible to the database.
 
-    The latter keeps Docker's dotenv parser away from punctuation in OAuth
-    credentials.  Neither representation is exposed through Odoo fields.
+    Production mounts the Odoo-only secret directory read-only.  Environment
+    variables remain a backwards-compatible fallback for existing isolated
+    environments, but production does not put Google credentials in the shared
+    database dotenv file.
     """
+    secret_dir = os.environ.get("BASEER_SECRET_DIR", "/run/baseer-google-secrets")
+    for candidate in (name + "_B64", name):
+        path = os.path.join(secret_dir, candidate)
+        try:
+            with open(path, "r", encoding="utf-8") as secret_file:
+                stored = secret_file.read().strip()
+        except FileNotFoundError:
+            continue
+        if candidate.endswith("_B64"):
+            try:
+                return base64.b64decode(stored, validate=True).decode("utf-8")
+            except (ValueError, UnicodeDecodeError) as exc:
+                raise UserError(_("Google Ads server credential configuration is invalid.")) from exc
+        if stored:
+            return stored
     encoded = os.environ.get(name + "_B64")
     if encoded:
         try:
@@ -532,6 +549,9 @@ class GadsConnection(models.Model):
             Fact = self.env["baseer.gads.daily.fact"].sudo()
             dates = set()
             for row in rows:
+                returned_customer_id = str((row.get("customer") or {}).get("id") or "")
+                if returned_customer_id != self.customer_id:
+                    raise UserError(_("Google Ads returned data for an unexpected customer."))
                 campaign = row.get("campaign") or {}
                 segments = row.get("segments") or {}
                 metrics = row.get("metrics") or {}

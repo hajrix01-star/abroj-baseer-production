@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_google_business.Dashboard">
+        <main class="o_gbp_dashboard" t-att-aria-busy="state.status === 'loading' ? 'true' : 'false'">
+            <header class="o_gbp_dashboard__header">
+                <div>
+                    <p class="o_gbp_dashboard__eyebrow" t-esc="labels.eyebrow"/>
+                    <h1 t-esc="labels.title"/>
+                    <p class="o_gbp_dashboard__description" t-esc="labels.description"/>
+                </div>
+                <div class="o_gbp_dashboard__toolbar" t-if="state.data">
+                    <select class="form-select" t-att-aria-label="labels.location" t-on-change="selectLocation">
+                        <option value="" t-att-selected="!state.selectedLocationId"><t t-esc="labels.allLocations"/></option>
+                        <option t-foreach="state.data.locations" t-as="location" t-key="location.id"
+                                t-att-value="location.id" t-att-selected="state.selectedLocationId === location.id">
+                            <t t-esc="location.name"/> · <t t-esc="location.company_name"/>
+                        </option>
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="sync"
+                            t-att-disabled="!state.selectedLocationId || state.syncing || !state.data.can_sync"
+                            t-if="state.data.can_sync">
+                        <i class="fa fa-refresh" aria-hidden="true"/> <t t-esc="state.syncing ? labels.syncing : labels.sync"/>
+                    </button>
+                    <span class="o_gbp_dashboard__refreshing" t-if="state.refreshing" role="status"><i class="fa fa-refresh fa-spin" aria-hidden="true"/> <t t-esc="labels.syncing"/></span>
+                </div>
+            </header>
+
+            <section t-if="state.status === 'loading'" class="o_gbp_dashboard__state" role="status">
+                <div class="o_gbp_dashboard__skeleton"/><div class="o_gbp_dashboard__skeleton"/><div class="o_gbp_dashboard__skeleton"/><div class="o_gbp_dashboard__skeleton"/>
+            </section>
+            <section t-elif="state.status === 'error'" class="o_gbp_dashboard__state alert alert-danger" role="alert">
+                <p t-esc="labels.error"/>
+                <button type="button" class="btn btn-outline-danger" t-on-click="() => this.load()" t-esc="labels.retry"/>
+            </section>
+            <section t-elif="state.status === 'empty'" class="o_gbp_dashboard__state" role="status"><p t-esc="labels.noData"/></section>
+            <t t-else="">
+                <section class="o_gbp_dashboard__kpis" t-att-aria-label="labels.summary">
+                    <article class="o_gbp_dashboard__kpi o_gbp_dashboard__kpi--rating"><span class="o_gbp_dashboard__kpi-icon"><i class="fa fa-star"/></span><span t-esc="labels.rating"/><strong><t t-esc="state.data.summary.rating"/> <small>/ 5</small></strong></article>
+                    <article class="o_gbp_dashboard__kpi"><span class="o_gbp_dashboard__kpi-icon"><i class="fa fa-comment-o"/></span><span t-esc="labels.reviews"/><strong t-esc="state.data.summary.reviews"/></article>
+                    <article class="o_gbp_dashboard__kpi"><span class="o_gbp_dashboard__kpi-icon"><i class="fa fa-check-circle-o"/></span><span t-esc="labels.repliedReviews"/><strong t-esc="state.data.summary.replied_reviews"/></article>
+                    <article class="o_gbp_dashboard__kpi"><span class="o_gbp_dashboard__kpi-icon"><i class="fa fa-reply"/></span><span t-esc="labels.responseRate"/><strong><t t-esc="state.data.summary.reply_rate"/><small>%</small></strong></article>
+                    <article class="o_gbp_dashboard__kpi"><span class="o_gbp_dashboard__kpi-icon"><i class="fa fa-bolt"/></span><span t-esc="labels.profileActions"/><strong t-esc="state.data.summary.profile_actions"/></article>
+                </section>
+
+                <section class="o_gbp_dashboard__grid">
+                    <article class="o_gbp_dashboard__panel o_gbp_dashboard__panel--chart">
+                        <div class="o_gbp_dashboard__panel-heading"><div><h2 t-esc="labels.analysis"/><p><t t-esc="labels.impressions"/> · <t t-esc="state.chartRange === 'daily' ? labels.days30 : labels.months12"/></p></div><span t-att-class="'o_gbp_dashboard__trend o_gbp_dashboard__trend--' + state.data.trend.direction"><t t-esc="state.data.trend.change"/>% <t t-esc="trendLabel()"/></span></div>
+                        <div class="o_gbp_dashboard__chart-range" role="group" t-att-aria-label="labels.analysis"><button type="button" t-att-class="state.chartRange === 'daily' ? 'active' : ''" t-on-click="() => this.setChartRange('daily')" t-esc="labels.daily"/><button type="button" t-att-class="state.chartRange === 'monthly' ? 'active' : ''" t-on-click="() => this.setChartRange('monthly')" t-esc="labels.monthly"/></div>
+                        <t t-set="chartSeries" t-value="state.chartRange === 'daily' ? state.data.series : state.data.monthly_series"/>
+                        <div class="o_gbp_dashboard__chart" role="img" t-att-aria-label="labels.chartAria">
+                            <div t-foreach="chartSeries" t-as="point" t-key="point.date" class="o_gbp_dashboard__bar-slot">
+                                <span class="o_gbp_dashboard__bar" t-att-title="point.date + ': ' + point.impressions" t-att-style="'height:' + point.impression_height + '%'"/>
+                                <small t-esc="point.label"/>
+                            </div>
+                        </div>
+                        <div class="o_gbp_dashboard__metric-strip"><span><small t-esc="labels.impressions"/><b t-esc="state.data.summary.impressions"/></span><span><small t-esc="labels.websiteClicks"/><b t-esc="state.data.summary.website_clicks"/></span><span><small t-esc="labels.calls"/><b t-esc="state.data.summary.calls"/></span><span><small t-esc="labels.directions"/><b t-esc="state.data.summary.directions"/></span></div>
+                    </article>
+                    <article class="o_gbp_dashboard__panel">
+                        <div class="o_gbp_dashboard__panel-heading"><div><h2 t-esc="labels.reviewQueue"/><p><t t-esc="labels.lastSync"/>: <t t-esc="state.data.summary.last_sync || '—'"/></p></div></div>
+                        <div class="o_gbp_dashboard__queue"><div><span class="o_gbp_dashboard__queue-icon o_gbp_dashboard__queue-icon--warning"><i class="fa fa-exclamation"/></span><span><small t-esc="labels.manual"/><strong t-esc="state.data.summary.manual_reviews"/></span></div><div><span class="o_gbp_dashboard__queue-icon"><i class="fa fa-commenting-o"/></span><span><small t-esc="labels.unanswered"/><strong t-esc="state.data.summary.unanswered_reviews"/></span></div></div>
+                        <div class="o_gbp_dashboard__actions"><button type="button" class="btn btn-primary" t-on-click="() => this.open('reviews')" t-att-disabled="!state.selectedLocationId"><t t-esc="labels.openReviews"/></button><button type="button" class="btn btn-link" t-on-click="() => this.open('profile')" t-att-disabled="!state.selectedLocationId"><t t-esc="labels.profile"/></button></div>
+                    </article>
+                </section>
+            </t>
+        </main>
+    </t>
+</templates>

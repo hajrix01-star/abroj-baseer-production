@@ -1,0 +1,15 @@
+<odoo>
+  <data noupdate="0">
+    <record id="group_gads_reader" model="res.groups">
+      <field name="name">Google Ads Reader</field>
+      <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gads_manager" model="res.groups">
+      <field name="name">Google Ads Manager</field>
+      <field name="implied_ids" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="baseer_access_roles.group_owner" model="res.groups">
+      <field name="implied_ids" eval="[(4, ref('baseer_google_ads.group_gads_manager'))]"/>
+    </record>
+  </data>
+</odoo>

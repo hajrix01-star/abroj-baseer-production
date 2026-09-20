@@ -1,0 +1,46 @@
+<odoo>
+  <data noupdate="1">
+    <record id="rule_gads_connection_company" model="ir.rule">
+      <field name="name">Google Ads connection: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_connection"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="rule_gads_fact_company" model="ir.rule">
+      <field name="name">Google Ads fact: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_daily_fact"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="rule_gads_dataset_company" model="ir.rule">
+      <field name="name">Google Ads dataset: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_dataset"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="rule_gads_dataset_row_company" model="ir.rule">
+      <field name="name">Google Ads dataset row: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_dataset_row"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="rule_gads_coverage_company" model="ir.rule">
+      <field name="name">Google Ads coverage: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_daily_coverage"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="rule_gads_sync_company" model="ir.rule">
+      <field name="name">Google Ads synchronization: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_sync_run"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_reader'))]"/>
+    </record>
+    <record id="rule_gads_audit_company" model="ir.rule">
+      <field name="name">Google Ads audit: allowed companies</field>
+      <field name="model_id" ref="model_baseer_gads_audit"/>
+      <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+      <field name="groups" eval="[(4, ref('baseer_google_ads.group_gads_manager'))]"/>
+    </record>
+  </data>
+</odoo>

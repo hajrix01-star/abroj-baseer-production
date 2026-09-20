@@ -1,0 +1,75 @@
+<odoo>
+    <record id="view_gbp_location_list" model="ir.ui.view">
+        <field name="name">baseer.gbp.location.list</field><field name="model">baseer.gbp.location</field>
+        <field name="arch" type="xml"><list><field name="name"/><field name="company_id"/><field name="average_rating"/><field name="total_review_count"/><field name="last_source_sync_at"/><field name="state"/></list></field>
+    </record>
+    <record id="view_gbp_location_form" model="ir.ui.view">
+        <field name="name">baseer.gbp.location.form</field><field name="model">baseer.gbp.location</field>
+        <field name="arch" type="xml"><form string="Google Business Profile"><header><button name="action_sync_read_only" type="object" string="Read-only sync" class="btn-primary" groups="baseer_google_business.group_gbp_manager"/></header><sheet><group><field name="name"/><field name="company_id" groups="base.group_multi_company"/><field name="connection_id" groups="base.group_system"/><field name="state"/><field name="active"/></group><group string="Google mapping" groups="base.group_system"><field name="external_location_id"/><field name="google_location_name"/><field name="google_place_id"/></group><group string="Profile summary"><field name="average_rating" readonly="1"/><field name="total_review_count" readonly="1"/><field name="last_source_sync_at" readonly="1"/></group></sheet></form></field>
+    </record>
+    <record id="view_gbp_location_kanban" model="ir.ui.view">
+        <field name="name">baseer.gbp.location.kanban</field><field name="model">baseer.gbp.location</field>
+        <field name="arch" type="xml"><kanban><field name="name"/><field name="average_rating"/><field name="total_review_count"/><field name="last_source_sync_at"/><templates><t t-name="card"><div class="oe_kanban_global_click"><div class="fw-bold"><field name="name"/></div><div class="mt-2"><span>Rating: </span><field name="average_rating"/></div><div><span>Reviews: </span><field name="total_review_count"/></div><div class="text-muted"><field name="last_source_sync_at"/></div></div></t></templates></kanban></field>
+    </record>
+
+    <record id="view_gbp_review_list" model="ir.ui.view">
+        <field name="name">baseer.gbp.review.list</field><field name="model">baseer.gbp.review</field>
+        <field name="arch" type="xml"><list><field name="location_id" string="Location"/><field name="star_rating" string="Star rating"/><field name="comment" string="Original review"/><field name="has_google_reply" string="Replied on Google"/><field name="reply_state" string="Reply status"/><field name="external_update_time" string="Last Google update"/></list></field>
+    </record>
+    <record id="view_gbp_review_form" model="ir.ui.view">
+        <field name="name">baseer.gbp.review.form</field><field name="model">baseer.gbp.review</field>
+        <field name="arch" type="xml"><form string="Google review"><header><button name="action_prepare_reply" type="object" string="Prepare reply" class="btn-primary" groups="baseer_google_business.group_gbp_responder"/><field name="reply_state" string="Reply status" widget="statusbar" statusbar_visible="unanswered,draft,manual,queued,published,needs_check"/></header><sheet><group><field name="location_id" string="Location"/><field name="star_rating" string="Star rating"/><field name="external_update_time" string="Last Google update"/><field name="has_google_reply" string="Replied on Google"/></group><group><field name="comment" string="Original review" readonly="1"/><field name="remote_reply_text" string="Google reply" readonly="1"/></group></sheet></form></field>
+    </record>
+    <record id="view_gbp_review_search" model="ir.ui.view">
+        <field name="name">baseer.gbp.review.search</field><field name="model">baseer.gbp.review</field>
+        <field name="arch" type="xml"><search><field name="location_id"/><field name="reply_state"/><filter string="1 star" name="one_star" domain="[('star_rating','=',1)]"/><filter string="2 stars" name="two_star" domain="[('star_rating','=',2)]"/><filter string="3 stars" name="three_star" domain="[('star_rating','=',3)]"/><filter string="4 stars" name="four_star" domain="[('star_rating','=',4)]"/><filter string="5 stars" name="five_star" domain="[('star_rating','=',5)]"/></search></field>
+    </record>
+
+    <record id="view_gbp_policy_form" model="ir.ui.view">
+        <field name="name">baseer.gbp.reply.policy.form</field><field name="model">baseer.gbp.reply.policy</field>
+        <field name="arch" type="xml"><form string="Reply policy"><header><button name="action_record_consent" type="object" string="Record automatic-reply consent" class="btn-primary"/></header><sheet><group><field name="location_id" string="Location"/><field name="four_five_action" string="Four-five star action"/><field name="auto_reply_enabled" string="Enable automatic replies"/><field name="low_rating_action" string="Low-rating action" readonly="1"/><field name="max_batch_size" string="Maximum batch size"/><field name="freshness_hours" string="Source freshness (hours)"/></group><group string="Consent audit"><field name="explicit_consent_at" string="Explicit consent at" readonly="1"/><field name="explicit_consent_by" string="Approved by" readonly="1"/><field name="consent_version" string="Consent version" readonly="1"/></group><div class="alert alert-warning" role="alert">One through three star reviews are always manual. QA is read-only: reply publishing stays disabled.</div></sheet></form></field>
+    </record>
+    <record id="view_gbp_outbox_list" model="ir.ui.view">
+        <field name="name">baseer.gbp.reply.outbox.list</field><field name="model">baseer.gbp.reply.outbox</field>
+        <field name="arch" type="xml"><list><field name="review_id"/><field name="revision"/><field name="state"/><field name="attempt_count"/><field name="published_at"/></list></field>
+    </record>
+    <record id="view_gbp_outbox_form" model="ir.ui.view">
+        <field name="name">baseer.gbp.reply.outbox.form</field><field name="model">baseer.gbp.reply.outbox</field>
+        <field name="arch" type="xml"><form string="Reply"><header><button name="action_approve" type="object" string="Approve" class="btn-primary" invisible="state != 'draft'"/><button name="action_send" type="object" string="Send to Google" class="btn-primary" invisible="state != 'approved'" groups="baseer_google_business.group_gbp_manager"/><button name="action_reconcile_remote" type="object" string="Reconcile" invisible="state != 'unknown'" groups="baseer_google_business.group_gbp_manager"/><field name="state" widget="statusbar" statusbar_visible="draft,approved,queued,sending,published,unknown,failed,cancelled"/></header><sheet><group><field name="review_id"/><field name="revision" readonly="1"/><field name="body"/><field name="attempt_count" readonly="1"/><field name="published_at" readonly="1"/><field name="last_error_code" readonly="1"/></group></sheet></form></field>
+    </record>
+
+    <record id="view_gbp_metric_graph" model="ir.ui.view">
+        <field name="name">baseer.gbp.metric.graph</field><field name="model">baseer.gbp.metric</field>
+        <field name="arch" type="xml"><graph string="Google Business engagement" type="line"><field name="metric_date" interval="day"/><field name="value" type="measure"/><field name="metric_key"/></graph></field>
+    </record>
+    <record id="view_gbp_metric_list" model="ir.ui.view">
+        <field name="name">baseer.gbp.metric.list</field><field name="model">baseer.gbp.metric</field>
+        <field name="arch" type="xml"><list><field name="location_id"/><field name="metric_date"/><field name="metric_key"/><field name="value"/></list></field>
+    </record>
+    <record id="view_gbp_connection_list" model="ir.ui.view">
+        <field name="name">baseer.gbp.connection.list</field><field name="model">baseer.gbp.connection</field>
+        <field name="arch" type="xml"><list><field name="name"/><field name="company_id"/><field name="external_connection_id"/><field name="external_account_id"/><field name="state"/><field name="writer_enabled"/><field name="last_read_sync_at"/></list></field>
+    </record>
+    <record id="view_gbp_connection_form" model="ir.ui.view">
+        <field name="name">baseer.gbp.connection.form</field><field name="model">baseer.gbp.connection</field>
+        <field name="arch" type="xml"><form string="Google Business connection"><sheet><div class="alert alert-info" role="alert">Credentials are imported server-side only. They are never displayed or stored in Odoo configuration. Google reply publishing also requires an explicit production-only environment lock.</div><group><field name="name"/><field name="company_id"/><field name="external_connection_id"/><field name="external_account_id"/><field name="state"/><field name="writer_enabled"/><field name="last_read_sync_at"/><field name="last_error_at"/><field name="last_error_code"/></group></sheet></form></field>
+    </record>
+
+    <record id="action_gbp_dashboard" model="ir.actions.act_window"><field name="name">Locations</field><field name="res_model">baseer.gbp.location</field><field name="view_mode">kanban,list,form</field></record>
+    <record id="action_gbp_dashboard_client" model="ir.actions.client"><field name="name">Dashboard</field><field name="tag">baseer_google_business.dashboard</field></record>
+    <record id="action_gbp_locations" model="ir.actions.act_window"><field name="name">Profile</field><field name="res_model">baseer.gbp.location</field><field name="view_mode">list,form</field></record>
+    <record id="action_gbp_reviews" model="ir.actions.act_window"><field name="name">Reviews</field><field name="res_model">baseer.gbp.review</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_gbp_review_search"/></record>
+    <record id="action_gbp_policies" model="ir.actions.act_window"><field name="name">Reply policies</field><field name="res_model">baseer.gbp.reply.policy</field><field name="view_mode">list,form</field></record>
+    <record id="action_gbp_outbox" model="ir.actions.act_window"><field name="name">Replies</field><field name="res_model">baseer.gbp.reply.outbox</field><field name="view_mode">list,form</field></record>
+    <record id="action_gbp_metrics" model="ir.actions.act_window"><field name="name">Engagement metrics</field><field name="res_model">baseer.gbp.metric</field><field name="view_mode">graph,list</field></record>
+    <record id="action_gbp_connections" model="ir.actions.act_window"><field name="name">Connections</field><field name="res_model">baseer.gbp.connection</field><field name="view_mode">list,form</field></record>
+
+    <menuitem id="menu_gbp_root" name="Google Business" sequence="40" groups="baseer_google_business.group_gbp_reader"/>
+    <menuitem id="menu_gbp_dashboard" name="Dashboard" parent="menu_gbp_root" action="action_gbp_dashboard_client" sequence="5"/>
+    <menuitem id="menu_gbp_locations" name="Profile" parent="menu_gbp_root" action="action_gbp_locations" sequence="10"/>
+    <menuitem id="menu_gbp_reviews" name="Reviews" parent="menu_gbp_root" action="action_gbp_reviews" sequence="20"/>
+    <menuitem id="menu_gbp_outbox" name="Replies" parent="menu_gbp_root" action="action_gbp_outbox" sequence="30" groups="baseer_google_business.group_gbp_responder"/>
+    <menuitem id="menu_gbp_metrics" name="Engagement metrics" parent="menu_gbp_root" action="action_gbp_metrics" sequence="35"/>
+    <menuitem id="menu_gbp_policies" name="Reply policies" parent="menu_gbp_root" action="action_gbp_policies" sequence="40" groups="baseer_google_business.group_gbp_manager"/>
+    <menuitem id="menu_gbp_connections" name="Connections" parent="menu_gbp_root" action="action_gbp_connections" sequence="90" groups="base.group_system"/>
+</odoo>

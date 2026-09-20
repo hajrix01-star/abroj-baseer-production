@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gads_connection_reader,baseer.gads.connection.reader,model_baseer_gads_connection,baseer_google_ads.group_gads_reader,1,0,0,0
+access_gads_connection_manager,baseer.gads.connection.manager,model_baseer_gads_connection,baseer_google_ads.group_gads_manager,1,1,1,0
+access_gads_fact_reader,baseer.gads.daily.fact.reader,model_baseer_gads_daily_fact,baseer_google_ads.group_gads_reader,1,0,0,0
+access_gads_dataset_reader,baseer.gads.dataset.reader,model_baseer_gads_dataset,baseer_google_ads.group_gads_reader,1,0,0,0
+access_gads_dataset_row_reader,baseer.gads.dataset.row.reader,model_baseer_gads_dataset_row,baseer_google_ads.group_gads_reader,1,0,0,0
+access_gads_coverage_reader,baseer.gads.daily.coverage.reader,model_baseer_gads_daily_coverage,baseer_google_ads.group_gads_reader,1,0,0,0
+access_gads_sync_reader,baseer.gads.sync.run.reader,model_baseer_gads_sync_run,baseer_google_ads.group_gads_reader,1,0,0,0
+access_gads_sync_manager,baseer.gads.sync.run.manager,model_baseer_gads_sync_run,baseer_google_ads.group_gads_manager,1,0,0,0
+access_gads_audit_manager,baseer.gads.audit.manager,model_baseer_gads_audit,baseer_google_ads.group_gads_manager,1,0,0,0

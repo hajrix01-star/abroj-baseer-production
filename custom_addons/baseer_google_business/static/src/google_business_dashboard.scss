@@ -1,0 +1,74 @@
+.o_gbp_dashboard {
+    // Keep this compatible with Odoo's server-side Sass compiler.
+    --gbp-border: #e5e7eb;
+    --gbp-muted: var(--text-muted, #667085);
+    --gbp-accent: var(--primary, #714b67);
+    color: var(--body-color, #1f2937);
+    min-height: 100%; overflow: visible; padding: 1.5rem 1.75rem 2rem;
+
+    &__header { align-items: flex-start; display: flex; gap: 1rem; justify-content: space-between; margin: 0 auto 1.5rem; max-width: 88rem; }
+    &__eyebrow { color: var(--gbp-accent); font-size: .7rem; font-weight: 700; letter-spacing: .12em; margin: 0 0 .4rem; }
+    &__header h1 { font-size: 1.85rem; letter-spacing: -.03em; margin: 0; }
+    &__description { color: var(--gbp-muted); margin: .35rem 0 0; max-width: 46rem; }
+    &__toolbar { align-items: center; display: flex; gap: .6rem; max-width: 21rem; width: 100%; }
+    &__toolbar select { min-width: 12rem; }
+    &__kpis, &__grid { display: grid; gap: 1rem; margin: 0 auto; max-width: 88rem; }
+    &__kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 1rem; }
+    &__kpi, &__panel { background: var(--body-bg, #fff); border: 1px solid var(--gbp-border); border-radius: 1rem; }
+    &__kpi { display: grid; gap: .45rem; min-height: 9rem; padding: 1rem; position: relative; }
+    &__kpi > span:not(.o_gbp_dashboard__kpi-icon) { color: var(--gbp-muted); font-size: .82rem; }
+    &__kpi strong { font-size: 1.65rem; letter-spacing: -.035em; line-height: 1; }
+    &__kpi small { color: var(--gbp-muted); font-size: .78rem; font-weight: 500; }
+    &__kpi-icon { align-items: center; background: #f3eaf0; border-radius: .7rem; color: var(--gbp-accent); display: inline-flex; height: 2rem; justify-content: center; width: 2rem; }
+    &__kpi--rating .o_gbp_dashboard__kpi-icon { background: #fff4d6; color: #b7791f; }
+    &__grid { grid-template-columns: minmax(0, 1.55fr) minmax(18rem, .8fr); }
+    &__panel { min-width: 0; padding: 1.1rem; }
+    &__panel-heading { align-items: flex-start; display: flex; gap: .75rem; justify-content: space-between; }
+    &__panel h2 { font-size: 1rem; margin: 0; }
+    &__panel-heading p { color: var(--gbp-muted); font-size: .78rem; margin: .25rem 0 0; }
+    &__trend { border-radius: 99rem; font-size: .75rem; font-weight: 650; padding: .35rem .55rem; white-space: nowrap; }
+    &__trend--up { background: #e7f8ee; color: #137333; } &__trend--down { background: #fff0f0; color: #b42318; } &__trend--flat, &__trend--no_baseline { background: #f2f4f7; color: #475467; }
+    &__chart-range { display: inline-flex; background: #f2f4f7; border-radius: .6rem; gap: .15rem; margin-top: 1rem; padding: .2rem; }
+    &__chart-range button { background: transparent; border: 0; border-radius: .45rem; color: var(--gbp-muted); font-size: .75rem; padding: .35rem .6rem; }
+    &__chart-range button.active { background: var(--body-bg, #fff); box-shadow: 0 1px 2px rgb(16 24 40 / 10%); color: var(--body-color, #1f2937); font-weight: 650; }
+    &__chart { align-items: end; border-bottom: 1px solid var(--gbp-border); display: flex; gap: .25rem; height: 13rem; margin-top: .85rem; padding: 0 .15rem; }
+    &__bar-slot { align-items: center; display: flex; flex: 1 1 0; flex-direction: column; height: 100%; justify-content: flex-end; min-width: 0; }
+    &__bar { background: linear-gradient(180deg, #a06e8d, var(--gbp-accent)); border-radius: .3rem .3rem 0 0; display: block; min-height: 2px; transition: height 180ms cubic-bezier(.23, 1, .32, 1); width: 100%; }
+    &__bar-slot small { color: var(--gbp-muted); font-size: .6rem; height: 2.8rem; line-height: 1.05; margin-top: .45rem; overflow: hidden; text-align: center; }
+    &__metric-strip { display: grid; gap: .5rem; grid-template-columns: repeat(4, 1fr); margin-top: 1rem; }
+    &__metric-strip span { display: grid; gap: .15rem; } &__metric-strip small { color: var(--gbp-muted); font-size: .72rem; } &__metric-strip b { font-size: .95rem; }
+    &__queue { display: grid; gap: .75rem; margin-top: 1.4rem; } &__queue > div { align-items: center; border: 1px solid var(--gbp-border); border-radius: .75rem; display: flex; gap: .7rem; padding: .75rem; } &__queue span:last-child { display: grid; gap: .15rem; } &__queue small { color: var(--gbp-muted); font-size: .75rem; } &__queue strong { font-size: 1.15rem; }
+    &__queue-icon { align-items: center; background: #eef4ff; border-radius: .55rem; color: #175cd3; display: inline-flex; height: 2.2rem; justify-content: center; width: 2.2rem; } &__queue-icon--warning { background: #fff4d6; color: #b7791f; }
+    &__actions { display: flex; gap: .5rem; margin-top: 1.25rem; } &__actions .btn:active, &__toolbar .btn:active { transform: scale(.97); } &__actions .btn, &__toolbar .btn { transition: transform 140ms ease-out; }
+    &__refreshing { color: var(--gbp-muted); font-size: .75rem; white-space: nowrap; }
+    &__state { align-items: center; display: grid; gap: 1rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 4rem auto; max-width: 88rem; } &__state.alert { display: block; max-width: 40rem; } &__skeleton { animation: gbp-pulse 1.2s ease-in-out infinite alternate; background: #eef1f4; border-radius: 1rem; height: 9rem; }
+}
+
+@keyframes gbp-pulse { to { opacity: .5; } }
+
+// Client actions are mounted directly below .o_action_manager in Odoo's
+// mobile shell.  Make the dashboard root itself the scroll container; relying
+// only on an optional .o_action wrapper leaves the lower cards unreachable on
+// some mobile themes.
+.o_action_manager > .o_gbp_dashboard {
+    height: 100%;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+
+// Keep the same behavior in shells that do wrap the client action.
+.o_action:has(.o_gbp_dashboard) {
+    min-height: 0;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 1050px) { .o_gbp_dashboard { &__kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } } }
+@media (max-width: 900px) { .o_gbp_dashboard { padding: 1.1rem; &__header { flex-direction: column; } &__toolbar { width: 100%; } &__toolbar select { flex: 1; } &__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } &__grid { grid-template-columns: 1fr; } } }
+@media (max-width: 575.98px) { .o_gbp_dashboard { padding: .85rem; &__toolbar { align-items: stretch; flex-direction: column; } &__toolbar .btn { width: 100%; } &__kpi { min-height: 8rem; padding: .85rem; } &__kpi strong { font-size: 1.4rem; } &__chart { height: 10rem; } &__metric-strip { grid-template-columns: repeat(2, 1fr); } &__panel { padding: .9rem; } } }
+@media (prefers-reduced-motion: reduce) { .o_gbp_dashboard { &__bar, &__actions .btn, &__toolbar .btn { transition: none; } &__skeleton { animation: none; } } }

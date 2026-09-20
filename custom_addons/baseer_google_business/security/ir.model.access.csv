@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gbp_location_reader,gbp location reader,model_baseer_gbp_location,baseer_google_business.group_gbp_reader,1,0,0,0
+access_gbp_location_manager,gbp location manager,model_baseer_gbp_location,baseer_google_business.group_gbp_manager,1,1,1,1
+access_gbp_review_reader,gbp review reader,model_baseer_gbp_review,baseer_google_business.group_gbp_reader,1,0,0,0
+access_gbp_review_responder,gbp review responder,model_baseer_gbp_review,baseer_google_business.group_gbp_responder,1,1,0,0
+access_gbp_policy_manager,gbp policy manager,model_baseer_gbp_reply_policy,baseer_google_business.group_gbp_manager,1,1,1,1
+access_gbp_outbox_reader,gbp outbox reader,model_baseer_gbp_reply_outbox,baseer_google_business.group_gbp_reader,1,0,0,0
+access_gbp_outbox_responder,gbp outbox responder,model_baseer_gbp_reply_outbox,baseer_google_business.group_gbp_responder,1,1,1,0
+access_gbp_metric_reader,gbp metric reader,model_baseer_gbp_metric,baseer_google_business.group_gbp_reader,1,0,0,0
+access_gbp_metric_manager,gbp metric manager,model_baseer_gbp_metric,baseer_google_business.group_gbp_manager,1,1,1,1
+access_gbp_audit_manager,gbp audit manager,model_baseer_gbp_audit,baseer_google_business.group_gbp_manager,1,0,0,0
+access_gbp_connection_system,gbp connection system,model_baseer_gbp_connection,base.group_system,1,1,1,1

@@ -1,0 +1,522 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#     * baseer_google_business
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* baseer_google_business
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260817\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-20 11:11+0000\n"
+"PO-Revision-Date: 2026-09-20 11:11+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_list
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Location"
+msgstr "الموقع"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_list
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Star rating"
+msgstr "التقييم بالنجوم"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_list
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Original review"
+msgstr "نص التعليق الأصلي"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_list
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Replied on Google"
+msgstr "تم الرد في Google"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_list
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Reply status"
+msgstr "حالة الرد"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_list
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Last Google update"
+msgstr "آخر تحديث من Google"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Google reply"
+msgstr "رد النشاط التجاري"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Four-five star action"
+msgstr "إجراء تقييمات 4 و5 نجوم"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Enable automatic replies"
+msgstr "تفعيل الردود التلقائية"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Low-rating action"
+msgstr "إجراء التقييمات المنخفضة"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Maximum batch size"
+msgstr "الحد الأقصى للدفعة"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Source freshness (hours)"
+msgstr "حد حداثة البيانات (ساعة)"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Explicit consent at"
+msgstr "وقت الموافقة الصريحة"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Approved by"
+msgstr "اعتمدها"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Consent version"
+msgstr "نسخة الموافقة"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_search
+msgid "1 star"
+msgstr "نجمة واحدة"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_search
+msgid "2 stars"
+msgstr "نجمتان"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_search
+msgid "3 stars"
+msgstr "3 نجوم"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_search
+msgid "4 stars"
+msgstr "4 نجوم"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_search
+msgid "5 stars"
+msgstr "5 نجوم"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_location_kanban
+msgid "<span>Rating: </span>"
+msgstr "<span>التقييم: </span>"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_location_kanban
+msgid "<span>Reviews: </span>"
+msgstr "<span>التقييمات: </span>"
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_location_gbp_location_resource_unique
+msgid "A Google review location can only belong to one Baseer company."
+msgstr "لا يمكن أن ينتمي موقع تعليقات Google إلا إلى شركة بصير واحدة."
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_reply_outbox_gbp_outbox_revision_unique
+msgid "A reply revision already exists for this review."
+msgstr "يوجد إصدار رد لهذا التعليق بالفعل."
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_connection__state__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_outbox_form
+msgid "Approve"
+msgstr "اعتماد"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__approved
+msgid "Approved"
+msgstr "معتمد"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_policy__four_five_action__auto
+msgid "Automatic"
+msgstr "تلقائي"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_policy__four_five_action__manual
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_policy__low_rating_action__manual
+msgid "Manual"
+msgstr "يدوي"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_review__reply_state__unanswered
+msgid "Unanswered"
+msgstr "بلا رد"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_metric__metric_key__calls
+msgid "Calls"
+msgstr "الاتصالات"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__cancelled
+msgid "Cancelled"
+msgstr "ملغى"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_location__state__connected
+msgid "Connected"
+msgstr "متصل"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_connections
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_connections
+msgid "Connections"
+msgstr "الاتصالات"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Consent audit"
+msgstr "سجل الموافقة"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_connection_form
+msgid ""
+"Credentials are imported server-side only. They are never displayed or "
+"stored in Odoo configuration."
+msgstr "يُستورد الاتصال من الخادم فقط. لا تُعرض بيانات الاعتماد ولا تُحفظ في إعدادات أودو."
+
+#. module: baseer_google_business
+#: model:ir.actions.client,name:baseer_google_business.action_gbp_dashboard_client
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_dashboard
+msgid "Dashboard"
+msgstr "لوحة التحكم"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_metric__metric_key__directions
+msgid "Directions"
+msgstr "طلبات الاتجاهات"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_connection__state__disabled
+msgid "Disabled"
+msgstr "معطل"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__draft
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_review__reply_state__draft
+msgid "Draft"
+msgstr "مسودة"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_metrics
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_metrics
+msgid "Engagement metrics"
+msgstr "مؤشرات التفاعل"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__failed
+msgid "Failed"
+msgstr "فشل"
+
+#. module: baseer_google_business
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_root
+msgid "Google Business"
+msgstr "Google Business"
+
+#. module: baseer_google_business
+#: model:res.groups,name:baseer_google_business.group_gbp_manager
+msgid "Google Business Manager"
+msgstr "مدير Google Business"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_location_form
+msgid "Google Business Profile"
+msgstr "ملف Google Business"
+
+#. module: baseer_google_business
+#: model:res.groups,name:baseer_google_business.group_gbp_reader
+msgid "Google Business Reader"
+msgstr "قارئ Google Business"
+
+#. module: baseer_google_business
+#: model:res.groups,name:baseer_google_business.group_gbp_responder
+msgid "Google Business Responder"
+msgstr "مسؤول ردود Google Business"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_connection_form
+msgid "Google Business connection"
+msgstr "اتصال Google Business"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_connection
+msgid "Google Business credential connection"
+msgstr "اتصال بيانات اعتماد Google Business"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_metric_graph
+msgid "Google Business engagement"
+msgstr "تفاعل Google Business"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_location
+msgid "Google Business location"
+msgstr "موقع Google Business"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_metric
+msgid "Google Business metric"
+msgstr "مؤشر Google Business"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_audit
+msgid "Google Business safety audit"
+msgstr "سجل أمان Google Business"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_location_form
+msgid "Google mapping"
+msgstr "ربط Google"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_reply_outbox
+msgid "Google reply outbox"
+msgstr "صندوق إرسال ردود Google"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_review
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Google review"
+msgstr "تعليق Google"
+
+#. module: baseer_google_business
+#: model:ir.model,name:baseer_google_business.model_baseer_gbp_reply_policy
+msgid "Google review reply policy"
+msgstr "سياسة الرد على تعليقات Google"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_metric__metric_key__impressions
+msgid "Impressions"
+msgstr "مرات الظهور"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_dashboard
+msgid "Locations"
+msgstr "المواقع"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_review__reply_state__manual
+msgid "Manual required"
+msgstr "يتطلب رداً يدوياً"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_location__state__attention
+msgid "Needs attention"
+msgstr "يحتاج متابعة"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_review__reply_state__needs_check
+msgid "Needs check"
+msgstr "يحتاج تحققاً"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_connection__state__attention
+msgid "Needs re-authorization"
+msgstr "يتطلب إعادة التفويض"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid ""
+"One through three star reviews are always manual. QA is read-only: reply "
+"publishing stays disabled."
+msgstr "التعليقات من نجمة إلى ثلاث نجوم يدوية دائمًا. بيئة QA للقراءة فقط، ونشر الردود معطل."
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_reply_policy_gbp_policy_location_unique
+msgid "Only one reply policy is allowed per location."
+msgstr "يُسمح بسياسة رد واحدة فقط لكل موقع."
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_review_form
+msgid "Prepare reply"
+msgstr "إعداد رد"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_locations
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_locations
+msgid "Profile"
+msgstr "الملف الشخصي"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_location_form
+msgid "Profile summary"
+msgstr "ملخص الملف الشخصي"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__published
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_review__reply_state__published
+msgid "Published"
+msgstr "تم النشر"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__queued
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_review__reply_state__queued
+msgid "Queued"
+msgstr "في قائمة الانتظار"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_location_form
+msgid "Read-only sync"
+msgstr "مزامنة للقراءة فقط"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_outbox_form
+msgid "Reconcile"
+msgstr "تسوية والتحقق"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Record automatic-reply consent"
+msgstr "تسجيل موافقة الرد التلقائي"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_outbox
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_outbox
+msgid "Replies"
+msgstr "الردود"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_outbox_form
+msgid "Reply"
+msgstr "رد"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_policies
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_policies
+msgid "Reply policies"
+msgstr "سياسات الردود"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_policy_form
+msgid "Reply policy"
+msgstr "سياسة الرد"
+
+#. module: baseer_google_business
+#: model:ir.actions.act_window,name:baseer_google_business.action_gbp_reviews
+#: model:ir.ui.menu,name:baseer_google_business.menu_gbp_reviews
+msgid "Reviews"
+msgstr "التعليقات والتقييمات"
+
+#. module: baseer_google_business
+#: model_terms:ir.ui.view,arch_db:baseer_google_business.view_gbp_outbox_form
+msgid "Send to Google"
+msgstr "إرسال إلى Google"
+
+#. module: baseer_google_business
+#: model:ir.model.fields.selection,name:baseer_google_business.selection__baseer_gbp_reply_outbox__state__sending
+msgid "Sending"
+msgstr "جارٍ الإرسال"
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_connection_gbp_connection_external_unique
+msgid "The legacy Google connection can only be imported once."
+msgstr "لا يمكن استيراد اتصال Google القديم إلا مرة واحدة."
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_review_gbp_review_unique
+msgid "This Google review already exists."
+msgstr "تعليق Google هذا موجود بالفعل."
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_metric_gbp_metric_unique
+msgid "This metric already exists for the date."
+msgstr "هذا المؤشر موجود بالفعل لهذا التاريخ."
+
+#. module: baseer_google_business
+msgid "Google reply publishing is locked by this environment."
+msgstr "نشر ردود Google مقفل في هذه البيئة."
+
+#. module: baseer_google_business
+msgid "Only a system administrator can map a Google Business location."
+msgstr "مدير النظام فقط يمكنه ربط موقع Google Business."
+
+#. module: baseer_google_business
+msgid "Only a system administrator can change Google Business mapping."
+msgstr "مدير النظام فقط يمكنه تغيير ربط Google Business."
+
+#. module: baseer_google_business
+msgid "Only a Google Business manager can refresh Google data."
+msgstr "مدير Google Business فقط يمكنه تحديث بيانات Google."
+
+#. module: baseer_google_business
+msgid "Google Business refresh is already running for this location."
+msgstr "تحديث Google Business يعمل بالفعل لهذا الموقع."
+
+#. module: baseer_google_business
+msgid "Google Business was refreshed recently. Please wait one minute before trying again."
+msgstr "تم تحديث Google Business مؤخرًا. انتظر دقيقة واحدة قبل المحاولة مرة أخرى."
+
+#. module: baseer_google_business
+msgid "Google returned more reviews than the safe refresh limit. Data was not marked fresh."
+msgstr "أعاد Google تعليقات أكثر من حد التحديث الآمن. لم تُوسم البيانات بأنها حديثة."
+
+#. module: baseer_google_business
+msgid "Google reviews can only be created by the secure sync service."
+msgstr "لا يمكن إنشاء تعليقات Google إلا عبر خدمة المزامنة الآمنة."
+
+#. module: baseer_google_business
+msgid "Google review source data and workflow state can only be changed by the secure service."
+msgstr "لا يمكن تغيير بيانات مصدر تعليق Google أو حالة سير العمل إلا عبر الخدمة الآمنة."
+
+#. module: baseer_google_business
+msgid "Automatic-reply consent can only be recorded by the approved workflow."
+msgstr "لا يمكن تسجيل موافقة الرد التلقائي إلا عبر سير العمل المعتمد."
+
+#. module: baseer_google_business
+msgid "Automatic-reply consent has already been recorded for this policy."
+msgstr "تم تسجيل موافقة الرد التلقائي لهذه السياسة مسبقًا."
+
+#. module: baseer_google_business
+msgid "Replies can only be created from the review workflow."
+msgstr "لا يمكن إنشاء الردود إلا من خلال سير عمل التعليقات."
+
+#. module: baseer_google_business
+msgid "Reply workflow state can only be changed by the approved workflow."
+msgstr "لا يمكن تغيير حالة سير عمل الرد إلا عبر سير العمل المعتمد."
+
+#. module: baseer_google_business
+msgid "Only a draft reply can be edited."
+msgstr "لا يمكن تعديل إلا الرد الموجود كمسودة."
+
+#. module: baseer_google_business
+msgid "This reply belongs to another company."
+msgstr "هذا الرد تابع لشركة أخرى."
+
+#. module: baseer_google_business
+#: model:ir.model.constraint,message:baseer_google_business.constraint_baseer_gbp_reply_outbox_gbp_outbox_idempotency_unique
+msgid "This reply operation already exists."
+msgstr "عملية الرد هذه موجودة بالفعل."

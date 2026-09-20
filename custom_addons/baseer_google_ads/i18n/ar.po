@@ -1,0 +1,287 @@
+# Translation of Odoo Server.
+# Arabic interface terms owned by baseer_google_ads.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\\n"
+"Language: ar_001\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+#. module: baseer_google_ads
+#: model:ir.ui.menu,name:baseer_google_ads.menu_gads_root
+msgid "Google Ads"
+msgstr "إعلانات Google"
+
+#. module: baseer_google_ads
+#: model:ir.actions.client,name:baseer_google_ads.action_gads_dashboard
+#: model:ir.ui.menu,name:baseer_google_ads.menu_gads_dashboard
+msgid "Dashboard"
+msgstr "النظرة العامة"
+
+#. module: baseer_google_ads
+#: model:ir.actions.act_window,name:baseer_google_ads.action_gads_connections
+#: model:ir.ui.menu,name:baseer_google_ads.menu_gads_connections
+msgid "Connections"
+msgstr "الاتصالات"
+
+#. module: baseer_google_ads
+#: model:ir.actions.act_window,name:baseer_google_ads.action_gads_facts
+#: model:ir.ui.menu,name:baseer_google_ads.menu_gads_facts
+msgid "Daily facts"
+msgstr "البيانات اليومية"
+
+#. module: baseer_google_ads
+#: model:ir.actions.act_window,name:baseer_google_ads.action_gads_sync_runs
+#: model:ir.ui.menu,name:baseer_google_ads.menu_gads_sync_runs
+msgid "Synchronization log"
+msgstr "سجل المزامنة"
+
+#. module: baseer_google_ads
+#: model_terms:ir.ui.view,arch_db:baseer_google_ads.view_gads_connection_form
+msgid "Google Ads connection"
+msgstr "اتصال إعلانات Google"
+
+#. module: baseer_google_ads
+#: model_terms:ir.ui.view,arch_db:baseer_google_ads.view_gads_connection_form
+msgid "Read-only refresh"
+msgstr "تحديث للقراءة فقط"
+
+#. module: baseer_google_ads
+#: model_terms:ir.ui.view,arch_db:baseer_google_ads.view_gads_connection_form
+msgid "Credentials are imported server-side only. This module has no Google Ads write operation."
+msgstr "تُستورد بيانات الاعتماد من الخادم فقط. لا ينفذ هذا الموديول أي كتابة في إعلانات Google."
+
+#. module: baseer_google_ads
+#: model_terms:ir.ui.view,arch_db:baseer_google_ads.view_gads_fact_search
+msgid "Enabled"
+msgstr "نشطة"
+
+#. module: baseer_google_ads
+#: model_terms:ir.ui.view,arch_db:baseer_google_ads.view_gads_fact_search
+msgid "Paused"
+msgstr "موقوفة مؤقتاً"
+
+#. module: baseer_google_ads
+#: model_terms:ir.ui.view,arch_db:baseer_google_ads.view_gads_fact_search
+msgid "Campaign"
+msgstr "الحملة"
+
+#. module: baseer_google_ads
+#: model:res.groups,name:baseer_google_ads.group_gads_reader
+msgid "Google Ads Reader"
+msgstr "قارئ إعلانات Google"
+
+#. module: baseer_google_ads
+#: model:res.groups,name:baseer_google_ads.group_gads_manager
+msgid "Google Ads Manager"
+msgstr "مدير إعلانات Google"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_connection__state__pending
+msgid "Pending secure import"
+msgstr "بانتظار النقل الآمن"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_connection__state__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_connection__state__attention
+msgid "Needs re-authorization"
+msgstr "يحتاج إلى إعادة تفويض"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_connection__state__disabled
+msgid "Disabled"
+msgstr "معطّل"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__name
+msgid "Name"
+msgstr "الاسم"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__company_id
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__company_id
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__legacy_connection_id
+msgid "Legacy Connection Id"
+msgstr "معرّف الاتصال السابق"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__customer_id
+msgid "Customer Id"
+msgstr "معرّف العميل الإعلاني"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__login_customer_id
+msgid "Login Customer Id"
+msgstr "معرّف حساب المدير"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__state
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__state
+msgid "State"
+msgstr "الحالة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__last_sync_at
+msgid "Last Sync At"
+msgstr "آخر مزامنة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__last_error_at
+msgid "Last Error At"
+msgstr "وقت آخر خطأ"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_connection__last_error_code
+msgid "Last Error Code"
+msgstr "رمز آخر خطأ"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__connection_id
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__connection_id
+msgid "Connection"
+msgstr "الاتصال"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__campaign_name
+msgid "Campaign Name"
+msgstr "اسم الحملة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__campaign_status
+msgid "Campaign Status"
+msgstr "حالة الحملة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__metric_date
+msgid "Metric Date"
+msgstr "تاريخ المؤشر"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__impressions
+msgid "Impressions"
+msgstr "مرات الظهور"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__clicks
+msgid "Clicks"
+msgstr "النقرات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__cost_micros
+msgid "Cost Micros"
+msgstr "التكلفة بالوحدات الدقيقة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__conversions_scaled
+msgid "Conversions Scaled"
+msgstr "التحويلات بدقة ثابتة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_daily_fact__conversion_value_scaled
+msgid "Conversion Value Scaled"
+msgstr "قيمة التحويلات بدقة ثابتة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__kind
+msgid "Kind"
+msgstr "النوع"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__started_at
+msgid "Started At"
+msgstr "بدأ في"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__finished_at
+msgid "Finished At"
+msgstr "انتهى في"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__row_count
+msgid "Row Count"
+msgstr "عدد السجلات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_sync_run__error_code
+msgid "Error Code"
+msgstr "رمز الخطأ"
+
+#. module: baseer_google_ads
+#: model:ir.actions.act_window,name:baseer_google_ads.action_gads_datasets
+#: model:ir.ui.menu,name:baseer_google_ads.menu_gads_datasets
+msgid "Dataset status"
+msgstr "حالة مصادر البيانات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_dataset__dataset_key
+msgid "Dataset Key"
+msgstr "مصدر البيانات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_dataset__row_count
+msgid "Row Count"
+msgstr "عدد السجلات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_dataset__last_sync_at
+msgid "Last Sync At"
+msgstr "آخر مزامنة"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields,field_description:baseer_google_ads.field_baseer_gads_dataset__last_error_code
+msgid "Last Error Code"
+msgstr "رمز آخر خطأ"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_sync_run__kind__detail
+msgid "Detailed refresh"
+msgstr "تحديث التفاصيل"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__conversion_performance
+msgid "Conversion performance"
+msgstr "أداء التحويلات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__smart_search_terms
+msgid "Smart campaign search terms"
+msgstr "عبارات بحث حملات Smart"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__pmax_search_terms
+msgid "Performance Max search terms"
+msgstr "عبارات بحث Performance Max"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__campaign_negatives
+msgid "Campaign negative keywords"
+msgstr "الكلمات السلبية للحملات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__ad_group_negatives
+msgid "Ad group negative keywords"
+msgstr "الكلمات السلبية للمجموعات"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__optimization_score
+msgid "Optimization score"
+msgstr "درجة التحسين"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__pmax_asset_groups
+msgid "Performance Max asset groups"
+msgstr "مجموعات أصول Performance Max"
+
+#. module: baseer_google_ads
+#: model:ir.model.fields.selection,name:baseer_google_ads.selection__baseer_gads_dataset__dataset_key__recent_changes
+msgid "Recent changes"
+msgstr "التغييرات الأخيرة"

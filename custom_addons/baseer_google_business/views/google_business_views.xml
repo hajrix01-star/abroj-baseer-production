@@ -64,7 +64,7 @@
     <record id="action_gbp_metrics" model="ir.actions.act_window"><field name="name">Engagement metrics</field><field name="res_model">baseer.gbp.metric</field><field name="view_mode">graph,list</field></record>
     <record id="action_gbp_connections" model="ir.actions.act_window"><field name="name">Connections</field><field name="res_model">baseer.gbp.connection</field><field name="view_mode">list,form</field></record>
 
-    <menuitem id="menu_gbp_root" name="Google Business" sequence="40" groups="baseer_google_business.group_gbp_reader"/>
+    <menuitem id="menu_gbp_root" name="Google Business" sequence="40" groups="baseer_google_business.group_gbp_reader" web_icon="baseer_google_business,static/description/icon.png"/>
     <menuitem id="menu_gbp_dashboard" name="Dashboard" parent="menu_gbp_root" action="action_gbp_dashboard_client" sequence="5"/>
     <menuitem id="menu_gbp_locations" name="Profile" parent="menu_gbp_root" action="action_gbp_locations" sequence="10"/>
     <menuitem id="menu_gbp_reviews" name="Reviews" parent="menu_gbp_root" action="action_gbp_reviews" sequence="20"/>

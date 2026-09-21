@@ -28,7 +28,7 @@
   <record id="action_gads_facts" model="ir.actions.act_window"><field name="name">Daily facts</field><field name="res_model">baseer.gads.daily.fact</field><field name="view_mode">list</field><field name="search_view_id" ref="view_gads_fact_search"/></record>
   <record id="action_gads_sync_runs" model="ir.actions.act_window"><field name="name">Synchronization log</field><field name="res_model">baseer.gads.sync.run</field><field name="view_mode">list</field></record>
   <record id="action_gads_datasets" model="ir.actions.act_window"><field name="name">Dataset status</field><field name="res_model">baseer.gads.dataset</field><field name="view_mode">list</field></record>
-  <menuitem id="menu_gads_root" name="Google Ads" sequence="41" groups="baseer_google_ads.group_gads_reader"/>
+  <menuitem id="menu_gads_root" name="Google Ads" sequence="41" groups="baseer_google_ads.group_gads_reader" web_icon="baseer_google_ads,static/description/icon.png"/>
   <menuitem id="menu_gads_dashboard" name="Dashboard" parent="menu_gads_root" action="action_gads_dashboard" sequence="5"/>
   <menuitem id="menu_gads_facts" name="Daily facts" parent="menu_gads_root" action="action_gads_facts" sequence="20" groups="baseer_google_ads.group_gads_manager"/>
   <menuitem id="menu_gads_sync_runs" name="Synchronization log" parent="menu_gads_root" action="action_gads_sync_runs" sequence="30" groups="baseer_google_ads.group_gads_manager"/>

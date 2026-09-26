@@ -1,0 +1,14 @@
+<odoo>
+  <record id="res_users_view_form_employee_app_access" model="ir.ui.view">
+    <field name="name">res.users.form.employee.app.access</field>
+    <field name="model">res.users</field>
+    <field name="inherit_id" ref="base.view_users_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='access_rights']/group[1]" position="after">
+        <group string="تطبيق المدير" groups="base.group_system">
+          <field name="baseer_manager_app_access"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>

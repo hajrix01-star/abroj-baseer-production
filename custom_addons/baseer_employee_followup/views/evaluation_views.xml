@@ -1,0 +1,35 @@
+<odoo>
+  <record id="followup_note_view_list" model="ir.ui.view">
+    <field name="name">baseer.followup.note.list</field><field name="model">baseer.followup.note</field>
+    <field name="arch" type="xml"><list><field name="reported_at"/><field name="item_type"/><field name="name"/><field name="target_at"/><field name="employee_id"/><field name="stage"/><field name="line_id"/><field name="state"/></list></field>
+  </record>
+  <record id="followup_note_view_form" model="ir.ui.view">
+    <field name="name">baseer.followup.note.form</field><field name="model">baseer.followup.note</field>
+    <field name="arch" type="xml"><form><header><button name="action_resolve" type="object" string="تمت المعالجة" invisible="state == 'resolved'"/></header><sheet><group><field name="item_type"/><field name="recurrence" invisible="item_type != 'reminder'"/><field name="name"/><field name="state"/><field name="reported_at"/><field name="target_at"/><field name="resolved_at"/><field name="employee_id"/><field name="shift_id"/><field name="line_id"/></group><group><field name="description"/><field name="image" widget="image"/></group><field name="item_ids" invisible="item_type != 'task'"><list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="done"/><field name="completed_at"/></list></field></sheet></form></field>
+  </record>
+  <record id="followup_note_action" model="ir.actions.act_window"><field name="name">ملاحظات المتابعة</field><field name="res_model">baseer.followup.note</field><field name="view_mode">list,form</field></record>
+
+  <record id="followup_evaluation_template_view_list" model="ir.ui.view">
+    <field name="name">baseer.followup.evaluation.template.list</field><field name="model">baseer.followup.evaluation.template</field>
+    <field name="arch" type="xml"><list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="name_en"/><field name="company_id"/><field name="active"/></list></field>
+  </record>
+  <record id="followup_evaluation_template_view_form" model="ir.ui.view">
+    <field name="name">baseer.followup.evaluation.template.form</field><field name="model">baseer.followup.evaluation.template</field>
+    <field name="arch" type="xml"><form><sheet><group><field name="sequence"/><field name="company_id"/><field name="active"/></group><group string="المؤشر"><field name="name"/><field name="name_en"/></group></sheet></form></field>
+  </record>
+  <record id="followup_evaluation_template_action" model="ir.actions.act_window"><field name="name">مؤشرات تقييم الموظفين</field><field name="res_model">baseer.followup.evaluation.template</field><field name="view_mode">list,form</field></record>
+
+  <record id="followup_evaluation_view_list" model="ir.ui.view">
+    <field name="name">baseer.followup.employee.evaluation.list</field><field name="model">baseer.followup.employee.evaluation</field>
+    <field name="arch" type="xml"><list><field name="evaluated_at"/><field name="employee_id"/><field name="evaluator_id"/><field name="shift_id"/></list></field>
+  </record>
+  <record id="followup_evaluation_view_form" model="ir.ui.view">
+    <field name="name">baseer.followup.employee.evaluation.form</field><field name="model">baseer.followup.employee.evaluation</field>
+    <field name="arch" type="xml"><form><sheet><group><field name="employee_id"/><field name="evaluator_id"/><field name="shift_id"/><field name="evaluated_at"/></group><field name="line_ids"><list><field name="sequence"/><field name="name"/><field name="name_en" optional="hide"/><field name="rating"/></list></field><group><field name="note"/><field name="image" widget="image"/></group></sheet></form></field>
+  </record>
+  <record id="followup_evaluation_action" model="ir.actions.act_window"><field name="name">تقييمات الموظفين</field><field name="res_model">baseer.followup.employee.evaluation</field><field name="view_mode">list,form</field></record>
+
+  <menuitem id="followup_notes" name="الملاحظات" parent="followup_root" action="followup_note_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="15"/>
+  <menuitem id="followup_evaluations" name="تقييمات الموظفين" parent="followup_root" action="followup_evaluation_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="25"/>
+  <menuitem id="followup_evaluation_templates" name="مؤشرات التقييم" parent="followup_root" action="followup_evaluation_template_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="30"/>
+</odoo>

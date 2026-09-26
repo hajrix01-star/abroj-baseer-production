@@ -1,0 +1,21 @@
+<odoo>
+  <!--
+    Existing security rules were originally declared noupdate=1.  This small
+    upgrade action deliberately corrects their live domain on every module
+    upgrade without resetting the rest of the security records.
+  -->
+  <data noupdate="0">
+    <function model="ir.rule" name="write">
+      <function model="ir.rule" name="search">
+        <value eval="[('id', '=', ref('baseer_employee_followup.rule_manager_task_template'))]"/>
+      </function>
+      <value eval="{'domain_force': &quot;[('company_id', '=', company_id)]&quot;}"/>
+    </function>
+    <function model="ir.rule" name="write">
+      <function model="ir.rule" name="search">
+        <value eval="[('id', '=', ref('baseer_employee_followup.rule_manager_evaluation_template'))]"/>
+      </function>
+      <value eval="{'domain_force': &quot;[('company_id', '=', company_id)]&quot;}"/>
+    </function>
+  </data>
+</odoo>

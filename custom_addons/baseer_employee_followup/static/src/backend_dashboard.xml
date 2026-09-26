@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_employee_followup.BackendDashboard">
+        <div class="o_baseer_followup_dashboard" t-att-dir="state.data &amp;&amp; state.data.is_arabic ? 'rtl' : 'ltr'">
+            <div t-if="state.loading" class="o_baseer_followup_dashboard_state">Loading dashboard…</div>
+            <div t-elif="state.error" class="o_baseer_followup_dashboard_state is-error" t-esc="state.error"/>
+            <t t-else="">
+                <t t-set="data" t-value="state.data"/>
+                <t t-set="ui" t-value="data.ui"/>
+                <t t-set="dashboard" t-value="data.dashboard"/>
+                <header class="o_followup_dashboard_header"><div><h1 t-esc="ui.backend_dashboard_title"/><p t-esc="dashboard.today"/></div></header>
+
+                <section class="o_followup_kpi_grid">
+                    <article t-attf-class="o_followup_kpi #{dashboard.manager_noncompliance_alert ? 'is-alert' : ''}"><span t-esc="ui.shift_completion"/><strong><t t-esc="dashboard.completed_days"/>/<t t-esc="dashboard.days_in_month"/></strong><small><t t-esc="dashboard.shift_completion"/>%</small></article>
+                    <article class="o_followup_kpi"><span t-esc="ui.team_quality"/><strong><t t-esc="dashboard.team_quality"/>%</strong><small t-esc="ui.monthly"/></article>
+                    <article t-if="dashboard.revenue.available" t-attf-class="o_followup_kpi is-revenue-#{dashboard.revenue.direction}"><span t-esc="ui.revenue_growth"/><strong t-if="dashboard.revenue.has_comparison"><t t-esc="dashboard.revenue.percentage"/>%</strong><strong t-else="">—</strong><small t-esc="dashboard.revenue.has_comparison ? ui.revenue_comparison : ui.no_revenue_comparison"/></article>
+                    <article class="o_followup_kpi"><span t-esc="ui.open_followups"/><strong t-esc="dashboard.open_notes"/><small t-esc="ui.followup_count"/></article>
+                </section>
+
+                <section t-if="dashboard.alerts.length" class="o_followup_panel o_followup_alerts"><h2 t-esc="ui.attention_alerts"/><ul><li t-foreach="dashboard.alerts" t-as="alert" t-key="alert_index" t-attf-class="is-#{alert.level}"><span t-esc="alert.message"/></li></ul></section>
+
+                <section class="o_followup_panel o_followup_employee_performance">
+                    <div class="o_followup_panel_title"><h2 t-esc="ui.employee_performance"/><span><t t-esc="ui.employee_score"/>: <strong t-esc="data.performance_threshold + '%'"/></span></div>
+                    <div t-if="!(data.employees || []).length" class="o_followup_empty" t-esc="ui.no_employee_data"/>
+                    <div t-else="" class="o_followup_employee_cards">
+                        <article t-foreach="data.employees || []" t-as="employee" t-key="employee.id" t-attf-class="o_followup_employee_card is-#{employee.performance_state || 'pending'}">
+                            <header class="o_followup_employee_card_header"><img class="o_followup_employee_avatar" t-att-src="employee.photo_url" t-att-alt="employee.name"/><div><b t-esc="employee.name"/><small t-if="employee.evaluated_at" t-esc="employee.evaluated_at"/></div><strong class="o_followup_employee_percentage" t-esc="employee.percentage === null ? '—' : employee.percentage + '%'"/></header>
+                            <div class="o_followup_employee_indicators"><div t-foreach="employee.indicators || []" t-as="indicator" t-key="indicator.id" class="o_followup_employee_indicator"><span t-esc="indicator.name"/><span class="o_followup_stars" t-att-title="indicator.rating === null ? '—' : indicator.rating + '/5'"><i t-foreach="indicator.stars || []" t-as="star" t-key="star_index" t-attf-class="fa #{star.filled ? 'fa-star is-filled' : 'fa-star-o'}" aria-hidden="true"/></span></div></div>
+                            <footer><span><i class="fa fa-comment-o" aria-hidden="true"/> <t t-esc="employee.note_count"/> <t t-esc="ui.evaluation_notes"/></span></footer>
+                        </article>
+                    </div>
+                </section>
+                <div class="o_followup_dashboard_columns">
+                    <section class="o_followup_panel"><h2 t-esc="ui.top_noted_employees"/><div t-if="!data.top_noted_employees.length" class="o_followup_empty" t-esc="ui.no_employee_data"/><ol t-else="" class="o_followup_ranked"><li t-foreach="data.top_noted_employees" t-as="employee" t-key="employee.id"><span><b t-esc="employee.name"/><small><t t-esc="employee.percentage === null ? '—' : employee.percentage + '%'"/> · <t t-esc="employee.note_count"/> <t t-esc="ui.evaluation_notes"/></small></span><strong t-esc="employee.note_count"/></li></ol></section>
+                </div>
+
+                <section class="o_followup_panel"><h2 t-esc="ui.latest_followups"/><div t-if="!data.followups.length" class="o_followup_empty" t-esc="ui.no_open_followups"/><div t-else="" class="o_followup_followups"><article t-foreach="data.followups" t-as="followup" t-key="followup.id"><div><span t-esc="followup.type"/><b t-esc="followup.name"/></div><p t-if="followup.description" t-esc="followup.description"/><small><t t-esc="followup.target_at || followup.reported_at"/><t t-if="followup.remaining_count"> · <t t-esc="followup.remaining_count"/> <t t-esc="ui.remaining_items"/></t></small></article></div></section>
+            </t>
+        </div>
+    </t>
+</templates>

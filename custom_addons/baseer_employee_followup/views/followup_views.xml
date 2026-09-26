@@ -1,0 +1,32 @@
+<odoo>
+  <record id="followup_shift_view_list" model="ir.ui.view">
+    <field name="name">baseer.followup.shift.list</field><field name="model">baseer.followup.shift</field>
+    <field name="arch" type="xml"><list><field name="employee_id"/><field name="started_at"/><field name="state"/><field name="opening_completion" widget="progressbar"/><field name="midday_completion" widget="progressbar"/><field name="closing_completion" widget="progressbar"/></list></field>
+  </record>
+  <record id="followup_shift_view_form" model="ir.ui.view">
+    <field name="name">baseer.followup.shift.form</field><field name="model">baseer.followup.shift</field>
+    <field name="arch" type="xml"><form><sheet><group><field name="employee_id"/><field name="started_at"/><field name="state"/></group><group string="نسب الإنجاز"><field name="opening_completion" widget="progressbar"/><field name="midday_completion" widget="progressbar"/><field name="closing_completion" widget="progressbar"/></group><notebook><page string="بداية الدوام"><field name="opening_line_ids"><list><field name="name"/><field name="name_en" optional="hide"/><field name="done"/><field name="completed_at"/></list></field></page><page string="وسط الدوام"><field name="midday_line_ids"><list><field name="name"/><field name="name_en" optional="hide"/><field name="done"/><field name="completed_at"/></list></field></page><page string="الإغلاق"><field name="closing_line_ids"><list><field name="name"/><field name="name_en" optional="hide"/><field name="done"/><field name="completed_at"/></list></field></page><page string="الموظفون الغائبون"><field name="absence_ids"><list><field name="employee_id"/><field name="marked_at"/></list></field></page></notebook></sheet></form></field>
+  </record>
+  <record id="followup_template_view_list" model="ir.ui.view">
+    <field name="name">baseer.followup.task.template.list</field><field name="model">baseer.followup.task.template</field>
+    <field name="arch" type="xml"><list editable="bottom"><field name="sequence" widget="handle"/><field name="stage"/><field name="name"/><field name="name_en"/><field name="company_id"/><field name="active"/></list></field>
+  </record>
+  <record id="followup_template_view_form" model="ir.ui.view">
+    <field name="name">baseer.followup.task.template.form</field><field name="model">baseer.followup.task.template</field>
+    <field name="arch" type="xml"><form><sheet><group><field name="stage"/><field name="sequence"/><field name="company_id"/><field name="active"/></group><group string="المهمة"><field name="name"/><field name="name_en"/></group></sheet></form></field>
+  </record>
+  <record id="followup_shift_action" model="ir.actions.act_window"><field name="name">متابعة الورديات</field><field name="res_model">baseer.followup.shift</field><field name="view_mode">list,form</field></record>
+  <record id="followup_template_action" model="ir.actions.act_window"><field name="name">قوالب المهام الافتراضية</field><field name="res_model">baseer.followup.task.template</field><field name="view_mode">list,form</field></record>
+  <record id="followup_backend_dashboard_action" model="ir.actions.client"><field name="name">لوحة متابعة الموظفين</field><field name="tag">baseer_employee_followup.backend_dashboard</field></record>
+  <record id="followup_employee_app_action" model="ir.actions.act_url"><field name="name">فتح تطبيق المدير</field><field name="url">/employee-app</field><field name="target">self</field></record>
+  <menuitem id="followup_root" name="متابعة الموظفين" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="35"/>
+  <record id="followup_root" model="ir.ui.menu">
+    <field name="parent_id" eval="False"/>
+    <field name="action" eval="False"/>
+    <field name="web_icon">baseer_employee_followup,static/description/app-icon-shift.png</field>
+  </record>
+  <menuitem id="followup_dashboard" name="لوحة المتابعة" parent="followup_root" action="followup_backend_dashboard_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="1"/>
+  <menuitem id="followup_employee_app" name="فتح تطبيق المدير" parent="followup_root" action="followup_employee_app_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="2"/>
+  <menuitem id="followup_shifts" name="الورديات" parent="followup_root" action="followup_shift_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="10"/>
+  <menuitem id="followup_templates" name="قوالب المهام" parent="followup_root" action="followup_template_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="20"/>
+</odoo>

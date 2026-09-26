@@ -1,0 +1,35 @@
+<odoo>
+  <record id="hr_employee_view_form_inherit_followup" model="ir.ui.view">
+    <field name="name">hr.employee.form.followup.evaluations</field>
+    <field name="model">hr.employee</field>
+    <field name="inherit_id" ref="hr.view_employee_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="تقييمات المتابعة" groups="base.group_system,baseer_employee_followup.group_followup_manager">
+          <group><field name="followup_excluded"/></group>
+          <field name="followup_evaluation_ids" readonly="1">
+            <list create="0" delete="0" open_form_view="1">
+              <field name="evaluated_at"/>
+              <field name="evaluator_id"/>
+              <field name="shift_id"/>
+            </list>
+          </field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="res_company_view_form_inherit_followup" model="ir.ui.view">
+    <field name="name">res.company.form.followup.performance</field>
+    <field name="model">res.company</field>
+    <field name="inherit_id" ref="base.view_company_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="متابعة الموظفين" groups="base.group_system">
+          <group string="عرض الأداء">
+            <field name="baseer_followup_performance_threshold"/>
+          </group>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

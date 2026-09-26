@@ -1,0 +1,349 @@
+<odoo>
+    <template id="employee_app_login" name="Employee Follow-up PWA sign in">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <meta name="theme-color" content="#0d4774"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
+                <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift.png" type="image/png"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <title t-esc="'تسجيل الدخول | بصير شِفت' if is_arabic else 'Sign in | Baseer Shift'"/>
+            </head>
+            <body class="baseer-followup-app pwa-signin">
+                <main class="pwa-signin-shell">
+                    <section class="pwa-signin-card" aria-labelledby="pwa-signin-title">
+                        <nav class="pwa-language-switch" aria-label="Language">
+                            <a t-att-class="'is-active' if is_arabic else ''" href="/employee-app/language/ar?next=/employee-app">العربية</a>
+                            <a t-att-class="'is-active' if not is_arabic else ''" href="/employee-app/language/en?next=/employee-app">English</a>
+                        </nav>
+                        <img class="pwa-signin-mark" src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/>
+                        <p class="pwa-signin-eyebrow" t-esc="'بصير' if is_arabic else 'Baseer'"/>
+                        <h1 id="pwa-signin-title" t-esc="'بصير شِفت' if is_arabic else 'Baseer Shift'"/>
+                        <p class="pwa-signin-copy" t-esc="'سجّل دخولك بحساب أودو لبدء ورديتك ومتابعة فريقك.' if is_arabic else 'Sign in with your Odoo account to run your shift and follow up with your team.'"/>
+                        <form class="pwa-signin-form" action="/web/login?redirect=/employee-app/" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="redirect" t-att-value="redirect_url"/>
+                            <label>
+                                <span t-esc="'اسم المستخدم أو البريد الإلكتروني' if is_arabic else 'Username or email'"/>
+                                <input name="login" type="text" required="required" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus="autofocus"/>
+                            </label>
+                            <label>
+                                <span t-esc="'كلمة المرور' if is_arabic else 'Password'"/>
+                                <input name="password" type="password" required="required" autocomplete="current-password"/>
+                            </label>
+                            <button type="submit" t-esc="'تسجيل الدخول' if is_arabic else 'Sign in'"/>
+                        </form>
+                        <p class="pwa-signin-session" t-esc="'يبقى دخولك محفوظًا بأمان إلى أن تسجّل الخروج أو تنتهي الجلسة.' if is_arabic else 'Your sign-in stays secure until you sign out or the session expires.'"/>
+                    </section>
+                </main>
+                <script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script>
+            </body>
+        </html>
+    </template>
+
+    <template id="employee_app_access_denied" name="Employee Follow-up PWA access denied">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <meta name="theme-color" content="#0d4774"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
+                <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift.png" type="image/png"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <title t-esc="'تعذر الدخول | بصير' if is_arabic else 'Access denied | Baseer'"/>
+            </head>
+            <body class="baseer-followup-app pwa-signin">
+                <main class="pwa-signin-shell">
+                    <section class="pwa-signin-card pwa-access-denied" aria-labelledby="pwa-access-denied-title">
+                        <img class="pwa-signin-mark" src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/>
+                        <p class="pwa-signin-eyebrow" t-esc="'بصير شِفت' if is_arabic else 'Baseer Shift'"/>
+                        <h1 id="pwa-access-denied-title" t-esc="'الدخول غير مفعّل' if is_arabic else 'Access is not enabled'"/>
+                        <p class="pwa-signin-copy" t-esc="'اطلب من مسؤول النظام تفعيل «السماح بدخول تطبيق المدير» من إعدادات حسابك.' if is_arabic else 'Ask a system administrator to enable manager-app access in your user settings.'"/>
+                        <form class="pwa-access-actions" action="/employee-app/logout" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" t-esc="'تسجيل الخروج' if is_arabic else 'Sign out'"/>
+                        </form>
+                    </section>
+                </main>
+            </body>
+        </html>
+    </template>
+
+    <template id="employee_app_navigation" name="Baseer Shift app navigation">
+        <input id="baseer-shift-menu-toggle" class="shift-menu-toggle" type="checkbox"/>
+        <header class="shift-app-header">
+            <label class="shift-menu-trigger" for="baseer-shift-menu-toggle" t-att-aria-label="ui['menu_label']" t-att-title="ui['menu_label']">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </label>
+            <a class="shift-app-brand" href="/employee-app/" aria-label="Baseer Shift"><img src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/><span><strong t-esc="ui['app_name']"/></span></a>
+            <strong class="shift-page-title" t-esc="page_title"/>
+        </header>
+        <label class="shift-drawer-backdrop" for="baseer-shift-menu-toggle" t-att-aria-label="ui['close_menu']"/>
+        <aside id="baseer-shift-drawer" class="shift-app-drawer" t-att-aria-label="ui['navigation_label']">
+            <div class="shift-drawer-heading"><img src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/><span><strong t-esc="ui['app_name']"/><small t-esc="ui['navigation_label']"/></span><label class="shift-drawer-close" for="baseer-shift-menu-toggle" t-att-aria-label="ui['close_menu']">×</label></div>
+            <nav class="shift-drawer-nav" t-att-aria-label="ui['navigation_label']">
+                <a href="/employee-app/" t-att-class="'is-active' if active_nav == 'today' else ''"><i aria-hidden="true">✓</i><span t-esc="ui['today_nav']"/></a>
+                <a href="/employee-app/dashboard" t-att-class="'is-active' if active_nav == 'dashboard' else ''"><i aria-hidden="true">⌂</i><span t-esc="ui['dashboard_nav']"/></a>
+                <a href="/employee-app/shift" t-att-class="'is-active' if active_nav == 'shift' else ''"><i aria-hidden="true">✓</i><span t-esc="ui['shift_nav']"/></a>
+                <a href="/employee-app/evaluation" t-att-class="'is-active' if active_nav == 'evaluation' else ''"><i aria-hidden="true">★</i><span t-esc="ui['employee_evaluation']"/></a>
+                <a href="/employee-app/follow-up" t-att-class="'is-active' if active_nav == 'tasks' else ''"><i aria-hidden="true">＋</i><span t-esc="ui['tasks_nav']"/></a>
+            </nav>
+            <footer class="shift-drawer-footer">
+                <a href="/employee-app/profile"><i aria-hidden="true">◉</i><span t-esc="ui['my_profile']"/></a>
+                <div class="shift-language-links" t-att-aria-label="ui['language_label']"><a t-att-class="'is-active' if is_arabic else ''" t-att-href="'/employee-app/language/ar?next=%s' % request.httprequest.path">العربية</a><a t-att-class="'is-active' if not is_arabic else ''" t-att-href="'/employee-app/language/en?next=%s' % request.httprequest.path">English</a></div>
+                <form action="/employee-app/logout" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit"><i aria-hidden="true">↪</i><span t-esc="ui['logout']"/></button></form>
+            </footer>
+        </aside>
+    </template>
+
+    <template id="employee_app_today" name="Baseer Shift today board">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['today_nav'] + ' | ' + ui['app_name']"/></head>
+            <body class="baseer-followup-app"><main>
+                <t t-set="page_title" t-value="ui['today_nav']"/><t t-set="active_nav" t-value="'today'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                <header t-if="not employee" class="app-header"><p>هذا المستخدم غير مرتبط بملف موظف نشط في الشركة الحالية.</p></header>
+                <section t-if="not employee" class="notice notice-warning"><strong>قبل البدء</strong><span>يربط المدير حساب أودو بملف الموظف، ثم يمنح الحساب صلاحية تطبيق المدير.</span></section>
+                <t t-else="">
+                    <section class="today-hero"><span t-esc="dashboard['today']"/><h1 t-esc="ui['today_title']"/><p t-esc="ui['today_copy']"/></section>
+                    <section class="today-status-list" t-att-aria-label="ui['today_title']"><a t-foreach="today_statuses" t-as="status" t-att-href="status['href']" t-att-class="'today-status-row is-done' if status['done'] else 'today-status-row'"><i t-esc="'✓' if status['done'] else '•'"/><span><strong t-esc="status['title']"/><small t-esc="status['detail']"/></span><b t-esc="ui['today_complete'] if status['done'] else ui['today_incomplete']"/></a></section>
+                    <section t-if="today_followups" class="today-followups"><div class="today-section-heading"><h2 t-esc="ui['tasks_nav']"/><a href="/employee-app/follow-up?tab=history" t-esc="ui['view_notes']"/></div><article t-foreach="today_followups" t-as="card" t-att-class="'today-followup-row is-done' if card['record'].state == 'resolved' else 'today-followup-row'"><i class="today-followup-check" t-esc="'✓' if card['record'].state == 'resolved' else '•'"/><div><span class="followup-type" t-esc="card['type_label']"/><strong t-esc="card['record'].name"/><small t-if="card['record'].item_type == 'task'" t-esc="card['remaining_label']"/></div><form t-if="card['record'].state == 'open' and (card['record'].item_type != 'task' or not card['remaining_count'])" t-att-action="'/employee-app/follow-up/%s/resolve' % card['record'].id" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><input type="hidden" name="next_url" value="/employee-app/"/><button type="submit" t-esc="ui['today_complete']"/></form><a t-elif="card['record'].state == 'open'" t-att-href="'/employee-app/follow-up?tab=history'" t-esc="ui['today_open_task']"/><small t-else="" class="today-followup-complete" t-esc="ui['today_complete']"/></article></section>
+                    <section t-if="dashboard['alerts']" class="today-attention" t-att-aria-label="ui['attention_alerts']"><div class="today-section-heading"><h2 t-esc="ui['attention_alerts']"/><span t-esc="len(dashboard['alerts'])"/></div><a t-foreach="dashboard['alerts']" t-as="alert" t-att-class="'today-alert is-%s' % alert['level']" t-att-href="alert['href']"><i aria-hidden="true">!</i><span t-esc="alert['message']"/></a></section>
+                </t>
+            </main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
+        </html>
+    </template>
+
+    <template id="employee_app" name="Employee Follow-up mobile app">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <meta name="theme-color" content="#0d4774"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <title t-esc="ui['app_name']"/>
+            </head>
+            <body class="baseer-followup-app">
+                <main>
+                    <t t-set="page_title" t-value="ui['dashboard_nav']"/><t t-set="active_nav" t-value="'dashboard'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                    <header t-if="not employee" class="app-header">
+                        <p>هذا المستخدم غير مرتبط بملف موظف نشط في الشركة الحالية.</p>
+                    </header>
+
+                    <section t-if="not employee" class="notice notice-warning">
+                        <strong>قبل البدء</strong>
+                        <span>يربط المدير حساب أودو بملف الموظف، ثم يمنح الحساب صلاحية «Employee Follow-up User».</span>
+                    </section>
+
+                    <section t-else="" class="dashboard-shell">
+                        <div class="monthly-period"><strong t-esc="dashboard['today']"/></div>
+                        <section class="dashboard-metrics" aria-label="Monthly operational summary">
+                            <article t-att-class="'metric-card metric-card-primary' + (' is-alert' if dashboard['manager_noncompliance_alert'] else '')"><span t-esc="ui['shift_completion']"/><strong><t t-esc="dashboard['completed_days']"/>/<t t-esc="dashboard['days_in_month']"/></strong><small><t t-esc="dashboard['shift_completion']"/>٪ · <t t-esc="ui['day_count']"/></small></article>
+                            <article class="metric-card"><span t-esc="ui['team_quality']"/><strong><t t-esc="dashboard['team_quality']"/>٪</strong><small t-esc="ui['monthly']"/></article>
+                            <article t-att-class="'metric-card revenue-metric is-%s' % dashboard['revenue']['direction']"><span t-esc="ui['revenue_growth']"/><strong t-if="dashboard['revenue']['available'] and dashboard['revenue']['has_comparison']"><t t-esc="dashboard['revenue']['percentage']"/>٪</strong><strong t-else="">—</strong><small t-esc="ui['revenue_comparison'] if dashboard['revenue']['available'] and dashboard['revenue']['has_comparison'] else (ui['no_revenue_comparison'] if dashboard['revenue']['available'] else ui['revenue_unavailable'])"/></article>
+                            <a class="metric-card metric-card-link" href="/employee-app/follow-up?tab=history"><span t-esc="ui['open_followups']"/><strong t-esc="dashboard['open_notes']"/><small t-esc="ui['followup_count']"/></a>
+                        </section>
+                        <section class="performance-chart" aria-label="Monthly team performance">
+                            <div class="chart-heading"><h2 t-esc="ui['team_indicators']"/><span t-esc="ui['monthly']"/></div>
+                            <t t-foreach="dashboard['performance_indicators']" t-as="indicator">
+                                <div class="indicator-row"><div><span t-esc="indicator['name']"/><strong><t t-esc="indicator['percentage']"/>٪</strong></div><div class="indicator-track"><span t-att-class="'indicator-fill' + ('' if indicator['has_data'] else ' is-empty')" t-attf-style="width: {{ indicator['percentage'] }}%;"/></div></div>
+                            </t>
+                        </section>
+                        <a class="dashboard-link-card dashboard-shift-link" href="/employee-app/shift"><i class="phase-number">✓</i><span><strong t-esc="ui['shift_overview_title']"/><small t-esc="current_stage_title if shift else ui['start_shift']"/></span><b t-esc="ui['open_section']"/></a>
+                    </section>
+                </main>
+            </body>
+        </html>
+    </template>
+
+    <template id="employee_app_shift_overview" name="Baseer Shift follow-up overview">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['shift_overview_title'] + ' | ' + ui['app_name']"/></head>
+            <body class="baseer-followup-app"><main>
+                <t t-set="page_title" t-value="ui['shift_nav']"/><t t-set="active_nav" t-value="'shift'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                <section t-if="not employee" class="notice notice-warning"><strong t-esc="ui['no_active_shift']"/></section>
+                <section t-elif="not shift" class="start-card shift-start-card"><span class="stage-chip">1</span><h2 t-esc="ui['start_shift']"/><p t-esc="ui['shift_overview_copy']"/><form action="/employee-app/start" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-esc="ui['start_shift']"/></form></section>
+                <section t-else="" class="shift-flow-card"><div class="shift-context-bar"><span t-esc="ui['current_shift']"/><strong><t t-esc="ui['operational_date']"/>: <t t-esc="shift.operational_date"/></strong></div><div class="followup-flow shift-flow-full" t-att-aria-label="ui['followup_sections']"><t t-foreach="dashboard['stage_summaries']" t-as="summary"><a t-if="summary['available']" class="followup-flow-step" t-att-href="'/employee-app/shift/%s' % summary['stage']"><i class="phase-number" t-esc="summary['sequence']"/><span><strong t-esc="summary['name']"/><small><t t-esc="summary['percentage']"/>٪</small></span><b t-if="summary['complete_today']" class="phase-complete">✓</b><b t-else="" t-esc="ui['open_section']"/></a><div t-else="" class="followup-flow-step is-locked"><i class="phase-number" t-esc="summary['sequence']"/><span><strong t-esc="summary['name']"/><small><t t-esc="summary['percentage']"/>٪</small></span><b>🔒</b></div><i t-if="summary['stage'] != 'closing'" class="followup-flow-arrow" aria-hidden="true">←</i></t></div></section>
+            </main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
+        </html>
+    </template>
+
+    <template id="employee_app_profile" name="Employee Follow-up profile">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <meta name="theme-color" content="#0d4774"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <title t-esc="ui['my_profile']"/>
+            </head>
+            <body class="baseer-followup-app">
+                <main>
+                    <t t-set="page_title" t-value="ui['my_profile']"/><t t-set="active_nav" t-value="'profile'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                    <header class="app-header"><p class="eyebrow" t-esc="ui['my_profile']"/><h1 t-esc="employee.name if employee else user.name"/><p t-esc="user.login"/></header>
+                    <section class="checklist-card profile-card">
+                        <t t-if="employee">
+                            <div><span t-esc="'المسمى الوظيفي' if is_arabic else 'Job title'"/><strong t-esc="employee.job_title or '—'"/></div>
+                            <div><span t-esc="'القسم' if is_arabic else 'Department'"/><strong t-esc="employee.department_id.name or '—'"/></div>
+                            <div><span t-esc="'شركة العمل' if is_arabic else 'Company'"/><strong t-esc="employee.company_id.name"/></div>
+                            <div><span t-esc="'البريد الإلكتروني' if is_arabic else 'Email'"/><strong t-esc="employee.work_email or user.email or '—'"/></div>
+                            <div><span t-esc="'هاتف العمل' if is_arabic else 'Work phone'"/><strong t-esc="employee.work_phone or employee.mobile_phone or '—'"/></div>
+                        </t>
+                        <p t-else="" t-esc="'لا يوجد ملف موظف متاح لهذا الحساب.' if is_arabic else 'No employee profile is available for this account.'"/>
+                    </section>
+                </main>
+            </body>
+        </html>
+    </template>
+
+    <template id="employee_app_followup_cards" name="Follow-up cards">
+        <article t-if="not cards" class="checklist-card"><p t-esc="empty_message"/></article>
+        <article t-foreach="cards" t-as="note_card" class="checklist-card note-history-item"><t t-set="note" t-value="note_card['record']"/><div><strong><span class="followup-type" t-esc="note_card['type_label']"/><t t-if="note.item_type != 'task'"> · <t t-esc="note.name"/></t></strong><span t-att-class="'note-state is-%s' % note.state" t-esc="ui['note_open'] if note.state == 'open' else ui['note_resolved']"/></div><p t-if="note.description" t-esc="note.description"/><small t-esc="note.reported_at"/><small t-if="note_card['target_at']"><t t-esc="ui['reminder_time'] if note.item_type == 'reminder' else ui['followup_target']"/>: <t t-esc="note_card['target_at']"/></small><section t-if="note.item_type == 'task'" class="followup-checklist"><small t-esc="note_card['remaining_label']"/><form t-foreach="note.item_ids" t-as="task_item" class="followup-check-item" t-att-class="'followup-check-item is-done' if task_item.done else 'followup-check-item'" t-att-action="'/employee-app/follow-up/item/%s/toggle' % task_item.id" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-att-disabled="note.state != 'open'"><span class="checkmark"><t t-if="task_item.done">✓</t></span><span t-esc="task_item.name"/></button></form></section><div t-if="note.state == 'open'" class="followup-actions"><form t-if="note.item_type != 'task' or not note_card['remaining_count']" t-att-action="'/employee-app/follow-up/%s/resolve' % note.id" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-esc="note_card['complete_label']"/></form><a class="whatsapp-share" t-att-href="note_card['whatsapp_url']" target="_blank" rel="noopener" t-esc="ui['share_whatsapp']"/></div></article>
+    </template>
+
+    <template id="employee_app_notes" name="Employee follow-up notes">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['open_followups']"/></head>
+            <body class="baseer-followup-app"><main><t t-set="page_title" t-value="ui['tasks_nav']"/><t t-set="active_nav" t-value="'tasks'"/><t t-call="baseer_employee_followup.employee_app_navigation"/><nav class="followup-tabs" data-followup-tabs=""><button type="button" data-followup-tab="followups" t-att-class="'is-active' if active_tab == 'followups' else ''" t-esc="ui['followups_tab']"/><button type="button" data-followup-tab="history" t-att-class="'is-active' if active_tab == 'history' else ''" t-esc="ui['history_tab']"/></nav><section class="notes-history followup-tab-panel" data-followup-panel="followups" t-att-class="'notes-history followup-tab-panel is-active' if active_tab == 'followups' else 'notes-history followup-tab-panel'"><a class="dashboard-followup-action" href="/employee-app/follow-up" t-esc="ui['add_followup']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="open_notes"/><t t-set="empty_message" t-value="ui['no_followups']"/></t></section><section class="notes-history followup-tab-panel" data-followup-panel="history" t-att-class="'notes-history followup-tab-panel is-active' if active_tab == 'history' else 'notes-history followup-tab-panel'"><h2 class="followup-history-heading" t-esc="ui['pending_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="open_notes"/><t t-set="empty_message" t-value="ui['no_followups']"/></t><h2 class="followup-history-heading" t-esc="ui['completed_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="resolved_notes"/><t t-set="empty_message" t-value="ui['no_completed_followups']"/></t></section><a class="note-link stage-note-link" href="/employee-app/follow-up?tab=history" t-esc="ui['back_tasks']"/></main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
+        </html>
+    </template>
+
+    <template id="employee_app_followup_chooser" name="Follow-up type chooser">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['add_followup']"/></head>
+            <body class="baseer-followup-app"><main><t t-set="page_title" t-value="ui['tasks_nav']"/><t t-set="active_nav" t-value="'tasks'"/><t t-call="baseer_employee_followup.employee_app_navigation"/><nav class="followup-tabs" data-followup-tabs=""><button type="button" data-followup-tab="entry" t-att-class="'is-active' if active_tab == 'entry' else ''" t-esc="ui['followups_tab']"/><button type="button" data-followup-tab="history" t-att-class="'is-active' if active_tab == 'history' else ''" t-esc="ui['history_tab']"/></nav><section class="followup-tab-panel" data-followup-panel="entry" t-att-class="'followup-tab-panel is-active' if active_tab == 'entry' else 'followup-tab-panel'"><section t-if="shift" class="followup-type-chooser"><a class="followup-type-choice is-note" href="/employee-app/follow-up/note"><strong t-esc="ui['followup_note']"/></a><a class="followup-type-choice is-task" href="/employee-app/follow-up/task"><strong t-esc="ui['followup_task']"/></a><a class="followup-type-choice is-reminder" href="/employee-app/follow-up/reminder"><strong t-esc="ui['followup_reminder']"/></a></section><section t-else="" class="notice notice-warning"><strong t-esc="ui['no_active_shift']"/></section></section><section class="notes-history followup-tab-panel" data-followup-panel="history" t-att-class="'notes-history followup-tab-panel is-active' if active_tab == 'history' else 'notes-history followup-tab-panel'"><h2 class="followup-history-heading" t-esc="ui['pending_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="open_notes"/><t t-set="empty_message" t-value="ui['no_followups']"/></t><h2 class="followup-history-heading" t-esc="ui['completed_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="resolved_notes"/><t t-set="empty_message" t-value="ui['no_completed_followups']"/></t></section><a class="note-link stage-note-link" href="/employee-app/follow-up?tab=history" t-esc="ui['back_tasks']"/></main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
+        </html>
+    </template>
+
+    <template id="employee_app_stage" name="Employee Follow-up shift stage">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="stage_title"/></head>
+            <body class="baseer-followup-app"><main>
+                <t t-set="page_title" t-value="ui['shift_nav']"/><t t-set="active_nav" t-value="'shift'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                <div t-if="shift" class="shift-context-bar shift-stage-context"><strong t-esc="stage_title"/><span><t t-esc="ui['operational_date']"/>: <t t-esc="shift.operational_date"/></span></div>
+                <section t-if="not shift" class="notice notice-warning"><strong t-esc="ui['no_active_shift']"/><a class="note-link" href="/employee-app/shift" t-esc="ui['back_followup']"/></section>
+                <section t-else="" class="checklist-card">
+                    <div class="progress-row"><div><span class="stage-chip"><t t-esc="stage_step"/></span></div><strong data-opening-completion=""><t t-esc="stage_completion"/>٪</strong></div>
+                    <div class="progress-track" aria-hidden="true"><span data-opening-progress="" t-attf-style="width: {{ stage_completion }}%;"/></div>
+                    <div class="checklist"><t t-foreach="stage_lines" t-as="line"><div class="task-wrap"><form class="check-item" t-att-class="'check-item is-done' if line.done else 'check-item'" t-att-action="'/employee-app/task/%s/toggle' % line.id" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-att-aria-label="'Update: %s' % line.name"><span class="checkmark"><t t-if="line.done">✓</t></span><span t-esc="line.name if is_arabic else line.name_en"/></button></form><a class="task-note-action" t-att-href="'/employee-app/note?line_id=%s' % line.id" t-att-aria-label="ui['add_note']" t-att-title="ui['add_note']"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3v-3H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Zm7 3v6m-3-3h6"/></svg></a></div></t></div>
+                    <a class="note-link stage-note-link" href="/employee-app/note" t-esc="ui['add_stage_note']"/>
+                    <p t-if="is_current_stage and not can_advance and not (stage == 'opening' and stage_completion == 100)" class="completion-lock" t-esc="advance_lock_message"/>
+                    <section t-if="is_current_stage and stage == 'opening' and stage_completion == 100 and not can_advance" class="stage-complete-panel"><div class="stage-complete-copy"><i aria-hidden="true">✓</i><strong t-esc="ui['stage_completed']"/></div><a class="stage-done-action" href="/employee-app/shift" t-esc="ui['done']"/></section>
+                    <form t-if="is_current_stage and stage == 'opening' and can_advance" action="/employee-app/stage/midday" method="post" class="stage-action"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-esc="ui['next_midday']"/></form>
+                    <form t-if="is_current_stage and stage == 'midday'" action="/employee-app/stage/closing" method="post" class="stage-action"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-att-disabled="not can_advance" t-esc="ui['next_closing']"/></form>
+                    <form t-if="is_current_stage and stage == 'closing'" action="/employee-app/stage/closed" method="post" class="stage-action"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" t-att-disabled="not can_advance" t-esc="ui['close_shift']"/></form>
+                </section>
+                <a class="note-link stage-note-link" href="/employee-app/shift" t-esc="ui['back_followup']"/>
+            </main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
+        </html>
+    </template>
+
+    <template id="employee_app_note" name="Employee follow-up note">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <title t-esc="ui['add_followup']"/>
+            </head>
+            <body class="baseer-followup-app">
+                <main>
+                    <t t-set="page_title" t-value="ui['tasks_nav']"/><t t-set="active_nav" t-value="'tasks'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                    <header class="app-header">
+                        <h1 t-esc="ui['followup_%s' % item_type]"/>
+                    </header>
+                    <div t-if="line and item_type == 'note'" class="note-line-context"><span t-esc="ui['note_for_line']"/><strong t-esc="line.name if is_arabic else line.name_en"/></div>
+                    <section class="checklist-card note-form-card">
+                        <form t-att-action="form_action" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input t-if="line" type="hidden" name="line_id" t-att-value="line.id"/>
+                            <label t-if="item_type != 'task'"><span t-esc="ui['note_reason'] if line and item_type == 'note' else ui['followup_title']"/><input type="text" name="title" required="required"/></label>
+                            <label t-if="item_type != 'task'"><span t-esc="ui['additional_details'] if line and item_type == 'note' else ui['followup_details']"/><textarea name="description" rows="4"/></label>
+                            <section t-if="item_type == 'task'" class="task-item-editor" data-task-item-form="">
+                                <span class="field-label" t-esc="ui['task_items']"/>
+                                <div data-task-items=""><label class="task-item-input"><span t-esc="ui['task_item']"/><input type="text" name="task_item" required="required" t-att-placeholder="ui['task_item_placeholder']"/></label></div>
+                                <template data-task-item-template=""><label class="task-item-input"><span t-esc="ui['task_item']"/><input type="text" name="task_item" required="required" t-att-placeholder="ui['task_item_placeholder']"/><button type="button" data-remove-task-item="" t-esc="ui['remove_task_item']"/></label></template>
+                                <button type="button" class="add-task-item" data-add-task-item="" t-esc="ui['add_task_item']"/>
+                            </section>
+                            <label t-if="item_type != 'note'"><span t-esc="ui['reminder_time'] if item_type == 'reminder' else ui['followup_target']"/><input type="datetime-local" name="target_at" t-att-required="item_type == 'reminder' and 'required' or None"/></label>
+                            <label t-if="item_type == 'reminder'"><span t-esc="ui['reminder_recurrence']"/><select name="recurrence"><option value="once" t-esc="ui['recurrence_once']"/><option value="daily" t-esc="ui['recurrence_daily']"/><option value="weekly" t-esc="ui['recurrence_weekly']"/><option value="monthly" t-esc="ui['recurrence_monthly']"/></select></label>
+                            <button type="button" class="photo-picker-open" data-photo-picker-open="followup-photo-picker" t-esc="ui['add_photo']"/>
+                            <dialog id="followup-photo-picker" class="photo-picker-dialog"><h2 t-esc="ui['followup_image']"/><label class="photo-source-button"><span t-esc="ui['take_photo']"/><input class="photo-source-input" type="file" name="camera_image" accept="image/*" capture="environment"/></label><label class="photo-source-button"><span t-esc="ui['choose_photo']"/><input class="photo-source-input" type="file" name="image" accept="image/*"/></label><button type="button" data-photo-picker-close="" t-esc="ui['back_dashboard']"/></dialog>
+                            <button type="submit" t-esc="ui['save_followup']"/>
+                        </form>
+                        <a class="note-link stage-note-link" t-att-href="back_url" t-esc="back_label"/>
+                    </section>
+                </main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script>
+            </body>
+        </html>
+    </template>
+
+    <template id="employee_app_evaluation" name="Employee evaluation mobile app">
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <title t-esc="ui['evaluation_title'] + ' | ' + ui['app_name']"/>
+            </head>
+            <body class="baseer-followup-app">
+                <main>
+                    <t t-set="page_title" t-value="ui['employee_evaluation']"/><t t-set="active_nav" t-value="'evaluation'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
+                    <div t-if="shift" class="shift-context-bar shift-evaluation-context"><span t-esc="ui['current_shift']"/><strong><t t-esc="ui['operational_date']"/>: <t t-esc="shift.operational_date"/></strong></div>
+                    <section t-if="not shift" class="notice notice-warning"><strong t-esc="ui['evaluation_start_shift_first']"/><span t-esc="ui['evaluation_shift_required']"/></section>
+                    <t t-else="">
+                        <section class="evaluation-dashboard" t-att-aria-label="ui['evaluation_today_summary']">
+                            <article class="metric-card metric-card-primary"><span t-esc="ui['evaluation_reviewed']"/><strong><t t-esc="evaluated_count"/>/<t t-esc="len(staff)"/></strong><small t-esc="ui['evaluation_staff_today']"/></article>
+                            <article class="metric-card"><span t-esc="ui['evaluation_remaining']"/><strong t-esc="remaining_count"/><small t-esc="ui['evaluation_employee']"/></article>
+                            <article class="metric-card"><span t-esc="ui['evaluation_overall_performance']"/><strong><t t-esc="overall_percentage"/>٪</strong><small><t t-esc="average_rating"/>/5 <t t-esc="ui['evaluation_stars']"/></small></article>
+                        </section>
+                        <section class="performance-chart" t-att-aria-label="performance_title">
+                            <div class="chart-heading"><h2 t-esc="performance_title"/></div>
+                            <t t-foreach="performance_indicators" t-as="indicator">
+                                <div class="indicator-row">
+                                    <div><span t-esc="indicator['name']"/><strong><t t-esc="indicator['percentage']"/>٪</strong></div>
+                                    <div class="indicator-track"><span t-att-class="'indicator-fill' + ('' if indicator['has_data'] else ' is-empty')" t-attf-style="width: {{ indicator['percentage'] }}%;"/></div>
+                                </div>
+                            </t>
+                        </section>
+                        <section class="checklist-card evaluation-card">
+                            <p class="evaluation-summary"><span t-esc="ui['evaluation_summary']"/> <strong t-esc="evaluated_count"/> <span t-esc="ui['evaluation_of']"/> <strong t-esc="len(staff)"/> <span t-esc="ui['evaluation_employee']"/></p>
+                            <form action="/employee-app/evaluation" method="get">
+                                <label><span t-esc="ui['evaluation_employee_label']"/><select name="employee_id" required="required" onchange="this.form.submit()"><option value="" t-esc="ui['evaluation_select_employee']"/><t t-foreach="staff" t-as="staff_member"><option t-att-value="staff_member.id" t-att-selected="selected_employee and staff_member.id == selected_employee.id"><t t-if="staff_member.id in absent_employee_ids">— </t><t t-if="staff_member.id in evaluated_employee_ids">✓ </t><t t-if="staff_member.id not in absent_employee_ids and staff_member.id not in evaluated_employee_ids">○ </t><t t-esc="staff_member.name"/></option></t></select></label>
+                                <noscript><button type="submit" t-esc="ui['evaluation_show_indicators']"/></noscript>
+                            </form>
+                        </section>
+                        <section t-if="selected_employee and selected_employee.id in absent_employee_ids" class="checklist-card evaluation-card absence-status">
+                            <div class="employee-evaluation-heading"><h2 t-esc="selected_employee.name"/><strong t-esc="ui['evaluation_absent_today']"/></div>
+                            <form action="/employee-app/evaluation/absence/remove" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><input type="hidden" name="employee_id" t-att-value="selected_employee.id"/><button type="submit" class="absence-remove" t-esc="ui['evaluation_mark_present']"/></form>
+                        </section>
+                        <section t-if="selected_employee and selected_employee.id not in absent_employee_ids" class="checklist-card evaluation-card evaluation-form-card">
+                            <div class="employee-evaluation-heading"><h2 t-esc="selected_employee.name"/><strong t-if="selected_percentage" class="employee-score"><t t-esc="selected_percentage"/>٪</strong></div>
+                            <p t-if="selected_evaluation" class="saved-evaluation">✓ <span t-esc="ui['evaluation_saved']"/></p>
+                            <form t-if="not selected_evaluation" action="/employee-app/evaluation/absence" method="post" class="absence-form"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><input type="hidden" name="employee_id" t-att-value="selected_employee.id"/><button type="submit" class="absence-action" t-esc="ui['evaluation_absent_today']"/></form>
+                            <form action="/employee-app/evaluation" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="employee_id" t-att-value="selected_employee.id"/>
+                                <t t-foreach="templates" t-as="template">
+                                    <div class="rating-row">
+                                        <span t-esc="template.name if is_arabic else (template.name_en or template.name)"/>
+                                        <div class="rating-stars" role="radiogroup" t-att-aria-label="template.name">
+                                            <t t-foreach="[1, 2, 3, 4, 5]" t-as="rating">
+                                                <input type="radio" t-att-name="'rating_%s' % template.id" t-att-id="'rating_%s_%s' % (template.id, rating)" t-att-value="rating" t-att-required="rating == 5" t-att-checked="rating_by_template.get(template.id) == rating"/>
+                                                <label t-att-for="'rating_%s_%s' % (template.id, rating)" t-att-aria-label="'%s %s' % (rating, ui['rating_out_of_five'])"><svg class="rating-star-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.1c.35 0 .68.2.83.54l2.14 4.4 4.84.7c.38.06.7.32.82.68.12.37.02.77-.27 1.03l-3.5 3.37.83 4.77c.07.4-.09.8-.42 1.04-.33.24-.77.27-1.13.07L12 17.52l-4.33 2.3c-.35.19-.79.16-1.12-.08-.33-.24-.5-.64-.43-1.04l.83-4.77-3.5-3.37c-.29-.26-.39-.66-.27-1.03.12-.36.44-.62.82-.68l4.84-.7 2.14-4.4c.15-.34.48-.54.83-.54Z"/></svg></label>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </t>
+                                <label><span t-esc="ui['evaluation_note']"/><textarea name="note" rows="3" t-att-placeholder="ui['evaluation_note_placeholder']"><t t-esc="selected_evaluation.note if selected_evaluation else ''"/></textarea></label>
+                                <button type="button" class="photo-picker-open" data-photo-picker-open="evaluation-photo-picker" t-esc="ui['add_photo']"/>
+                                <dialog id="evaluation-photo-picker" class="photo-picker-dialog"><h2 t-esc="ui['followup_image']"/><label class="photo-source-button"><span t-esc="ui['take_photo']"/><input class="photo-source-input" type="file" name="camera_image" accept="image/*" capture="environment"/></label><label class="photo-source-button"><span t-esc="ui['choose_photo']"/><input class="photo-source-input" type="file" name="image" accept="image/*"/></label><button type="button" data-photo-picker-close="" t-esc="ui['back_dashboard']"/></dialog>
+                                <img t-if="selected_evaluation and selected_evaluation.image" class="evaluation-image" t-att-src="'/web/image/baseer.followup.employee.evaluation/%s/image' % selected_evaluation.id" t-att-alt="ui['attached_image']"/>
+                                <button type="submit" t-esc="ui['evaluation_save']"/>
+                            </form>
+                        </section>
+                    </t>
+                </main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script>
+            </body>
+        </html>
+    </template>
+</odoo>

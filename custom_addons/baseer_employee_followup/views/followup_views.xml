@@ -23,7 +23,7 @@
   <record id="followup_root" model="ir.ui.menu">
     <field name="parent_id" eval="False"/>
     <field name="action" eval="False"/>
-    <field name="web_icon">baseer_employee_followup,static/description/app-icon-shift-clock.png</field>
+    <field name="web_icon">baseer_employee_followup,static/description/app-icon-shift-time-check.png</field>
   </record>
   <menuitem id="followup_dashboard" name="لوحة المتابعة" parent="followup_root" action="followup_backend_dashboard_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="1"/>
   <menuitem id="followup_employee_app" name="فتح تطبيق المدير" parent="followup_root" action="followup_employee_app_action" groups="base.group_system,baseer_employee_followup.group_followup_manager" sequence="2"/>

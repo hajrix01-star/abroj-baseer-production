@@ -1128,9 +1128,9 @@ class EmployeeFollowupApp(http.Controller):
             'background_color': '#f5f7fa',
             'theme_color': '#0d4774',
             'icons': [{
-                'src': '/baseer_employee_followup/static/description/app-icon-shift.png',
-                'sizes': '1254x1254',
-                'type': 'image/png',
+                'src': '/baseer_employee_followup/static/description/app-icon-shift-dark.svg?v=1',
+                'sizes': 'any',
+                'type': 'image/svg+xml',
                 'purpose': 'any',
             }],
         }

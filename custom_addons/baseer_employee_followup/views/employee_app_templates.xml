@@ -5,8 +5,8 @@
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
                 <meta name="theme-color" content="#0d4774"/>
-                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
-                <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift.png" type="image/png"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest?v=2"/>
+                <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift-dark.svg?v=1" type="image/svg+xml"/>
                 <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="'تسجيل الدخول | بصير شِفت' if is_arabic else 'Sign in | Baseer Shift'"/>
             </head>
@@ -17,7 +17,7 @@
                             <a t-att-class="'is-active' if is_arabic else ''" href="/employee-app/language/ar?next=/employee-app">العربية</a>
                             <a t-att-class="'is-active' if not is_arabic else ''" href="/employee-app/language/en?next=/employee-app">English</a>
                         </nav>
-                        <img class="pwa-signin-mark" src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/>
+                        <img class="pwa-signin-mark" src="/baseer_employee_followup/static/description/app-icon-shift-dark.svg?v=1" alt=""/>
                         <p class="pwa-signin-eyebrow" t-esc="'بصير' if is_arabic else 'Baseer'"/>
                         <h1 id="pwa-signin-title" t-esc="'بصير شِفت' if is_arabic else 'Baseer Shift'"/>
                         <p class="pwa-signin-copy" t-esc="'سجّل دخولك بحساب أودو لبدء ورديتك ومتابعة فريقك.' if is_arabic else 'Sign in with your Odoo account to run your shift and follow up with your team.'"/>
@@ -48,15 +48,15 @@
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
                 <meta name="theme-color" content="#0d4774"/>
-                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
-                <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift.png" type="image/png"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest?v=2"/>
+                <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift-dark.svg?v=1" type="image/svg+xml"/>
                 <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="'تعذر الدخول | بصير' if is_arabic else 'Access denied | Baseer'"/>
             </head>
             <body class="baseer-followup-app pwa-signin">
                 <main class="pwa-signin-shell">
                     <section class="pwa-signin-card pwa-access-denied" aria-labelledby="pwa-access-denied-title">
-                        <img class="pwa-signin-mark" src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/>
+                        <img class="pwa-signin-mark" src="/baseer_employee_followup/static/description/app-icon-shift-dark.svg?v=1" alt=""/>
                         <p class="pwa-signin-eyebrow" t-esc="'بصير شِفت' if is_arabic else 'Baseer Shift'"/>
                         <h1 id="pwa-access-denied-title" t-esc="'الدخول غير مفعّل' if is_arabic else 'Access is not enabled'"/>
                         <p class="pwa-signin-copy" t-esc="'اطلب من مسؤول النظام تفعيل «السماح بدخول تطبيق المدير» من إعدادات حسابك.' if is_arabic else 'Ask a system administrator to enable manager-app access in your user settings.'"/>
@@ -76,12 +76,12 @@
             <label class="shift-menu-trigger" for="baseer-shift-menu-toggle" t-att-aria-label="ui['menu_label']" t-att-title="ui['menu_label']">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </label>
-            <a class="shift-app-brand" href="/employee-app/" aria-label="Baseer Shift"><img src="/baseer_employee_followup/static/description/app-icon-shift-light.svg?v=1" alt=""/><span><strong t-esc="ui['app_name']"/></span></a>
+            <a class="shift-app-brand" href="/employee-app/" aria-label="Baseer Shift"><img src="/baseer_employee_followup/static/description/app-icon-shift-light.svg?v=2" alt=""/><span><strong t-esc="ui['app_name']"/></span></a>
             <strong class="shift-page-title" t-esc="page_title"/>
         </header>
         <label class="shift-drawer-backdrop" for="baseer-shift-menu-toggle" t-att-aria-label="ui['close_menu']"/>
         <aside id="baseer-shift-drawer" class="shift-app-drawer" t-att-aria-label="ui['navigation_label']">
-            <div class="shift-drawer-heading"><img src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/><span><strong t-esc="ui['app_name']"/><small t-esc="ui['navigation_label']"/></span><label class="shift-drawer-close" for="baseer-shift-menu-toggle" t-att-aria-label="ui['close_menu']">×</label></div>
+            <div class="shift-drawer-heading"><img src="/baseer_employee_followup/static/description/app-icon-shift-dark.svg?v=1" alt=""/><span><strong t-esc="ui['app_name']"/><small t-esc="ui['navigation_label']"/></span><label class="shift-drawer-close" for="baseer-shift-menu-toggle" t-att-aria-label="ui['close_menu']">×</label></div>
             <nav class="shift-drawer-nav" t-att-aria-label="ui['navigation_label']">
                 <a href="/employee-app/" t-att-class="'is-active' if active_nav == 'today' else ''"><i aria-hidden="true">✓</i><span t-esc="ui['today_nav']"/></a>
                 <a href="/employee-app/dashboard" t-att-class="'is-active' if active_nav == 'dashboard' else ''"><i aria-hidden="true">⌂</i><span t-esc="ui['dashboard_nav']"/></a>
@@ -99,7 +99,7 @@
 
     <template id="employee_app_today" name="Baseer Shift today board">
         <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
-            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['today_nav'] + ' | ' + ui['app_name']"/></head>
+            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest?v=2"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['today_nav'] + ' | ' + ui['app_name']"/></head>
             <body class="baseer-followup-app"><main>
                 <t t-set="page_title" t-value="ui['today_nav']"/><t t-set="active_nav" t-value="'today'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
                 <header t-if="not employee" class="app-header"><p>هذا المستخدم غير مرتبط بملف موظف نشط في الشركة الحالية.</p></header>
@@ -120,7 +120,7 @@
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
                 <meta name="theme-color" content="#0d4774"/>
-                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest?v=2"/>
                 <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="ui['app_name']"/>
             </head>
@@ -159,7 +159,7 @@
 
     <template id="employee_app_shift_overview" name="Baseer Shift follow-up overview">
         <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
-            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['shift_overview_title'] + ' | ' + ui['app_name']"/></head>
+            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest?v=2"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['shift_overview_title'] + ' | ' + ui['app_name']"/></head>
             <body class="baseer-followup-app"><main>
                 <t t-set="page_title" t-value="ui['shift_nav']"/><t t-set="active_nav" t-value="'shift'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
                 <section t-if="not employee" class="notice notice-warning"><strong t-esc="ui['no_active_shift']"/></section>
@@ -175,7 +175,7 @@
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
                 <meta name="theme-color" content="#0d4774"/>
-                <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
+                <link rel="manifest" href="/employee-app/manifest.webmanifest?v=2"/>
                 <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="ui['my_profile']"/>
             </head>

@@ -22,9 +22,9 @@ class EmployeeFollowupApp(http.Controller):
     }
 
     def _has_manager_app_access(self):
-        """PWA admission is owned by the current Odoo user, never by the browser."""
+        """PWA admission is the explicit user toggle, never admin status."""
         user = request.env.user
-        return user._is_admin() or user.baseer_manager_app_access
+        return bool(user.baseer_manager_app_access)
 
     def _require_manager_app_access(self):
         if not self._has_manager_app_access():
@@ -79,6 +79,11 @@ class EmployeeFollowupApp(http.Controller):
             ('employee_id', '=', employee.id),
             ('state', 'in', ('opening', 'midday', 'closing')),
         ], limit=1) if employee else request.env['baseer.followup.shift']
+
+    @staticmethod
+    def _empty_followup_cards():
+        """Keep the daily-board card payload stable without an employee."""
+        return {'open_notes': [], 'resolved_notes': []}
 
     def _is_arabic(self):
         """Keep the PWA language independent from an Odoo account's locale."""
@@ -247,7 +252,11 @@ class EmployeeFollowupApp(http.Controller):
         """Read the current user's actionable work without changing its owners."""
         dashboard = self._monthly_dashboard(employee, is_arabic) if employee else False
         shift = self._current_shift(employee) if employee else request.env['baseer.followup.shift']
-        followups = self._followup_cards(employee, is_arabic) if employee else {'open_notes': []}
+        # A permitted manager can temporarily have no active employee profile
+        # (for example after an archived user/employee assignment).  The daily
+        # board is still readable in that state, so it must receive the same
+        # complete follow-up payload as a manager with an employee profile.
+        followups = self._followup_cards(employee, is_arabic) if employee else self._empty_followup_cards()
         statuses = []
         if shift:
             stage_name = self._stage_details[shift.state]['title_ar'] if is_arabic else self._stage_details[shift.state]['title_en']

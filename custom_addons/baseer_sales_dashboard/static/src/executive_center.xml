@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_sales_dashboard.ExecutiveCenter">
+        <section class="o_baseer_executive" t-att-aria-label="labels.title" t-att-aria-busy="state.loading">
+            <header class="o_bec_heading">
+                <div><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div>
+                <button type="button" class="btn btn-light" t-on-click="initialize" t-att-disabled="state.loading"><i class="fa fa-refresh me-1" aria-hidden="true"/><t t-esc="labels.refresh"/></button>
+            </header>
+            <p class="o_bec_snapshot_note" t-esc="labels.snapshotNote"/>
+            <details class="o_bec_picker">
+                <summary><i class="fa fa-building-o me-2" aria-hidden="true"/><t t-esc="labels.companies"/> <bdi t-esc="state.selected.length"/></summary>
+                <div class="o_bec_picker_actions"><button type="button" class="btn btn-link" t-on-click="selectAll" t-esc="labels.all"/><button type="button" class="btn btn-link" t-on-click="clearSelection" t-esc="labels.clear"/></div>
+                <div class="o_bec_company_options"><label t-foreach="state.companies" t-as="company" t-key="company.id"><input type="checkbox" t-att-checked="state.selected.includes(company.id)" t-on-change="(ev) => this.selectCompany(company.id, ev)"/><span t-esc="company.name"/></label></div>
+            </details>
+            <p t-if="state.loading" class="o_bec_status" role="status" aria-live="polite"><i class="fa fa-circle-o-notch fa-spin me-2" aria-hidden="true"/><t t-esc="labels.loading"/> <bdi><t t-esc="state.loaded"/> / <t t-esc="state.selected.length"/></bdi></p>
+            <div t-if="state.error" class="alert alert-warning" role="alert"><p t-esc="state.error"/><button type="button" class="btn btn-outline-secondary" t-on-click="initialize" t-esc="labels.retry"/></div>
+            <p t-if="!state.loading and !state.error and !state.selected.length" class="o_bec_status" t-esc="state.companies.length ? labels.empty : labels.noCompanies"/>
+            <div class="o_bec_grid">
+                <article t-foreach="state.cards" t-as="card" t-key="card.company.id" class="o_bec_card">
+                    <header class="o_bec_card_header"><div><p class="o_bec_date"><t t-esc="labels.lastDay"/> · <bdi t-esc="card.date || '—'"/></p><h2 t-att-title="card.company.name" t-esc="card.company.name"/></div><span class="o_bec_delta" t-att-data-direction="card.daily_change.direction"><span aria-hidden="true" t-esc="arrow(card.daily_change.direction)"/><bdi t-esc="card.daily_change.display"/></span></header>
+                    <p t-if="!card.available" class="o_bec_status" t-esc="card.reason === 'unsupported_currency' ? labels.unsupportedCurrency : labels.unavailable"/>
+                    <section class="o_bec_daily" t-att-aria-label="labels.daily"><div class="o_bec_daily_value"><bdi t-esc="card.daily.display"/><small t-if="card.daily.available" t-esc="card.company.currency"/></div><p t-att-data-direction="card.daily_change.direction"><span t-esc="labels.change"/>: <bdi t-esc="card.daily_change.amount_display"/></p></section>
+                    <section class="o_bec_chart" t-att-aria-label="labels.chart"><p class="o_bec_chart_title" t-esc="labels.chart"/>
+                        <div class="o_bec_bars" role="group" t-att-aria-label="labels.chart">
+                            <button t-foreach="card.timeline" t-as="point" t-key="point.date" type="button" class="o_bec_bar" t-att-class="{'o_bec_point_open': state.point === pointKey(card, point), 'o_bec_point_missing': point.status === 'missing', 'o_bec_point_partial': point.status === 'incomplete', 'o_bec_point_closed': point.status === 'closed'}" t-att-aria-label="pointLabel(point)" t-on-click="() => this.togglePoint(card, point)" t-on-keydown="onPointKeydown">
+                                <span class="o_bec_bar_fill" t-att-style="barStyle(point, card.timeline)"/>
+                                <span class="o_bec_tooltip" aria-hidden="true"><strong t-esc="point.date"/><span><bdi t-esc="point.display"/></span><span t-esc="pointStatus(point)"/><span t-if="point.change.available"><bdi t-esc="point.change.display"/></span></span>
+                            </button>
+                        </div>
+                        <div class="o_bec_dates"><span t-foreach="card.timeline" t-as="point" t-key="point.date"><bdi t-esc="point.label"/></span></div>
+                    </section>
+                    <section class="o_bec_metrics"><div t-foreach="metrics(card)" t-as="metric" t-key="metric.key" t-att-class="{'o_bec_metric_wide': metric.key === 'customers'}"><p t-esc="metric.label"/><strong><bdi t-esc="metric.value"/></strong><small t-if="metric.detail"><bdi t-esc="metric.detail"/></small></div></section>
+                    <section class="o_bec_channels"><h3 t-esc="labels.channels"/><ul><li t-foreach="card.payments.rows" t-as="channel" t-key="channel_index"><span t-esc="channel.name"/><strong><bdi t-esc="channel.sales.display"/><small><bdi><t t-esc="channel.share.display"/><t t-if="channel.share.available">%</t></bdi></small></strong></li></ul><p t-if="!card.payments.rows.length" t-esc="labels.noPayments"/><p t-if="card.available and !card.payments.coverage.complete" class="o_bec_warning" t-esc="labels.paymentIncomplete"/>
+                        <footer><span><t t-esc="labels.coverage"/>: <bdi><t t-esc="card.coverage.operating_days"/> / <t t-esc="card.coverage.days"/></bdi></span><span t-if="card.coverage.closed_days"><t t-esc="labels.closed"/>: <bdi t-esc="card.coverage.closed_days"/></span><span t-if="card.coverage.incomplete_days"><t t-esc="labels.incomplete"/>: <bdi t-esc="card.coverage.incomplete_days"/></span><span t-if="card.coverage.missing_days"><t t-esc="labels.missing"/>: <bdi t-esc="card.coverage.missing_days"/></span></footer>
+                    </section>
+                </article>
+            </div>
+        </section>
+    </t>
+</templates>

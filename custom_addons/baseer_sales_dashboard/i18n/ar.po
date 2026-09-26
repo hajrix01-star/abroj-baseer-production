@@ -8,6 +8,176 @@ msgstr ""
 
 #. module: baseer_sales_dashboard
 #. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+#: model:ir.actions.client,name:baseer_sales_dashboard.action_executive_home
+#: model:spreadsheet.dashboard,name:baseer_sales_dashboard.dashboard_executive_center
+msgid "Command center"
+msgstr "مركز القيادة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sales summaries support SAR only"
+msgstr "ملخصات المبيعات تدعم الريال السعودي فقط"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Snapshots through each company's last completed day."
+msgstr "نظرة تنفيذية حتى آخر يوم مكتمل لكل شركة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Executive overview · approved sales summaries"
+msgstr "نظرة تنفيذية · ملخصات المبيعات المعتمدة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Choose companies"
+msgstr "اختيار الشركات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "All companies"
+msgstr "جميع الشركات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Clear selection"
+msgstr "إلغاء التحديد"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Loading companies"
+msgstr "جارٍ تحميل الشركات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Choose a company to display its executive overview."
+msgstr "اختر شركة لعرض نظرتها التنفيذية."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No authorized companies are available."
+msgstr "لا توجد شركات متاحة ضمن صلاحياتك."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No completed approved sales day is available."
+msgstr "لا يوجد يوم مبيعات مكتمل ومعتمد متاح."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Last completed day"
+msgstr "آخر يوم مكتمل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Daily sales"
+msgstr "مبيعات اليوم"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Daily change"
+msgstr "التغير اليومي"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Daily sales · last 14 days"
+msgstr "المبيعات اليومية · آخر 14 يومًا"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Month to date"
+msgstr "مبيعات الشهر حتى الآن"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Daily average"
+msgstr "المتوسط اليومي"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Month-end forecast (estimated)"
+msgstr "توقع نهاية الشهر (تقديري)"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Compared with equal previous period"
+msgstr "مقارنة بالفترة السابقة المساوية"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Average registered customers per operating day"
+msgstr "متوسط العملاء المسجلين لكل يوم تشغيل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Payment channels · month to date"
+msgstr "قنوات الدفع · الشهر حتى الآن"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Missing days"
+msgstr "أيام غير مسجلة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Incomplete days"
+msgstr "أيام غير مكتملة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No payment channel data available."
+msgstr "لا تتوفر بيانات قنوات الدفع."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Recorded zero"
+msgstr "صفر مسجل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Partial month: forecast unavailable"
+msgstr "الشهر غير مكتمل البيانات: التوقع غير متاح"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Unable to load the executive overview. Please try again."
+msgstr "تعذر تحميل النظرة التنفيذية. حاول مرة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Some companies could not be loaded. Please try again."
+msgstr "تعذر تحميل بعض الشركات. حاول مرة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
 #: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
 msgid "Applications share of total sales (%)"
 msgstr "نسبة التطبيقات من إجمالي المبيعات (%)"

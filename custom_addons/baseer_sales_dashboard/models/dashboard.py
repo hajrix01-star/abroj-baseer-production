@@ -8,6 +8,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.baseer_pos_summary.models.common import money, ZERO, clean_context
 from odoo.addons.baseer_pos_summary.models.operations import checked_range
+from .report_names import report_name
 
 
 # Explicit reporting budgets: never silently shorten an All time request.
@@ -351,8 +352,8 @@ class SalesDashboard(models.Model):
                       'views': [(False, 'list'), (False, 'form')],
                       'domain': domain + [('payment_method_id', '=', method_id), ('summary_id', 'in', bucket['summary_ids'])],
                       'context': {'create': False, 'allowed_company_ids': [company.id]}}
-            rows.append({'method_id': method_id, 'name': method.name,
-                         'category': {'id': category.id, 'name': category.name, 'kind': category.kind},
+            rows.append({'method_id': method_id, 'name': report_name(method.name, self.env.lang),
+                         'category': {'id': category.id, 'name': report_name(category.name, self.env.lang), 'kind': category.kind},
                          'sales': _card(bucket['sales']),
                          'share': _card(bucket['sales'] * Decimal(100) / recorded_sales if recorded_sales > ZERO else None, complete),
                          'source_action': action})
@@ -411,6 +412,10 @@ class SalesDashboard(models.Model):
             performance['lowest'] = serialize(min(result_rows, key=lambda row: lowest_order({
                 'amount': Decimal(row['sales']['value']), 'name': row['name'], 'category_id': row['category_id'],
             })))
+        # Localize only after ranks and rounding are finalized on source names.
+        for row in result_rows + chart_rows + [performance['highest'], performance['lowest']]:
+            if row:
+                row['name'] = report_name(row['name'], self.env.lang)
         return {'rows': result_rows, 'chart_rows': chart_rows, 'performance': performance}
 
     def _baseer_comparison(self, current, previous, has_sample):
@@ -471,7 +476,7 @@ class SalesDashboard(models.Model):
             card['comparison'] = scoped._baseer_comparison(card, previous['cards'][key], current['has_sample'] and previous['has_sample'])
         totals = current['data']['totals']
         return {
-            'company': {'id': company.id, 'name': company.name, 'currency': company.currency_id.name},
+            'company': {'id': company.id, 'name': report_name(company.display_name, self.env.lang), 'currency': company.currency_id.name},
             'filters': {'preset': preset, 'date_from': first.isoformat() if first else None, 'date_to': last.isoformat() if last else None, 'granularity': granularity},
             'comparison_period': {'date_from': previous_first.isoformat() if previous_first else None,
                                   'date_to': previous_last.isoformat() if previous_last else None},

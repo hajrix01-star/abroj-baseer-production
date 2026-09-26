@@ -1,0 +1,60 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_pos_receipt_layout
+msgid "Apply POS receipt defaults to new registers"
+msgstr "تطبيق إعدادات إيصال نقاط البيع الافتراضية على نقاط البيع الجديدة"
+
+#. module: baseer_pos_receipt_layout
+msgid "Baseer professional 80 mm receipt"
+msgstr "إيصال بصير الاحترافي 80 مم"
+
+#. module: baseer_pos_receipt_layout
+#: model_terms:ir.ui.view,arch_db:baseer_pos_receipt_layout.view_pos_config_form_receipt_layout
+msgid "Customer receipt layout"
+msgstr "تصميم إيصال العميل"
+
+#. module: baseer_pos_receipt_layout
+#: model_terms:ir.ui.view,arch_db:baseer_pos_receipt_layout.view_pos_config_form_receipt_layout
+msgid "Choose the look of the printed customer receipt. It does not change totals or taxes."
+msgstr "اختر شكل إيصال العميل المطبوع؛ لا يغيّر الإجماليات أو الضرائب."
+
+#. module: baseer_pos_receipt_layout
+msgid "Default receipt copies"
+msgstr "النسخ الافتراضية للإيصال"
+
+#. module: baseer_pos_receipt_layout
+msgid "Default receipt layout"
+msgstr "تصميم الإيصال الافتراضي"
+
+#. module: baseer_pos_receipt_layout
+msgid "Default receipt printer"
+msgstr "طابعة الإيصال الافتراضية"
+
+#. module: baseer_pos_receipt_layout
+msgid "Original Odoo receipt"
+msgstr "إيصال أودو الأصلي"
+
+#. module: baseer_pos_receipt_layout
+msgid "POS receipt defaults"
+msgstr "إعدادات إيصال نقاط البيع الافتراضية"
+
+#. module: baseer_pos_receipt_layout
+msgid "Print closing report by default"
+msgstr "طباعة تقرير إغلاق الجلسة افتراضياً"
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_receipt_layout
+msgid "Baseer POS Receipt Layout"
+msgstr "تصميم إيصال 80 مم"
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.module.module,summary:base.module_baseer_pos_receipt_layout
+msgid "Optional 80 mm layout for the original POS receipt"
+msgstr "ينسق إيصال أودو الأصلي للطابعة الحرارية 80 مم."

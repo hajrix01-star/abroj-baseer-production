@@ -1,0 +1,2504 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* baseer_pos_print_bridge
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260817\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-22 17:29+0000\n"
+"PO-Revision-Date: 2026-09-22 17:29+0000\n"
+"Last-Translator: \n"
+"Language-Team: Arabic \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_kanban_session_status
+msgid "<span name=\"baseer_last_session_closed_label\">Last session closed</span>"
+msgstr "<span name=\"baseer_last_session_closed_label\">آخر إغلاق للجلسة</span>"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid ""
+"%s × %s will be cancelled and the reason will be recorded for the kitchen."
+msgstr "سيُلغى %s × %s وسيُسجل السبب للمطبخ."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_printer__paper_width__58
+msgid "58 mm"
+msgstr "58 مم"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_printer__paper_width__80
+msgid "80 mm"
+msgstr "80 مم"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid ""
+"A POS using Baseer direct printing cannot mix Baseer with native IoT or "
+"Epson preparation printers."
+msgstr "لا يمكن لنقطة بيع تستخدم طباعة بصير المباشرة الجمع بينها وبين طابعات تحضير IoT أو Epson الأصلية."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "A cancellation reason is only valid for a cancelled kitchen item."
+msgstr "سبب الإلغاء صالح فقط لصنف مطبخ مُلغى."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "A cancellation reason is only valid when cancelling a kitchen item."
+msgstr "لا يُقبل سبب الإلغاء إلا عند إلغاء صنف من المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "A description is required when the cancellation reason is Other."
+msgstr "يجب كتابة وصف عندما يكون سبب الإلغاء «أخرى»."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_printer_agent_machine_unique
+msgid "A discovered printer may only exist once on an agent."
+msgstr "لا يجوز تكرار الطابعة المكتشفة في الأيجنت نفسه."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_cancellation_order_unique
+msgid "A kitchen cancellation already exists for this order."
+msgstr "يوجد بالفعل إلغاء مطبخ لهذا الطلب."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid ""
+"A kitchen order must be cancelled through the documented kitchen "
+"cancellation workflow."
+msgstr "يجب إلغاء طلب المطبخ من خلال مسار الإلغاء الموثق."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "A kitchen print batch must belong to one action."
+msgstr "يجب أن تنتمي دفعة طباعة المطبخ إلى عملية واحدة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "A kitchen print batch must contain matching events and lines."
+msgstr "يجب أن تحتوي دفعة طباعة المطبخ على أحداث وأسطر متطابقة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "A new order cannot have an existing kitchen quantity."
+msgstr "لا يمكن أن يحتوي الطلب الجديد على كمية سابقة في المطبخ."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_preparation_state_order_line_printer_unique
+msgid "A preparation line may only have one state per printer."
+msgstr "لا يجوز أن يكون لسطر التحضير أكثر من حالة واحدة لكل طابعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid ""
+"A printer may only authorize companies already authorized for its agent."
+msgstr "لا يمكن تفويض الطابعة إلا للشركات المفوضة للأيجنت التابع لها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "A reason is required to cancel a kitchen item."
+msgstr "يجب تحديد سبب لإلغاء صنف المطبخ."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__state__done
+msgid "Accepted by Windows"
+msgstr "تم قبولها من Windows"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__action
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Action"
+msgstr "الإجراء"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__action_uuid
+msgid "Action Uuid"
+msgstr "معرّف الإجراء"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__active
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__active
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Add note"
+msgstr "إضافة ملاحظة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__action__add
+msgid "Added quantity"
+msgstr "كمية مضافة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__agent_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__agent_id
+msgid "Agent"
+msgstr "الأيجنت"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__agent_version
+msgid "Agent Version"
+msgstr "إصدار الأيجنت"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "Agent credentials and connection state are controlled by the server."
+msgstr "يتحكم الخادم في بيانات اعتماد الأيجنت وحالة اتصاله."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__agent_latency_seconds
+msgid "Agent latency (seconds)"
+msgstr "زمن تنفيذ الأيجنت (ثانية)"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "An agent device identifier may only be used once."
+msgstr "لا يجوز استخدام معرّف جهاز الأيجنت أكثر من مرة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Apply"
+msgstr "تطبيق"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__attempt_count
+msgid "Attempt Count"
+msgstr "عدد المحاولات"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "Authorize at least one company for the agent."
+msgstr "فوّض شركة واحدة على الأقل للأيجنت."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid "Authorize at least one company for the printer."
+msgstr "فوّض شركة واحدة على الأقل للطابعة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__allowed_company_ids
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__allowed_company_ids
+msgid "Authorized companies"
+msgstr "الشركات المفوضة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__available_at
+msgid "Available At"
+msgstr "متاحة في"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Back"
+msgstr "العودة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_cancellation
+msgid "Baseer Kitchen Cancellation"
+msgstr "إلغاء مطبخ بصير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_preparation_event
+msgid "Baseer Kitchen Preparation Event"
+msgstr "حدث تحضير مطبخ بصير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_route
+msgid "Baseer POS Preparation Binding"
+msgstr "ربط تحضير نقاط بيع بصير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_preparation_state
+msgid "Baseer Preparation Print State"
+msgstr "حالة طباعة تحضير بصير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_agent
+msgid "Baseer Print Agent"
+msgstr "أيجنت طباعة بصير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_job
+msgid "Baseer Print Job"
+msgstr "مهمة طباعة بصير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_baseer_print_printer
+msgid "Baseer Windows Printer"
+msgstr "طابعة بصير على Windows"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "Baseer direct kitchen printing is disabled for this point of sale."
+msgstr "طباعة مطبخ بصير المباشرة معطلة لنقطة البيع هذه."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Baseer direct printing"
+msgstr "طباعة بصير المباشرة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Baseer printer test"
+msgstr "اختبار طابعة بصير"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Cancel item"
+msgstr "إلغاء الصنف"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Cancel item?"
+msgstr "إلغاء الصنف؟"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Cancel kitchen item"
+msgstr "إلغاء صنف المطبخ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__cancellation_id
+msgid "Cancellation"
+msgstr "الإلغاء"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Cancellation reason"
+msgstr "سبب الإلغاء"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__state__cancelled
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__action__cancel
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Cancelled"
+msgstr "ملغي"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Cashier"
+msgstr "أمين الصندوق"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__cashier_name
+msgid "Cashier Name"
+msgstr "اسم الكاشير"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Change quantity"
+msgstr "تعديل الكمية"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid ""
+"Choose a Baseer Windows receipt printer before enabling direct printing."
+msgstr "اختر طابعة إيصال بصير على Windows قبل تفعيل الطباعة المباشرة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "Choose a reason before cancelling a kitchen item."
+msgstr "اختر سبباً قبل إلغاء صنف المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Choose a receipt printer first."
+msgstr "اختر طابعة الإيصال أولاً."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+msgid "Choose a valid kitchen cancellation reason."
+msgstr "اختر سبب إلغاء مطبخ صالحاً."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "Choose one cancellation reason for every kitchen order."
+msgstr "اختر سبب إلغاء واحداً لكل طلب مطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Choose the reason for cancelling this kitchen order."
+msgstr "اختر سبب إلغاء طلب المطبخ هذا."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__company_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__company_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__company_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__company_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__company_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__company_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__company_id
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__completed_at
+msgid "Completed At"
+msgstr "اكتملت في"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_job_form
+msgid "Confirm paper output"
+msgstr "تأكيد خروج الورق"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Connect to the internet before changing a kitchen item."
+msgstr "اتصل بالإنترنت قبل تعديل صنف أُرسل إلى المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Continue payment without sending"
+msgstr "متابعة الدفع دون إرسال"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__copies
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__copies
+msgid "Copies"
+msgstr "عدد النسخ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/route.py:0
+msgid "Copies must be between 1 and 10."
+msgstr "يجب أن يكون عدد النسخ بين 1 و10."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_agent_form
+msgid "Create pairing code"
+msgstr "إنشاء رمز اقتران"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__create_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__create_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__create_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__create_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__create_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__create_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__create_uid
+msgid "Created by"
+msgstr "أنشئ بواسطة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__create_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__create_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__create_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__create_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__create_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__create_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__create_date
+msgid "Created on"
+msgstr "أنشئ في"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_cancellation__reason_code__customer_cancelled
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__reason_code__customer_cancelled
+msgid "Customer cancelled"
+msgstr "إلغاء العميل"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Day"
+msgstr "اليوم"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__delta_quantity
+msgid "Delta Quantity"
+msgstr "فرق الكمية"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Describe the cancellation"
+msgstr "صف سبب الإلغاء"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Describe the reason"
+msgstr "اكتب وصف السبب"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__details
+msgid "Details"
+msgstr "التفاصيل"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__device_uid
+msgid "Device Uid"
+msgstr "معرّف الجهاز"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_direct_print
+msgid "Direct printing"
+msgstr "الطباعة المباشرة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid ""
+"Direct-print migration stopped: duplicate agent %s is paired or has "
+"unfinished jobs."
+msgstr "توقفت ترقية الطباعة المباشرة: الأيجنت المكرر %s مقترن أو لديه مهام غير مكتملة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__discovered_at
+msgid "Discovered At"
+msgstr "اكتُشفت في"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid "Discovered printer metadata is controlled by the agent."
+msgstr "يتحكم الأيجنت في بيانات الطابعة المكتشفة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_ir_http__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_order__display_name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_session__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__driver_name
+msgid "Driver Name"
+msgstr "اسم برنامج التشغيل"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_cancellation__reason_code__duplicate_order
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__reason_code__duplicate_order
+msgid "Duplicate order"
+msgstr "طلب مكرر"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid ""
+"Enable Baseer direct printing before enabling the session closing report."
+msgstr "فعّل طباعة بصير المباشرة قبل تفعيل تقرير إغلاق الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "Enable the agent before creating a pairing code."
+msgstr "فعّل الأيجنت قبل إنشاء رمز الاقتران."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Enable the session closing report on this point of sale first."
+msgstr "فعّل تقرير إغلاق الجلسة في نقطة البيع هذه أولاً."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Enter a valid quantity greater than zero."
+msgstr "أدخل كمية صحيحة أكبر من صفر."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__error_code
+msgid "Error Code"
+msgstr "رمز الخطأ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__error_detail
+msgid "Error Detail"
+msgstr "تفاصيل الخطأ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Every kitchen event must belong to the print-job company."
+msgstr "يجب أن ينتمي كل حدث مطبخ إلى شركة مهمة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Every kitchen event must belong to the print-job order."
+msgstr "يجب أن ينتمي كل حدث مطبخ إلى طلب مهمة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "Every order in this cancellation must already have a kitchen ticket."
+msgstr "يجب أن يكون لكل طلب في هذا الإلغاء تذكرة مطبخ سابقة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__state__failed
+msgid "Failed"
+msgstr "فشلت"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_ir_http
+msgid "HTTP Routing"
+msgstr "مسار HTTP"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_ir_http__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_order__id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_session__id
+msgid "ID"
+msgstr "المُعرف"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__idempotency_key
+msgid "Idempotency Key"
+msgstr "مفتاح منع التكرار"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Invalid quantity"
+msgstr "كمية غير صالحة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Item actions"
+msgstr "إجراءات الصنف"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Item note"
+msgstr "ملاحظة الصنف"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_cancellation__reason_code__unavailable_item
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__reason_code__unavailable_item
+msgid "Item unavailable"
+msgstr "الصنف غير متوفر"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__job_ids
+msgid "Job"
+msgstr "المهمة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Keep item"
+msgstr "الإبقاء على الصنف"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen"
+msgstr "المطبخ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_cancellation_form
+msgid "Kitchen cancellation"
+msgstr "إلغاء المطبخ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+msgid ""
+"Kitchen cancellation links do not belong to the same point of sale company."
+msgstr "روابط إلغاء المطبخ لا تنتمي إلى شركة نقطة البيع نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+msgid "Kitchen cancellation records are immutable."
+msgstr "سجلات إلغاء المطبخ غير قابلة للتعديل."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+msgid "Kitchen cancellation records cannot be deleted."
+msgstr "لا يمكن حذف سجلات إلغاء المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid ""
+"Kitchen cancellation was recorded and is waiting for the Windows agent."
+msgstr "حُفظ إلغاء المطبخ وهو بانتظار أيجنت Windows."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen cancellation was recorded."
+msgstr "حُفظ إلغاء المطبخ."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.actions.act_window,name:baseer_pos_print_bridge.action_baseer_print_cancellation
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_cancellations
+msgid "Kitchen cancellations"
+msgstr "إلغاءات المطبخ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid ""
+"Kitchen cancellations must contain orders from one point of sale session."
+msgstr "يجب أن تتضمن إلغاءات المطبخ طلبات من جلسة نقطة بيع واحدة."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_form
+msgid "Kitchen change"
+msgstr "تغيير المطبخ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen change was accepted by the Windows print queue."
+msgstr "قَبِلَت قائمة طباعة Windows تغيير المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen change was recorded and is waiting for the Windows agent."
+msgstr "سُجل تغيير المطبخ وهو بانتظار وكيل الطباعة في Windows."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid ""
+"Kitchen change was recorded, but printing failed. Ask a manager to retry the"
+" print job."
+msgstr "سُجل تغيير المطبخ، لكن الطباعة أخفقت. اطلب من المدير إعادة محاولة مهمة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.actions.act_window,name:baseer_pos_print_bridge.action_baseer_print_preparation_event
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_preparation_events
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_list
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Kitchen changes"
+msgstr "تغييرات المطبخ"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "Kitchen changes cannot be submitted while paying or closing an order."
+msgstr "لا يمكن إرسال تغييرات المطبخ أثناء دفع الطلب أو إغلاقه."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen changes not sent"
+msgstr "تغييرات المطبخ لم تُرسل"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "Kitchen event quantities cannot be negative."
+msgstr "لا يمكن أن تكون كميات حدث المطبخ سالبة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "Kitchen preparation events are immutable."
+msgstr "أحداث تحضير المطبخ غير قابلة للتعديل."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid ""
+"Kitchen preparation events can only be created by the preparation workflow."
+msgstr "لا يمكن إنشاء أحداث تحضير المطبخ إلا من مسار التحضير."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "Kitchen preparation events cannot be deleted."
+msgstr "لا يمكن حذف أحداث تحضير المطبخ."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_preparation_binding_ids
+msgid "Kitchen printer bindings"
+msgstr "ربط طابعات المطبخ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__last_seen_at
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__last_seen_at
+msgid "Last Seen At"
+msgstr "آخر ظهور في"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__write_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__write_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__write_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__write_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__write_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__write_uid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__write_uid
+msgid "Last Updated by"
+msgstr "آخر تحديث بواسطة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__write_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__write_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__write_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__write_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__write_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__write_date
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__write_date
+msgid "Last Updated on"
+msgstr "آخر تحديث في"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__lease_expires_at
+msgid "Lease Expires At"
+msgstr "تنتهي المهلة في"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__lease_token
+msgid "Lease Token"
+msgstr "رمز المهلة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__state__leased
+msgid "Leased"
+msgstr "تم التسليم للوكيل"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__line_uuid
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__line_uuid
+msgid "Line Uuid"
+msgstr "معرّف السطر"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__machine_identifier
+msgid "Machine Identifier"
+msgstr "معرّف الطابعة على الجهاز"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__max_attempts
+msgid "Max Attempts"
+msgstr "الحد الأقصى للمحاولات"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__name
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__name
+msgid "Name"
+msgstr "الاسم"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_agent__state__new
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__action__new
+msgid "New"
+msgstr "جديد"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__new_quantity
+msgid "New Quantity"
+msgstr "الكمية الجديدة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid ""
+"Odoo creates secure Windows print jobs; the iPad never connects to a "
+"printer."
+msgstr "ينشئ أودو مهام طباعة Windows آمنة؛ ولا يتصل الآيباد بالطابعة مباشرةً."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_agent__state__offline
+msgid "Offline"
+msgstr "غير متصل"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_agent__state__online
+msgid "Online"
+msgstr "متصل"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Only a Point of Sale manager can print a session closing report."
+msgstr "مدير نقطة البيع فقط يمكنه طباعة تقرير إغلاق الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Only a Point of Sale manager can reprint a job."
+msgstr "مدير نقطة البيع فقط يمكنه إعادة طباعة المهمة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "Only a Point of Sale user can cancel a kitchen order."
+msgstr "مستخدم نقطة البيع فقط يمكنه إلغاء طلب المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "Only a Point of Sale user can inspect a kitchen action."
+msgstr "مستخدم نقطة البيع فقط يمكنه مراجعة إجراء المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "Only a Point of Sale user can send preparation tickets."
+msgstr "مستخدم نقطة البيع فقط يمكنه إرسال تذاكر التحضير."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "Only a Point of Sale user can submit kitchen changes."
+msgstr "مستخدم نقطة البيع فقط يمكنه إرسال تغييرات المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Only a Windows-accepted job can be confirmed physically."
+msgstr "لا يمكن تأكيد خروج الورق إلا لمهمة قبلها Windows."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Only a completed, failed, or cancelled job can be reprinted."
+msgstr "لا يمكن إعادة الطباعة إلا لمهمة مكتملة أو فاشلة أو ملغاة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid "Only a system administrator can manage direct-print hardware."
+msgstr "مسؤول النظام فقط يمكنه إدارة أجهزة الطباعة المباشرة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Only a system administrator can test direct printing."
+msgstr "مسؤول النظام فقط يمكنه اختبار الطباعة المباشرة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid ""
+"Only draft point of sale orders can be cancelled from the kitchen workflow."
+msgstr "يمكن إلغاء طلبات نقطة البيع المسودة فقط من مسار المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/route.py:0
+msgid "Only one active preparation binding may use this POS category."
+msgstr "لا يمكن استخدام فئة نقطة البيع إلا في ربط تحضير نشط واحد."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "Only the Other cancellation reason may include a description."
+msgstr "سبب الإلغاء «أخرى» فقط يمكن أن يتضمن وصفاً."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid ""
+"Open each kitchen order and choose its cancellation reason before closing "
+"the session."
+msgstr "افتح كل طلب مطبخ واختر سبب إلغائه قبل إغلاق الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid ""
+"Open the test from the Point of Sale configuration so its company is "
+"explicit."
+msgstr "شغّل الاختبار من إعداد نقطة البيع لتكون الشركة محددة بوضوح."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__order_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__order_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__order_id
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Order"
+msgstr "الطلب"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__order_line_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__order_line_id
+msgid "Order Line"
+msgstr "سطر الطلب"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__order_reference
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__order_reference
+msgid "Order Reference"
+msgstr "مرجع الطلب"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_cancellation__reason_code__other
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__reason_code__other
+msgid "Other"
+msgstr "أخرى"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__pos_category_id
+msgid "POS Category"
+msgstr "فئة نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid ""
+"Paired agent identity cannot be changed. Revoke and pair a new agent "
+"instead."
+msgstr "لا يمكن تغيير هوية الأيجنت المقترن. ألغِ اقترانه ثم أقرن أيجنت جديداً."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__pairing_attempts
+msgid "Pairing Attempts"
+msgstr "محاولات الاقتران"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__pairing_expires_at
+msgid "Pairing Expires At"
+msgstr "ينتهي الاقتران في"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__pairing_fingerprint
+msgid "Pairing Fingerprint"
+msgstr "بصمة الاقتران"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "Pairing code"
+msgstr "رمز الاقتران"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__paper_confirmed_at
+msgid "Paper Confirmed At"
+msgstr "تأكد خروج الورق في"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__paper_confirmed_by
+msgid "Paper Confirmed By"
+msgstr "أكد خروج الورق"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_printer__paper_width
+msgid "Paper Width"
+msgstr "عرض الورق"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__payload
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_job_form
+msgid "Payload"
+msgstr "بيانات المهمة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__state__pending
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_pos_config
+msgid "Point of Sale Configuration"
+msgstr "تهيئة نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_pos_order
+msgid "Point of Sale Orders"
+msgstr "طلبات نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model,name:baseer_pos_print_bridge.model_pos_session
+msgid "Point of Sale Session"
+msgstr "جلسة نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__pos_config_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__pos_config_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__pos_config_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__pos_config_id
+msgid "Pos Config"
+msgstr "تهيئة نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__preparation
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_route__ticket_type__preparation
+msgid "Preparation"
+msgstr "تحضير"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__preparation_event_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__preparation_event_ids
+msgid "Preparation Event"
+msgstr "حدث التحضير"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Preparation printers"
+msgstr "طابعات التحضير"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "Preparation state companies do not match."
+msgstr "شركات حالة التحضير غير متطابقة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "Preparation state printer configuration is not valid."
+msgstr "إعداد طابعة حالة التحضير غير صالح."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__previous_quantity
+msgid "Previous Quantity"
+msgstr "الكمية السابقة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__job_ids
+msgid "Print Jobs"
+msgstr "مهام الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_session_form_baseer_closing_report
+msgid "Print closing report"
+msgstr "طباعة تقرير الإغلاق"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_job_form
+msgid "Print job"
+msgstr "مهمة طباعة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.actions.act_window,name:baseer_pos_print_bridge.action_baseer_print_job
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_jobs
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_cancellation_form
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_form
+msgid "Print jobs"
+msgstr "مهام الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,help:baseer_pos_print_bridge.field_pos_config__baseer_print_session_close_report
+#: model:ir.model.fields,help:baseer_pos_print_bridge.field_pos_session__baseer_print_session_close_report
+msgid "Print one thermal summary after the session has closed successfully."
+msgstr "اطبع ملخصاً حرارياً واحداً بعد إغلاق الجلسة بنجاح."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_print_session_close_report
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_session__baseer_print_session_close_report
+msgid "Print session closing report"
+msgstr "طباعة تقرير إغلاق الجلسة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__printer_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__printer_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__printer_id
+msgid "Printer"
+msgstr "طابعة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Printer test"
+msgstr "اختبار الطابعة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid "Printers must be discovered by a paired Windows agent."
+msgstr "يجب اكتشاف الطابعات بواسطة أيجنت Windows مقترن."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__priority
+msgid "Priority"
+msgstr "الأولوية"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/route.py:0
+msgid "Priority must be between 1 and 99."
+msgstr "يجب أن تكون الأولوية بين 1 و99."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__product_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__product_id
+msgid "Product"
+msgstr "المنتج"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__quantity
+msgid "Quantity"
+msgstr "الكمية"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__queue_latency_seconds
+msgid "Queue latency (seconds)"
+msgstr "زمن الانتظار قبل الإرسال (ثانية)"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__reason_code
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__reason_code
+msgid "Reason Code"
+msgstr "رمز السبب"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__reason_note
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__reason_note
+msgid "Reason Note"
+msgstr "ملاحظة السبب"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__receipt
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_route__ticket_type__receipt
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Receipt"
+msgstr "إيصال"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_receipt_printer_id
+msgid "Receipt Windows printer"
+msgstr "طابعة الإيصال على Windows"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_receipt_copies
+msgid "Receipt copies"
+msgstr "نسخ الإيصال"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Receipt copies must be between 1 and 10."
+msgstr "يجب أن يكون عدد نسخ الإيصال بين 1 و10."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/route.py:0
+msgid "Receipt routing is configured directly on the point of sale."
+msgstr "يُضبط مسار الإيصال مباشرةً في نقطة البيع."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Reduce quantity"
+msgstr "تخفيض الكمية"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_search
+msgid "Reduced"
+msgstr "مخفّض"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__action__reduce
+msgid "Reduced quantity"
+msgstr "كمية مخفضة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Remove item"
+msgstr "إزالة الصنف"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_job_form
+msgid "Reprint"
+msgstr "إعادة الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__reprint_of_id
+msgid "Reprint Of"
+msgstr "إعادة طباعة لـ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__reprint_sequence
+msgid "Reprint Sequence"
+msgstr "تسلسل إعادة الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__requested_by
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__requested_by
+msgid "Requested By"
+msgstr "طلبها"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_agent_form
+msgid "Revoke agent"
+msgstr "إبطال الوكيل"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_agent__state__revoked
+msgid "Revoked"
+msgstr "ملغى الاقتران"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__route_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__route_id
+msgid "Route"
+msgstr "المسار"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/kitchen_send_button.js:0
+msgid "Send"
+msgstr "إرسال"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/kitchen_send_button.js:0
+msgid "Send to kitchen"
+msgstr "إرسال للمطبخ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__sent_at
+msgid "Sent At"
+msgstr "أُرسلت في"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__session_id
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__session_id
+msgid "Session"
+msgstr "الجلسة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__session_close
+msgid "Session closing report"
+msgstr "تقرير إغلاق الجلسة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_cancellation__snapshot
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_event__snapshot
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_cancellation_form
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_preparation_event_form
+msgid "Snapshot"
+msgstr "اللقطة المحفوظة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__source_order_id
+msgid "Source Order"
+msgstr "الطلب المصدر"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__source_session_id
+msgid "Source Session"
+msgstr "الجلسة المصدر"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,help:baseer_pos_print_bridge.field_baseer_print_agent__device_uid
+msgid "Stable identifier generated by the Windows agent."
+msgstr "معرّف ثابت ينشئه أيجنت Windows."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_cancellation__reason_code__staff_error
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__reason_code__staff_error
+msgid "Staff error"
+msgstr "خطأ الموظف"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__state
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__state
+msgid "State"
+msgstr "الحالة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/table_usage_timer.js:0
+msgid "Table use duration %s"
+msgstr "مدة استخدام الطاولة %s"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__test
+msgid "Test"
+msgstr "اختبار"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Test receipt printer"
+msgstr "اختبار طابعة الإيصال"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_agent_form
+msgid "The Windows agent will need a new pairing code."
+msgstr "سيحتاج أيجنت Windows إلى رمز اقتران جديد."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The agent lease expired before it confirmed the print result."
+msgstr "انتهت مهلة الأيجنت قبل تأكيد نتيجة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+msgid "The cancellation description is invalid."
+msgstr "وصف الإلغاء غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/cancellation.py:0
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The cancellation description is too long."
+msgstr "وصف الإلغاء طويل جداً."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "The device identifier is not valid."
+msgstr "معرّف الجهاز غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action contains a duplicate line."
+msgstr "يحتوي إجراء المطبخ على سطر مكرر."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action does not change the item quantity."
+msgstr "إجراء المطبخ لا يغيّر كمية الصنف."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen action does not have one valid order."
+msgstr "إجراء المطبخ لا يرتبط بطلب صالح واحد."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen action identifier is invalid."
+msgstr "معرّف إجراء المطبخ غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen action identifier must use canonical UUID format."
+msgstr "يجب أن يستخدم معرّف إجراء المطبخ صيغة UUID القياسية."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action is invalid."
+msgstr "إجراء المطبخ غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action line is invalid."
+msgstr "سطر إجراء المطبخ غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action must contain valid lines."
+msgstr "يجب أن يحتوي إجراء المطبخ على أسطر صالحة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action quantities are invalid."
+msgstr "كميات إجراء المطبخ غير صالحة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen action type is invalid."
+msgstr "نوع إجراء المطبخ غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen cancellation reason is invalid."
+msgstr "سبب إلغاء المطبخ غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The kitchen cancellation session is not active for these orders."
+msgstr "جلسة إلغاء المطبخ غير نشطة لهذه الطلبات."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "The kitchen change was not saved. The item was kept in the order."
+msgstr "لم يُحفظ تغيير المطبخ، وتم الإبقاء على الصنف في الطلب."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen event action is inconsistent with its quantities."
+msgstr "إجراء حدث المطبخ غير متسق مع كمياته."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen event line belongs to another order."
+msgstr "سطر حدث المطبخ ينتمي إلى طلب آخر."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen event order belongs to another company."
+msgstr "طلب حدث المطبخ ينتمي إلى شركة أخرى."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen event point of sale belongs to another company."
+msgstr "نقطة بيع حدث المطبخ تنتمي إلى شركة أخرى."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen event quantity delta is inconsistent."
+msgstr "فرق كمية حدث المطبخ غير متسق."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "The kitchen event session belongs to another point of sale."
+msgstr "جلسة حدث المطبخ تنتمي إلى نقطة بيع أخرى."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen item baseline is missing. Refresh the order and try again."
+msgstr "الكمية المرجعية لصنف المطبخ مفقودة. حدّث الطلب وحاول مجدداً."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The kitchen line identifier is invalid."
+msgstr "معرّف سطر المطبخ غير صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The order POS session does not match its point of sale."
+msgstr "جلسة الطلب لا تتطابق مع نقطة البيع التابعة له."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "The original kitchen printer is no longer authorized for this company."
+msgstr "لم تعد طابعة المطبخ الأصلية مفوضة لهذه الشركة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/printer.py:0
+msgid "The point of sale is no longer available."
+msgstr "نقطة البيع لم تعد متاحة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The point of sale session was not found."
+msgstr "لم يتم العثور على جلسة نقطة البيع."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The previous kitchen action no longer has a valid order."
+msgstr "لم يعد لإجراء المطبخ السابق طلب صالح."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid ""
+"The print job and kitchen cancellation must belong to the same company."
+msgstr "يجب أن تنتمي مهمة الطباعة وإلغاء المطبخ إلى الشركة نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job and kitchen event must belong to the same company."
+msgstr "يجب أن تنتمي مهمة الطباعة وحدث المطبخ إلى الشركة نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job and kitchen event must belong to the same order."
+msgstr "يجب أن تنتمي مهمة الطباعة وحدث المطبخ إلى الطلب نفسه."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job and point of sale must belong to the same company."
+msgstr "يجب أن تنتمي مهمة الطباعة ونقطة البيع إلى الشركة نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job and preparation binding must belong to the same company."
+msgstr "يجب أن تنتمي مهمة الطباعة وربط التحضير إلى الشركة نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job and source order must belong to the same company."
+msgstr "يجب أن تنتمي مهمة الطباعة والطلب المصدر إلى الشركة نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job and source session must belong to the same company."
+msgstr "يجب أن تنتمي مهمة الطباعة والجلسة المصدر إلى الشركة نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid ""
+"The print job and source session must belong to the same point of sale."
+msgstr "يجب أن تنتمي مهمة الطباعة والجلسة المصدر إلى نقطة البيع نفسها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The print job lease is no longer valid."
+msgstr "لم تعد مهلة مهمة الطباعة صالحة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "The receipt printer is not authorized for this company."
+msgstr "طابعة الإيصال غير مفوضة لهذه الشركة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The receipt printer is not ready for the session closing report."
+msgstr "طابعة الإيصال غير جاهزة لتقرير إغلاق الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The selected printer does not belong to the selected agent."
+msgstr "الطابعة المحددة لا تنتمي إلى الأيجنت المحدد."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The selected reason will be recorded for %s kitchen orders."
+msgstr "سيُسجل السبب المحدد لعدد %s من طلبات المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid ""
+"The session closing report is available only after the session is closed."
+msgstr "يتاح تقرير إغلاق الجلسة بعد إغلاق الجلسة فقط."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid ""
+"The synchronized kitchen item quantity does not match the requested change."
+msgstr "كمية صنف المطبخ المتزامنة لا تطابق التغيير المطلوب."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The synchronized point of sale order was not found."
+msgstr "لم يتم العثور على طلب نقطة البيع المتزامن."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "There are no kitchen changes to send."
+msgstr "لا توجد تغييرات جديدة لإرسالها إلى المطبخ."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/route.py:0
+msgid "This Windows printer is not authorized for the point-of-sale company."
+msgstr "طابعة Windows هذه غير مفوضة لشركة نقطة البيع."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "This kitchen action does not belong to the requested order."
+msgstr "إجراء المطبخ هذا لا ينتمي إلى الطلب المطلوب."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "This kitchen action does not belong to the synchronized order."
+msgstr "إجراء المطبخ هذا لا ينتمي إلى الطلب المتزامن."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "This kitchen action identifier was already used for different data."
+msgstr "استُخدم معرّف إجراء المطبخ هذا من قبل لبيانات مختلفة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid "This kitchen action identifier was already used for different lines."
+msgstr "استُخدم معرّف إجراء المطبخ هذا من قبل لأسطر مختلفة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation_event.py:0
+msgid ""
+"This kitchen action identifier was already used for different quantities."
+msgstr "استُخدم معرّف إجراء المطبخ هذا من قبل لكميات مختلفة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid ""
+"This kitchen item changed on another device. Refresh the order and try "
+"again."
+msgstr "تغيّر صنف المطبخ هذا على جهاز آخر. حدّث الطلب وحاول مجدداً."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_preparation_event_action_line_unique
+msgid "This kitchen line action has already been recorded."
+msgstr "سُجل إجراء سطر المطبخ هذا من قبل."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "This kitchen order does not belong to an allowed company."
+msgstr "طلب المطبخ هذا لا ينتمي إلى شركة مسموح بها."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "This order cannot be sent to preparation."
+msgstr "لا يمكن إرسال هذا الطلب إلى التحضير."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid ""
+"This order has changes that were not sent to the kitchen. Continue to "
+"payment without sending them?"
+msgstr "يحتوي الطلب على تغييرات لم تُرسل إلى المطبخ. هل تريد متابعة الدفع دون إرسالها؟"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_job_idempotency_unique
+msgid "This print job has already been created."
+msgstr "أُنشئت مهمة الطباعة هذه من قبل."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "This printer is inactive or unauthorized for this point of sale."
+msgstr "هذه الطابعة غير نشطة أو غير مفوضة لنقطة البيع هذه."
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "This printer is not authorized for the print-job company."
+msgstr "هذه الطابعة غير مفوضة لشركة مهمة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__ticket_type
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__ticket_type
+msgid "Ticket Type"
+msgstr "نوع التذكرة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_agent__token_fingerprint
+msgid "Token Fingerprint"
+msgstr "بصمة الرمز"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Unknown payment method"
+msgstr "طريقة دفع غير معروفة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/kitchen_send_button.js:0
+msgid "Update kitchen"
+msgstr "تحديث المطبخ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_direct_print_enabled
+msgid "Use Baseer direct printing"
+msgstr "استخدام طباعة بصير المباشرة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/agent.py:0
+msgid "Use this code once in the Windows agent within 10 minutes: %s"
+msgstr "استخدم هذا الرمز مرة واحدة في أيجنت Windows خلال 10 دقائق: %s"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_job__acceptance_latency_seconds
+msgid "Windows acceptance latency (seconds)"
+msgstr "الوقت حتى قبول Windows (ثانية)"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.actions.act_window,name:baseer_pos_print_bridge.action_baseer_print_agent
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_agents
+msgid "Windows agents"
+msgstr "أجهزة Windows"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_agent_form
+msgid "Windows print agent"
+msgstr "أيجنت الطباعة على Windows"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_printer_form
+msgid "Windows printer"
+msgstr "طابعة Windows"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.actions.act_window,name:baseer_pos_print_bridge.action_baseer_print_printer
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_printers
+msgid "Windows printers"
+msgstr "طابعات Windows"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_cancellation__reason_code__wrong_order
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_preparation_event__reason_code__wrong_order
+msgid "Wrong order"
+msgstr "طلب خاطئ"
+
+#. module: baseer_pos_print_bridge
+msgid "Print the original Odoo customer receipt"
+msgstr "طباعة إيصال العميل الأصلي من أودو"
+
+#. module: baseer_pos_print_bridge
+msgid "Use the original Odoo POS receipt image for customer printing. Kitchen tickets are unchanged."
+msgstr "استخدم صورة إيصال نقاط البيع الأصلية من أودو لطباعة العميل. تذاكر المطبخ لا تتغير."
+
+#. module: baseer_pos_print_bridge
+msgid "The original Odoo receipt requires an 80 mm receipt printer."
+msgstr "يتطلب إيصال أودو الأصلي طابعة إيصالات بعرض 80 مم."
+
+#. module: baseer_pos_print_bridge
+msgid "Resolve pending customer receipt jobs before switching to the original Odoo receipt."
+msgstr "عالج مهام إيصالات العملاء المعلقة قبل الانتقال إلى إيصال أودو الأصلي."
+
+#. module: baseer_pos_print_bridge
+msgid "Only a Point of Sale user can print customer receipts."
+msgstr "يسمح بطباعة إيصالات العملاء لمستخدمي نقاط البيع فقط."
+
+#. module: baseer_pos_print_bridge
+msgid "This order is not ready for an original Odoo customer receipt."
+msgstr "هذا الطلب غير جاهز لإيصال العميل الأصلي من أودو."
+
+#. module: baseer_pos_print_bridge
+msgid "The 80 mm receipt printer is not available for this company."
+msgstr "طابعة الإيصالات 80 مم غير متاحة لهذه الشركة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Complete the Saudi company VAT and name before printing its QR receipt."
+msgstr "أكمل اسم الشركة ورقمها الضريبي قبل طباعة الإيصال ذي رمز QR."
+
+#. module: baseer_pos_print_bridge
+msgid "The Saudi electronic invoice is not complete; the receipt cannot be printed yet."
+msgstr "الفاتورة الإلكترونية السعودية غير مكتملة؛ لا يمكن طباعة الإيصال الآن."
+
+#. module: baseer_pos_print_bridge
+msgid "The customer receipt image is missing or too large."
+msgstr "صورة إيصال العميل مفقودة أو كبيرة جدًا."
+
+#. module: baseer_pos_print_bridge
+msgid "The customer receipt image is invalid."
+msgstr "صورة إيصال العميل غير صالحة."
+
+#. module: baseer_pos_print_bridge
+msgid "The receipt image differs from the first recorded copy. Ask a manager to review it."
+msgstr "تختلف صورة الإيصال عن النسخة الأولى المسجلة. اطلب مراجعتها من المدير."
+
+#. module: baseer_pos_print_bridge
+msgid "Only a Point of Sale manager can recapture a purged receipt."
+msgstr "يسمح لمدير نقاط البيع فقط بإعادة التقاط إيصال حُذفت صورته المؤقتة."
+
+#. module: baseer_pos_print_bridge
+msgid "The stored receipt image is missing or invalid."
+msgstr "صورة الإيصال المحفوظة مفقودة أو غير صالحة."
+
+#. module: baseer_pos_print_bridge
+msgid "The receipt image has expired. A manager must recapture it from the original Odoo receipt screen."
+msgstr "انتهت مدة حفظ صورة الإيصال. يجب على المدير إعادة التقاطها من شاشة إيصال أودو الأصلية."
+
+#. module: baseer_pos_print_bridge
+msgid "The order is saved, but its customer receipt is not ready. Sync it and retry from the receipt screen."
+msgstr "حُفظ الطلب، لكن إيصال العميل غير جاهز. زامن الطلب ثم أعد المحاولة من شاشة الإيصال."
+
+#. module: baseer_pos_print_bridge
+msgid "The original Odoo receipt was already accepted by Windows."
+msgstr "قَبِل Windows إيصال أودو الأصلي مسبقًا."
+
+#. module: baseer_pos_print_bridge
+msgid "The original Odoo receipt is queued for the Windows printer."
+msgstr "إيصال أودو الأصلي في انتظار طابعة Windows."
+
+#. module: baseer_pos_print_bridge
+msgid "Payment remains saved, but customer receipt printing failed. Retry from the receipt screen or ask a manager to inspect print jobs."
+msgstr "الدفع محفوظ، لكن طباعة إيصال العميل فشلت. أعد المحاولة من شاشة الإيصال أو اطلب من المدير مراجعة مهام الطباعة."
+
+#. module: baseer_pos_print_bridge
+msgid "Update the Windows print agent to version 1.4.0 before enabling the original Odoo receipt."
+msgstr "حدّث وكيل الطباعة على Windows إلى الإصدار 1.4.0 قبل تفعيل إيصال أودو الأصلي."
+
+#. module: baseer_pos_print_bridge
+msgid "This receipt job failed or was cancelled. Ask a Point of Sale manager to reprint it from Print Jobs."
+msgstr "فشلت مهمة هذا الإيصال أو أُلغيت. اطلب من مدير نقطة البيع إعادة طباعته من مهام الطباعة."
+
+#. module: baseer_pos_print_bridge
+msgid "Payment remains saved, but no new customer receipt was queued. Check the connection and retry; if a print job failed, ask a manager to reprint it."
+msgstr "الدفع محفوظ، لكن لم تُدرج مهمة جديدة لإيصال العميل. تحقق من الاتصال وأعد المحاولة؛ وإذا فشلت مهمة طباعة، اطلب من المدير إعادة طباعتها."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Payment remains saved. Customer receipt was not printed: %s"
+msgstr "الدفع محفوظ. لم تتم طباعة إيصال العميل: %s"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Ask a manager to inspect Print Jobs."
+msgstr "اطلب من المدير مراجعة مهام الطباعة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Payment remains saved. Receipt status could not be checked."
+msgstr "الدفع محفوظ. تعذر التحقق من حالة طباعة الإيصال."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The kitchen change has not been acknowledged by the server. Refresh and check the order before retrying."
+msgstr "لم يؤكد الخادم حفظ تعديل المطبخ. حدّث الطلب وتحقق من حالته قبل إعادة المحاولة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The customer receipt printer is not ready."
+msgstr "طابعة إيصال العميل غير جاهزة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The receipt service failed. Ask a manager to inspect the server log."
+msgstr "تعطلت خدمة الإيصال. اطلب من المدير مراجعة سجل الخادم."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The customer receipt order date is missing."
+msgstr "تاريخ الطلب مفقود في إيصال العميل."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Confirm the pending kitchen change before payment."
+msgstr "تحقق من حفظ تعديل المطبخ المعلّق قبل الدفع."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Resolve the pending item change before sending to the kitchen."
+msgstr "أكمل التحقق من تعديل الصنف المعلّق قبل الإرسال للمطبخ."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "The kitchen result is still unknown. Reconnect and check it before retrying."
+msgstr "لم تتأكد نتيجة تعديل المطبخ بعد. أعد الاتصال وتحقق منها قبل إعادة المحاولة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The order is not finalized. Complete payment and synchronization before printing its final receipt."
+msgstr "لم يُعتمد الطلب بعد. أكمل الدفع والمزامنة قبل طباعة الإيصال النهائي."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/kitchen_send_button.js:0
+msgid "Check kitchen change"
+msgstr "تحقق من تعديل المطبخ"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "An order with payments, refunds or an invoice cannot be cancelled from the kitchen workflow. Resolve it through the native payment or refund workflow."
+msgstr "لا يمكن إلغاء طلب يحتوي على دفعات أو مرتجع أو فاتورة من مسار المطبخ. عالج الطلب من مسار الدفع أو الاسترداد الأصلي."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The receipt company does not match the order. Reload POS data before printing."
+msgstr "شركة الإيصال لا تطابق شركة الطلب. حدّث بيانات نقطة البيع قبل الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/table_availability.js:0
+msgid "The empty table could not be released. Reconnect and reopen it to retry."
+msgstr "تعذر تأكيد إتاحة الطاولة الفارغة. أعد الاتصال وافتح الطاولة للمحاولة مجددًا."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_print_bridge
+msgid "Baseer POS Direct Print Bridge"
+msgstr "طباعة نقاط البيع"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.module.module,summary:base.module_baseer_pos_print_bridge
+msgid "Receipt and kitchen printing through the print agent"
+msgstr "يرسل إيصالات العميل وتذاكر المطبخ إلى الطابعات."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Agent connected"
+msgstr "الوكيل متصل"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Agent reconnecting"
+msgstr "جارٍ إعادة اتصال الوكيل"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Repair agent"
+msgstr "إصلاح الوكيل"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Set up agent"
+msgstr "إعداد الوكيل"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Agent status unavailable"
+msgstr "حالة الوكيل غير متاحة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Print agent connected"
+msgstr "وكيل الطباعة متصل"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Print agent is reconnecting"
+msgstr "جارٍ إعادة اتصال وكيل الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Print agent offline — open repair"
+msgstr "وكيل الطباعة غير متصل — افتح الإصلاح"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Print agent needs setup"
+msgstr "وكيل الطباعة يحتاج إعدادًا"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/agent_status.js:0
+msgid "Print agent status is unavailable"
+msgstr "حالة وكيل الطباعة غير متاحة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_agent_center
+msgid "Agent Center"
+msgstr "مركز الوكيل"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Simple printer setup"
+msgstr "إعداد الطابعة المبسط"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Set up printer"
+msgstr "إعداد الطابعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Download Windows agent"
+msgstr "تنزيل وكيل الطباعة لويندوز"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_agent_form
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Create pairing code"
+msgstr "إنشاء رمز الربط"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "2. Install and pair"
+msgstr "2. التثبيت والربط"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_setup_wizard__pairing_code
+msgid "One-time pairing code"
+msgstr "رمز الربط لمرة واحدة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_setup_wizard__server_url
+msgid "Server Url"
+msgstr "عنوان خادم الربط"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_setup_wizard__agent_id
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Windows computer"
+msgstr "جهاز الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/print_setup_wizard.py:103
+msgid "Pair a Windows computer, wait for its printer list, then choose the 80 mm receipt printer."
+msgstr "اربط جهاز طباعة يعمل بنظام Windows، وانتظر ظهور الطابعات ثم اختر طابعة الإيصالات 80 مم."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/print_setup_wizard.py:0
+msgid "New printer computer"
+msgstr "جهاز طابعة جديد"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/print_setup_wizard.py:0
+msgid "No approved Windows print agent is available. Ask a system administrator to publish one first."
+msgstr "لا يوجد وكيل طباعة Windows معتمد. اطلب من مسؤول النظام نشر إصدار معتمد أولًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/print_setup_wizard.py:0
+msgid "Open the downloaded agent on the printer computer. In its pairing window, enter this HTTPS address and one-time code within 10 minutes. The computer identity is filled in automatically by Windows."
+msgstr "افتح الوكيل الذي تم تنزيله على جهاز الطابعة. في نافذة الربط، أدخل عنوان HTTPS ورمز الربط خلال 10 دقائق. يحدد Windows هوية الجهاز تلقائيًا."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.ui.menu,name:baseer_pos_print_bridge.menu_baseer_print_agents
+msgid "Windows agents"
+msgstr "وكلاء ويندوز"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Guided print setup"
+msgstr "إعداد الطباعة المبسط"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Point of sale"
+msgstr "نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "1. Point of sale"
+msgstr "1. نقطة البيع"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "3. Printer and kitchen"
+msgstr "3. الطابعة والمطبخ"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_setup_wizard__receipt_printer_id
+msgid "80 mm receipt printer"
+msgstr "طابعة الإيصالات 80 مم"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_setup_wizard__create_default_kitchen_route
+msgid "Use the same printer for the kitchen by default"
+msgstr "استخدم الطابعة نفسها للمطبخ افتراضيًا"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Open the downloaded file once and accept Windows permission. In its pairing window, enter the address and the one-time code shown here. Windows fills in the computer ID automatically."
+msgstr "افتح الملف الذي نُزّل على جهاز الطابعة ووافق على صلاحية ويندوز. في نافذة الربط أدخل عنوان الخادم ورمز الربط الظاهر هنا. يحدد ويندوز هوية الجهاز تلقائيًا."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "After pairing, Windows-discovered 80 mm printers appear here automatically. The selected printer is used for the customer receipt and closing report; kitchen use is optional."
+msgstr "بعد الربط، تظهر طابعات 80 مم التي اكتشفها ويندوز هنا تلقائيًا. تُستخدم الطابعة المختارة لإيصال العميل وتقرير الإغلاق، وربطها بالمطبخ اختياري."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Save and test printer"
+msgstr "حفظ واختبار الطابعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_setup_wizard__setup_mode
+msgid "Print computer"
+msgstr "جهاز الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_setup_wizard__setup_mode__existing
+msgid "Use existing print computer"
+msgstr "استخدام جهاز طباعة موجود"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields.selection,name:baseer_pos_print_bridge.selection__baseer_print_setup_wizard__setup_mode__new
+msgid "Add new print computer"
+msgstr "إضافة جهاز طباعة جديد"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "2. Print computer"
+msgstr "2. جهاز الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Choose the Windows computer already connected to the printer. One computer can serve all POS cashiers and its discovered printers are selected separately for each POS."
+msgstr "اختر جهاز ويندوز المتصل بالطابعة مسبقًا. جهاز واحد يخدم جميع الكاشيرات، وتُختار طابعاته المكتشفة لكل نقطة بيع بشكل مستقل."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Create pairing code for new computer"
+msgstr "إنشاء رمز ربط لجهاز جديد"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Choose this option only for a new physical Windows computer. Download the approved agent once, then enter the HTTPS address and one-time code in its pairing window. Windows fills the computer ID automatically."
+msgstr "اختر هذا الخيار فقط عند إضافة جهاز ويندوز فعلي جديد. نزّل الوكيل المعتمد مرة واحدة، ثم أدخل عنوان HTTPS والرمز لمرة واحدة في نافذة الربط. يملأ ويندوز هوية الجهاز تلقائيًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/print_setup_wizard.py:0
+msgid "Choose \"Add new print computer\" before creating a pairing code."
+msgstr "اختر «إضافة جهاز طباعة جديد» قبل إنشاء رمز الربط."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/print_setup_wizard.py:0
+msgid "Choose an existing Windows computer or add a new one, then choose its 80 mm receipt printer."
+msgstr "اختر جهاز ويندوز موجودًا أو أضف جهازًا جديدًا، ثم اختر طابعة الإيصالات 80 مم التابعة له."
+
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Baseer printing"
+msgstr "طباعة بصير"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Printer settings"
+msgstr "إعدادات الطابعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Copies and receipt layout"
+msgstr "النسخ ونموذج الإيصال"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Print customization"
+msgstr "تخصيص الطباعات"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Use the default kitchen route for a single kitchen printer. Add category rows only when different product categories need different printers."
+msgstr "استخدم المسار الافتراضي للمطبخ عند وجود طابعة مطبخ واحدة. أضف صفوف الفئات فقط عندما تحتاج فئات الأصناف إلى طابعات مختلفة."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Configure the company print computer from the advanced printing administration, then return here to choose its discovered printer."
+msgstr "أعد جهاز طباعة الشركة من إدارة الطباعة المتقدمة، ثم عد هنا لاختيار طابعته المكتشفة."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_effective_print_agent_id
+msgid "Company print computer"
+msgstr "جهاز طباعة الشركة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_print_hardware_status
+msgid "Printing device status"
+msgstr "حالة جهاز الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_res_company__baseer_primary_print_agent_id
+msgid "Primary Windows print computer"
+msgstr "جهاز ويندوز الرئيسي للطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_company_form_primary_print_agent
+msgid "Advanced POS printing"
+msgstr "إعدادات الطباعة المتقدمة لنقاط البيع"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "No company print computer is configured"
+msgstr "لم يتم إعداد جهاز طباعة للشركة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Connected"
+msgstr "متصل"
+
+#. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Not connected"
+msgstr "غير متصل"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_config.py:0
+msgid "Choose a receipt printer discovered by this company’s primary Windows print computer."
+msgstr "اختر طابعة إيصال اكتشفها جهاز ويندوز الرئيسي للطباعة في هذه الشركة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/company.py:0
+msgid "The primary Windows print computer must be active and authorized for this company."
+msgstr "يجب أن يكون جهاز ويندوز الرئيسي للطباعة نشطًا ومصرحًا له لهذه الشركة."
+
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Enable printing for this POS"
+msgstr "تفعيل الطباعة لهذه النقطة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Odoo sends print jobs securely to the company print computer. iPads do not connect to printers directly."
+msgstr "يرسل أودو مهام الطباعة بأمان إلى جهاز طباعة الشركة. أجهزة iPad لا تتصل بالطابعات مباشرة."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Print connection status"
+msgstr "حالة اتصال الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Receipt printer"
+msgstr "طابعة الإيصال"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Test receipt printing"
+msgstr "اختبار طباعة الإيصال"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Receipt copies"
+msgstr "عدد نسخ الإيصال"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Print the customer receipt"
+msgstr "طباعة إيصال العميل"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Print the session closing report"
+msgstr "طباعة تقرير إغلاق الجلسة"
+
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Choose an active 80 mm receipt printer discovered by the company print computer."
+msgstr "اختر طابعة إيصالات 80 مم نشطة اكتشفها جهاز طباعة الشركة."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Download and connect print computer"
+msgstr "تنزيل وربط جهاز الطباعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_baseer_print_setup_wizard_form
+msgid "Downloads one file for this new Windows computer. Open it once and it installs, connects and starts automatically."
+msgstr "ينزّل ملفًا واحدًا لجهاز Windows الجديد. افتحه مرة واحدة ليُثبّت الوكيل ويربطه ويشغّله تلقائيًا."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Add print computer"
+msgstr "إضافة جهاز طباعة"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Downloads one file for the company Windows print computer. Open it once to install, connect and start automatically."
+msgstr "ينزّل ملفًا واحدًا لجهاز Windows الرئيسي للشركة. افتحه مرة واحدة لتثبيت الوكيل وربطه وتشغيله تلقائيًا."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_daily_sales_reports_wizard_baseer_whatsapp
+msgid "Send via WhatsApp"
+msgstr "إرسال عبر واتساب"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Session closing report"
+msgstr "تقرير إغلاق الجلسة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Session"
+msgstr "الجلسة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Opened at"
+msgstr "وقت الفتح"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Closed at"
+msgstr "وقت الإغلاق"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Duration"
+msgstr "المدة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Invoices"
+msgstr "الفواتير"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Refunds"
+msgstr "المرتجعات"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Sales total"
+msgstr "إجمالي المبيعات"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Payments total"
+msgstr "إجمالي المدفوعات"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Average invoice"
+msgstr "متوسط الفاتورة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Cancellations"
+msgstr "إجمالي الإلغاءات"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Payment methods"
+msgstr "طرق الدفع"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "No payments"
+msgstr "لا توجد مدفوعات"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Units sold"
+msgstr "الوحدات المباعة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Products sold"
+msgstr "الأصناف المباعة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Only a Point of Sale manager can send a session report by WhatsApp."
+msgstr "مدير نقطة البيع فقط يمكنه إرسال تقرير الجلسة عبر واتساب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Choose one closed POS session first."
+msgstr "اختر جلسة نقطة بيع مقفلة أولاً."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "You do not have access to this session company."
+msgstr "لا تملك صلاحية الوصول إلى شركة هذه الجلسة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "The WhatsApp session report is available only after the session is closed."
+msgstr "يتاح تقرير الجلسة عبر واتساب بعد إغلاق الجلسة فقط."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "This session report is too long to open safely in WhatsApp."
+msgstr "تقرير الجلسة طويل جداً لفتحه بأمان في واتساب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Cancelled orders"
+msgstr "الطلبات الملغاة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_daily_sales_reports.py:0
+msgid "Cancelled items"
+msgstr "الأصناف الملغاة"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/required_guest_count.js:0
+msgid "Guests"
+msgstr "عدد الضيوف"

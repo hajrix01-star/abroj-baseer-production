@@ -1,0 +1,20 @@
+.floor-screen .baseer-table-usage {
+    z-index: 2;
+    max-width: calc(100% - 0.5rem);
+    padding: 0.2rem 0.45rem;
+    background: transparent;
+    color: #172b36;
+    font-weight: 600;
+    font-size: 0.72rem;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+
+    .fa {
+        margin-inline-end: 0.2rem;
+    }
+}
+
+.floor-screen .floor-kanban .baseer-table-usage {
+    margin-bottom: 0.5rem !important;
+}

@@ -1,0 +1,28 @@
+// Keep the POS interaction model intact; this only gives primary POS actions
+// the traditional Odoo Enterprise purple instead of the Community blue.
+.pos {
+    // Odoo POS uses --primary for its primary Bootstrap controls.
+    --primary: #714b67;
+    --primary-rgb: 113, 75, 103;
+}
+
+.pos .btn-primary {
+    // These are the POS-specific control variables used by Odoo 19.
+    --btn-bg: #714b67;
+    --btn-border-color: #714b67;
+    --btn-hover-bg: #5d3e56;
+    --btn-hover-border-color: #5d3e56;
+    --btn-active-bg: #4c3246;
+    --btn-active-border-color: #4c3246;
+    --btn-disabled-bg: #714b67;
+    --btn-disabled-border-color: #714b67;
+    --btn-focus-shadow-rgb: 113, 75, 103;
+    --bs-btn-bg: #714b67;
+    --bs-btn-border-color: #714b67;
+    --bs-btn-hover-bg: #5d3e56;
+    --bs-btn-hover-border-color: #5d3e56;
+    --bs-btn-active-bg: #4c3246;
+    --bs-btn-active-border-color: #4c3246;
+    --bs-btn-disabled-bg: #714b67;
+    --bs-btn-disabled-border-color: #714b67;
+}

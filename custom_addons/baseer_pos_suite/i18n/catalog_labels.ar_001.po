@@ -1,0 +1,355 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. module: baseer_abroj_login
+#: model:ir.module.module,shortdesc:base.module_baseer_abroj_login
+msgid "Baseer Abroj Login"
+msgstr "تسجيل دخول أبراج"
+
+#. module: baseer_abroj_login
+#: model:ir.module.module,summary:base.module_baseer_abroj_login
+msgid "Abroj website login page styling"
+msgstr "يضبط شكل صفحة دخول موقع أبراج."
+
+#. module: baseer_access_roles
+#: model:ir.module.module,shortdesc:base.module_baseer_access_roles
+msgid "Baseer Ready Access Roles"
+msgstr "صلاحيات بصير"
+
+#. module: baseer_access_roles
+#: model:ir.module.module,summary:base.module_baseer_access_roles
+msgid "Ready access roles for owners, accountants and cashiers"
+msgstr "يجهز صلاحيات المالك والمحاسب والكاشير."
+
+#. module: baseer_arabic_ui
+#: model:ir.module.module,shortdesc:base.module_baseer_arabic_ui
+msgid "Baseer Arabic UI Terminology"
+msgstr "واجهة المحاسبة العربية"
+
+#. module: baseer_arabic_ui
+#: model:ir.module.module,summary:base.module_baseer_arabic_ui
+msgid "Arabic labels for accounting screens"
+msgstr "يوضح مسميات الشاشات المحاسبية بالعربية."
+
+#. module: baseer_basser_workspace
+#: model:ir.module.module,shortdesc:base.module_baseer_basser_workspace
+msgid "Baseer Workspace"
+msgstr "مساحة عمل بصير"
+
+#. module: baseer_basser_workspace
+#: model:ir.module.module,summary:base.module_baseer_basser_workspace
+msgid "Role based navigation for Baseer operations"
+msgstr "يعرض لكل دور أدواته المعتمدة في مكان واحد."
+
+#. module: baseer_browser_print
+#: model:ir.module.module,shortdesc:base.module_baseer_browser_print
+msgid "Baseer Browser Print"
+msgstr "الطباعة من المتصفح"
+
+#. module: baseer_browser_print
+#: model:ir.module.module,summary:base.module_baseer_browser_print
+msgid "Browser printing for original PDF reports"
+msgstr "يطبع تقارير PDF الأصلية عبر المتصفح."
+
+#. module: baseer_cash_categories
+#: model:ir.module.module,shortdesc:base.module_baseer_cash_categories
+msgid "Baseer Cash Movement by Category"
+msgstr "تصنيفات النقدية"
+
+#. module: baseer_cash_categories
+#: model:ir.module.module,summary:base.module_baseer_cash_categories
+msgid "Monthly cash receipts and payments by category"
+msgstr "يصنف المقبوضات والمدفوعات النقدية في التقارير الشهرية."
+
+#. module: baseer_category_display
+#: model:ir.module.module,shortdesc:base.module_baseer_category_display
+msgid "Baseer Category Display"
+msgstr "عرض فئات المنتجات"
+
+#. module: baseer_category_display
+#: model:ir.module.module,summary:base.module_baseer_category_display
+msgid "Short product category labels and hierarchy"
+msgstr "يختصر أسماء فئات المنتجات ويظهر ترتيبها."
+
+#. module: baseer_company_setup
+#: model:ir.module.module,shortdesc:base.module_baseer_company_setup
+msgid "Baseer Company Accounting Setup"
+msgstr "تهيئة الشركات"
+
+#. module: baseer_company_setup
+#: model:ir.module.module,summary:base.module_baseer_company_setup
+msgid "Accounting setup for each company"
+msgstr "يساعد في إعداد الحسابات المطلوبة لكل شركة."
+
+#. module: baseer_core
+#: model:ir.module.module,shortdesc:base.module_baseer_core
+msgid "Baseer Core"
+msgstr "أساس بصير"
+
+#. module: baseer_core
+#: model:ir.module.module,summary:base.module_baseer_core
+msgid "Shared foundation for Baseer modules"
+msgstr "يوفر الأساس المشترك لإضافات بصير."
+
+#. module: baseer_financial_correction
+#: model:ir.module.module,shortdesc:base.module_baseer_financial_correction
+msgid "Baseer Financial Correction"
+msgstr "تصحيح البيانات المالية"
+
+#. module: baseer_financial_correction
+#: model:ir.module.module,summary:base.module_baseer_financial_correction
+msgid "Reviewed correction of financial entry errors"
+msgstr "يوثق تصحيح أخطاء الإدخال المالي بعد مراجعتها."
+
+#. module: baseer_financial_register
+#: model:ir.module.module,shortdesc:base.module_baseer_financial_register
+msgid "Baseer Financial Operations"
+msgstr "السجل المالي"
+
+#. module: baseer_financial_register
+#: model:ir.module.module,summary:base.module_baseer_financial_register
+msgid "Financial operations with settlement and invoice indicators"
+msgstr "يعرض العمليات المالية وحالة التسوية والفواتير."
+
+#. module: baseer_google_business
+#: model:ir.module.module,shortdesc:base.module_baseer_google_business
+msgid "Baseer Google Business"
+msgstr "نشاط Google التجاري"
+
+#. module: baseer_google_business
+#: model:ir.module.module,summary:base.module_baseer_google_business
+msgid "Google Business Profile management"
+msgstr "يدير بيانات نشاط الشركة على Google."
+
+#. module: baseer_hr_services
+#: model:ir.module.module,shortdesc:base.module_baseer_hr_services
+msgid "Baseer Employee Services"
+msgstr "خدمات الموظفين"
+
+#. module: baseer_hr_services
+#: model:ir.module.module,summary:base.module_baseer_hr_services
+msgid "Employee services linked to supplier bills"
+msgstr "يربط خدمات الموظفين بفواتير الموردين ودفعاتهم."
+
+#. module: baseer_legion_compat
+#: model:ir.module.module,shortdesc:base.module_baseer_legion_compat
+msgid "Baseer Legion Theme Compatibility"
+msgstr "توافق واجهة Legion"
+
+#. module: baseer_legion_compat
+#: model:ir.module.module,summary:base.module_baseer_legion_compat
+msgid "Navigation compatibility with the Legion theme"
+msgstr "يضبط التنقل مع تصميم Legion."
+
+#. module: baseer_native_spend
+#: model:ir.module.module,shortdesc:base.module_baseer_native_spend
+msgid "Baseer Native Spend Foundation"
+msgstr "تحليل المصروفات"
+
+#. module: baseer_native_spend
+#: model:ir.module.module,summary:base.module_baseer_native_spend
+msgid "Spend analysis and supplier bill controls"
+msgstr "يعرض المصروفات ويراقب فواتير الموردين."
+
+#. module: baseer_noorix_main_replay
+#: model:ir.module.module,shortdesc:base.module_baseer_noorix_main_replay
+msgid "Baseer Noorix MAIN Rehearsal Guard"
+msgstr "تجربة نقل Noorix"
+
+#. module: baseer_noorix_main_replay
+#: model:ir.module.module,summary:base.module_baseer_noorix_main_replay
+msgid "Guarded Noorix source data rehearsal"
+msgstr "يعيد تجربة نقل بيانات Noorix في بيئة اختبار."
+
+#. module: baseer_noorix_migration
+#: model:ir.module.module,shortdesc:base.module_baseer_noorix_migration
+msgid "Baseer Noorix Migration (QA only)"
+msgstr "نقل بيانات Noorix"
+
+#. module: baseer_noorix_migration
+#: model:ir.module.module,summary:base.module_baseer_noorix_migration
+msgid "Noorix data migration tools for QA"
+msgstr "يوفر أدوات نقل بيانات Noorix إلى بيئة الاختبار."
+
+#. module: baseer_partner_priority
+#: model:ir.module.module,shortdesc:base.module_baseer_partner_priority
+msgid "Baseer Partner Favorites"
+msgstr "جهات الاتصال المفضلة"
+
+#. module: baseer_partner_priority
+#: model:ir.module.module,summary:base.module_baseer_partner_priority
+msgid "Favorite suppliers and recent contacts"
+msgstr "يسهل الوصول إلى الموردين وجهات الاتصال المستخدمة حديثًا."
+
+#. module: baseer_payroll
+#: model:ir.module.module,shortdesc:base.module_baseer_payroll
+msgid "Baseer Payroll and Employee Advances"
+msgstr "الرواتب وسلف الموظفين"
+
+#. module: baseer_payroll
+#: model:ir.module.module,summary:base.module_baseer_payroll
+msgid "Payroll and employee advances"
+msgstr "ينظم الرواتب وسلف الموظفين داخل أودو."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_print_bridge
+msgid "Baseer POS Direct Print Bridge"
+msgstr "طباعة نقاط البيع"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.module.module,summary:base.module_baseer_pos_print_bridge
+msgid "Receipt and kitchen printing through the print agent"
+msgstr "يرسل إيصالات العميل وتذاكر المطبخ إلى الطابعات."
+
+#. module: baseer_pos_product_substitution
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_product_substitution
+msgid "Baseer POS Product Substitution"
+msgstr "تعديل أصناف الطلب"
+
+#. module: baseer_pos_product_substitution
+#: model:ir.module.module,summary:base.module_baseer_pos_product_substitution
+msgid "Controlled product edits and cancellation records"
+msgstr "يوثق تعديل الأصناف المحمية وإلغاءها بأسباب واضحة."
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_receipt_layout
+msgid "Baseer POS Receipt Layout"
+msgstr "تصميم إيصال 80 مم"
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.module.module,summary:base.module_baseer_pos_receipt_layout
+msgid "Optional 80 mm layout for the original POS receipt"
+msgstr "ينسق إيصال أودو الأصلي للطابعة الحرارية 80 مم."
+
+#. module: baseer_pos_suite
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_suite
+msgid "Baseer POS Suite"
+msgstr "حزمة نقاط البيع"
+
+#. module: baseer_pos_suite
+#: model:ir.module.module,summary:base.module_baseer_pos_suite
+msgid "Install and configure Baseer POS printing and item controls"
+msgstr "يجمع إعدادات طباعة نقاط البيع وتعديل الأصناف."
+
+#. module: baseer_pos_summary
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_summary
+msgid "Baseer POS Sales Summaries"
+msgstr "ملخصات نقاط البيع"
+
+#. module: baseer_pos_summary
+#: model:ir.module.module,summary:base.module_baseer_pos_summary
+msgid "POS sales summaries linked to native accounting"
+msgstr "يربط ملخصات المبيعات بالحسابات الأصلية."
+
+#. module: baseer_procurement_requests
+#: model:ir.module.module,shortdesc:base.module_baseer_procurement_requests
+msgid "Baseer Procurement Requests"
+msgstr "طلبات الشراء"
+
+#. module: baseer_procurement_requests
+#: model:ir.module.module,summary:base.module_baseer_procurement_requests
+msgid "Purchase requests with price history and stock receipts"
+msgstr "يتابع طلبات الشراء والأسعار السابقة واستلام المخزون."
+
+#. module: baseer_purchase_batch
+#: model:ir.module.module,shortdesc:base.module_baseer_purchase_batch
+msgid "Baseer Purchase Batch"
+msgstr "اعتماد فواتير الموردين"
+
+#. module: baseer_purchase_batch
+#: model:ir.module.module,summary:base.module_baseer_purchase_batch
+msgid "Approve groups of supplier bills"
+msgstr "يساعد في مراجعة مجموعة فواتير واعتمادها."
+
+#. module: baseer_purchase_classification
+#: model:ir.module.module,shortdesc:base.module_baseer_purchase_classification
+msgid "Baseer Purchase Classification"
+msgstr "تصنيف بنود الفواتير"
+
+#. module: baseer_purchase_classification
+#: model:ir.module.module,summary:base.module_baseer_purchase_classification
+msgid "Classify supplier bill lines by company"
+msgstr "يصنف بنود فواتير الموردين بحسب الشركة."
+
+#. module: baseer_purchase_expense_dashboard
+#: model:ir.module.module,shortdesc:base.module_baseer_purchase_expense_dashboard
+msgid "Baseer Purchase and Expense Dashboard"
+msgstr "لوحة المشتريات والمصروفات"
+
+#. module: baseer_purchase_expense_dashboard
+#: model:ir.module.module,summary:base.module_baseer_purchase_expense_dashboard
+msgid "View supplier bills and expense reports"
+msgstr "يعرض فواتير الموردين وتقارير المصروفات."
+
+#. module: baseer_report_layout
+#: model:ir.module.module,shortdesc:base.module_baseer_report_layout
+msgid "Baseer Report Layout"
+msgstr "تنسيق التقارير المالية"
+
+#. module: baseer_report_layout
+#: model:ir.module.module,summary:base.module_baseer_report_layout
+msgid "Compact financial report layout"
+msgstr "يرتب عرض تقارير الأرباح والخسائر والتدفق النقدي."
+
+#. module: baseer_sales_dashboard
+#: model:ir.module.module,shortdesc:base.module_baseer_sales_dashboard
+msgid "Baseer Sales Summary Dashboard"
+msgstr "لوحة المبيعات"
+
+#. module: baseer_sales_dashboard
+#: model:ir.module.module,summary:base.module_baseer_sales_dashboard
+msgid "Sales summary dashboard"
+msgstr "يعرض ملخص المبيعات في لوحة واحدة."
+
+#. module: baseer_sales_heat_calendar
+#: model:ir.module.module,shortdesc:base.module_baseer_sales_heat_calendar
+msgid "Baseer Sales Heat Calendar"
+msgstr "تقويم المبيعات"
+
+#. module: baseer_sales_heat_calendar
+#: model:ir.module.module,summary:base.module_baseer_sales_heat_calendar
+msgid "Sales patterns by day and occasion"
+msgstr "يوضح نشاط المبيعات حسب اليوم والمناسبة."
+
+#. module: baseer_service_seed
+#: model:ir.module.module,shortdesc:base.module_baseer_service_seed
+msgid "Baseer Common Services Seed"
+msgstr "بيانات الخدمات المشتركة"
+
+#. module: baseer_service_seed
+#: model:ir.module.module,summary:base.module_baseer_service_seed
+msgid "Shared suppliers and service products"
+msgstr "يجهز الموردين ومنتجات الخدمات المشتركة."
+
+#. module: baseer_web_navigation
+#: model:ir.module.module,shortdesc:base.module_baseer_web_navigation
+msgid "Baseer Web Navigation"
+msgstr "التنقل بين التطبيقات"
+
+#. module: baseer_web_navigation
+#: model:ir.module.module,summary:base.module_baseer_web_navigation
+msgid "Application icons and language selection"
+msgstr "يعرض أيقونات التطبيقات واختيار اللغة."
+
+#. module: baseer_website_branding
+#: model:ir.module.module,shortdesc:base.module_baseer_website_branding
+msgid "Baseer Website Branding"
+msgstr "هوية موقع بصير"
+
+#. module: baseer_website_branding
+#: model:ir.module.module,summary:base.module_baseer_website_branding
+msgid "Website appearance for Baseer"
+msgstr "يضبط مظهر موقع بصير."
+
+#. module: baseer_work_schedule
+#: model:ir.module.module,shortdesc:base.module_baseer_work_schedule
+msgid "Baseer Simple Work Schedules"
+msgstr "جداول عمل الموظفين"
+
+#. module: baseer_work_schedule
+#: model:ir.module.module,summary:base.module_baseer_work_schedule
+msgid "Employee work schedules"
+msgstr "ينظم جداول عمل الموظفين."

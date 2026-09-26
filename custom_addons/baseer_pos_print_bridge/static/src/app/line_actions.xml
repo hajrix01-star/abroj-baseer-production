@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.OrderlineActions"
+       t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//li[hasclass('orderline')]" position="inside">
+            <button t-if="baseerLineActionsVisible"
+                    type="button"
+                    class="baseer-line-actions btn btn-light border-0 rounded-circle flex-shrink-0 align-self-center"
+                    t-att-title="baseerLineActionsLabel"
+                    t-att-aria-label="baseerLineActionsLabel"
+                    t-on-pointerdown.stop=""
+                    t-on-pointerup.stop=""
+                    t-on-click="openBaseerLineActions">
+                <i class="fa fa-ellipsis-v" aria-hidden="true"/>
+            </button>
+        </xpath>
+    </t>
+</templates>

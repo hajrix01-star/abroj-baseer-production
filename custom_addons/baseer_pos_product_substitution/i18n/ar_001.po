@@ -1,0 +1,317 @@
+# Translation of Odoo Server.
+# Arabic (Modern Standard Arabic) translations for Baseer POS substitutions.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-23 12:00+0000\n"
+"PO-Revision-Date: 2026-09-23 12:00+0000\n"
+"Language-Team: Arabic\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar_001\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_pos_product_substitution
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_product_substitution
+msgid "Baseer POS Product Substitution"
+msgstr "تعديل أصناف الطلب"
+#. module: baseer_pos_product_substitution
+msgid "Eligible for controlled substitution"
+msgstr "قابل للاستبدال المنضبط"
+#. module: baseer_pos_product_substitution
+msgid "Allowed substitution products"
+msgstr "الأصناف البديلة المسموح بها"
+#. module: baseer_pos_product_substitution
+msgid "POS substitution product IDs"
+msgstr "معرّفات الأصناف البديلة في نقاط البيع"
+#. module: baseer_pos_product_substitution
+msgid "Use controlled product substitutions"
+msgstr "تفعيل استبدال الأصناف المنضبط"
+#. module: baseer_pos_product_substitution
+msgid "Replacement products"
+msgstr "الأصناف البديلة"
+#. module: baseer_pos_product_substitution
+msgid "Cashiers must substitute this POS item instead of deleting it directly."
+msgstr "يجب على الكاشير استبدال هذا الصنف بدلًا من حذفه مباشرةً."
+#. module: baseer_pos_product_substitution
+msgid "Only these products may replace this protected product in Point of Sale."
+msgstr "لا يُسمح باستبدال هذا الصنف إلا بالأصناف المحددة هنا."
+#. module: baseer_pos_product_substitution
+msgid "Read-only POS policy payload. The cashier never receives edit rights."
+msgstr "بيانات سياسة للقراءة فقط في نقاط البيع؛ لا يملك الكاشير صلاحية تعديلها."
+#. module: baseer_pos_product_substitution
+msgid "When enabled, products marked for controlled substitution cannot be deleted directly in this Point of Sale."
+msgstr "عند التفعيل، لا يمكن حذف الأصناف المحددة للاستبدال مباشرةً في نقطة البيع هذه."
+#. module: baseer_pos_product_substitution
+msgid "Controlled substitution"
+msgstr "الاستبدال المنضبط"
+
+#. module: baseer_pos_product_substitution
+#: model:ir.actions.act_window,name:baseer_pos_product_substitution.action_baseer_pos_protected_item_cancellation
+#: model:ir.ui.menu,name:baseer_pos_product_substitution.menu_baseer_pos_protected_item_cancellation
+msgid "Protected item cancellations"
+msgstr "إلغاءات الأصناف المحمية"
+#. module: baseer_pos_product_substitution
+msgid "Reason"
+msgstr "السبب"
+#. module: baseer_pos_product_substitution
+msgid "Source snapshot"
+msgstr "بيانات الصنف الأصلي وقت العملية"
+#. module: baseer_pos_product_substitution
+msgid "Replacement snapshot"
+msgstr "بيانات البدائل وقت العملية"
+#. module: baseer_pos_product_substitution
+msgid "Today"
+msgstr "اليوم"
+#. module: baseer_pos_product_substitution
+msgid "POS"
+msgstr "نقطة البيع"
+#. module: baseer_pos_product_substitution
+msgid "Cashier"
+msgstr "الكاشير"
+#. module: baseer_pos_product_substitution
+msgid "Source product"
+msgstr "الصنف الأصلي"
+#. module: baseer_pos_product_substitution
+msgid "Date"
+msgstr "التاريخ"
+#. module: baseer_pos_product_substitution
+msgid "Product substitutions"
+msgstr "عمليات استبدال الأصناف"
+#. module: baseer_pos_product_substitution
+msgid "Company"
+msgstr "الشركة"
+#. module: baseer_pos_product_substitution
+msgid "Order"
+msgstr "الطلب"
+#. module: baseer_pos_product_substitution
+msgid "Point of Sale"
+msgstr "نقطة البيع"
+#. module: baseer_pos_product_substitution
+msgid "Session"
+msgstr "الجلسة"
+#. module: baseer_pos_product_substitution
+msgid "Event At"
+msgstr "وقت العملية"
+#. module: baseer_pos_product_substitution
+msgid "Order Reference"
+msgstr "مرجع الطلب"
+#. module: baseer_pos_product_substitution
+msgid "Source Product"
+msgstr "الصنف الأصلي"
+#. module: baseer_pos_product_substitution
+msgid "Source Quantity"
+msgstr "كمية الصنف الأصلي"
+#. module: baseer_pos_product_substitution
+msgid "Source Gross"
+msgstr "إجمالي الصنف الأصلي"
+#. module: baseer_pos_product_substitution
+msgid "Replacement Gross"
+msgstr "إجمالي البدائل"
+#. module: baseer_pos_product_substitution
+msgid "Reason Note"
+msgstr "السبب أو الملاحظة"
+#. module: baseer_pos_product_substitution
+msgid "Action Uuid"
+msgstr "معرّف العملية"
+#. module: baseer_pos_product_substitution
+msgid "Source Line Uuid"
+msgstr "معرّف سطر الصنف الأصلي"
+#. module: baseer_pos_product_substitution
+msgid "Currency"
+msgstr "العملة"
+#. module: baseer_pos_product_substitution
+msgid "Connection required"
+msgstr "يلزم الاتصال بالإنترنت"
+#. module: baseer_pos_product_substitution
+msgid "Connect to the internet before substituting a protected item."
+msgstr "اتصل بالإنترنت قبل استبدال هذا الصنف المحمي."
+#. module: baseer_pos_product_substitution
+msgid "No substitution products"
+msgstr "لا توجد أصناف بديلة"
+#. module: baseer_pos_product_substitution
+msgid "Ask a manager to configure allowed substitution products for this item."
+msgstr "اطلب من المدير تحديد الأصناف البديلة المسموح بها لهذا الصنف."
+#. module: baseer_pos_product_substitution
+msgid "Replacement total does not match"
+msgstr "إجمالي البدائل غير مطابق"
+#. module: baseer_pos_product_substitution
+msgid "Choose allowed products whose total equals the protected item exactly."
+msgstr "اختر أصنافًا مسموحًا بها بحيث يساوي إجماليها قيمة الصنف المحمي تمامًا."
+#. module: baseer_pos_product_substitution
+msgid "The substitution was recorded."
+msgstr "تم تسجيل عملية الاستبدال."
+#. module: baseer_pos_product_substitution
+msgid "Substitution was not saved"
+msgstr "لم يتم حفظ الاستبدال"
+#. module: baseer_pos_product_substitution
+msgid "The protected item was kept. Check that the replacement total matches exactly."
+msgstr "تم الإبقاء على الصنف المحمي. تحقق من تطابق إجمالي البدائل تمامًا."
+#. module: baseer_pos_product_substitution
+msgid "Substitute protected item"
+msgstr "استبدال الصنف المحمي"
+#. module: baseer_pos_product_substitution
+msgid "choose allowed replacements only"
+msgstr "اختر من الأصناف البديلة المسموح بها فقط"
+#. module: baseer_pos_product_substitution
+msgid "Reason / note (optional)"
+msgstr "السبب أو الملاحظة (اختياري)"
+#. module: baseer_pos_product_substitution
+msgid "Odoo validates the exact total using the active price list and taxes before saving."
+msgstr "يتحقق أودو من تطابق الإجمالي باستخدام قائمة الأسعار والضرائب المطبقة قبل الحفظ."
+#. module: baseer_pos_product_substitution
+msgid "Cancel"
+msgstr "إلغاء"
+#. module: baseer_pos_product_substitution
+msgid "Confirm substitution"
+msgstr "تأكيد الاستبدال"
+#. module: baseer_pos_product_substitution
+msgid "The substitution action identifier is invalid."
+msgstr "معرّف عملية الاستبدال غير صالح."
+#. module: baseer_pos_product_substitution
+msgid "The substitution request is invalid."
+msgstr "طلب الاستبدال غير صالح."
+#. module: baseer_pos_product_substitution
+msgid "The protected order line is invalid."
+msgstr "سطر الصنف المحمي غير صالح."
+#. module: baseer_pos_product_substitution
+msgid "The substitution note is invalid."
+msgstr "ملاحظة الاستبدال غير صالحة."
+#. module: baseer_pos_product_substitution
+msgid "Choose one or more replacement products."
+msgstr "اختر صنفًا بديلًا واحدًا أو أكثر."
+#. module: baseer_pos_product_substitution
+msgid "A replacement product is invalid."
+msgstr "أحد الأصناف البديلة غير صالح."
+#. module: baseer_pos_product_substitution
+msgid "A replacement order line is invalid."
+msgstr "سطر الصنف البديل غير صالح."
+#. module: baseer_pos_product_substitution
+msgid "A replacement quantity is invalid."
+msgstr "كمية الصنف البديل غير صالحة."
+#. module: baseer_pos_product_substitution
+msgid "Substitution audit records are created only by the Point of Sale workflow."
+msgstr "لا تُنشأ سجلات تدقيق الاستبدال إلا من خلال سير عمل نقاط البيع."
+#. module: baseer_pos_product_substitution
+msgid "Substitution audit records are immutable."
+msgstr "سجلات تدقيق الاستبدال غير قابلة للتعديل."
+#. module: baseer_pos_product_substitution
+msgid "Substitution audit records cannot be deleted."
+msgstr "لا يمكن حذف سجلات تدقيق الاستبدال."
+#. module: baseer_pos_product_substitution
+msgid "Choose at least one allowed substitution product."
+msgstr "حدد صنفًا بديلًا مسموحًا به على الأقل."
+#. module: baseer_pos_product_substitution
+msgid "A product cannot be its own substitution product."
+msgstr "لا يمكن أن يكون الصنف بديلًا لنفسه."
+#. module: baseer_pos_product_substitution
+msgid "Allowed substitution products must be active and available in Point of Sale."
+msgstr "يجب أن تكون الأصناف البديلة المسموح بها نشطة ومتاحة في نقاط البيع."
+#. module: baseer_pos_product_substitution
+msgid "A substitution can only be made on an existing draft order."
+msgstr "لا يمكن إجراء الاستبدال إلا على طلب مسودة موجود."
+#. module: baseer_pos_product_substitution
+msgid "Only a Point of Sale user can substitute a protected item."
+msgstr "لا يمكن استبدال الصنف المحمي إلا بواسطة مستخدم نقاط البيع."
+#. module: baseer_pos_product_substitution
+msgid "This order cannot be changed by a substitution."
+msgstr "لا يمكن تعديل هذا الطلب بعملية استبدال."
+#. module: baseer_pos_product_substitution
+msgid "Controlled substitutions are disabled for this Point of Sale."
+msgstr "ميزة الاستبدال المنضبط غير مفعلة لنقطة البيع هذه."
+#. module: baseer_pos_product_substitution
+msgid "The protected item is no longer available for substitution."
+msgstr "لم يعد الصنف المحمي متاحًا للاستبدال."
+#. module: baseer_pos_product_substitution
+msgid "One or more replacement products are not allowed for this item."
+msgstr "يوجد صنف بديل واحد أو أكثر غير مسموح به لهذا الصنف."
+#. module: baseer_pos_product_substitution
+msgid "The protected item must be fully substituted in one action."
+msgstr "يجب استبدال الصنف المحمي بالكامل في عملية واحدة."
+#. module: baseer_pos_product_substitution
+msgid "The replacement order lines do not match the substitution request."
+msgstr "سطور الأصناف البديلة لا تطابق طلب الاستبدال."
+#. module: baseer_pos_product_substitution
+msgid "The replacement quantity changed before it was saved."
+msgstr "تغيرت كمية الصنف البديل قبل حفظها."
+#. module: baseer_pos_product_substitution
+msgid "Replacement products must equal the protected item total exactly. Source: %(source)s; replacements: %(replacement)s."
+msgstr "يجب أن يساوي إجمالي الأصناف البديلة قيمة الصنف المحمي تمامًا. الأصلي: %(source)s؛ البدائل: %(replacement)s."
+#. module: baseer_pos_product_substitution
+msgid "A protected item must be substituted; it cannot be deleted or reduced directly."
+msgstr "يجب استبدال الصنف المحمي؛ ولا يمكن حذفه أو تقليل كميته مباشرةً."
+#. module: baseer_pos_product_substitution
+msgid "A product substitution cannot be combined with a kitchen action."
+msgstr "لا يمكن دمج استبدال الصنف مع إجراء مطبخ في العملية نفسها."
+#. module: baseer_pos_product_substitution
+msgid "The synchronized point of sale order was not found."
+msgstr "لم يتم العثور على طلب نقاط البيع الذي تمت مزامنته."
+#. module: baseer_pos_product_substitution
+msgid "Substitution item is protected"
+msgstr "صنف الاستبدال محمي"
+#. module: baseer_pos_product_substitution
+msgid "This item was added as an approved substitution. It cannot be removed or substituted again."
+msgstr "أُضيف هذا الصنف كبديل معتمد؛ لا يمكن حذفه أو استبداله مرة أخرى."
+#. module: baseer_pos_product_substitution
+msgid "The quantity cannot be reduced below the quantity approved in the substitution."
+msgstr "لا يمكن تقليل الكمية عن الكمية المعتمدة في عملية الاستبدال."
+#. module: baseer_pos_product_substitution
+msgid "A substituted item cannot be removed or duplicated."
+msgstr "لا يمكن حذف صنف بديل أو تكرار سطره."
+#. module: baseer_pos_product_substitution
+msgid "A substituted item cannot be changed or reduced below its original quantity."
+msgstr "لا يمكن تعديل الصنف البديل أو تقليل كميته عن الكمية المعتمدة."
+#. module: baseer_pos_product_substitution
+msgid "A substituted item cannot be substituted again."
+msgstr "لا يمكن استبدال الصنف البديل مرة أخرى."
+#. module: baseer_pos_product_substitution
+msgid "An order with substitution audit records cannot be deleted."
+msgstr "لا يمكن حذف طلب يحتوي على سجل استبدال موثق."
+#. module: baseer_pos_product_substitution
+msgid "A substituted item cannot be removed from the order."
+msgstr "لا يمكن حذف صنف بديل من الطلب."
+#. module: baseer_pos_product_substitution
+msgid "Draft order was not saved"
+msgstr "لم يتم حفظ الطلب كمسودة"
+#. module: baseer_pos_product_substitution
+msgid "Save the order draft before substituting the protected item."
+msgstr "احفظ الطلب كمسودة قبل استبدال الصنف المحمي."
+
+#. module: baseer_pos_product_substitution
+msgid "Edit item"
+msgstr "تعديل الصنف"
+
+#. module: baseer_pos_product_substitution
+msgid "Cancel item"
+msgstr "إلغاء الصنف"
+
+#. module: baseer_pos_product_substitution
+msgid "The cancellation was recorded."
+msgstr "تم تسجيل الإلغاء."
+
+#. module: baseer_pos_product_substitution
+msgid "Cancellation was not saved"
+msgstr "لم يتم حفظ الإلغاء"
+
+#. module: baseer_pos_product_substitution
+msgid "Connect to the internet before cancelling a protected item."
+msgstr "اتصل بالإنترنت قبل إلغاء الصنف المحمي."
+
+#. module: baseer_pos_product_substitution
+msgid "Save the order draft before cancelling the protected item."
+msgstr "احفظ الطلب كمسودة قبل إلغاء الصنف المحمي."
+
+#. module: baseer_pos_product_substitution
+msgid "Edit protected item"
+msgstr "تعديل الصنف المحمي"
+
+#. module: baseer_pos_product_substitution
+msgid "Confirm edit"
+msgstr "تأكيد التعديل"
+
+#. module: baseer_pos_product_substitution
+#: model:ir.module.module,summary:base.module_baseer_pos_product_substitution
+msgid "Controlled product edits and cancellation records"
+msgstr "يوثق تعديل الأصناف المحمية وإلغاءها بأسباب واضحة."

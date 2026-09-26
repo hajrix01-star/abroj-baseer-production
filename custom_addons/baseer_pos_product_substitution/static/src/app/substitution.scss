@@ -1,0 +1,23 @@
+.baseer-substitution-products {
+    display: grid;
+    gap: .5rem;
+}
+
+.baseer-substitution-product {
+    align-items: center;
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: .5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    min-height: 3.25rem;
+    padding: .5rem .75rem;
+}
+
+.baseer-substitution-product > span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.baseer-substitution-product > div { flex-shrink: 0; }
+
+@media (max-width: 576px) {
+    .baseer-substitution-product { min-height: 3.75rem; }
+    .baseer-substitution-product .btn { min-height: 2.5rem; min-width: 2.5rem; }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.FloorScreenTableUsage"
+       t-inherit="pos_restaurant.FloorScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('info')]" position="after">
+            <t t-set="baseerUsage" t-value="this.baseerTableUsage(table)"/>
+            <div t-if="baseerUsage"
+                 class="baseer-table-usage position-absolute bottom-0 start-50 translate-middle-x mb-1"
+                 t-att-title="baseerUsage.label" t-att-aria-label="baseerUsage.label">
+                <i class="fa fa-clock-o" aria-hidden="true"/>
+                <bdi dir="ltr" t-esc="baseerUsage.duration"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

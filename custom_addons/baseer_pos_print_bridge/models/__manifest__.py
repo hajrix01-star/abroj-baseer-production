@@ -1,0 +1,38 @@
+{
+    'name': 'Baseer POS Direct Print Bridge',
+    'summary': 'Receipt and kitchen printing through the print agent',
+    'version': '19.0.7.8.10',
+    'category': 'Baseer/POS',
+    'author': 'Baseer',
+    'license': 'LGPL-3',
+    'depends': ['point_of_sale', 'pos_restaurant'],
+    'data': [
+        'security/print_security.xml',
+        'security/ir.model.access.csv',
+        'views/print_views.xml',
+        'views/pos_daily_sales_reports_views.xml',
+        'data/receipt_cleanup_cron.xml',
+    ],
+    'assets': {
+        'point_of_sale._assets_pos': [
+            'baseer_pos_print_bridge/static/src/app/pos_exit.js',
+            'baseer_pos_print_bridge/static/src/app/preparation_bridge.js',
+            'baseer_pos_print_bridge/static/src/app/restaurant_cancellation.js',
+            'baseer_pos_print_bridge/static/src/app/kitchen_send_button.js',
+            'baseer_pos_print_bridge/static/src/app/kitchen_send_button.xml',
+            'baseer_pos_print_bridge/static/src/app/line_actions.js',
+            'baseer_pos_print_bridge/static/src/app/line_actions.xml',
+            'baseer_pos_print_bridge/static/src/app/line_actions.scss',
+            'baseer_pos_print_bridge/static/src/app/table_availability.js',
+            'baseer_pos_print_bridge/static/src/app/table_usage_timer.js',
+            'baseer_pos_print_bridge/static/src/app/table_usage_timer.xml',
+            'baseer_pos_print_bridge/static/src/app/table_usage_timer.scss',
+            'baseer_pos_print_bridge/static/src/app/agent_status.js',
+            'baseer_pos_print_bridge/static/src/app/agent_status.xml',
+            'baseer_pos_print_bridge/static/src/app/agent_status.scss',
+        ],
+    },
+    'installable': True,
+}
+
+

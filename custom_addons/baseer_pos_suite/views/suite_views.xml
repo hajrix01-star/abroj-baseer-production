@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_suite_config_list" model="ir.ui.view">
+        <field name="name">baseer.pos.suite.config.list</field>
+        <field name="model">pos.config</field>
+        <field name="arch" type="xml">
+            <list string="Registers and features" create="0" delete="0">
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="baseer_direct_print_enabled" string="Direct printing"/>
+                <field name="baseer_substitution_enabled" string="Controlled edits"/>
+                <field name="baseer_receipt_layout_mode" string="Receipt layout"/>
+                <field name="baseer_receipt_printer_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_suite_config" model="ir.actions.act_window">
+        <field name="name">Registers and features</field>
+        <field name="res_model">pos.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_suite_config_list"/>
+    </record>
+    <menuitem id="menu_baseer_pos_suite" name="Baseer POS Suite" sequence="35"
+        groups="point_of_sale.group_pos_manager"/>
+    <!-- Explicit reset is necessary when upgrading the formerly nested suite. -->
+    <record id="menu_baseer_pos_suite" model="ir.ui.menu">
+        <field name="parent_id" eval="False"/>
+        <field name="web_icon">baseer_pos_suite,static/description/icon.png</field>
+    </record>
+    <menuitem id="menu_suite_config" name="Registers and features"
+        parent="menu_baseer_pos_suite" action="action_suite_config" sequence="1"
+        groups="point_of_sale.group_pos_manager"/>
+
+    <record id="baseer_pos_print_bridge.menu_baseer_direct_print" model="ir.ui.menu">
+        <field name="parent_id" ref="menu_baseer_pos_suite"/>
+        <field name="name">Direct printing</field>
+    </record>
+
+    <record id="view_pos_config_form_arabic_checklist" model="ir.ui.view">
+        <field name="name">pos.config.form.baseer.arabic.checklist</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='checklist']" position="attributes">
+                <attribute name="string">Check list</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

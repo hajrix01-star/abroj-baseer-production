@@ -1,0 +1,118 @@
+.pos-receipt.baseer-pos-receipt-80 {
+    box-sizing: border-box;
+    inline-size: 80mm;
+    max-inline-size: 100%;
+    margin-inline: auto;
+    padding: 2.5mm 3mm !important;
+    color: #172b36;
+    // Rendered as an image before reaching the thermal spooler, so 11 px was
+    // needlessly light on physical 80 mm paper. Keep the native data but give
+    // Arabic and Latin text enough optical size and contrast.
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 500;
+
+    .baseer-receipt-fiscal-title {
+        margin-block: 2mm 2.5mm;
+        padding-block: 1.5mm;
+        border-block: 1px solid #172b36;
+        font-size: 1.15em;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+
+        .baseer-receipt-fiscal-title-en {
+            display: block;
+            margin-block-start: 0.5mm;
+            font-size: 0.84em;
+            font-weight: 600;
+        }
+    }
+
+    .baseer-receipt-customer,
+    .baseer-receipt-customer-mobile {
+        inline-size: 100%;
+        margin-block: 2mm 0;
+        padding-block: 1.5mm;
+        border-block: 1px solid #172b36;
+        text-align: center;
+        font-size: 1.15em;
+        font-weight: 800;
+    }
+
+    .baseer-receipt-customer-mobile {
+        border-block-start: 0;
+        margin-block-start: 0;
+
+        .baseer-receipt-customer-mobile-label {
+            margin-inline-end: 2mm;
+            font-size: 0.84em;
+            font-weight: 650;
+        }
+
+        .baseer-receipt-customer-mobile-number {
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .orderline {
+        padding-block: 1.25mm;
+        border-block-end: 1px dashed #a9b4ba;
+
+        .product-name,
+        .product-name-content {
+            font-weight: 650;
+        }
+    }
+
+    .pos-receipt-taxes {
+        margin-block-start: 2mm;
+        padding-block: 1.5mm;
+        border-block-start: 1px solid #172b36;
+    }
+
+    .baseer-receipt-summary-label {
+        margin-block-start: 2.5mm;
+        padding-block: 1mm;
+        border-block-start: 1px solid #172b36;
+        font-size: 1.05em;
+        font-weight: 750;
+
+        .baseer-receipt-summary-label-en {
+            display: block;
+            margin-block-start: 0.35mm;
+            font-size: 0.78em;
+            font-weight: 600;
+        }
+    }
+
+    .pos-receipt-amount.receipt-total {
+        margin-block-start: 1.5mm;
+        padding-block: 1.75mm;
+        border-block: 2px solid #172b36;
+        font-size: 1.28em;
+        font-weight: 800;
+    }
+
+    .paymentlines,
+    .receipt-change {
+        padding-block: 0.75mm;
+    }
+
+    .font-monospace,
+    bdi {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .footer-powered-by {
+        font-size: 0.82em;
+        color: #5b6b73;
+    }
+}
+
+@media print {
+    .pos-receipt.baseer-pos-receipt-80 {
+        inline-size: 80mm;
+        max-inline-size: 80mm;
+        margin: 0;
+    }
+}

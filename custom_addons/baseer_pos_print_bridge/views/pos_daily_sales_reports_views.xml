@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_daily_sales_reports_wizard_baseer_whatsapp" model="ir.ui.view">
+        <field name="name">pos.daily.sales.reports.wizard.baseer.whatsapp</field>
+        <field name="model">pos.daily.sales.reports.wizard</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_daily_sales_reports_wizard"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='generate_report']" position="after">
+                <button name="action_baseer_open_whatsapp_session_report"
+                        string="Send via WhatsApp"
+                        type="object"
+                        class="btn-secondary"
+                        groups="point_of_sale.group_pos_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

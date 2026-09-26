@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_kanban_cashier_orders" model="ir.ui.view">
+        <field name="name">pos.config.kanban.cashier.orders</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_config_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="inside">
+                <field name="baseer_cashier_history_hidden"/>
+            </xpath>
+            <xpath expr="//t[@t-name='menu']//a[@name='%(point_of_sale.action_pos_order_filtered)d']" position="replace">
+                <a name="%(point_of_sale.action_pos_order_filtered)d" type="action"
+                   t-if="!record.baseer_cashier_history_hidden.raw_value">Orders</a>
+            </xpath>
+            <xpath expr="//t[@t-name='menu']//a[@name='%(point_of_sale.action_report_pos_order_all_filtered)d']" position="replace">
+                <a name="%(point_of_sale.action_report_pos_order_all_filtered)d" type="action"
+                   t-if="!record.baseer_cashier_history_hidden.raw_value">Orders</a>
+            </xpath>
+            <xpath expr="//t[@t-name='menu']//div[hasclass('col-6')][.//a[@name='%(point_of_sale.action_report_pos_order_all_filtered)d']]" position="attributes">
+                <attribute name="t-if">!record.baseer_cashier_history_hidden.raw_value</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

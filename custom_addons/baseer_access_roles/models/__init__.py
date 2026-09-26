@@ -9,3 +9,4 @@ from . import purchase_batch_audit
 from . import payroll_privacy
 from . import partner_privacy
 from . import advance_entry
+from . import pos_order

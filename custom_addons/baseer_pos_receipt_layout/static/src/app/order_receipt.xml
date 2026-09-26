@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="baseer_pos_receipt_layout.OrderReceipt"
+       t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('pos-receipt')]" position="attributes">
+            <attribute name="t-attf-class">pos-receipt p-2 #{order.config.baseer_receipt_layout_mode === 'baseer_80' ? 'baseer-pos-receipt-80' : ''}</attribute>
+        </xpath>
+        <xpath expr="//ReceiptHeader" position="after">
+            <div t-if="order.config.baseer_receipt_layout_mode === 'baseer_80'"
+                 class="baseer-receipt-fiscal-title text-center">
+                <span>إيصال العميل</span>
+                <span class="baseer-receipt-fiscal-title-en">Customer Receipt</span>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('before-footer')]" position="before">
+            <div t-if="order.config.baseer_receipt_layout_mode === 'baseer_80'"
+                 class="baseer-receipt-summary-label text-center">
+                <span>ملخص الفاتورة</span>
+                <span class="baseer-receipt-summary-label-en">Invoice Summary</span>
+            </div>
+        </xpath>
+        <!-- A tobacco service fee can be a 100% levy subject to a minimum.
+             Keep the Odoo-generated fee amount and label, but do not print its
+             calculation base (for example: "on SR 22.83") in the professional
+             customer layout. Native Odoo receipts remain completely unchanged. -->
+        <xpath expr="//t[@id='tax_base']" position="attributes">
+            <attribute name="t-if">!taxTotals.same_tax_base &amp;&amp; (order.config.baseer_receipt_layout_mode !== 'baseer_80' || (!((tax_group.group_name || '').includes('تبغ')) &amp;&amp; !((tax_group.group_name || '').toLowerCase().includes('tobacco'))))</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_pos_receipt_layout.ReceiptHeader"
+       t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('pos-receipt-customer')]" position="attributes">
+            <attribute name="t-attf-class">pos-receipt-customer mt-2 #{order.config.baseer_receipt_layout_mode === 'baseer_80' ? 'baseer-receipt-customer' : ''}</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt-customer')]" position="after">
+            <div t-if="order.config.baseer_receipt_layout_mode === 'baseer_80' and order.partner_id and order.partner_id.phone"
+                 class="baseer-receipt-customer-mobile text-center">
+                <span class="baseer-receipt-customer-mobile-label">الجوال / Mobile</span>
+                <span class="baseer-receipt-customer-mobile-number" dir="ltr"
+                      t-esc="order.partner_id.phone"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

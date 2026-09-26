@@ -1,11 +1,13 @@
 {
+    'category': 'Baseer/Platform',
     'name': 'Baseer Ready Access Roles',
-    'summary': 'Owner, accountant and cashier presets with company and draft controls',
-    'version': '19.0.1.0.9',
+    'summary': 'Ready access roles for owners, accountants and branch managers',
+    'version': '19.0.1.0.19',
     'license': 'LGPL-3',
     'depends': ['baseer_service_seed', 'baseer_pos_summary', 'sale_management', 'purchase', 'baseer_payroll', 'baseer_procurement_requests'],
     'data': [
         'security/groups.xml',
+        'security/pos_cashier_pos_access.xml',
         'security/denied_rules.xml',
         'security/ir.model.access.csv',
         'security/cashier.xml',
@@ -17,8 +19,16 @@
         'views/purchase_batch_views.xml',
         'views/purchase_batch_approval_audit_views.xml',
         'views/advance_entry_views.xml',
+        'views/pos_cashier_views.xml',
         'data/setup.xml',
     ],
+    'assets': {
+        'point_of_sale._assets_pos': [
+            'baseer_access_roles/static/src/app/cashier_paid_history.js',
+            'baseer_access_roles/static/src/app/cashier_debug_widget.js',
+            'baseer_access_roles/static/src/app/pos_enterprise_primary.scss',
+        ],
+    },
     'installable': True,
     'application': True,
 }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agent/printer access is explicitly enforced by their server methods.
+         The historical PRINT-1 rule XML IDs do not exist on a first install,
+         so do not create incomplete ir.rule records merely to deactivate them. -->
+    <record id="baseer_print_job_sequence" model="ir.sequence">
+        <field name="name">Baseer print job</field>
+        <field name="code">baseer.print.job</field>
+        <field name="prefix">PRN/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="rule_print_route_company" model="ir.rule">
+        <field name="name">Direct print route company isolation</field>
+        <field name="model_id" ref="model_baseer_print_route"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_print_job_company" model="ir.rule">
+        <field name="name">Direct print job company isolation</field>
+        <field name="model_id" ref="model_baseer_print_job"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_print_preparation_state_company" model="ir.rule">
+        <field name="name">Direct print preparation state company isolation</field>
+        <field name="model_id" ref="model_baseer_print_preparation_state"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_print_cancellation_company" model="ir.rule">
+        <field name="name">Direct print cancellation company isolation</field>
+        <field name="model_id" ref="model_baseer_print_cancellation"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_print_preparation_event_company" model="ir.rule">
+        <field name="name">Preparation event company isolation</field>
+        <field name="model_id" ref="model_baseer_print_preparation_event"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

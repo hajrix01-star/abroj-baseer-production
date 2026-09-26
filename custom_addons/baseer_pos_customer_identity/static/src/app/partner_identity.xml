@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_customer_identity.PartnerFilters"
+       t-inherit="point_of_sale.PartnerList"
+       t-inherit-mode="extension">
+        <xpath expr="//Input" position="after">
+            <div class="baseer-pos-customer-filters d-flex gap-1 ms-auto mt-1" role="tablist" aria-label="Customer type filters">
+                <button class="btn btn-sm"
+                        t-att-class="{'btn-primary': state.baseerCustomerCategory === 'individual', 'btn-outline-secondary': state.baseerCustomerCategory !== 'individual'}"
+                        t-on-click="() => this.setBaseerCustomerCategory('individual')">Individuals</button>
+                <button class="btn btn-sm"
+                        t-att-class="{'btn-primary': state.baseerCustomerCategory === 'company', 'btn-outline-secondary': state.baseerCustomerCategory !== 'company'}"
+                        t-on-click="() => this.setBaseerCustomerCategory('company')">Companies</button>
+                <button class="btn btn-sm"
+                        t-att-class="{'btn-primary': state.baseerCustomerCategory === 'employee', 'btn-outline-secondary': state.baseerCustomerCategory !== 'employee'}"
+                        t-on-click="() => this.setBaseerCustomerCategory('employee')">Employees</button>
+            </div>
+        </xpath>
+    </t>
+</templates>

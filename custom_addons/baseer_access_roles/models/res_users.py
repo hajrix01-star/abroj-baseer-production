@@ -2,16 +2,58 @@ from odoo import api, fields, models, Command
 from odoo.exceptions import AccessError, ValidationError
 
 
-ROLE_NAMES = ('owner', 'accountant', 'cashier')
+ROLE_GROUP_XMLIDS = {
+    'owner': 'baseer_access_roles.group_owner',
+    'accountant': 'baseer_access_roles.group_accountant',
+    # ``cashier`` remains the stable technical key for the pre-existing
+    # branch-manager preset.
+    'cashier': 'baseer_access_roles.group_cashier',
+    'pos_cashier': 'baseer_access_roles.group_pos_cashier',
+}
+ROLE_NAMES = tuple(ROLE_GROUP_XMLIDS)
 
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
 
+    baseer_hide_pos_history = fields.Boolean(
+        compute='_compute_baseer_hide_pos_history',
+    )
+
+    @api.depends_context('uid')
+    def _compute_baseer_hide_pos_history(self):
+        """Expose one non-sensitive, per-session POS display flag."""
+        is_restricted_cashier = (
+            self.env.user.has_group('baseer_access_roles.group_pos_cashier')
+            and self.env.user.baseer_restrict_pos_history
+        )
+        for user in self:
+            user.baseer_hide_pos_history = (
+                user.id == self.env.uid and is_restricted_cashier
+            )
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        """Load the flag as a native POS user field, not an ad-hoc payload."""
+        fields_to_load = super()._load_pos_data_fields(config)
+        return [*fields_to_load, 'baseer_hide_pos_history']
+
     baseer_access_role = fields.Selection(
         [('owner', 'Owner / General Manager'), ('accountant', 'Accountant'),
-         ('cashier', 'Cashier')], string='Baseer Access Role', copy=False,
+         # ``cashier`` is a durable technical key used by existing security
+         # rules; the visible title reflects its branch-operations scope.
+         ('cashier', 'Branch Manager'),
+         ('pos_cashier', 'Cashier')], string='Baseer Access Role', copy=False,
         help='Leave empty to manage access manually. Applying a preset replaces existing application rights.',
+    )
+    baseer_restrict_pos_history = fields.Boolean(
+        string='Hide POS sales history and reports',
+        help=(
+            'For the Cashier role only. Enable to hide paid orders and the '
+            'orders/reporting entries in the Point of Sale card menu.'
+        ),
+        default=False,
+        copy=False,
     )
 
     @api.model
@@ -20,13 +62,17 @@ class ResUsers(models.Model):
             raise AccessError(self.env._('Only an administrator can change access roles or memberships.'))
 
     @api.model
+    def _baseer_role_group(self, role, raise_if_not_found=True):
+        return self.env.ref(ROLE_GROUP_XMLIDS[role], raise_if_not_found=raise_if_not_found)
+
+    @api.model
     def _baseer_role_values(self, values):
         values = dict(values)
         role = values.get('baseer_access_role')
         if role:
             if role not in ROLE_NAMES:
                 raise ValidationError(self.env._('Unknown access role.'))
-            group = self.env.ref('baseer_access_roles.group_' + role)
+            group = self._baseer_role_group(role)
             # Reset the explicit grants atomically, including grants left by an old administrator preset.
             role_group_ids = group.ids
             if role == 'owner':
@@ -59,7 +105,10 @@ class ResUsers(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        guarded = {'baseer_access_role', 'group_ids', 'company_ids', 'role'}
+        guarded = {
+            'baseer_access_role', 'baseer_restrict_pos_history', 'group_ids',
+            'company_ids', 'role',
+        }
         if any(guarded.intersection(vals) for vals in vals_list):
             self._baseer_require_role_admin()
         with self.env.cr.savepoint():
@@ -68,7 +117,10 @@ class ResUsers(models.Model):
         return users
 
     def write(self, vals):
-        guarded = {'baseer_access_role', 'group_ids', 'company_ids', 'role'}
+        guarded = {
+            'baseer_access_role', 'baseer_restrict_pos_history', 'group_ids',
+            'company_ids', 'role',
+        }
         if guarded.intersection(vals):
             self._baseer_require_role_admin()
         if 'baseer_access_role' in vals and 'notification_type' not in vals:
@@ -89,18 +141,18 @@ class ResUsers(models.Model):
         groups = self.env['res.groups']
         markers = groups.browse()
         for role in ROLE_NAMES:
-            markers |= self.env.ref('baseer_access_roles.group_' + role, raise_if_not_found=False) or groups
-        if len(markers) != 3:
+            markers |= self._baseer_role_group(role, raise_if_not_found=False) or groups
+        if len(markers) != len(ROLE_NAMES):
             return
         optional = (self.env.ref('base.group_multi_company')
                     | self.env.ref('mail.group_mail_notification_type_inbox'))
         for user in self.sudo():
             actual = user.all_group_ids
             role = user.baseer_access_role
-            expected = self.env.ref('baseer_access_roles.group_' + role) if role else groups
+            expected = self._baseer_role_group(role) if role else groups
             if actual & markers != expected:
                 raise ValidationError(self.env._('Assign Baseer roles using the Access Role selector.'))
-            if role in ('accountant', 'cashier'):
+            if role in ('accountant', 'cashier', 'pos_cashier'):
                 allowed = expected.all_implied_ids | optional
                 if actual - allowed:
                     raise ValidationError(self.env._('These groups exceed the selected access role. Switch to manual access first.'))
@@ -114,7 +166,7 @@ class ResGroups(models.Model):
         marked = self.env['res.users'].sudo().with_context(active_test=False).search([
             '|', ('baseer_access_role', '!=', False),
             ('all_group_ids', 'in', [g.id for name in ROLE_NAMES
-             if (g := self.env.ref('baseer_access_roles.group_' + name, raise_if_not_found=False))]),
+             if (g := self.env['res.users']._baseer_role_group(name, raise_if_not_found=False))]),
         ])
         marked._baseer_validate_roles()
 

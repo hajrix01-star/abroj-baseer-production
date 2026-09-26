@@ -1,4 +1,5 @@
 from uuid import uuid4
+from unittest.mock import patch
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -151,6 +152,101 @@ class CashierProcurementRoleCase(TransactionCase):
         self.assertFalse(cashier.has_group(
             'baseer_procurement_requests.group_procurement_cashier'
         ))
+
+    def test_cpr_t01b_pos_cashier_is_separate_from_the_branch_manager_preset(self):
+        """The new cashier is POS-only; the existing durable key stays intact."""
+        company = self.env.company
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'POS-only cashier',
+            'login': 'pos-only-cashier-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'baseer_access_role': 'pos_cashier',
+        })
+
+        self.assertTrue(cashier.has_group('baseer_access_roles.group_pos_cashier'))
+        self.assertTrue(cashier.has_group('point_of_sale.group_pos_user'))
+        self.assertFalse(cashier.has_group('baseer_access_roles.group_cashier'))
+        self.assertFalse(cashier.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ))
+        self.assertFalse(cashier.has_group('account.group_account_invoice'))
+        payment_wizard = self.env['pos.make.payment'].with_user(cashier)
+        self.assertTrue(payment_wizard.check_access('read'))
+        self.assertTrue(payment_wizard.check_access('create'))
+
+    def test_cpr_t01c_pos_cashier_never_receives_paid_ticket_history(self):
+        """The paid-ticket endpoint is empty only for the POS cashier role."""
+        company = self.env.company
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'POS history cashier',
+            'login': 'pos-history-cashier-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'baseer_access_role': 'pos_cashier',
+        })
+        config = self.env['pos.config'].create({'name': 'Cashier history POS'})
+        native_endpoint = (
+            'odoo.addons.point_of_sale.models.pos_order.PosOrder.'
+            'search_paid_order_ids'
+        )
+
+        with patch(native_endpoint) as native_search:
+            result = self.env['pos.order'].with_user(cashier).search_paid_order_ids(
+                config.id, [], 30, 0,
+            )
+
+        native_result = {'ordersInfo': [{'id': 999}], 'totalCount': 1}
+        with patch(native_endpoint, return_value=native_result) as native_search:
+            result = self.env['pos.order'].with_user(cashier).search_paid_order_ids(
+                config.id, [], 30, 0,
+            )
+
+        self.assertEqual(result, native_result)
+        native_search.assert_called_once_with(config.id, [], 30, 0)
+
+        cashier_loader = self.env['res.users'].with_user(cashier)
+        self.assertIn(
+            'baseer_hide_pos_history',
+            cashier_loader._load_pos_data_fields(config),
+        )
+        self.assertFalse(
+            cashier_loader._load_pos_data_read(cashier_loader.env.user, config)[0]
+            ['baseer_hide_pos_history']
+        )
+
+        restricted_cashier = self.env['res.users'].with_context(
+            no_reset_password=True
+        ).create({
+            'name': 'Restricted POS history cashier',
+            'login': 'restricted-pos-history-cashier-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'baseer_access_role': 'pos_cashier',
+            'baseer_restrict_pos_history': True,
+        })
+        restricted_loader = self.env['res.users'].with_user(restricted_cashier)
+        self.assertTrue(
+            restricted_loader._load_pos_data_read(
+                restricted_loader.env.user, config
+            )[0]
+            ['baseer_hide_pos_history']
+        )
+        with patch(native_endpoint) as native_search:
+            result = self.env['pos.order'].with_user(
+                restricted_cashier
+            ).search_paid_order_ids(
+                config.id, [], 30, 0,
+            )
+
+        self.assertEqual(result, {'ordersInfo': [], 'totalCount': 0})
+        native_search.assert_not_called()
+
+    def test_cpr_t01d_pos_cashier_dashboard_hides_the_orders_link(self):
+        """The POS-card menu must not expose its backend orders route."""
+        view = self.env.ref('baseer_access_roles.view_pos_config_kanban_cashier_orders')
+        self.assertEqual(view.arch_db.count('baseer_cashier_history_hidden'), 4)
+        self.assertNotIn('groups="!baseer_access_roles.group_pos_cashier"', view.arch_db)
 
     def test_cpr_t01a_cashier_sees_only_curated_navigation(self):
         """BASSER replaces native roots when installed; otherwise preserve legacy paths."""

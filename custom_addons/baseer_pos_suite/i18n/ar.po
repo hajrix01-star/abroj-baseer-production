@@ -1,0 +1,49 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0?0:n==1?1:n==2?2:n%100>=3 && n%100<=10?3:n%100>=11?4:5;\n"
+
+#. module: baseer_pos_suite
+#: model:ir.ui.menu,name:baseer_pos_suite.menu_baseer_pos_suite
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_suite
+msgid "Baseer POS Suite"
+msgstr "حزمة نقاط البيع"
+
+#. module: baseer_pos_suite
+#: model:ir.ui.menu,name:baseer_pos_suite.menu_suite_config
+#: model:ir.actions.act_window,name:baseer_pos_suite.action_suite_config
+#: model_terms:ir.ui.view,arch_db:baseer_pos_suite.view_suite_config_list
+msgid "Registers and features"
+msgstr "نقاط البيع والميزات"
+
+#. module: baseer_pos_suite
+#: model_terms:ir.ui.view,arch_db:baseer_pos_suite.view_suite_config_list
+msgid "Set up printer"
+msgstr "إعداد الطابعة"
+
+#. module: baseer_pos_suite
+#: model_terms:ir.ui.view,arch_db:baseer_pos_suite.view_suite_config_list
+msgid "Direct printing"
+msgstr "الطباعة المباشرة"
+
+#. module: baseer_pos_suite
+#: model_terms:ir.ui.view,arch_db:baseer_pos_suite.view_suite_config_list
+msgid "Controlled edits"
+msgstr "التعديل الموثق"
+
+#. module: baseer_pos_suite
+#: model_terms:ir.ui.view,arch_db:baseer_pos_suite.view_suite_config_list
+msgid "Receipt layout"
+msgstr "تصميم الإيصال"
+
+#. module: baseer_pos_suite
+#: model_terms:ir.ui.view,arch_db:baseer_pos_suite.view_pos_config_form_arabic_checklist
+msgid "Check list"
+msgstr "قائمة التحقق"
+
+#. module: baseer_pos_suite
+#: model:ir.module.module,summary:base.module_baseer_pos_suite
+msgid "Install and configure Baseer POS printing and item controls"
+msgstr "يجمع إعدادات طباعة نقاط البيع وتعديل الأصناف."

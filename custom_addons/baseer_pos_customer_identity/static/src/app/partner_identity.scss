@@ -1,0 +1,23 @@
+.pos .baseer-pos-customer-filters {
+    flex-wrap: wrap;
+
+    .btn {
+        min-height: 2rem;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 576px) {
+    .pos .partner-list .modal-header {
+        flex-wrap: wrap;
+    }
+
+    .pos .baseer-pos-customer-filters {
+        width: 100%;
+        justify-content: space-between;
+
+        .btn {
+            flex: 1 1 auto;
+        }
+    }
+}

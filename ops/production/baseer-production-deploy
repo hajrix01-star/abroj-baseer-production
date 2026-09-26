@@ -127,6 +127,23 @@ fetch_reviewed_source() {
     rm -rf -- "$fetch_repo"
 }
 
+# A database can retain an installed Baseer module even if an earlier manual
+# source repair was never committed.  A Git-archived release would then start
+# without that module and fail later while rendering a view.  Fail before the
+# live service is stopped whenever the candidate source is not closed over the
+# installed Baseer addon set.
+verify_installed_baseer_module_source() {
+    local installed_module
+    while IFS= read -r installed_module; do
+        [ -n "$installed_module" ] || continue
+        [ -f "$source_dir/custom_addons/$installed_module/__manifest__.py" ] \
+            || die "installed Baseer module is missing from release source: $installed_module"
+    done < <(
+        docker exec "$DB_CONTAINER" sh -lc \
+            'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT name FROM ir_module_module WHERE state = '\''installed'\'' AND name LIKE '\''baseer_%'\'' ORDER BY name"'
+    )
+}
+
 snapshot_sql=$(cat <<'SQL'
 SELECT jsonb_build_object(
   'account.move', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_move),
@@ -268,6 +285,7 @@ done
 for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
     [ -f "$source_dir/third_party_addons/erp_heritage_19/$approved_module/__manifest__.py" ] || die "approved third-party module is missing from release: $approved_module"
 done
+verify_installed_baseer_module_source
 
 compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
 odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"

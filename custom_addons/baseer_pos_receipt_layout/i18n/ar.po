@@ -1,0 +1,15 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.module.module,shortdesc:base.module_baseer_pos_receipt_layout
+msgid "Baseer POS Receipt Layout"
+msgstr "تصميم إيصال 80 مم"
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.module.module,summary:base.module_baseer_pos_receipt_layout
+msgid "Optional 80 mm layout for the original POS receipt"
+msgstr "ينسق إيصال أودو الأصلي للطابعة الحرارية 80 مم."

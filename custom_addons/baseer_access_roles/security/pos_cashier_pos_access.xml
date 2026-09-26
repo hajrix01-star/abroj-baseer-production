@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Re-assert the native POS user grant on upgrade.  Existing cashier
+         records were created before this role was split from Branch Manager. -->
+    <record id="group_pos_cashier" model="res.groups">
+        <field name="implied_ids" eval="[(6, 0, [ref('base.group_user'), ref('point_of_sale.group_pos_user')])]"/>
+    </record>
+</odoo>

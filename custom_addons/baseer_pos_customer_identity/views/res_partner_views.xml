@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_partner_form_baseer_pos_customer" model="ir.ui.view">
+        <field name="name">res.partner.form.baseer.pos.customer</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <form string="Customer" create="1" edit="1" delete="0">
+                <sheet>
+                    <group>
+                        <field name="name" required="1"/>
+                        <field name="phone"/>
+                        <field name="city"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="point_of_sale.res_partner_action_edit_pos" model="ir.actions.act_window">
+        <field name="context">{'baseer_pos_customer_form': True}</field>
+        <field name="view_id" ref="view_partner_form_baseer_pos_customer"/>
+    </record>
+</odoo>

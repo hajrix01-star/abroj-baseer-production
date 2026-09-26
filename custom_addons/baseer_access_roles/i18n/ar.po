@@ -28,8 +28,14 @@ msgstr "المحاسب"
 #. module: baseer_access_roles
 #: model:res.groups,name:baseer_access_roles.group_cashier
 #: model:ir.model.fields.selection,name:baseer_access_roles.selection__res_users__baseer_access_role__cashier
+msgid "Branch Manager"
+msgstr "مدير فرع"
+
+#. module: baseer_access_roles
+#: model:res.groups,name:baseer_access_roles.group_pos_cashier
+#: model:ir.model.fields.selection,name:baseer_access_roles.selection__res_users__baseer_access_role__pos_cashier
 msgid "Cashier"
-msgstr "الكاشير"
+msgstr "كاشير"
 
 #. module: baseer_access_roles
 #: model:ir.model.fields,field_description:baseer_access_roles.field_res_users__baseer_access_role
@@ -348,3 +354,13 @@ msgstr "يسمح هذا بترحيل فواتير الموردين ومدفوع�
 #: model_terms:ir.ui.view,arch_db:baseer_access_roles.view_purchase_batch_form_cashier_approval
 msgid "Your draft remains pending accountant approval for this company."
 msgstr "تبقى مسودتك بانتظار اعتماد المحاسب لهذه الشركة."
+
+#. module: baseer_access_roles
+#: model:ir.module.module,shortdesc:base.module_baseer_access_roles
+msgid "Baseer Ready Access Roles"
+msgstr "صلاحيات بصير"
+
+#. module: baseer_access_roles
+#: model:ir.module.module,summary:base.module_baseer_access_roles
+msgid "Ready access roles for owners, accountants and branch managers"
+msgstr "يجهز صلاحيات المالك والمحاسب ومدير الفرع."

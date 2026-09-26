@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <!-- Keep the printing status immediately next to the POS menu button.
+             Appending it to status-buttons puts it at the far end on RTL mobile. -->
+        <xpath expr="//div[hasclass('status-buttons')]/Dropdown" position="before">
+            <button t-if="pos.config.baseer_direct_print_enabled"
+                    class="baseer-agent-status btn btn-sm d-flex align-items-center gap-1"
+                    t-att-class="{
+                        'is-online': baseerAgentStatus.state === 'online',
+                        'is-warning': baseerAgentStatus.state === 'stale' or baseerAgentStatus.state === 'unknown',
+                        'is-offline': baseerAgentStatus.state === 'offline' or baseerAgentStatus.state === 'unconfigured'
+                    }"
+                    t-att-disabled="!baseerAgentStatus.repair_uri_allowed"
+                    t-att-title="baseerAgentStatusTitle"
+                    t-on-click="baseerOpenAgentRepair">
+                <i class="fa fa-fw fa-print" aria-hidden="true"/>
+                <span t-esc="baseerAgentStatusLabel"/>
+            </button>
+        </xpath>
+    </t>
+</templates>

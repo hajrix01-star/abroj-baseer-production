@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="baseer_pos_product_substitution.SubstitutionPopup">
+        <Dialog title.translate="Edit protected item" size="'lg'">
+            <div class="baseer-substitution-popup">
+                <p class="text-muted mb-3">
+                    <strong t-esc="props.line.getFullProductName()"/><br/><span>choose allowed replacements only</span>
+                </p>
+                <div class="baseer-substitution-products">
+                    <div t-foreach="props.products" t-as="product" t-key="product.id" class="baseer-substitution-product">
+                        <span class="text-truncate" t-esc="product.display_name"/>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" aria-label="Decrease quantity" class="btn btn-outline-secondary" t-on-click="() => this.decrease(product)">−</button>
+                            <strong t-esc="state.quantities[product.id] || 0"/>
+                            <button type="button" aria-label="Increase quantity" class="btn btn-primary" t-on-click="() => this.increase(product)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <label class="form-label mt-3" for="baseer-substitution-note">Reason / note (optional)</label>
+                <input id="baseer-substitution-note" class="form-control" t-model="state.note" maxlength="250"/>
+                <p class="small text-muted mt-2 mb-0">Odoo validates the exact total using the active price list and taxes before saving.</p>
+            </div>
+            <t t-set-slot="footer">
+                <button type="button" class="btn btn-secondary" t-on-click="props.close">Back</button>
+                <button type="button" class="btn btn-primary" t-att-disabled="!selectedProducts.length" t-on-click="confirm">Confirm edit</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

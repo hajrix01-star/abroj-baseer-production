@@ -1,0 +1,32 @@
+.baseer-agent-status {
+    min-height: 30px;
+    padding: 0.22rem 0.42rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--body-color, #212529);
+    font-size: 0.76rem;
+    font-weight: 600;
+
+    .fa-print {
+        font-size: 0.95rem;
+    }
+
+    &.is-online {
+        color: #146c43;
+        opacity: 1;
+    }
+
+    &.is-warning {
+        color: #8a5a13;
+    }
+
+    &.is-offline {
+        border-color: #f0b6b1;
+        background: #fff5f4;
+        color: #b42318;
+    }
+
+    &:not(:disabled):hover {
+        background: #fff0ef;
+    }
+}

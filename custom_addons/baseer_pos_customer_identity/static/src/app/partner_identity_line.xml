@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_customer_identity.PartnerLine"
+       t-inherit="point_of_sale.PartnerLine"
+       t-inherit-mode="extension">
+        <!-- POS customer selection is intentionally limited to identity details. -->
+        <!-- Target concrete partner-line elements, never Owl's conditional branch
+             wrappers: the compiler may remove those wrappers before inheritance. -->
+        <xpath expr="//div[contains(@class, 'company-field')]" position="replace">
+            <div class="baseer-pos-partner-city text-muted" t-if="props.partner.city" t-esc="props.partner.city"/>
+        </xpath>
+        <xpath expr="//div[contains(@class, 'partner-line-adress')]" position="replace"/>
+        <xpath expr="//div[contains(@class, 'email-field')]" position="replace"/>
+    </t>
+</templates>

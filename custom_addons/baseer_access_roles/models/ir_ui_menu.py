@@ -23,7 +23,9 @@ class IrUiMenu(models.Model):
         user = self.env.user
         if user.has_group('baseer_access_roles.group_owner'):
             return visible
-        if user.has_group('baseer_access_roles.group_cashier'):
+        if user.has_group('baseer_access_roles.group_pos_cashier'):
+            role_roots = ['point_of_sale.menu_point_root']
+        elif user.has_group('baseer_access_roles.group_cashier'):
             role_roots = [
                 'point_of_sale.menu_point_root',
                 'baseer_procurement_requests.menu_procurement_root',

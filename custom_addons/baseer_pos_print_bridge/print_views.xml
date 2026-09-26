@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_kanban_session_status" model="ir.ui.view">
+        <field name="name">pos.config.kanban.baseer.last.closing.label</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_config_kanban"/>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <!-- This row describes the last CLOSED session's date, not an
+                 in-progress closing state. Keep native status badges intact. -->
+            <xpath expr="//field[@name='last_session_closing_date']/preceding-sibling::div/span" position="replace">
+                <span name="baseer_last_session_closed_label">Last session closed</span>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_company_form_primary_print_agent" model="ir.ui.view">
+        <field name="name">res.company.form.baseer.primary.print.agent</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_info']" position="inside">
+                <group string="Advanced POS printing" groups="base.group_system">
+                    <field name="baseer_primary_print_agent_id"
+                           domain="[('active','=',True), ('state','in',['online','offline']), ('allowed_company_ids','in', id)]"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_config_form_direct_print" model="ir.ui.view">
+        <field name="name">pos.config.form.baseer.direct.print</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']" position="after">
+                <page string="Baseer printing" name="baseer_printing" groups="base.group_system">
+                    <field name="baseer_effective_print_agent_id" invisible="1"/>
+                    <group col="2">
+                        <group string="Printer settings">
+                            <field name="baseer_direct_print_enabled" string="Enable printing for this POS"
+                                   help="Odoo sends print jobs securely to the company print computer. iPads do not connect to printers directly."/>
+                            <field name="baseer_print_hardware_status" string="Print connection status" readonly="1"/>
+                            <button name="action_baseer_download_and_connect_agent" type="object"
+                                    string="Add print computer" class="btn-primary"
+                                    invisible="baseer_effective_print_agent_id"
+                                    help="Downloads one file for the company Windows print computer. Open it once to install, connect and start automatically."/>
+                            <field name="baseer_receipt_printer_id"
+                                   string="Receipt printer"
+                                   help="Choose an active 80 mm receipt printer discovered by the company print computer."
+                                   domain="[('active','=',True), ('paper_width','=','80'), ('agent_id','=',baseer_effective_print_agent_id), ('allowed_company_ids','in', company_id)]"
+                                   invisible="not baseer_direct_print_enabled"/>
+                            <button name="action_baseer_test_receipt_printer" type="object"
+                                    string="Test receipt printing" class="btn-secondary"
+                                    invisible="not baseer_direct_print_enabled"/>
+                        </group>
+                        <group string="Copies and receipt layout" invisible="not baseer_direct_print_enabled">
+                            <field name="baseer_receipt_copies" string="Receipt copies"/>
+                            <field name="baseer_native_receipt_enabled" string="Print the customer receipt"/>
+                            <field name="baseer_print_session_close_report" string="Print the session closing report"/>
+                        </group>
+                    </group>
+                    <group string="Print customization" invisible="not baseer_direct_print_enabled">
+                        <field name="baseer_preparation_binding_ids" domain="[('ticket_type','=','preparation')]"
+                               help="Use the default kitchen route for a single kitchen printer. Add category rows only when different product categories need different printers.">
+                            <list editable="bottom" default_order="pos_category_id, printer_id">
+                                <field name="pos_category_id"/>
+                                <field name="printer_id" domain="[('active','=',True), ('paper_width','=','80'), ('agent_id','=',parent.baseer_effective_print_agent_id), ('allowed_company_ids','in', parent.company_id)]"/>
+                                <field name="copies"/>
+                                <field name="active"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_baseer_print_setup_wizard_form" model="ir.ui.view">
+        <field name="name">baseer.print.setup.wizard.form</field>
+        <field name="model">baseer.print.setup.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Guided print setup" create="0" edit="0" delete="0">
+                <sheet>
+                    <div class="oe_title"><h1>Guided print setup</h1></div>
+                    <group>
+                        <group string="1. Point of sale">
+                            <field name="pos_config_id" string="Point of sale"/>
+                            <field name="company_id" string="Company"/>
+                        </group>
+                        <group string="2. Print computer">
+                            <field name="setup_mode" widget="radio" options="{'horizontal': true}"/>
+                            <field name="agent_id" string="Windows computer"
+                                   domain="[('active', '=', True), ('state', 'in', ['online', 'offline']), ('allowed_company_ids', 'in', company_id)]"
+                                   invisible="setup_mode != 'existing'" required="setup_mode == 'existing'"/>
+                            <div class="text-muted" colspan="2" invisible="setup_mode != 'existing'">Choose the Windows computer already connected to the printer. One computer can serve all POS cashiers and its discovered printers are selected separately for each POS.</div>
+                            <button name="action_download_and_connect_agent" type="object" string="Download and connect print computer" class="btn-primary" invisible="setup_mode != 'new'" help="Downloads one file for this new Windows computer. Open it once and it installs, connects and starts automatically."/>
+                        </group>
+                    </group>
+                    <group string="3. Printer and kitchen">
+                        <field name="receipt_printer_id" domain="[('agent_id', '=', agent_id), ('active', '=', True), ('paper_width', '=', '80')]" invisible="not agent_id"/>
+                        <field name="create_default_kitchen_route"/>
+                        <div class="text-muted" colspan="2">After pairing, Windows-discovered 80 mm printers appear here automatically. The selected printer is used for the customer receipt and closing report; kitchen use is optional.</div>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply_and_test" type="object" string="Save and test printer" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_baseer_print_agent_list" model="ir.ui.view"><field name="name">baseer.print.agent.list</field><field name="model">baseer.print.agent</field><field name="arch" type="xml"><list><field name="name"/><field name="device_uid"/><field name="allowed_company_ids" widget="many2many_tags"/><field name="state" widget="badge" decoration-success="state == 'online'"/><field name="last_seen_at"/><field name="active"/></list></field></record>
+    <record id="view_baseer_print_agent_form" model="ir.ui.view"><field name="name">baseer.print.agent.form</field><field name="model">baseer.print.agent</field><field name="arch" type="xml"><form string="Windows print agent"><header><button name="action_generate_pairing_code" type="object" string="Create pairing code" class="btn-primary" invisible="state == 'revoked' or not active"/><button name="action_revoke_token" type="object" string="Revoke agent" confirm="The Windows agent will need a new pairing code."/><field name="state" widget="statusbar" readonly="1"/></header><sheet><group><field name="name"/><field name="device_uid"/><field name="allowed_company_ids" widget="many2many_tags"/><field name="active"/><field name="agent_version" readonly="1"/><field name="last_seen_at" readonly="1"/></group></sheet></form></field></record>
+    <record id="action_baseer_print_agent" model="ir.actions.act_window"><field name="name">Windows agents</field><field name="res_model">baseer.print.agent</field><field name="view_mode">list,form</field></record>
+
+    <record id="view_baseer_print_agent_release_list" model="ir.ui.view">
+        <field name="name">baseer.print.agent.release.list</field><field name="model">baseer.print.agent.release</field>
+        <field name="arch" type="xml"><list><field name="name" string="الاسم"/><field name="version" string="الإصدار"/><field name="state" string="الحالة" widget="badge" decoration-success="state == 'approved'"/><field name="artifact_sha256" string="بصمة الملف" optional="hide"/><field name="approved_at" string="وقت الاعتماد"/><field name="approved_by" string="اعتمده"/></list></field>
+    </record>
+    <record id="view_baseer_print_agent_release_form" model="ir.ui.view">
+        <field name="name">baseer.print.agent.release.form</field><field name="model">baseer.print.agent.release</field>
+        <field name="arch" type="xml"><form string="وكيل طباعة ويندوز"><header><button name="action_approve" type="object" string="اعتماد ملف التنزيل" class="btn-primary" invisible="state != 'draft'"/><button name="action_download_and_connect_current_company" type="object" string="تنزيل وربط جهاز الطباعة" class="btn-primary" invisible="state != 'approved'"/><button name="action_retire" type="object" string="إيقاف الإصدار" class="btn-secondary" invisible="state != 'approved'"/><field name="state" widget="statusbar" statusbar_visible="draft,approved,retired" readonly="1"/></header><sheet><div class="oe_title"><h1>وكيل الطباعة</h1><p class="text-muted">نزّل ملف الربط المعتمد وافتحه مرة واحدة على جهاز الطابعة؛ يتثبت ويرتبط ويبدأ تلقائيًا.</p></div><group><group><field name="name" string="الاسم"/><field name="version" string="الإصدار"/><field name="artifact" string="ملف الوكيل" filename="artifact_filename" invisible="state != 'draft'"/><field name="artifact_filename" invisible="1"/><field name="signer_identity" string="هوية التوقيع" invisible="state != 'draft'"/></group><group><field name="artifact_sha256" string="بصمة الملف" readonly="1"/><field name="approved_at" string="وقت الاعتماد" readonly="1"/><field name="approved_by" string="اعتمده" readonly="1"/></group></group><group><field name="release_notes" string="ملاحظات الإصدار" placeholder="ما الذي تغير في هذا الإصدار؟" readonly="state != 'draft'"/></group></sheet></form></field>
+    </record>
+    <record id="action_baseer_print_agent_release" model="ir.actions.act_window"><field name="name">مركز وكيل الطباعة</field><field name="res_model">baseer.print.agent.release</field><field name="view_mode">list,form</field></record>
+
+    <record id="view_baseer_print_printer_list" model="ir.ui.view"><field name="name">baseer.print.printer.list</field><field name="model">baseer.print.printer</field><field name="arch" type="xml"><list><field name="name"/><field name="agent_id"/><field name="allowed_company_ids" widget="many2many_tags"/><field name="driver_name"/><field name="paper_width"/><field name="last_seen_at"/><field name="active"/></list></field></record>
+    <record id="view_baseer_print_printer_form" model="ir.ui.view"><field name="name">baseer.print.printer.form</field><field name="model">baseer.print.printer</field><field name="arch" type="xml"><form string="Windows printer"><sheet><group><field name="name" readonly="1"/><field name="agent_id" readonly="1"/><field name="allowed_company_ids" widget="many2many_tags"/><field name="machine_identifier" readonly="1"/><field name="driver_name" readonly="1"/><field name="paper_width"/><field name="last_seen_at" readonly="1"/><field name="active"/></group></sheet></form></field></record>
+    <record id="action_baseer_print_printer" model="ir.actions.act_window"><field name="name">Windows printers</field><field name="res_model">baseer.print.printer</field><field name="view_mode">list,form</field></record>
+
+    <record id="view_baseer_print_job_list" model="ir.ui.view"><field name="name">baseer.print.job.list</field><field name="model">baseer.print.job</field><field name="arch" type="xml"><list><field name="name"/><field name="company_id" groups="base.group_multi_company"/><field name="pos_config_id"/><field name="ticket_type"/><field name="source_session_id" optional="hide"/><field name="cancellation_id" optional="hide"/><field name="preparation_event_id" optional="hide"/><field name="printer_id"/><field name="state" widget="badge" decoration-success="state == 'done'" decoration-danger="state == 'failed'"/><field name="attempt_count"/><field name="acceptance_latency_seconds" optional="show"/><field name="create_date"/></list></field></record>
+    <record id="view_baseer_print_job_form" model="ir.ui.view"><field name="name">baseer.print.job.form</field><field name="model">baseer.print.job</field><field name="arch" type="xml"><form string="Print job"><header><button name="action_reprint" type="object" string="Reprint" class="btn-primary" invisible="state not in ['done','failed','cancelled']"/><button name="action_confirm_paper_output" type="object" string="Confirm paper output" invisible="state != 'done' or paper_confirmed_at"/><field name="state" widget="statusbar" readonly="1"/></header><sheet><group><field name="company_id" readonly="1"/><field name="pos_config_id" readonly="1"/><field name="ticket_type" readonly="1"/><field name="source_session_id" readonly="1"/><field name="cancellation_id" readonly="1"/><field name="preparation_event_id" readonly="1"/><field name="agent_id" readonly="1"/><field name="printer_id" readonly="1"/><field name="sent_at" readonly="1"/><field name="completed_at" readonly="1"/><field name="queue_latency_seconds" readonly="1"/><field name="agent_latency_seconds" readonly="1"/><field name="acceptance_latency_seconds" readonly="1"/><field name="receipt_image_sha256" readonly="1" groups="base.group_system"/><field name="receipt_image_purged_at" readonly="1"/><field name="paper_confirmed_at" readonly="1"/><field name="paper_confirmed_by" readonly="1"/><field name="error_code" readonly="1"/></group><notebook><page string="Payload" groups="base.group_system"><field name="payload" readonly="1"/></page></notebook></sheet></form></field></record>
+    <record id="action_baseer_print_job" model="ir.actions.act_window"><field name="name">Print jobs</field><field name="res_model">baseer.print.job</field><field name="view_mode">list,form</field></record>
+
+    <record id="view_pos_session_form_baseer_closing_report" model="ir.ui.view">
+        <field name="name">pos.session.form.baseer.closing.report</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <field name="baseer_print_session_close_report" invisible="1"/>
+                <button name="action_baseer_print_closing_report" type="object"
+                        string="Print closing report" class="btn-secondary"
+                        groups="point_of_sale.group_pos_manager"
+                        invisible="state != 'closed' or not baseer_print_session_close_report"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_baseer_whatsapp_closing_report_from_session" model="ir.actions.server">
+        <field name="name">إرسال عبر واتساب</field>
+        <field name="model_id" ref="point_of_sale.model_pos_session"/>
+        <field name="binding_model_id" ref="point_of_sale.model_pos_session"/>
+        <field name="binding_view_types">form</field>
+        <field name="sequence">1</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_baseer_open_whatsapp_closing_report()</field>
+        <field name="group_ids" eval="[(4, ref('point_of_sale.group_pos_manager'))]"/>
+    </record>
+
+    <record id="view_baseer_print_cancellation_list" model="ir.ui.view"><field name="name">baseer.print.cancellation.list</field><field name="model">baseer.print.cancellation</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="order_reference"/><field name="company_id" groups="base.group_multi_company"/><field name="pos_config_id"/><field name="reason_code"/><field name="requested_by"/><field name="create_date"/></list></field></record>
+    <record id="view_baseer_print_cancellation_form" model="ir.ui.view"><field name="name">baseer.print.cancellation.form</field><field name="model">baseer.print.cancellation</field><field name="arch" type="xml"><form string="Kitchen cancellation" create="0" edit="0" delete="0"><sheet><group><field name="order_reference" readonly="1"/><field name="company_id" readonly="1"/><field name="pos_config_id" readonly="1"/><field name="session_id" readonly="1"/><field name="requested_by" readonly="1"/><field name="reason_code" readonly="1"/><field name="reason_note" readonly="1"/><field name="create_date" readonly="1"/></group><notebook><page string="Print jobs"><field name="job_ids" readonly="1"><list><field name="name"/><field name="printer_id"/><field name="state" widget="badge"/><field name="completed_at"/></list></field></page><page string="Snapshot" groups="base.group_system"><field name="snapshot" readonly="1"/></page></notebook></sheet></form></field></record>
+    <record id="action_baseer_print_cancellation" model="ir.actions.act_window"><field name="name">Kitchen cancellations</field><field name="res_model">baseer.print.cancellation</field><field name="view_mode">list,form</field></record>
+
+    <record id="view_baseer_print_preparation_event_search" model="ir.ui.view">
+        <field name="name">baseer.print.preparation.event.search</field>
+        <field name="model">baseer.print.preparation.event</field>
+        <field name="arch" type="xml">
+            <search string="Kitchen changes">
+                <field name="order_reference"/>
+                <field name="product_id"/>
+                <field name="cashier_name"/>
+                <field name="requested_by"/>
+                <field name="pos_config_id"/>
+                <field name="reason_code"/>
+                <filter name="action_cancel" string="Cancelled" domain="[('action', '=', 'cancel')]"/>
+                <filter name="action_reduce" string="Reduced" domain="[('action', '=', 'reduce')]"/>
+                <separator/>
+                <filter name="group_order" string="Order" context="{'group_by': 'order_reference'}"/>
+                <filter name="group_action" string="Action" context="{'group_by': 'action'}"/>
+                <filter name="group_cashier" string="Cashier" context="{'group_by': 'requested_by'}"/>
+                <filter name="group_day" string="Day" context="{'group_by': 'create_date:day'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="view_baseer_print_preparation_event_list" model="ir.ui.view">
+        <field name="name">baseer.print.preparation.event.list</field>
+        <field name="model">baseer.print.preparation.event</field>
+        <field name="arch" type="xml">
+            <list string="Kitchen changes" create="0" edit="0" delete="0" default_order="create_date desc, id desc">
+                <field name="create_date"/>
+                <field name="order_reference"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="pos_config_id" optional="show"/>
+                <field name="product_id"/>
+                <field name="action" widget="badge" decoration-danger="action == 'cancel'" decoration-warning="action == 'reduce'" decoration-success="action in ['new', 'add']"/>
+                <field name="previous_quantity" optional="hide"/>
+                <field name="delta_quantity"/>
+                <field name="new_quantity"/>
+                <field name="reason_code" optional="show"/>
+                <field name="cashier_name"/>
+                <field name="requested_by" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_baseer_print_preparation_event_form" model="ir.ui.view">
+        <field name="name">baseer.print.preparation.event.form</field>
+        <field name="model">baseer.print.preparation.event</field>
+        <field name="arch" type="xml">
+            <form string="Kitchen change" create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group><field name="order_reference"/><field name="product_id"/><field name="action"/><field name="cashier_name"/><field name="requested_by"/><field name="create_date"/></group>
+                        <group><field name="previous_quantity"/><field name="delta_quantity"/><field name="new_quantity"/><field name="reason_code"/><field name="reason_note"/></group>
+                    </group>
+                    <group><field name="company_id"/><field name="pos_config_id"/><field name="session_id"/><field name="line_uuid"/><field name="action_uuid"/></group>
+                    <notebook>
+                        <page string="Print jobs"><field name="job_ids" readonly="1"><list><field name="name"/><field name="printer_id"/><field name="state" widget="badge"/><field name="sent_at"/><field name="completed_at"/><field name="paper_confirmed_at"/></list></field></page>
+                        <page string="Snapshot" groups="base.group_system"><field name="snapshot" readonly="1"/></page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_baseer_print_preparation_event" model="ir.actions.act_window">
+        <field name="name">Kitchen changes</field>
+        <field name="res_model">baseer.print.preparation.event</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_baseer_print_preparation_event_search"/>
+    </record>
+
+    <menuitem id="menu_baseer_direct_print" name="Direct printing" parent="point_of_sale.menu_point_config_product" sequence="40" groups="point_of_sale.group_pos_manager"/>
+    <menuitem id="menu_baseer_print_jobs" name="Print jobs" parent="menu_baseer_direct_print" action="action_baseer_print_job" sequence="1" groups="point_of_sale.group_pos_manager"/>
+    <menuitem id="menu_baseer_print_cancellations" name="Kitchen cancellations" parent="menu_baseer_direct_print" action="action_baseer_print_cancellation" sequence="2" groups="point_of_sale.group_pos_manager"/>
+    <menuitem id="menu_baseer_print_preparation_events" name="Kitchen changes" parent="menu_baseer_direct_print" action="action_baseer_print_preparation_event" sequence="3" groups="point_of_sale.group_pos_manager"/>
+    <menuitem id="menu_baseer_print_agents" name="Windows agents" parent="menu_baseer_direct_print" action="action_baseer_print_agent" sequence="5" groups="base.group_system"/>
+    <menuitem id="menu_baseer_print_agent_center" name="مركز وكيل الطباعة" parent="menu_baseer_direct_print" action="action_baseer_print_agent_release" sequence="4" groups="base.group_system"/>
+    <menuitem id="menu_baseer_print_printers" name="Windows printers" parent="menu_baseer_direct_print" action="action_baseer_print_printer" sequence="6" groups="base.group_system"/>
+</odoo>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_pos_substitution_list" model="ir.ui.view">
+        <field name="name">baseer.pos.substitution.list</field>
+        <field name="model">baseer.pos.substitution</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="event_at"/>
+                <field name="order_reference"/>
+                <field name="pos_config_id"/>
+                <field name="session_id"/>
+                <field name="reason_note"/>
+                <field name="cashier_id"/>
+                <field name="source_product_id"/>
+                <field name="replacement_product_ids" widget="many2many_tags"/>
+                <field name="source_gross"/>
+                <field name="replacement_gross"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_baseer_pos_substitution_form" model="ir.ui.view">
+        <field name="name">baseer.pos.substitution.form</field>
+        <field name="model">baseer.pos.substitution</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="event_at"/>
+                            <field name="order_reference"/>
+                            <field name="pos_config_id"/>
+                            <field name="session_id"/>
+                            <field name="cashier_id"/>
+                        </group>
+                        <group>
+                            <field name="source_product_id"/>
+                            <field name="source_quantity"/>
+                            <field name="source_gross"/>
+                            <field name="replacement_gross"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <group string="Replacement products"><field name="replacement_product_ids" widget="many2many_tags"/></group>
+                    <group string="Reason"><field name="reason_note"/></group>
+                    <notebook>
+                        <page string="Source snapshot"><field name="source_snapshot" widget="json"/></page>
+                        <page string="Replacement snapshot"><field name="replacement_snapshot" widget="json"/></page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_baseer_pos_substitution_search" model="ir.ui.view">
+        <field name="name">baseer.pos.substitution.search</field>
+        <field name="model">baseer.pos.substitution</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="order_reference"/>
+                <field name="source_product_id"/>
+                <field name="replacement_product_ids"/>
+                <field name="cashier_id"/>
+                <field name="pos_config_id"/>
+                <field name="session_id"/>
+                <filter string="Today" name="today" date="event_at"/>
+                <group>
+                    <filter string="POS" name="group_pos" context="{'group_by': 'pos_config_id'}"/>
+                    <filter string="Cashier" name="group_cashier" context="{'group_by': 'cashier_id'}"/>
+                    <filter string="Source product" name="group_source" context="{'group_by': 'source_product_id'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'event_at:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_baseer_pos_substitution" model="ir.actions.act_window">
+        <field name="name">Product substitutions</field>
+        <field name="res_model">baseer.pos.substitution</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_baseer_pos_substitution_search"/>
+        <field name="context">{'search_default_today': 1}</field>
+    </record>
+    <menuitem id="menu_baseer_pos_substitution" name="Product substitutions"
+        parent="baseer_pos_print_bridge.menu_baseer_direct_print" action="action_baseer_pos_substitution"
+        sequence="10" groups="point_of_sale.group_pos_manager"/>
+    <record id="view_baseer_pos_protected_item_cancellation_list" model="ir.ui.view">
+        <field name="name">baseer.pos.protected.item.cancellation.list</field>
+        <field name="model">baseer.pos.protected_item_cancellation</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="event_at" string="تاريخ العملية"/><field name="order_reference" string="مرجع الطلب"/><field name="pos_config_id" string="نقطة البيع"/>
+                <field name="cashier_id" string="الكاشير"/><field name="source_product_id" string="الصنف"/><field name="source_quantity" string="الكمية"/>
+                <field name="source_gross" string="الإجمالي"/><field name="reason_code" string="سبب الإلغاء"/><field name="reason_note" string="ملاحظة"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_baseer_pos_protected_item_cancellation_form" model="ir.ui.view">
+        <field name="name">baseer.pos.protected.item.cancellation.form</field>
+        <field name="model">baseer.pos.protected_item_cancellation</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0"><sheet><group><group>
+                <field name="event_at" string="تاريخ العملية"/><field name="order_reference" string="مرجع الطلب"/><field name="pos_config_id" string="نقطة البيع"/><field name="session_id" string="الجلسة"/><field name="cashier_id" string="الكاشير"/>
+            </group><group><field name="source_product_id" string="الصنف"/><field name="source_quantity" string="الكمية"/><field name="source_gross" string="الإجمالي"/><field name="currency_id" string="العملة"/><field name="reason_code" string="سبب الإلغاء"/><field name="reason_note" string="ملاحظة"/></group></group>
+            <group string="بيانات الصنف وقت الإلغاء"><field name="source_snapshot" widget="json"/></group></sheet></form>
+        </field>
+    </record>
+    <record id="action_baseer_pos_protected_item_cancellation" model="ir.actions.act_window">
+        <field name="name">Protected item cancellations</field><field name="res_model">baseer.pos.protected_item_cancellation</field><field name="view_mode">list,form,pivot,graph</field>
+    </record>
+    <menuitem id="menu_baseer_pos_protected_item_cancellation" name="Protected item cancellations"
+        parent="baseer_pos_print_bridge.menu_baseer_direct_print" action="action_baseer_pos_protected_item_cancellation"
+        sequence="11" groups="point_of_sale.group_pos_manager"/>
+</odoo>

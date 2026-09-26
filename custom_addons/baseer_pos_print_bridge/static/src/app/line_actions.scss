@@ -1,0 +1,14 @@
+.orderline .baseer-line-actions {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    inline-size: 44px;
+    block-size: 44px;
+    margin-inline: 0.25rem;
+    padding: 0;
+    touch-action: manipulation;
+}
+
+.orderline .baseer-line-actions:focus-visible {
+    outline: 2px solid var(--o-brand-primary, var(--primary, #714b67));
+    outline-offset: 2px;
+}

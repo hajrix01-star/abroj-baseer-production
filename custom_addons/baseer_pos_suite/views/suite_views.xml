@@ -4,7 +4,7 @@
         <field name="name">baseer.pos.suite.config.list</field>
         <field name="model">pos.config</field>
         <field name="arch" type="xml">
-            <list string="Registers and features" create="0" delete="0">
+            <list string="Registers and features" create="1" delete="0">
                 <field name="name"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="baseer_direct_print_enabled" string="Direct printing"/>

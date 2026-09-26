@@ -7,7 +7,7 @@
                 <meta name="theme-color" content="#0d4774"/>
                 <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
                 <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift.png" type="image/png"/>
-                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="'تسجيل الدخول | بصير شِفت' if is_arabic else 'Sign in | Baseer Shift'"/>
             </head>
             <body class="baseer-followup-app pwa-signin">
@@ -50,7 +50,7 @@
                 <meta name="theme-color" content="#0d4774"/>
                 <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
                 <link rel="icon" href="/baseer_employee_followup/static/description/app-icon-shift.png" type="image/png"/>
-                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="'تعذر الدخول | بصير' if is_arabic else 'Access denied | Baseer'"/>
             </head>
             <body class="baseer-followup-app pwa-signin">
@@ -76,7 +76,7 @@
             <label class="shift-menu-trigger" for="baseer-shift-menu-toggle" t-att-aria-label="ui['menu_label']" t-att-title="ui['menu_label']">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </label>
-            <a class="shift-app-brand" href="/employee-app/" aria-label="Baseer Shift"><img src="/baseer_employee_followup/static/description/app-icon-shift.png" alt=""/><span><strong t-esc="ui['app_name']"/></span></a>
+            <a class="shift-app-brand" href="/employee-app/" aria-label="Baseer Shift"><img src="/baseer_employee_followup/static/description/app-icon-shift-light.svg?v=1" alt=""/><span><strong t-esc="ui['app_name']"/></span></a>
             <strong class="shift-page-title" t-esc="page_title"/>
         </header>
         <label class="shift-drawer-backdrop" for="baseer-shift-menu-toggle" t-att-aria-label="ui['close_menu']"/>
@@ -99,7 +99,7 @@
 
     <template id="employee_app_today" name="Baseer Shift today board">
         <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
-            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['today_nav'] + ' | ' + ui['app_name']"/></head>
+            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['today_nav'] + ' | ' + ui['app_name']"/></head>
             <body class="baseer-followup-app"><main>
                 <t t-set="page_title" t-value="ui['today_nav']"/><t t-set="active_nav" t-value="'today'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
                 <header t-if="not employee" class="app-header"><p>هذا المستخدم غير مرتبط بملف موظف نشط في الشركة الحالية.</p></header>
@@ -121,7 +121,7 @@
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
                 <meta name="theme-color" content="#0d4774"/>
                 <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
-                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="ui['app_name']"/>
             </head>
             <body class="baseer-followup-app">
@@ -159,7 +159,7 @@
 
     <template id="employee_app_shift_overview" name="Baseer Shift follow-up overview">
         <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'">
-            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['shift_overview_title'] + ' | ' + ui['app_name']"/></head>
+            <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><meta name="theme-color" content="#0d4774"/><link rel="manifest" href="/employee-app/manifest.webmanifest"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['shift_overview_title'] + ' | ' + ui['app_name']"/></head>
             <body class="baseer-followup-app"><main>
                 <t t-set="page_title" t-value="ui['shift_nav']"/><t t-set="active_nav" t-value="'shift'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
                 <section t-if="not employee" class="notice notice-warning"><strong t-esc="ui['no_active_shift']"/></section>
@@ -176,7 +176,7 @@
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
                 <meta name="theme-color" content="#0d4774"/>
                 <link rel="manifest" href="/employee-app/manifest.webmanifest"/>
-                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="ui['my_profile']"/>
             </head>
             <body class="baseer-followup-app">
@@ -204,19 +204,19 @@
     </template>
 
     <template id="employee_app_notes" name="Employee follow-up notes">
-        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['open_followups']"/></head>
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['open_followups']"/></head>
             <body class="baseer-followup-app"><main><t t-set="page_title" t-value="ui['tasks_nav']"/><t t-set="active_nav" t-value="'tasks'"/><t t-call="baseer_employee_followup.employee_app_navigation"/><nav class="followup-tabs" data-followup-tabs=""><button type="button" data-followup-tab="followups" t-att-class="'is-active' if active_tab == 'followups' else ''" t-esc="ui['followups_tab']"/><button type="button" data-followup-tab="history" t-att-class="'is-active' if active_tab == 'history' else ''" t-esc="ui['history_tab']"/></nav><section class="notes-history followup-tab-panel" data-followup-panel="followups" t-att-class="'notes-history followup-tab-panel is-active' if active_tab == 'followups' else 'notes-history followup-tab-panel'"><a class="dashboard-followup-action" href="/employee-app/follow-up" t-esc="ui['add_followup']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="open_notes"/><t t-set="empty_message" t-value="ui['no_followups']"/></t></section><section class="notes-history followup-tab-panel" data-followup-panel="history" t-att-class="'notes-history followup-tab-panel is-active' if active_tab == 'history' else 'notes-history followup-tab-panel'"><h2 class="followup-history-heading" t-esc="ui['pending_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="open_notes"/><t t-set="empty_message" t-value="ui['no_followups']"/></t><h2 class="followup-history-heading" t-esc="ui['completed_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="resolved_notes"/><t t-set="empty_message" t-value="ui['no_completed_followups']"/></t></section><a class="note-link stage-note-link" href="/employee-app/follow-up?tab=history" t-esc="ui['back_tasks']"/></main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
         </html>
     </template>
 
     <template id="employee_app_followup_chooser" name="Follow-up type chooser">
-        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="ui['add_followup']"/></head>
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="ui['add_followup']"/></head>
             <body class="baseer-followup-app"><main><t t-set="page_title" t-value="ui['tasks_nav']"/><t t-set="active_nav" t-value="'tasks'"/><t t-call="baseer_employee_followup.employee_app_navigation"/><nav class="followup-tabs" data-followup-tabs=""><button type="button" data-followup-tab="entry" t-att-class="'is-active' if active_tab == 'entry' else ''" t-esc="ui['followups_tab']"/><button type="button" data-followup-tab="history" t-att-class="'is-active' if active_tab == 'history' else ''" t-esc="ui['history_tab']"/></nav><section class="followup-tab-panel" data-followup-panel="entry" t-att-class="'followup-tab-panel is-active' if active_tab == 'entry' else 'followup-tab-panel'"><section t-if="shift" class="followup-type-chooser"><a class="followup-type-choice is-note" href="/employee-app/follow-up/note"><strong t-esc="ui['followup_note']"/></a><a class="followup-type-choice is-task" href="/employee-app/follow-up/task"><strong t-esc="ui['followup_task']"/></a><a class="followup-type-choice is-reminder" href="/employee-app/follow-up/reminder"><strong t-esc="ui['followup_reminder']"/></a></section><section t-else="" class="notice notice-warning"><strong t-esc="ui['no_active_shift']"/></section></section><section class="notes-history followup-tab-panel" data-followup-panel="history" t-att-class="'notes-history followup-tab-panel is-active' if active_tab == 'history' else 'notes-history followup-tab-panel'"><h2 class="followup-history-heading" t-esc="ui['pending_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="open_notes"/><t t-set="empty_message" t-value="ui['no_followups']"/></t><h2 class="followup-history-heading" t-esc="ui['completed_followups']"/><t t-call="baseer_employee_followup.employee_app_followup_cards"><t t-set="cards" t-value="resolved_notes"/><t t-set="empty_message" t-value="ui['no_completed_followups']"/></t></section><a class="note-link stage-note-link" href="/employee-app/follow-up?tab=history" t-esc="ui['back_tasks']"/></main><script src="/baseer_employee_followup/static/src/js/employee_app.js?v=11"></script></body>
         </html>
     </template>
 
     <template id="employee_app_stage" name="Employee Follow-up shift stage">
-        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/><title t-esc="stage_title"/></head>
+        <html t-att-lang="'ar' if is_arabic else 'en'" t-att-dir="'rtl' if is_arabic else 'ltr'"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/><title t-esc="stage_title"/></head>
             <body class="baseer-followup-app"><main>
                 <t t-set="page_title" t-value="ui['shift_nav']"/><t t-set="active_nav" t-value="'shift'"/><t t-call="baseer_employee_followup.employee_app_navigation"/>
                 <div t-if="shift" class="shift-context-bar shift-stage-context"><strong t-esc="stage_title"/><span><t t-esc="ui['operational_date']"/>: <t t-esc="shift.operational_date"/></span></div>
@@ -242,7 +242,7 @@
             <head>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="ui['add_followup']"/>
             </head>
             <body class="baseer-followup-app">
@@ -282,7 +282,7 @@
             <head>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=51"/>
+                <link rel="stylesheet" href="/baseer_employee_followup/static/src/css/employee_app.css?v=52"/>
                 <title t-esc="ui['evaluation_title'] + ' | ' + ui['app_name']"/>
             </head>
             <body class="baseer-followup-app">

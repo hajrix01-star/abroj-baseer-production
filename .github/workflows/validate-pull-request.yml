@@ -33,6 +33,7 @@ jobs:
           done
           python3 - "$BASE_SHA" "$HEAD_SHA" <<'PY'
           import ast
+          import os
           import subprocess
           import sys
           import xml.etree.ElementTree as etree
@@ -42,6 +43,10 @@ jobs:
               ["git", "diff", "--name-only", base, head], text=True
           ).splitlines()
           for path in paths:
+              # A valid source change may delete a Python or XML file.  There
+              # is no working-tree file to parse in that case.
+              if not os.path.exists(path):
+                  continue
               if path.endswith(".py"):
                   with open(path, encoding="utf-8") as source:
                       ast.parse(source.read(), filename=path)

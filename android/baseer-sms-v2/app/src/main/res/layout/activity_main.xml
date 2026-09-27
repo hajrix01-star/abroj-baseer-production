@@ -15,6 +15,7 @@
             <TextView android:id="@+id/queue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="لا توجد رسائل معلقة" android:textColor="#627D98"/>
         </LinearLayout>
         <Button android:id="@+id/pair" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="مسح رمز ربط QA"/>
+        <Button android:id="@+id/retry_connection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="فحص الاتصال وإعادة المحاولة"/>
         <Button android:id="@+id/permission" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="تفعيل استقبال الرسائل"/>
         <Button android:id="@+id/import_history" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="استيراد رسائل سابقة"/>
         <TextView android:id="@+id/automatic_sync" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="المزامنة تلقائية في الخلفية عند عودة الاتصال" android:textColor="#627D98" android:textSize="13sp"/>

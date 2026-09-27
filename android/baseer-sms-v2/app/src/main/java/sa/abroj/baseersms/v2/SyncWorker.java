@@ -27,11 +27,17 @@ public final class SyncWorker extends Worker {
     private static final String UNIQUE_WORK = "baseer-sms-v2-dispatch";
     public SyncWorker(Context context, WorkerParameters params) { super(context, params); }
     static void enqueue(Context context) {
+        schedule(context, ExistingWorkPolicy.KEEP);
+    }
+    /** User-initiated retry: safely replaces only the scheduler, never the encrypted outbox. */
+    static void retryNow(Context context) {
+        schedule(context, ExistingWorkPolicy.REPLACE);
+    }
+    private static void schedule(Context context, ExistingWorkPolicy policy) {
         Constraints network = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(SyncWorker.class).setConstraints(network)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build();
-        // KEEP deliberately preserves an in-flight sender; the outbox lease prevents a second worker from claiming the same row.
-        WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_WORK, ExistingWorkPolicy.KEEP, request);
+        WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_WORK, policy, request);
     }
     @Override public Result doWork() {
         Context context = getApplicationContext();
@@ -44,6 +50,10 @@ public final class SyncWorker extends Worker {
             return Result.success();
         } catch (PermanentAuthException error) { StatusStore.error(context, "pairing_required"); return Result.failure(); }
         catch (PermanentRequestException error) { StatusStore.error(context, error.code); return Result.failure(); }
+        catch (java.net.UnknownHostException error) { StatusStore.error(context, "qa_address_unreachable"); return Result.retry(); }
+        catch (java.net.SocketTimeoutException error) { StatusStore.error(context, "qa_timeout"); return Result.retry(); }
+        catch (javax.net.ssl.SSLException error) { StatusStore.error(context, "qa_secure_connection_failed"); return Result.retry(); }
+        catch (java.net.ConnectException error) { StatusStore.error(context, "qa_connection_refused"); return Result.retry(); }
         catch (Exception error) { StatusStore.error(context, "network_or_server_retry"); return Result.retry(); }
     }
     private void deliver(Context context, SmsOutbox outbox, List<SmsOutbox.Item> items) throws Exception {

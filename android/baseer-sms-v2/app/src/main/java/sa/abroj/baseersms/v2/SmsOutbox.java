@@ -45,6 +45,11 @@ final class SmsOutbox extends SQLiteOpenHelper {
     void acknowledge(long id) { update(id, "acknowledged", null, true); }
     void retry(long id, String reason) { update(id, "retry_scheduled", reason, false); }
     void block(long id, String reason) { update(id, "blocked_policy", reason, false); }
+    /** Older clients classified the server's temporary rate limit as a permanent block. */
+    int requeueRateLimited() {
+        ContentValues values = new ContentValues(); values.put("state", "retry_scheduled"); values.putNull("lease_until");
+        return getWritableDatabase().update("outbox", values, "state='blocked_policy' AND last_error=?", new String[]{"rate_limit_exceeded"});
+    }
     void repair(long id, String reason) { update(id, "needs_repair", reason, false); }
     private void update(long id, String state, String error, boolean acknowledged) {
         ContentValues values = new ContentValues(); values.put("state", state); values.putNull("lease_until"); values.put("last_error", error);

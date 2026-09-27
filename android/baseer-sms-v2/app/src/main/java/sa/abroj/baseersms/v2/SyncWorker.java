@@ -44,8 +44,11 @@ public final class SyncWorker extends Worker {
         if (!SecureSettings.isPaired(context) || !SecureSettings.enabled(context)) { StatusStore.error(context, "not_paired_or_disabled"); return Result.success(); }
         SmsOutbox outbox = new SmsOutbox(context);
         try {
+            outbox.requeueRateLimited();
             List<SmsOutbox.Item> items;
-            while (!(items = outbox.claimBatch(50)).isEmpty()) deliver(context, outbox, items);
+            while (!(items = outbox.claimBatch(50)).isEmpty()) {
+                if (deliver(context, outbox, items)) { heartbeat(context, outbox); return Result.retry(); }
+            }
             heartbeat(context, outbox);
             return Result.success();
         } catch (PermanentAuthException error) { StatusStore.error(context, "pairing_required"); return Result.failure(); }
@@ -56,7 +59,8 @@ public final class SyncWorker extends Worker {
         catch (java.net.ConnectException error) { StatusStore.error(context, "qa_connection_refused"); return Result.retry(); }
         catch (Exception error) { StatusStore.error(context, "network_or_server_retry"); return Result.retry(); }
     }
-    private void deliver(Context context, SmsOutbox outbox, List<SmsOutbox.Item> items) throws Exception {
+    /** @return true when a temporary server response requires WorkManager backoff. */
+    private boolean deliver(Context context, SmsOutbox outbox, List<SmsOutbox.Item> items) throws Exception {
         JSONArray messages = new JSONArray();
         for (SmsOutbox.Item item : items) { JSONObject value = new JSONObject(); value.put("idempotency_key", item.token); value.put("sender", item.sender); value.put("body", item.body); value.put("received_at", Instant.ofEpochMilli(item.receivedAt).toString()); messages.put(value); }
         JSONObject payload = new JSONObject(); payload.put("device_code", SecureSettings.code(context)); payload.put("messages", messages);
@@ -66,11 +70,11 @@ public final class SyncWorker extends Worker {
         if (response.status != 200) throw new PermanentRequestException("http_" + response.status);
         HashMap<String, SmsOutbox.Item> claimed = new HashMap<>(); for (SmsOutbox.Item item : items) claimed.put(item.token, item);
         JSONArray acknowledgements = new JSONObject(response.body).getJSONArray("acknowledgements");
-        for (int i=0;i<acknowledgements.length();i++) { JSONObject ack=acknowledgements.getJSONObject(i); SmsOutbox.Item item=claimed.get(ack.optString("idempotency_key")); if (item == null) continue; String state=ack.optString("status");
+        boolean retryScheduled=false; for (int i=0;i<acknowledgements.length();i++) { JSONObject ack=acknowledgements.getJSONObject(i); SmsOutbox.Item item=claimed.get(ack.optString("idempotency_key")); if (item == null) continue; String state=ack.optString("status");
             if ("accepted".equals(state) || "duplicate".equals(state)) { outbox.acknowledge(item.id); StatusStore.acknowledged(context, System.currentTimeMillis()); }
             else if ("blocked".equals(state)) outbox.block(item.id, ack.optString("reason", "rejected"));
-            else outbox.retry(item.id, ack.optString("reason", "retryable"));
-        }
+            else { outbox.retry(item.id, ack.optString("reason", "retryable")); retryScheduled=true; }
+        } return retryScheduled;
     }
     private void heartbeat(Context context, SmsOutbox outbox) throws Exception {
         JSONObject payload = new JSONObject(); payload.put("device_code", SecureSettings.code(context)); payload.put("app_version", BuildConfig.VERSION_NAME); payload.put("protocol_version", "2"); payload.put("monitoring_enabled", false);

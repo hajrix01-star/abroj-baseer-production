@@ -128,7 +128,8 @@ class BaseerBankSmsApi(http.Controller):
                 device.ingest_payload({'device_code': device.device_code, **item})
                 acknowledgements.append({'idempotency_key': key, 'status': 'accepted'})
             except ValueError as validation_error:
-                acknowledgements.append({'idempotency_key': key, 'status': 'blocked', 'reason': str(validation_error)})
+                reason = str(validation_error)
+                acknowledgements.append({'idempotency_key': key, 'status': 'retryable' if reason == 'rate_limit_exceeded' else 'blocked', 'reason': reason})
             except Exception:
                 acknowledgements.append({'idempotency_key': key, 'status': 'retryable', 'reason': 'ingestion_unavailable'})
         return request.make_json_response({'acknowledgements': acknowledgements}, status=200)

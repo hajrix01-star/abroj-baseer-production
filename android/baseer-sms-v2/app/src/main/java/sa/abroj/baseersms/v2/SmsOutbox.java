@@ -64,6 +64,13 @@ final class SmsOutbox extends SQLiteOpenHelper {
         else getWritableDatabase().execSQL("UPDATE outbox SET state=?, lease_until=NULL, last_error=?, attempts=attempts+1 WHERE id=?", new Object[]{state, error, id});
     }
     int countOpen() { return count("state != 'acknowledged'"); }
+    int countPending() { return count("state IN ('queued','sending','retry_scheduled')"); }
+    int countBlocked() { return count("state IN ('blocked_policy','needs_repair')"); }
+    String primaryBlockedReason() {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(last_error,'') FROM outbox WHERE state IN ('blocked_policy','needs_repair') GROUP BY last_error ORDER BY COUNT(*) DESC LIMIT 1", null)) {
+            return c.moveToFirst() ? c.getString(0) : "";
+        }
+    }
     long latestCapturedAt() { try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(MAX(received_at), 0) FROM outbox", null)) { c.moveToFirst(); return c.getLong(0); } }
     int count(String where) { try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM outbox WHERE " + where, null)) { c.moveToFirst(); return c.getInt(0); } }
     private static String randomToken() { byte[] bytes = new byte[24]; new SecureRandom().nextBytes(bytes); StringBuilder out = new StringBuilder(48); for (byte b : bytes) out.append(String.format("%02x", b)); return out.toString(); }

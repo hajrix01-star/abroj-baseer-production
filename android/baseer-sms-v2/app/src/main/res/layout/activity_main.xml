@@ -13,6 +13,7 @@
             <TextView android:id="@+id/last_captured" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="لم يحفظ التطبيق أي رسالة بعد" android:textColor="#102A43" android:textSize="16sp"/>
             <TextView android:id="@+id/last_ack" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="لم تُؤكد أي رسالة بعد" android:textColor="#102A43" android:textSize="16sp"/>
             <TextView android:id="@+id/queue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="لا توجد رسائل معلقة" android:textColor="#627D98"/>
+            <TextView android:id="@+id/blocked" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="#9B1C1C" android:textSize="14sp"/>
         </LinearLayout>
         <Button android:id="@+id/pair" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="مسح رمز ربط QA"/>
         <Button android:id="@+id/retry_connection" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="فحص الاتصال وإعادة المحاولة"/>

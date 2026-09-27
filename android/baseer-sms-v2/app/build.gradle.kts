@@ -15,8 +15,8 @@ android {
         applicationId = "sa.abroj.baseersms.v2"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "2.0.8-qa"
+        versionCode = 10
+        versionName = "2.0.9-qa"
     }
     buildFeatures { buildConfig = true }
     defaultConfig { buildConfigField("String", "BUILD_TIMESTAMP", "\"$buildTimestamp\"") }

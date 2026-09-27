@@ -38,8 +38,8 @@ public final class SyncWorker extends Worker {
         if (!SecureSettings.isPaired(context) || !SecureSettings.enabled(context)) { StatusStore.error(context, "not_paired_or_disabled"); return Result.success(); }
         SmsOutbox outbox = new SmsOutbox(context);
         try {
-            List<SmsOutbox.Item> items = outbox.claimBatch(50);
-            if (!items.isEmpty()) deliver(context, outbox, items);
+            List<SmsOutbox.Item> items;
+            while (!(items = outbox.claimBatch(50)).isEmpty()) deliver(context, outbox, items);
             heartbeat(context, outbox);
             return Result.success();
         } catch (PermanentAuthException error) { StatusStore.error(context, "pairing_required"); return Result.failure(); }

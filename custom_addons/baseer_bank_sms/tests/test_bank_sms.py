@@ -130,7 +130,7 @@ class TestBankSms(TransactionCase):
         message = self.Message.ingest(
             source_device_id='device-alrajhi-bill', idempotency_key='alrajhi-bill-5204',
             sender='AlRajhiBank',
-            body='سداد فاتورة من: 5204 مبلغ: SAR 3961.81 مفوتر: 002 الشركة السعودية للكهرباء',
+            body='سداد فاتورة من 5204 مبلغ: SAR 3961.81 مفوتر: 002 الشركة السعودية للكهرباء',
         )
         self.assertEqual(message.operation_type, 'bill_payment')
         self.assertEqual(message.identifier_token, '5204')

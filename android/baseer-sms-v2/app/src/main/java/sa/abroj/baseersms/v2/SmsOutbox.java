@@ -32,7 +32,7 @@ final class SmsOutbox extends SQLiteOpenHelper {
     List<Item> claimBatch(int limit) {
         SQLiteDatabase db = getWritableDatabase(); long now = System.currentTimeMillis(); long lease = now + LEASE_MS; List<Item> result = new ArrayList<>();
         db.beginTransaction();
-        try (Cursor cursor = db.rawQuery("SELECT id,token,sender,body,received_at,attempts FROM outbox WHERE state IN ('queued','retry_scheduled') AND (lease_until IS NULL OR lease_until < ?) ORDER BY id LIMIT ?", new String[]{Long.toString(now), Integer.toString(limit)})) {
+        try (Cursor cursor = db.rawQuery("SELECT id,token,sender,body,received_at,attempts FROM outbox WHERE state IN ('queued','retry_scheduled','sending') AND (lease_until IS NULL OR lease_until < ?) ORDER BY id LIMIT ?", new String[]{Long.toString(now), Integer.toString(limit)})) {
             while (cursor.moveToNext()) {
                 long id = cursor.getLong(0); ContentValues update = new ContentValues(); update.put("state", "sending"); update.put("lease_until", lease);
                 if (db.update("outbox", update, "id=? AND state IN ('queued','retry_scheduled') AND (lease_until IS NULL OR lease_until < ?)", new String[]{Long.toString(id), Long.toString(now)}) == 1)
@@ -49,6 +49,12 @@ final class SmsOutbox extends SQLiteOpenHelper {
     int requeueRateLimited() {
         ContentValues values = new ContentValues(); values.put("state", "retry_scheduled"); values.putNull("lease_until");
         return getWritableDatabase().update("outbox", values, "state='blocked_policy' AND last_error=?", new String[]{"rate_limit_exceeded"});
+    }
+    int recoverTemporaryState() {
+        int recovered = requeueRateLimited();
+        ContentValues values = new ContentValues(); values.put("state", "retry_scheduled"); values.putNull("lease_until");
+        recovered += getWritableDatabase().update("outbox", values, "state='sending' AND lease_until < ?", new String[]{Long.toString(System.currentTimeMillis())});
+        return recovered;
     }
     void repair(long id, String reason) { update(id, "needs_repair", reason, false); }
     private void update(long id, String state, String error, boolean acknowledged) {

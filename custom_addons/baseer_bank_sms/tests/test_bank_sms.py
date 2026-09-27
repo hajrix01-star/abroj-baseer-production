@@ -382,3 +382,38 @@ class TestBankSms(TransactionCase):
             'received_at': '2026-09-26 12:00:00',
         })
         self.assertEqual(message.direction, 'in')
+
+    def test_v2_heartbeat_keeps_only_operational_metadata(self):
+        device = self.env['baseer.bank.sms.device'].create({
+            'name': 'QA test phone', 'device_code': 'qa-health-device',
+        })
+        status = device.record_heartbeat({
+            'device_code': 'qa-health-device',
+            'app_version': '2.0.0-qa',
+            'protocol_version': '2',
+            'monitoring_enabled': True,
+            'queued_count': 1400,
+            'retry_count': 3,
+            'blocked_count': 2,
+            'oldest_pending_at': '2026-09-27T08:00:00Z',
+            'last_error_code': 'http_429',
+        })
+        self.assertEqual(status['environment_label'], 'QA')
+        self.assertEqual(device.connection_state, 'online')
+        self.assertEqual(device.queued_count, 1400)
+        self.assertEqual(device.last_error_code, 'http_429')
+        self.assertTrue(device.last_heartbeat_at)
+        self.assertFalse(device.last_message_ingested_at)
+
+    def test_v2_heartbeat_rejects_unknown_or_sensitive_fields(self):
+        device = self.env['baseer.bank.sms.device'].create({
+            'name': 'QA test phone', 'device_code': 'qa-health-device-2',
+        })
+        with self.assertRaisesRegex(ValueError, 'unsupported_field'):
+            device.record_heartbeat({
+                'device_code': 'qa-health-device-2',
+                'queued_count': 0,
+                'retry_count': 0,
+                'blocked_count': 0,
+                'body': 'must never enter health telemetry',
+            })

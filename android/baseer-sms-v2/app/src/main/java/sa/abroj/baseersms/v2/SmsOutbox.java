@@ -50,6 +50,7 @@ final class SmsOutbox extends SQLiteOpenHelper {
         else getWritableDatabase().execSQL("UPDATE outbox SET state=?, lease_until=NULL, last_error=?, attempts=attempts+1 WHERE id=?", new Object[]{state, error, id});
     }
     int countOpen() { return count("state != 'acknowledged'"); }
+    long latestCapturedAt() { try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(MAX(received_at), 0) FROM outbox", null)) { c.moveToFirst(); return c.getLong(0); } }
     int count(String where) { try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM outbox WHERE " + where, null)) { c.moveToFirst(); return c.getInt(0); } }
     private static String randomToken() { byte[] bytes = new byte[24]; new SecureRandom().nextBytes(bytes); StringBuilder out = new StringBuilder(48); for (byte b : bytes) out.append(String.format("%02x", b)); return out.toString(); }
     static final class Item { final long id, receivedAt; final int attempts; final String token, sender, body; Item(long id,String token,String sender,String body,long receivedAt,int attempts){this.id=id;this.token=token;this.sender=sender;this.body=body;this.receivedAt=receivedAt;this.attempts=attempts;} }

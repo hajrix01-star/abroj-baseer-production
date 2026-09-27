@@ -10,6 +10,7 @@
         </LinearLayout>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:background="#FFFFFF" android:orientation="vertical" android:padding="18dp">
             <TextView android:text="التسليم" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#486581" android:textSize="13sp"/>
+            <TextView android:id="@+id/last_captured" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="لم يحفظ التطبيق أي رسالة بعد" android:textColor="#102A43" android:textSize="16sp"/>
             <TextView android:id="@+id/last_ack" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="لم تُؤكد أي رسالة بعد" android:textColor="#102A43" android:textSize="16sp"/>
             <TextView android:id="@+id/queue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="لا توجد رسائل معلقة" android:textColor="#627D98"/>
         </LinearLayout>

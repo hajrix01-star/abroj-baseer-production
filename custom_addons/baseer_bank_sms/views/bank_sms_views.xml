@@ -218,7 +218,7 @@
                     <p>افتح تطبيق بصير SMS في الجوال، ثم اضغط «مسح رمز الربط» وامسح هذا الرمز.</p>
                     <field name="qr_html" widget="html" nolabel="1"/>
                     <div class="text-center mt16">
-                        <a href="/baseer_bank_sms/static/apk/baseer-sms-v2.0.0-qa.apk" target="_blank" role="button" class="btn btn-primary">
+                        <a href="/baseer_bank_sms/static/apk/baseer-sms-v2.0.1-qa.apk" target="_blank" role="button" class="btn btn-primary">
                             تحميل تطبيق بصير SMS — QA للأندرويد
                         </a>
                     </div>
@@ -243,7 +243,7 @@
     <record id="action_bank_sms_devices" model="ir.actions.act_window"><field name="name">Bank SMS devices</field><field name="res_model">baseer.bank.sms.device</field><field name="view_mode">list,form</field></record>
     <record id="action_bank_sms_download_android" model="ir.actions.act_url">
         <field name="name">تحميل تطبيق بصير SMS — QA</field>
-        <field name="url">/baseer_bank_sms/static/apk/baseer-sms-v2.0.0-qa.apk</field>
+        <field name="url">/baseer_bank_sms/static/apk/baseer-sms-v2.0.1-qa.apk</field>
         <field name="target">new</field>
     </record>
     <record id="action_bank_sms_open_pairing" model="ir.actions.server">

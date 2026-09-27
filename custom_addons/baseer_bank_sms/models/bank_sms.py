@@ -23,7 +23,7 @@ MASKED_IDENTIFIER_RE = re.compile(
     r'(?P<left>\d{3,4})\s*(?:\*+|x+)\s*(?P<right>\d{3,4})(?!\d)', re.I,
 )
 TRANSFER_SOURCE_IDENTIFIER_RE = re.compile(
-    r'(?:\bfrom\b|(?<!\S)من(?!\S))\s*[:؛-]?\s*(?:حساب(?:ك)?\s*)?(?:\*+|x+)\s*(?P<token>\d{3,4})(?!\d)',
+    r'(?:\bfrom\b|(?<!\S)من(?=\s|[:؛-]|$))\s*[:؛-]?\s*(?:حساب(?:ك)?\s*)?(?:\*+|x+)\s*(?P<token>\d{3,4})(?!\d)',
     re.I,
 )
 # A bare suffix is only accepted when the bank explicitly labels it as the
@@ -31,7 +31,7 @@ TRANSFER_SOURCE_IDENTIFIER_RE = re.compile(
 # bill/reference number elsewhere in the SMS as an account while supporting
 # AlRajhi bill payments.
 EXPLICIT_OUTGOING_SOURCE_IDENTIFIER_RE = re.compile(
-    r'(?:\bfrom\b|(?<!\S)من(?!\S))(?:\s*[:؛-]\s*|\s+)(?:حساب(?:ك)?\s*)?(?P<token>\d{4})(?!\d)',
+    r'(?:\bfrom\b|(?<!\S)من(?=\s|[:؛-]|$))(?:\s*[:؛-]\s*|\s+)(?:حساب(?:ك)?\s*)?(?P<token>\d{4})(?!\d)',
     re.I,
 )
 MASKED_IDENTIFIER_RE = re.compile(

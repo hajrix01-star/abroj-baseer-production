@@ -8,8 +8,8 @@ android {
         applicationId = "sa.abroj.baseersms.v2"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "2.0.2-qa"
+        versionCode = 4
+        versionName = "2.0.3-qa"
     }
     buildFeatures { buildConfig = true }
 }

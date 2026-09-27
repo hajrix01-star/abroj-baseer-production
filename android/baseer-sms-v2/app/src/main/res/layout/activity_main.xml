@@ -16,6 +16,7 @@
         </LinearLayout>
         <Button android:id="@+id/pair" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="مسح رمز ربط QA"/>
         <Button android:id="@+id/permission" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="تفعيل استقبال الرسائل"/>
+        <Button android:id="@+id/import_history" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="استيراد رسائل سابقة"/>
         <TextView android:id="@+id/automatic_sync" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="المزامنة تلقائية في الخلفية عند عودة الاتصال" android:textColor="#627D98" android:textSize="13sp"/>
         <TextView android:id="@+id/error" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:textColor="#9B1C1C" android:textSize="14sp"/>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp" android:text="يعمل التطبيق في الخلفية بعد الربط. لا نعرض محتوى الرسائل أو نرسله قبل الربط الصريح." android:textColor="#627D98" android:textSize="13sp"/>

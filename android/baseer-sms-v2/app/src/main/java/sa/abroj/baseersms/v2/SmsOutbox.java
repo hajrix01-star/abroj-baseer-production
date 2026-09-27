@@ -21,9 +21,12 @@ final class SmsOutbox extends SQLiteOpenHelper {
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { throw new IllegalStateException("v2 has no legacy database migration"); }
 
     boolean capture(String sender, String body, long receivedAt) {
+        return capture(sender, body, receivedAt, randomToken());
+    }
+    boolean capture(String sender, String body, long receivedAt, String token) {
         try {
-            ContentValues values = new ContentValues(); values.put("token", randomToken()); values.put("sender", SecureSettings.encryptLocal(sender)); values.put("body", SecureSettings.encryptLocal(body)); values.put("received_at", receivedAt); values.put("state", "queued");
-            return getWritableDatabase().insert("outbox", null, values) != -1;
+            ContentValues values = new ContentValues(); values.put("token", token); values.put("sender", SecureSettings.encryptLocal(sender)); values.put("body", SecureSettings.encryptLocal(body)); values.put("received_at", receivedAt); values.put("state", "queued");
+            return getWritableDatabase().insertWithOnConflict("outbox", null, values, SQLiteDatabase.CONFLICT_IGNORE) != -1;
         } catch (Exception error) { throw new IllegalStateException("Could not encrypt SMS", error); }
     }
     List<Item> claimBatch(int limit) {

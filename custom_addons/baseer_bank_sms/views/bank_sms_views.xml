@@ -10,7 +10,7 @@
                 <field name="sender" string="مرسل البنك"/>
                 <field name="identifier_token" string="الرقم المميّز"/>
                 <field name="source_token" string="حساب المصدر" optional="show"/>
-                <button name="action_open_source_learning" type="object" string="تعليم" icon="fa-magic" invisible="not source_token"/>
+                <button name="action_open_source_learning" type="object" string="تعليم" icon="fa-magic" invisible="not source_token or instrument_id"/>
                 <field name="instrument_id" string="المعرّف المرجعي"/>
                 <field name="card_id" string="البطاقة المرتبطة" optional="show"/>
                 <field name="direction" widget="badge" decoration-success="direction == 'in'" decoration-warning="direction == 'out'" decoration-danger="direction == 'unknown'"/>
@@ -31,7 +31,7 @@
         <field name="arch" type="xml">
             <form string="تفاصيل الرسالة البنكية" create="false" edit="false" delete="false">
                 <header>
-                    <button name="action_open_source_learning" type="object" string="تعليم من حساب المصدر" class="btn-primary" invisible="not source_token"/>
+                    <button name="action_open_source_learning" type="object" string="تعليم من حساب المصدر" class="btn-primary" invisible="not source_token or instrument_id"/>
                 </header>
                 <sheet>
                     <group string="Original SMS text" class="o_bank_sms_evidence" groups="base.group_system">

@@ -1000,20 +1000,32 @@ class BaseerBankSmsMessage(models.Model):
         currencies = {currency.id: currency for currency in self.env['res.currency'].browse(list(currency_ids))}
         totals = {}
         by_instrument = {}
+        card_totals = {}
+        unassigned_totals = {}
+        hidden_identifier_totals = {}
+        active_instrument_ids = set(instruments.ids)
+
+        def add_to_bucket(bucket, currency_id, direction, amount, count):
+            summary = bucket.setdefault(
+                currency_id, {'in': Decimal('0'), 'out': Decimal('0'), 'count': 0},
+            )
+            summary[direction] += amount
+            summary['count'] += count
+
         for instrument, currency, direction, amount, count in grouped:
             if not currency:
                 continue
             currency_id = currency.id
             parent_id = instrument.id if instrument else False
             amount = Decimal(str(amount or 0))
-            summary = by_instrument.setdefault(parent_id, {}).setdefault(
-                currency_id, {'in': Decimal('0'), 'out': Decimal('0'), 'count': 0},
-            )
-            summary[direction] += amount
-            summary['count'] += count
-            overall = totals.setdefault(currency_id, {'in': Decimal('0'), 'out': Decimal('0'), 'count': 0})
-            overall[direction] += amount
-            overall['count'] += count
+            add_to_bucket(by_instrument.setdefault(parent_id, {}), currency_id, direction, amount, count)
+            add_to_bucket(totals, currency_id, direction, amount, count)
+            if not parent_id:
+                add_to_bucket(unassigned_totals, currency_id, direction, amount, count)
+            elif parent_id in active_instrument_ids:
+                add_to_bucket(card_totals, currency_id, direction, amount, count)
+            else:
+                add_to_bucket(hidden_identifier_totals, currency_id, direction, amount, count)
 
         def build_metrics(values):
             result = []
@@ -1030,21 +1042,35 @@ class BaseerBankSmsMessage(models.Model):
 
         cards = []
         for instrument in instruments:
+            analysis_labels = instrument.analysis_target_ids.mapped('display_name')
+            if not analysis_labels:
+                analysis_labels = instrument.analysis_company_ids.mapped('display_name')
+            if not analysis_labels and instrument.analysis_company_id:
+                analysis_labels = [instrument.analysis_company_id.display_name]
             cards.append({
                 'id': instrument.id,
                 'name': instrument.name,
                 'token': instrument.token,
                 'sender': instrument.sender_id.name or instrument.sender,
-                'analysis_company': instrument.analysis_company_id.name or 'غير محددة',
+                'analysis_label': '، '.join(analysis_labels) or 'غير محدد',
                 'card_count': len(instrument.card_ids.filtered('active')),
                 'metrics': build_metrics(by_instrument.get(instrument.id, {})),
             })
         return {
             'period': {'from': fields.Date.to_string(start), 'to': fields.Date.to_string(end)},
             'totals': build_metrics(totals),
+            'card_totals': build_metrics(card_totals),
+            'unassigned_totals': build_metrics(unassigned_totals),
+            'hidden_identifier_totals': build_metrics(hidden_identifier_totals),
             'identifiers': cards,
             'identifier_count': len(instruments),
-            'matched_message_count': sum(item['message_count'] for item in build_metrics(totals)),
+            'message_count': sum(item['message_count'] for item in build_metrics(totals)),
+            'linked_message_count': sum(item['message_count'] for item in build_metrics(card_totals)),
+            'unassigned_message_count': sum(item['message_count'] for item in build_metrics(unassigned_totals)),
+            'hidden_identifier_message_count': sum(item['message_count'] for item in build_metrics(hidden_identifier_totals)),
+            # Compatibility for integrations that consumed the original field.
+            # Its meaning now matches its label: messages represented by cards.
+            'matched_message_count': sum(item['message_count'] for item in build_metrics(card_totals)),
         }
 
     def _apply_first_matching_rule(self):

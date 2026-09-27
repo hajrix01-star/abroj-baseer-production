@@ -101,6 +101,42 @@
     .o_bank_sms_metric_out { border-top-color: var(--bank-sms-out); }
     .o_bank_sms_metric_net { border-top-color: var(--bank-sms-net); }
 
+    .o_bank_sms_reconciliation { margin-bottom: 2.25rem; }
+    .o_bank_sms_reconciliation_grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .o_bank_sms_reconciliation_card {
+        padding: 1rem 1.15rem;
+        background: #fff;
+        border: 1px solid var(--bank-sms-border);
+        border-radius: .85rem;
+        border-right: 4px solid var(--bank-sms-brand);
+
+        > strong { display: block; }
+        > p { margin-top: .35rem; color: var(--bank-sms-muted); }
+        > small { display: block; margin-top: .75rem; color: var(--bank-sms-muted); }
+    }
+
+    .o_bank_sms_reconciliation_pending { border-right-color: #c78a18; }
+    .o_bank_sms_reconciliation_hidden { border-right-color: #687385; }
+
+    .o_bank_sms_reconciliation_currency {
+        display: grid;
+        grid-template-columns: auto repeat(3, minmax(0, 1fr));
+        gap: .45rem;
+        padding-top: .65rem;
+        margin-top: .65rem;
+        color: var(--bank-sms-muted);
+        border-top: 1px solid #edf1f6;
+        font-size: .78rem;
+
+        > span:first-child { color: var(--bank-sms-brand); font-weight: 700; }
+        b { display: block; color: var(--bank-sms-ink); direction: ltr; text-align: right; }
+    }
+
     .o_bank_sms_section_heading { margin-bottom: 1rem; align-items: flex-end; }
     .o_bank_sms_section_heading h2 { font-size: 1.3rem; margin-top: .2rem; }
     .o_bank_sms_section_heading > span { color: var(--bank-sms-muted); font-size: .9rem; }
@@ -160,7 +196,7 @@
 
 @media (max-width: 1100px) {
     .o_bank_sms_dashboard {
-        .o_bank_sms_dashboard_summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .o_bank_sms_dashboard_summary, .o_bank_sms_reconciliation_grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .o_bank_sms_identifier_grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 }
@@ -179,7 +215,7 @@
         touch-action: pan-y;
         overscroll-behavior-y: contain;
         .o_bank_sms_dashboard_header, .o_bank_sms_section_heading { align-items: stretch; flex-direction: column; }
-        .o_bank_sms_dashboard_summary, .o_bank_sms_identifier_grid { grid-template-columns: 1fr; }
+        .o_bank_sms_dashboard_summary, .o_bank_sms_reconciliation_grid, .o_bank_sms_identifier_grid { grid-template-columns: 1fr; }
         .o_bank_sms_period { align-items: stretch; flex-direction: column; }
         .o_bank_sms_currency_row { grid-template-columns: auto repeat(3, minmax(0, 1fr)); font-size: .7rem; }
     }

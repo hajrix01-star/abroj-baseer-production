@@ -243,6 +243,46 @@ class TestBankSms(TransactionCase):
         self.assertFalse(incoming.journal_id)
         self.assertFalse(outgoing.journal_id)
 
+    def test_dashboard_reconciles_visible_cards_with_unassigned_and_inactive_identifiers(self):
+        sender = 'DashboardReconBank'
+        active_instrument = self.Instrument.create({
+            'name': 'Visible dashboard account', 'sender': sender, 'token': '3333',
+        })
+        inactive_instrument = self.Instrument.create({
+            'name': 'Archived dashboard account', 'sender': sender, 'token': '4444',
+        })
+        self.Message.ingest(
+            source_device_id='dashboard-reconciliation', idempotency_key='visible', sender=sender,
+            body='Incoming transfer 150.00 SAR account *3333',
+        )
+        self.Message.ingest(
+            source_device_id='dashboard-reconciliation', idempotency_key='unassigned', sender=sender,
+            body='Incoming transfer 25.00 SAR',
+        )
+        self.Message.ingest(
+            source_device_id='dashboard-reconciliation', idempotency_key='inactive', sender=sender,
+            body='Purchase 40.00 SAR using card *4444',
+        )
+        inactive_instrument.active = False
+
+        dashboard = self.Message.get_analysis_dashboard(sender=sender)
+
+        def sar_metric(metrics):
+            return next(metric for metric in metrics if metric['incoming']['currency'] == 'SAR')
+
+        total = sar_metric(dashboard['totals'])
+        cards = sar_metric(dashboard['card_totals'])
+        unassigned = sar_metric(dashboard['unassigned_totals'])
+        hidden = sar_metric(dashboard['hidden_identifier_totals'])
+        self.assertEqual((total['incoming']['value'], total['outgoing']['value'], total['message_count']), ('175.00', '40.00', 3))
+        self.assertEqual((cards['incoming']['value'], cards['outgoing']['value'], cards['message_count']), ('150.00', '0.00', 1))
+        self.assertEqual((unassigned['incoming']['value'], unassigned['outgoing']['value'], unassigned['message_count']), ('25.00', '0.00', 1))
+        self.assertEqual((hidden['incoming']['value'], hidden['outgoing']['value'], hidden['message_count']), ('0.00', '40.00', 1))
+        self.assertEqual(
+            dashboard['message_count'],
+            dashboard['linked_message_count'] + dashboard['unassigned_message_count'] + dashboard['hidden_identifier_message_count'],
+        )
+
     def test_otp_is_preserved_for_review_not_discarded(self):
         message = self.Message.ingest(
             source_device_id='device-a', idempotency_key='1002', sender='TestBank',

@@ -27,10 +27,11 @@ TRANSFER_SOURCE_IDENTIFIER_RE = re.compile(
     re.I,
 )
 # A bare suffix is only accepted when the bank explicitly labels it as the
-# outgoing source ("من: 5204").  This avoids treating a bill/reference number
-# elsewhere in the SMS as an account while supporting AlRajhi bill payments.
+# outgoing source ("من 5204" or "من: 5204").  This avoids treating a
+# bill/reference number elsewhere in the SMS as an account while supporting
+# AlRajhi bill payments.
 EXPLICIT_OUTGOING_SOURCE_IDENTIFIER_RE = re.compile(
-    r'(?:\bfrom\b|(?<!\S)من(?!\S))\s*[:؛]\s*(?:حساب(?:ك)?\s*)?(?P<token>\d{4})(?!\d)',
+    r'(?:\bfrom\b|(?<!\S)من(?!\S))\s*[:؛-]?\s+(?:حساب(?:ك)?\s*)?(?P<token>\d{4})(?!\d)',
     re.I,
 )
 MASKED_IDENTIFIER_RE = re.compile(

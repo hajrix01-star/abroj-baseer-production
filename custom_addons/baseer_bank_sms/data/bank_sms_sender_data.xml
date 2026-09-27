@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="sender_alrajhi" model="baseer.bank.sms.sender">
+        <field name="name">Al Rajhi Bank</field>
+        <field name="sender">AlRajhiBank</field>
+    </record>
+    <record id="sender_snb_alahli" model="baseer.bank.sms.sender">
+        <field name="name">SNB AlAhli</field>
+        <field name="sender">SNB-AlAhli</field>
+    </record>
+</odoo>

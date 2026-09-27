@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bank_sms_message_list" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.message.list</field>
+        <field name="model">baseer.bank.sms.message</field>
+        <field name="arch" type="xml">
+            <list string="صندوق وارد الرسائل البنكية" create="false" delete="false" default_order="received_at desc, id desc">
+                <field name="received_at" string="وقت الوصول للنظام"/>
+                <field name="device_received_at" string="وقت استلام الرسالة بالجوال"/>
+                <field name="sender" string="مرسل البنك"/>
+                <field name="identifier_token" string="الرقم المميّز"/>
+                <field name="source_token" string="حساب المصدر" optional="show"/>
+                <button name="action_open_source_learning" type="object" string="تعليم" icon="fa-magic" invisible="not source_token"/>
+                <field name="instrument_id" string="المعرّف المرجعي"/>
+                <field name="card_id" string="البطاقة المرتبطة" optional="show"/>
+                <field name="direction" widget="badge" decoration-success="direction == 'in'" decoration-warning="direction == 'out'" decoration-danger="direction == 'unknown'"/>
+                <field name="operation_type"/>
+                <field name="amount" widget="monetary"/>
+                <field name="currency_id" optional="hide"/>
+                <field name="analysis_company_id" string="الشركة التحليلية" optional="show"/>
+                <field name="analysis_target_id" string="التصنيف التحليلي" optional="show"/>
+                <field name="custody_id" optional="hide"/>
+                <field name="state" widget="badge" decoration-info="state == 'new'" decoration-success="state == 'routed'" decoration-warning="state == 'review'" decoration-danger="state == 'rejected'" decoration-muted="state == 'trash'"/>
+                <field name="body_preview" groups="base.group_system"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_bank_sms_message_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.message.form</field>
+        <field name="model">baseer.bank.sms.message</field>
+        <field name="arch" type="xml">
+            <form string="تفاصيل الرسالة البنكية" create="false" edit="false" delete="false">
+                <header>
+                    <button name="action_open_source_learning" type="object" string="تعليم من حساب المصدر" class="btn-primary" invisible="not source_token"/>
+                </header>
+                <sheet>
+                    <group string="Original SMS text" class="o_bank_sms_evidence" groups="base.group_system">
+                        <field name="raw_body" nolabel="1" readonly="1"/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="received_at"/>
+                            <field name="device_received_at" groups="base.group_system"/>
+                            <field name="sender"/>
+                            <field name="identifier_token"/>
+                            <field name="source_token"/>
+                            <field name="instrument_id"/>
+                            <field name="card_id"/>
+                            <field name="analysis_company_id"/>
+                            <field name="analysis_target_id"/>
+                            <field name="direction"/>
+                            <field name="operation_type"/>
+                            <field name="suspected_otp"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="currency_id"/>
+                            <field name="state"/>
+                            <field name="applied_rule_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="journal_id"/>
+                            <field name="custody_id"/>
+                            <field name="employee_id"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_bank_sms_message_search" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.message.search</field>
+        <field name="model">baseer.bank.sms.message</field>
+        <field name="arch" type="xml">
+            <search string="صندوق وارد الرسائل البنكية">
+                <field name="sender" string="مرسل البنك"/>
+                <field name="identifier_token" string="الرقم المميّز"/>
+                <field name="source_token" string="حساب المصدر"/>
+                <field name="instrument_id" string="المعرّف المرجعي"/>
+                <field name="card_id" string="البطاقة المرتبطة"/>
+                <field name="analysis_company_id" string="الشركة التحليلية"/>
+                <field name="analysis_target_id" string="التصنيف التحليلي"/>
+                <field name="custody_id"/>
+                <filter name="received_at" string="تاريخ الوصول" date="received_at"/>
+                <filter name="incoming" string="وارد" domain="[('direction', '=', 'in')]"/>
+                <filter name="outgoing" string="صادر" domain="[('direction', '=', 'out')]"/>
+                <filter name="deposit" string="الإيداعات" domain="[('operation_type', '=', 'deposit')]"/>
+                <filter name="needs_review" string="تحتاج مراجعة" domain="[('state', '=', 'review')]"/>
+                <filter name="suspected_otp" string="الرموز المؤقتة" domain="[('operation_type', '=', 'otp')]"/>
+                <filter name="trash" string="سلة المهملات" domain="[('state', '=', 'trash')]"/>
+                <filter name="rejected" string="العمليات المرفوضة" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter name="group_analysis_company" string="الشركة التحليلية" context="{'group_by': 'analysis_company_id'}"/>
+                <filter name="group_analysis_target" string="التصنيف التحليلي" context="{'group_by': 'analysis_target_id'}"/>
+                <filter name="group_sender" string="مرسل البنك" context="{'group_by': 'sender'}"/>
+                <filter name="group_identifier" string="الحساب أو البطاقة" context="{'group_by': 'instrument_id'}"/>
+                <filter name="group_direction" string="الاتجاه" context="{'group_by': 'direction'}"/>
+                <filter name="group_operation_type" string="نوع العملية" context="{'group_by': 'operation_type'}"/>
+                <filter name="group_month" string="الشهر" context="{'group_by': 'analysis_at:month'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_delete_bank_sms_temporary_codes" model="ir.actions.server">
+        <field name="name">Delete temporary codes</field>
+        <field name="model_id" ref="model_baseer_bank_sms_message"/>
+        <field name="binding_model_id" ref="model_baseer_bank_sms_message"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">records.action_delete_temporary_codes()</field>
+    </record>
+    <record id="action_refresh_bank_sms_reference_identifiers" model="ir.actions.server">
+        <field name="name">Refresh reference identifiers</field>
+        <field name="model_id" ref="model_baseer_bank_sms_message"/>
+        <field name="binding_model_id" ref="model_baseer_bank_sms_message"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">records.reanalyse_received_messages()</field>
+    </record>
+    <record id="view_bank_sms_message_pivot" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.message.pivot</field>
+        <field name="model">baseer.bank.sms.message</field>
+        <field name="arch" type="xml"><pivot string="مؤشرات حركة الرسائل"><field name="currency_id" type="row"/><field name="analysis_at" type="row" interval="month"/><field name="direction" type="col"/><field name="amount" type="measure"/></pivot></field>
+    </record>
+    <record id="view_bank_sms_instrument_list" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.instrument.list</field>
+        <field name="model">baseer.bank.sms.instrument</field>
+        <field name="arch" type="xml"><list string="معرّفات الرسائل البنكية"><field name="name"/><field name="sender_id"/><field name="sender" optional="hide"/><field name="token"/><field name="account_number" optional="show"/><field name="analysis_company_id" optional="show"/><field name="account_masked_display" optional="show"/><field name="account_matching_configured" optional="hide"/><field name="active"/></list></field>
+    </record>
+    <record id="view_bank_sms_sender_list" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.sender.list</field>
+        <field name="model">baseer.bank.sms.sender</field>
+        <field name="arch" type="xml"><list string="Allowed bank senders"><field name="name"/><field name="sender"/><field name="active"/></list></field>
+    </record>
+    <record id="view_bank_sms_sender_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.sender.form</field>
+        <field name="model">baseer.bank.sms.sender</field>
+        <field name="arch" type="xml"><form string="Allowed bank sender"><sheet><group><field name="name"/><field name="sender"/><field name="active"/></group></sheet></form></field>
+    </record>
+    <record id="view_bank_sms_instrument_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.instrument.form</field>
+        <field name="model">baseer.bank.sms.instrument</field>
+        <field name="arch" type="xml">
+            <form string="معرّف رسالة بنكية">
+                <sheet>
+                    <group><field name="name"/><field name="active"/><field name="sender_id" options="{'no_create_edit': True}"/><field name="sender" invisible="1"/><field name="token"/><field name="account_number" placeholder="SA… أو رقم الحساب الكامل"/><field name="analysis_company_id" options="{'no_create_edit': True}"/><field name="analysis_company_ids" widget="many2many_tags" options="{'no_create_edit': True}"/><field name="analysis_target_ids" widget="many2many_tags"/><field name="account_masked_display" readonly="1"/><field name="account_matching_configured" readonly="1"/><field name="note"/></group>
+                    <notebook>
+                        <page string="البطاقات المرتبطة">
+                            <field name="card_ids"><list editable="bottom"><field name="name"/><field name="token"/><field name="note" optional="hide"/><field name="active"/></list></field>
+                        </page>
+                        <page string="صيغ الرسائل المقنّعة"><field name="alias_ids"><list editable="bottom"><field name="prefix"/><field name="suffix"/><field name="generated_from_account" readonly="1" optional="hide"/><field name="active"/></list></field></page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_bank_sms_analysis_target_list" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.analysis.target.list</field>
+        <field name="model">baseer.bank.sms.analysis.target</field>
+        <field name="arch" type="xml"><list string="التصنيفات التحليلية"><field name="name"/><field name="kind"/><field name="company_ids" widget="many2many_tags"/><field name="active"/></list></field>
+    </record>
+    <record id="view_bank_sms_analysis_target_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.analysis.target.form</field>
+        <field name="model">baseer.bank.sms.analysis.target</field>
+        <field name="arch" type="xml"><form string="تصنيف تحليلي"><sheet><group><field name="name"/><field name="kind"/><field name="company_id" readonly="1"/><field name="company_ids" widget="many2many_tags"/><field name="active"/><field name="note"/></group></sheet></form></field>
+    </record>
+    <record id="view_bank_sms_source_learning_wizard" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.source.learning.wizard.form</field>
+        <field name="model">baseer.bank.sms.source.learning.wizard</field>
+        <field name="arch" type="xml">
+            <form string="تعليم معرّف من حساب المصدر" create="false" delete="false">
+                <group>
+                    <field name="message_id" invisible="1"/>
+                    <field name="sender"/>
+                    <field name="source_token" string="حساب المصدر"/>
+                    <field name="existing_instrument_id" string="المعرّف الموجود" invisible="not existing_instrument_id"/>
+                    <field name="analysis_target_id" string="التصنيف التحليلي" options="{'no_create_edit': False}"/>
+                </group>
+                <p class="text-muted">«حفظ كمعرّف» يربط مرسل البنك وحساب المصدر ويعيد تحليل الرسائل المطابقة فقط. «لهذه الرسالة فقط» لا ينشئ قاعدة. لا ينتج عن الخيارين أي قيد أو يومية أو ربط مالي.</p>
+                <footer>
+                    <button name="action_create_source_identifier" type="object" string="حفظ كمعرّف" class="btn-primary"/>
+                    <button name="action_apply_to_message_only" type="object" string="لهذه الرسالة فقط"/>
+                    <button string="إلغاء" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_bank_sms_rule_list" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.rule.list</field>
+        <field name="model">baseer.bank.sms.rule</field>
+        <field name="arch" type="xml"><list string="Bank SMS routing rules"><field name="sequence" widget="handle"/><field name="name"/><field name="sender_id"/><field name="sender" optional="hide"/><field name="instrument_id"/><field name="direction"/><field name="company_id"/><field name="active"/></list></field>
+    </record>
+    <record id="view_bank_sms_rule_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.rule.form</field>
+        <field name="model">baseer.bank.sms.rule</field>
+        <field name="arch" type="xml"><form string="Bank SMS routing rule"><sheet><group><group><field name="name"/><field name="active"/><field name="sequence"/><field name="sender_id" options="{'no_create_edit': True}"/><field name="sender" invisible="1"/><field name="instrument_id"/><field name="contains_text"/><field name="direction"/></group><group><field name="company_id"/><field name="journal_id"/><field name="custody_id"/><field name="employee_id"/><field name="note"/></group></group></sheet></form></field>
+    </record>
+    <record id="view_bank_sms_device_list" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.device.list</field>
+        <field name="model">baseer.bank.sms.device</field>
+        <field name="arch" type="xml"><list string="Bank SMS devices"><field name="name"/><field name="device_code"/><field name="connection_state"/><field name="last_seen_at"/><field name="active"/></list></field>
+    </record>
+    <record id="view_bank_sms_device_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.device.form</field>
+        <field name="model">baseer.bank.sms.device</field>
+        <field name="arch" type="xml"><form string="Bank SMS device"><header><button name="action_rotate_secret" type="object" string="Rotate secret" class="btn-primary"/></header><sheet><group><field name="name"/><field name="device_code"/><field name="connection_state" readonly="1"/><field name="active"/><field name="last_seen_at" readonly="1"/></group></sheet></form></field>
+    </record>
+    <record id="view_bank_sms_device_secret_wizard" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.device.secret.wizard.form</field>
+        <field name="model">baseer.bank.sms.device.secret.wizard</field>
+        <field name="arch" type="xml"><form string="New device secret"><group><span class="o_form_label">Copy this secret now. It is not stored and cannot be displayed again.</span><field name="device_id"/><field name="secret" password="True"/></group><footer><button name="action_close" type="object" string="Done" class="btn-primary"/></footer></form></field>
+    </record>
+    <record id="view_bank_sms_pairing_form" model="ir.ui.view">
+        <field name="name">baseer.bank.sms.pairing.form</field>
+        <field name="model">baseer.bank.sms.pairing</field>
+        <field name="arch" type="xml">
+            <form string="ربط جوال" create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="oe_title"><h1>اربط الجوال عبر QR</h1></div>
+                    <p>افتح تطبيق بصير SMS في الجوال، ثم اضغط «مسح رمز الربط» وامسح هذا الرمز.</p>
+                    <field name="qr_html" widget="html" nolabel="1"/>
+                    <div class="text-center mt16">
+                        <a href="/baseer_bank_sms/static/apk/baseer-sms-v1.0.4-release.apk" target="_blank" role="button" class="btn btn-primary">
+                            تحميل تطبيق بصير SMS للأندرويد
+                        </a>
+                    </div>
+                    <group>
+                        <field name="expires_at"/>
+                        <field name="state"/>
+                        <field name="device_id" invisible="not device_id"/>
+                    </group>
+                </sheet>
+                <footer><button string="تم" special="cancel" class="btn-primary"/></footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_bank_sms_dashboard" model="ir.actions.client"><field name="name">لوحة تحليل الرسائل</field><field name="tag">baseer_bank_sms.dashboard</field></record>
+    <record id="action_bank_sms_messages" model="ir.actions.act_window"><field name="name">صندوق وارد الرسائل البنكية</field><field name="res_model">baseer.bank.sms.message</field><field name="view_mode">list,form,pivot</field><field name="domain">[('state', 'not in', ['trash', 'rejected'])]</field></record>
+    <record id="action_bank_sms_trash" model="ir.actions.act_window"><field name="name">Trash</field><field name="res_model">baseer.bank.sms.message</field><field name="view_mode">list,form</field><field name="domain">[('state', '=', 'trash')]</field></record>
+    <record id="action_bank_sms_rejected" model="ir.actions.act_window"><field name="name">Rejected operations</field><field name="res_model">baseer.bank.sms.message</field><field name="view_mode">list,form</field><field name="domain">[('state', '=', 'rejected')]</field></record>
+    <record id="action_bank_sms_senders" model="ir.actions.act_window"><field name="name">Allowed bank senders</field><field name="res_model">baseer.bank.sms.sender</field><field name="view_mode">list,form</field></record>
+    <record id="action_bank_sms_instruments" model="ir.actions.act_window"><field name="name">Bank SMS identifiers</field><field name="res_model">baseer.bank.sms.instrument</field><field name="view_mode">list,form</field></record>
+    <record id="action_bank_sms_analysis_targets" model="ir.actions.act_window"><field name="name">التصنيفات التحليلية</field><field name="res_model">baseer.bank.sms.analysis.target</field><field name="view_mode">list,form</field></record>
+    <record id="action_bank_sms_rules" model="ir.actions.act_window"><field name="name">Bank SMS routing rules</field><field name="res_model">baseer.bank.sms.rule</field><field name="view_mode">list,form</field></record>
+    <record id="action_bank_sms_devices" model="ir.actions.act_window"><field name="name">Bank SMS devices</field><field name="res_model">baseer.bank.sms.device</field><field name="view_mode">list,form</field></record>
+    <record id="action_bank_sms_download_android" model="ir.actions.act_url">
+        <field name="name">تحميل تطبيق بصير SMS</field>
+        <field name="url">/baseer_bank_sms/static/apk/baseer-sms-v1.0.4-release.apk</field>
+        <field name="target">new</field>
+    </record>
+    <record id="action_bank_sms_open_pairing" model="ir.actions.server">
+        <field name="name">ربط جوال</field>
+        <field name="model_id" ref="model_baseer_bank_sms_pairing"/>
+        <field name="state">code</field>
+        <field name="code">action = env['baseer.bank.sms.pairing'].action_open_new_pairing()</field>
+    </record>
+</odoo>

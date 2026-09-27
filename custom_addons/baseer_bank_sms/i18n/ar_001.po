@@ -1,0 +1,603 @@
+# Translation of Odoo Server.
+#. module: baseer_bank_sms
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\\n"
+"Language: ar_001\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_messages
+msgid "Inbox"
+msgstr "صندوق الوارد"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_configuration
+msgid "Configuration"
+msgstr "الإعدادات"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_senders
+msgid "Allowed senders"
+msgstr "المرسلون المسموحون"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_instruments
+msgid "Identifiers"
+msgstr "المعرّفات"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_rules
+msgid "Routing rules"
+msgstr "قواعد التوجيه"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_devices
+msgid "Devices"
+msgstr "الأجهزة"
+
+#. module: baseer_bank_sms
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_messages
+msgid "Bank SMS inbox"
+msgstr "صندوق وارد الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_form
+msgid "Bank SMS evidence"
+msgstr "تفاصيل الرسالة البنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_form
+msgid "Original SMS text"
+msgstr "نص الرسالة الأصلي"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_form
+msgid "Technical details"
+msgstr "التفاصيل التقنية"
+
+#. module: baseer_bank_sms
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_senders
+msgid "Allowed bank senders"
+msgstr "مرسلو البنوك المسموحون"
+
+#. module: baseer_bank_sms
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_instruments
+msgid "Bank SMS identifiers"
+msgstr "معرّفات الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_rules
+msgid "Bank SMS routing rules"
+msgstr "قواعد توجيه الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_devices
+msgid "Bank SMS devices"
+msgstr "أجهزة الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__received_at
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_list
+msgid "System Receipt Time"
+msgstr "وقت الوصول للنظام"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__device_received_at
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_list
+msgid "Phone SMS Received At"
+msgstr "وقت استلام الرسالة بالجوال"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__sender
+msgid "Sender"
+msgstr "المرسل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__identifier_token
+msgid "Identifier Token"
+msgstr "رمز المعرّف"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__instrument_id
+msgid "Instrument"
+msgstr "الحساب أو البطاقة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__sender_id
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__sender_id
+msgid "Bank sender"
+msgstr "مرسل البنك"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_list
+msgid "Reference identifier"
+msgstr "المعرّف المرجعي"
+
+#. module: baseer_bank_sms
+#: model:ir.actions.server,name:baseer_bank_sms.action_refresh_bank_sms_reference_identifiers
+msgid "Refresh reference identifiers"
+msgstr "تحديث المعرّفات المرجعية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__direction
+msgid "Direction"
+msgstr "الاتجاه"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__operation_type
+msgid "Operation Type"
+msgstr "نوع العملية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__amount
+msgid "Amount"
+msgstr "المبلغ"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__state
+msgid "State"
+msgstr "الحالة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__body_preview
+msgid "Body Preview"
+msgstr "معاينة الرسالة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__direction__in
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Incoming"
+msgstr "وارد"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__direction__out
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Outgoing"
+msgstr "صادر"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__state__review
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__direction__unknown
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Needs review"
+msgstr "تحتاج مراجعة"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_list
+msgid "Bank SMS identifiers"
+msgstr "معرّفات الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_form
+msgid "Bank SMS identifier"
+msgstr "معرّف رسالة بنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_sender_list
+msgid "Allowed bank senders"
+msgstr "مرسلو البنوك المسموحون"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_sender_form
+msgid "Allowed bank sender"
+msgstr "مرسل بنك مسموح"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_rule_list
+msgid "Bank SMS routing rules"
+msgstr "قواعد توجيه الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_rule_form
+msgid "Bank SMS routing rule"
+msgstr "قاعدة توجيه رسالة بنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_device_list
+msgid "Bank SMS devices"
+msgstr "أجهزة الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_device_form
+msgid "Bank SMS device"
+msgstr "جهاز الرسائل البنكية"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_device_secret_wizard
+msgid "New device secret"
+msgstr "رمز جهاز جديد"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_device_form
+msgid "Rotate secret"
+msgstr "تغيير رمز الجهاز"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_sender__name
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__name
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__name
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_device__name
+msgid "Name"
+msgstr "الاسم"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_sender__sender
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__sender
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__sender
+msgid "Sender"
+msgstr "المرسل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_sender__active
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__active
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__active
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_device__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__token
+msgid "Token"
+msgstr "الرقم المميّز"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__note
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__note
+msgid "Note"
+msgstr "ملاحظة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__sequence
+msgid "Sequence"
+msgstr "الترتيب"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__contains_text
+msgid "Contains Text"
+msgstr "يحتوي النص"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__instrument_id
+msgid "Instrument"
+msgstr "الحساب أو البطاقة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__direction
+msgid "Direction"
+msgstr "الاتجاه"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__journal_id
+msgid "Journal"
+msgstr "دفتر اليومية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__custody_id
+msgid "Custody"
+msgstr "العهدة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_rule__employee_id
+msgid "Employee"
+msgstr "الموظف"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_device__device_code
+msgid "Device Code"
+msgstr "رمز الجهاز"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_device__installation_id
+msgid "Installation ID"
+msgstr "معرّف تثبيت التطبيق"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_device__last_seen_at
+msgid "Last Seen At"
+msgstr "آخر اتصال"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_device__connection_state
+msgid "Connection Status"
+msgstr "حالة الاتصال"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_device__connection_state__online
+msgid "Online"
+msgstr "متصل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_device__connection_state__offline
+msgid "Offline"
+msgstr "غير متصل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_pairing__expires_at
+msgid "Expires At"
+msgstr "تنتهي في"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_pairing__state
+msgid "State"
+msgstr "الحالة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_pairing__state__pending
+msgid "Pending scan"
+msgstr "بانتظار المسح"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_pairing__state__used
+msgid "Paired"
+msgstr "تم الربط"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_pairing__state__expired
+msgid "Expired"
+msgstr "منتهية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__deposit
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Deposit"
+msgstr "إيداع"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__otp
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Temporary code"
+msgstr "رمز مؤقت"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__declined
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Declined transaction"
+msgstr "عملية مرفوضة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__beneficiary_added
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Beneficiary added"
+msgstr "إضافة مستفيد"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__state__rejected
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_rejected
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_rejected
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Rejected operations"
+msgstr "العمليات المرفوضة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__state__trash
+#: model:ir.actions.act_window,name:baseer_bank_sms.action_bank_sms_trash
+#: model:ir.ui.menu,name:baseer_bank_sms.menu_bank_sms_trash
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Trash"
+msgstr "سلة المهملات"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Temporary codes"
+msgstr "الرموز المؤقتة"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Deposits"
+msgstr "الإيداعات"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Operation type"
+msgstr "نوع العملية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__card_fee
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Bank fee"
+msgstr "رسوم بنكية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__internal_transfer_candidate
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Possible internal transfer"
+msgstr "تحويل داخلي محتمل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__nonfinancial_notice
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Non-financial notice"
+msgstr "تنبيه غير مالي"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__transfer_in
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Incoming transfer"
+msgstr "تحويل وارد"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__transfer_out
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Outgoing transfer"
+msgstr "تحويل صادر"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__card_purchase
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Card purchase"
+msgstr "شراء بالبطاقة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__cash_withdrawal
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Cash withdrawal"
+msgstr "سحب نقدي"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__bill_payment
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Bill payment"
+msgstr "سداد فاتورة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__operation_type__unknown
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_rule__direction__unknown
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Unknown"
+msgstr "غير معروف"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__state__new
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "New"
+msgstr "جديد"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields.selection,name:baseer_bank_sms.selection__baseer_bank_sms_message__state__routed
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Routed"
+msgstr "تم التوجيه"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_form
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_account_wizard
+msgid "Set complete account"
+msgstr "إدخال رقم الحساب الكامل"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_form
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__alias_ids
+msgid "Masked SMS forms"
+msgstr "صيغ الرسائل المقنّعة"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_account_wizard
+msgid "Save matching form"
+msgstr "حفظ صيغة المطابقة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument_account_wizard__full_account
+msgid "Full Account"
+msgstr "رقم الحساب الكامل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__analysis_company_id
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__analysis_company_id
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_list
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Analytical company"
+msgstr "الشركة التحليلية"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__account_masked_display
+msgid "Account matching form"
+msgstr "صيغة مطابقة الحساب"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__account_matching_configured
+msgid "Account matching configured"
+msgstr "تمت تهيئة مطابقة الحساب"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument_alias__prefix
+msgid "Visible start"
+msgstr "بداية الرقم الظاهرة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument_alias__suffix
+msgid "Visible end"
+msgstr "نهاية الرقم الظاهرة"
+
+#. module: baseer_bank_sms
+#: model_terms:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_instrument_account_wizard
+msgid "Enter the account once. It is converted to a protected fingerprint and masked SMS form, then cleared."
+msgstr "أدخل رقم الحساب مرة واحدة؛ يتحول إلى بصمة محمية وصيغة رسالة مقنّعة ثم يُمسح."
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__card_id
+msgid "Linked card"
+msgstr "البطاقة المرتبطة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument__card_ids
+msgid "Linked cards"
+msgstr "البطاقات المرتبطة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument_card__instrument_id
+msgid "Identifier"
+msgstr "المعرّف"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_instrument_card__token
+msgid "Card suffix"
+msgstr "آخر أربعة أرقام للبطاقة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__analysis_at
+msgid "Analysis date"
+msgstr "تاريخ التحليل"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__source_device_id
+msgid "Source Device"
+msgstr "جهاز المصدر"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__idempotency_key
+msgid "Idempotency Key"
+msgstr "مفتاح منع التكرار"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__body_fingerprint
+msgid "Body Fingerprint"
+msgstr "بصمة نص الرسالة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__currency_id
+msgid "Currency"
+msgstr "العملة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__currency_code
+msgid "Currency Code"
+msgstr "رمز العملة"
+
+#. module: baseer_bank_sms
+#: model:ir.model.fields,field_description:baseer_bank_sms.field_baseer_bank_sms_message__applied_rule_id
+msgid "Applied Rule"
+msgstr "القاعدة المطبقة"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Received date"
+msgstr "تاريخ الوصول"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Account / card"
+msgstr "الحساب أو البطاقة"
+
+#. module: baseer_bank_sms
+#: model:ir.ui.view,arch_db:baseer_bank_sms.view_bank_sms_message_search
+msgid "Month"
+msgstr "الشهر"
+
+#. module: baseer_bank_sms
+#: code:addons/baseer_bank_sms/models/bank_sms.py:0
+msgid "Unassigned"
+msgstr "غير محددة"

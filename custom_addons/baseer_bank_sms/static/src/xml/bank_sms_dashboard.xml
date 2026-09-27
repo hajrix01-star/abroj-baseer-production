@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_bank_sms.AnalysisDashboard">
+        <main class="o_bank_sms_dashboard" dir="rtl" t-ref="dashboard">
+            <section class="o_bank_sms_dashboard_header">
+                <div>
+                    <p class="o_bank_sms_eyebrow">بصير SMS</p>
+                    <h1>لوحة تحليل الرسائل</h1>
+                    <p>ملخص تحليلي للرسائل المصنفة. لا يمثل رصيدًا مصرفيًا أو قيدًا محاسبيًا.</p>
+                </div>
+                <div class="o_bank_sms_period" aria-label="فترة التحليل">
+                    <label>من <input name="from" type="date" t-att-value="state.filters.from" t-on-change="onDateChanged"/></label>
+                    <label>إلى <input name="to" type="date" t-att-value="state.filters.to" t-on-change="onDateChanged"/></label>
+                    <button class="btn btn-primary" type="button" t-on-click="load">تحديث العرض</button>
+                </div>
+            </section>
+
+            <div t-if="state.loading" class="o_bank_sms_dashboard_state" role="status">يجري تحميل المؤشرات…</div>
+            <div t-elif="state.error" class="o_bank_sms_dashboard_state o_bank_sms_dashboard_error" role="alert">
+                <span t-esc="state.error"/>
+                <button class="btn btn-secondary" type="button" t-on-click="load">حاول مرة أخرى</button>
+            </div>
+            <t t-elif="state.data">
+                <section class="o_bank_sms_dashboard_summary" aria-label="ملخص الفترة">
+                    <article class="o_bank_sms_metric_card o_bank_sms_metric_in">
+                        <span>الوارد</span>
+                        <div t-if="state.data.totals.length">
+                            <p t-foreach="state.data.totals" t-as="metric" t-key="metric.currency_id" t-esc="formatAmount(metric.incoming)"/>
+                        </div>
+                        <small t-else="">لا توجد حركة واردة</small>
+                    </article>
+                    <article class="o_bank_sms_metric_card o_bank_sms_metric_out">
+                        <span>الصادر</span>
+                        <div t-if="state.data.totals.length">
+                            <p t-foreach="state.data.totals" t-as="metric" t-key="metric.currency_id" t-esc="formatAmount(metric.outgoing)"/>
+                        </div>
+                        <small t-else="">لا توجد حركة صادرة</small>
+                    </article>
+                    <article class="o_bank_sms_metric_card o_bank_sms_metric_net">
+                        <span>صافي حركة الرسائل</span>
+                        <div t-if="state.data.totals.length">
+                            <p t-foreach="state.data.totals" t-as="metric" t-key="metric.currency_id" t-esc="formatAmount(metric.net)"/>
+                        </div>
+                        <small t-else="">الوارد ناقص الصادر، وليس رصيدًا مصرفيًا</small>
+                    </article>
+                    <article class="o_bank_sms_metric_card o_bank_sms_metric_count">
+                        <span>رسائل مطابقة</span>
+                        <p t-esc="state.data.matched_message_count"/>
+                        <small><t t-esc="state.data.identifier_count"/> معرّفًا نشطًا</small>
+                    </article>
+                </section>
+
+                <section class="o_bank_sms_identifier_section" aria-labelledby="bank-sms-identifiers-title">
+                    <div class="o_bank_sms_section_heading">
+                        <div>
+                            <p class="o_bank_sms_eyebrow">المعرّفات</p>
+                            <h2 id="bank-sms-identifiers-title">حسابات وبطاقات التحليل</h2>
+                        </div>
+                        <span>اختر بطاقة لعرض رسائلها في الفترة المحددة</span>
+                    </div>
+                    <div t-if="state.data.identifiers.length" class="o_bank_sms_identifier_grid">
+                        <article t-foreach="state.data.identifiers" t-as="identifier" t-key="identifier.id" class="o_bank_sms_identifier_card">
+                            <header>
+                                <div>
+                                    <h3 t-esc="identifier.name"/>
+                                    <p><span t-esc="identifier.sender"/> · <span t-esc="identifier.token"/></p>
+                                </div>
+                                <span class="o_bank_sms_company_badge" t-esc="identifier.analysis_company"/>
+                            </header>
+                            <div class="o_bank_sms_card_meta">
+                                <span><t t-esc="identifier.card_count"/> بطاقات مرتبطة</span>
+                                <button class="btn btn-link" type="button" t-on-click="() => this.openIdentifier(identifier.id)">إدارة المعرّف</button>
+                            </div>
+                            <div t-if="identifier.metrics.length" class="o_bank_sms_currency_rows">
+                                <div t-foreach="identifier.metrics" t-as="metric" t-key="metric.currency_id" class="o_bank_sms_currency_row">
+                                    <span class="o_bank_sms_currency" t-esc="metric.incoming.currency"/>
+                                    <span>وارد <strong t-esc="formatAmount(metric.incoming)"/></span>
+                                    <span>صادر <strong t-esc="formatAmount(metric.outgoing)"/></span>
+                                    <span>الصافي <strong t-esc="formatAmount(metric.net)"/></span>
+                                </div>
+                            </div>
+                            <p t-else="" class="o_bank_sms_empty">لا رسائل مصنفة لهذا المعرّف في الفترة المحددة.</p>
+                            <footer><button class="btn btn-outline-primary" type="button" t-on-click="() => this.openMessages(identifier.id)">عرض الرسائل</button></footer>
+                        </article>
+                    </div>
+                    <div t-else="" class="o_bank_sms_dashboard_state">لا توجد معرّفات نشطة ضمن عوامل التصفية.</div>
+                </section>
+            </t>
+        </main>
+    </t>
+</templates>

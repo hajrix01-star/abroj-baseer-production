@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bank_sms_message_owner,bank sms message owner,model_baseer_bank_sms_message,base.group_system,1,1,0,0
+access_bank_sms_instrument_owner,bank sms identifier owner,model_baseer_bank_sms_instrument,base.group_system,1,1,1,1
+access_bank_sms_instrument_alias_owner,bank sms masked identifier form owner,model_baseer_bank_sms_instrument_alias,base.group_system,1,1,1,1
+access_bank_sms_instrument_card_owner,bank sms linked card owner,model_baseer_bank_sms_instrument_card,base.group_system,1,1,1,1
+access_bank_sms_analysis_target_owner,bank sms analytical classification owner,model_baseer_bank_sms_analysis_target,base.group_system,1,1,1,1
+access_bank_sms_source_learning_wizard_owner,bank sms source learning wizard owner,model_baseer_bank_sms_source_learning_wizard,base.group_system,1,1,1,1
+access_bank_sms_instrument_account_wizard_owner,bank sms account matching wizard owner,model_baseer_bank_sms_instrument_account_wizard,base.group_system,1,1,1,1
+access_bank_sms_sender_owner,bank sms sender owner,model_baseer_bank_sms_sender,base.group_system,1,1,1,1
+access_bank_sms_rule_owner,bank sms rule owner,model_baseer_bank_sms_rule,base.group_system,1,1,1,1
+access_bank_sms_device_owner,bank sms device owner,model_baseer_bank_sms_device,base.group_system,1,1,1,1
+access_bank_sms_device_secret_wizard_owner,bank sms device secret wizard owner,model_baseer_bank_sms_device_secret_wizard,base.group_system,1,1,1,1
+access_bank_sms_pairing_owner,bank sms pairing owner,model_baseer_bank_sms_pairing,base.group_system,1,1,1,1

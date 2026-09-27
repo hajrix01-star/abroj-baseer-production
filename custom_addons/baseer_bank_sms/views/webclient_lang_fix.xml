@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Odoo's bootstrap template appends the language parameter to a URL with
+        an ampersand even when the URL has no query string.  Arabic then tries
+        to load /web/webclient/load_menus&lang=ar_001 (404), leaving a blank
+        web client.  Preserve the core bootstrap behavior and use a query
+        string only when a language override is present.
+    -->
+    <template id="webclient_bootstrap_language_menu_fix" inherit_id="web.webclient_bootstrap">
+        <xpath expr="//script[contains(., 'odoo.__session_info__')]" position="replace">
+            <script type="text/javascript">
+                {
+                    odoo.__session_info__ = <t t-out="json.dumps(session_info)"/>;
+                    const { user_context } = odoo.__session_info__;
+                    const lang = new URLSearchParams(document.location.search).get("lang");
+                    let menuURL = "/web/webclient/load_menus";
+                    if (lang) {
+                        user_context.lang = lang;
+                        menuURL += `?lang=${encodeURIComponent(lang)}`;
+                    }
+                    odoo.reloadMenus = () => fetch(menuURL, { cache: "no-store" }).then(res => res.json());
+                    odoo.loadMenusPromise = odoo.reloadMenus();
+                }
+            </script>
+        </xpath>
+    </template>
+</odoo>

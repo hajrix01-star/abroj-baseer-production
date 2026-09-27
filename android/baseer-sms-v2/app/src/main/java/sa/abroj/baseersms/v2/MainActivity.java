@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
     private TextView connection, heartbeat, lastAck, queue, error; private final Handler handler=new Handler();
     private final Runnable refreshTask=new Runnable(){@Override public void run(){refresh();handler.postDelayed(this,2000);}};
     @Override public void onCreate(Bundle state){super.onCreate(state);setContentView(R.layout.activity_main);connection=findViewById(R.id.connection);heartbeat=findViewById(R.id.heartbeat);lastAck=findViewById(R.id.last_ack);queue=findViewById(R.id.queue);error=findViewById(R.id.error);
-        findViewById(R.id.permission).setOnClickListener(v->requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS},11));findViewById(R.id.pair).setOnClickListener(v->scan());findViewById(R.id.test_connection).setOnClickListener(v->{SyncWorker.enqueue(this);refresh();});refresh();}
+        findViewById(R.id.permission).setOnClickListener(v->requestPermissions(new String[]{Manifest.permission.RECEIVE_SMS},11));findViewById(R.id.pair).setOnClickListener(v->scan());refresh();}
     @Override protected void onResume(){super.onResume();handler.post(refreshTask);} @Override protected void onPause(){handler.removeCallbacks(refreshTask);super.onPause();}
     private void refresh(){boolean permission=checkSelfPermission(Manifest.permission.RECEIVE_SMS)==PackageManager.PERMISSION_GRANTED; long hb=StatusStore.heartbeatAt(this);long now=System.currentTimeMillis();boolean live=SecureSettings.isPaired(this)&&permission&&hb>0&&now-hb<=120000;
         if(!SecureSettings.isPaired(this)){connection.setText("غير مربوط");connection.setTextColor(Color.rgb(155,28,28));}

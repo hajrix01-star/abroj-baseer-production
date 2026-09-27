@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_company_kanban_display_name" model="ir.ui.view">
+        <field name="name">res.company.kanban.language.display</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_res_company_kanban"/>
+        <field name="arch" type="xml">
+            <!-- Explicit widget uses the shared readonly language formatter. -->
+            <xpath expr="//templates//field[@name='name']" position="attributes">
+                <attribute name="widget">char</attribute>
+                <attribute name="readonly">1</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_web_navigation.CompanyDisplayName" t-inherit="web.SwitchCompanyMenu" t-inherit-mode="extension">
+        <xpath expr="//button[@t-att-title='user.activeCompany.name']" position="attributes">
+            <attribute name="t-att-title">baseerCompanyName(user.activeCompany.name)</attribute>
+        </xpath>
+        <xpath expr="//span[@t-esc='user.activeCompany.name']" position="attributes">
+            <attribute name="t-esc">baseerCompanyName(user.activeCompany.name)</attribute>
+        </xpath>
+    </t>
+    <t t-name="baseer_web_navigation.CompanyItemDisplayName" t-inherit="web.SwitchCompanyItem" t-inherit-mode="extension">
+        <xpath expr="//t[@t-out='props.company.name']" position="attributes">
+            <attribute name="t-out">baseerCompanyName(props.company.name)</attribute>
+        </xpath>
+        <xpath expr="//div[@role='menuitemcheckbox']" position="attributes">
+            <attribute name="t-att-aria-label">baseerCompanyName(props.company.name)</attribute>
+            <attribute name="t-att-title">baseerCompanyName(props.company.name)</attribute>
+        </xpath>
+        <xpath expr="//div[@role='button']" position="attributes">
+            <attribute name="t-att-aria-label">baseerCompanyName(props.company.name)</attribute>
+            <attribute name="t-att-title">baseerCompanyName(props.company.name)</attribute>
+        </xpath>
+    </t>
+</templates>

@@ -1,0 +1,51 @@
+name: Validate pull request source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-integrity:
+    name: Source integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject whitespace errors and validate changed source
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          git diff --check "$BASE_SHA" "$HEAD_SHA"
+          mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          for path in "${changed[@]}"; do
+            case "$path" in
+              ops/production/baseer-production-*) bash -n "$path" ;;
+            esac
+          done
+          python3 - "$BASE_SHA" "$HEAD_SHA" <<'PY'
+          import ast
+          import subprocess
+          import sys
+          import xml.etree.ElementTree as etree
+
+          base, head = sys.argv[1:]
+          paths = subprocess.check_output(
+              ["git", "diff", "--name-only", base, head], text=True
+          ).splitlines()
+          for path in paths:
+              if path.endswith(".py"):
+                  with open(path, encoding="utf-8") as source:
+                      ast.parse(source.read(), filename=path)
+              elif path.endswith(".xml"):
+                  etree.parse(path)
+          print(f"validated {len(paths)} changed paths")
+          PY

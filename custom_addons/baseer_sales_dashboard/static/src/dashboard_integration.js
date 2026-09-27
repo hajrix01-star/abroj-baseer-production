@@ -5,6 +5,7 @@ import { SpreadsheetDashboardAction } from "@spreadsheet_dashboard/bundle/dashbo
 import { DashboardDateFilter } from "@spreadsheet_dashboard/bundle/dashboard_action/dashboard_date_filter/dashboard_date_filter";
 import { DateFilterDropdown } from "@spreadsheet/global_filters/components/date_filter_dropdown/date_filter_dropdown";
 import { BaseerSalesDashboard } from "./sales_dashboard";
+import { BaseerExecutiveCenter } from "./executive_center";
 
 export function westernDateDigits(value) {
     return value.replace(/[\u0660-\u0669\u06f0-\u06f9]/g, (digit) =>
@@ -33,7 +34,7 @@ patch(DashboardLoader.prototype, {
 });
 
 patch(SpreadsheetDashboardAction, {
-    components: { ...SpreadsheetDashboardAction.components, BaseerSalesDashboard, BaseerDashboardDateFilter },
+    components: { ...SpreadsheetDashboardAction.components, BaseerSalesDashboard, BaseerExecutiveCenter, BaseerDashboardDateFilter },
 });
 
 patch(SpreadsheetDashboardAction.prototype, {
@@ -56,5 +57,8 @@ patch(SpreadsheetDashboardAction.prototype, {
 
     get isBaseerSalesDashboard() {
         return this.loader.getActiveDashboard()?.data.baseer_dashboard_kind === "sales_summary";
+    },
+    get isBaseerExecutiveDashboard() {
+        return this.loader.getActiveDashboard()?.data.baseer_dashboard_kind === "executive_center";
     },
 });

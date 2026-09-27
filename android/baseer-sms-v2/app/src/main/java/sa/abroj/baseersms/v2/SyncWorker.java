@@ -44,7 +44,7 @@ public final class SyncWorker extends Worker {
         if (!SecureSettings.isPaired(context) || !SecureSettings.enabled(context)) { StatusStore.error(context, "not_paired_or_disabled"); return Result.success(); }
         SmsOutbox outbox = new SmsOutbox(context);
         try {
-            outbox.requeueRateLimited();
+            outbox.recoverTemporaryState();
             List<SmsOutbox.Item> items;
             while (!(items = outbox.claimBatch(50)).isEmpty()) {
                 if (deliver(context, outbox, items)) { heartbeat(context, outbox); return Result.retry(); }

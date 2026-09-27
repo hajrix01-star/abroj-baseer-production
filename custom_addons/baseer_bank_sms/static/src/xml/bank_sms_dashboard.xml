@@ -44,10 +44,59 @@
                         <small t-else="">الوارد ناقص الصادر، وليس رصيدًا مصرفيًا</small>
                     </article>
                     <article class="o_bank_sms_metric_card o_bank_sms_metric_count">
-                        <span>رسائل مطابقة</span>
-                        <p t-esc="state.data.matched_message_count"/>
-                        <small><t t-esc="state.data.identifier_count"/> معرّفًا نشطًا</small>
+                        <span>رسائل ضمن نطاق التحليل</span>
+                        <p t-esc="state.data.message_count"/>
+                        <small>مرتبطة بمعرّف: <t t-esc="state.data.linked_message_count"/> · بانتظار تعريف: <t t-esc="state.data.unassigned_message_count"/></small>
                     </article>
+                </section>
+
+                <section class="o_bank_sms_reconciliation" aria-labelledby="bank-sms-reconciliation-title">
+                    <div class="o_bank_sms_section_heading">
+                        <div>
+                            <p class="o_bank_sms_eyebrow">مطابقة التحليل</p>
+                            <h2 id="bank-sms-reconciliation-title">كيف تتطابق الأرقام</h2>
+                        </div>
+                        <span>إجمالي الفترة = كروت المعرّفات + بانتظار التعريف <t t-if="state.data.hidden_identifier_message_count">+ معرّفات غير ظاهرة</t></span>
+                    </div>
+                    <div class="o_bank_sms_reconciliation_grid">
+                        <article class="o_bank_sms_reconciliation_card">
+                            <strong>مجموع كروت المعرّفات</strong>
+                            <p><t t-esc="state.data.linked_message_count"/> رسالة</p>
+                            <t t-if="state.data.card_totals.length">
+                                <div t-foreach="state.data.card_totals" t-as="metric" t-key="metric.currency_id" class="o_bank_sms_reconciliation_currency">
+                                    <span t-esc="metric.incoming.currency"/>
+                                    <span>وارد <b t-esc="formatAmount(metric.incoming)"/></span>
+                                    <span>صادر <b t-esc="formatAmount(metric.outgoing)"/></span>
+                                    <span>الصافي <b t-esc="formatAmount(metric.net)"/></span>
+                                </div>
+                            </t>
+                            <small t-else="">لا رسائل مرتبطة بمعرّف في هذه الفترة.</small>
+                        </article>
+                        <article class="o_bank_sms_reconciliation_card o_bank_sms_reconciliation_pending">
+                            <strong>بانتظار تعريف</strong>
+                            <p><t t-esc="state.data.unassigned_message_count"/> رسالة</p>
+                            <t t-if="state.data.unassigned_totals.length">
+                                <div t-foreach="state.data.unassigned_totals" t-as="metric" t-key="metric.currency_id" class="o_bank_sms_reconciliation_currency">
+                                    <span t-esc="metric.incoming.currency"/>
+                                    <span>وارد <b t-esc="formatAmount(metric.incoming)"/></span>
+                                    <span>صادر <b t-esc="formatAmount(metric.outgoing)"/></span>
+                                    <span>الصافي <b t-esc="formatAmount(metric.net)"/></span>
+                                </div>
+                            </t>
+                            <small t-else="">كل الرسائل ضمن الفترة مرتبطة بمعرّف.</small>
+                        </article>
+                        <article t-if="state.data.hidden_identifier_message_count" class="o_bank_sms_reconciliation_card o_bank_sms_reconciliation_hidden">
+                            <strong>معرّفات غير ظاهرة</strong>
+                            <p><t t-esc="state.data.hidden_identifier_message_count"/> رسالة</p>
+                            <div t-foreach="state.data.hidden_identifier_totals" t-as="metric" t-key="metric.currency_id" class="o_bank_sms_reconciliation_currency">
+                                <span t-esc="metric.incoming.currency"/>
+                                <span>وارد <b t-esc="formatAmount(metric.incoming)"/></span>
+                                <span>صادر <b t-esc="formatAmount(metric.outgoing)"/></span>
+                                <span>الصافي <b t-esc="formatAmount(metric.net)"/></span>
+                            </div>
+                            <small>هذه الرسائل مرتبطة بمعرّف مؤرشف أو خارج عامل التصفية، لذلك لا تدخل في الكروت الظاهرة.</small>
+                        </article>
+                    </div>
                 </section>
 
                 <section class="o_bank_sms_identifier_section" aria-labelledby="bank-sms-identifiers-title">
@@ -65,7 +114,7 @@
                                     <h3 t-esc="identifier.name"/>
                                     <p><span t-esc="identifier.sender"/> · <span t-esc="identifier.token"/></p>
                                 </div>
-                                <span class="o_bank_sms_company_badge" t-esc="identifier.analysis_company"/>
+                                <span class="o_bank_sms_company_badge" t-esc="identifier.analysis_label"/>
                             </header>
                             <div class="o_bank_sms_card_meta">
                                 <span><t t-esc="identifier.card_count"/> بطاقات مرتبطة</span>

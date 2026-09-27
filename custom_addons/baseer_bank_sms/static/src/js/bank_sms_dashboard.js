@@ -78,6 +78,7 @@ export class BaseerBankSmsDashboard extends Component {
                 ["analysis_at", ">=", from],
                 ["analysis_at", "<", to],
                 ["state", "not in", ["trash", "rejected"]],
+                ["direction", "in", ["in", "out"]],
             ],
         });
     }

@@ -123,6 +123,20 @@ class TestBankSms(TransactionCase):
         self.assertFalse(message.company_id)
         self.assertFalse(message.journal_id)
 
+    def test_bill_payment_uses_an_explicit_unmasked_source_suffix(self):
+        instrument = self.Instrument.create({
+            'name': 'Al Rajhi payment source', 'sender': 'AlRajhiBank', 'token': '5204',
+        })
+        message = self.Message.ingest(
+            source_device_id='device-alrajhi-bill', idempotency_key='alrajhi-bill-5204',
+            sender='AlRajhiBank',
+            body='سداد فاتورة من: 5204 مبلغ: SAR 3961.81 مفوتر: 002 الشركة السعودية للكهرباء',
+        )
+        self.assertEqual(message.operation_type, 'bill_payment')
+        self.assertEqual(message.identifier_token, '5204')
+        self.assertEqual(message.source_token, '5204')
+        self.assertEqual(message.instrument_id, instrument)
+
     def test_source_learning_creates_one_reusable_identifier_without_financial_routing(self):
         Target = self.env['baseer.bank.sms.analysis.target']
         Wizard = self.env['baseer.bank.sms.source.learning.wizard']

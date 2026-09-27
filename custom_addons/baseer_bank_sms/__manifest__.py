@@ -1,7 +1,7 @@
 {
     'name': 'بصير SMS',
     'summary': 'Central bank-SMS evidence inbox and routing rules',
-    'version': '19.0.1.8.3',
+    'version': '19.0.1.8.4',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Tools',

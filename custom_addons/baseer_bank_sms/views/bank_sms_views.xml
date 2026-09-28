@@ -10,7 +10,7 @@
                 <field name="sender" string="مرسل البنك"/>
                 <field name="identifier_token" string="الرقم المميّز"/>
                 <field name="source_token" string="حساب المصدر" optional="show"/>
-                <button name="action_open_source_learning" type="object" string="تعليم" icon="fa-magic" invisible="not source_token"/>
+                <button name="action_open_source_learning" type="object" string="تعليم" icon="fa-magic" invisible="not source_token or instrument_id"/>
                 <field name="instrument_id" string="المعرّف المرجعي"/>
                 <field name="card_id" string="البطاقة المرتبطة" optional="show"/>
                 <field name="direction" widget="badge" decoration-success="direction == 'in'" decoration-warning="direction == 'out'" decoration-danger="direction == 'unknown'"/>
@@ -31,7 +31,7 @@
         <field name="arch" type="xml">
             <form string="تفاصيل الرسالة البنكية" create="false" edit="false" delete="false">
                 <header>
-                    <button name="action_open_source_learning" type="object" string="تعليم من حساب المصدر" class="btn-primary" invisible="not source_token"/>
+                    <button name="action_open_source_learning" type="object" string="تعليم من حساب المصدر" class="btn-primary" invisible="not source_token or instrument_id"/>
                 </header>
                 <sheet>
                     <group string="Original SMS text" class="o_bank_sms_evidence" groups="base.group_system">
@@ -218,8 +218,8 @@
                     <p>افتح تطبيق بصير SMS في الجوال، ثم اضغط «مسح رمز الربط» وامسح هذا الرمز.</p>
                     <field name="qr_html" widget="html" nolabel="1"/>
                     <div class="text-center mt16">
-                        <a href="/baseer_bank_sms/static/apk/baseer-sms-v1.0.4-release.apk" target="_blank" role="button" class="btn btn-primary">
-                            تحميل تطبيق بصير SMS للأندرويد
+                        <a href="/baseer_bank_sms/static/apk/baseer-sms-v2.0.9-live.apk" target="_blank" role="button" class="btn btn-primary">
+                            تحميل تطبيق بصير SMS — Live للأندرويد
                         </a>
                     </div>
                     <group>
@@ -242,8 +242,8 @@
     <record id="action_bank_sms_rules" model="ir.actions.act_window"><field name="name">Bank SMS routing rules</field><field name="res_model">baseer.bank.sms.rule</field><field name="view_mode">list,form</field></record>
     <record id="action_bank_sms_devices" model="ir.actions.act_window"><field name="name">Bank SMS devices</field><field name="res_model">baseer.bank.sms.device</field><field name="view_mode">list,form</field></record>
     <record id="action_bank_sms_download_android" model="ir.actions.act_url">
-        <field name="name">تحميل تطبيق بصير SMS</field>
-        <field name="url">/baseer_bank_sms/static/apk/baseer-sms-v1.0.4-release.apk</field>
+        <field name="name">تحميل تطبيق بصير SMS — Live</field>
+        <field name="url">/baseer_bank_sms/static/apk/baseer-sms-v2.0.9-live.apk</field>
         <field name="target">new</field>
     </record>
     <record id="action_bank_sms_open_pairing" model="ir.actions.server">

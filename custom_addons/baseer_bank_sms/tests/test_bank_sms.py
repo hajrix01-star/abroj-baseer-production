@@ -1,4 +1,5 @@
 from odoo.tests.common import TransactionCase, tagged
+from odoo.exceptions import ValidationError
 
 
 @tagged('post_install', '-at_install')
@@ -28,6 +29,56 @@ class TestBankSms(TransactionCase):
         self.assertEqual(message.direction, 'out')
         self.assertEqual(message.operation_type, 'card_purchase')
         self.assertEqual(self.Message.search_count([('source_device_id', '=', 'device-a'), ('idempotency_key', '=', '1001')]), 1)
+
+    def test_v2_installation_idempotency_survives_repair_without_cross_device_loss(self):
+        self.env['baseer.bank.sms.sender'].create({'name': 'Test bank', 'sender': 'TestBank'})
+        first = self.Message.ingest(
+            source_device_id='old-credential', source_installation_id='installation-one',
+            idempotency_key='history:installation-one:12345', sender='TestBank',
+            body='Incoming transfer 12.00 SAR *4567',
+        )
+        repaired = self.Message.ingest(
+            source_device_id='rotated-credential', source_installation_id='installation-one',
+            idempotency_key='history:installation-one:12345', sender='TestBank',
+            body='Incoming transfer 12.00 SAR *4567',
+        )
+        separate_phone = self.Message.ingest(
+            source_device_id='second-phone', source_installation_id='installation-two',
+            idempotency_key='history:installation-one:12345', sender='TestBank',
+            body='Incoming transfer 12.00 SAR *4567',
+        )
+        self.assertEqual(first, repaired)
+        self.assertNotEqual(first, separate_phone)
+        self.assertEqual(self.Message.search_count([('idempotency_key', '=', 'history:installation-one:12345')]), 2)
+
+    def test_pairing_rotates_existing_installation_secret(self):
+        installation_id = 'installation-identity-for-rotation'
+        first_pairing = self.env['baseer.bank.sms.pairing'].create({})
+        first = first_pairing.consume(installation_id)
+        device = first_pairing.device_id
+        self.assertTrue(device.verify_secret(first['device_secret']))
+        second_pairing = self.env['baseer.bank.sms.pairing'].create({})
+        second = second_pairing.consume(installation_id)
+        self.assertEqual(second_pairing.device_id, device)
+        self.assertNotEqual(first['device_code'], second['device_code'])
+        self.assertFalse(device.verify_secret(first['device_secret']))
+        self.assertTrue(device.verify_secret(second['device_secret']))
+        self.assertEqual(self.env['baseer.bank.sms.device'].search_count([('installation_id', '=', installation_id)]), 1)
+
+    def test_repair_backfills_legacy_messages_before_rotating_device_code(self):
+        self.env['baseer.bank.sms.sender'].create({'name': 'Test bank', 'sender': 'TestBank'})
+        installation_id = 'installation-identity-for-backfill'
+        first_pairing = self.env['baseer.bank.sms.pairing'].create({})
+        first = first_pairing.consume(installation_id)
+        message = self.Message.ingest(
+            source_device_id=first['device_code'], idempotency_key='legacy-history-key',
+            sender='TestBank', body='Incoming transfer 12.00 SAR *4567',
+        )
+        self.assertFalse(message.source_installation_id)
+        self.env['baseer.bank.sms.pairing'].create({}).consume(installation_id)
+        self.assertEqual(message.source_installation_id, installation_id)
+        with self.assertRaisesRegex(ValidationError, 'immutable'):
+            message.write({'source_installation_id': 'another-installation'})
 
     def test_instrument_uses_sender_catalogue_and_reanalysis_stays_nonfinancial(self):
         sender = self.env['baseer.bank.sms.sender'].create({
@@ -122,6 +173,21 @@ class TestBankSms(TransactionCase):
         self.assertEqual(message.analysis_company_id, self.env.company)
         self.assertFalse(message.company_id)
         self.assertFalse(message.journal_id)
+
+    def test_bill_payment_uses_an_explicit_unmasked_source_suffix(self):
+        instrument = self.Instrument.create({
+            'name': 'Al Rajhi payment source', 'sender': 'AlRajhiBank', 'token': '5204',
+        })
+        for index, source_text in enumerate(('من 5204', 'من: 5204', 'من:5204')):
+            message = self.Message.ingest(
+                source_device_id='device-alrajhi-bill', idempotency_key=f'alrajhi-bill-5204-{index}',
+                sender='AlRajhiBank',
+                body=f'سداد فاتورة {source_text} مبلغ: SAR 3961.81 مفوتر: 002 الشركة السعودية للكهرباء',
+            )
+            self.assertEqual(message.operation_type, 'bill_payment')
+            self.assertEqual(message.identifier_token, '5204')
+            self.assertEqual(message.source_token, '5204')
+            self.assertEqual(message.instrument_id, instrument)
 
     def test_source_learning_creates_one_reusable_identifier_without_financial_routing(self):
         Target = self.env['baseer.bank.sms.analysis.target']
@@ -382,3 +448,38 @@ class TestBankSms(TransactionCase):
             'received_at': '2026-09-26 12:00:00',
         })
         self.assertEqual(message.direction, 'in')
+
+    def test_v2_heartbeat_keeps_only_operational_metadata(self):
+        device = self.env['baseer.bank.sms.device'].create({
+            'name': 'QA test phone', 'device_code': 'qa-health-device',
+        })
+        status = device.record_heartbeat({
+            'device_code': 'qa-health-device',
+            'app_version': '2.0.0-qa',
+            'protocol_version': '2',
+            'monitoring_enabled': True,
+            'queued_count': 1400,
+            'retry_count': 3,
+            'blocked_count': 2,
+            'oldest_pending_at': '2026-09-27T08:00:00Z',
+            'last_error_code': 'http_429',
+        })
+        self.assertEqual(status['environment_label'], 'QA')
+        self.assertEqual(device.connection_state, 'online')
+        self.assertEqual(device.queued_count, 1400)
+        self.assertEqual(device.last_error_code, 'http_429')
+        self.assertTrue(device.last_heartbeat_at)
+        self.assertFalse(device.last_message_ingested_at)
+
+    def test_v2_heartbeat_rejects_unknown_or_sensitive_fields(self):
+        device = self.env['baseer.bank.sms.device'].create({
+            'name': 'QA test phone', 'device_code': 'qa-health-device-2',
+        })
+        with self.assertRaisesRegex(ValueError, 'unsupported_field'):
+            device.record_heartbeat({
+                'device_code': 'qa-health-device-2',
+                'queued_count': 0,
+                'retry_count': 0,
+                'blocked_count': 0,
+                'body': 'must never enter health telemetry',
+            })

@@ -23,7 +23,15 @@ MASKED_IDENTIFIER_RE = re.compile(
     r'(?P<left>\d{3,4})\s*(?:\*+|x+)\s*(?P<right>\d{3,4})(?!\d)', re.I,
 )
 TRANSFER_SOURCE_IDENTIFIER_RE = re.compile(
-    r'(?:\bfrom\b|(?<!\S)من(?!\S))\s*(?:حساب(?:ك)?\s*)?(?:\*+|x+)\s*(?P<token>\d{3,4})(?!\d)',
+    r'(?:\bfrom\b|(?<!\S)من(?=\s|[:؛-]|$))\s*[:؛-]?\s*(?:حساب(?:ك)?\s*)?(?:\*+|x+)\s*(?P<token>\d{3,4})(?!\d)',
+    re.I,
+)
+# A bare suffix is only accepted when the bank explicitly labels it as the
+# outgoing source ("من 5204" or "من: 5204").  This avoids treating a
+# bill/reference number elsewhere in the SMS as an account while supporting
+# AlRajhi bill payments.
+EXPLICIT_OUTGOING_SOURCE_IDENTIFIER_RE = re.compile(
+    r'(?:\bfrom\b|(?<!\S)من(?=\s|[:؛-]|$))(?:\s*[:؛-]\s*|\s+)(?:حساب(?:ك)?\s*)?(?P<token>\d{4})(?!\d)',
     re.I,
 )
 MASKED_IDENTIFIER_RE = re.compile(
@@ -86,7 +94,9 @@ def _parse_identifier(body):
 def _parse_transfer_source_identifier(body):
     """Extract the debited account in an outgoing transfer, if the bank names it."""
     text = _normalise_text(body)
-    match = TRANSFER_SOURCE_IDENTIFIER_RE.search(text)
+    match = EXPLICIT_OUTGOING_SOURCE_IDENTIFIER_RE.search(text)
+    if not match:
+        match = TRANSFER_SOURCE_IDENTIFIER_RE.search(text)
     if not match:
         # Arabic bidi rendering may persist the mask after its digits (0409*)
         # although it is displayed before them (*0409) on the phone.
@@ -646,6 +656,10 @@ class BaseerBankSmsMessage(models.Model):
 
     name = fields.Char(compute='_compute_name', store=True, index=True)
     source_device_id = fields.Char(required=True, copy=False, index=True, readonly=True)
+    source_installation_id = fields.Char(
+        copy=False, index=True, readonly=True,
+        help='Stable Android installation identity for v2 idempotency across a credential re-pair.',
+    )
     idempotency_key = fields.Char(required=True, copy=False, index=True, readonly=True)
     sender = fields.Char(required=True, readonly=True, index=True)
     # The server timestamp is the reporting and audit timestamp.  A device
@@ -717,6 +731,10 @@ class BaseerBankSmsMessage(models.Model):
         'UNIQUE(source_device_id, idempotency_key)',
         'This SMS has already been received for this device.',
     )
+    _installation_message_unique = models.Constraint(
+        'UNIQUE(source_installation_id, idempotency_key)',
+        'This SMS has already been received for this Android installation.',
+    )
 
     @api.depends('sender', 'received_at', 'identifier_token')
     def _compute_name(self):
@@ -786,14 +804,15 @@ class BaseerBankSmsMessage(models.Model):
         # assign it using the beneficiary suffix merely because it appears
         # later in the text.
         direction, operation_type, _suspected_otp = _classify(normalised)
-        if direction == 'out' and operation_type == 'transfer_out':
+        if direction == 'out' and operation_type in ('transfer_out', 'bill_payment'):
             source_token = _parse_transfer_source_identifier(normalised)
-            if not source_token:
+            if operation_type == 'transfer_out' and not source_token:
                 return Instrument.browse(), self.env['baseer.bank.sms.instrument.card'].browse()
-            source_card = self.env['baseer.bank.sms.instrument.card'].find_for_sms(sender, source_token)
-            if source_card:
-                return source_card.instrument_id, source_card
-            return Instrument.find_for_sms(sender, normalised, source_token), self.env['baseer.bank.sms.instrument.card'].browse()
+            if source_token:
+                source_card = self.env['baseer.bank.sms.instrument.card'].find_for_sms(sender, source_token)
+                if source_card:
+                    return source_card.instrument_id, source_card
+                return Instrument.find_for_sms(sender, normalised, source_token), self.env['baseer.bank.sms.instrument.card'].browse()
 
         card = self.env['baseer.bank.sms.instrument.card'].find_for_sms(sender, token)
         if card:
@@ -802,7 +821,7 @@ class BaseerBankSmsMessage(models.Model):
 
     @api.model
     def _source_token_for_analysis(self, body, direction, operation_type):
-        if direction == 'out' and operation_type == 'transfer_out':
+        if direction == 'out' and operation_type in ('transfer_out', 'bill_payment'):
             return _parse_transfer_source_identifier(body)
         return False
 
@@ -825,7 +844,8 @@ class BaseerBankSmsMessage(models.Model):
         }
 
     @api.model
-    def ingest(self, *, source_device_id, idempotency_key, sender, body, received_at=None):
+    def ingest(self, *, source_device_id, idempotency_key, sender, body, received_at=None,
+               source_installation_id=False):
         """Idempotently ingest one complete SMS from a trusted future device API.
 
         This is intentionally an internal service in the first slice. The
@@ -834,10 +854,12 @@ class BaseerBankSmsMessage(models.Model):
         """
         if not source_device_id or not idempotency_key or not sender or not body:
             raise ValidationError(_('A device ID, idempotency key, sender, and complete SMS body are required.'))
-        existing = self.search([
-            ('source_device_id', '=', source_device_id),
-            ('idempotency_key', '=', idempotency_key),
-        ], limit=1)
+        identity_domain = [('idempotency_key', '=', idempotency_key)]
+        identity_domain.append(
+            ('source_installation_id', '=', source_installation_id)
+            if source_installation_id else ('source_device_id', '=', source_device_id)
+        )
+        existing = self.search(identity_domain, limit=1)
         if existing:
             return existing
         text = _normalise_text(body)
@@ -845,6 +867,7 @@ class BaseerBankSmsMessage(models.Model):
         direction, operation_type, suspected_otp = _classify(text)
         token = _parse_identifier(text)
         source_token = self._source_token_for_analysis(text, direction, operation_type)
+        token = token or source_token
         instrument, card = self._resolve_instrument_and_card(sender, text, token)
         currency = self.env['res.currency'].with_context(active_test=False).search([
             ('name', '=', currency_code or 'SAR'),
@@ -852,6 +875,7 @@ class BaseerBankSmsMessage(models.Model):
         fingerprint = hashlib.sha256(f'{sender}|{text}|{received_at or ""}'.encode()).hexdigest()
         values = {
             'source_device_id': source_device_id,
+            'source_installation_id': source_installation_id or False,
             'idempotency_key': idempotency_key,
             'sender': sender,
             'received_at': fields.Datetime.now(),
@@ -877,10 +901,7 @@ class BaseerBankSmsMessage(models.Model):
             with self.env.cr.savepoint():
                 record = self.create(values)
         except IntegrityError:
-            record = self.search([
-                ('source_device_id', '=', source_device_id),
-                ('idempotency_key', '=', idempotency_key),
-            ], limit=1)
+            record = self.search(identity_domain, limit=1)
             if record:
                 return record
             raise
@@ -909,6 +930,7 @@ class BaseerBankSmsMessage(models.Model):
             direction, operation_type, suspected_otp = _classify(text)
             token = _parse_identifier(text)
             source_token = self._source_token_for_analysis(text, direction, operation_type)
+            token = token or source_token
             instrument, card = self._resolve_instrument_and_card(message.sender, text, token)
             currency = self.env['res.currency'].with_context(active_test=False).search([
                 ('name', '=', currency_code or 'SAR'),
@@ -1095,7 +1117,7 @@ class BaseerBankSmsMessage(models.Model):
         return self.unlink()
 
     def write(self, vals):
-        protected = {'source_device_id', 'idempotency_key', 'sender', 'received_at', 'raw_body', 'body_fingerprint', 'amount', 'currency_id', 'currency_code', 'identifier_token', 'source_token', 'instrument_id', 'card_id', 'direction', 'operation_type', 'suspected_otp'}
+        protected = {'source_device_id', 'source_installation_id', 'idempotency_key', 'sender', 'received_at', 'raw_body', 'body_fingerprint', 'amount', 'currency_id', 'currency_code', 'identifier_token', 'source_token', 'instrument_id', 'card_id', 'direction', 'operation_type', 'suspected_otp'}
         if protected.intersection(vals) and not self.env.context.get('baseer_bank_sms_internal'):
             raise ValidationError(_('SMS evidence fields are immutable after ingestion.'))
         return super().write(vals)

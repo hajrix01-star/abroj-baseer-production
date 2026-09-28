@@ -73,18 +73,37 @@ class BaseerBankSmsPairing(models.Model):
             raise ValidationError(_('Invalid phone installation identifier.'))
         Device = self.env['baseer.bank.sms.device'].sudo()
         existing = Device.search([('installation_id', '=', installation_id)], limit=1)
-        if existing:
-            existing.write({'active': False})
         device_code = 'sms-' + secrets.token_urlsafe(18)
         secret = secrets.token_urlsafe(32)
         salt = secrets.token_hex(16)
-        device = Device.create({
-            'name': _('Paired Android phone'),
-            'device_code': device_code,
-            'installation_id': installation_id,
-            'secret_salt': salt,
-            'secret_hash': Device._digest(secret, salt),
-            'active': True,
-        })
+        if existing:
+            # Reuse the stable installation record: the old bearer secret is
+            # replaced atomically, while source_device_id remains audit data
+            # on earlier messages.  This also satisfies the unique
+            # installation constraint without creating a second active phone.
+            # Backfill evidence produced before source_installation_id was
+            # introduced while the old device code is still available.
+            self.env['baseer.bank.sms.message'].sudo().with_context(
+                baseer_bank_sms_internal=True,
+            ).search([
+                ('source_installation_id', '=', False),
+                ('source_device_id', '=', existing.device_code),
+            ]).write({'source_installation_id': installation_id})
+            existing.write({
+                'device_code': device_code,
+                'secret_salt': salt,
+                'secret_hash': Device._digest(secret, salt),
+                'active': True,
+            })
+            device = existing
+        else:
+            device = Device.create({
+                'name': _('Paired Android phone'),
+                'device_code': device_code,
+                'installation_id': installation_id,
+                'secret_salt': salt,
+                'secret_hash': Device._digest(secret, salt),
+                'active': True,
+            })
         self.write({'state': 'used', 'device_id': device.id})
         return {'device_code': device.device_code, 'device_secret': secret, 'senders': device.allowed_senders()}

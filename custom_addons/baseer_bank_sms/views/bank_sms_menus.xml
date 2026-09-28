@@ -7,7 +7,7 @@
     <menuitem id="menu_bank_sms_rejected" name="العمليات المرفوضة" parent="menu_bank_sms_root" action="action_bank_sms_rejected" sequence="30" groups="base.group_system"/>
     <menuitem id="menu_bank_sms_configuration" name="الإعدادات" parent="menu_bank_sms_root" sequence="90" groups="base.group_system"/>
     <menuitem id="menu_bank_sms_pairing" name="ربط جوال" parent="menu_bank_sms_configuration" action="action_bank_sms_open_pairing" sequence="1" groups="base.group_system"/>
-    <menuitem id="menu_bank_sms_download_android" name="تحميل تطبيق بصير SMS" parent="menu_bank_sms_configuration" action="action_bank_sms_download_android" sequence="2" groups="base.group_system"/>
+    <menuitem id="menu_bank_sms_download_android" name="تحميل تطبيق بصير SMS — Live" parent="menu_bank_sms_configuration" action="action_bank_sms_download_android" sequence="2" groups="base.group_system"/>
     <menuitem id="menu_bank_sms_senders" name="مرسلو البنوك المسموحون" parent="menu_bank_sms_configuration" action="action_bank_sms_senders" sequence="5" groups="base.group_system"/>
     <menuitem id="menu_bank_sms_instruments" name="المعرّفات" parent="menu_bank_sms_configuration" action="action_bank_sms_instruments" sequence="10" groups="base.group_system"/>
     <menuitem id="menu_bank_sms_analysis_targets" name="التصنيفات التحليلية" parent="menu_bank_sms_configuration" action="action_bank_sms_analysis_targets" sequence="15" groups="base.group_system"/>

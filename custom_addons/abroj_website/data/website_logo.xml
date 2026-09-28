@@ -1,0 +1,6 @@
+<odoo>
+  <!-- The same approved master is used by the native header and static lockups. -->
+  <record id="website.default_website" model="website" context="{'image_no_postprocess': True}">
+    <field name="logo" type="base64" file="abroj_website/static/src/img/abroj-logo.png"/>
+  </record>
+</odoo>

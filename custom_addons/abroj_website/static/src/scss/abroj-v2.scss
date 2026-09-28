@@ -22,7 +22,7 @@
 [dir='rtl'] .abroj-v2__hero-veil { background: linear-gradient(270deg, rgba(7, 22, 31, .12), rgba(7, 22, 31, .14) 47%, rgba(7, 22, 31, .76) 100%); }
 .abroj-v2__header { width: calc(100% - 80px); max-width: 1420px; min-height: 96px; margin: 0 auto; border-bottom: 1px solid rgba(255, 255, 255, .28); display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; gap: 28px; align-items: center; }
 .abroj-v2__brand { width: 185px; display: block; }
-.abroj-v2__brand img { width: 100%; height: auto; display: block; filter: brightness(0) invert(1); }
+.abroj-v2__brand img { width: 100%; height: auto; display: block; }
 .abroj-v2__nav { display: flex; align-items: center; gap: clamp(17px, 2vw, 34px); }
 .abroj-v2__nav a { color: rgba(255, 255, 255, .9); font-size: .86rem; font-weight: 500; white-space: nowrap; }
 .abroj-v2__nav a:first-child { color: #fff; position: relative; }

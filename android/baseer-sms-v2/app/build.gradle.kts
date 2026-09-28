@@ -17,8 +17,8 @@ android {
         applicationId = "sa.abroj.baseersms"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.0.5"
+        versionCode = 209
+        versionName = "2.0.9"
         buildConfigField("String", "BUILD_TIMESTAMP", "\"$buildTimestamp\"")
         buildConfigField("String", "ENVIRONMENT_LABEL", "\"Live\"")
     }

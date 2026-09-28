@@ -5,8 +5,10 @@ import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
+import androidx.work.WorkManager;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.util.UUID;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -22,10 +24,24 @@ final class SecureSettings {
     static String url(Context context) { return get(context, "url"); }
     static String code(Context context) { return get(context, "code"); }
     static String secret(Context context) { return get(context, "secret"); }
+    static String installationId(Context context) { String value=get(context, "installation_id"); if(!value.isEmpty()) return value; value=UUID.randomUUID().toString(); put(context,"installation_id",value); return value; }
     static boolean enabled(Context context) { return prefs(context).getBoolean("enabled", false); }
     static void setEnabled(Context context, boolean value) { prefs(context).edit().putBoolean("enabled", value).apply(); }
-    static void savePairing(Context context, String url, String code, String secret) { put(context, "url", url); put(context, "code", code); put(context, "secret", secret); setEnabled(context, true); }
+    static void savePairing(Context context, String url, String code, String secret, String[] senders) { put(context, "url", url); put(context, "code", code); put(context, "secret", secret); saveAllowedSenders(context, senders); setEnabled(context, true); }
+    static void saveAllowedSenders(Context context, String[] senders) { put(context, "senders", String.join("\n", senders)); }
+    static boolean isAllowedSender(Context context, String sender) { if(sender==null||sender.isEmpty()) return false; String values=get(context,"senders"); if(values.isEmpty()) return false; for(String allowed:values.split("\\n",-1)) if(sender.equals(allowed)) return true; return false; }
     static void clear(Context context) { prefs(context).edit().clear().apply(); }
+    /** Stops only the old v1 dispatchers after this same-package v2 update.
+     * The v1 database is intentionally left untouched; the owner selected a
+     * fresh v2 pairing and queue rather than a silent migration. */
+    static void retireLegacyV1Dispatchers(Context context) {
+        if (prefs(context).getBoolean("legacy_v1_dispatchers_retired", false)) return;
+        WorkManager manager = WorkManager.getInstance(context);
+        manager.cancelUniqueWork("baseer-bank-sms-sync");
+        manager.cancelUniqueWork("baseer-bank-sms-periodic");
+        manager.cancelUniqueWork("baseer-bank-sms-history");
+        prefs(context).edit().putBoolean("legacy_v1_dispatchers_retired", true).apply();
+    }
     static String encryptLocal(String value) throws Exception { return encrypt(value); }
     static String decryptLocal(String value) throws Exception { return decrypt(value); }
 

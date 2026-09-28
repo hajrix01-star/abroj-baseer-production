@@ -44,6 +44,23 @@ final class SmsOutbox extends SQLiteOpenHelper {
     }
     void acknowledge(long id) { update(id, "acknowledged", null, true); }
     void retry(long id, String reason) { update(id, "retry_scheduled", reason, false); }
+    /** Releases a claimed batch immediately after a transport failure.
+     *
+     * WorkManager may retry before the lease expires.  Leaving rows in
+     * "sending" would make that retry appear successful while doing no work.
+     */
+    void releaseClaimed(List<Item> items, String reason) {
+        if (items == null || items.isEmpty()) return;
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (Item item : items) {
+                db.execSQL("UPDATE outbox SET state='retry_scheduled', lease_until=NULL, last_error=?, attempts=attempts+1 WHERE id=? AND state='sending'",
+                        new Object[]{reason, item.id});
+            }
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
     void block(long id, String reason) { update(id, "blocked_policy", reason, false); }
     /** Older clients classified the server's temporary rate limit as a permanent block. */
     int requeueRateLimited() {

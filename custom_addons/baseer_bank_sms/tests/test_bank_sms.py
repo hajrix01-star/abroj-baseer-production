@@ -29,6 +29,41 @@ class TestBankSms(TransactionCase):
         self.assertEqual(message.operation_type, 'card_purchase')
         self.assertEqual(self.Message.search_count([('source_device_id', '=', 'device-a'), ('idempotency_key', '=', '1001')]), 1)
 
+    def test_v2_installation_idempotency_survives_repair_without_cross_device_loss(self):
+        self.env['baseer.bank.sms.sender'].create({'name': 'Test bank', 'sender': 'TestBank'})
+        first = self.Message.ingest(
+            source_device_id='old-credential', source_installation_id='installation-one',
+            idempotency_key='history:installation-one:12345', sender='TestBank',
+            body='Incoming transfer 12.00 SAR *4567',
+        )
+        repaired = self.Message.ingest(
+            source_device_id='rotated-credential', source_installation_id='installation-one',
+            idempotency_key='history:installation-one:12345', sender='TestBank',
+            body='Incoming transfer 12.00 SAR *4567',
+        )
+        separate_phone = self.Message.ingest(
+            source_device_id='second-phone', source_installation_id='installation-two',
+            idempotency_key='history:installation-one:12345', sender='TestBank',
+            body='Incoming transfer 12.00 SAR *4567',
+        )
+        self.assertEqual(first, repaired)
+        self.assertNotEqual(first, separate_phone)
+        self.assertEqual(self.Message.search_count([('idempotency_key', '=', 'history:installation-one:12345')]), 2)
+
+    def test_pairing_rotates_existing_installation_secret(self):
+        installation_id = 'installation-identity-for-rotation'
+        first_pairing = self.env['baseer.bank.sms.pairing'].create({})
+        first = first_pairing.consume(installation_id)
+        device = first_pairing.device_id
+        self.assertTrue(device.verify_secret(first['device_secret']))
+        second_pairing = self.env['baseer.bank.sms.pairing'].create({})
+        second = second_pairing.consume(installation_id)
+        self.assertEqual(second_pairing.device_id, device)
+        self.assertNotEqual(first['device_code'], second['device_code'])
+        self.assertFalse(device.verify_secret(first['device_secret']))
+        self.assertTrue(device.verify_secret(second['device_secret']))
+        self.assertEqual(self.env['baseer.bank.sms.device'].search_count([('installation_id', '=', installation_id)]), 1)
+
     def test_instrument_uses_sender_catalogue_and_reanalysis_stays_nonfinancial(self):
         sender = self.env['baseer.bank.sms.sender'].create({
             'name': 'Test bank', 'sender': 'TestBank',

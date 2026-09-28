@@ -4,8 +4,10 @@ import android.content.Context;
 import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
 import androidx.work.ExistingWorkPolicy;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
@@ -29,9 +31,18 @@ import org.json.JSONObject;
 /** One persistent dispatcher. Server ACKs, never a locally empty queue, establish delivery. */
 public final class SyncWorker extends Worker {
     private static final String UNIQUE_WORK = "baseer-sms-v2-dispatch";
+    private static final String HEARTBEAT_WORK = "baseer-sms-v2-heartbeat";
     public SyncWorker(Context context, WorkerParameters params) { super(context, params); }
     static void enqueue(Context context) {
         schedule(context, ExistingWorkPolicy.KEEP);
+    }
+    /** Background health checks also drain an outbox that was delayed by Android constraints. */
+    static void enableBackgroundWork(Context context) {
+        enqueue(context);
+        Constraints network = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
+        PeriodicWorkRequest heartbeat = new PeriodicWorkRequest.Builder(SyncWorker.class, 15, TimeUnit.MINUTES)
+                .setConstraints(network).build();
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(HEARTBEAT_WORK, ExistingPeriodicWorkPolicy.KEEP, heartbeat);
     }
     /** User-initiated retry: safely replaces only the scheduler, never the encrypted outbox. */
     static void retryNow(Context context) {
@@ -89,9 +100,9 @@ public final class SyncWorker extends Worker {
         HttpURLConnection connection=(HttpURLConnection)new URL(SecureSettings.url(context)+"/baseer-bank-sms/v2/device/config?device_code="+ URLEncoder.encode(SecureSettings.code(context), "UTF-8")).openConnection();
         connection.setConnectTimeout(15_000); connection.setReadTimeout(20_000); connection.setRequestMethod("GET"); connection.setRequestProperty("Authorization", "Bearer "+SecureSettings.secret(context));
         int status=connection.getResponseCode(); if (status == 401 || status == 403) throw new PermanentAuthException(); if (status != 200) return;
-        JSONArray senders = new JSONObject(new String(readFully(connection.getInputStream()), StandardCharsets.UTF_8)).optJSONArray("senders"); if (senders == null || senders.length() == 0) return;
+        JSONArray senders = new JSONObject(new String(readFully(connection.getInputStream()), StandardCharsets.UTF_8)).optJSONArray("senders"); if (senders == null) return;
         List<String> values = new ArrayList<>(); for (int i=0;i<senders.length();i++) { String sender=senders.optString(i).trim(); if (!sender.isEmpty()) values.add(sender); }
-        if (!values.isEmpty()) SecureSettings.saveAllowedSenders(context, values.toArray(new String[0]));
+        SecureSettings.saveAllowedSenders(context, values.toArray(new String[0]));
     }
     private void heartbeat(Context context, SmsOutbox outbox) throws Exception {
         JSONObject payload = new JSONObject(); payload.put("device_code", SecureSettings.code(context)); payload.put("app_version", BuildConfig.VERSION_NAME); payload.put("protocol_version", "2"); payload.put("monitoring_enabled", false);

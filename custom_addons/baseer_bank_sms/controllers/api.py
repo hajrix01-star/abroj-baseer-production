@@ -121,9 +121,12 @@ class BaseerBankSmsApi(http.Controller):
                 acknowledgements.append({'idempotency_key': '', 'status': 'blocked', 'reason': 'invalid_idempotency_key'})
                 continue
             # A v2 client keeps its installation id across re-pairing.  The
-            # history token is therefore stable even though a replacement
-            # device credential has a new device_code.
-            existing = Message.search([('idempotency_key', '=', key)], limit=1)
+            # model enforces this scope atomically in the database; device_code
+            # is retained solely as the audit identity of this credential.
+            existing = Message.search([
+                ('source_installation_id', '=', device.installation_id),
+                ('idempotency_key', '=', key),
+            ], limit=1)
             if existing:
                 acknowledgements.append({'idempotency_key': key, 'status': 'duplicate'})
                 continue

@@ -131,6 +131,7 @@ class BaseerBankSmsDevice(models.Model):
             raise ValueError('rate_limit_exceeded')
         message = Message.ingest(
             source_device_id=self.device_code,
+            source_installation_id=self.installation_id,
             idempotency_key=key,
             sender=sender,
             body=body,

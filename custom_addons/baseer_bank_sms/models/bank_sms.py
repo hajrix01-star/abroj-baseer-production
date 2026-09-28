@@ -656,6 +656,10 @@ class BaseerBankSmsMessage(models.Model):
 
     name = fields.Char(compute='_compute_name', store=True, index=True)
     source_device_id = fields.Char(required=True, copy=False, index=True, readonly=True)
+    source_installation_id = fields.Char(
+        copy=False, index=True, readonly=True,
+        help='Stable Android installation identity for v2 idempotency across a credential re-pair.',
+    )
     idempotency_key = fields.Char(required=True, copy=False, index=True, readonly=True)
     sender = fields.Char(required=True, readonly=True, index=True)
     # The server timestamp is the reporting and audit timestamp.  A device
@@ -726,6 +730,10 @@ class BaseerBankSmsMessage(models.Model):
     _source_message_unique = models.Constraint(
         'UNIQUE(source_device_id, idempotency_key)',
         'This SMS has already been received for this device.',
+    )
+    _installation_message_unique = models.Constraint(
+        'UNIQUE(source_installation_id, idempotency_key)',
+        'This SMS has already been received for this Android installation.',
     )
 
     @api.depends('sender', 'received_at', 'identifier_token')
@@ -836,7 +844,8 @@ class BaseerBankSmsMessage(models.Model):
         }
 
     @api.model
-    def ingest(self, *, source_device_id, idempotency_key, sender, body, received_at=None):
+    def ingest(self, *, source_device_id, idempotency_key, sender, body, received_at=None,
+               source_installation_id=False):
         """Idempotently ingest one complete SMS from a trusted future device API.
 
         This is intentionally an internal service in the first slice. The
@@ -845,10 +854,12 @@ class BaseerBankSmsMessage(models.Model):
         """
         if not source_device_id or not idempotency_key or not sender or not body:
             raise ValidationError(_('A device ID, idempotency key, sender, and complete SMS body are required.'))
-        existing = self.search([
-            ('source_device_id', '=', source_device_id),
-            ('idempotency_key', '=', idempotency_key),
-        ], limit=1)
+        identity_domain = [('idempotency_key', '=', idempotency_key)]
+        identity_domain.append(
+            ('source_installation_id', '=', source_installation_id)
+            if source_installation_id else ('source_device_id', '=', source_device_id)
+        )
+        existing = self.search(identity_domain, limit=1)
         if existing:
             return existing
         text = _normalise_text(body)
@@ -864,6 +875,7 @@ class BaseerBankSmsMessage(models.Model):
         fingerprint = hashlib.sha256(f'{sender}|{text}|{received_at or ""}'.encode()).hexdigest()
         values = {
             'source_device_id': source_device_id,
+            'source_installation_id': source_installation_id or False,
             'idempotency_key': idempotency_key,
             'sender': sender,
             'received_at': fields.Datetime.now(),
@@ -889,10 +901,7 @@ class BaseerBankSmsMessage(models.Model):
             with self.env.cr.savepoint():
                 record = self.create(values)
         except IntegrityError:
-            record = self.search([
-                ('source_device_id', '=', source_device_id),
-                ('idempotency_key', '=', idempotency_key),
-            ], limit=1)
+            record = self.search(identity_domain, limit=1)
             if record:
                 return record
             raise

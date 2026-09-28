@@ -63,6 +63,13 @@ public final class SyncWorker extends Worker {
             refreshAllowedSenders(context);
             outbox.recoverTemporaryState();
             while (!(claimed = outbox.claimBatch(50)).isEmpty()) {
+                List<SmsOutbox.Item> deliverable = new ArrayList<>();
+                for (SmsOutbox.Item item : claimed) {
+                    if (SecureSettings.isAllowedSender(context, item.sender)) deliverable.add(item);
+                    else outbox.block(item.id, "sender_not_allowed");
+                }
+                if (deliverable.isEmpty()) { claimed = null; continue; }
+                claimed = deliverable;
                 if (deliver(context, outbox, claimed)) { heartbeat(context, outbox); return Result.retry(); }
                 claimed = null;
             }

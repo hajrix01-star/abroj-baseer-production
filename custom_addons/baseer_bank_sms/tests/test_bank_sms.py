@@ -1,4 +1,5 @@
 from odoo.tests.common import TransactionCase, tagged
+from odoo.exceptions import ValidationError
 
 
 @tagged('post_install', '-at_install')
@@ -63,6 +64,21 @@ class TestBankSms(TransactionCase):
         self.assertFalse(device.verify_secret(first['device_secret']))
         self.assertTrue(device.verify_secret(second['device_secret']))
         self.assertEqual(self.env['baseer.bank.sms.device'].search_count([('installation_id', '=', installation_id)]), 1)
+
+    def test_repair_backfills_legacy_messages_before_rotating_device_code(self):
+        self.env['baseer.bank.sms.sender'].create({'name': 'Test bank', 'sender': 'TestBank'})
+        installation_id = 'installation-identity-for-backfill'
+        first_pairing = self.env['baseer.bank.sms.pairing'].create({})
+        first = first_pairing.consume(installation_id)
+        message = self.Message.ingest(
+            source_device_id=first['device_code'], idempotency_key='legacy-history-key',
+            sender='TestBank', body='Incoming transfer 12.00 SAR *4567',
+        )
+        self.assertFalse(message.source_installation_id)
+        self.env['baseer.bank.sms.pairing'].create({}).consume(installation_id)
+        self.assertEqual(message.source_installation_id, installation_id)
+        with self.assertRaisesRegex(ValidationError, 'immutable'):
+            message.write({'source_installation_id': 'another-installation'})
 
     def test_instrument_uses_sender_catalogue_and_reanalysis_stays_nonfinancial(self):
         sender = self.env['baseer.bank.sms.sender'].create({

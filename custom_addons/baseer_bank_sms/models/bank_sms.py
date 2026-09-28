@@ -1117,7 +1117,7 @@ class BaseerBankSmsMessage(models.Model):
         return self.unlink()
 
     def write(self, vals):
-        protected = {'source_device_id', 'idempotency_key', 'sender', 'received_at', 'raw_body', 'body_fingerprint', 'amount', 'currency_id', 'currency_code', 'identifier_token', 'source_token', 'instrument_id', 'card_id', 'direction', 'operation_type', 'suspected_otp'}
+        protected = {'source_device_id', 'source_installation_id', 'idempotency_key', 'sender', 'received_at', 'raw_body', 'body_fingerprint', 'amount', 'currency_id', 'currency_code', 'identifier_token', 'source_token', 'instrument_id', 'card_id', 'direction', 'operation_type', 'suspected_otp'}
         if protected.intersection(vals) and not self.env.context.get('baseer_bank_sms_internal'):
             raise ValidationError(_('SMS evidence fields are immutable after ingestion.'))
         return super().write(vals)

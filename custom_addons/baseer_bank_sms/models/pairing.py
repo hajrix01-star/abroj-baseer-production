@@ -81,6 +81,14 @@ class BaseerBankSmsPairing(models.Model):
             # replaced atomically, while source_device_id remains audit data
             # on earlier messages.  This also satisfies the unique
             # installation constraint without creating a second active phone.
+            # Backfill evidence produced before source_installation_id was
+            # introduced while the old device code is still available.
+            self.env['baseer.bank.sms.message'].sudo().with_context(
+                baseer_bank_sms_internal=True,
+            ).search([
+                ('source_installation_id', '=', False),
+                ('source_device_id', '=', existing.device_code),
+            ]).write({'source_installation_id': installation_id})
             existing.write({
                 'device_code': device_code,
                 'secret_salt': salt,

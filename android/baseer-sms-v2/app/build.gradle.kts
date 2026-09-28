@@ -12,14 +12,17 @@ android {
     compileSdk = 36
     buildToolsVersion = "36.1.0"
     defaultConfig {
-        applicationId = "sa.abroj.baseersms.v2"
+        // Keep the installed Live application's identity so Android accepts this
+        // as an update to the owner-controlled Baseer SMS app.
+        applicationId = "sa.abroj.baseersms"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "2.0.9-qa"
+        versionCode = 6
+        versionName = "1.0.5"
+        buildConfigField("String", "BUILD_TIMESTAMP", "\"$buildTimestamp\"")
+        buildConfigField("String", "ENVIRONMENT_LABEL", "\"Live\"")
     }
     buildFeatures { buildConfig = true }
-    defaultConfig { buildConfigField("String", "BUILD_TIMESTAMP", "\"$buildTimestamp\"") }
 }
 
 dependencies {

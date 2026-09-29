@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="external_layout_baseer_theme" name="Baseer Theme">
+        <style type="text/css">
+            @font-face {font-family:'Tajawal';src:url('/web/static/fonts/google/Tajawal/Tajawal-Regular.ttf') format('truetype');font-weight:400}
+            @font-face {font-family:'Tajawal';src:url('/web/static/fonts/google/Tajawal/Tajawal-Bold.ttf') format('truetype');font-weight:700}
+            .o_report_layout_baseer_theme,.baseer-theme-header,.baseer-theme-footer{font-family:'Tajawal','DejaVu Sans',sans-serif!important;color:#1f2933}
+            .baseer-theme-header{position:relative!important;height:auto!important;min-height:104px!important;margin:0 0 12px!important;padding:8px 0 10px!important;border:0!important;background:#fff!important}
+            .baseer-theme-header .baseer-theme-brand{display:block!important;position:relative!important;width:100%!important;min-height:82px!important;direction:ltr!important}
+            .baseer-theme-identity,.baseer-theme-logo-slot{display:block;vertical-align:middle}
+            .baseer-theme-header .baseer-theme-identity{position:relative!important;top:auto!important;right:auto!important;left:auto!important;display:block!important;min-height:88px!important;margin-left:215px!important;text-align:right!important;direction:rtl!important;padding:4px 0 6px 18px!important;z-index:2!important}
+            .baseer-theme-name-ar{font-size:23px;line-height:1.3;font-weight:700;color:#18242d}
+            .baseer-theme-name-en{margin-top:3px;font-family:'Open Sans','DejaVu Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;color:#56636d;direction:ltr;text-align:right}
+            .baseer-theme-meta{margin-top:8px;font-size:9px;line-height:1.7;color:#4a5964;white-space:nowrap}
+            .baseer-theme-meta span{display:inline-block;margin-left:12px}
+            .baseer-theme-header .baseer-theme-logo-slot{position:absolute!important;top:0!important;left:0!important;width:200px!important;text-align:left!important;direction:ltr!important;z-index:3!important}
+            .baseer-theme-header .baseer-theme-logo-frame{display:inline-flex!important;width:180px!important;height:80px!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+            .baseer-theme-header .baseer-theme-logo-frame img{display:block!important;max-width:180px!important;max-height:80px!important;width:auto!important;height:auto!important;object-fit:contain!important}
+            .baseer-theme-rule{height:2px;background:#354b59;margin-top:7px}
+            .article.o_report_layout_baseer_theme{margin-top:116px!important;font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important}
+            .article.o_report_layout_baseer_theme h2{margin:0 0 13px;color:#18242d;font-size:18px;font-weight:700}
+            .o_report_layout_baseer_theme table{background:#fff}
+            .o_report_layout_baseer_theme table th,.o_report_layout_baseer_theme table td{background:#fff!important}
+            .baseer-theme-footer{border-top:1px solid #b8c1c7;padding-top:7px;font-size:8.5px;color:#56636d;direction:rtl;text-align:center}
+            .baseer-theme-footer span{display:inline-block;padding:0 6px;white-space:nowrap}
+            .baseer-theme-page{font-family:'Open Sans','DejaVu Sans',sans-serif;direction:ltr}
+            .baseer-theme-seal{display:inline-flex;width:74px;height:74px;margin:0 14px 4px 0;border:2px solid #123d7a;border-radius:50%;box-sizing:border-box;vertical-align:middle;align-items:center;justify-content:center;text-align:center;direction:rtl;color:#123d7a;font-family:'Tajawal','DejaVu Sans',sans-serif;line-height:1.3}
+            .baseer-theme-seal-inner{display:block;width:60px;padding:4px 0;border-top:1px solid #123d7a;border-bottom:1px solid #123d7a}
+            .baseer-theme-seal-name{font-size:6.7px;font-weight:700;white-space:normal}
+            .baseer-theme-seal-cr{margin-top:2px;font-family:'Open Sans','DejaVu Sans',sans-serif;font-size:5.7px;font-weight:700;direction:ltr}
+            .baseer-theme-seal-city{margin-top:1px;font-size:6px}
+            .baseer-theme-footer-details{display:inline-block;vertical-align:middle}
+        </style>
+        <div t-attf-class="header o_company_#{company.id}_layout baseer-theme-header">
+            <div class="baseer-theme-brand" style="position:relative!important;min-height:90px!important;width:100%!important;direction:ltr!important;">
+                <div class="baseer-theme-identity" style="position:absolute!important;top:0!important;right:0!important;left:auto!important;width:68%!important;min-height:90px!important;margin:0!important;padding:4px 0 6px 18px!important;text-align:right!important;direction:rtl!important;">
+                            <t t-set="baseer_name_ar" t-value="company.baseer_name_ar if 'baseer_name_ar' in company._fields else company.name"/>
+                            <t t-set="baseer_name_en" t-value="company.baseer_name_en if 'baseer_name_en' in company._fields else False"/>
+                            <div class="baseer-theme-name-ar" style="font-size:23px!important;line-height:1.3!important;font-weight:700!important;text-align:right!important;" t-esc="baseer_name_ar or company.name"/>
+                            <div class="baseer-theme-name-en" style="font-size:11px!important;text-align:right!important;direction:ltr!important;" t-esc="baseer_name_en or company.name"/>
+                    <div class="baseer-theme-meta">
+                        <span t-if="company.partner_id.company_registry">CR: <b dir="ltr" t-esc="company.partner_id.company_registry"/></span>
+                        <span t-if="company.vat">VAT: <b dir="ltr" t-esc="company.vat"/></span>
+                        <span t-if="company.phone or company.partner_id.phone">Tel: <b dir="ltr" t-esc="company.phone or company.partner_id.phone"/></span>
+                    </div>
+                </div>
+                <div class="baseer-theme-logo-slot" style="position:absolute!important;top:0!important;left:0!important;width:200px!important;text-align:left!important;"><div class="baseer-theme-logo-frame"><img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="display:block!important;width:180px!important;height:auto!important;max-width:180px!important;max-height:80px!important;" alt="Company Logo"/></div></div>
+            </div>
+            <div class="baseer-theme-rule"/>
+        </div>
+        <div t-attf-class="article o_report_layout_baseer_theme o_company_#{company.id}_layout o_snail_mail"
+             t-att-data-oe-model="o and o._name"
+             t-att-data-oe-id="o and o.id"
+             t-att-data-oe-lang="o and o.env.context.get('lang')">
+            <t t-call="web.address_layout"/>
+            <h2 t-if="layout_document_title" t-out="layout_document_title"/>
+            <t t-out="0"/>
+        </div>
+        <div t-attf-class="footer o_company_#{company.id}_layout baseer-theme-footer {{report_type != 'pdf' and 'mt-auto'}}">
+            <div class="baseer-theme-seal" t-if="company.partner_id.company_registry">
+                <div class="baseer-theme-seal-inner">
+                    <div class="baseer-theme-seal-name" t-esc="company.baseer_name_ar if 'baseer_name_ar' in company._fields and company.baseer_name_ar else company.name"/>
+                    <div class="baseer-theme-seal-cr">CR <span t-esc="company.partner_id.company_registry"/></div>
+                    <div class="baseer-theme-seal-city" t-esc="company.partner_id.city or 'الخبر'"/>
+                </div>
+            </div>
+            <div class="baseer-theme-footer-details">
+                <span t-if="company.country_id" t-field="company.country_id"/>
+                <span t-if="'city' in company._fields and company.city" t-field="company.city"/>
+                <span t-if="'street' in company._fields and company.street" t-field="company.street"/>
+                <span t-if="'mobile' in company._fields and company.mobile">الجوال: <b dir="ltr" t-field="company.mobile"/></span>
+                <span t-elif="'phone' in company._fields and company.phone">التواصل: <b dir="ltr" t-field="company.phone"/></span>
+                <span t-if="'email' in company._fields and company.email"><b dir="ltr" t-field="company.email"/></span>
+                <span t-if="'website' in company._fields and company.website"><b dir="ltr" t-field="company.website"/></span>
+                <span t-if="report_type == 'pdf'" class="baseer-theme-page">Page <span class="page"/> / <span class="topage"/></span>
+            </div>
+        </div>
+    </template>
+
+    <!--
+        A primary inheritance keeps Odoo's standard Boxed layout untouched while
+        making this layout a first-class, selectable document layout per company.
+    -->
+    <template id="external_layout_baseer_boxed"
+              inherit_id="web.external_layout_boxed"
+              primary="True"
+              name="Baseer Boxed">
+        <xpath expr="//div[contains(@t-attf-class, 'header')]" position="before">
+            <style type="text/css">
+                .o_report_layout_baseer_boxed,.baseer-boxed-header,.baseer-boxed-footer{font-family:'Tajawal','DejaVu Sans',sans-serif!important;color:#1f2933}
+                .baseer-boxed-header{position:relative!important;min-height:120px!important;margin:0 0 12px!important;padding:10px 0 12px!important;background:#fff!important}
+                .baseer-boxed-brand{position:relative!important;min-height:94px!important;width:100%!important;direction:ltr!important}
+                .baseer-boxed-identity{min-height:94px!important;margin-left:222px!important;padding:5px 0 8px 18px!important;text-align:right!important;direction:rtl!important}
+                .baseer-boxed-name-ar{font-size:23px!important;line-height:1.3!important;font-weight:700!important;color:#18242d!important}
+                .baseer-boxed-name-en{margin-top:3px!important;font-family:'Open Sans','DejaVu Sans',sans-serif!important;font-size:11px!important;font-weight:600!important;letter-spacing:.08em!important;color:#52616b!important;direction:ltr!important;text-align:right!important}
+                .baseer-boxed-meta{margin-top:9px!important;font-size:9px!important;line-height:1.7!important;color:#4a5964!important;white-space:nowrap!important}
+                .baseer-boxed-meta span{display:inline-block!important;margin-left:12px!important}
+                .baseer-boxed-logo-slot{position:absolute!important;top:0!important;left:0!important;width:206px!important;text-align:left!important;direction:ltr!important}
+                .baseer-boxed-logo-frame{display:inline-flex!important;width:194px!important;height:86px!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+                .baseer-boxed-logo-frame img{display:block!important;max-width:190px!important;max-height:84px!important;width:auto!important;height:auto!important;object-fit:contain!important}
+                .baseer-boxed-rule{height:2px!important;margin-top:9px!important;background:#354b59!important}
+                .article.o_report_layout_baseer_boxed{font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important}
+                .article.o_report_layout_baseer_boxed h2{color:#18242d!important;font-weight:700!important}
+                .o_report_layout_baseer_boxed table,.o_report_layout_baseer_boxed table th,.o_report_layout_baseer_boxed table td{background:#fff!important}
+                .baseer-boxed-footer{border-top:1px solid #b8c1c7!important;padding-top:7px!important;font-size:8.5px!important;color:#56636d!important;direction:rtl!important;text-align:center!important}
+                .baseer-boxed-footer span{display:inline-block!important;padding:0 6px!important;white-space:nowrap!important}
+                .baseer-boxed-page{font-family:'Open Sans','DejaVu Sans',sans-serif!important;direction:ltr!important}
+            </style>
+        </xpath>
+        <xpath expr="//div[contains(@t-attf-class, 'header')]" position="replace">
+            <div t-attf-class="header o_company_#{company.id}_layout baseer-boxed-header">
+                <div class="baseer-boxed-brand">
+                    <div class="baseer-boxed-identity">
+                        <t t-set="baseer_name_ar" t-value="company.baseer_name_ar if 'baseer_name_ar' in company._fields else company.name"/>
+                        <t t-set="baseer_name_en" t-value="company.baseer_name_en if 'baseer_name_en' in company._fields else company.name"/>
+                        <div class="baseer-boxed-name-ar" t-esc="baseer_name_ar or company.name"/>
+                        <div class="baseer-boxed-name-en" t-esc="baseer_name_en or company.name"/>
+                        <div class="baseer-boxed-meta">
+                            <span t-if="company.partner_id.company_registry">CR: <b dir="ltr" t-esc="company.partner_id.company_registry"/></span>
+                            <span t-if="company.vat">VAT: <b dir="ltr" t-esc="company.vat"/></span>
+                            <span t-if="company.phone or company.partner_id.phone">Tel: <b dir="ltr" t-esc="company.phone or company.partner_id.phone"/></span>
+                        </div>
+                    </div>
+                    <div class="baseer-boxed-logo-slot">
+                        <div class="baseer-boxed-logo-frame">
+                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company Logo"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="baseer-boxed-rule"/>
+            </div>
+        </xpath>
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="replace">
+            <div t-attf-class="footer o_company_#{company.id}_layout baseer-boxed-footer {{report_type != 'pdf' and 'mt-auto'}}">
+                <span t-if="company.country_id" t-field="company.country_id"/>
+                <span t-if="'city' in company.partner_id._fields and company.partner_id.city" t-esc="company.partner_id.city"/>
+                <span t-if="'street' in company.partner_id._fields and company.partner_id.street" t-esc="company.partner_id.street"/>
+                <span t-if="'mobile' in company.partner_id._fields and company.partner_id.mobile">الجوال: <b dir="ltr" t-esc="company.partner_id.mobile"/></span>
+                <span t-elif="company.phone or ('phone' in company.partner_id._fields and company.partner_id.phone)">التواصل: <b dir="ltr" t-esc="company.phone or company.partner_id.phone"/></span>
+                <span t-if="'email' in company.partner_id._fields and company.partner_id.email"><b dir="ltr" t-esc="company.partner_id.email"/></span>
+                <span t-if="'website' in company.partner_id._fields and company.partner_id.website"><b dir="ltr" t-esc="company.partner_id.website"/></span>
+                <span t-if="report_type == 'pdf'" class="baseer-boxed-page">Page <span class="page"/> / <span class="topage"/></span>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-call='web.address_layout']" position="replace">
+            <t t-if="not (o and o._context.get('baseer_hide_address_layout'))">
+                <t t-call="web.address_layout"/>
+            </t>
+        </xpath>
+    </template>
+
+    <record id="report_layout_baseer_theme" model="report.layout">
+        <field name="name">بصير بوكسد</field>
+        <field name="sequence">1</field>
+        <field name="view_id" ref="external_layout_baseer_theme"/>
+    </record>
+</odoo>

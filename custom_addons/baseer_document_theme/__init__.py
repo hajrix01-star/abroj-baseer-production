@@ -1,1 +1,3 @@
-"""Baseer document theme: QWeb layouts only."""
+"""Baseer document layouts and their company-scoped seal setting."""
+
+from . import models

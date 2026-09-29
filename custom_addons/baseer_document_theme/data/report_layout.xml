@@ -24,12 +24,6 @@
             .baseer-theme-footer{border-top:1px solid #b8c1c7;padding-top:7px;font-size:8.5px;color:#56636d;direction:rtl;text-align:center}
             .baseer-theme-footer span{display:inline-block;padding:0 6px;white-space:nowrap}
             .baseer-theme-page{font-family:'Open Sans','DejaVu Sans',sans-serif;direction:ltr}
-            .baseer-theme-seal{display:inline-flex;width:74px;height:74px;margin:0 14px 4px 0;border:2px solid #123d7a;border-radius:50%;box-sizing:border-box;vertical-align:middle;align-items:center;justify-content:center;text-align:center;direction:rtl;color:#123d7a;font-family:'Tajawal','DejaVu Sans',sans-serif;line-height:1.3}
-            .baseer-theme-seal-inner{display:block;width:60px;padding:4px 0;border-top:1px solid #123d7a;border-bottom:1px solid #123d7a}
-            .baseer-theme-seal-name{font-size:6.7px;font-weight:700;white-space:normal}
-            .baseer-theme-seal-cr{margin-top:2px;font-family:'Open Sans','DejaVu Sans',sans-serif;font-size:5.7px;font-weight:700;direction:ltr}
-            .baseer-theme-seal-city{margin-top:1px;font-size:6px}
-            .baseer-theme-footer-details{display:inline-block;vertical-align:middle}
         </style>
         <div t-attf-class="header o_company_#{company.id}_layout baseer-theme-header">
             <div class="baseer-theme-brand" style="position:relative!important;min-height:90px!important;width:100%!important;direction:ltr!important;">
@@ -57,24 +51,49 @@
             <t t-out="0"/>
         </div>
         <div t-attf-class="footer o_company_#{company.id}_layout baseer-theme-footer {{report_type != 'pdf' and 'mt-auto'}}">
-            <div class="baseer-theme-seal" t-if="company.partner_id.company_registry">
-                <div class="baseer-theme-seal-inner">
-                    <div class="baseer-theme-seal-name" t-esc="company.baseer_name_ar if 'baseer_name_ar' in company._fields and company.baseer_name_ar else company.name"/>
-                    <div class="baseer-theme-seal-cr">CR <span t-esc="company.partner_id.company_registry"/></div>
-                    <div class="baseer-theme-seal-city" t-esc="company.partner_id.city or 'الخبر'"/>
+            <span t-if="company.country_id" t-field="company.country_id"/>
+            <span t-if="'city' in company._fields and company.city" t-field="company.city"/>
+            <span t-if="'street' in company._fields and company.street" t-field="company.street"/>
+            <span t-if="'mobile' in company._fields and company.mobile">الجوال: <b dir="ltr" t-field="company.mobile"/></span>
+            <span t-elif="'phone' in company._fields and company.phone">التواصل: <b dir="ltr" t-field="company.phone"/></span>
+            <span t-if="'email' in company._fields and company.email"><b dir="ltr" t-field="company.email"/></span>
+            <span t-if="'website' in company._fields and company.website"><b dir="ltr" t-field="company.website"/></span>
+            <span t-if="report_type == 'pdf'" class="baseer-theme-page">Page <span class="page"/> / <span class="topage"/></span>
+        </div>
+    </template>
+
+    <template id="company_seal" name="Company Seal">
+        <t t-if="'baseer_document_seal_enabled' in company._fields and company.baseer_document_seal_enabled and company.partner_id.company_registry">
+            <style type="text/css">
+                .baseer-company-seal{clear:both;float:left;display:flex;width:76px;height:76px;margin:12px 0 0;box-sizing:border-box;align-items:center;justify-content:center;break-inside:avoid;page-break-inside:avoid;border:2px solid #123d7a;border-radius:50%;background:rgba(255,255,255,.78);color:#123d7a;text-align:center;direction:rtl;font-family:'Tajawal','DejaVu Sans',sans-serif;line-height:1.28}
+                .baseer-company-seal__inner{width:61px;padding:4px 0;border-top:1px solid #123d7a;border-bottom:1px solid #123d7a}
+                .baseer-company-seal__name{font-size:6.6px;font-weight:700;white-space:normal}
+                .baseer-company-seal__cr{margin-top:2px;font-family:'Open Sans','DejaVu Sans',sans-serif;font-size:5.8px;font-weight:700;direction:ltr}
+                .baseer-company-seal__city{margin-top:1px;font-size:6px}
+            </style>
+            <div class="baseer-company-seal" aria-label="Company seal">
+                <div class="baseer-company-seal__inner">
+                    <div class="baseer-company-seal__name" t-esc="company.baseer_name_ar if 'baseer_name_ar' in company._fields and company.baseer_name_ar else company.name"/>
+                    <div class="baseer-company-seal__cr">CR <span t-esc="company.partner_id.company_registry"/></div>
+                    <div class="baseer-company-seal__city" t-esc="company.partner_id.city or 'الخبر'"/>
                 </div>
             </div>
-            <div class="baseer-theme-footer-details">
-                <span t-if="company.country_id" t-field="company.country_id"/>
-                <span t-if="'city' in company._fields and company.city" t-field="company.city"/>
-                <span t-if="'street' in company._fields and company.street" t-field="company.street"/>
-                <span t-if="'mobile' in company._fields and company.mobile">الجوال: <b dir="ltr" t-field="company.mobile"/></span>
-                <span t-elif="'phone' in company._fields and company.phone">التواصل: <b dir="ltr" t-field="company.phone"/></span>
-                <span t-if="'email' in company._fields and company.email"><b dir="ltr" t-field="company.email"/></span>
-                <span t-if="'website' in company._fields and company.website"><b dir="ltr" t-field="company.website"/></span>
-                <span t-if="report_type == 'pdf'" class="baseer-theme-page">Page <span class="page"/> / <span class="topage"/></span>
-            </div>
-        </div>
+        </t>
+    </template>
+
+    <template id="external_layout_add_company_seal" inherit_id="web.external_layout" name="Add Company Seal to Standard Layouts">
+        <xpath expr="//t[@t-if='company.external_report_layout_id']" position="replace">
+            <t t-if="company.external_report_layout_id" t-call="{{company.external_report_layout_id.sudo().key}}">
+                <t t-out="0"/>
+                <t t-call="baseer_document_theme.company_seal"/>
+            </t>
+        </xpath>
+        <xpath expr="//t[@t-else='else' and @t-call='web.external_layout_standard']" position="replace">
+            <t t-else="else" t-call="web.external_layout_standard">
+                <t t-out="0"/>
+                <t t-call="baseer_document_theme.company_seal"/>
+            </t>
+        </xpath>
     </template>
 
     <!--

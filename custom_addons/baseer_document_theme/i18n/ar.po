@@ -1,0 +1,23 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# \t* baseer_document_theme
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\\n"
+"Language: ar\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+#. odoo-python
+#: code:addons/baseer_document_theme/models/res_company.py:0
+msgid "Company Seal"
+msgstr "ختم الشركة"
+
+#. odoo-python
+#: code:addons/baseer_document_theme/models/res_company.py:0
+msgid "Add this company’s dynamic seal to every report using the standard Odoo document layout."
+msgstr "يضيف الختم الديناميكي لهذه الشركة إلى كل تقرير يستخدم تخطيط مستندات أودو القياسي."
+
+#: model:ir.model.fields,help:baseer_document_theme.field_base_document_layout__baseer_document_seal_enabled
+msgid "Adds a dynamic company seal to every standard document using the selected layout."
+msgstr "يضيف ختم الشركة الديناميكي إلى كل مستند قياسي يستخدم التخطيط المختار."

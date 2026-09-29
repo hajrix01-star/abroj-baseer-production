@@ -167,6 +167,6 @@
     <record id="report_layout_baseer_theme" model="report.layout">
         <field name="name">بصير بوكسد</field>
         <field name="sequence">1</field>
-        <field name="view_id" ref="external_layout_baseer_theme"/>
+        <field name="view_id" ref="external_layout_baseer_boxed"/>
     </record>
 </odoo>

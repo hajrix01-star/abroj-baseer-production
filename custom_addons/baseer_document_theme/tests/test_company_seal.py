@@ -37,6 +37,15 @@ class TestCompanySeal(TransactionCase):
         wizard.baseer_document_seal_enabled = False
         self.assertFalse(self.company.baseer_document_seal_enabled)
 
+    def test_baseer_boxed_is_the_selectable_company_layout(self):
+        selectable_layout = self.env.ref(
+            'baseer_document_theme.report_layout_baseer_theme'
+        )
+        self.assertEqual(
+            selectable_layout.view_id,
+            self.env.ref('baseer_document_theme.external_layout_baseer_boxed'),
+        )
+
     def test_seal_template_uses_uploaded_image(self):
         html = self.env['ir.ui.view']._render_template(
             'baseer_document_theme.company_seal',

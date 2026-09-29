@@ -63,7 +63,7 @@
     </template>
 
     <template id="company_seal" name="Company Seal">
-        <t t-if="'baseer_document_seal_enabled' in company._fields and company.baseer_document_seal_enabled and company.partner_id.company_registry">
+        <t t-if="'baseer_document_seal_enabled' in company._fields and company.baseer_document_seal_enabled">
             <style type="text/css">
                 .baseer-company-seal{clear:both;float:left;display:flex;width:76px;height:76px;margin:12px 0 0;box-sizing:border-box;align-items:center;justify-content:center;break-inside:avoid;page-break-inside:avoid;border:2px solid #123d7a;border-radius:50%;background:rgba(255,255,255,.78);color:#123d7a;text-align:center;direction:rtl;font-family:'Tajawal','DejaVu Sans',sans-serif;line-height:1.28}
                 .baseer-company-seal__inner{width:61px;padding:4px 0;border-top:1px solid #123d7a;border-bottom:1px solid #123d7a}
@@ -74,7 +74,7 @@
             <div class="baseer-company-seal" aria-label="Company seal">
                 <div class="baseer-company-seal__inner">
                     <div class="baseer-company-seal__name" t-esc="company.baseer_name_ar if 'baseer_name_ar' in company._fields and company.baseer_name_ar else company.name"/>
-                    <div class="baseer-company-seal__cr">CR <span t-esc="company.partner_id.company_registry"/></div>
+                    <div class="baseer-company-seal__cr" t-if="company.partner_id.company_registry">CR <span t-esc="company.partner_id.company_registry"/></div>
                     <div class="baseer-company-seal__city" t-esc="company.partner_id.city or 'الخبر'"/>
                 </div>
             </div>

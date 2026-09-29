@@ -32,3 +32,9 @@
 - Classification: LOCAL UI. `abroj_project_costing` alone owns the change; no model, API, data, record-rule, report, or other Odoo form contract changed.
 - Source commit `27608ca8`, module `19.0.1.4.5`: a marker in the project form scopes one backend CSS rule that lifts Odoo's 1400px sheet limit to the available width. The x2many tables retain their native horizontal scrolling when space is narrow.
 - The isolated QA-clone upgrade and QA upgrade both exited successfully. Read-only QA checks confirmed the installed version, scoped marker, and registered asset. A browser visual check remained unavailable because browser permission verification failed; no visual acceptance is claimed.
+
+## Local dashboard scroll fix — 2026-09-29
+
+- Classification: LOCAL UI; no model, security, data, financial calculation, or report change. Source commit `963a5d3`, module `19.0.1.4.6`.
+- Root cause: Odoo's action manager clips overflow, while the custom dashboard root had no bounded scrolling container. The dashboard now fills the action area and owns vertical scrolling, including touch momentum on mobile.
+- QA-clone and QA module upgrades passed; QA reported the installed version and the published CSS hash matched source. Browser permission verification remained unavailable, so desktop/mobile visual scrolling is not claimed as tested.

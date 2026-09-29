@@ -56,6 +56,7 @@ class TestCompanySeal(TransactionCase):
         self.assertIn('max-height:80px!important', arch)
         self.assertIn('margin-top:132px!important', arch)
         self.assertIn('padding-top:56px!important', arch)
+        self.assertIn('box-sizing:border-box!important', arch)
 
     def test_seal_template_uses_uploaded_image(self):
         html = self.env['ir.ui.view']._render_template(

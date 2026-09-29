@@ -1,7 +1,7 @@
 {
     'name': 'بصير بوكسد للمستندات',
     'summary': 'Shared bilingual Boxed document layout for Baseer',
-    'version': '19.0.2.0.4',
+    'version': '19.0.2.0.5',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'depends': ['web', 'baseer_service_seed'],

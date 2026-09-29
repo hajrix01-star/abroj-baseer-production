@@ -147,6 +147,10 @@
                 <div class="baseer-boxed-rule"/>
             </div>
         </xpath>
+        <xpath expr="//div[contains(@t-attf-class, 'o_report_layout_boxed')]" position="attributes">
+            <!-- The PDF renderer separates header and body styles, so these safeguards must be inline. -->
+            <attribute name="t-attf-style">margin-top:132px!important;padding-top:56px!important;box-sizing:border-box!important;font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important;{{ 'background-image: url(%s);' % layout_background_url if layout_background_url else '' }}</attribute>
+        </xpath>
         <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="replace">
             <div t-attf-class="footer o_company_#{company.id}_layout baseer-boxed-footer {{report_type != 'pdf' and 'mt-auto'}}">
                 <span t-if="company.country_id" t-field="company.country_id"/>

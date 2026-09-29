@@ -46,6 +46,15 @@ class TestCompanySeal(TransactionCase):
             self.env.ref('baseer_document_theme.external_layout_baseer_boxed'),
         )
 
+    def test_baseer_boxed_constrains_the_company_logo_in_pdf(self):
+        layout = self.env.ref(
+            'baseer_document_theme.external_layout_baseer_boxed'
+        )
+        arch = layout.get_combined_arch()
+        self.assertIn('width="178"', arch)
+        self.assertIn('max-width:178px!important', arch)
+        self.assertIn('max-height:80px!important', arch)
+
     def test_seal_template_uses_uploaded_image(self):
         html = self.env['ir.ui.view']._render_template(
             'baseer_document_theme.company_seal',

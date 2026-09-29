@@ -103,16 +103,12 @@
         <xpath expr="//div[contains(@t-attf-class, 'header')]" position="before">
             <style type="text/css">
                 .o_report_layout_baseer_boxed,.baseer-boxed-header,.baseer-boxed-footer{font-family:'Tajawal','DejaVu Sans',sans-serif!important;color:#1f2933}
-                .baseer-boxed-header{position:relative!important;min-height:120px!important;margin:0 0 12px!important;padding:10px 0 12px!important;background:#fff!important}
-                .baseer-boxed-brand{position:relative!important;min-height:94px!important;width:100%!important;direction:ltr!important}
-                .baseer-boxed-identity{min-height:94px!important;margin-left:222px!important;padding:5px 0 8px 18px!important;text-align:right!important;direction:rtl!important}
+                .baseer-boxed-header{position:relative!important;min-height:108px!important;margin:0 0 12px!important;padding:8px 0 10px!important;background:#fff!important}
+                .baseer-boxed-brand{width:100%!important;direction:ltr!important}
                 .baseer-boxed-name-ar{font-size:23px!important;line-height:1.3!important;font-weight:700!important;color:#18242d!important}
                 .baseer-boxed-name-en{margin-top:3px!important;font-family:'Open Sans','DejaVu Sans',sans-serif!important;font-size:11px!important;font-weight:600!important;letter-spacing:.08em!important;color:#52616b!important;direction:ltr!important;text-align:right!important}
                 .baseer-boxed-meta{margin-top:9px!important;font-size:9px!important;line-height:1.7!important;color:#4a5964!important;white-space:nowrap!important}
                 .baseer-boxed-meta span{display:inline-block!important;margin-left:12px!important}
-                .baseer-boxed-logo-slot{position:absolute!important;top:0!important;left:0!important;width:206px!important;text-align:left!important;direction:ltr!important}
-                .baseer-boxed-logo-frame{display:inline-flex!important;width:194px!important;height:86px!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
-                .baseer-boxed-logo-frame img{display:block!important;max-width:190px!important;max-height:84px!important;width:auto!important;height:auto!important;object-fit:contain!important}
                 .baseer-boxed-rule{height:2px!important;margin-top:9px!important;background:#354b59!important}
                 .article.o_report_layout_baseer_boxed{font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important}
                 .article.o_report_layout_baseer_boxed h2{color:#18242d!important;font-weight:700!important}
@@ -125,7 +121,13 @@
         <xpath expr="//div[contains(@t-attf-class, 'header')]" position="replace">
             <div t-attf-class="header o_company_#{company.id}_layout baseer-boxed-header">
                 <div class="baseer-boxed-brand">
-                    <div class="baseer-boxed-identity">
+                    <!-- Tables and explicit image dimensions render consistently in wkhtmltopdf. -->
+                    <table role="presentation" style="width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;">
+                        <tr>
+                            <td style="width:32%!important;vertical-align:middle!important;text-align:left!important;direction:ltr!important;padding:0!important;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" width="178" style="display:block!important;width:178px!important;max-width:178px!important;max-height:80px!important;height:auto!important;margin:0!important;" alt="Company Logo"/>
+                            </td>
+                            <td style="width:68%!important;vertical-align:middle!important;text-align:right!important;direction:rtl!important;padding:4px 0 6px 12px!important;">
                         <t t-set="baseer_name_ar" t-value="company.baseer_name_ar if 'baseer_name_ar' in company._fields else company.name"/>
                         <t t-set="baseer_name_en" t-value="company.baseer_name_en if 'baseer_name_en' in company._fields else company.name"/>
                         <div class="baseer-boxed-name-ar" t-esc="baseer_name_ar or company.name"/>
@@ -135,12 +137,9 @@
                             <span t-if="company.vat">VAT: <b dir="ltr" t-esc="company.vat"/></span>
                             <span t-if="company.phone or company.partner_id.phone">Tel: <b dir="ltr" t-esc="company.phone or company.partner_id.phone"/></span>
                         </div>
-                    </div>
-                    <div class="baseer-boxed-logo-slot">
-                        <div class="baseer-boxed-logo-frame">
-                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company Logo"/>
-                        </div>
-                    </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
                 <div class="baseer-boxed-rule"/>
             </div>

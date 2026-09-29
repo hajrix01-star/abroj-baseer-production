@@ -454,6 +454,50 @@ class AbrojCostReceipt(models.Model):
     date = fields.Date('التاريخ', default=fields.Date.context_today, required=True)
     amount = fields.Monetary('المبلغ', required=True, currency_field='currency_id')
     note = fields.Text('ملاحظات')
+    # The fields below adapt this operational receipt to Odoo's native payment
+    # receipt template. They do not create an account.payment or account.move.
+    partner_id = fields.Many2one(related='project_id.partner_id', readonly=True)
+    partner_type = fields.Selection([('customer', 'Customer')], default='customer', readonly=True)
+    payment_receipt_title = fields.Char(compute='_compute_payment_receipt_title')
+    memo = fields.Text(related='note', readonly=True, string='مذكرة سند القبض')
+    # Some installed Odoo localizations extend the native receipt template with
+    # withholding details. Project receipts never create withholding entries,
+    # so this explicit display-only flag keeps that optional block empty.
+    withholding_line_ids = fields.Boolean(default=False, readonly=True)
+
+    @api.depends('name')
+    def _compute_payment_receipt_title(self):
+        for receipt in self:
+            receipt.payment_receipt_title = _('سند قبض مشروع')
+
+    def _get_payment_receipt_report_values(self):
+        """Supply only the display contract expected by Odoo's native template."""
+        self.ensure_one()
+        return {
+            'display_payment_method': False,
+            'display_invoices': False,
+        }
+
+    def _get_prior_project_receipts(self):
+        """Return prior receipts for this project, ordered for the printed audit trail."""
+        self.ensure_one()
+        prior = self.project_id.receipt_ids.filtered(
+            lambda receipt: (receipt.date, receipt.id) < (self.date, self.id)
+        )
+        return prior.sorted(lambda receipt: (receipt.date, receipt.id))
+
+    def _get_project_receipt_summary(self):
+        """Keep all receipt totals authoritative in the Odoo backend."""
+        self.ensure_one()
+        prior = self._get_prior_project_receipts()
+        prior_amount = sum(prior.mapped('amount'))
+        received_after = prior_amount + self.amount
+        return {
+            'prior_receipts': prior,
+            'prior_amount': prior_amount,
+            'received_after': received_after,
+            'remaining_after': self.project_id.agreement_amount - received_after,
+        }
 
     @api.model
     def default_get(self, fields_list):

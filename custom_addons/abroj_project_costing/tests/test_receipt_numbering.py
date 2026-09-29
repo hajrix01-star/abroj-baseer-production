@@ -23,3 +23,22 @@ class TestReceiptNumbering(TransactionCase):
             default_project_id=self.project.id,
         ).default_get(['name', 'project_id'])
         self.assertRegex(values['name'], r'^RCV/\d{4}/\d{5}$')
+
+    def test_native_receipt_template_adapter_keeps_project_totals_in_backend(self):
+        first = self.env['abroj.cost.receipt'].create({
+            'project_id': self.project.id,
+            'amount': 100,
+        })
+        second = self.env['abroj.cost.receipt'].create({
+            'project_id': self.project.id,
+            'amount': 250,
+        })
+        summary = second._get_project_receipt_summary()
+        self.assertEqual(summary['prior_receipts'], first)
+        self.assertEqual(summary['prior_amount'], 100)
+        self.assertEqual(summary['received_after'], 350)
+        self.assertEqual(summary['remaining_after'], 650)
+        self.assertEqual(second._get_payment_receipt_report_values(), {
+            'display_payment_method': False,
+            'display_invoices': False,
+        })

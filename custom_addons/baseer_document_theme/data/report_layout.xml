@@ -63,20 +63,16 @@
     </template>
 
     <template id="company_seal" name="Company Seal">
-        <t t-if="'baseer_document_seal_enabled' in company._fields and company.baseer_document_seal_enabled">
+        <t t-set="seal_is_enabled" t-value="'baseer_document_seal_enabled' in company._fields and company.baseer_document_seal_enabled and company.baseer_document_seal_image"/>
+        <t t-set="seal_matches_document" t-value="company.baseer_document_seal_scope != 'selected' or (o and o._name in company.baseer_document_seal_model_ids.mapped('model'))"/>
+        <t t-if="seal_is_enabled and seal_matches_document">
             <style type="text/css">
-                .baseer-company-seal{clear:both;float:left;display:flex;width:76px;height:76px;margin:12px 0 0;box-sizing:border-box;align-items:center;justify-content:center;break-inside:avoid;page-break-inside:avoid;border:2px solid #123d7a;border-radius:50%;background:rgba(255,255,255,.78);color:#123d7a;text-align:center;direction:rtl;font-family:'Tajawal','DejaVu Sans',sans-serif;line-height:1.28}
-                .baseer-company-seal__inner{width:61px;padding:4px 0;border-top:1px solid #123d7a;border-bottom:1px solid #123d7a}
-                .baseer-company-seal__name{font-size:6.6px;font-weight:700;white-space:normal}
-                .baseer-company-seal__cr{margin-top:2px;font-family:'Open Sans','DejaVu Sans',sans-serif;font-size:5.8px;font-weight:700;direction:ltr}
-                .baseer-company-seal__city{margin-top:1px;font-size:6px}
+                .baseer-company-seal{clear:both;float:left;width:108px;height:108px;margin:6px 0 0;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+                .baseer-company-seal--right{float:right}
+                .baseer-company-seal img{display:block;width:108px;height:108px;object-fit:contain}
             </style>
-            <div class="baseer-company-seal" aria-label="Company seal">
-                <div class="baseer-company-seal__inner">
-                    <div class="baseer-company-seal__name" t-esc="company.baseer_name_ar if 'baseer_name_ar' in company._fields and company.baseer_name_ar else company.name"/>
-                    <div class="baseer-company-seal__cr" t-if="company.partner_id.company_registry">CR <span t-esc="company.partner_id.company_registry"/></div>
-                    <div class="baseer-company-seal__city" t-esc="company.partner_id.city or 'الخبر'"/>
-                </div>
+            <div t-attf-class="baseer-company-seal baseer-company-seal--#{company.baseer_document_seal_position or 'left'}" aria-label="Company stamp">
+                <img t-att-src="image_data_uri(company.baseer_document_seal_image)" alt="Company Stamp"/>
             </div>
         </t>
     </template>

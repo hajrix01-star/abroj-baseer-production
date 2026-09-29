@@ -7,8 +7,22 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='report_layout_id']" position="after">
                 <field name="baseer_document_seal_enabled"
-                       string="Company Seal"
-                       help="Adds a dynamic company seal to every standard document using the selected layout."/>
+                       string="Add Company Stamp"
+                       help="Prints the uploaded stamp image on every standard document using the selected layout."/>
+                <field name="baseer_document_seal_image"
+                       widget="image"
+                       filename="baseer_document_seal_image_filename"
+                       invisible="not baseer_document_seal_enabled"
+                       help="Upload the approved company stamp as a transparent PNG image."/>
+                <field name="baseer_document_seal_image_filename" invisible="1"/>
+                <field name="baseer_document_seal_position"
+                       invisible="not baseer_document_seal_enabled"/>
+                <field name="baseer_document_seal_scope"
+                       invisible="not baseer_document_seal_enabled"/>
+                <field name="baseer_document_seal_model_ids"
+                       widget="many2many_tags"
+                       options="{'no_create': True}"
+                       invisible="not baseer_document_seal_enabled or baseer_document_seal_scope != 'selected'"/>
             </xpath>
         </field>
     </record>

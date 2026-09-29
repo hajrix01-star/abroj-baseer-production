@@ -19,16 +19,56 @@ msgstr ""
 #. module: baseer_document_theme
 #. odoo-python
 #: code:addons/baseer_document_theme/models/res_company.py:0
-msgid "Company Seal"
-msgstr "ختم الشركة"
+msgid "Add Company Stamp"
+msgstr "إضافة ختم الشركة"
 
 #. module: baseer_document_theme
 #. odoo-python
 #: code:addons/baseer_document_theme/models/res_company.py:0
-msgid "Add this company’s dynamic seal to every report using the standard Odoo document layout."
-msgstr "يضيف الختم الديناميكي لهذه الشركة إلى كل تقرير يستخدم تخطيط مستندات أودو القياسي."
+msgid "Print the uploaded transparent stamp image on standard documents for this company."
+msgstr "يطبع صورة الختم الشفافة المرفوعة في المستندات القياسية لهذه الشركة."
 
 #. module: baseer_document_theme
 #: model:ir.model.fields,help:baseer_document_theme.field_base_document_layout__baseer_document_seal_enabled
-msgid "Adds a dynamic company seal to every standard document using the selected layout."
-msgstr "يضيف ختم الشركة الديناميكي إلى كل مستند قياسي يستخدم التخطيط المختار."
+msgid "Prints the uploaded stamp image on every standard document using the selected layout."
+msgstr "يطبع صورة الختم المرفوعة في كل مستند قياسي يستخدم التخطيط المختار."
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_image
+msgid "Company Stamp Image"
+msgstr "صورة ختم الشركة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_position
+msgid "Company Stamp Position"
+msgstr "موضع ختم الشركة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_scope
+msgid "Company Stamp Scope"
+msgstr "نطاق ختم الشركة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_model_ids
+msgid "Stamped Document Types"
+msgstr "أنواع المستندات المختومة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_position__left
+msgid "Left"
+msgstr "يسار"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_position__right
+msgid "Right"
+msgstr "يمين"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_scope__all
+msgid "All Standard Documents"
+msgstr "كل المستندات القياسية"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_scope__selected
+msgid "Selected Document Types"
+msgstr "أنواع مستندات محددة"

@@ -38,3 +38,8 @@
 - Classification: LOCAL UI; no model, security, data, financial calculation, or report change. Source commit `963a5d3`, module `19.0.1.4.6`.
 - Root cause: Odoo's action manager clips overflow, while the custom dashboard root had no bounded scrolling container. The dashboard now fills the action area and owns vertical scrolling, including touch momentum on mobile.
 - QA-clone and QA module upgrades passed; QA reported the installed version and the published CSS hash matched source. Browser permission verification remained unavailable, so desktop/mobile visual scrolling is not claimed as tested.
+
+## Local material-list header readability — 2026-09-29
+
+- Classification: LOCAL UI. `abroj_project_costing` owns the material-list view and its scoped CSS; no model, price, security, report, or shared Odoo list behavior changes.
+- Module `19.0.1.4.7` marks only the material library list and allows its header labels to wrap to at most two lines. Cost columns have a readable minimum width; Odoo's existing horizontal list scrolling remains available on narrow screens.

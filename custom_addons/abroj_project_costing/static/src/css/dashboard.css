@@ -1,4 +1,5 @@
 .o_abroj_dashboard { --abroj-ink:#172b3a; --abroj-muted:#697b87; --abroj-primary:#80506f; --abroj-border:#e5e9ec; max-width:1280px; margin:0 auto; padding:32px; color:var(--abroj-ink); }
+.o_action_manager .o_abroj_dashboard { width:100%; height:100%; min-height:0; overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 .o_abroj_dashboard_header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:28px; padding:28px 30px; background:linear-gradient(120deg,#faf6f8,#fff); border:1px solid var(--abroj-border); border-radius:18px; }
 .o_abroj_dashboard_header h1 { margin:2px 0 6px; font-size:28px; font-weight:700; }
 .o_abroj_dashboard_header p { margin:0; color:var(--abroj-muted); }

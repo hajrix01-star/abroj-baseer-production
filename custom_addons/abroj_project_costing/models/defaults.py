@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 
 DEFAULT_CATEGORIES = (
@@ -126,6 +127,8 @@ class AbrojCostProject(models.Model):
 
     @api.model
     def default_get(self, fields_list):
+        if not self.env.su and not self.env.company.abroj_project_costing_enabled:
+            raise AccessError(_("Project costing is disabled for the selected company."))
         self.env["abroj.cost.defaults"].ensure_for_company(self.env.company)
         return super().default_get(fields_list)
 

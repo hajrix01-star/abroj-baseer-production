@@ -12,6 +12,59 @@
         <field name="implied_ids" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
     </record>
 
+    <!-- Global rules intersect with every user/manager rule. Hiding the app tile alone
+         does not protect direct URLs, RPC calls, or users with several active companies. -->
+    <record id="rule_abroj_project_active_company" model="ir.rule">
+        <field name="name">Abroj project: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_project"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_plan_active_company" model="ir.rule">
+        <field name="name">Abroj plan: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_plan_line"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_actual_active_company" model="ir.rule">
+        <field name="name">Abroj actual: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_actual_line"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_stage_active_company" model="ir.rule">
+        <field name="name">Abroj stage: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_progress_stage"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_receipt_active_company" model="ir.rule">
+        <field name="name">Abroj receipt: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_receipt"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_amendment_active_company" model="ir.rule">
+        <field name="name">Abroj amendment: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_agreement_amendment"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_member_active_company" model="ir.rule">
+        <field name="name">Abroj member: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_project_member"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_material_active_company" model="ir.rule">
+        <field name="name">Abroj material: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_material"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_category_active_company" model="ir.rule">
+        <field name="name">Abroj category: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_category"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+    <record id="rule_abroj_material_import_active_company" model="ir.rule">
+        <field name="name">Abroj material import: enabled selected company</field>
+        <field name="model_id" ref="model_abroj_cost_material_import_wizard"/>
+        <field name="domain_force">[('company_id', '=', company_id), ('company_id.abroj_project_costing_enabled', '=', True)]</field>
+    </record>
+
     <record id="rule_abroj_project_user_read" model="ir.rule">
         <field name="name">Abroj project: assigned read</field><field name="model_id" ref="model_abroj_cost_project"/>
         <field name="domain_force">[('company_id', 'in', company_ids), '|', ('owner_id', '=', user.id), ('member_ids.user_id', '=', user.id)]</field>

@@ -8,24 +8,20 @@
                     <h1>لوحة التحكم</h1>
                     <p>ملخص المشاريع القائمة والتكاليف والإنجاز.</p>
                 </div>
-                <button class="btn btn-primary o_abroj_dashboard_button" t-on-click="openProjects">عرض المشاريع</button>
             </section>
 
-            <t t-if="state.loading">
-                <section class="o_abroj_dashboard_empty">جارٍ تحميل المؤشرات…</section>
-            </t>
-            <t t-elif="state.error">
-                <section class="o_abroj_dashboard_empty">تعذر تحميل لوحة التحكم. حدّث الصفحة وحاول مرة أخرى.</section>
-            </t>
-            <t t-else="">
-                <section class="o_abroj_dashboard_metrics">
-                    <article class="o_abroj_metric"><span>المشاريع النشطة</span><strong t-esc="state.metrics.active"/></article>
-                    <article class="o_abroj_metric"><span>المشاريع المغلقة</span><strong t-esc="state.metrics.closed"/></article>
-                    <article class="o_abroj_metric"><span>إجمالي المتوقع</span><strong t-esc="formatNumber(state.metrics.estimated)"/></article>
-                    <article class="o_abroj_metric"><span>إجمالي التكاليف الفعلية</span><strong t-esc="formatNumber(state.metrics.actual)"/></article>
-                    <article class="o_abroj_metric"><span>الانحراف الإجمالي</span><strong t-att-class="state.metrics.variance &gt; 0 ? 'is-negative' : 'is-positive'" t-esc="formatNumber(state.metrics.variance)"/></article>
-                    <article class="o_abroj_metric"><span>متوسط الإنجاز</span><strong t-esc="formatPercent(state.metrics.progress)"/></article>
-                </section>
+            <section class="o_abroj_dashboard_metrics" t-att-class="state.loading || state.error || state.empty ? 'is-muted' : ''" t-att-aria-busy="state.loading ? 'true' : 'false'">
+                <article class="o_abroj_metric"><span>المشاريع النشطة</span><strong t-esc="state.loading || state.error ? '—' : state.metrics.active"/></article>
+                <article class="o_abroj_metric"><span>المشاريع المغلقة</span><strong t-esc="state.loading || state.error ? '—' : state.metrics.closed"/></article>
+                <article class="o_abroj_metric"><span>إجمالي المتوقع</span><strong t-esc="state.loading || state.error ? '—' : formatNumber(state.metrics.estimated)"/></article>
+                <article class="o_abroj_metric"><span>إجمالي التكاليف الفعلية</span><strong t-esc="state.loading || state.error ? '—' : formatNumber(state.metrics.actual)"/></article>
+                <article class="o_abroj_metric"><span>الانحراف الإجمالي</span><strong t-att-class="state.metrics.variance &gt; 0 ? 'is-negative' : 'is-positive'" t-esc="state.loading || state.error ? '—' : formatNumber(state.metrics.variance)"/></article>
+                <article class="o_abroj_metric"><span>متوسط الإنجاز</span><strong t-esc="state.loading || state.error ? '—' : formatPercent(state.metrics.progress)"/></article>
+            </section>
+            <div t-if="state.loading" class="o_abroj_dashboard_status">جارٍ تحميل المؤشرات…</div>
+            <div t-elif="state.error" class="o_abroj_dashboard_status" role="alert">تعذر تحميل بيانات المؤشرات. حدّث الصفحة وحاول مرة أخرى.</div>
+
+            <t t-if="!state.loading &amp;&amp; !state.error">
 
                 <section class="o_abroj_dashboard_section">
                     <div class="o_abroj_section_heading"><div><p>آخر المشاريع القائمة</p><h2>متابعة مباشرة</h2></div><button class="btn btn-link" t-on-click="openProjects">كل المشاريع</button></div>

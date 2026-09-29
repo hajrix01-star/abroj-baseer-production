@@ -23,6 +23,7 @@ export class AbrojProjectCostingDashboard extends Component {
         this.state = useState({
             loading: true,
             error: false,
+            empty: false,
             projects: [],
             metrics: {
                 active: 0, closed: 0, estimated: 0, actual: 0, variance: 0, progress: 0,
@@ -41,15 +42,14 @@ export class AbrojProjectCostingDashboard extends Component {
             const [active, closed, totals, projects, categoryDistribution, topLines, varianceLines] = await Promise.all([
                 this.orm.searchCount("abroj.cost.project", activeDomain),
                 this.orm.searchCount("abroj.cost.project", [["state", "=", "closed"]]),
-                this.orm.readGroup(
+                this.orm.call(
                     "abroj.cost.project",
-                    [],
-                    [
+                    "read_group",
+                    [[], [
                         "estimated_total:sum", "actual_total:sum", "variance_amount:sum", "progress:avg",
                         "estimated_material_total:sum", "estimated_auxiliary_total:sum",
                         "estimated_labor_total:sum", "estimated_lump_sum_total:sum",
-                    ],
-                    []
+                    ], []]
                 ),
                 this.orm.searchRead(
                     "abroj.cost.project",
@@ -57,11 +57,10 @@ export class AbrojProjectCostingDashboard extends Component {
                     ["name", "state", "agreement_end_date", "estimated_total", "actual_total", "variance_amount", "progress", "write_date"],
                     { order: "write_date desc", limit: 6 }
                 ),
-                this.orm.readGroup(
+                this.orm.call(
                     "abroj.cost.plan.line",
-                    [],
-                    ["estimated_total:sum"],
-                    ["category_id"]
+                    "read_group",
+                    [[], ["estimated_total:sum"], ["category_id"]]
                 ),
                 this.orm.searchRead(
                     "abroj.cost.plan.line",
@@ -77,6 +76,7 @@ export class AbrojProjectCostingDashboard extends Component {
                 ),
             ]);
             const total = totals[0] || {};
+            this.state.empty = active + closed === 0;
             this.state.metrics = {
                 active,
                 closed,

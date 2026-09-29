@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_abroj_cost_project_form_defaults" model="ir.ui.view">
+        <field name="name">abroj.cost.project.form.defaults</field>
+        <field name="model">abroj.cost.project</field>
+        <field name="inherit_id" ref="view_abroj_project_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='progress_stage_ids']//field[@name='name']" position="before">
+                <field name="stage_template_key"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

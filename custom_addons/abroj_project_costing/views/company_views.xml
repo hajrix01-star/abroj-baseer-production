@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_abroj_project_costing" model="ir.ui.view">
+        <field name="name">res.company.form.abroj.project.costing</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="تطبيقات أبرج" groups="base.group_system">
+                    <field name="abroj_project_costing_enabled"/>
+                    <div class="text-muted" colspan="2">
+                        يختفي التطبيق من القائمة عند اختيار شركة غير مفعّلة، وتبقى بيانات كل شركة معزولة.
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,8 @@
+.o_form_sheet_bg:has(> .o_form_sheet > .o_abroj_project_width_marker) {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.o_abroj_project_width_marker {
+    display: none;
+}

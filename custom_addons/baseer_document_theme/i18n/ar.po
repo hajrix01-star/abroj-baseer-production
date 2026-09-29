@@ -1,0 +1,74 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#   * baseer_document_theme
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0-20260817\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-29 12:39+0000\n"
+"PO-Revision-Date: 2026-09-29 12:39+0000\n"
+"Last-Translator: \n"
+"Language-Team: Arabic \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_document_theme
+#. odoo-python
+#: code:addons/baseer_document_theme/models/res_company.py:0
+msgid "Add Company Stamp"
+msgstr "إضافة ختم الشركة"
+
+#. module: baseer_document_theme
+#. odoo-python
+#: code:addons/baseer_document_theme/models/res_company.py:0
+msgid "Print the uploaded transparent stamp image on standard documents for this company."
+msgstr "يطبع صورة الختم الشفافة المرفوعة في المستندات القياسية لهذه الشركة."
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,help:baseer_document_theme.field_base_document_layout__baseer_document_seal_enabled
+msgid "Prints the uploaded stamp image on every standard document using the selected layout."
+msgstr "يطبع صورة الختم المرفوعة في كل مستند قياسي يستخدم التخطيط المختار."
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_image
+msgid "Company Stamp Image"
+msgstr "صورة ختم الشركة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_position
+msgid "Company Stamp Position"
+msgstr "موضع ختم الشركة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_scope
+msgid "Company Stamp Scope"
+msgstr "نطاق ختم الشركة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,field_description:baseer_document_theme.field_res_company__baseer_document_seal_model_ids
+msgid "Stamped Document Types"
+msgstr "أنواع المستندات المختومة"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_position__left
+msgid "Left"
+msgstr "يسار"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_position__right
+msgid "Right"
+msgstr "يمين"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_scope__all
+msgid "All Standard Documents"
+msgstr "كل المستندات القياسية"
+
+#. module: baseer_document_theme
+#: model:ir.model.fields,selection:baseer_document_theme.selection__res_company__baseer_document_seal_scope__selected
+msgid "Selected Document Types"
+msgstr "أنواع مستندات محددة"

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="abroj_project_costing.Dashboard">
+        <main class="o_abroj_dashboard" dir="rtl">
+            <section class="o_abroj_dashboard_header">
+                <div>
+                    <p class="o_abroj_dashboard_eyebrow">أبرج | تكاليف المشاريع</p>
+                    <h1>لوحة التحكم</h1>
+                    <p>ملخص المشاريع القائمة والتكاليف والإنجاز.</p>
+                </div>
+            </section>
+
+            <section class="o_abroj_dashboard_metrics" t-att-class="state.loading || state.error || state.empty ? 'is-muted' : ''" t-att-aria-busy="state.loading ? 'true' : 'false'">
+                <article class="o_abroj_metric"><span>المشاريع النشطة</span><strong t-esc="state.loading || state.error ? '—' : state.metrics.active"/></article>
+                <article class="o_abroj_metric"><span>المشاريع المغلقة</span><strong t-esc="state.loading || state.error ? '—' : state.metrics.closed"/></article>
+                <article class="o_abroj_metric"><span>إجمالي المتوقع</span><strong t-esc="state.loading || state.error ? '—' : formatNumber(state.metrics.estimated)"/></article>
+                <article class="o_abroj_metric"><span>إجمالي التكاليف الفعلية</span><strong t-esc="state.loading || state.error ? '—' : formatNumber(state.metrics.actual)"/></article>
+                <article class="o_abroj_metric"><span>الانحراف الإجمالي</span><strong t-att-class="state.metrics.variance &gt; 0 ? 'is-negative' : 'is-positive'" t-esc="state.loading || state.error ? '—' : formatNumber(state.metrics.variance)"/></article>
+                <article class="o_abroj_metric"><span>متوسط الإنجاز</span><strong t-esc="state.loading || state.error ? '—' : formatPercent(state.metrics.progress)"/></article>
+            </section>
+            <div t-if="state.loading" class="o_abroj_dashboard_status">جارٍ تحميل المؤشرات…</div>
+            <div t-elif="state.error" class="o_abroj_dashboard_status" role="alert">تعذر تحميل بيانات المؤشرات. حدّث الصفحة وحاول مرة أخرى.</div>
+
+            <t t-if="!state.loading &amp;&amp; !state.error">
+
+                <section class="o_abroj_dashboard_section">
+                    <div class="o_abroj_section_heading"><div><p>آخر المشاريع القائمة</p><h2>متابعة مباشرة</h2></div><button class="btn btn-link" t-on-click="openProjects">كل المشاريع</button></div>
+                    <div t-if="!state.projects.length" class="o_abroj_dashboard_empty">لا توجد مشاريع قائمة في الشركة النشطة.</div>
+                    <div t-else="" class="o_abroj_project_grid">
+                        <button t-foreach="state.projects" t-as="project" t-key="project.id" class="o_abroj_project_card" t-on-click="() =&gt; this.openProject(project)">
+                            <div class="o_abroj_project_card_top"><h3 t-esc="project.name"/><span class="o_abroj_state_badge" t-esc="stateLabel(project.state)"/></div>
+                            <div class="o_abroj_project_progress"><span>نسبة الإنجاز</span><strong t-esc="formatPercent(project.progress)"/></div>
+                            <div class="o_abroj_progress_track"><i t-att-style="'width:' + Math.min(Math.max(project.progress || 0, 0), 100) + '%'"/></div>
+                            <dl><div><dt>المتوقع</dt><dd t-esc="formatNumber(project.estimated_total)"/></div><div><dt>الفعلي</dt><dd t-esc="formatNumber(project.actual_total)"/></div><div><dt>نهاية الاتفاقية</dt><dd t-esc="project.agreement_end_date || '—'"/></div></dl>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="o_abroj_dashboard_section o_abroj_dashboard_charts">
+                    <div class="o_abroj_section_heading"><div><p>تحليل سريع</p><h2>التكاليف والفروقات</h2></div></div>
+                    <div class="o_abroj_chart_grid">
+                        <article class="o_abroj_chart_card">
+                            <h3>توزيع التكلفة المتوقعة</h3>
+                            <div class="o_abroj_bar_list">
+                                <t t-set="composition" t-value="[{value: state.metrics.material, label: 'مواد أساسية'}, {value: state.metrics.auxiliary, label: 'مواد مساعدة'}, {value: state.metrics.labor, label: 'شغل يد'}, {value: state.metrics.lumpSum, label: 'مقطوعية'}]"/>
+                                <div t-foreach="composition" t-as="entry" t-key="entry.label" class="o_abroj_bar_row">
+                                    <div><span t-esc="entry.label"/><strong t-esc="formatNumber(entry.value)"/></div>
+                                    <i class="o_abroj_bar_track"><b t-att-style="'width:' + barWidth(entry.value, composition)"/></i>
+                                </div>
+                            </div>
+                        </article>
+                        <article class="o_abroj_chart_card">
+                            <h3>المتوقع مقابل الفعلي</h3>
+                            <t t-set="comparison" t-value="[{value: state.metrics.estimated, label: 'المتوقع'}, {value: state.metrics.actual, label: 'الفعلي'}]"/>
+                            <div class="o_abroj_bar_list">
+                                <div t-foreach="comparison" t-as="entry" t-key="entry.label" class="o_abroj_bar_row">
+                                    <div><span t-esc="entry.label"/><strong t-esc="formatNumber(entry.value)"/></div>
+                                    <i class="o_abroj_bar_track"><b t-att-class="entry.label === 'الفعلي' ? 'is-actual' : ''" t-att-style="'width:' + barWidth(entry.value, comparison)"/></i>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="o_abroj_chart_grid o_abroj_chart_grid_wide">
+                        <article class="o_abroj_chart_card">
+                            <h3>التكلفة حسب الفئة</h3>
+                            <div t-if="!state.categoryDistribution.length" class="o_abroj_chart_empty">لا توجد بنود دراسة مصنفة بعد.</div>
+                            <div t-else="" class="o_abroj_bar_list">
+                                <div t-foreach="state.categoryDistribution" t-as="entry" t-key="entry.category_id[0]" class="o_abroj_bar_row">
+                                    <div><span t-esc="categoryName(entry)"/><strong t-esc="formatNumber(entry.estimated_total)"/></div>
+                                    <i class="o_abroj_bar_track"><b t-att-style="'width:' + barWidth(entry.estimated_total, state.categoryDistribution)"/></i>
+                                </div>
+                            </div>
+                        </article>
+                        <article class="o_abroj_chart_card">
+                            <h3>أعلى 5 بنود تكلفة</h3>
+                            <div t-if="!state.topLines.length" class="o_abroj_chart_empty">لا توجد بنود دراسة بعد.</div>
+                            <ol t-else="" class="o_abroj_rank_list"><li t-foreach="state.topLines" t-as="line" t-key="line.id"><span t-esc="line.name"/><strong t-esc="formatNumber(line.estimated_total)"/></li></ol>
+                        </article>
+                        <article class="o_abroj_chart_card">
+                            <h3>أكبر الانحرافات</h3>
+                            <div t-if="!state.varianceLines.length" class="o_abroj_chart_empty">لا توجد تكاليف فعلية مرتبطة ببنود الدراسة بعد.</div>
+                            <ol t-else="" class="o_abroj_rank_list"><li t-foreach="state.varianceLines" t-as="line" t-key="line.id"><span t-esc="line.name"/><strong t-att-class="varianceClass(line.variance_amount)" t-esc="formatNumber(line.variance_amount)"/></li></ol>
+                        </article>
+                    </div>
+                </section>
+            </t>
+        </main>
+    </t>
+</templates>

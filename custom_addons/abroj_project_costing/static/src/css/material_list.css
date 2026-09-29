@@ -1,0 +1,23 @@
+/* Keep the material-library labels legible without changing other Odoo lists. */
+.o_abroj_material_list .o_list_table thead th[data-name] {
+    vertical-align: middle;
+}
+
+.o_abroj_material_list .o_list_table thead th[data-name] .text-truncate {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    white-space: normal !important;
+    text-overflow: clip;
+    line-height: 1.35;
+    max-height: 2.7em;
+    overflow-wrap: anywhere;
+}
+
+.o_abroj_material_list .o_list_table thead th[data-name="material_unit_cost"],
+.o_abroj_material_list .o_list_table thead th[data-name="auxiliary_unit_cost"],
+.o_abroj_material_list .o_list_table thead th[data-name="labor_unit_cost"],
+.o_abroj_material_list .o_list_table thead th[data-name="inclusive_unit_cost"] {
+    min-width: 8.5rem;
+}

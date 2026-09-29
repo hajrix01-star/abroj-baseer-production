@@ -26,3 +26,9 @@
 - The same administrator's project-report HTML render for ARZ project 1 raised `AccessError`; report URLs are not a bypass for the disabled company.
 - Before/after QA data counts remained 3 projects, 5 receipts, 252 materials. Project 1 remains with ARZ; the ARZ flag remains false. No records were deleted or transferred.
 - The browser visual check could not complete because the browser's security permission verification failed. Odoo's native company switcher statically shows it rechecks read access and reloads the action. This limits the visual acceptance claim, not the server-side denial proof. A direct dashboard client action may still mount an empty/error shell for a disabled company; all underlying model reads are denied. Independent scoped decision: CONDITIONAL GO for QA only, NO-GO for live pending normal PR/release review.
+
+## Local project-form layout follow-up — 2026-09-29
+
+- Classification: LOCAL UI. `abroj_project_costing` alone owns the change; no model, API, data, record-rule, report, or other Odoo form contract changed.
+- Source commit `27608ca8`, module `19.0.1.4.5`: a marker in the project form scopes one backend CSS rule that lifts Odoo's 1400px sheet limit to the available width. The x2many tables retain their native horizontal scrolling when space is narrow.
+- The isolated QA-clone upgrade and QA upgrade both exited successfully. Read-only QA checks confirmed the installed version, scoped marker, and registered asset. A browser visual check remained unavailable because browser permission verification failed; no visual acceptance is claimed.

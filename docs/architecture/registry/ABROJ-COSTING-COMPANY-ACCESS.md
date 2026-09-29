@@ -43,3 +43,4 @@
 
 - Classification: LOCAL UI. `abroj_project_costing` owns the material-list view and its scoped CSS; no model, price, security, report, or shared Odoo list behavior changes.
 - Module `19.0.1.4.7` marks only the material library list and allows its header labels to wrap to at most two lines. Cost columns have a readable minimum width; Odoo's existing horizontal list scrolling remains available on narrow screens.
+- Source commit `3c5c4ed`. A module and database backup preceded QA deployment. Both the isolated QA-clone and QA module upgrades succeeded; QA confirms version `19.0.1.4.7`, the installed list marker, and a CSS SHA-256 identical to source. Browser permission verification failed, so desktop/mobile visual appearance is not claimed as tested.

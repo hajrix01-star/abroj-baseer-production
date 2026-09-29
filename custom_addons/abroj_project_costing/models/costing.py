@@ -247,6 +247,27 @@ class AbrojCostProject(models.Model):
             'context': {'default_project_id': self.id},
         }
 
+    def action_create_customer_receipt(self):
+        """Open a deliberate receipt-issuance dialog with its number reserved."""
+        self.ensure_one()
+        receipt_model = self.env['abroj.cost.receipt']
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('إصدار سند قبض للعميل'),
+            'res_model': 'abroj.cost.receipt',
+            'view_mode': 'form',
+            'views': [(self.env.ref(
+                'abroj_project_costing.view_abroj_receipt_form_create'
+            ).id, 'form')],
+            'target': 'new',
+            'context': {
+                'default_project_id': self.id,
+                # The number is reserved here instead of relying on an inline
+                # One2many default payload, which may omit readonly fields.
+                'default_name': receipt_model._next_receipt_number(self.company_id),
+            },
+        }
+
 
 class AbrojCostPlanLine(models.Model):
     _name = 'abroj.cost.plan.line'
@@ -551,6 +572,22 @@ class AbrojCostReceipt(models.Model):
             'view_id': self.env.ref('abroj_project_costing.view_abroj_receipt_form_edit').id,
             'target': 'current',
             'context': dict(self.env.context, form_view_initial_mode='edit'),
+        }
+
+    def action_open_receipt_view(self):
+        """Open a saved receipt in read-only mode, not as an inline draft."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('سند قبض العميل'),
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'views': [(self.env.ref(
+                'abroj_project_costing.view_abroj_receipt_form_readonly'
+            ).id, 'form')],
+            'target': 'new',
+            'context': dict(self.env.context, form_view_initial_mode='readonly'),
         }
 
     def action_open_whatsapp(self):

@@ -24,6 +24,25 @@ class TestReceiptNumbering(TransactionCase):
         ).default_get(['name', 'project_id'])
         self.assertRegex(values['name'], r'^RCV/\d{4}/\d{5}$')
 
+    def test_receipt_issuance_action_reserves_a_reference_before_save(self):
+        action = self.project.action_create_customer_receipt()
+        self.assertEqual(action['target'], 'new')
+        self.assertEqual(action['context']['default_project_id'], self.project.id)
+        self.assertRegex(action['context']['default_name'], r'^RCV/\d{4}/\d{5}$')
+
+    def test_saved_receipt_opens_in_the_readonly_receipt_view(self):
+        receipt = self.env['abroj.cost.receipt'].create({
+            'project_id': self.project.id,
+            'amount': 100,
+        })
+        action = receipt.action_open_receipt_view()
+        self.assertEqual(action['res_id'], receipt.id)
+        self.assertEqual(action['target'], 'new')
+        self.assertEqual(
+            action['views'][0][0],
+            self.env.ref('abroj_project_costing.view_abroj_receipt_form_readonly').id,
+        )
+
     def test_native_receipt_template_adapter_keeps_project_totals_in_backend(self):
         first = self.env['abroj.cost.receipt'].create({
             'project_id': self.project.id,

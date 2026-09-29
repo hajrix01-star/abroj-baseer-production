@@ -35,3 +35,10 @@ Architecture impact: `CONTROLLED` shared UI component. Registry baseline `docs/a
 | G3 | GO | Odoo 19 registry `{force: true}` support; independent gatekeeper review before code |
 
 Independent review and build/test outcome are recorded after their respective checks.
+
+## QA evidence and open acceptance
+
+- Candidate source `76b29f397b5251ecdde580da364cf07c92c469d5` is in PR #28; Source integrity CI passed. `node --check` passed for both changed JavaScript files; an `Intl.DateTimeFormat` spot check returned `September 2026`.
+- On QA database `baseer_live_qa_clean_20260928`, `baseer_english_dates` installed at `19.0.1.0.0`. The active files for it and the cash selector match the staged candidate. QA service restarted and `/web/login` returned HTTP 303. Backups before changes are `db-backup-english-dates-fad621bc.dump`, `db-backup-english-dates-76b29f39.dump`, and `.backup-cash-categories-76b29f39` under the QA checkout.
+- The `baseer_cash_categories` upgrade command returned nonzero while loading an unrelated `baseer_pos_summary` onboarding view: missing `setup_tobacco_fee` on `baseer.company.onboarding`. The DB reports the cash module installed at `19.0.1.3.3`, but successful end-to-end upgrade cannot be claimed. Do not alter the unrelated onboarding model under this date change.
+- Authenticated Arabic browser acceptance is not available: the browser's QA-tab security permission check failed before reading the page. Date-picker rendering, cross-module display, same-day save, and relative-time display remain **unverified**. Independent delivery verdict: **NO-GO for merge/release claim** until those checks run. PDF/QWeb dates remain outside this candidate.

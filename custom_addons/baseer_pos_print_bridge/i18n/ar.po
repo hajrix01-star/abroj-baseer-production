@@ -2382,3 +2382,13 @@ msgstr "إضافة جهاز طباعة"
 #: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
 msgid "Downloads one file for the company Windows print computer. Open it once to install, connect and start automatically."
 msgstr "ينزّل ملفًا واحدًا لجهاز Windows الرئيسي للشركة. افتحه مرة واحدة لتثبيت الوكيل وربطه وتشغيله تلقائيًا."
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_route__pos_category_ids
+msgid "POS Categories"
+msgstr "فئات نقاط البيع"
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Test kitchen printer"
+msgstr "اختبار طابعة المطبخ"

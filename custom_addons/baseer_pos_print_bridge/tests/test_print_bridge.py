@@ -65,12 +65,195 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_shared_hardware_is_authorized_server_side(self):
         other_company = self.env['res.company'].create({'name': 'Unapproved print company'})
-        other_config = self.env['pos.config'].with_company(other_company).create({'name': 'Other POS'})
+        other_payment_method = self.env['pos.payment.method'].with_company(other_company).create({
+            'name': 'Other company test payment', 'company_id': other_company.id,
+        })
+        other_config = self.env['pos.config'].with_company(other_company).create({
+            'name': 'Other POS',
+            # Supplying an in-company method keeps this authorization test
+            # independent from the chart-of-accounts demo fixture.
+            'payment_method_ids': [Command.set(other_payment_method.ids)],
+        })
         self.assertFalse(self.receipt._allows_company(other_company))
         with self.assertRaises(ValidationError):
             self.env['baseer.print.route'].with_company(other_company).create({
                 'pos_config_id': other_config.id, 'pos_category_id': False, 'printer_id': self.kitchen_a.id,
             })
+
+    def test_one_preparation_route_accepts_multiple_categories(self):
+        first, second, third = self.env['pos.category'].create([
+            {'name': 'Multi-route first'}, {'name': 'Multi-route second'}, {'name': 'Multi-route third'},
+        ])
+        route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.set([first.id, second.id])],
+        })
+        self.assertEqual(route.pos_category_ids, first | second)
+        self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, first), route)
+        self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, second), route)
+        self.assertFalse(self.env['baseer.print.route']._select_binding(self.config, third))
+
+    def test_parent_category_does_not_implicitly_route_its_children(self):
+        parent = self.env['pos.category'].create({'name': 'Parent kitchen category'})
+        child = self.env['pos.category'].create({
+            'name': 'Child kitchen category', 'parent_id': parent.id,
+        })
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.link(parent.id)],
+        })
+        self.assertFalse(self.env['baseer.print.route']._select_binding(self.config, child))
+
+    def test_default_route_handles_only_categories_without_an_explicit_route(self):
+        explicit = self.env['pos.category'].create({'name': 'Explicit kitchen category'})
+        other = self.env['pos.category'].create({'name': 'Default kitchen category'})
+        explicit_route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.link(explicit.id)],
+        })
+        default_route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+        })
+        self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, explicit), explicit_route)
+        self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, other), default_route)
+
+    def test_preparation_category_cannot_belong_to_two_active_routes(self):
+        category = self.env['pos.category'].create({'name': 'Exclusive preparation category'})
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        with self.assertRaises(ValidationError):
+            self.env['baseer.print.route'].create({
+                'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+                'pos_category_ids': [Command.link(category.id)],
+            })
+
+    def test_only_one_active_default_preparation_route_is_allowed(self):
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+        })
+        with self.assertRaises(ValidationError):
+            self.env['baseer.print.route'].create({
+                'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+            })
+
+    def test_upgrade_backfills_a_legacy_single_category_route_idempotently(self):
+        category = self.env['pos.category'].create({'name': 'Legacy kitchen category'})
+        route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+        })
+        self.env.cr.execute(
+            'UPDATE baseer_print_route SET pos_category_id = %s WHERE id = %s', [category.id, route.id],
+        )
+        route.invalidate_recordset(['pos_category_id', 'pos_category_ids'])
+        self.assertFalse(route.pos_category_ids)
+
+        self.env['baseer.print.route'].init()
+        route.invalidate_recordset(['pos_category_id', 'pos_category_ids'])
+        self.assertEqual(route.pos_category_ids, category)
+        self.assertFalse(route.pos_category_id)
+
+        self.env['baseer.print.route'].init()
+        route.invalidate_recordset(['pos_category_id', 'pos_category_ids'])
+        self.assertEqual(route.pos_category_ids, category)
+        self.assertFalse(route.pos_category_id)
+
+    def test_clearing_migrated_categories_makes_a_true_default_route(self):
+        category = self.env['pos.category'].create({'name': 'Cleared historic category'})
+        legacy_route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+        })
+        self.env.cr.execute(
+            'UPDATE baseer_print_route SET pos_category_id = %s WHERE id = %s', [category.id, legacy_route.id],
+        )
+        self.env['baseer.print.route'].init()
+        legacy_route.invalidate_recordset(['pos_category_id', 'pos_category_ids'])
+        legacy_route.write({'pos_category_ids': [Command.clear()]})
+        self.assertFalse(legacy_route._routing_categories())
+
+        self.env['baseer.print.route'].init()
+        legacy_route.invalidate_recordset(['pos_category_id', 'pos_category_ids'])
+        self.assertFalse(legacy_route.pos_category_ids)
+        self.assertFalse(legacy_route.pos_category_id)
+
+        explicit_route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, category), explicit_route)
+        with self.assertRaises(ValidationError):
+            self.env['baseer.print.route'].create({
+                'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+            })
+
+    def test_upgrade_preflight_rejects_historic_category_overlap(self):
+        category = self.env['pos.category'].create({'name': 'Historic overlapping category'})
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        duplicate = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+            'pos_category_ids': [Command.link(category.id)], 'active': False,
+        })
+        self.env.cr.execute('UPDATE baseer_print_route SET active = TRUE WHERE id = %s', [duplicate.id])
+        with self.assertRaises(ValidationError):
+            self.env['baseer.print.route'].init()
+
+    def test_upgrade_preflight_rejects_historic_default_overlap(self):
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+        })
+        duplicate = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id, 'active': False,
+        })
+        self.env.cr.execute('UPDATE baseer_print_route SET active = TRUE WHERE id = %s', [duplicate.id])
+        with self.assertRaises(ValidationError):
+            self.env['baseer.print.route'].init()
+
+    def test_pos_payload_flattens_multiple_route_categories(self):
+        first, second = self.env['pos.category'].create([
+            {'name': 'Payload category first'}, {'name': 'Payload category second'},
+        ])
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.set([first.id, second.id])],
+        })
+        payload = self.config._baseer_preparation_bindings_payload()
+        self.assertEqual({row['category_id'] for row in payload}, {first.id, second.id})
+        self.assertEqual({row['category_name'] for row in payload}, {first.display_name, second.display_name})
+        self.assertTrue(all(set(row) == {'category_id', 'category_name'} for row in payload))
+
+    def test_route_printer_test_creates_no_order_or_payment(self):
+        route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+        })
+        before_orders = self.env['pos.order'].search_count([])
+        before_payments = self.env['pos.payment'].search_count([])
+        result = route.action_test_preparation_printer()
+        job = self.env['baseer.print.job'].browse(result['res_id'])
+        self.assertEqual(job.ticket_type, 'test')
+        self.assertEqual(job.printer_id, self.kitchen_a)
+        self.assertEqual(job.pos_config_id, self.config)
+        self.assertEqual(self.env['pos.order'].search_count([]), before_orders)
+        self.assertEqual(self.env['pos.payment'].search_count([]), before_payments)
+
+    def test_route_printer_test_rejects_an_inactive_or_unauthorized_printer(self):
+        route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+        })
+        self.kitchen_a.write({'active': False})
+        with self.assertRaises(ValidationError):
+            route.action_test_preparation_printer()
+
+        other_company = self.env['res.company'].create({'name': 'Unauthorized test company'})
+        self.agent.write({'allowed_company_ids': [Command.set([self.company.id, other_company.id])]})
+        self.kitchen_a.write({
+            'active': True, 'allowed_company_ids': [Command.set([other_company.id])],
+        })
+        with self.assertRaises(ValidationError):
+            route.action_test_preparation_printer()
 
     def test_guided_setup_configures_one_printer_and_one_default_kitchen_route(self):
         self.company.country_id = self.env.ref('base.us')
@@ -93,6 +276,34 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(len(route), 1)
         self.assertEqual(route.printer_id, self.receipt)
         self.assertEqual(result['res_model'], 'baseer.print.job')
+
+    def test_guided_setup_keeps_a_multi_category_route_when_creating_default(self):
+        self.company.country_id = self.env.ref('base.us')
+        category = self.env['pos.category'].create({'name': 'Guided setup category'})
+        category_route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'copies': 3, 'priority': 17,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        wizard = self.env['baseer.print.setup.wizard'].with_context(
+            baseer_pos_config_id=self.config.id,
+        ).create({
+            'pos_config_id': self.config.id,
+            'agent_id': self.agent.id,
+            'receipt_printer_id': self.receipt.id,
+            'create_default_kitchen_route': True,
+        })
+        wizard.action_apply_and_test()
+        category_route.invalidate_recordset()
+        self.assertEqual(category_route.printer_id, self.kitchen_a)
+        self.assertEqual(category_route.copies, 3)
+        self.assertEqual(category_route.priority, 17)
+        default_route = self.env['baseer.print.route'].search([
+            ('pos_config_id', '=', self.config.id), ('ticket_type', '=', 'preparation'),
+            ('pos_category_ids', '=', False),
+        ])
+        self.assertEqual(len(default_route), 1)
+        self.assertEqual(default_route.printer_id, self.receipt)
 
     def test_guided_setup_reuses_one_existing_computer_for_another_pos(self):
         self.company.country_id = self.env.ref('base.us')
@@ -144,6 +355,9 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertIn('Printer settings', view.arch_db)
         self.assertIn('Copies and receipt layout', view.arch_db)
         self.assertIn('Print customization', view.arch_db)
+        self.assertIn('name="pos_category_ids"', view.arch_db)
+        self.assertIn('action_test_preparation_printer', view.arch_db)
+        self.assertNotIn('name="pos_category_id"', view.arch_db)
         self.assertNotIn('action_baseer_open_guided_print_setup', view.arch_db)
 
     def test_guided_setup_selects_the_only_safe_receipt_printer(self):

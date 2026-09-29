@@ -194,6 +194,7 @@ class BaseerPrintSetupWizard(models.TransientModel):
             route = Route.search([
                 ('pos_config_id', '=', config.id), ('ticket_type', '=', 'preparation'),
                 ('pos_category_id', '=', False),
+                ('pos_category_ids', '=', False),
             ], limit=1)
             values = {'printer_id': printer.id, 'copies': 1, 'priority': 10, 'active': True}
             if route:

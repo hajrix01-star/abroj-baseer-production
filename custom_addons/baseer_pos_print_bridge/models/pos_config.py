@@ -99,12 +99,19 @@ class PosConfig(models.Model):
 
     def _baseer_preparation_bindings_payload(self):
         self.ensure_one()
-        return [{
-            'category_id': binding.pos_category_id.id or False,
-            'category_name': binding.pos_category_id.display_name if binding.pos_category_id else _('Kitchen'),
-        } for binding in self.sudo().baseer_preparation_binding_ids.filtered(
+        payload = []
+        for binding in self.sudo().baseer_preparation_binding_ids.filtered(
             lambda binding: binding.active and binding.ticket_type == 'preparation'
-        )]
+        ):
+            categories = binding.pos_category_ids
+            if categories:
+                payload.extend({
+                    'category_id': category.id,
+                    'category_name': category.display_name,
+                } for category in categories)
+            else:
+                payload.append({'category_id': False, 'category_name': _('Kitchen')})
+        return payload
 
     @api.model
     def baseer_agent_status(self, pos_config_id):

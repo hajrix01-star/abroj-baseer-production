@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="abroj_project_costing.ReceiptShareFormController"
+       t-inherit="web.FormView"
+       t-inherit-mode="primary">
+        <xpath expr="//t[@t-set-slot='layout-buttons']" position="inside">
+            <button type="button"
+                    class="btn btn-secondary o_abroj_receipt_share"
+                    t-on-click.stop="shareReceipt">
+                <i class="fa fa-share-alt me-1"/>
+                <span>مشاركة السند</span>
+            </button>
+        </xpath>
+    </t>
+</templates>

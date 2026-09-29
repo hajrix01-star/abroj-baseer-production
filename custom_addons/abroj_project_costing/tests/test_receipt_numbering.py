@@ -16,10 +16,10 @@ class TestReceiptNumbering(TransactionCase):
             'project_id': self.project.id,
             'amount': 100,
         })
-        self.assertRegex(receipt.name, r'^RCV/\\d{4}/\\d{5}$')
+        self.assertRegex(receipt.name, r'^RCV/\d{4}/\d{5}$')
 
     def test_project_receipt_default_shows_the_reference_before_save(self):
         values = self.env['abroj.cost.receipt'].with_context(
             default_project_id=self.project.id,
         ).default_get(['name', 'project_id'])
-        self.assertRegex(values['name'], r'^RCV/\\d{4}/\\d{5}$')
+        self.assertRegex(values['name'], r'^RCV/\d{4}/\d{5}$')

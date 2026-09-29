@@ -1,4 +1,5 @@
 from collections import defaultdict
+from urllib.parse import quote
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
@@ -506,6 +507,21 @@ class AbrojCostReceipt(models.Model):
             'view_id': self.env.ref('abroj_project_costing.view_abroj_receipt_form_edit').id,
             'target': 'current',
             'context': dict(self.env.context, form_view_initial_mode='edit'),
+        }
+
+    def action_open_whatsapp(self):
+        """Open WhatsApp with the receipt reference ready for the selected contact."""
+        self.ensure_one()
+        message = _(
+            'سند استلام %(number)s لمشروع %(project)s'
+        ) % {
+            'number': self.name,
+            'project': self.project_id.name,
+        }
+        return {
+            'type': 'ir.actions.act_url',
+            'url': 'https://wa.me/?text=%s' % quote(message),
+            'target': 'new',
         }
 
     @api.model

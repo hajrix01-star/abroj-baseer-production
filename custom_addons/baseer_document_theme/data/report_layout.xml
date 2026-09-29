@@ -112,6 +112,8 @@
                 .baseer-boxed-rule{height:2px!important;margin-top:9px!important;background:#354b59!important}
                 /* Boxed keeps the header out of normal flow; reserve its full height for every report body. */
                 .article.o_report_layout_boxed{margin-top:132px!important;font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important}
+                /* Prevent the first report heading from collapsing into the header in wkhtmltopdf. */
+                .article.o_report_layout_boxed > .page{padding-top:56px!important;box-sizing:border-box!important}
                 .article.o_report_layout_boxed h2{color:#18242d!important;font-weight:700!important}
                 .o_report_layout_baseer_boxed table,.o_report_layout_baseer_boxed table th,.o_report_layout_baseer_boxed table td{background:#fff!important}
                 .baseer-boxed-footer{border-top:1px solid #b8c1c7!important;padding-top:7px!important;font-size:8.5px!important;color:#56636d!important;direction:rtl!important;text-align:center!important}

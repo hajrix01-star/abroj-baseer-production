@@ -242,7 +242,10 @@ class AbrojCostProject(models.Model):
             'res_model': 'abroj.cost.receipt',
             'view_mode': 'list,form',
             'domain': [('project_id', '=', self.id)],
-            'context': {'default_project_id': self.id},
+            'context': {
+                'default_project_id': self.id,
+                'default_company_id': self.company_id.id,
+            },
         }
 
     def action_create_customer_receipt(self):
@@ -265,6 +268,25 @@ class AbrojCostProject(models.Model):
                 'default_name': receipt_model._next_receipt_number(self.company_id),
             },
         }
+
+    def action_open_plan_import(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('استيراد دراسة المشروع'),
+            'res_model': 'abroj.cost.plan.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_project_id': self.id},
+        }
+
+    def action_export_plan(self):
+        self.ensure_one()
+        wizard = self.env['abroj.cost.plan.import.wizard'].create({
+            'project_id': self.id,
+            'company_id': self.company_id.id,
+        })
+        return wizard.action_export_plan()
 
 
 class AbrojCostPlanLine(models.Model):

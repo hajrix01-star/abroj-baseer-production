@@ -9,6 +9,7 @@ access_abroj_member_user,abroj.cost.project.member.user,model_abroj_cost_project
 access_abroj_material_user,abroj.cost.material.user,model_abroj_cost_material,abroj_project_costing.group_abroj_cost_user,1,1,1,0
 access_abroj_category_user,abroj.cost.category.user,model_abroj_cost_category,abroj_project_costing.group_abroj_cost_user,1,1,1,0
 access_abroj_material_import_user,abroj.cost.material.import.wizard.user,model_abroj_cost_material_import_wizard,abroj_project_costing.group_abroj_cost_user,1,1,1,0
+access_abroj_plan_import_user,abroj.cost.plan.import.wizard.user,model_abroj_cost_plan_import_wizard,abroj_project_costing.group_abroj_cost_user,1,1,1,0
 access_abroj_project_manager,abroj.cost.project.manager,model_abroj_cost_project,abroj_project_costing.group_abroj_cost_manager,1,1,1,1
 access_abroj_plan_manager,abroj.cost.plan.line.manager,model_abroj_cost_plan_line,abroj_project_costing.group_abroj_cost_manager,1,1,1,1
 access_abroj_actual_manager,abroj.cost.actual.line.manager,model_abroj_cost_actual_line,abroj_project_costing.group_abroj_cost_manager,1,1,1,1
@@ -19,3 +20,4 @@ access_abroj_member_manager,abroj.cost.project.member.manager,model_abroj_cost_p
 access_abroj_material_manager,abroj.cost.material.manager,model_abroj_cost_material,abroj_project_costing.group_abroj_cost_manager,1,1,1,1
 access_abroj_category_manager,abroj.cost.category.manager,model_abroj_cost_category,abroj_project_costing.group_abroj_cost_manager,1,1,1,1
 access_abroj_material_import_manager,abroj.cost.material.import.wizard.manager,model_abroj_cost_material_import_wizard,abroj_project_costing.group_abroj_cost_manager,1,1,1,1
+access_abroj_plan_import_manager,abroj.cost.plan.import.wizard.manager,model_abroj_cost_plan_import_wizard,abroj_project_costing.group_abroj_cost_manager,1,1,1,1

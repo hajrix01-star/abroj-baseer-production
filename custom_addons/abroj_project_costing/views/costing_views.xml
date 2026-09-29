@@ -14,6 +14,8 @@
         <field name="arch" type="xml"><form string="مشروع أبرج"><header>
             <button name="action_close" type="object" string="إغلاق المشروع" class="btn-primary" invisible="state == 'closed'"/>
             <button name="action_reopen" type="object" string="إعادة فتح" class="btn-secondary" invisible="state != 'closed'" groups="abroj_project_costing.group_abroj_cost_manager"/>
+            <button name="action_open_plan_import" type="object" string="استيراد دراسة" class="btn-secondary" invisible="state == 'closed'"/>
+            <button name="action_export_plan" type="object" string="تصدير دراسة" class="btn-secondary"/>
             <button name="%(action_report_project_costing)d" type="action" string="طباعة تقرير المشروع" class="btn-secondary"/>
             <field name="state" widget="statusbar" statusbar_visible="draft,pricing,approved,in_progress,completed,closed,cancelled"/>
         </header><sheet>
@@ -42,7 +44,7 @@
       <record id="action_abroj_receipt_edit" model="ir.actions.server"><field name="name">تعديل السند</field><field name="model_id" ref="model_abroj_cost_receipt"/><field name="binding_model_id" ref="model_abroj_cost_receipt"/><field name="binding_type">action</field><field name="state">code</field><field name="code">action = records.action_open_edit_form() if len(records) == 1 else False</field></record>
       <!-- Retire the former text-only WhatsApp entry on upgrades.  File sharing
            is handled by the receipt form's native Web Share control instead. -->
-      <record id="action_abroj_receipt_whatsapp" model="ir.actions.server"><field name="binding_model_id" eval="False"/><field name="code">action = False</field></record>
+      <record id="action_abroj_receipt_whatsapp" model="ir.actions.server"><field name="name">إرسال سند القبض عبر واتساب</field><field name="model_id" ref="model_abroj_cost_receipt"/><field name="binding_model_id" eval="False"/><field name="state">code</field><field name="code">action = False</field></record>
 
     <record id="view_abroj_material_list" model="ir.ui.view"><field name="name">abroj.cost.material.list</field><field name="model">abroj.cost.material</field><field name="arch" type="xml"><list string="مكتبة المواد" class="o_abroj_material_list"><field name="image_1920" widget="image"/><field name="code"/><field name="name"/><field name="category_id"/><field name="uom_type"/><field name="material_unit_cost"/><field name="auxiliary_unit_cost"/><field name="labor_unit_cost"/><field name="inclusive_unit_cost"/><field name="supplier_id"/><field name="active"/></list></field></record>
     <record id="view_abroj_material_form" model="ir.ui.view"><field name="name">abroj.cost.material.form</field><field name="model">abroj.cost.material</field><field name="arch" type="xml"><form string="مادة"><sheet><group><group><field name="image_1920" widget="image" class="oe_avatar"/><field name="code"/><field name="name"/><field name="name_en"/><field name="category_id"/><field name="uom_type"/><field name="default_pricing_method"/></group><group><field name="material_unit_cost"/><field name="auxiliary_unit_cost"/><field name="labor_unit_cost"/><field name="inclusive_unit_cost"/><field name="supplier_id"/><field name="supplier_text"/><field name="last_price_update"/><field name="active"/></group></group><notebook><page string="الوصف"><field name="description"/></page><page string="ملاحظات"><field name="notes"/></page><page string="مرجع أودو"><field name="original_product_id" readonly="1"/></page></notebook></sheet></form></field></record>

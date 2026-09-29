@@ -97,7 +97,7 @@ patch(EhDynamicReportViewer.prototype, {
     },
     baseerMonthLabel(month) {
         const language = this.user?.context?.lang || "en_US";
-        const locale = language.startsWith("ar") ? "ar-SA-u-ca-gregory-nu-latn" : language.replace("_", "-");
+        const locale = language.startsWith("ar") ? "en-GB" : language.replace("_", "-");
         const [year, number] = month.split("-").map(Number);
         return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" })
             .format(new Date(Date.UTC(year, number - 1, 1)));

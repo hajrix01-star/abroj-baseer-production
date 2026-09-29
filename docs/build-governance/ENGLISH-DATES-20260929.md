@@ -5,7 +5,7 @@ Architecture impact: `CONTROLLED` shared UI component. Registry baseline `docs/a
 ## G0 — Scope and acceptance
 
 - The Arabic Odoo interface currently renders date inputs and picker headings with Arabic month names and Arabic-Indic digits. The requested result is English month/day names and Latin digits for dates across Odoo screens and installed modules, without switching the UI translation language.
-- Scope: the shared Odoo web date/datetime rendering and picker used by modules. Preserve each language's date order, timezone, Arabic labels, accounting data, and existing stored dates. English-language sessions already satisfy the requirement and should be unchanged.
+- Scope: the shared Odoo web date/datetime rendering and picker used by modules, plus the known Baseer cash-category report month selector which directly invokes `Intl.DateTimeFormat` and bypasses that shared path. Preserve each language's date order, timezone, Arabic interface labels, accounting data, and existing stored dates. English-language sessions already satisfy the requirement and should be unchanged.
 - The screenshot and acceptance target are the interactive web client. Report-specific QWeb formatting and dates embedded in free text are excluded pending a separate report-path audit; this is an explicit interpretation of “all modules,” not a claim that PDF dates are covered. Disclose this boundary to the user.
 - Also out of scope: monetary number formatting, language records, and a production rollout.
 - Acceptance: an Arabic session displays a date and date-picker month/weekdays in English with Latin digits; date entry parses and saves the same calendar day; a second module uses the same behavior; Arabic translated interface text remains Arabic; temporal relative-time/duration text rendered by Luxon is intentionally English too; no model or database schema changes.
@@ -22,7 +22,7 @@ Architecture impact: `CONTROLLED` shared UI component. Registry baseline `docs/a
 
 ## G3 — Direct route and safety
 
-- Add one small `web`-dependent addon to the official Git branch. Replace the localization service registry entry with a wrapper around the original `start`; after the original initialization, set Luxon to `en-GB` and `latn` only for Arabic user locales. No external package, parallel date state, or per-view patches.
+- Add one small `web`-dependent addon to the official Git branch. Replace the localization service registry entry with a wrapper around the original `start`; after the original initialization, set Luxon to `en-GB` and `latn` only for Arabic user locales. Change the one installed Baseer month selector that bypasses Luxon to use `en-GB`. No external package or parallel date state.
 - Test the central formatter/parser and picker on QA, then verify the Arabic UI in at least two modules. Back out by uninstalling the addon or reverting its source and upgrading QA. Production is out of scope.
 
 ## Gate ledger

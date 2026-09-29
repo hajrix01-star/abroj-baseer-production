@@ -22,6 +22,11 @@ class BaseerPrintAgentRelease(models.Model):
     _description = 'Baseer Print Agent Release'
     _order = 'approved_at desc, id desc'
 
+    # The installer is served by the web server as a static file, outside the
+    # Odoo process. Git stores source only: there is one deployed binary and
+    # one atomic current-file switch, avoiding drift between mirrors.
+    _PUBLIC_DOWNLOAD_URL = 'https://baseer.abroj.sa/downloads/Baseer.PrintAgent.exe'
+
     name = fields.Char(required=True, default='Baseer Print Agent')
     version = fields.Char(required=True, index=True)
     artifact = fields.Binary(required=True, attachment=True, groups='base.group_system')
@@ -85,7 +90,14 @@ class BaseerPrintAgentRelease(models.Model):
 
     def action_retire(self):
         self._require_system_admin()
-        self.filtered(lambda release: release.state == 'approved').write({'state': 'retired'})
+        approved = self.env['baseer.print.agent.release'].search([('state', '=', 'approved')])
+        retiring = self.filtered(lambda release: release.state == 'approved')
+        if retiring and len(approved - retiring) == 0:
+            raise UserError(_(
+                'لا يمكن إيقاف آخر إصدار معتمد لوكيل الطباعة. '
+                'ارفع واعتمد إصدارًا بديلاً أولًا، ليبقى التنزيل متاحًا للأجهزة الجديدة.'
+            ))
+        retiring.write({'state': 'retired'})
         return True
 
     def action_download(self):
@@ -95,7 +107,7 @@ class BaseerPrintAgentRelease(models.Model):
             raise UserError(_('Approve the release before downloading it.'))
         return {
             'type': 'ir.actions.act_url',
-            'url': '/baseer/print/agent-release/%s/download' % self.id,
+            'url': self._PUBLIC_DOWNLOAD_URL,
             'target': 'self',
         }
 

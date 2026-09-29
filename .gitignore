@@ -7,3 +7,9 @@ backups/
 *.zip
 **/__pycache__/
 **/*.py[cod]
+
+# Generated Windows agent binaries are published to the static download path;
+# Git keeps the reproducible source only.
+artifacts/
+services/**/bin/
+services/**/obj/

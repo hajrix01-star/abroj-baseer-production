@@ -228,6 +228,23 @@ class PosConfig(models.Model):
             raise UserError(_('No approved Windows print agent is available. Ask a system administrator to publish one first.'))
         return release.action_download_and_connect(pending)
 
+    def action_baseer_download_agent(self):
+        """Open the permanent installer URL without depending on agent state.
+
+        Downloading the Windows installer is intentionally separate from
+        pairing a computer and from the release-center lifecycle.  This keeps
+        the installer available from the POS settings even when every
+        registered computer is offline or an old release was retired.
+        """
+        self.ensure_one()
+        if not self.env.user.has_group('base.group_system'):
+            raise AccessError(_('Only a system administrator can download the Windows print agent.'))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.env['baseer.print.agent.release']._PUBLIC_DOWNLOAD_URL,
+            'target': 'new',
+        }
+
     def action_baseer_open_guided_print_setup(self):
         self.ensure_one()
         if not self.env.user.has_group('base.group_system'):

@@ -107,7 +107,40 @@ class TestBaseerAgentOperations(TransactionCase):
         self.assertEqual(release.artifact_sha256, hashlib.sha256(payload).hexdigest())
         with self.assertRaises(UserError):
             release.write({'artifact': base64.b64encode(b'mutated')})
-        self.assertIn('/baseer/print/agent-release/%s/download' % release.id, release.action_download()['url'])
+        self.assertEqual(
+            'https://baseer.abroj.sa/downloads/Baseer.PrintAgent.exe',
+            release.action_download()['url'],
+        )
+
+    def test_last_approved_release_cannot_be_retired(self):
+        release = self.env['baseer.print.agent.release'].create({
+            'name': 'Permanent QA Windows agent',
+            'version': '9.9.9-permanent-qa',
+            'artifact_filename': 'Baseer.PrintAgent.exe',
+            'artifact': base64.b64encode(b'permanent approved installer'),
+        })
+        release.action_approve()
+        with self.assertRaises(UserError):
+            release.action_retire()
+
+        replacement = self.env['baseer.print.agent.release'].create({
+            'name': 'Replacement QA Windows agent',
+            'version': '9.9.9-replacement-qa',
+            'artifact_filename': 'Baseer.PrintAgent.exe',
+            'artifact': base64.b64encode(b'replacement approved installer'),
+        })
+        replacement.action_approve()
+        release.action_retire()
+        self.assertEqual(release.state, 'retired')
+        self.assertEqual(replacement.state, 'approved')
+
+    def test_pos_settings_open_the_permanent_download_url(self):
+        action = self.config.action_baseer_download_agent()
+        self.assertEqual(action, {
+            'type': 'ir.actions.act_url',
+            'url': 'https://baseer.abroj.sa/downloads/Baseer.PrintAgent.exe',
+            'target': 'new',
+        })
 
     def test_one_click_download_uses_pending_agent_and_one_time_envelope(self):
         release = self.env['baseer.print.agent.release'].create({

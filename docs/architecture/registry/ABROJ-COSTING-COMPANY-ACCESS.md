@@ -2,7 +2,7 @@
 
 - Classification: ARCHITECTURAL (multi-company authorization).
 - Owner: Abroj project-costing module; alternate: ERP security reviewer.
-- Baseline: `codex/abroj-company-access-qa`, parent commit `6a021f73` (verify exact HEAD at release). QA-only; live out of scope.
+- Baseline: `codex/abroj-company-access-qa`, parent commit `6a021f73`; `lastVerifiedCommit` for module source: `ee764f9`. QA-only; live out of scope.
 - Evidence: QA company ARZ (id 1) has `abroj_project_costing_enabled = false`, while project 1 belongs to ARZ and opens by direct URL. Company Abroj (id 56) is enabled. The existing JavaScript filters only the app tile; module record rules use all `company_ids`, so a multi-company user can still open a disabled company's records.
 
 ## Access contract

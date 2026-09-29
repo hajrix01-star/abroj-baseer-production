@@ -28,8 +28,50 @@
                     <group string="الملخص المالي" col="4"><field name="estimated_total"/><field name="actual_total"/><field name="variance_amount"/><field name="variance_percent" widget="percentage"/><field name="expected_profit"/><field name="actual_profit"/><field name="received_total"/><field name="receivable_remaining"/></group>
                     <group><field name="description"/><field name="note" widget="html"/></group>
                 </page>
-                <page string="دراسة المشروع" name="plan"><field name="plan_line_ids" mode="list,form"><list><field name="sequence" widget="handle"/><field name="category_id" required="1"/><field name="material_id" optional="hide"/><field name="name"/><field name="pricing_method" optional="hide"/><field name="uom_type" optional="hide"/><field name="quantity"/><field name="material_unit_cost" optional="hide"/><field name="auxiliary_unit_cost" optional="hide"/><field name="labor_unit_cost" optional="hide"/><field name="inclusive_unit_cost" optional="hide"/><field name="lump_sum_cost" optional="hide"/><field name="estimated_unit_cost" readonly="1" optional="hide"/><field name="estimated_total" readonly="1"/><field name="actual_total" readonly="1" optional="hide"/><field name="variance_amount" readonly="1" optional="hide"/><field name="status" optional="hide"/><control><create string="إضافة بند دراسة"/></control></list><form string="بند دراسة المشروع"><sheet><group><group><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/><field name="pricing_method"/><field name="uom_type"/><field name="quantity"/></group><group><field name="material_unit_cost" invisible="pricing_method not in ('detailed', 'supply_only')"/><field name="auxiliary_unit_cost" invisible="pricing_method != 'detailed'"/><field name="labor_unit_cost" invisible="pricing_method not in ('detailed', 'labor_only')"/><field name="inclusive_unit_cost" invisible="pricing_method != 'supply_install'"/><field name="lump_sum_cost" invisible="pricing_method != 'lump_sum'"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group string="النتيجة"><field name="estimated_unit_cost" readonly="1"/><field name="estimated_total" readonly="1"/><field name="notes"/></group></sheet></form></field></page>
-                <page string="التكاليف الفعلية" name="actual"><field name="actual_line_ids" mode="list,form"><list><field name="date"/><field name="category_id"/><field name="name"/><field name="cost_type"/><field name="quantity"/><field name="amount"/><field name="plan_line_id" optional="hide"/><field name="material_id" optional="hide"/><field name="supplier_id" optional="hide"/><control><create string="إضافة تكلفة فعلية"/></control></list><form string="تكلفة فعلية"><header><button name="%(action_report_actual_cost_voucher)d" type="action" string="طباعة سند صرف" class="btn-secondary" invisible="not id"/></header><sheet><group><group><field name="date"/><field name="plan_line_id"/><field name="is_unplanned"/><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/></group><group><field name="cost_type"/><field name="uom_type"/><field name="quantity"/><field name="amount"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group><field name="attachment_ids" widget="many2many_binary"/><field name="notes"/></group></sheet></form></field></page>
+                <page string="دراسة المشروع" name="plan">
+                    <field name="plan_line_ids" mode="list,form">
+                        <list editable="bottom" open_form_view="1">
+                            <field name="sequence" widget="handle"/>
+                            <field name="category_id" required="1"/>
+                            <field name="material_id" optional="hide"/>
+                            <field name="name" required="1"/>
+                            <field name="pricing_method"/>
+                            <field name="uom_type" optional="hide"/>
+                            <field name="quantity"/>
+                            <field name="material_unit_cost"/>
+                            <field name="auxiliary_unit_cost" optional="hide"/>
+                            <field name="labor_unit_cost"/>
+                            <field name="inclusive_unit_cost" optional="hide"/>
+                            <field name="lump_sum_cost"/>
+                            <field name="estimated_unit_cost" readonly="1" optional="hide"/>
+                            <field name="estimated_total" readonly="1" sum="إجمالي الدراسة"/>
+                            <field name="actual_total" readonly="1" optional="hide"/>
+                            <field name="variance_amount" readonly="1" optional="hide"/>
+                            <field name="status" optional="hide"/>
+                            <control><create string="إضافة بند دراسة"/></control>
+                        </list>
+                        <form string="بند دراسة المشروع"><sheet><group><group><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/><field name="pricing_method"/><field name="uom_type"/><field name="quantity"/></group><group><field name="material_unit_cost" invisible="pricing_method not in ('detailed', 'supply_only')"/><field name="auxiliary_unit_cost" invisible="pricing_method != 'detailed'"/><field name="labor_unit_cost" invisible="pricing_method not in ('detailed', 'labor_only')"/><field name="inclusive_unit_cost" invisible="pricing_method != 'supply_install'"/><field name="lump_sum_cost" invisible="pricing_method != 'lump_sum'"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group string="النتيجة"><field name="estimated_unit_cost" readonly="1"/><field name="estimated_total" readonly="1"/><field name="notes"/></group></sheet></form>
+                    </field>
+                </page>
+                <page string="التكاليف الفعلية" name="actual">
+                    <field name="actual_line_ids" mode="list,form">
+                        <list editable="bottom" open_form_view="1">
+                            <field name="date"/>
+                            <field name="plan_line_id"/>
+                            <field name="is_unplanned"/>
+                            <field name="category_id" required="1"/>
+                            <field name="name" required="1"/>
+                            <field name="cost_type"/>
+                            <field name="quantity"/>
+                            <field name="amount" sum="إجمالي التكاليف"/>
+                            <field name="supplier_text" optional="hide"/>
+                            <field name="material_id" optional="hide"/>
+                            <field name="supplier_id" optional="hide"/>
+                            <control><create string="إضافة تكلفة فعلية"/></control>
+                        </list>
+                        <form string="تكلفة فعلية"><header><button name="%(action_report_actual_cost_voucher)d" type="action" string="طباعة سند صرف" class="btn-secondary" invisible="not id"/></header><sheet><group><group><field name="date"/><field name="plan_line_id"/><field name="is_unplanned"/><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/></group><group><field name="cost_type"/><field name="uom_type"/><field name="quantity"/><field name="amount"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group><field name="attachment_ids" widget="many2many_binary"/><field name="notes"/></group></sheet></form>
+                    </field>
+                </page>
                 <page string="الإنجاز" name="progress"><group><field name="progress" widget="percentage" readonly="1"/></group><field name="progress_stage_ids" mode="list,form"><list><field name="sequence" widget="handle"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/><field name="planned_end_date" readonly="1"/><field name="state"/><field name="actual_completion_date" readonly="1" optional="hide"/><field name="delay_days" readonly="1" optional="hide"/><button name="action_mark_done" type="object" string="تم الإنجاز" invisible="state == 'done'"/><control><create string="إضافة مرحلة إنجاز"/></control></list><form string="مرحلة إنجاز"><sheet><group><group><field name="stage_template_key"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/></group><group><field name="state"/><field name="planned_end_date" readonly="1"/><field name="actual_completion_date" readonly="1"/><field name="delay_days" readonly="1"/></group></group><group><field name="notes"/></group></sheet></form></field></page>
                 <page string="دفعات العميل" name="receipts"><group string="ملخص دفعات العميل" col="3"><field name="received_total" readonly="1"/><field name="receivable_remaining" readonly="1"/><button name="action_create_customer_receipt" type="object" string="إصدار سند قبض" class="btn-primary" icon="fa-plus"/><button name="action_open_receipts" type="object" string="عرض كل الدفعات" class="btn-secondary"/></group><field name="receipt_ids" mode="list" context="{'form_view_ref': 'abroj_project_costing.view_abroj_receipt_form_readonly'}"><list create="0" delete="0" edit="0"><field name="name" string="رقم السند"/><field name="date" string="التاريخ"/><field name="amount" string="المبلغ"/><button name="action_open_receipt_view" type="object" string="عرض" class="btn-secondary" icon="fa-eye"/></list></field></page>
                 <page string="تعديل الاتفاقية" name="amendments"><field name="amendment_ids" mode="list,form"><list><field name="date"/><field name="previous_amount" readonly="1"/><field name="new_amount"/><field name="reason"/><field name="state"/><button name="action_apply" type="object" string="تطبيق" invisible="state == 'applied'"/><control><create string="إضافة تعديل اتفاقية"/></control></list><form string="تعديل الاتفاقية"><sheet><group><field name="date"/><field name="previous_amount" readonly="1"/><field name="new_amount"/><field name="reason"/><field name="state"/></group></sheet></form></field></page>

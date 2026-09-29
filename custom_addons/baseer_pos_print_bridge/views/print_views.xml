@@ -41,6 +41,9 @@
                             <field name="baseer_direct_print_enabled" string="Enable printing for this POS"
                                    help="Odoo sends print jobs securely to the company print computer. iPads do not connect to printers directly."/>
                             <field name="baseer_print_hardware_status" string="Print connection status" readonly="1"/>
+                            <button name="action_baseer_download_agent" type="object"
+                                    string="تحميل وكيل طباعة بصير" class="btn-secondary"
+                                    help="ينزّل وكيل الطباعة من الرابط الثابت. لا تتأثر هذه العملية باتصال جهاز الطباعة أو حالة إصداراته السابقة."/>
                             <button name="action_baseer_download_and_connect_agent" type="object"
                                     string="Add print computer" class="btn-primary"
                                     invisible="baseer_effective_print_agent_id"

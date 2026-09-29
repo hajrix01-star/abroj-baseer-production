@@ -1,0 +1,72 @@
+[
+  {
+    "file": "cash_monthly_ar_gross",
+    "pages": 2,
+    "portrait": true,
+    "rows": 32,
+    "columns": 6,
+    "exact_excel_cells": true,
+    "embedded_fonts": [
+      "/IBMPlexSansArabic",
+      "/IBMPlexSansArabic-Bold"
+    ]
+  },
+  {
+    "file": "cash_monthly_ar_net",
+    "pages": 2,
+    "portrait": true,
+    "rows": 34,
+    "columns": 6,
+    "exact_excel_cells": true,
+    "embedded_fonts": [
+      "/IBMPlexSansArabic",
+      "/IBMPlexSansArabic-Bold"
+    ]
+  },
+  {
+    "file": "cash_monthly_en_gross",
+    "pages": 2,
+    "portrait": true,
+    "rows": 32,
+    "columns": 6,
+    "exact_excel_cells": true,
+    "embedded_fonts": [
+      "/DejaVuSans",
+      "/Lato-Bold",
+      "/Lato-Regular"
+    ]
+  },
+  {
+    "file": "cash_monthly_en_net",
+    "pages": 2,
+    "portrait": true,
+    "rows": 34,
+    "columns": 6,
+    "exact_excel_cells": true,
+    "embedded_fonts": [
+      "/DejaVuSans",
+      "/Lato-Bold",
+      "/Lato-Regular"
+    ]
+  },
+  {
+    "file": "cash_monthly_ar_year",
+    "pages": 4,
+    "portrait": true,
+    "rows": 32,
+    "columns": 15,
+    "exact_excel_cells": true,
+    "embedded_fonts": [
+      "/DejaVuSans-Bold",
+      "/IBMPlexSansArabic",
+      "/IBMPlexSansArabic-Bold",
+      "/Lato-Bold",
+      "/Lato-Regular"
+    ]
+  },
+  {
+    "file": "cash_monthly_original_pnl",
+    "landscape": true,
+    "injected_context_ignored": true
+  }
+]

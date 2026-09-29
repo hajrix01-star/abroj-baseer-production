@@ -1,0 +1,1419 @@
+{
+  "schema": "baseer-candidate-tree-receipt/v1",
+  "method": "sha256 of UTF-8 concatenation of sorted relative-posix-path|file-sha256|byte-length\\n records; excluding __pycache__ directories and .pyc files",
+  "root_name": "custom_addons",
+  "file_count": 282,
+  "tree_sha256": "14fa02b5235d62d9e3eaf4c685f17db83bf47577f5b58bc3d85245f630bfdedd",
+  "records": [
+    {
+      "path": "README.md",
+      "sha256": "614b0fc49431d53c4cf02ceaa9b031d1feddec53ba6753f9b31d31d9aae61098",
+      "bytes": 631
+    },
+    {
+      "path": "baseer_access_roles/README.md",
+      "sha256": "81d32b09dce64d9ac3f4bf092e9902c92a46270e6c1cf0df35990b4774ab65e9",
+      "bytes": 2945
+    },
+    {
+      "path": "baseer_access_roles/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_access_roles/__manifest__.py",
+      "sha256": "6b2a0f49d1e6b08ed3d143ed368d29acfd47530f5145cfd61879f2b36c28d695",
+      "bytes": 693
+    },
+    {
+      "path": "baseer_access_roles/data/setup.xml",
+      "sha256": "8570be73d3cc481f181d15a13e2915398932048fdc985bd81d3a9693b1cb2942",
+      "bytes": 122
+    },
+    {
+      "path": "baseer_access_roles/i18n/ar.po",
+      "sha256": "390fb3d6e9a7c032d0f62f2a692b715ba1b5a75d0012d42f26e198175e8326bf",
+      "bytes": 10006
+    },
+    {
+      "path": "baseer_access_roles/models/__init__.py",
+      "sha256": "ab83fe6fc5fcf4c840f814756cfee9d36cc435110cd855175ae90eab4426e4e1",
+      "bytes": 190
+    },
+    {
+      "path": "baseer_access_roles/models/advance_entry.py",
+      "sha256": "9fe8cc37b76c0f1c47e5db4bc5be87f9ad7fb3212b51400e7c4aeec2d58f7b65",
+      "bytes": 7879
+    },
+    {
+      "path": "baseer_access_roles/models/ir_ui_menu.py",
+      "sha256": "06be4b40d461562f143c27a9980f19c39586504bcfee81d9b931a52f742b760c",
+      "bytes": 1044
+    },
+    {
+      "path": "baseer_access_roles/models/partner_privacy.py",
+      "sha256": "158c39635b6c7e545ceb6334035fa22547c56f40f79a16cf25f16a51621fb724",
+      "bytes": 3651
+    },
+    {
+      "path": "baseer_access_roles/models/payroll_privacy.py",
+      "sha256": "a8942d809ef7eda2b4e9821b6cab9f964c89e35dd1822113cd5a0f644aaa1c37",
+      "bytes": 7649
+    },
+    {
+      "path": "baseer_access_roles/models/purchase_batch.py",
+      "sha256": "ff39b50ad351c2a0dbf8d829db1c8e86889fee2908b30224097d6fc9258e32f4",
+      "bytes": 2153
+    },
+    {
+      "path": "baseer_access_roles/models/res_users.py",
+      "sha256": "1797a83521d5faac9b8c68ddf2c691654f676244ed2f28343af1fa19f52c8641",
+      "bytes": 6325
+    },
+    {
+      "path": "baseer_access_roles/models/role_seed.py",
+      "sha256": "47d0b44032bdf9d7b80828372e47834021343d53d304f2ebda9da6e8a87f9c7e",
+      "bytes": 3608
+    },
+    {
+      "path": "baseer_access_roles/security/advance_entry.xml",
+      "sha256": "2754369be8b859fd8d61d7d623da9724bef607bf1c87a4be751bdeed2dca00df",
+      "bytes": 704
+    },
+    {
+      "path": "baseer_access_roles/security/cashier.xml",
+      "sha256": "96e19616288508248fe8f0e3e74f772faba365e7818d92b2369fa28636fddc11",
+      "bytes": 836
+    },
+    {
+      "path": "baseer_access_roles/security/denied_rules.xml",
+      "sha256": "f05e0f655daf1d1916fa9282316bae0041da81551e5dd8bbac1e281f3afa043f",
+      "bytes": 152
+    },
+    {
+      "path": "baseer_access_roles/security/groups.xml",
+      "sha256": "72318e56ebbba283d0a1ac164469c326d543665efd08e48e9051fc54163ffdf3",
+      "bytes": 1210
+    },
+    {
+      "path": "baseer_access_roles/security/ir.model.access.csv",
+      "sha256": "ebf3af3a36dd379bb2160c78428d3c47474241a50bfa67d355c7acfbb2a4e475",
+      "bytes": 785
+    },
+    {
+      "path": "baseer_access_roles/views/advance_entry_views.xml",
+      "sha256": "77ff6449cd0a7c82e26a567836a3c351607643cef924694f67f09c6eb67020a3",
+      "bytes": 3774
+    },
+    {
+      "path": "baseer_access_roles/views/purchase_batch_views.xml",
+      "sha256": "c49d63616a8b693b8c8e8830158a143d8e08bc9ddeafad2107f393175425dcfb",
+      "bytes": 2625
+    },
+    {
+      "path": "baseer_access_roles/views/res_users_views.xml",
+      "sha256": "1514396e5df4a65ebd17fee1355035decd7a926b6da636eefac40f308dff0f8e",
+      "bytes": 844
+    },
+    {
+      "path": "baseer_arabic_ui/__init__.py",
+      "sha256": "798478169a7f3b46d0f3f00631ea04e6b5c13e5fd0dc9cfbc89a4c159d825ce4",
+      "bytes": 64
+    },
+    {
+      "path": "baseer_arabic_ui/__manifest__.py",
+      "sha256": "84668aa3a709e3dac8543001e8a7809655707448f271e32af1c11586efc07550",
+      "bytes": 344
+    },
+    {
+      "path": "baseer_arabic_ui/i18n/ar.po",
+      "sha256": "f1843d2089a3158ec61476937739d542c9b63695b54d9bd3c4e730fa52cbf57f",
+      "bytes": 1618
+    },
+    {
+      "path": "baseer_browser_print/README.md",
+      "sha256": "548c3c2c67716a246e12fd4b6fa67deea2c89eb6c80dac854103f236becd530c",
+      "bytes": 1292
+    },
+    {
+      "path": "baseer_browser_print/__init__.py",
+      "sha256": "064816761628721a5da66da205093718c8eacf92426e84f852731cb3c02e9e3c",
+      "bytes": 68
+    },
+    {
+      "path": "baseer_browser_print/__manifest__.py",
+      "sha256": "c6c184b6355773160066b76dd6135464d4543ff1ef1d5c63716fda9d8d11688e",
+      "bytes": 567
+    },
+    {
+      "path": "baseer_browser_print/i18n/ar.po",
+      "sha256": "fe28f3c74cae55aab552b1eda99bfbfc84b25cfcae99dfd5971e5282ab0f3e77",
+      "bytes": 2408
+    },
+    {
+      "path": "baseer_browser_print/static/src/print_dialog.js",
+      "sha256": "d1d76e4caf0c6887f67895f3cd01abcf4f8bed4cc14d43daba6d6c662b68abaa",
+      "bytes": 6032
+    },
+    {
+      "path": "baseer_browser_print/static/src/print_dialog.scss",
+      "sha256": "999583b2b75bc27437b1d4c17b85a5ed465d8113713b32db8a6847b72e4f3b00",
+      "bytes": 117
+    },
+    {
+      "path": "baseer_browser_print/static/src/print_dialog.xml",
+      "sha256": "6cc769687d5985b8b57a6c5ea2f76e39208c080b5cbc6ead6964a44604f7ad43",
+      "bytes": 1063
+    },
+    {
+      "path": "baseer_browser_print/static/src/report_transport.js",
+      "sha256": "801ff8f0d2857c8a48ee790b04b165f8ebba3984d543cdab07bdef75560d22db",
+      "bytes": 2813
+    },
+    {
+      "path": "baseer_cash_categories/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_cash_categories/__manifest__.py",
+      "sha256": "23c5ce18b3787532d09cf67a7bf6c4641a5804d36f9b0695d67e55f1a5ed1bf3",
+      "bytes": 629
+    },
+    {
+      "path": "baseer_cash_categories/data/report.xml",
+      "sha256": "8e3e00e3e6ad5b0323813cc78c9f86190101846835091c6b1404f8aa67fac1bb",
+      "bytes": 1117
+    },
+    {
+      "path": "baseer_cash_categories/i18n/ar_001.po",
+      "sha256": "bde61ad3859632554ed900ead2f1cb1c8c896da789420c735792cd129a74938b",
+      "bytes": 16151
+    },
+    {
+      "path": "baseer_cash_categories/models/__init__.py",
+      "sha256": "e6e47f90052e68bff038844f79037cbd2151461e28765993620d1256649af756",
+      "bytes": 53
+    },
+    {
+      "path": "baseer_cash_categories/models/cash_categories.py",
+      "sha256": "31162986c34f66ac1d78005b2edbe10128068811fa53ba904c0cb15040b4abf4",
+      "bytes": 52704
+    },
+    {
+      "path": "baseer_cash_categories/models/cash_pdf.py",
+      "sha256": "53364c5c69afc7d819aac8d499c202fe11721dd9ff23e4a632492d73e85cf525",
+      "bytes": 7255
+    },
+    {
+      "path": "baseer_cash_categories/report/report_note.xml",
+      "sha256": "a45ebab01ed40c3c9c71ace7b390bf927ebb62019f29cd901c22ea03fec60c9b",
+      "bytes": 5060
+    },
+    {
+      "path": "baseer_cash_categories/static/src/cash_categories.js",
+      "sha256": "4663cb6871b754f5246071f5f7481fb507e9d8189ea8eb86b04bc5092ba9816b",
+      "bytes": 8482
+    },
+    {
+      "path": "baseer_cash_categories/static/src/cash_categories.scss",
+      "sha256": "d0077013b59da03aab6ae59c6ae9def564fe6866aea221cccdfaeb8597a04202",
+      "bytes": 8609
+    },
+    {
+      "path": "baseer_cash_categories/static/src/cash_categories.xml",
+      "sha256": "3a678333524bae3bae3d732456361d00633c0b0d0356dd0b9be0dda941e4f490",
+      "bytes": 7136
+    },
+    {
+      "path": "baseer_category_display/README.md",
+      "sha256": "906c554d8c2846315bef3ab08067d028473bbe2ba94f26f62c5aa2fb1f4088ee",
+      "bytes": 650
+    },
+    {
+      "path": "baseer_category_display/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_category_display/__manifest__.py",
+      "sha256": "80ed4d449408157f892d6ba06c60f5231f91ec36f4b85423666c521d682972ac",
+      "bytes": 279
+    },
+    {
+      "path": "baseer_category_display/models/__init__.py",
+      "sha256": "2330ebc9ec58477a49dc086dbaa3518d4b78fc5ed1001fcf05f1055175a9b0d1",
+      "bytes": 31
+    },
+    {
+      "path": "baseer_category_display/models/product_category.py",
+      "sha256": "ea7857a6899c58aa3e8daacbcc6c0966a6ecf723229dbd18f02c2c5720745137",
+      "bytes": 424
+    },
+    {
+      "path": "baseer_category_display/views/product_category_views.xml",
+      "sha256": "c357d8726816d7c6bf2583bff6e2c643e8d05b55151d88a9357bf318a9c99996",
+      "bytes": 543
+    },
+    {
+      "path": "baseer_company_setup/README.md",
+      "sha256": "16f4ab10c6e24cbb81bf60abd9e6bfc47e2ce09fcfc0701c7887d785d0026d50",
+      "bytes": 2038
+    },
+    {
+      "path": "baseer_company_setup/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_company_setup/__manifest__.py",
+      "sha256": "3c5a63e744f9c105abbda11494cf76d69319716fcca6c6fa6f12d8aee1b2a070",
+      "bytes": 303
+    },
+    {
+      "path": "baseer_company_setup/data/setup.xml",
+      "sha256": "c45786bb0699e894f2d988b9633ccd81c9107872e188e795be4d328b1032f368",
+      "bytes": 127
+    },
+    {
+      "path": "baseer_company_setup/i18n/ar.po",
+      "sha256": "98fef9933e9130000fd8ad245a612fc24919c779a34a8e4f52ca576785ba2bd5",
+      "bytes": 1523
+    },
+    {
+      "path": "baseer_company_setup/models/__init__.py",
+      "sha256": "00681d9d19252278aa9bf4d875be53c0157eb1d100491f2baa1e3c85afe00955",
+      "bytes": 22
+    },
+    {
+      "path": "baseer_company_setup/models/company.py",
+      "sha256": "5e75319478c40a03805a5a6bc82b01582c0cf64c022e8de9856cd86dd567a796",
+      "bytes": 8904
+    },
+    {
+      "path": "baseer_core/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1
+    },
+    {
+      "path": "baseer_core/__manifest__.py",
+      "sha256": "5d324c68f36dd7fafeb98ebb89c5699d8cccf1048aa9a94a0597218436d95e56",
+      "bytes": 284
+    },
+    {
+      "path": "baseer_financial_correction/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_financial_correction/__manifest__.py",
+      "sha256": "26b087b7404849edfecad65d27a9905f2c46002cdb0200c1bf8e65b073da92cd",
+      "bytes": 613
+    },
+    {
+      "path": "baseer_financial_correction/i18n/ar_001.po",
+      "sha256": "6cbbcdeff461926607e14445f37124cd70e594149f13c2ba3fe726e7dc1020fe",
+      "bytes": 69238
+    },
+    {
+      "path": "baseer_financial_correction/models/__init__.py",
+      "sha256": "154ca714f87ecc8421d7ceeaa84f2ebe384451e529140b8bd93305b0e0d1b2c2",
+      "bytes": 134
+    },
+    {
+      "path": "baseer_financial_correction/models/batch_adapter.py",
+      "sha256": "1b22008733071df97fa37c9cd441b4012f9a68312f32e1090e09dad2b0e2ac28",
+      "bytes": 9763
+    },
+    {
+      "path": "baseer_financial_correction/models/correction.py",
+      "sha256": "94fff3bc184494879b002104d67e3e3d2ff275f908eaa24b0f542796fc75d26d",
+      "bytes": 37288
+    },
+    {
+      "path": "baseer_financial_correction/models/dispatcher.py",
+      "sha256": "2e7630338e186d279a63e0a877c3d3ad4f9416b75927ebfa5951a03903de14ce",
+      "bytes": 13031
+    },
+    {
+      "path": "baseer_financial_correction/models/lifecycle.py",
+      "sha256": "5dbcc75ef90381dfcd66e984659d8b5ae28a375f1cf7c1847f2ac9983bbeb48b",
+      "bytes": 9799
+    },
+    {
+      "path": "baseer_financial_correction/models/summary_lifecycle.py",
+      "sha256": "acb5a405e542dcce01c190e568f4e17483cdccef6fe0a85faf7e5b9674f989ed",
+      "bytes": 14893
+    },
+    {
+      "path": "baseer_financial_correction/security/correction_rules.xml",
+      "sha256": "90942afa0554a51dac2406ce1ddbed13bf753411819e6e2131a43edd43573bee",
+      "bytes": 1118
+    },
+    {
+      "path": "baseer_financial_correction/security/ir.model.access.csv",
+      "sha256": "ffd338ec6285ea6f8071ae40088ac3a4a2a6e5d9bfb4f801507c202681f5a8b8",
+      "bytes": 2180
+    },
+    {
+      "path": "baseer_financial_correction/security/summary_lifecycle_rules.xml",
+      "sha256": "ecf920042c9dd0174be6ef01c93cf578ec3619152661aeaca9a2fd07711e5c32",
+      "bytes": 959
+    },
+    {
+      "path": "baseer_financial_correction/views/correction_views.xml",
+      "sha256": "409c2c52ec4f8accac657f127cacfdd0f75e4fade6d204981a5b4966069adf10",
+      "bytes": 14703
+    },
+    {
+      "path": "baseer_financial_correction/views/summary_lifecycle_views.xml",
+      "sha256": "5445357639a90cafe23e29184ad7d17538e259d4ff73e2b23b49bfb419d3a76b",
+      "bytes": 5011
+    },
+    {
+      "path": "baseer_financial_register/README.md",
+      "sha256": "2b2897d671cb5992881205641a23aee2a82c41bf6abc01940aea1c8cb51751d6",
+      "bytes": 2023
+    },
+    {
+      "path": "baseer_financial_register/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_financial_register/__manifest__.py",
+      "sha256": "34e5951c3b1504faa11433f2dd5abf2c54027d0d689397ae40e669ce4e4ac45b",
+      "bytes": 630
+    },
+    {
+      "path": "baseer_financial_register/i18n/ar.po",
+      "sha256": "a153687fe88bca7b74708c71951775772b3926df53a51d083d1a61894abb08bc",
+      "bytes": 28563
+    },
+    {
+      "path": "baseer_financial_register/models/__init__.py",
+      "sha256": "dea8c028fc07b34ff270add4518a110b5f6b590dbc6931bf1264e37dddebc27e",
+      "bytes": 109
+    },
+    {
+      "path": "baseer_financial_register/models/cash_register.py",
+      "sha256": "e5762b154c0bda5710354957af20c5fee3100f83a889f4d1fee014d3248b7ea8",
+      "bytes": 12127
+    },
+    {
+      "path": "baseer_financial_register/models/financial_register.py",
+      "sha256": "faf6c67bddb1d115fd880fe44c82acb30f756506c787efa1418a0ee0bb352f55",
+      "bytes": 8519
+    },
+    {
+      "path": "baseer_financial_register/models/platform.py",
+      "sha256": "b015154f2305a29fcc0b42bb969d689931125379498ac10ddd75c40566c00825",
+      "bytes": 7035
+    },
+    {
+      "path": "baseer_financial_register/models/projection.py",
+      "sha256": "b154003a0b1b0df52714d2fcb4f5d97527b118e90c865e8762315fb6681776a9",
+      "bytes": 18081
+    },
+    {
+      "path": "baseer_financial_register/static/src/financial_register.js",
+      "sha256": "401b8c8b75d06af426c4c21f05bab0a5e01fdd0363af411848a22c11dc74d41f",
+      "bytes": 7519
+    },
+    {
+      "path": "baseer_financial_register/static/src/financial_register.scss",
+      "sha256": "1caa8b6df008796d080e7581f862fcd632e86d311eb1cd8a4ee678304c858ace",
+      "bytes": 3259
+    },
+    {
+      "path": "baseer_financial_register/static/src/financial_register.xml",
+      "sha256": "d73840e4c3bf144b704e340a494c6ebf089e518eafa099807eda2d9479b3f0f8",
+      "bytes": 6047
+    },
+    {
+      "path": "baseer_financial_register/views/financial_register_views.xml",
+      "sha256": "bf6f83393edca638bca71f2605e8710197a65bb664c794be0083fd636b49b1e0",
+      "bytes": 11355
+    },
+    {
+      "path": "baseer_hr_services/README.md",
+      "sha256": "9bc6dbe328a52b32eaab00d5417e9d9b5d16c3a4f214d01768c408d394888a39",
+      "bytes": 2656
+    },
+    {
+      "path": "baseer_hr_services/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_hr_services/__manifest__.py",
+      "sha256": "d289f38f5bc11bf4ee98037de071ddfa05eb31a72bd17bf346d6a5b6b655a238",
+      "bytes": 469
+    },
+    {
+      "path": "baseer_hr_services/data/sequence.xml",
+      "sha256": "154a7bd7ef57a9daa5600b28e2b1ca2ac75d1dd63d29f7106b068b0f7b8ecc36",
+      "bytes": 390
+    },
+    {
+      "path": "baseer_hr_services/i18n/ar_001.po",
+      "sha256": "270480c41e8115db80c895f595cdc5d00bd7387f95bb0252df5f8010a39c2d9e",
+      "bytes": 28014
+    },
+    {
+      "path": "baseer_hr_services/models/__init__.py",
+      "sha256": "2cc11fa289844242ddbc37c0578ee94a9803e25ec76944943e7faee00bc2495a",
+      "bytes": 64
+    },
+    {
+      "path": "baseer_hr_services/models/bill.py",
+      "sha256": "9f7a6a77afdec18a23a9c7313510dbb8b7549036cea48c02738b8744f69d50b4",
+      "bytes": 3118
+    },
+    {
+      "path": "baseer_hr_services/models/employee.py",
+      "sha256": "9713431e69da748990213a026d892c4bcf227ebc7c17135de3bf753fe7bd9db9",
+      "bytes": 1093
+    },
+    {
+      "path": "baseer_hr_services/models/service.py",
+      "sha256": "2ce2f2fbf4fb90c120f3dbcc40007ba4cfd9318d1c1f2dedcf79560ae599cd35",
+      "bytes": 25617
+    },
+    {
+      "path": "baseer_hr_services/report/service_report.xml",
+      "sha256": "e6fd6203228b2661a033558a16984becf34da252580ee82a1a6c73e556ac8a3e",
+      "bytes": 7793
+    },
+    {
+      "path": "baseer_hr_services/security/ir.model.access.csv",
+      "sha256": "6d5b06b2c502441a285fc2841be279c503e2b7d874e428bce03d6cbefe465e54",
+      "bytes": 340
+    },
+    {
+      "path": "baseer_hr_services/security/security.xml",
+      "sha256": "ce6ab20e7555090ac9d2c66a9c20c1e460b9b413aa8efc3e4c5afcd7b49d287a",
+      "bytes": 347
+    },
+    {
+      "path": "baseer_hr_services/views/employee_views.xml",
+      "sha256": "e935ea692451f13d098e742d25e00fd49bc0efdf22a3ce7e84cd863e2b0b6b69",
+      "bytes": 4512
+    },
+    {
+      "path": "baseer_hr_services/views/service_views.xml",
+      "sha256": "6b9f1aacd6c9135d2154147125814b9737f73936d018c72fa8e9e517dbde1598",
+      "bytes": 11346
+    },
+    {
+      "path": "baseer_legion_compat/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1
+    },
+    {
+      "path": "baseer_legion_compat/__manifest__.py",
+      "sha256": "db5efe33e9075878047daa33ef9241e9655eeffcd3865e56720c3f84c5e563a9",
+      "bytes": 430
+    },
+    {
+      "path": "baseer_legion_compat/static/src/navbar.scss",
+      "sha256": "e1add8c78bf281669f2b771cf9f7f20c2dbf262bbc5c889b28958be24dfca9ef",
+      "bytes": 210
+    },
+    {
+      "path": "baseer_partner_priority/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_partner_priority/__manifest__.py",
+      "sha256": "5dbfd76ec3e4991f6f34ea541b50fe8cd6519d0f5763af07618f2d94fe1d60dc",
+      "bytes": 577
+    },
+    {
+      "path": "baseer_partner_priority/i18n/ar.po",
+      "sha256": "9944409c2ec89a98056c6809b42101cec1bba1bbfc9f872891569ef2ba966905",
+      "bytes": 1853
+    },
+    {
+      "path": "baseer_partner_priority/models/__init__.py",
+      "sha256": "83e0e9d99c0dea80780aa7507e04489cd4b374c580550835be358bed2f993833",
+      "bytes": 26
+    },
+    {
+      "path": "baseer_partner_priority/models/res_partner.py",
+      "sha256": "60efdb7d4a3b4b44bbcabb97058e75c710e73d315d22de0d8c7749f6a096e627",
+      "bytes": 5854
+    },
+    {
+      "path": "baseer_partner_priority/static/src/partner_autocomplete.js",
+      "sha256": "007505d2cd1c27b2f87d79ec9f756cdf6d6faccd35eddfb62bd5aa3c6cd8d653",
+      "bytes": 754
+    },
+    {
+      "path": "baseer_partner_priority/static/src/partner_autocomplete.xml",
+      "sha256": "f2527d8d3853413dab765fa1b17c7f58f45c3f6a7bb42d22b3a928d8531ccd6c",
+      "bytes": 508
+    },
+    {
+      "path": "baseer_partner_priority/views/partner_views.xml",
+      "sha256": "1c69dbbc973304746beb9c0b725c57e65427386205766f2e43cbe836bd44a801",
+      "bytes": 2086
+    },
+    {
+      "path": "baseer_partner_priority/views/purchase_batch_views.xml",
+      "sha256": "6ea8aa61140b4ac51afab5724c878595c0983e700cdf528c31748c7e16d63c1f",
+      "bytes": 1162
+    },
+    {
+      "path": "baseer_payroll/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_payroll/__manifest__.py",
+      "sha256": "59c6b2817bcb2bf7ff077b600678fdd8d51f52f77471bafae15965e629b38a08",
+      "bytes": 903
+    },
+    {
+      "path": "baseer_payroll/data/work_schedules.xml",
+      "sha256": "25a9c85daaf88290daff69b61dceec14a822d04b00478346905fc3b72bd21fc9",
+      "bytes": 125
+    },
+    {
+      "path": "baseer_payroll/i18n/ar.po",
+      "sha256": "7c51ea0005a53e5fa164d1b1097fa3556bdf8a42f7906bab28b4dd67e7935d4a",
+      "bytes": 173241
+    },
+    {
+      "path": "baseer_payroll/models/__init__.py",
+      "sha256": "d194329a47c6850de849902621e0a5c641adc9a9671d30bb60cdcbfa7525108f",
+      "bytes": 248
+    },
+    {
+      "path": "baseer_payroll/models/common.py",
+      "sha256": "47c924a92fccf126e6261cbc47966595bd8f030b76f0fa9d8f359ac12b401e81",
+      "bytes": 2916
+    },
+    {
+      "path": "baseer_payroll/models/correction.py",
+      "sha256": "29f1cf80d743dc1494e497a89db61aea8b6ea4c744f870338be948e809e32da0",
+      "bytes": 18748
+    },
+    {
+      "path": "baseer_payroll/models/end_service.py",
+      "sha256": "ed87294f0ce7c0b6781db743a8cca3ad1006f5dee7ac7d71899f3a0d6ce07a6f",
+      "bytes": 23828
+    },
+    {
+      "path": "baseer_payroll/models/eos_workflow.py",
+      "sha256": "2e23df3e8f9c2249391b562a54fc8918a45dc321455a86a52a7acbaca8062f30",
+      "bytes": 13377
+    },
+    {
+      "path": "baseer_payroll/models/financial_record.py",
+      "sha256": "c1d9f88d9fc5a3a50b57cb8d0a6e5d10b8284ebba7e651c6b225520121ea0533",
+      "bytes": 9234
+    },
+    {
+      "path": "baseer_payroll/models/guards.py",
+      "sha256": "2b1a0c3be2a21f82531ae244c096d12cbb213a0f4b9a6ddd8d9b3d3447c33378",
+      "bytes": 3576
+    },
+    {
+      "path": "baseer_payroll/models/loan.py",
+      "sha256": "e7346aadeade0613055a565e6ea8554069c1fd0ab3a90b7f257022fd54f2e776",
+      "bytes": 31192
+    },
+    {
+      "path": "baseer_payroll/models/payroll.py",
+      "sha256": "4f1bc6ab7eca26f0291336a4ad9bfec98c2b93c5e98963a37967a11c6b01a4f8",
+      "bytes": 54216
+    },
+    {
+      "path": "baseer_payroll/models/settings.py",
+      "sha256": "165fa5a5df6fce0e86470ceb070bcbfccece17ae01a4c3f8316c412728facb8b",
+      "bytes": 852
+    },
+    {
+      "path": "baseer_payroll/models/settlement.py",
+      "sha256": "3b6b6ac7748a682a13b83f72ecbb51233710449b04091560cd8784f88989d11b",
+      "bytes": 13883
+    },
+    {
+      "path": "baseer_payroll/models/work_schedules.py",
+      "sha256": "42eae1c2a58ba310b8235abeded2c537ef2e142f11221c5a5e9e6bb18bfe418a",
+      "bytes": 2832
+    },
+    {
+      "path": "baseer_payroll/report/end_service_report.xml",
+      "sha256": "a5b5c52bc3bcf5316f54da5312eec2fd75227337e7dcb8f95d89733147ef54b6",
+      "bytes": 11740
+    },
+    {
+      "path": "baseer_payroll/report/payment_receipt.xml",
+      "sha256": "0f5975fd8a1621d5728e461915c19bae16746d93960314860b2e555b8fa7a44a",
+      "bytes": 4506
+    },
+    {
+      "path": "baseer_payroll/report/payslip_report.xml",
+      "sha256": "7b2dc655c7386b11aed09953d2287dbd02695a79ed506bc5513fb573ee358508",
+      "bytes": 6647
+    },
+    {
+      "path": "baseer_payroll/security/end_service_security.xml",
+      "sha256": "774af294a1d920589c8c4ccf2e98ea9ee57f99123ea97293515d771784f40ba5",
+      "bytes": 767
+    },
+    {
+      "path": "baseer_payroll/security/ir.model.access.csv",
+      "sha256": "f075dc023f17263609d70b812dd1dd90f3df7214e45a6c3124327c2ffda14d1b",
+      "bytes": 1253
+    },
+    {
+      "path": "baseer_payroll/security/security.xml",
+      "sha256": "fe19adf6c2be9c78162dc4e2cbc66560da3330bfeed874b6cfb31571f6598c33",
+      "bytes": 8354
+    },
+    {
+      "path": "baseer_payroll/static/src/payroll.scss",
+      "sha256": "d9171f84d50892034491dee7a93402c98a88750cf5a814f5eca25e9486559ceb",
+      "bytes": 511
+    },
+    {
+      "path": "baseer_payroll/static/src/payroll_month_field.js",
+      "sha256": "2c6b355df7049aa2b9444bc05750c6d2d28c5b5c7609833accfaeed189efd3cb",
+      "bytes": 1629
+    },
+    {
+      "path": "baseer_payroll/static/src/payroll_month_field.xml",
+      "sha256": "a3fd32a1129ce6a14920134d5c8c9381694f8a77cd96b62c489c8f30ca6b7e1c",
+      "bytes": 358
+    },
+    {
+      "path": "baseer_payroll/views/correction_views.xml",
+      "sha256": "df78f9d4369fff5b9db4363662fa2bed8ee191d119b55800a536820f9075e4d8",
+      "bytes": 5483
+    },
+    {
+      "path": "baseer_payroll/views/end_service_views.xml",
+      "sha256": "e698a95ccfe8725e4a93fc6c99490c0d1ea3d6ab06cb4e005df1536a4ba6b15c",
+      "bytes": 7750
+    },
+    {
+      "path": "baseer_payroll/views/eos_workflow_views.xml",
+      "sha256": "be9ce89055be8bc43fef93699f8a405ee95d8a84febb2dd29c57540c27eb0ef4",
+      "bytes": 2578
+    },
+    {
+      "path": "baseer_payroll/views/loan_views.xml",
+      "sha256": "8f809200b9c78f19c5c0992a68fb1d6f17c57f95d559b2d1c1b6c09f8cc1d264",
+      "bytes": 6856
+    },
+    {
+      "path": "baseer_payroll/views/payroll_views.xml",
+      "sha256": "34ead4e807b11c24ba9b37e8f815bcf6f8d899ebeb238e2a64f433b4d1b2f966",
+      "bytes": 11682
+    },
+    {
+      "path": "baseer_payroll/views/settings_views.xml",
+      "sha256": "14c8879bfd09c964c385893eaf395cdd13bbd80a7bc86c9a636104921cb4d76a",
+      "bytes": 7331
+    },
+    {
+      "path": "baseer_payroll/views/settlement_views.xml",
+      "sha256": "023422f1e5955cd8e74e82a8dcd1a8be1631f6442499e8adaf531621303cfbf5",
+      "bytes": 12422
+    },
+    {
+      "path": "baseer_pos_summary/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_pos_summary/__manifest__.py",
+      "sha256": "de815aee5f594e3d6d6bd799c6fc6e044e7a6e70b629a75e4c8748a828cd987e",
+      "bytes": 1102
+    },
+    {
+      "path": "baseer_pos_summary/data/payment_seed.xml",
+      "sha256": "11f100548230bf1c82276ce6a01d738fd20124db5b688974a6755c0d678bdd96",
+      "bytes": 129
+    },
+    {
+      "path": "baseer_pos_summary/i18n/ar.po",
+      "sha256": "b97949dff0686894c4957b871a422e3ae07a0a68b804eb921f144f02669e2c5d",
+      "bytes": 128644
+    },
+    {
+      "path": "baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py",
+      "sha256": "5cb22eb451ebf1b1bcba4776b9a540bd2d95c5f7d8bde3fa5163a52702917afb",
+      "bytes": 348
+    },
+    {
+      "path": "baseer_pos_summary/migrations/19.0.1.4.0/post-migrate.py",
+      "sha256": "132266749954c966b8b21b14ef6f4f52863854cedc26efd93087ad4fec2a2159",
+      "bytes": 574
+    },
+    {
+      "path": "baseer_pos_summary/migrations/19.0.1.4.0/pre-migrate.py",
+      "sha256": "4c201bf7197001793ac3e378ce4a27cf8b7476b8cd8d81cc0516aa05d366459f",
+      "bytes": 147
+    },
+    {
+      "path": "baseer_pos_summary/models/__init__.py",
+      "sha256": "49d1100fcce7792fc3d714125668fb7fd115b68fa18545e5cfc4e95806952276",
+      "bytes": 284
+    },
+    {
+      "path": "baseer_pos_summary/models/accounting.py",
+      "sha256": "c090ec92a37ae10cb19a000e58dea0836423934d2f9b769fbd03d3c462f6d670",
+      "bytes": 8003
+    },
+    {
+      "path": "baseer_pos_summary/models/cash_report.py",
+      "sha256": "b78ba821299380c24a44ce76f58f280268d2a10913d778d92605791acfa1c568",
+      "bytes": 23351
+    },
+    {
+      "path": "baseer_pos_summary/models/common.py",
+      "sha256": "0817f9ce0884b0898e22f41da8cc958d2d84385cbf780c9292fce32a8bc5aa49",
+      "bytes": 4082
+    },
+    {
+      "path": "baseer_pos_summary/models/correction.py",
+      "sha256": "fde3429149b21c74c0c170ecf1984856c8dcf9bdc35a58ca16020873e615c080",
+      "bytes": 7083
+    },
+    {
+      "path": "baseer_pos_summary/models/daily_report.py",
+      "sha256": "a3a21935551449477e3e6861ce6f694fc9fef11f70f3426ecda7f947dbac6dcb",
+      "bytes": 10450
+    },
+    {
+      "path": "baseer_pos_summary/models/day_archive.py",
+      "sha256": "c6d652d52e16076c508aecd6e4e9a2e704b1b64465d39c8029f4a94f6a209ebf",
+      "bytes": 10345
+    },
+    {
+      "path": "baseer_pos_summary/models/day_entry.py",
+      "sha256": "b03b780f741b684a54d9ec7266df08a41b1f70d56fad912013e5c8cf066a242a",
+      "bytes": 33661
+    },
+    {
+      "path": "baseer_pos_summary/models/operations.py",
+      "sha256": "ac4d3eab0328c7a058a6d4af8ab41bb638b3d53fd39de827ab1f3d914f15bc72",
+      "bytes": 7765
+    },
+    {
+      "path": "baseer_pos_summary/models/payment_seed.py",
+      "sha256": "c8894f17bd0a837b2284f36454b899c51b47891477f1dbf46b8fe17f0ef517da",
+      "bytes": 10677
+    },
+    {
+      "path": "baseer_pos_summary/models/pos_configuration.py",
+      "sha256": "c06bacb5d18760d47b313411144c26a0db5a92a4746377483e8462a2bbcef090",
+      "bytes": 14394
+    },
+    {
+      "path": "baseer_pos_summary/models/pos_native.py",
+      "sha256": "6b4c682e892dcb74919d224deb228b23473c4a2ef295071ca6a85ffb267b12cd",
+      "bytes": 10923
+    },
+    {
+      "path": "baseer_pos_summary/models/summary.py",
+      "sha256": "b91c1b466f91e05e6359361e7c42cde15395d29817951b985c2ff3b7a4bd3a29",
+      "bytes": 30371
+    },
+    {
+      "path": "baseer_pos_summary/security/ir.model.access.csv",
+      "sha256": "d611aad5188187d68a76865617705df4517c58d501fcef1afd5817c86a97119b",
+      "bytes": 1369
+    },
+    {
+      "path": "baseer_pos_summary/security/security.xml",
+      "sha256": "ab9b57e0dc7376f9514a9d1972850afe850f3f971e7e979326cfec25cfae39fb",
+      "bytes": 3161
+    },
+    {
+      "path": "baseer_pos_summary/static/src/js/payment_amount_grid.js",
+      "sha256": "7e3eb3eadaf471af4e17ba2ef23ee109bc95733aa65df540cdc848a9a3846b06",
+      "bytes": 1374
+    },
+    {
+      "path": "baseer_pos_summary/static/src/scss/summary.scss",
+      "sha256": "d680c7efaf9f538a0de4b521d1212000867f143d3e0171aa453c56393c097932",
+      "bytes": 6822
+    },
+    {
+      "path": "baseer_pos_summary/static/src/xml/payment_amount_grid.xml",
+      "sha256": "7f34aed58888615fc422e57e545b402727e0b3eee56d84924453bf56a930acfb",
+      "bytes": 957
+    },
+    {
+      "path": "baseer_pos_summary/views/allocation_views.xml",
+      "sha256": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c",
+      "bytes": 3693
+    },
+    {
+      "path": "baseer_pos_summary/views/configuration_views.xml",
+      "sha256": "4c10cbaefbd4d92305a408242fa85ad8a824fee82e915236e9b1af8a9f071153",
+      "bytes": 6729
+    },
+    {
+      "path": "baseer_pos_summary/views/correction_views.xml",
+      "sha256": "27bdee97e2958bf31f6463a3342ff45569107a03a6a976c7aaedfa3532bc3dbf",
+      "bytes": 2687
+    },
+    {
+      "path": "baseer_pos_summary/views/daily_report_views.xml",
+      "sha256": "2e6402225938a912c85ecc6ffd917616e80ee2c35a2d2bcc9d57e43bb218a3c9",
+      "bytes": 6334
+    },
+    {
+      "path": "baseer_pos_summary/views/day_archive_views.xml",
+      "sha256": "4f90537fe0fedfb581f27d14729211578ccc9e10a2d5d91e46695019441efc7b",
+      "bytes": 4702
+    },
+    {
+      "path": "baseer_pos_summary/views/day_entry_views.xml",
+      "sha256": "2c61332693084d54e6d3dd3c57feda7226a64b41dbfe7fa8468be08b43bd66c7",
+      "bytes": 11571
+    },
+    {
+      "path": "baseer_pos_summary/views/operations_views.xml",
+      "sha256": "4193caa66f0eee5e95ff36bd6b5de779ae09db718a8297d0b0169dbb382069c6",
+      "bytes": 4099
+    },
+    {
+      "path": "baseer_pos_summary/views/summary_views.xml",
+      "sha256": "7c74a736cc0ddd81f7da7617193470c6964201d00dfd0bcb2969d5456bc2707f",
+      "bytes": 11367
+    },
+    {
+      "path": "baseer_procurement_requests/__init__.py",
+      "sha256": "bea45878180255932966162f20b4b156c34b0bd57bcc39efc4c9ca53c4503fde",
+      "bytes": 55
+    },
+    {
+      "path": "baseer_procurement_requests/__manifest__.py",
+      "sha256": "4551efed77e6cdf04e3e5d83d48d9990af764ed46ef1b524c00e20f733e67566",
+      "bytes": 1031
+    },
+    {
+      "path": "baseer_procurement_requests/data/sequence.xml",
+      "sha256": "a9a189add1df0788d8613fa119ea6f7ca39842d59cc15c6989887f22e852a819",
+      "bytes": 719
+    },
+    {
+      "path": "baseer_procurement_requests/hooks.py",
+      "sha256": "0fd4cbf4e4e2846cb663c3c4b6d26da4b6b8e9c707e36976a991ac9dd4f53b1e",
+      "bytes": 2092
+    },
+    {
+      "path": "baseer_procurement_requests/i18n/ar_001.po",
+      "sha256": "653e4e951013d3c7a182102992fc5623faeebf1a0d5972371caed0368b985b07",
+      "bytes": 48342
+    },
+    {
+      "path": "baseer_procurement_requests/migrations/19.0.7.0.0/pre-migration.py",
+      "sha256": "36d1de2e2bb307caddb3cc5a394f1db69328e2a41bc6c9ff4724d03f0260a444",
+      "bytes": 4224
+    },
+    {
+      "path": "baseer_procurement_requests/migrations/19.0.8.0.0/post-migration.py",
+      "sha256": "9add478752b632c1710ca6aaa6b9971ec8b1224e97c5ba74140451f70748ed09",
+      "bytes": 1589
+    },
+    {
+      "path": "baseer_procurement_requests/migrations/19.0.8.0.0/pre-migration.py",
+      "sha256": "2830fccd0b9541a47135475afa2ee69520dedbd482be8ebad3a04c82cea65d50",
+      "bytes": 1498
+    },
+    {
+      "path": "baseer_procurement_requests/migrations/19.0.9.0.0/post-migration.py",
+      "sha256": "0f4b59934fac0e2a81aaf740c107f523f39dadbeeb456c6ddb8aa28c8014b1a7",
+      "bytes": 487
+    },
+    {
+      "path": "baseer_procurement_requests/migrations/19.0.9.0.0/pre-migration.py",
+      "sha256": "faa133efcb894db3986ae66c7b023d7c5d80d48c016b93156d38c6fcb0542769",
+      "bytes": 1032
+    },
+    {
+      "path": "baseer_procurement_requests/models/__init__.py",
+      "sha256": "d3bc6d11859800c9d57276a734923dc2d68741595a2164d216fd26d4c2ea1ab3",
+      "bytes": 48
+    },
+    {
+      "path": "baseer_procurement_requests/models/custody.py",
+      "sha256": "f8a1080fb34720159becb8b79cf532343a4f593fc1d8d34c7b6735c41c5722e2",
+      "bytes": 83050
+    },
+    {
+      "path": "baseer_procurement_requests/models/procurement.py",
+      "sha256": "54eb3bf2e2adc882fdec0e70c2e931cb85bcffaa87d4778f073d21bec82699df",
+      "bytes": 92143
+    },
+    {
+      "path": "baseer_procurement_requests/security/ir.model.access.csv",
+      "sha256": "80c240e228b94b923de249e6d923a9cec858adbc62ac2a9380f01906dd924a3a",
+      "bytes": 4613
+    },
+    {
+      "path": "baseer_procurement_requests/security/security.xml",
+      "sha256": "9c7cbce863762fdb8b710d55ccd8c34ef09c74d10ea51b97e93d2dbe865ee298",
+      "bytes": 4809
+    },
+    {
+      "path": "baseer_procurement_requests/static/src/procurement_catalog.js",
+      "sha256": "bd2db43d1fdb9caaa39ac7942ba6e94941edac0e6a6d7e0a5dffeee41bf83a61",
+      "bytes": 31640
+    },
+    {
+      "path": "baseer_procurement_requests/static/src/procurement_catalog.scss",
+      "sha256": "9973e866c816a66949175eb527cc203db31255eaa91676aaa9391e28b47bf5a2",
+      "bytes": 33229
+    },
+    {
+      "path": "baseer_procurement_requests/static/src/procurement_catalog.xml",
+      "sha256": "9b14c2f8aaa0daab3dde20f6dbc78517f5d8f82350d8523e8c1351c538640f9c",
+      "bytes": 29499
+    },
+    {
+      "path": "baseer_procurement_requests/tests/__init__.py",
+      "sha256": "41132e794aba902d0607f39d62e55ef885be9cbdcd584bf62e79c6f1e83f0f88",
+      "bytes": 181
+    },
+    {
+      "path": "baseer_procurement_requests/tests/test_catalog_quick.py",
+      "sha256": "959c8186eeb0c9fcd66b90f6f4c7f85c6d86a046cf3f6e3919af05bbf5c8b30c",
+      "bytes": 16748
+    },
+    {
+      "path": "baseer_procurement_requests/tests/test_catalog_remediation.py",
+      "sha256": "805d93b7700dbd8f35d27ec5c8c5819b3802ba6b72ce89b64e6faac5bd28b095",
+      "bytes": 8596
+    },
+    {
+      "path": "baseer_procurement_requests/tests/test_custody_remediation.py",
+      "sha256": "5c6efa004b7d6635eb7fe476044b68fa8a97d9b0a3c4b5340fdb8c8899c6593c",
+      "bytes": 9583
+    },
+    {
+      "path": "baseer_procurement_requests/tests/test_procurement_flow.py",
+      "sha256": "8673301f0299bc8a676eeb157910ebc1e66a750e08e27a14c953da864cd40dc0",
+      "bytes": 61553
+    },
+    {
+      "path": "baseer_procurement_requests/tests/test_product_source.py",
+      "sha256": "84bb3400c7348c5b4bac6d9fa95faea73bdfc256540ef5b9cf4ac9bcca3a491c",
+      "bytes": 21660
+    },
+    {
+      "path": "baseer_procurement_requests/tools/check_quick_product_concurrency.py",
+      "sha256": "d79aa5a7a0135570b5bcc636d206387e5b057fb39b95de5c175780f9e0fb5101",
+      "bytes": 11715
+    },
+    {
+      "path": "baseer_procurement_requests/tools/export_legacy_catalog.sql",
+      "sha256": "0aa8b28f0899fffabf726efb05c5973546af6be6314fc00859da0c77e493c855",
+      "bytes": 1869
+    },
+    {
+      "path": "baseer_procurement_requests/tools/import_legacy_catalog.py",
+      "sha256": "2540fe9112e93f17c7786cb293a9982ecbd91327e030d175e23f05aeccd98bb3",
+      "bytes": 8109
+    },
+    {
+      "path": "baseer_procurement_requests/views/procurement_custody_views.xml",
+      "sha256": "c7c251b71210643731bc581228590341abe60d708469d7a291550ab2391ccdb3",
+      "bytes": 35421
+    },
+    {
+      "path": "baseer_procurement_requests/views/procurement_menus.xml",
+      "sha256": "a01e4bde6e2af3edc662946c9b512b9dacb36fd2e43b81de42c68327d2e29af8",
+      "bytes": 2735
+    },
+    {
+      "path": "baseer_procurement_requests/views/procurement_option_views.xml",
+      "sha256": "a073acbe39bccb1c91829fd8335bb8408fb727084a26f8436e5a5a193e220a34",
+      "bytes": 6321
+    },
+    {
+      "path": "baseer_procurement_requests/views/procurement_request_views.xml",
+      "sha256": "bf3a3dfe9671575e6c5cff3cf0259eff7318cdc04e0fba4be60390ba1f265a2b",
+      "bytes": 11264
+    },
+    {
+      "path": "baseer_purchase_batch/README.md",
+      "sha256": "6423a7da92b38a346413fc11dea8e9e9c8ed44b4238765199d32b1bde902f5f7",
+      "bytes": 4915
+    },
+    {
+      "path": "baseer_purchase_batch/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_purchase_batch/__manifest__.py",
+      "sha256": "907f08a22750ec02a5e23f60afcc0396b0226129a0e6fd2cec947183fdf8addb",
+      "bytes": 845
+    },
+    {
+      "path": "baseer_purchase_batch/data/sequence.xml",
+      "sha256": "42ddb26d2ad842a0b4690809c413256e06f52e574710b0457ac347a4a6a486a0",
+      "bytes": 388
+    },
+    {
+      "path": "baseer_purchase_batch/i18n/ar_001.po",
+      "sha256": "2a953441dbab26ea339cd2d1349cd62e553b3b5350ddf1af791a64c52477d413",
+      "bytes": 46081
+    },
+    {
+      "path": "baseer_purchase_batch/migrations/19.0.1.2.0/post-migration.py",
+      "sha256": "bca03cbec6ce68d554968e7b7b5657577a0ec32cb5d5295beb7d3e165a8f2e7b",
+      "bytes": 713
+    },
+    {
+      "path": "baseer_purchase_batch/models/__init__.py",
+      "sha256": "c1d7dd04824a48dd8c48d5308fe53b6e2397002932aeb414bbf5896eb5f47788",
+      "bytes": 55
+    },
+    {
+      "path": "baseer_purchase_batch/models/purchase_batch.py",
+      "sha256": "07c6390882577be16762b2b312f6f1b529cc042c74d397fd9316442b208039c0",
+      "bytes": 40360
+    },
+    {
+      "path": "baseer_purchase_batch/models/res_partner.py",
+      "sha256": "cba62b6b12eb9d35ab5344be20fd7ed3cb373f308fef76bcd96d17f8b552a84d",
+      "bytes": 2040
+    },
+    {
+      "path": "baseer_purchase_batch/report/purchase_batch_report.xml",
+      "sha256": "b1c11d3b00e6924ca8337f6f9fab93d293eb31fde0764cd016461ed5884f20d8",
+      "bytes": 6321
+    },
+    {
+      "path": "baseer_purchase_batch/security/ir.model.access.csv",
+      "sha256": "c42c7e37f2ba59be5e74532d50d56cd3e969808f3d6d51aaf1d1faefe030e476",
+      "bytes": 622
+    },
+    {
+      "path": "baseer_purchase_batch/security/security.xml",
+      "sha256": "dce5ee3927d3c5d2c96dfdef13805af8c7bcf3d9e856c0928d7721aac8a4a08a",
+      "bytes": 974
+    },
+    {
+      "path": "baseer_purchase_batch/static/src/js/latin_date_field.js",
+      "sha256": "fff7b862fdbf1646e3563e8024a3d3e9f98f2aca8f12fd529e963fc9f988e8b4",
+      "bytes": 185
+    },
+    {
+      "path": "baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+      "sha256": "a7789a8611ccb9659689e330786b0ce5204e2a3d8ac18910d32ac5d03cb48da3",
+      "bytes": 3971
+    },
+    {
+      "path": "baseer_purchase_batch/views/category_mapping_views.xml",
+      "sha256": "86259719f9860d596ac253e82da472ed05c750b91ebef588e9d17223a77f2505",
+      "bytes": 2614
+    },
+    {
+      "path": "baseer_purchase_batch/views/purchase_batch_views.xml",
+      "sha256": "621b8bdcb30e3e3f7b4948ac80674f312d810960d1f473d85422115033f0a99f",
+      "bytes": 16626
+    },
+    {
+      "path": "baseer_purchase_batch/views/res_partner_views.xml",
+      "sha256": "58a3bba5ca314a7b6b016012241cfb06c32bcfd6b0a7594c34135a82af18d6f3",
+      "bytes": 815
+    },
+    {
+      "path": "baseer_report_layout/README.md",
+      "sha256": "7bc5455ffe723dd1da567c3d679c3c341e1d3850385885fd78684dcaa3c4c24d",
+      "bytes": 1533
+    },
+    {
+      "path": "baseer_report_layout/__init__.py",
+      "sha256": "c06b9ebcbdc951e33341c821997954811a8ad2fa663f1c9383abb08601e2847a",
+      "bytes": 57
+    },
+    {
+      "path": "baseer_report_layout/__manifest__.py",
+      "sha256": "e6ed0d3e0ddfb9aa8ae1b7c71f868121220ff7939a579a61ca6f42cf78267ad3",
+      "bytes": 601
+    },
+    {
+      "path": "baseer_report_layout/report/arabic_pdf_font.xml",
+      "sha256": "d77a6877798e1c09a44894a799bbbd42b8bb962ffa9117e9fdcea6c0e9359c91",
+      "bytes": 2642
+    },
+    {
+      "path": "baseer_report_layout/static/fonts/IBMPlexSansArabic-Bold.ttf",
+      "sha256": "b74f809dead12442ed56e02a12c3bcc02076c9ad4e32f17d0a9ca6fc1aafc89e",
+      "bytes": 247896
+    },
+    {
+      "path": "baseer_report_layout/static/fonts/IBMPlexSansArabic-Regular.ttf",
+      "sha256": "8e0f1046c736bf939d4939ee3ae0116acf61cbcd6592deae7656761627080981",
+      "bytes": 236708
+    },
+    {
+      "path": "baseer_report_layout/static/fonts/LICENSE.txt",
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+      "bytes": 4456
+    },
+    {
+      "path": "baseer_report_layout/static/fonts/SOURCE.md",
+      "sha256": "8fb1c17142f3bbc5e7db937e6a3e7b92c8807c4a306c90ede204216092f91a74",
+      "bytes": 697
+    },
+    {
+      "path": "baseer_report_layout/static/src/js/latin_date_field.js",
+      "sha256": "815e79dedbda875caa488dd346afb6a554713b6d12e208d528955445e97341b1",
+      "bytes": 1199
+    },
+    {
+      "path": "baseer_report_layout/static/src/report_layout.scss",
+      "sha256": "1fe93af3b7ba25e3b2d50a69b35953cb7ece656142e8db6a89617c8650a4ed18",
+      "bytes": 1996
+    },
+    {
+      "path": "baseer_report_layout/static/src/report_layout.xml",
+      "sha256": "151f624d23dba4fd509b585151d7dd9f806347be84e8655badf871dcb13a34d0",
+      "bytes": 784
+    },
+    {
+      "path": "baseer_sales_dashboard/README.md",
+      "sha256": "3e23cd834b18957563b751c6eb96bfee965ad9f8ff6d4336ca4df1b9931c36ba",
+      "bytes": 4089
+    },
+    {
+      "path": "baseer_sales_dashboard/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_sales_dashboard/__manifest__.py",
+      "sha256": "12d663e56bc9d6013a84b3e694851d6c16d13e7c7a9032655b1121ad0359db30",
+      "bytes": 535
+    },
+    {
+      "path": "baseer_sales_dashboard/data/dashboard.xml",
+      "sha256": "7711e2873b5fccba5cdab5b31eb00e8673d83ccd13cc279995f8dc6707a111df",
+      "bytes": 608
+    },
+    {
+      "path": "baseer_sales_dashboard/i18n/ar.po",
+      "sha256": "06fbf9c746b87136e004edfe9434ca5dd1c8c635b80aca502a089e02392e5dbc",
+      "bytes": 17463
+    },
+    {
+      "path": "baseer_sales_dashboard/models/__init__.py",
+      "sha256": "96f5ef4cf26cc91d9be706aea4fa4e746aa0a864b7a56eadbb79f3eba95c4cbe",
+      "bytes": 24
+    },
+    {
+      "path": "baseer_sales_dashboard/models/dashboard.py",
+      "sha256": "d31cec2d9abd250cbf477de7c31ceb3a56f25f47a07ba9dc43aee9e27bea0bc6",
+      "bytes": 26909
+    },
+    {
+      "path": "baseer_sales_dashboard/static/src/dashboard_integration.js",
+      "sha256": "a38cc2958594e6993662a4128abe19c49a13f2068ae7de8a5dcf374c2cd5ca73",
+      "bytes": 2907
+    },
+    {
+      "path": "baseer_sales_dashboard/static/src/dashboard_integration.xml",
+      "sha256": "51ffac91af9484ab3ad1e41d24b4c6d93dcfb1cc20804a1224c68e62e886191d",
+      "bytes": 2255
+    },
+    {
+      "path": "baseer_sales_dashboard/static/src/sales_dashboard.js",
+      "sha256": "1f086b1291760ee511477d49b5c1d7bc0ed4872876413b76ba3b1da47240fb2b",
+      "bytes": 19598
+    },
+    {
+      "path": "baseer_sales_dashboard/static/src/sales_dashboard.scss",
+      "sha256": "2f694082211c800817b0750a0bed2c711eeccc4160611a098f95cff5957a9968",
+      "bytes": 11891
+    },
+    {
+      "path": "baseer_sales_dashboard/static/src/sales_dashboard.xml",
+      "sha256": "6eded6a751b5a091ad95bdf5310b7c02254e262dbe791b8278840857bc6759c0",
+      "bytes": 20294
+    },
+    {
+      "path": "baseer_service_seed/README.md",
+      "sha256": "bedb9d96d36059d86f3dc9f90e8087a01c24494ea551d0cd255bc5cde39a24d3",
+      "bytes": 6820
+    },
+    {
+      "path": "baseer_service_seed/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_service_seed/__manifest__.py",
+      "sha256": "a3acb1b763e84c45f7aada6f1ba1ff6f3025aae769bc0685b0704a2e0f4f0a70",
+      "bytes": 367
+    },
+    {
+      "path": "baseer_service_seed/data/categories.xml",
+      "sha256": "aced1f581474008b4232bc9e252403a1b3fe532000b47ee80e7316fa0ace7938",
+      "bytes": 7143
+    },
+    {
+      "path": "baseer_service_seed/data/setup.xml",
+      "sha256": "e1ebd696dc402e19badaa5df2ec3fc43eb83de8d56ff270e3c51c9c8a75d4764",
+      "bytes": 86
+    },
+    {
+      "path": "baseer_service_seed/i18n/ar.po",
+      "sha256": "cfe046badd505dbc1b68ecd3fc46fb5d3d70d8611e612faa26655721fa14a8a0",
+      "bytes": 9273
+    },
+    {
+      "path": "baseer_service_seed/migrations/19.0.1.2.0/post-migrate.py",
+      "sha256": "679c1174e686978d055c24ebb0d3fdf24adc0ecd1376666073266715f116b6a9",
+      "bytes": 377
+    },
+    {
+      "path": "baseer_service_seed/models/__init__.py",
+      "sha256": "acb2aff313f268eaff17e750bd6ed620bb7093236d3fe0192f432785ce48baa7",
+      "bytes": 135
+    },
+    {
+      "path": "baseer_service_seed/models/catalog.py",
+      "sha256": "a61262d2fdc5d5378657b8c3f14c878823451a1d31ed2e1bc1e13270d8f2863d",
+      "bytes": 6644
+    },
+    {
+      "path": "baseer_service_seed/models/company.py",
+      "sha256": "683054fd18548af2a0f0bd7729a4a8832461c9e123fcee77d485710980debb9e",
+      "bytes": 6685
+    },
+    {
+      "path": "baseer_service_seed/models/company_names.py",
+      "sha256": "950314a7122565c368c038501d98c4ca91a144c145a09848f074619d6fcf3d32",
+      "bytes": 2342
+    },
+    {
+      "path": "baseer_service_seed/models/purchase_batch.py",
+      "sha256": "7b43b7ab558d0aef18835b879131ec6ba9e3c2e76f31c0c692859d920b3f7408",
+      "bytes": 1699
+    },
+    {
+      "path": "baseer_service_seed/models/res_partner.py",
+      "sha256": "2a2c3d0b17fb81611f6a91f87d2dcef9f593fe6662fd3e9e730eed58892cd642",
+      "bytes": 3473
+    },
+    {
+      "path": "baseer_service_seed/models/shared_provider.py",
+      "sha256": "556ac6dd7ca663e5038c8fe711bdc161a7532d42fc19b992746ebcec0d37d7e9",
+      "bytes": 16612
+    },
+    {
+      "path": "baseer_service_seed/views/res_partner_views.xml",
+      "sha256": "532597630bc1373aaf51018cf209b8aaea9d1d198649b0d1b5e261da0720e332",
+      "bytes": 2014
+    },
+    {
+      "path": "baseer_web_navigation/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1
+    },
+    {
+      "path": "baseer_web_navigation/__manifest__.py",
+      "sha256": "2d7405542aebf7cf2e72c85fec13f37faf620fec5e300df83cc25132a64e0111",
+      "bytes": 599
+    },
+    {
+      "path": "baseer_web_navigation/static/src/apps_menu.scss",
+      "sha256": "3296b03772dacbd9bc94be40dc7b51c5094cff2979b6559de0b4ad10d63c639d",
+      "bytes": 543
+    },
+    {
+      "path": "baseer_web_navigation/static/src/apps_menu.xml",
+      "sha256": "20738ad0b195e1f3b8728c791420ea7c5162ad451adf399051f16a9135277561",
+      "bytes": 896
+    },
+    {
+      "path": "baseer_web_navigation/static/src/language_menu.js",
+      "sha256": "ebdbb3699a58c3ef7a9eace31b48e0ccba31a7b99a802393f8b84c50d9492fb1",
+      "bytes": 2050
+    },
+    {
+      "path": "baseer_web_navigation/static/src/language_menu.xml",
+      "sha256": "770121996fb586b7a859ef7b9abce813c5893d2f8ea1652af5ff67b4ce6bcde4",
+      "bytes": 1181
+    },
+    {
+      "path": "baseer_work_schedule/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "baseer_work_schedule/__manifest__.py",
+      "sha256": "13241d85b4ed1517431bbc149abdfe368e95a0af02b5ca4d640d129694193f9d",
+      "bytes": 547
+    },
+    {
+      "path": "baseer_work_schedule/data/weekdays.xml",
+      "sha256": "f6a565bdcf1d17ebcb3aea9f0a840691fc3cbf3bd6f824a13b606dd9fae4b341",
+      "bytes": 1135
+    },
+    {
+      "path": "baseer_work_schedule/i18n/ar.po",
+      "sha256": "b0864a4f9d8868ce3855da81d7e70be62971e9b7341e11b4aaca7cc2cdfd2276",
+      "bytes": 37361
+    },
+    {
+      "path": "baseer_work_schedule/models/__init__.py",
+      "sha256": "47e52fa0a5c3b2e9108cf511337e296ae9f84766c138f59f1c9d275571a50409",
+      "bytes": 23
+    },
+    {
+      "path": "baseer_work_schedule/models/schedule.py",
+      "sha256": "084434d14c16f408332be01fe7f1d32ce240a9a6f1115a7b93cbbf48db833f6d",
+      "bytes": 43448
+    },
+    {
+      "path": "baseer_work_schedule/models/time_math.py",
+      "sha256": "885ff556190e1d9de4f340a23979f5ebe603da1f08bae6a3e805a92af66f9c7b",
+      "bytes": 1884
+    },
+    {
+      "path": "baseer_work_schedule/security/ir.model.access.csv",
+      "sha256": "12366f940a4a4453d0caa47c7347d0e66bf71453f0899c0b49be1bcafa5af83a",
+      "bytes": 356
+    },
+    {
+      "path": "baseer_work_schedule/security/rules.xml",
+      "sha256": "5e85d12267eb7eb845c9991a3c826abaadbe6723984a681fad40ce388380272f",
+      "bytes": 602
+    },
+    {
+      "path": "baseer_work_schedule/static/src/schedule.scss",
+      "sha256": "6f829dc17472ce88b5ca4cf6c486750f8960db31755c589e32cb0a2a22a8dfbc",
+      "bytes": 2821
+    },
+    {
+      "path": "baseer_work_schedule/static/src/time_field.js",
+      "sha256": "93d44c60ff2916e7053d4759e0129b36de70765849a7b9e7f93e83b7ef7d7e51",
+      "bytes": 6119
+    },
+    {
+      "path": "baseer_work_schedule/static/src/time_field.xml",
+      "sha256": "78ca5cb1f932c0899fa7eec9d58ce44b7451f47104ac4bf0e5da5f9270ba1dc4",
+      "bytes": 4037
+    },
+    {
+      "path": "baseer_work_schedule/views/schedule_views.xml",
+      "sha256": "0dd2dcb79bb68faa4c601e5c567dfb6ddb6a5713e35482dbb8c8efaa3cfedaa2",
+      "bytes": 21175
+    }
+  ]
+}

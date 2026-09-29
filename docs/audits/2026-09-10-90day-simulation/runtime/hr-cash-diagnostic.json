@@ -1,0 +1,2644 @@
+{
+  "database": "baseer_ic1_20260910",
+  "read_only": true,
+  "months": [
+    {
+      "month": "2026-01",
+      "expected_hr_cash_by_kind": {
+        "advance_disbursement": "-21450.00",
+        "advance_direct_repayment": "4920.00",
+        "hr_bill_payment": "-5497.00",
+        "hr_service_bill": "0.00",
+        "salary_accrual": "0.00",
+        "salary_payment": "-47613.01"
+      },
+      "actual_salary_cash": "-47613.01",
+      "salary_report_rows": [
+        {
+          "id": "payments/ledger-143",
+          "name": "Basic Salary",
+          "level": 1,
+          "parent_id": "payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": -152143.85
+            }
+          ],
+          "unfoldable": false,
+          "unfolded": true,
+          "meta": {
+            "kind": "baseer_cash_category",
+            "source_count": 45,
+            "allocated": true,
+            "baseer_source_drilldown": true,
+            "baseer_role": "detail"
+          }
+        }
+      ],
+      "unclassified_rows": [
+        {
+          "id": "payments/unclassified",
+          "name": "Unclassified / needs allocation",
+          "level": 1,
+          "parent_id": "payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": 69917.22
+            }
+          ],
+          "unfoldable": false,
+          "unfolded": true,
+          "meta": {
+            "kind": "baseer_cash_category",
+            "source_count": 205,
+            "allocated": true,
+            "baseer_source_drilldown": true,
+            "baseer_role": "detail"
+          }
+        }
+      ],
+      "allocation_by_cash_source_kind": {
+        "advance_disbursement": {
+          "salary": "-21840.46",
+          "unknown": "390.46",
+          "actual_cash": "-21450.00",
+          "sources": 23
+        },
+        "hr_bill_payment": {
+          "salary": "0.00",
+          "unknown": "0.00",
+          "actual_cash": "-5497.00",
+          "sources": 22
+        },
+        "salary_payment": {
+          "salary": "-130303.39",
+          "unknown": "81371.76",
+          "actual_cash": "-47613.01",
+          "sources": 17
+        },
+        "non_hr_cash": {
+          "salary": "0.00",
+          "unknown": "-11845.00",
+          "actual_cash": "-168382.26",
+          "sources": 371
+        }
+      },
+      "balance_check": 0.0,
+      "diagnostics": [
+        "An incomplete internal transfer remains visible as unclassified.",
+        "Approved POS summaries count only reconciled cash or bank collections; platform clearing is not cash.",
+        "Counterpart outside the posted reporting cutoff.",
+        "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+        "POS tax portions are rounded for each actual receipt; their sum can differ by a cent from the full source tax.",
+        "Unreconciled cash counterpart.",
+        "Unresolved or deep reconciliation chain.",
+        "Unresolved reconciliation cycle."
+      ]
+    },
+    {
+      "month": "2026-02",
+      "expected_hr_cash_by_kind": {
+        "advance_disbursement": "-1230.00",
+        "advance_direct_repayment": "2160.00",
+        "salary_payment": "-84701.26",
+        "hr_bill_payment": "-8142.00",
+        "hr_service_bill": "0.00",
+        "salary_accrual": "0.00"
+      },
+      "actual_salary_cash": "-84701.26",
+      "salary_report_rows": [
+        {
+          "id": "payments/ledger-143",
+          "name": "Basic Salary",
+          "level": 1,
+          "parent_id": "payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": -282664.76
+            }
+          ],
+          "unfoldable": false,
+          "unfolded": true,
+          "meta": {
+            "kind": "baseer_cash_category",
+            "source_count": 70,
+            "allocated": true,
+            "baseer_source_drilldown": true,
+            "baseer_role": "detail"
+          }
+        }
+      ],
+      "unclassified_rows": [
+        {
+          "id": "payments/unclassified",
+          "name": "Unclassified / needs allocation",
+          "level": 1,
+          "parent_id": "payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": 184312.11
+            }
+          ],
+          "unfoldable": false,
+          "unfolded": true,
+          "meta": {
+            "kind": "baseer_cash_category",
+            "source_count": 110,
+            "allocated": true,
+            "baseer_source_drilldown": true,
+            "baseer_role": "detail"
+          }
+        }
+      ],
+      "allocation_by_cash_source_kind": {
+        "advance_disbursement": {
+          "salary": "-7074.06",
+          "unknown": "5844.06",
+          "actual_cash": "-1230.00",
+          "sources": 1
+        },
+        "salary_payment": {
+          "salary": "-275590.70",
+          "unknown": "189278.05",
+          "actual_cash": "-84701.26",
+          "sources": 30
+        },
+        "hr_bill_payment": {
+          "salary": "0.00",
+          "unknown": "0.00",
+          "actual_cash": "-8142.00",
+          "sources": 30
+        },
+        "non_hr_cash": {
+          "salary": "0.00",
+          "unknown": "-10810.00",
+          "actual_cash": "-264274.86",
+          "sources": 406
+        }
+      },
+      "balance_check": 0.0,
+      "diagnostics": [
+        "An incomplete internal transfer remains visible as unclassified.",
+        "Approved POS summaries count only reconciled cash or bank collections; platform clearing is not cash.",
+        "Counterpart outside the posted reporting cutoff.",
+        "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+        "POS tax portions are rounded for each actual receipt; their sum can differ by a cent from the full source tax.",
+        "Treasury transfer in transit outside this period.",
+        "Unreconciled cash counterpart.",
+        "Unresolved or deep reconciliation chain.",
+        "Unresolved reconciliation cycle."
+      ]
+    },
+    {
+      "month": "2026-03",
+      "expected_hr_cash_by_kind": {
+        "salary_payment": "-84897.70",
+        "hr_bill_payment": "-37611.75",
+        "hr_service_bill": "0.00",
+        "salary_accrual": "0.00",
+        "end_service_bill": "0.00"
+      },
+      "actual_salary_cash": "-84897.70",
+      "salary_report_rows": [
+        {
+          "id": "payments/ledger-143",
+          "name": "Basic Salary",
+          "level": 1,
+          "parent_id": "payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": -301694.45
+            }
+          ],
+          "unfoldable": false,
+          "unfolded": true,
+          "meta": {
+            "kind": "baseer_cash_category",
+            "source_count": 70,
+            "allocated": true,
+            "baseer_source_drilldown": true,
+            "baseer_role": "detail"
+          }
+        }
+      ],
+      "unclassified_rows": [
+        {
+          "id": "payments/unclassified",
+          "name": "Unclassified / needs allocation",
+          "level": 1,
+          "parent_id": "payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": 204436.51
+            }
+          ],
+          "unfoldable": false,
+          "unfolded": true,
+          "meta": {
+            "kind": "baseer_cash_category",
+            "source_count": 108,
+            "allocated": true,
+            "baseer_source_drilldown": true,
+            "baseer_role": "detail"
+          }
+        }
+      ],
+      "allocation_by_cash_source_kind": {
+        "salary_payment": {
+          "salary": "-301694.45",
+          "unknown": "215016.51",
+          "actual_cash": "-84897.70",
+          "sources": 30
+        },
+        "hr_bill_payment": {
+          "salary": "0.00",
+          "unknown": "0.00",
+          "actual_cash": "-37611.75",
+          "sources": 31
+        },
+        "non_hr_cash": {
+          "salary": "0.00",
+          "unknown": "-10580.00",
+          "actual_cash": "-237744.72",
+          "sources": 443
+        }
+      },
+      "balance_check": 0.0,
+      "diagnostics": [
+        "An incomplete internal transfer remains visible as unclassified.",
+        "Approved POS summaries count only reconciled cash or bank collections; platform clearing is not cash.",
+        "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+        "POS tax portions are rounded for each actual receipt; their sum can differ by a cent from the full source tax.",
+        "Treasury transfer in transit outside this period.",
+        "Unreconciled cash counterpart.",
+        "Unresolved or deep reconciliation chain.",
+        "Unresolved reconciliation cycle."
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "month": 1,
+      "salary_overallocation_above_actual_cash": "15270.07",
+      "cash_line": {
+        "id": 306,
+        "move_id": 110,
+        "name": "Manual Payment: BPAY/2026/01/0011",
+        "date": "2026-01-31",
+        "account_id": 227,
+        "account_code": "101001",
+        "balance": "-3706.19",
+        "residual": "-3706.19",
+        "payslip_id": false,
+        "loan_id": false,
+        "origin_payment_id": 32,
+        "matches": []
+      },
+      "cash_counterparts": [
+        {
+          "id": 307,
+          "move_id": 110,
+          "name": "Manual Payment: BPAY/2026/01/0011",
+          "date": "2026-01-31",
+          "account_id": 236,
+          "account_code": "201090",
+          "balance": "3706.19",
+          "residual": "0.00",
+          "payslip_id": false,
+          "loan_id": false,
+          "origin_payment_id": 32,
+          "matches": [
+            {
+              "id": 60,
+              "amount": "2368.95",
+              "debit": 307,
+              "credit": 215
+            },
+            {
+              "id": 61,
+              "amount": "998.53",
+              "debit": 307,
+              "credit": 217
+            },
+            {
+              "id": 62,
+              "amount": "338.71",
+              "debit": 307,
+              "credit": 219
+            }
+          ]
+        }
+      ],
+      "matched_salary_moves": {
+        "88": [
+          {
+            "id": 214,
+            "move_id": 88,
+            "name": "Basic salary",
+            "date": "2026-01-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "2436.95",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 215,
+            "move_id": 88,
+            "name": "Basic salary",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-2436.95",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 35,
+                "amount": "68.00",
+                "debit": 220,
+                "credit": 215
+              },
+              {
+                "id": 60,
+                "amount": "2368.95",
+                "debit": 307,
+                "credit": 215
+              }
+            ]
+          },
+          {
+            "id": 216,
+            "move_id": 88,
+            "name": "Included overtime",
+            "date": "2026-01-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "998.53",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 217,
+            "move_id": 88,
+            "name": "Included overtime",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-998.53",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 61,
+                "amount": "998.53",
+                "debit": 307,
+                "credit": 217
+              }
+            ]
+          },
+          {
+            "id": 218,
+            "move_id": 88,
+            "name": "Allowances",
+            "date": "2026-01-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "338.71",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 219,
+            "move_id": 88,
+            "name": "Allowances",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-338.71",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 62,
+                "amount": "338.71",
+                "debit": 307,
+                "credit": 219
+              }
+            ]
+          },
+          {
+            "id": 220,
+            "move_id": 88,
+            "name": "Other deductions",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "68.00",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 35,
+                "amount": "68.00",
+                "debit": 220,
+                "credit": 215
+              }
+            ]
+          },
+          {
+            "id": 221,
+            "move_id": 88,
+            "name": "Other deductions",
+            "date": "2026-01-31",
+            "account_id": 212,
+            "account_code": "400074",
+            "balance": "-68.00",
+            "residual": "0.00",
+            "payslip_id": 13,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          }
+        ]
+      },
+      "allocation": {
+        "salary": "-18976.26",
+        "unknown": "14928.17",
+        "total": "-3706.19",
+        "fragments": [
+          {
+            "gross": "-2368.95",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-970.67",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "970.67",
+            "source": 217,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-329.26",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "329.26",
+            "source": 219,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-66.10",
+            "source": 220,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "66.10",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2436.95",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2436.95",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2436.95",
+            "source": 215,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-998.53",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "998.53",
+            "source": 217,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-338.71",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "338.71",
+            "source": 219,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "68.00",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2368.95",
+            "source": 215,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-998.53",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-338.71",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "338.71",
+            "source": 219,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-68.00",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-27.86",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "27.86",
+            "source": 217,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-9.45",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "9.45",
+            "source": 219,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1.90",
+            "source": 220,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1.90",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "68.00",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2436.95",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2436.95",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2436.95",
+            "source": 215,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-998.53",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "998.53",
+            "source": 217,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-338.71",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "338.71",
+            "source": 219,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "68.00",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2368.95",
+            "source": 215,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-998.53",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "998.53",
+            "source": 217,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-338.71",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-68.00",
+            "source": 214,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-27.86",
+            "source": 216,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "27.86",
+            "source": 217,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-9.45",
+            "source": 218,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "9.45",
+            "source": 219,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1.90",
+            "source": 220,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1.90",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "68.00",
+            "source": 221,
+            "path": [
+              [
+                "ledger-212",
+                "Salary Deductions"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          }
+        ]
+      }
+    },
+    {
+      "month": 2,
+      "salary_overallocation_above_actual_cash": "17425.93",
+      "cash_line": {
+        "id": 344,
+        "move_id": 129,
+        "name": "Manual Payment: BPAY/2026/01/0008",
+        "date": "2026-02-05",
+        "account_id": 227,
+        "account_code": "101001",
+        "balance": "-3787.10",
+        "residual": "-3787.10",
+        "payslip_id": false,
+        "loan_id": false,
+        "origin_payment_id": 47,
+        "matches": []
+      },
+      "cash_counterparts": [
+        {
+          "id": 345,
+          "move_id": 129,
+          "name": "Manual Payment: BPAY/2026/01/0008",
+          "date": "2026-02-05",
+          "account_id": 236,
+          "account_code": "201090",
+          "balance": "3787.10",
+          "residual": "0.00",
+          "payslip_id": false,
+          "loan_id": false,
+          "origin_payment_id": 47,
+          "matches": [
+            {
+              "id": 94,
+              "amount": "2394.86",
+              "debit": 345,
+              "credit": 199
+            },
+            {
+              "id": 95,
+              "amount": "1101.92",
+              "debit": 345,
+              "credit": 201
+            },
+            {
+              "id": 96,
+              "amount": "290.32",
+              "debit": 345,
+              "credit": 203
+            }
+          ]
+        }
+      ],
+      "matched_salary_moves": {
+        "85": [
+          {
+            "id": 198,
+            "move_id": 85,
+            "name": "Basic salary",
+            "date": "2026-01-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "2744.86",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 199,
+            "move_id": 85,
+            "name": "Basic salary",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-2744.86",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 34,
+                "amount": "350.00",
+                "debit": 204,
+                "credit": 199
+              },
+              {
+                "id": 94,
+                "amount": "2394.86",
+                "debit": 345,
+                "credit": 199
+              }
+            ]
+          },
+          {
+            "id": 200,
+            "move_id": 85,
+            "name": "Included overtime",
+            "date": "2026-01-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "1101.92",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 201,
+            "move_id": 85,
+            "name": "Included overtime",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-1101.92",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 95,
+                "amount": "1101.92",
+                "debit": 345,
+                "credit": 201
+              }
+            ]
+          },
+          {
+            "id": 202,
+            "move_id": 85,
+            "name": "Allowances",
+            "date": "2026-01-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "290.32",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 203,
+            "move_id": 85,
+            "name": "Allowances",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-290.32",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 96,
+                "amount": "290.32",
+                "debit": 345,
+                "credit": 203
+              }
+            ]
+          },
+          {
+            "id": 204,
+            "move_id": 85,
+            "name": "Advance installment",
+            "date": "2026-01-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "350.00",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 34,
+                "amount": "350.00",
+                "debit": 204,
+                "credit": 199
+              }
+            ]
+          },
+          {
+            "id": 205,
+            "move_id": 85,
+            "name": "Advance installment",
+            "date": "2026-01-31",
+            "account_id": 237,
+            "account_code": "102090",
+            "balance": "-350.00",
+            "residual": "0.00",
+            "payslip_id": 16,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 33,
+                "amount": "350.00",
+                "debit": 31,
+                "credit": 205
+              }
+            ]
+          }
+        ]
+      },
+      "allocation": {
+        "salary": "-21213.03",
+        "unknown": "17425.93",
+        "total": "-3787.10",
+        "fragments": [
+          {
+            "gross": "-2394.86",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-961.41",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "961.41",
+            "source": 201,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-253.30",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "253.30",
+            "source": 203,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-305.37",
+            "source": 204,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "305.37",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2744.86",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2744.86",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2744.86",
+            "source": 199,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1101.92",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1101.92",
+            "source": 201,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-290.32",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "290.32",
+            "source": 203,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "350.00",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2394.86",
+            "source": 199,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1101.92",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-290.32",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "290.32",
+            "source": 203,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-350.00",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-140.51",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "140.51",
+            "source": 201,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-37.02",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "37.02",
+            "source": 203,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-44.63",
+            "source": 204,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "44.63",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "350.00",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2744.86",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-2744.86",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2744.86",
+            "source": 199,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1101.92",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1101.92",
+            "source": 201,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-290.32",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "290.32",
+            "source": 203,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "350.00",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2394.86",
+            "source": 199,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1101.92",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1101.92",
+            "source": 201,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-290.32",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-350.00",
+            "source": 198,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-140.51",
+            "source": 200,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "140.51",
+            "source": 201,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-37.02",
+            "source": 202,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "37.02",
+            "source": 203,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-44.63",
+            "source": 204,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "44.63",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "350.00",
+            "source": 32,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          }
+        ]
+      }
+    },
+    {
+      "month": 3,
+      "salary_overallocation_above_actual_cash": "20474.94",
+      "cash_line": {
+        "id": 975,
+        "move_id": 334,
+        "name": "Manual Payment: BPAY/2026/03/0003",
+        "date": "2026-03-31",
+        "account_id": 227,
+        "account_code": "101001",
+        "balance": "-4452.90",
+        "residual": "-4452.90",
+        "payslip_id": false,
+        "loan_id": false,
+        "origin_payment_id": 157,
+        "matches": []
+      },
+      "cash_counterparts": [
+        {
+          "id": 976,
+          "move_id": 334,
+          "name": "Manual Payment: BPAY/2026/03/0003",
+          "date": "2026-03-31",
+          "account_id": 236,
+          "account_code": "201090",
+          "balance": "4452.90",
+          "residual": "0.00",
+          "payslip_id": false,
+          "loan_id": false,
+          "origin_payment_id": 157,
+          "matches": [
+            {
+              "id": 321,
+              "amount": "2840.73",
+              "debit": 976,
+              "credit": 808
+            },
+            {
+              "id": 322,
+              "amount": "1297.65",
+              "debit": 976,
+              "credit": 810
+            },
+            {
+              "id": 323,
+              "amount": "314.52",
+              "debit": 976,
+              "credit": 812
+            }
+          ]
+        }
+      ],
+      "matched_salary_moves": {
+        "296": [
+          {
+            "id": 807,
+            "move_id": 296,
+            "name": "Basic salary",
+            "date": "2026-03-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "3250.73",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 808,
+            "move_id": 296,
+            "name": "Basic salary",
+            "date": "2026-03-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-3250.73",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 266,
+                "amount": "410.00",
+                "debit": 813,
+                "credit": 808
+              },
+              {
+                "id": 321,
+                "amount": "2840.73",
+                "debit": 976,
+                "credit": 808
+              }
+            ]
+          },
+          {
+            "id": 809,
+            "move_id": 296,
+            "name": "Included overtime",
+            "date": "2026-03-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "1297.65",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 810,
+            "move_id": 296,
+            "name": "Included overtime",
+            "date": "2026-03-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-1297.65",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 322,
+                "amount": "1297.65",
+                "debit": 976,
+                "credit": 810
+              }
+            ]
+          },
+          {
+            "id": 811,
+            "move_id": 296,
+            "name": "Allowances",
+            "date": "2026-03-31",
+            "account_id": 143,
+            "account_code": "400003",
+            "balance": "314.52",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": []
+          },
+          {
+            "id": 812,
+            "move_id": 296,
+            "name": "Allowances",
+            "date": "2026-03-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "-314.52",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 323,
+                "amount": "314.52",
+                "debit": 976,
+                "credit": 812
+              }
+            ]
+          },
+          {
+            "id": 813,
+            "move_id": 296,
+            "name": "Advance installment",
+            "date": "2026-03-31",
+            "account_id": 236,
+            "account_code": "201090",
+            "balance": "410.00",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 266,
+                "amount": "410.00",
+                "debit": 813,
+                "credit": 808
+              }
+            ]
+          },
+          {
+            "id": 814,
+            "move_id": 296,
+            "name": "Advance installment",
+            "date": "2026-03-31",
+            "account_id": 237,
+            "account_code": "102090",
+            "balance": "-410.00",
+            "residual": "0.00",
+            "payslip_id": 69,
+            "loan_id": false,
+            "origin_payment_id": false,
+            "matches": [
+              {
+                "id": 265,
+                "amount": "410.00",
+                "debit": 43,
+                "credit": 814
+              }
+            ]
+          }
+        ]
+      },
+      "allocation": {
+        "salary": "-24927.84",
+        "unknown": "20474.94",
+        "total": "-4452.90",
+        "fragments": [
+          {
+            "gross": "-2840.73",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1133.98",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1133.98",
+            "source": 810,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-274.85",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "274.85",
+            "source": 812,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-358.29",
+            "source": 813,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "358.29",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-3250.73",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-3250.73",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "3250.73",
+            "source": 808,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1297.65",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1297.65",
+            "source": 810,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-314.52",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "314.52",
+            "source": 812,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "410.00",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2840.73",
+            "source": 808,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1297.65",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-314.52",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "314.52",
+            "source": 812,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-410.00",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-163.67",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "163.67",
+            "source": 810,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-39.67",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "39.67",
+            "source": 812,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-51.71",
+            "source": 813,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "51.71",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "410.00",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-3250.73",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-3250.73",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "3250.73",
+            "source": 808,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1297.65",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1297.65",
+            "source": 810,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-314.52",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "314.52",
+            "source": 812,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "410.00",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "2840.73",
+            "source": 808,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-1297.65",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "1297.65",
+            "source": 810,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-314.52",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-410.00",
+            "source": 807,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-163.67",
+            "source": 809,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "163.67",
+            "source": 810,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-39.67",
+            "source": 811,
+            "path": [
+              [
+                "ledger-143",
+                "Basic Salary"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "39.67",
+            "source": 812,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "-51.71",
+            "source": 813,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "51.71",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          },
+          {
+            "gross": "410.00",
+            "source": 44,
+            "path": [
+              [
+                "unclassified",
+                "Unclassified / needs allocation"
+              ]
+            ],
+            "unknown": true,
+            "transfer": null
+          }
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "salary input cash agrees native ledger 1",
+      "expected": "-47613.01",
+      "actual": "-47613.01",
+      "passed": true
+    },
+    {
+      "name": "salary input cash agrees native ledger 2",
+      "expected": "-84701.26",
+      "actual": "-84701.26",
+      "passed": true
+    },
+    {
+      "name": "salary input cash agrees native ledger 3",
+      "expected": "-84897.70",
+      "actual": "-84897.70",
+      "passed": true
+    }
+  ],
+  "all_input_cash_checks_passed": true
+}

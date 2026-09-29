@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "background": "rgb(255, 255, 255)",
+  "native_reference": "o_spreadsheet_dashboard_action white; verified previous turn",
+  "desktop_width": 1280,
+  "narrow_width": 480,
+  "checks": [
+    "white background matches native",
+    "KPI money/customer colors retained",
+    "narrow layout visually checked"
+  ],
+  "scope": "single background declaration and manifest version; no business logic changes"
+}

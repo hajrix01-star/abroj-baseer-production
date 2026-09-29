@@ -1,0 +1,5955 @@
+{
+  "status": "PASS",
+  "database": "baseer_sim90_fix_20260911",
+  "read_only": true,
+  "checks": [
+    {
+      "name": "SIM90-HR-loan-0 exact cash conservation",
+      "actual": "-600.00",
+      "expected": "-600.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-0 no invented tax",
+      "actual": "-600.00",
+      "expected": "-600.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-0 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-0 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-0 advance source only",
+      "actual": "{237: Decimal('-600.00')}",
+      "expected": "{237: Decimal('-600.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-0 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be849080>, {237: Decimal('-600.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be848b80>, {237: Decimal('-600.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-1 exact cash conservation",
+      "actual": "-630.00",
+      "expected": "-630.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-1 no invented tax",
+      "actual": "-630.00",
+      "expected": "-630.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-1 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-1 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-1 advance source only",
+      "actual": "{237: Decimal('-630.00')}",
+      "expected": "{237: Decimal('-630.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-1 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25e8900>, {237: Decimal('-630.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb83ce0>, {237: Decimal('-630.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-2 exact cash conservation",
+      "actual": "-660.00",
+      "expected": "-660.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-2 no invented tax",
+      "actual": "-660.00",
+      "expected": "-660.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-2 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-2 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-2 advance source only",
+      "actual": "{237: Decimal('-660.00')}",
+      "expected": "{237: Decimal('-660.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-2 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a0ae0>, {237: Decimal('-660.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a0cc0>, {237: Decimal('-660.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-3 exact cash conservation",
+      "actual": "-690.00",
+      "expected": "-690.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-3 no invented tax",
+      "actual": "-690.00",
+      "expected": "-690.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-3 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-3 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-3 advance source only",
+      "actual": "{237: Decimal('-690.00')}",
+      "expected": "{237: Decimal('-690.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-3 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb83d80>, {237: Decimal('-690.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb83600>, {237: Decimal('-690.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-4 exact cash conservation",
+      "actual": "-720.00",
+      "expected": "-720.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-4 no invented tax",
+      "actual": "-720.00",
+      "expected": "-720.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-4 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-4 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-4 advance source only",
+      "actual": "{237: Decimal('-720.00')}",
+      "expected": "{237: Decimal('-720.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-4 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb83ec0>, {237: Decimal('-720.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb836a0>, {237: Decimal('-720.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-5 exact cash conservation",
+      "actual": "-750.00",
+      "expected": "-750.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-5 no invented tax",
+      "actual": "-750.00",
+      "expected": "-750.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-5 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-5 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-5 advance source only",
+      "actual": "{237: Decimal('-750.00')}",
+      "expected": "{237: Decimal('-750.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-5 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb83740>, {237: Decimal('-750.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6beb83420>, {237: Decimal('-750.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-6 exact cash conservation",
+      "actual": "-780.00",
+      "expected": "-780.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-6 no invented tax",
+      "actual": "-780.00",
+      "expected": "-780.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-6 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-6 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-6 advance source only",
+      "actual": "{237: Decimal('-780.00')}",
+      "expected": "{237: Decimal('-780.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-6 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a1800>, {237: Decimal('-780.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a20c0>, {237: Decimal('-780.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-7 exact cash conservation",
+      "actual": "-810.00",
+      "expected": "-810.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-7 no invented tax",
+      "actual": "-810.00",
+      "expected": "-810.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-7 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-7 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-7 advance source only",
+      "actual": "{237: Decimal('-810.00')}",
+      "expected": "{237: Decimal('-810.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-7 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a2a20>, {237: Decimal('-810.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a2840>, {237: Decimal('-810.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-8 exact cash conservation",
+      "actual": "-840.00",
+      "expected": "-840.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-8 no invented tax",
+      "actual": "-840.00",
+      "expected": "-840.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-8 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-8 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-8 advance source only",
+      "actual": "{237: Decimal('-840.00')}",
+      "expected": "{237: Decimal('-840.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-8 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a36a0>, {237: Decimal('-840.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6bef860c0>, {237: Decimal('-840.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-9 exact cash conservation",
+      "actual": "-870.00",
+      "expected": "-870.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-9 no invented tax",
+      "actual": "-870.00",
+      "expected": "-870.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-9 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-9 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-9 advance source only",
+      "actual": "{237: Decimal('-870.00')}",
+      "expected": "{237: Decimal('-870.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-9 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a1d00>, {237: Decimal('-870.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6bef86ac0>, {237: Decimal('-870.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-10 exact cash conservation",
+      "actual": "-900.00",
+      "expected": "-900.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-10 no invented tax",
+      "actual": "-900.00",
+      "expected": "-900.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-10 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-10 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-10 advance source only",
+      "actual": "{237: Decimal('-900.00')}",
+      "expected": "{237: Decimal('-900.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-10 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c26a3560>, {237: Decimal('-900.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6bef87060>, {237: Decimal('-900.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-11 exact cash conservation",
+      "actual": "-930.00",
+      "expected": "-930.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-11 no invented tax",
+      "actual": "-930.00",
+      "expected": "-930.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-11 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-11 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-11 advance source only",
+      "actual": "{237: Decimal('-930.00')}",
+      "expected": "{237: Decimal('-930.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-11 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25eaf20>, {237: Decimal('-930.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25e8e00>, {237: Decimal('-930.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-12 exact cash conservation",
+      "actual": "-960.00",
+      "expected": "-960.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-12 no invented tax",
+      "actual": "-960.00",
+      "expected": "-960.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-12 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-12 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-12 advance source only",
+      "actual": "{237: Decimal('-960.00')}",
+      "expected": "{237: Decimal('-960.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-12 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25e9440>, {237: Decimal('-960.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25e9260>, {237: Decimal('-960.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-13 exact cash conservation",
+      "actual": "-990.00",
+      "expected": "-990.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-13 no invented tax",
+      "actual": "-990.00",
+      "expected": "-990.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-13 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-13 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-13 advance source only",
+      "actual": "{237: Decimal('-990.00')}",
+      "expected": "{237: Decimal('-990.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-13 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25e9c60>, {237: Decimal('-990.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25e9bc0>, {237: Decimal('-990.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-14 exact cash conservation",
+      "actual": "-1020.00",
+      "expected": "-1020.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-14 no invented tax",
+      "actual": "-1020.00",
+      "expected": "-1020.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-14 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-14 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-14 advance source only",
+      "actual": "{237: Decimal('-1020.00')}",
+      "expected": "{237: Decimal('-1020.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-14 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25ea5c0>, {237: Decimal('-1020.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25ea700>, {237: Decimal('-1020.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-15 exact cash conservation",
+      "actual": "-1050.00",
+      "expected": "-1050.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-15 no invented tax",
+      "actual": "-1050.00",
+      "expected": "-1050.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-15 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-15 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-15 advance source only",
+      "actual": "{237: Decimal('-1050.00')}",
+      "expected": "{237: Decimal('-1050.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-15 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25ea660>, {237: Decimal('-1050.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6c25eaac0>, {237: Decimal('-1050.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-16 exact cash conservation",
+      "actual": "-1080.00",
+      "expected": "-1080.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-16 no invented tax",
+      "actual": "-1080.00",
+      "expected": "-1080.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-16 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-16 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-16 advance source only",
+      "actual": "{237: Decimal('-1080.00')}",
+      "expected": "{237: Decimal('-1080.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-16 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be848040>, {237: Decimal('-1080.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be848cc0>, {237: Decimal('-1080.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-17 exact cash conservation",
+      "actual": "-1110.00",
+      "expected": "-1110.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-17 no invented tax",
+      "actual": "-1110.00",
+      "expected": "-1110.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-17 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-17 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-17 advance source only",
+      "actual": "{237: Decimal('-1110.00')}",
+      "expected": "{237: Decimal('-1110.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-17 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84a200>, {237: Decimal('-1110.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84a020>, {237: Decimal('-1110.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-18 exact cash conservation",
+      "actual": "-1140.00",
+      "expected": "-1140.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-18 no invented tax",
+      "actual": "-1140.00",
+      "expected": "-1140.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-18 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-18 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-18 advance source only",
+      "actual": "{237: Decimal('-1140.00')}",
+      "expected": "{237: Decimal('-1140.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-18 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84a980>, {237: Decimal('-1140.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84a8e0>, {237: Decimal('-1140.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-19 exact cash conservation",
+      "actual": "-1170.00",
+      "expected": "-1170.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-19 no invented tax",
+      "actual": "-1170.00",
+      "expected": "-1170.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-19 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-19 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-19 advance source only",
+      "actual": "{237: Decimal('-1170.00')}",
+      "expected": "{237: Decimal('-1170.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-19 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84aca0>, {237: Decimal('-1170.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84b060>, {237: Decimal('-1170.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-20 exact cash conservation",
+      "actual": "-1200.00",
+      "expected": "-1200.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-20 no invented tax",
+      "actual": "-1200.00",
+      "expected": "-1200.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-20 advance source only",
+      "actual": "{237: Decimal('-1200.00')}",
+      "expected": "{237: Decimal('-1200.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84bba0>, {237: Decimal('-1200.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84bb00>, {237: Decimal('-1200.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-21 exact cash conservation",
+      "actual": "-1230.00",
+      "expected": "-1230.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-21 no invented tax",
+      "actual": "-1230.00",
+      "expected": "-1230.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-21 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-21 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-21 advance source only",
+      "actual": "{237: Decimal('-1230.00')}",
+      "expected": "{237: Decimal('-1230.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-21 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84b920>, {237: Decimal('-1230.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84bc40>, {237: Decimal('-1230.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-22 exact cash conservation",
+      "actual": "-1260.00",
+      "expected": "-1260.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-22 no invented tax",
+      "actual": "-1260.00",
+      "expected": "-1260.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-22 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-22 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-22 advance source only",
+      "actual": "{237: Decimal('-1260.00')}",
+      "expected": "{237: Decimal('-1260.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-22 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be84b7e0>, {237: Decimal('-1260.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d4680>, {237: Decimal('-1260.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-23 exact cash conservation",
+      "actual": "-1290.00",
+      "expected": "-1290.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-23 no invented tax",
+      "actual": "-1290.00",
+      "expected": "-1290.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-23 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-23 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-23 advance source only",
+      "actual": "{237: Decimal('-1290.00')}",
+      "expected": "{237: Decimal('-1290.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-loan-23 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5120>, {237: Decimal('-1290.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5080>, {237: Decimal('-1290.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-1-2026-01-20 exact cash conservation",
+      "actual": "600.00",
+      "expected": "600.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-1-2026-01-20 no invented tax",
+      "actual": "600.00",
+      "expected": "600.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-1-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-1-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-1-2026-01-20 advance source only",
+      "actual": "{237: Decimal('600.00')}",
+      "expected": "{237: Decimal('600.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-1-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5800>, {237: Decimal('600.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5760>, {237: Decimal('600.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-01-20 exact cash conservation",
+      "actual": "252.00",
+      "expected": "252.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-01-20 no invented tax",
+      "actual": "252.00",
+      "expected": "252.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-01-20 advance source only",
+      "actual": "{237: Decimal('252.00')}",
+      "expected": "{237: Decimal('252.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5d00>, {237: Decimal('252.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5c60>, {237: Decimal('252.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-7-2026-01-20 exact cash conservation",
+      "actual": "780.00",
+      "expected": "780.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-7-2026-01-20 no invented tax",
+      "actual": "780.00",
+      "expected": "780.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-7-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-7-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-7-2026-01-20 advance source only",
+      "actual": "{237: Decimal('780.00')}",
+      "expected": "{237: Decimal('780.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-7-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5da0>, {237: Decimal('780.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d60c0>, {237: Decimal('780.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-01-20 exact cash conservation",
+      "actual": "324.00",
+      "expected": "324.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-01-20 no invented tax",
+      "actual": "324.00",
+      "expected": "324.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-01-20 advance source only",
+      "actual": "{237: Decimal('324.00')}",
+      "expected": "{237: Decimal('324.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d65c0>, {237: Decimal('324.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d5ee0>, {237: Decimal('324.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-13-2026-01-20 exact cash conservation",
+      "actual": "960.00",
+      "expected": "960.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-13-2026-01-20 no invented tax",
+      "actual": "960.00",
+      "expected": "960.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-13-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-13-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-13-2026-01-20 advance source only",
+      "actual": "{237: Decimal('960.00')}",
+      "expected": "{237: Decimal('960.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-13-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d6a20>, {237: Decimal('960.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d6980>, {237: Decimal('960.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-01-20 exact cash conservation",
+      "actual": "396.00",
+      "expected": "396.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-01-20 no invented tax",
+      "actual": "396.00",
+      "expected": "396.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-01-20 advance source only",
+      "actual": "{237: Decimal('396.00')}",
+      "expected": "{237: Decimal('396.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d6d40>, {237: Decimal('396.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d6ca0>, {237: Decimal('396.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-19-2026-01-20 exact cash conservation",
+      "actual": "1140.00",
+      "expected": "1140.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-19-2026-01-20 no invented tax",
+      "actual": "1140.00",
+      "expected": "1140.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-19-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-19-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-19-2026-01-20 advance source only",
+      "actual": "{237: Decimal('1140.00')}",
+      "expected": "{237: Decimal('1140.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-19-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d72e0>, {237: Decimal('1140.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d7240>, {237: Decimal('1140.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-01-20 exact cash conservation",
+      "actual": "468.00",
+      "expected": "468.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-01-20 no invented tax",
+      "actual": "468.00",
+      "expected": "468.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-01-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-01-20 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-01-20 advance source only",
+      "actual": "{237: Decimal('468.00')}",
+      "expected": "{237: Decimal('468.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-01-20 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d7380>, {237: Decimal('468.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d76a0>, {237: Decimal('468.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 exact cash conservation",
+      "actual": "-2290.58",
+      "expected": "-2290.58",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 no invented tax",
+      "actual": "-2290.58",
+      "expected": "-2290.58",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 signed input category 143",
+      "actual": "-2322.58",
+      "expected": "-2322.58",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 signed input category 212",
+      "actual": "32.00",
+      "expected": "32.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-1 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 exact cash conservation",
+      "actual": "-2484.27",
+      "expected": "-2484.27",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 no invented tax",
+      "actual": "-2484.27",
+      "expected": "-2484.27",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 signed input category 143",
+      "actual": "-2484.27",
+      "expected": "-2484.27",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-2 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 exact cash conservation",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 no invented tax",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 signed input category 143",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-3 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 exact cash conservation",
+      "actual": "-2809.23",
+      "expected": "-2809.23",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 no invented tax",
+      "actual": "-2809.23",
+      "expected": "-2809.23",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 signed input category 143",
+      "actual": "-2853.23",
+      "expected": "-2853.23",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 signed input category 212",
+      "actual": "44.00",
+      "expected": "44.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-5 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 exact cash conservation",
+      "actual": "-3025.00",
+      "expected": "-3025.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 no invented tax",
+      "actual": "-3025.00",
+      "expected": "-3025.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 signed input category 143",
+      "actual": "-3025.00",
+      "expected": "-3025.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-6 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 exact cash conservation",
+      "actual": "-1524.20",
+      "expected": "-1524.20",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 no invented tax",
+      "actual": "-1524.20",
+      "expected": "-1524.20",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 signed input category 143",
+      "actual": "-1524.20",
+      "expected": "-1524.20",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-7 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 exact cash conservation",
+      "actual": "-3344.00",
+      "expected": "-3344.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 no invented tax",
+      "actual": "-3344.00",
+      "expected": "-3344.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 signed input category 143",
+      "actual": "-3400.00",
+      "expected": "-3400.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 signed input category 212",
+      "actual": "56.00",
+      "expected": "56.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-9 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 exact cash conservation",
+      "actual": "-3121.29",
+      "expected": "-3121.29",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 no invented tax",
+      "actual": "-3121.29",
+      "expected": "-3121.29",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 signed input category 143",
+      "actual": "-3411.29",
+      "expected": "-3411.29",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 signed input category 237",
+      "actual": "290.00",
+      "expected": "290.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-10 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 exact cash conservation",
+      "actual": "-1795.57",
+      "expected": "-1795.57",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 no invented tax",
+      "actual": "-1795.57",
+      "expected": "-1795.57",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 signed input category 143",
+      "actual": "-1795.57",
+      "expected": "-1795.57",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-11 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 exact cash conservation",
+      "actual": "-3706.19",
+      "expected": "-3706.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 no invented tax",
+      "actual": "-3706.19",
+      "expected": "-3706.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 signed input category 143",
+      "actual": "-3774.19",
+      "expected": "-3774.19",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 signed input category 212",
+      "actual": "68.00",
+      "expected": "68.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-13 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "P1 payment32 cash",
+      "actual": "-3706.19",
+      "expected": "-3706.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "P1 payment32 salary gross once",
+      "actual": "-3774.19",
+      "expected": "-3774.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "P1 payment32 deductions once",
+      "actual": "68.00",
+      "expected": "68.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "P1 payment32 no loan recovery",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 exact cash conservation",
+      "actual": "-3960.08",
+      "expected": "-3960.08",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 no invented tax",
+      "actual": "-3960.08",
+      "expected": "-3960.08",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 signed input category 143",
+      "actual": "-3960.08",
+      "expected": "-3960.08",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-14 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 exact cash conservation",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 no invented tax",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 signed input category 143",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-15 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 exact cash conservation",
+      "actual": "-4249.03",
+      "expected": "-4249.03",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 no invented tax",
+      "actual": "-4249.03",
+      "expected": "-4249.03",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 signed input category 143",
+      "actual": "-4329.03",
+      "expected": "-4329.03",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 signed input category 212",
+      "actual": "80.00",
+      "expected": "80.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-17 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 exact cash conservation",
+      "actual": "-4525.00",
+      "expected": "-4525.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 no invented tax",
+      "actual": "-4525.00",
+      "expected": "-4525.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 signed input category 143",
+      "actual": "-4525.00",
+      "expected": "-4525.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-18 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 exact cash conservation",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 no invented tax",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 signed input category 143",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-19 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 exact cash conservation",
+      "actual": "-2595.10",
+      "expected": "-2595.10",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 no invented tax",
+      "actual": "-2595.10",
+      "expected": "-2595.10",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 signed input category 143",
+      "actual": "-2687.10",
+      "expected": "-2687.10",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 signed input category 212",
+      "actual": "92.00",
+      "expected": "92.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-21 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 exact cash conservation",
+      "actual": "-2533.47",
+      "expected": "-2533.47",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 no invented tax",
+      "actual": "-2533.47",
+      "expected": "-2533.47",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 signed input category 143",
+      "actual": "-2533.47",
+      "expected": "-2533.47",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-1-22 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-02-10 exact cash conservation",
+      "actual": "378.00",
+      "expected": "378.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-02-10 no invented tax",
+      "actual": "378.00",
+      "expected": "378.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-02-10 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-02-10 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-02-10 advance source only",
+      "actual": "{237: Decimal('378.00')}",
+      "expected": "{237: Decimal('378.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-2-2026-02-10 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d7ba0>, {237: Decimal('378.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be906b60>, {237: Decimal('378.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-02-10 exact cash conservation",
+      "actual": "486.00",
+      "expected": "486.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-02-10 no invented tax",
+      "actual": "486.00",
+      "expected": "486.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-02-10 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-02-10 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-02-10 advance source only",
+      "actual": "{237: Decimal('486.00')}",
+      "expected": "{237: Decimal('486.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-8-2026-02-10 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be906e80>, {237: Decimal('486.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be8d7ba0>, {237: Decimal('486.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-02-10 exact cash conservation",
+      "actual": "594.00",
+      "expected": "594.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-02-10 no invented tax",
+      "actual": "594.00",
+      "expected": "594.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-02-10 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-02-10 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-02-10 advance source only",
+      "actual": "{237: Decimal('594.00')}",
+      "expected": "{237: Decimal('594.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-14-2026-02-10 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be907240>, {237: Decimal('594.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be907060>, {237: Decimal('594.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-02-10 exact cash conservation",
+      "actual": "702.00",
+      "expected": "702.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-02-10 no invented tax",
+      "actual": "702.00",
+      "expected": "702.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-02-10 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-02-10 original evidence lines not repeatedly consumed",
+      "actual": "1",
+      "expected": "1",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-02-10 advance source only",
+      "actual": "{237: Decimal('702.00')}",
+      "expected": "{237: Decimal('702.00')}",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-repay-20-2026-02-10 future recovery does not change cash classification",
+      "actual": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be907740>, {237: Decimal('702.00')})",
+      "expected": "defaultdict(<function by_account.<locals>.<lambda> at 0x71c6be9076a0>, {237: Decimal('702.00')})",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 exact cash conservation",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 no invented tax",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 signed input category 143",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-3 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 exact cash conservation",
+      "actual": "-2455.48",
+      "expected": "-2455.48",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 no invented tax",
+      "actual": "-2455.48",
+      "expected": "-2455.48",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 signed input category 143",
+      "actual": "-2685.48",
+      "expected": "-2685.48",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 signed input category 237",
+      "actual": "230.00",
+      "expected": "230.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-4 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 exact cash conservation",
+      "actual": "-1524.19",
+      "expected": "-1524.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 no invented tax",
+      "actual": "-1524.19",
+      "expected": "-1524.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 signed input category 143",
+      "actual": "-1524.19",
+      "expected": "-1524.19",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-7 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 exact cash conservation",
+      "actual": "-3222.18",
+      "expected": "-3222.18",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 no invented tax",
+      "actual": "-3222.18",
+      "expected": "-3222.18",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 signed input category 143",
+      "actual": "-3222.18",
+      "expected": "-3222.18",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-8 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 exact cash conservation",
+      "actual": "-1795.56",
+      "expected": "-1795.56",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 no invented tax",
+      "actual": "-1795.56",
+      "expected": "-1795.56",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 signed input category 143",
+      "actual": "-1795.56",
+      "expected": "-1795.56",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-11 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 exact cash conservation",
+      "actual": "-3775.00",
+      "expected": "-3775.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 no invented tax",
+      "actual": "-3775.00",
+      "expected": "-3775.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 signed input category 143",
+      "actual": "-3775.00",
+      "expected": "-3775.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-12 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 exact cash conservation",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 no invented tax",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 signed input category 143",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-15 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 exact cash conservation",
+      "actual": "-3787.10",
+      "expected": "-3787.10",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 no invented tax",
+      "actual": "-3787.10",
+      "expected": "-3787.10",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 signed input category 143",
+      "actual": "-4137.10",
+      "expected": "-4137.10",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 signed input category 237",
+      "actual": "350.00",
+      "expected": "350.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-16 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 exact cash conservation",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 no invented tax",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 signed input category 143",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-19 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 exact cash conservation",
+      "actual": "-4697.98",
+      "expected": "-4697.98",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 no invented tax",
+      "actual": "-4697.98",
+      "expected": "-4697.98",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 signed input category 143",
+      "actual": "-4697.98",
+      "expected": "-4697.98",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-20 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 exact cash conservation",
+      "actual": "-2533.47",
+      "expected": "-2533.47",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 no invented tax",
+      "actual": "-2533.47",
+      "expected": "-2533.47",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 signed input category 143",
+      "actual": "-2533.47",
+      "expected": "-2533.47",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-22 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 exact cash conservation",
+      "actual": "-5275.00",
+      "expected": "-5275.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 no invented tax",
+      "actual": "-5275.00",
+      "expected": "-5275.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 signed input category 143",
+      "actual": "-5275.00",
+      "expected": "-5275.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-2-23 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 exact cash conservation",
+      "actual": "-2275.29",
+      "expected": "-2275.29",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 no invented tax",
+      "actual": "-2275.29",
+      "expected": "-2275.29",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 signed input category 143",
+      "actual": "-2314.29",
+      "expected": "-2314.29",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 signed input category 212",
+      "actual": "39.00",
+      "expected": "39.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-24 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 exact cash conservation",
+      "actual": "-2479.91",
+      "expected": "-2479.91",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 no invented tax",
+      "actual": "-2479.91",
+      "expected": "-2479.91",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 signed input category 143",
+      "actual": "-2479.91",
+      "expected": "-2479.91",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-25 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 exact cash conservation",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 no invented tax",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 signed input category 143",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-26 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 exact cash conservation",
+      "actual": "-2317.21",
+      "expected": "-2317.21",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 no invented tax",
+      "actual": "-2317.21",
+      "expected": "-2317.21",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 signed input category 143",
+      "actual": "-2848.21",
+      "expected": "-2848.21",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 signed input category 212",
+      "actual": "51.00",
+      "expected": "51.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 signed input category 237",
+      "actual": "480.00",
+      "expected": "480.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-28 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 exact cash conservation",
+      "actual": "-2775.00",
+      "expected": "-2775.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 no invented tax",
+      "actual": "-2775.00",
+      "expected": "-2775.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 signed input category 143",
+      "actual": "-3025.00",
+      "expected": "-3025.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 signed input category 237",
+      "actual": "250.00",
+      "expected": "250.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-29 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 exact cash conservation",
+      "actual": "-1518.75",
+      "expected": "-1518.75",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 no invented tax",
+      "actual": "-1518.75",
+      "expected": "-1518.75",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 signed input category 143",
+      "actual": "-1518.75",
+      "expected": "-1518.75",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-30 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 exact cash conservation",
+      "actual": "-3337.00",
+      "expected": "-3337.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 no invented tax",
+      "actual": "-3337.00",
+      "expected": "-3337.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 signed input category 143",
+      "actual": "-3400.00",
+      "expected": "-3400.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 signed input category 212",
+      "actual": "63.00",
+      "expected": "63.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-32 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 exact cash conservation",
+      "actual": "-3109.11",
+      "expected": "-3109.11",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 no invented tax",
+      "actual": "-3109.11",
+      "expected": "-3109.11",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 signed input category 143",
+      "actual": "-3399.11",
+      "expected": "-3399.11",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 signed input category 237",
+      "actual": "290.00",
+      "expected": "290.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-33 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 exact cash conservation",
+      "actual": "-1492.41",
+      "expected": "-1492.41",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 no invented tax",
+      "actual": "-1492.41",
+      "expected": "-1492.41",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 signed input category 143",
+      "actual": "-1792.41",
+      "expected": "-1792.41",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 signed input category 237",
+      "actual": "300.00",
+      "expected": "300.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-34 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 exact cash conservation",
+      "actual": "-3685.71",
+      "expected": "-3685.71",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 no invented tax",
+      "actual": "-3685.71",
+      "expected": "-3685.71",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 signed input category 143",
+      "actual": "-3760.71",
+      "expected": "-3760.71",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 signed input category 212",
+      "actual": "75.00",
+      "expected": "75.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-36 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 exact cash conservation",
+      "actual": "-3953.13",
+      "expected": "-3953.13",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 no invented tax",
+      "actual": "-3953.13",
+      "expected": "-3953.13",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 signed input category 143",
+      "actual": "-3953.13",
+      "expected": "-3953.13",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-37 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 exact cash conservation",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 no invented tax",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 signed input category 143",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-38 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 exact cash conservation",
+      "actual": "-3514.43",
+      "expected": "-3514.43",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 no invented tax",
+      "actual": "-3514.43",
+      "expected": "-3514.43",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 signed input category 143",
+      "actual": "-4321.43",
+      "expected": "-4321.43",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 signed input category 212",
+      "actual": "87.00",
+      "expected": "87.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 signed input category 237",
+      "actual": "720.00",
+      "expected": "720.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-40 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 exact cash conservation",
+      "actual": "-4155.00",
+      "expected": "-4155.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 no invented tax",
+      "actual": "-4155.00",
+      "expected": "-4155.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 signed input category 143",
+      "actual": "-4525.00",
+      "expected": "-4525.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 signed input category 237",
+      "actual": "370.00",
+      "expected": "370.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-41 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 exact cash conservation",
+      "actual": "-2241.97",
+      "expected": "-2241.97",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 no invented tax",
+      "actual": "-2241.97",
+      "expected": "-2241.97",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 signed input category 143",
+      "actual": "-2241.97",
+      "expected": "-2241.97",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-42 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 exact cash conservation",
+      "actual": "-4801.00",
+      "expected": "-4801.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 no invented tax",
+      "actual": "-4801.00",
+      "expected": "-4801.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 signed input category 143",
+      "actual": "-4900.00",
+      "expected": "-4900.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 signed input category 212",
+      "actual": "99.00",
+      "expected": "99.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-44 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 exact cash conservation",
+      "actual": "-2820.36",
+      "expected": "-2820.36",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 no invented tax",
+      "actual": "-2820.36",
+      "expected": "-2820.36",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 signed input category 143",
+      "actual": "-3230.36",
+      "expected": "-3230.36",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 signed input category 237",
+      "actual": "410.00",
+      "expected": "410.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-45 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 exact cash conservation",
+      "actual": "-2109.02",
+      "expected": "-2109.02",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 no invented tax",
+      "actual": "-2109.02",
+      "expected": "-2109.02",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 signed input category 143",
+      "actual": "-2529.02",
+      "expected": "-2529.02",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 signed input category 237",
+      "actual": "420.00",
+      "expected": "420.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-2-46 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 exact cash conservation",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 no invented tax",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 signed input category 143",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-26 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 exact cash conservation",
+      "actual": "-2445.89",
+      "expected": "-2445.89",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 no invented tax",
+      "actual": "-2445.89",
+      "expected": "-2445.89",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 signed input category 143",
+      "actual": "-2675.89",
+      "expected": "-2675.89",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 signed input category 237",
+      "actual": "230.00",
+      "expected": "230.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-27 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 exact cash conservation",
+      "actual": "-1518.75",
+      "expected": "-1518.75",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 no invented tax",
+      "actual": "-1518.75",
+      "expected": "-1518.75",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 signed input category 143",
+      "actual": "-1518.75",
+      "expected": "-1518.75",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-30 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 exact cash conservation",
+      "actual": "-3216.52",
+      "expected": "-3216.52",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 no invented tax",
+      "actual": "-3216.52",
+      "expected": "-3216.52",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 signed input category 143",
+      "actual": "-3216.52",
+      "expected": "-3216.52",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-31 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 exact cash conservation",
+      "actual": "-1492.41",
+      "expected": "-1492.41",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 no invented tax",
+      "actual": "-1492.41",
+      "expected": "-1492.41",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 signed input category 143",
+      "actual": "-1792.41",
+      "expected": "-1792.41",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 signed input category 237",
+      "actual": "300.00",
+      "expected": "300.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-34 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 exact cash conservation",
+      "actual": "-3465.00",
+      "expected": "-3465.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 no invented tax",
+      "actual": "-3465.00",
+      "expected": "-3465.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 signed input category 143",
+      "actual": "-3775.00",
+      "expected": "-3775.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 signed input category 237",
+      "actual": "310.00",
+      "expected": "310.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-35 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 exact cash conservation",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 no invented tax",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 signed input category 143",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-38 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 exact cash conservation",
+      "actual": "-3772.32",
+      "expected": "-3772.32",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 no invented tax",
+      "actual": "-3772.32",
+      "expected": "-3772.32",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 signed input category 143",
+      "actual": "-4122.32",
+      "expected": "-4122.32",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 signed input category 237",
+      "actual": "350.00",
+      "expected": "350.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-39 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 exact cash conservation",
+      "actual": "-2241.96",
+      "expected": "-2241.96",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 no invented tax",
+      "actual": "-2241.96",
+      "expected": "-2241.96",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 signed input category 143",
+      "actual": "-2241.96",
+      "expected": "-2241.96",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-42 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 exact cash conservation",
+      "actual": "-4689.73",
+      "expected": "-4689.73",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 no invented tax",
+      "actual": "-4689.73",
+      "expected": "-4689.73",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 signed input category 143",
+      "actual": "-4689.73",
+      "expected": "-4689.73",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-43 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 exact cash conservation",
+      "actual": "-2109.02",
+      "expected": "-2109.02",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 no invented tax",
+      "actual": "-2109.02",
+      "expected": "-2109.02",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 signed input category 143",
+      "actual": "-2529.02",
+      "expected": "-2529.02",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 signed input category 237",
+      "actual": "420.00",
+      "expected": "420.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-46 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 exact cash conservation",
+      "actual": "-4845.00",
+      "expected": "-4845.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 no invented tax",
+      "actual": "-4845.00",
+      "expected": "-4845.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 signed input category 143",
+      "actual": "-5275.00",
+      "expected": "-5275.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 signed input category 237",
+      "actual": "430.00",
+      "expected": "430.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-late-3-47 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 exact cash conservation",
+      "actual": "-2276.58",
+      "expected": "-2276.58",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 no invented tax",
+      "actual": "-2276.58",
+      "expected": "-2276.58",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 signed input category 143",
+      "actual": "-2322.58",
+      "expected": "-2322.58",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 signed input category 212",
+      "actual": "46.00",
+      "expected": "46.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-48 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 exact cash conservation",
+      "actual": "-2484.27",
+      "expected": "-2484.27",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 no invented tax",
+      "actual": "-2484.27",
+      "expected": "-2484.27",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 signed input category 143",
+      "actual": "-2484.27",
+      "expected": "-2484.27",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-49 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 exact cash conservation",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 no invented tax",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 signed input category 143",
+      "actual": "-1325.00",
+      "expected": "-1325.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-50 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 exact cash conservation",
+      "actual": "-2555.23",
+      "expected": "-2555.23",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 no invented tax",
+      "actual": "-2555.23",
+      "expected": "-2555.23",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 signed input category 143",
+      "actual": "-2853.23",
+      "expected": "-2853.23",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 signed input category 212",
+      "actual": "58.00",
+      "expected": "58.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 signed input category 237",
+      "actual": "240.00",
+      "expected": "240.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-52 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 exact cash conservation",
+      "actual": "-2775.00",
+      "expected": "-2775.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 no invented tax",
+      "actual": "-2775.00",
+      "expected": "-2775.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 signed input category 143",
+      "actual": "-3025.00",
+      "expected": "-3025.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 signed input category 237",
+      "actual": "250.00",
+      "expected": "250.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-53 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 exact cash conservation",
+      "actual": "-1524.20",
+      "expected": "-1524.20",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 no invented tax",
+      "actual": "-1524.20",
+      "expected": "-1524.20",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 signed input category 143",
+      "actual": "-1524.20",
+      "expected": "-1524.20",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-54 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 exact cash conservation",
+      "actual": "-3330.00",
+      "expected": "-3330.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 no invented tax",
+      "actual": "-3330.00",
+      "expected": "-3330.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 signed input category 143",
+      "actual": "-3400.00",
+      "expected": "-3400.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 signed input category 212",
+      "actual": "70.00",
+      "expected": "70.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-56 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 exact cash conservation",
+      "actual": "-3121.29",
+      "expected": "-3121.29",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 no invented tax",
+      "actual": "-3121.29",
+      "expected": "-3121.29",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 signed input category 143",
+      "actual": "-3411.29",
+      "expected": "-3411.29",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 signed input category 237",
+      "actual": "290.00",
+      "expected": "290.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-57 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 exact cash conservation",
+      "actual": "-1645.57",
+      "expected": "-1645.57",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 no invented tax",
+      "actual": "-1645.57",
+      "expected": "-1645.57",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 signed input category 143",
+      "actual": "-1795.57",
+      "expected": "-1795.57",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 signed input category 237",
+      "actual": "150.00",
+      "expected": "150.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-58 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 exact cash conservation",
+      "actual": "-3692.19",
+      "expected": "-3692.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 no invented tax",
+      "actual": "-3692.19",
+      "expected": "-3692.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 signed input category 143",
+      "actual": "-3774.19",
+      "expected": "-3774.19",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 signed input category 212",
+      "actual": "82.00",
+      "expected": "82.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-60 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 exact cash conservation",
+      "actual": "-3960.08",
+      "expected": "-3960.08",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 no invented tax",
+      "actual": "-3960.08",
+      "expected": "-3960.08",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 signed input category 143",
+      "actual": "-3960.08",
+      "expected": "-3960.08",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-61 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 exact cash conservation",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 no invented tax",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 original evidence lines not repeatedly consumed",
+      "actual": "2",
+      "expected": "2",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 signed input category 143",
+      "actual": "-2075.00",
+      "expected": "-2075.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-62 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 exact cash conservation",
+      "actual": "-3875.03",
+      "expected": "-3875.03",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 no invented tax",
+      "actual": "-3875.03",
+      "expected": "-3875.03",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 signed input category 143",
+      "actual": "-4329.03",
+      "expected": "-4329.03",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 signed input category 212",
+      "actual": "94.00",
+      "expected": "94.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 signed input category 237",
+      "actual": "360.00",
+      "expected": "360.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-64 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 exact cash conservation",
+      "actual": "-4155.00",
+      "expected": "-4155.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 no invented tax",
+      "actual": "-4155.00",
+      "expected": "-4155.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 signed input category 143",
+      "actual": "-4525.00",
+      "expected": "-4525.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 signed input category 237",
+      "actual": "370.00",
+      "expected": "370.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-65 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 exact cash conservation",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 no invented tax",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 signed input category 143",
+      "actual": "-2250.00",
+      "expected": "-2250.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-66 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 exact cash conservation",
+      "actual": "-4794.00",
+      "expected": "-4794.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 no invented tax",
+      "actual": "-4794.00",
+      "expected": "-4794.00",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 signed input category 143",
+      "actual": "-4900.00",
+      "expected": "-4900.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 signed input category 212",
+      "actual": "106.00",
+      "expected": "106.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 signed input category 237",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-68 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 exact cash conservation",
+      "actual": "-4452.90",
+      "expected": "-4452.90",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 no invented tax",
+      "actual": "-4452.90",
+      "expected": "-4452.90",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 original evidence lines not repeatedly consumed",
+      "actual": "4",
+      "expected": "4",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 signed input category 143",
+      "actual": "-4862.90",
+      "expected": "-4862.90",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 signed input category 237",
+      "actual": "410.00",
+      "expected": "410.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-69 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 exact cash conservation",
+      "actual": "-1409.76",
+      "expected": "-1409.76",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 no invented tax",
+      "actual": "-1409.76",
+      "expected": "-1409.76",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 no unresolved category fragments",
+      "actual": "False",
+      "expected": "False",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 original evidence lines not repeatedly consumed",
+      "actual": "3",
+      "expected": "3",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 signed input category 143",
+      "actual": "-1619.76",
+      "expected": "-1619.76",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 signed input category 212",
+      "actual": "0.00",
+      "expected": "0.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 signed input category 237",
+      "actual": "210.00",
+      "expected": "210.00",
+      "tolerance": "0.01",
+      "passed": true
+    },
+    {
+      "name": "SIM90-HR-salary-month-3-70 no category beyond source inputs",
+      "actual": "set()",
+      "expected": "set()",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "full dense payroll payments covered",
+      "actual": "77",
+      "expected": "77",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "P1 payment32 sample was executed",
+      "actual": "True",
+      "expected": "True",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "future payment retained unclassified before reporting cutoff",
+      "actual": "True",
+      "expected": "True",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "future payment cutoff preserves amount",
+      "actual": "-3706.19",
+      "expected": "-3706.19",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "private payroll cash source denied to role 6",
+      "actual": "True",
+      "expected": "True",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "private payroll cash source denied to role 7",
+      "actual": "True",
+      "expected": "True",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "HR source respects the existing trace budget",
+      "actual": "True",
+      "expected": "True",
+      "tolerance": "0",
+      "passed": true
+    },
+    {
+      "name": "HR source boundary enforces company isolation",
+      "actual": "True",
+      "expected": "True",
+      "tolerance": "0",
+      "passed": true
+    }
+  ],
+  "samples": [
+    {
+      "move_id": 110,
+      "payment_id": 32,
+      "cash": "-3706.19",
+      "account_allocations": {
+        "143": "-3774.19",
+        "212": "68.00",
+        "237": "0.00"
+      },
+      "sources": [
+        214,
+        216,
+        218,
+        221
+      ]
+    }
+  ],
+  "monthly": {
+    "2026-01": {
+      "143": "-48275.01",
+      "212": "372.00",
+      "237": "290.00"
+    },
+    "2026-02": {
+      "143": "-88935.26",
+      "212": "414.00",
+      "237": "3820.00"
+    },
+    "2026-03": {
+      "143": "-89673.70",
+      "212": "456.00",
+      "237": "4320.00"
+    }
+  },
+  "scenarios": {
+    "salary_payments": 77,
+    "advance_cash_legs": 36
+  },
+  "checks_passed": 844
+}

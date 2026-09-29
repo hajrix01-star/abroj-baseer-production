@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "database": "baseer_sim90_fix_20260911",
+  "su": false,
+  "read_only": true,
+  "rollback": true,
+  "date_utc": "2026-09-10",
+  "actor_date": "2026-09-11",
+  "timezone": "Asia/Riyadh",
+  "checks": [
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:overdue:native-maturity",
+      "status": "PASS",
+      "actual": "287326.48",
+      "expected": "287326.48"
+    }
+  ],
+  "note": "Native invoice maturity filtered independently; report domain/as_of is not used as expected.",
+  "script_sha256": "9769bdf44aa56206212df73e9f128c21f37634445bf3fa7749193ae98c9a431c"
+}

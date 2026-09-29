@@ -1,0 +1,7 @@
+{
+  "protected_tables": 250,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "UI metadata only; native calendar action default search filter; no business schema or rows changed",
+  "candidate": "2b555de2dc26349098dd1ab741d26e0eb260c334"
+}

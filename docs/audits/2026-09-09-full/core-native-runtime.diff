@@ -1,0 +1,275 @@
+--- local/orm/models.py
++++ runtime/orm/models.py
+@@ -36,7 +36,7 @@
+ import uuid
+ import warnings
+ from collections import defaultdict, deque
+-from collections.abc import Callable, Iterable, Mapping
++from collections.abc import Callable, Mapping
+ from inspect import getmembers
+ from operator import attrgetter, itemgetter
+ 
+@@ -76,7 +76,7 @@
+ )
+ 
+ if typing.TYPE_CHECKING:
+-    from collections.abc import Collection, Iterator, Reversible, Sequence
++    from collections.abc import Collection, Iterable, Iterator, Reversible, Sequence
+     from types import MappingProxyType
+     from .table_objects import TableObject
+     from .environments import Environment
+@@ -1328,19 +1328,6 @@
+         for fname, value in defaults.items():
+             if fname in self._fields:
+                 field = self._fields[fname]
+-                if (
+-                    field.relational
+-                    and not self.env.su
+-                    and isinstance(value, Iterable)
+-                ):
+-                    # since the value will be converted into a SET, we still
+-                    # need to check permissions for these actions
+-                    for cmd in value:
+-                        command_code = cmd[0] if isinstance(cmd, (tuple, list)) and len(cmd) >= 2 else None
+-                        if command_code == Command.DELETE:
+-                            self.env[field.comodel_name].browse(cmd[1]).check_access('unlink')
+-                        elif command_code == Command.UPDATE or (field.type == 'one2many' and command_code in (Command.UNLINK, Command.LINK)):
+-                            self.env[field.comodel_name].browse(cmd[1]).check_access('write')
+                 value = field.convert_to_cache(value, self, validate=False)
+                 defaults[fname] = field.convert_to_write(value, self)
+ 
+@@ -1785,7 +1772,7 @@
+         query.order = self._read_group_orderby(order, groupby_terms, query)
+         # GROUPING SET ((a, b), (a), ())
+         grouping_sets_sql = [
+-            SQL("(%s)", SQL(", ").join(unique(groupby_terms[groupby_spec] for groupby_spec in grouping_set)))
++            SQL("(%s)", SQL(", ").join(groupby_terms[groupby_spec] for groupby_spec in grouping_set))
+             for grouping_set in grouping_sets
+         ]
+         query.groupby = SQL("GROUPING SETS (%s)", SQL(", ").join(unique(grouping_sets_sql)))
+@@ -1805,13 +1792,9 @@
+         # grouping set defined by the user.
+         aggregates_indexes = tuple(range(len(all_groupby_specs), len(all_groupby_specs) + len(aggregates)))
+ 
+-        # Map each possible GROUPING() bitmask to the corresponding result lists and value
+-        # extractors: several grouping sets can share the same bitmask (either because
+-        # they are literally the same groupby list: [['foo'], ['foo']], or because one of them
+-        # repeats a term [['foo'], ['foo', 'foo']], so a single SQL result row may need to
+-        # be dispatched to more than one of them.
+-        # {GROUPING(...): [(append_method, extractor_method), ...]}
+-        mask_grouping_mapping = defaultdict(list)
++        # Map each possible GROUPING() bitmask to its corresponding result list and value extractor.
++        # {GROUPING(...): (append_method, extractor_method)}
++        mask_grouping_mapping = {}
+ 
+         # Create a mapping from each unique SQL GROUP BY term to its bitmask value.
+         # The terms are reversed to match the PostgreSQL logic where the bitmask was
+@@ -1822,6 +1805,7 @@
+             for i, sql_groupby in enumerate(unique(reversed(groupby_terms.values())))
+         }
+ 
++        mask_grouping_result_indexes = defaultdict(list)  # To manage "duplicated" groupby
+         for result_index, groupby in enumerate(grouping_sets):
+             # E.g. GROUPING SET ((a, b), (a), ())
+             # GROUPING(a, b): a and b included = 0, a included = 1, b included = 2, none included = 3
+@@ -1833,13 +1817,15 @@
+                 if sql_term not in sql_terms
+             )
+ 
+-            mask_grouping_mapping[groupby_mask].append((
+-                result[result_index].append,
+-                itemgetter_tuple(list(itertools.chain(
+-                    (all_groupby_specs.index(groupby_spec) for groupby_spec in groupby),
+-                    aggregates_indexes,
+-                ))),
+-            ))
++            mask_grouping_result_indexes[groupby_mask].append(result_index)
++            if groupby_mask not in mask_grouping_mapping:
++                mask_grouping_mapping[groupby_mask] = (
++                    result[result_index].append,
++                    itemgetter_tuple(list(itertools.chain(
++                        (all_groupby_specs.index(groupby_spec) for groupby_spec in groupby),
++                        aggregates_indexes,
++                    ))),
++                )
+ 
+         aggregates_start_index = len(all_groupby_specs) + 1
+         # Transpose rows to columns for efficient, column-wise post-processing.
+@@ -1857,9 +1843,17 @@
+         #   [(a1, <aggregates>), (a2, <aggregates>), ...],
+         #   [(<aggregates>)],
+         # ]
+-        for append_extractors, *row in zip(dispatch_info, *columns, strict=True):
+-            for append_method, extractor in append_extractors:
+-                append_method(extractor(row))
++        for (append_method, extractor), *row in zip(dispatch_info, *columns, strict=True):
++            append_method(extractor(row))
++
++        # Manage groupbys targetting the same column(s), then having the same results
++        for duplicate_groups_indexes in mask_grouping_result_indexes.values():
++            if len(duplicate_groups_indexes) < 2:
++                continue
++            # The first index's result is the source for all others in this group
++            source_result_group = result[duplicate_groups_indexes[0]]
++            for duplicate_group_index in duplicate_groups_indexes[1:]:
++                result[duplicate_group_index] = source_result_group[:]
+ 
+         return result
+ 
+--- local/addons/account/models/account_move.py
++++ runtime/addons/account/models/account_move.py
+@@ -473,11 +473,6 @@
+         tracking=True,
+         compute='_compute_payment_reference', inverse='_inverse_payment_reference', store=True, readonly=False,
+     )
+-    sanitize_payment_reference = fields.Char(
+-        string="Label sanitize",
+-        compute='_compute_sanitize_payment_reference',
+-        compute_sudo=False,
+-    )
+     display_qr_code = fields.Boolean(
+         string="Display QR-code",
+         compute='_compute_display_qr_code',
+@@ -792,12 +787,10 @@
+         "(name, journal_id) WHERE (state = 'posted'AND name != '/')",
+         "Another entry with the same name already exists.",
+     )
+-    _journal_id_date_idx = models.Index('(journal_id, date)')
+     _journal_id_company_id_idx = models.Index('(journal_id, company_id, date)')
+     # used in <account.journal>._query_has_sequence_holes
+     _made_gaps = models.Index('(journal_id, state, payment_state, move_type, date) WHERE (made_sequence_gap IS TRUE)')
+     _duplicate_bills_idx = models.Index("(ref) WHERE (move_type IN ('in_invoice', 'in_refund'))")
+-    _account_move_sanitize_payment_ref_idx = models.Index("(regexp_replace(COALESCE(payment_reference, ''), '[^a-zA-Z0-9]', '', 'g'))")
+ 
+     def _auto_init(self):
+         super()._auto_init()
+@@ -848,11 +841,6 @@
+         )):
+             move.payment_reference = move._get_invoice_computed_reference()
+         self._inverse_payment_reference()
+-
+-    @api.depends('payment_reference')
+-    def _compute_sanitize_payment_reference(self):
+-        for move in self:
+-            move.sanitize_payment_reference = re.sub(r'[^a-zA-Z0-9]', '', move.payment_reference or '')
+ 
+     def _get_accounting_date_source(self):
+         self.ensure_one()
+@@ -1356,8 +1344,6 @@
+                 f"ELSE 'not_sent' "
+                 "END"
+             )
+-        elif fname == 'sanitize_payment_reference':
+-            return SQL("regexp_replace(COALESCE(%s, ''), '[^a-zA-Z0-9]', '', 'g')", super()._field_to_sql(alias, "payment_reference", query))
+         return super()._field_to_sql(alias, fname, query=query)
+ 
+     @api.depends('reconciled_payment_ids')
+@@ -1844,7 +1830,7 @@
+                     base_lines=base_lines,
+                     currency=move.currency_id,
+                     company=move.company_id,
+-                    cash_rounding=move.sudo().invoice_cash_rounding_id,
++                    cash_rounding=move.invoice_cash_rounding_id,
+                 )
+                 move.tax_totals['display_in_company_currency'] = (
+                     move.company_id.display_invoice_tax_company_currency
+@@ -3961,11 +3947,7 @@
+                 'invoice_payment_term_id', 'currency_id', 'fiscal_position_id', 'invoice_cash_rounding_id')
+             readonly_fields = [val for val in vals if val in unmodifiable_fields]
+             if not self.env.context.get('skip_readonly_check') and move_state == "posted" and readonly_fields:
+-                raise UserError(self.env._(
+-                    "You cannot modify the following readonly fields on the posted move %(move)s: %(fields)s",
+-                    move=move.name or move.ref or move.id,
+-                    fields=', '.join(readonly_fields),
+-                ))
++                raise UserError(_("You cannot modify the following readonly fields on a posted move: %s", ', '.join(readonly_fields)))
+ 
+             if move.journal_id.sequence_override_regex and vals.get('name') and vals['name'] != '/' and not re.match(move.journal_id.sequence_override_regex, vals['name']):
+                 if not self.env.user.has_group('account.group_account_manager'):
+@@ -5810,19 +5792,6 @@
+     def _set_next_made_sequence_gap(self, made_gap: bool):
+         self._update_sequence_made_gap(invalidate_current=made_gap)
+ 
+-    def _get_sequence_suffix(self):
+-        """
+-        Return this move's sequence suffix (the part of `name` right after the
+-        number), or '' if it doesn't have a real sequence assigned yet.
+-
+-        Avoids calling `_get_sequence_format_param` on an unset/placeholder sequence
+-        (e.g. '/'), which some localizations treat as an unexpected format.
+-        """
+-        self.ensure_one()
+-        if not self.name or self.name == '/':
+-            return ''
+-        return self._get_sequence_format_param(self.name)[1].get('suffix', '')
+-
+     def _update_sequence_made_gap(self, invalidate_current=False):
+         """Update the field made_sequence_gap on the current, next and previous moves.
+ 
+@@ -5831,8 +5800,7 @@
+           sequence as broken on the next moves before updating (invalidate_current=True)
+         - we are filling a gap, so we need to update the next move to remove the flag (invalidate_current=False)
+         """
+-        moves_to_update = self.browse(self.ids)
+-        if not moves_to_update:
++        if not self:
+             return
+ 
+         def check_around(previous, current, next_move):
+@@ -5862,12 +5830,8 @@
+             # bypassing record rules here is safe.
+             return self.sudo().browse(ids).with_prefetch(all_ids)
+ 
+-        def _escape_like(value):
+-            return value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+-
+         sequence_mixin_cache = self._get_sequence_cache()
+         self.env['account.move'].flush_model(['name', 'sequence_prefix', 'sequence_number', 'journal_id'])
+-        suffix_pairs = [(move.id, _escape_like(move._get_sequence_suffix())) for move in moves_to_update]
+         made_gap_data = self.env.execute_query(SQL("""
+             SELECT ARRAY(
+                             SELECT other.id
+@@ -5875,7 +5839,6 @@
+                              WHERE other.journal_id = move.journal_id
+                                AND other.sequence_prefix = move.sequence_prefix
+                                AND other.sequence_number < move.sequence_number
+-                               AND other.name LIKE '%%' || other.sequence_number || ms.suffix
+                           ORDER BY other.sequence_number DESC
+                              LIMIT 2
+                    ),
+@@ -5886,14 +5849,12 @@
+                              WHERE other.journal_id = move.journal_id
+                                AND other.sequence_prefix = move.sequence_prefix
+                                AND other.sequence_number > move.sequence_number
+-                               AND other.name LIKE '%%' || other.sequence_number || ms.suffix
+                           ORDER BY other.sequence_number ASC
+                              LIMIT 2
+                    )
+               FROM account_move move
+-              JOIN (VALUES %(suffix_pairs)s) AS ms(move_id, suffix) ON ms.move_id = move.id
+-             WHERE move.id = ANY(%(move_ids)s)
+-        """, suffix_pairs=SQL(", ").join(suffix_pairs), move_ids=moves_to_update.ids))
++             WHERE move.id = ANY(%s)
++        """, self.ids))
+         all_ids = tuple({id_ for row in made_gap_data for ids in row for id_ in (ids if isinstance(ids, list) else [ids])})
+         for previous_ids, current_id, next_ids in made_gap_data:
+             move_p1, move_p2 = browse(previous_ids) if len(previous_ids) == 2 else (browse(previous_ids), browse())
+@@ -5911,7 +5872,7 @@
+                 if move_n1.made_sequence_gap != n1_made_gap:
+                     move_n1.made_sequence_gap = n1_made_gap
+ 
+-            if move_p1 and (not is_computed_with_mixin(current_move) or current_move.state != 'posted' or move_p1.state != 'posted'):
++            if move_p1 and (not is_computed_with_mixin(current_move) or current_move.state != 'posted'):
+                 p1_made_gap = bool(check_around(move_p2, move_p1, self.browse() if invalidate_current else current_move))
+                 if move_p1.made_sequence_gap != p1_made_gap:
+                     move_p1.made_sequence_gap = p1_made_gap
+--- local/addons/account/models/account_payment.py
++++ runtime/addons/account/models/account_payment.py
+@@ -133,7 +133,6 @@
+         store=True, readonly=False,
+         compute='_compute_destination_account_id',
+         domain="[('account_type', 'in', ('asset_receivable', 'liability_payable'))]",
+-        index='btree_not_null',
+         check_company=True)
+ 
+     # == Stat buttons ==

@@ -1,0 +1,12 @@
+{
+  "commit": "be89096027c823dbe5414bbf95ce97e9e354a5b6",
+  "source_commit": "3d96581c2eef324df3b5ed69f7ba526bb37035fc",
+  "remote_match": true,
+  "checkout_clean": true,
+  "source_files": 1181,
+  "source_only": true,
+  "workflow_id": 34511962677,
+  "workflow_status": "completed",
+  "workflow_conclusion": "success",
+  "workflow_url": "https://github.com/hajrix01-star/Odoo-Baseer/actions/runs/34511962677"
+}

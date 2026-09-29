@@ -1,0 +1,100 @@
+{
+  "status": "PASS",
+  "database": "baseer_ic1_20260910",
+  "browser_checks": [
+    "Arabic existing QA sales1580 and suppliers3100/1000/2100",
+    "Sales drill shows6 signed source/reversal rows and excludes every collection",
+    "September Cash remains0/-1000/-1000",
+    "July Cash890 retained separately from sales1580",
+    "English labels and same1580 monetaryvalues",
+    "480px English nativekanban and cards without page overflow",
+    "480px Arabic RTL nativekanban nooverflow and Western digits",
+    "Arabic mobile salesdrill opens actual approved790 summary25",
+    "Arabic September outgoing remains -1,000.00 with updated labels",
+    "Arabic July incoming and net1,580.00; outgoing0;10 signed rows",
+    "Incoming card creates native filter with same1,580.00 and10 signed rows",
+    "English LTR Incoming/Outgoing/Net labels show same1,580.00/0/1,580.00",
+    "Arabic RTL480 native kanban shows1,580.00 and Incoming/Outgoing/Net labels without horizontal overflow"
+  ],
+  "frontend_assertions": 7,
+  "observations": {
+    "FL3 All-mode invoices, native POS and reversals": {
+      "status": "PASS",
+      "checks": [
+        "Arabic existing QA sales1580 and suppliers3100/1000/2100",
+        "Sales drill shows6 signed source/reversal rows and excludes every collection",
+        "September Cash remains0/-1000/-1000",
+        "July Cash890 retained separately from sales1580",
+        "English labels and same1580 monetaryvalues",
+        "480px English nativekanban and cards without page overflow",
+        "480px Arabic RTL nativekanban nooverflow and Western digits",
+        "Arabic mobile salesdrill opens actual approved790 summary25"
+      ],
+      "passed": 8
+    },
+    "FL3B Applications incoming and actual outgoing": {
+      "status": "PASS",
+      "checks": [
+        "Arabic September outgoing remains -1,000.00 with updated labels",
+        "Arabic July incoming and net1,580.00; outgoing0;10 signed rows",
+        "Incoming card creates native filter with same1,580.00 and10 signed rows",
+        "English LTR Incoming/Outgoing/Net labels show same1,580.00/0/1,580.00",
+        "Arabic RTL480 native kanban shows1,580.00 and Incoming/Outgoing/Net labels without horizontal overflow"
+      ],
+      "kanban": true,
+      "kpi": "جميع العمليات\nالداخل والخارج\nفترة التقرير\nالمعلم الشامي\nSAR\nالداخل والخارج\n10 مستندات\nالداخل\n1,580.00\nالخارج\n0.00\nالصافي\n1,580.00",
+      "mobile_direction": "rtl",
+      "mobile_scroll_width": 480,
+      "mobile_width": 480
+    }
+  },
+  "limitations": [
+    "Incoming includes posted Applications sales and settlement adjustments; it is not a bank balance.",
+    "Historical cash-july evidence records the unadjusted actual-cash baseline of 890.",
+    "Mobile kanban is selected when opening the native action at mobile width.",
+    "Browser checks use the existing isolated QA data; no production capacity claim."
+  ],
+  "source_sha256": {
+    "custom_addons/baseer_financial_register/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons/baseer_financial_register/__manifest__.py": "10c95e545cb69f5e42353b42ca97fc2ecad6419763a1f63adb3f3e70bc1449e6",
+    "custom_addons/baseer_financial_register/i18n/ar.po": "a153687fe88bca7b74708c71951775772b3926df53a51d083d1a61894abb08bc",
+    "custom_addons/baseer_financial_register/models/__init__.py": "dea8c028fc07b34ff270add4518a110b5f6b590dbc6931bf1264e37dddebc27e",
+    "custom_addons/baseer_financial_register/models/cash_register.py": "e5762b154c0bda5710354957af20c5fee3100f83a889f4d1fee014d3248b7ea8",
+    "custom_addons/baseer_financial_register/models/financial_register.py": "faf6c67bddb1d115fd880fe44c82acb30f756506c787efa1418a0ee0bb352f55",
+    "custom_addons/baseer_financial_register/models/platform.py": "6cf94607be38c0fb5ca231a663b4f186a449d38e4962006db61fef6e209d3cb2",
+    "custom_addons/baseer_financial_register/models/projection.py": "b154003a0b1b0df52714d2fcb4f5d97527b118e90c865e8762315fb6681776a9",
+    "custom_addons/baseer_financial_register/README.md": "2b2897d671cb5992881205641a23aee2a82c41bf6abc01940aea1c8cb51751d6",
+    "custom_addons/baseer_financial_register/static/src/financial_register.js": "401b8c8b75d06af426c4c21f05bab0a5e01fdd0363af411848a22c11dc74d41f",
+    "custom_addons/baseer_financial_register/static/src/financial_register.scss": "1caa8b6df008796d080e7581f862fcd632e86d311eb1cd8a4ee678304c858ace",
+    "custom_addons/baseer_financial_register/static/src/financial_register.xml": "d73840e4c3bf144b704e340a494c6ebf089e518eafa099807eda2d9479b3f0f8",
+    "custom_addons/baseer_financial_register/views/financial_register_views.xml": "bf6f83393edca638bca71f2605e8710197a65bb664c794be0083fd636b49b1e0"
+  },
+  "evidence_files": {
+    "all-ar.png": "5ddbef87e490f124fe34ba2d7b322a3af878670773231a27884f5f7f6b388639",
+    "all-ar.txt": "7eeb7fe98938cca095804da4a84e47678c61748093cdad0e41adacd823a2cee1",
+    "all-en.png": "848e439d8356d39b914dcbd9e7315277903893f3e37e77bb559e75bb9749332f",
+    "all-en.txt": "365d2fcfa7e7a02bdbfd6cdc132beadd4a4754c17d323b6e95000ac83af279a5",
+    "before-ar.png": "4cc7a02c6c550e53bb085297bfcac39cf8e8653507b2055d6baf9ac69e7c678d",
+    "browser-checks.json": "7f80b2586ce9884417124070007045e83f2a3f1def976bc55def4bec90084373",
+    "cash-july-ar.png": "bbb70175fe3e583a5bdbb21e46697726e356d1ac20ad83ade3beec8d75c599f6",
+    "cash-july-ar.txt": "05e40a6d70cb18944eb963d64be9bd03d37a71e1ceda16bbd58641c421cd1d6b",
+    "frontend-checks.json": "ed4e49c78ad9539320b9f592d667ce4d3eb7b9411c000b2f0222569867a79298",
+    "frontend-checks.mjs": "cacedc9eae2ff7c1735c4c838ee6286883d53f2105ebb8a60b6c2b2d352dd24d",
+    "incoming-drill-ar.txt": "d883e9c166d60eca8633ca69a2d8122252f1584b225d0a646ad9f6d5270ce727",
+    "incoming-en.png": "a9048cad0fcb6c1d0bc90bea80a4e8586070847c1599c6440b0b682ffabc64c1",
+    "incoming-en.txt": "f357aa01b33e4726a1111dd651ded760a0153f73023ad2ba7d9b0d44e6de4e57",
+    "incoming-july-ar.png": "40ae58b68208e90fd90b8525bff0a88d92f29bf72aac150c88a9e330b3b2f1d3",
+    "incoming-july-ar.txt": "a2901515451fc3359b2881ada2d8ef733ea6d7bbae905f4519ea6c0d31113f03",
+    "incoming-mobile-ar.png": "bf9759b7c2f855bedcefbddd0ee52523a8a50935a9dbe5b24e7e6cf85e619a7d",
+    "incoming-mobile-ar.txt": "d7636b914ee7af2216c652dfa92aff071a15f0b80455472e1bfce65bcc5e08f3",
+    "mobile-ar.png": "0290d1123d0e83e02798d154d665c8d5177bfdbe9ec8d1b10101f45599bc683f",
+    "mobile-ar.txt": "68423b45b0aa1877e69cbe5367cb80b4a38b185081f8e3848efa72fd32e94016",
+    "mobile-en.png": "1f559f4a67f4e74d72ad9d2c79c61c343eea5374898552e16ac2cab9a386eb87",
+    "mobile-en.txt": "686f4879b94fc4f67b75fc3941da5a7ee80fb4bf03cc5475e6bd147781c4c404",
+    "platform-browser-checks.json": "8a32e633ad0b6a6c30c80a6738a0d5ff335b97eac74c43fec560c7599643681d",
+    "sales-drill-ar.png": "4414268048bb76ceecb7f920cf313ea8f597814c1ab5d3074e531957d19ee14c",
+    "sales-drill-ar.txt": "26015debb34b1f7aa046c01cfc87b34705f601055c8d475ff0f50a43d1779e6c",
+    "source-mobile-ar.png": "8720ffd06764f474a5320671ca6836f353426fac6d694e0db3b5091b53e69039",
+    "source-mobile-ar.txt": "b4a829e24983eadb426096bacb6bb97c30d780e9df25c38f40293d9269dd0ac4"
+  }
+}

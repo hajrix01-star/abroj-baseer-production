@@ -1,0 +1,64 @@
+{
+  "candidate": "0e2a0853d858ffc8760d009a34cf17dda68dde45",
+  "http": 200,
+  "source_tree_exact": true,
+  "no_pending_modules": true,
+  "versions": {
+    "baseer_cash_categories": "19.0.1.3.2",
+    "baseer_pos_summary": "19.0.1.5.2",
+    "baseer_financial_register": "19.0.1.2.1"
+  },
+  "mounts": [
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\cash-tracing-repair-20260911\\candidate\\third_party_addons",
+      "Destination": "/mnt/third-party-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\odoo",
+      "Destination": "/opt/baseer-odoo-source",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\cash-tracing-repair-20260911\\candidate\\custom_addons",
+      "Destination": "/mnt/extra-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "volume",
+      "Name": "baseer_odoo_dev_odoo-data",
+      "Source": "/var/lib/docker/volumes/baseer_odoo_dev_odoo-data/_data",
+      "Destination": "/var/lib/odoo",
+      "Driver": "local",
+      "Mode": "rw",
+      "RW": true,
+      "Propagation": ""
+    },
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/config/odoo.local.conf",
+      "Destination": "/etc/odoo/odoo.local.conf",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/.local-backups/cash-tracing-repair-20260911/candidate/custom_addons",
+      "Destination": "/mnt/baseer-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    }
+  ],
+  "image": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd"
+}

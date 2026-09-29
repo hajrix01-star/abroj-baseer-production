@@ -1,0 +1,17 @@
+{
+  "candidate": "2b555de2dc26349098dd1ab741d26e0eb260c334",
+  "files": 1104,
+  "source_hash_failures": [],
+  "zip_entries": 1104,
+  "zip_hash_failures": [],
+  "archive_sha256": "2df274ff2bb62d6bdc8569486243648c70010b79268399d7f834c1584f677bcc",
+  "archive_matches": true,
+  "ui_hash_failures": [],
+  "changed_files": [
+    "custom_addons/baseer_work_schedule/__manifest__.py",
+    "custom_addons/baseer_work_schedule/i18n/ar.po",
+    "custom_addons/baseer_work_schedule/views/schedule_views.xml"
+  ],
+  "removed_files": [],
+  "backend_unchanged": true
+}

@@ -1,0 +1,54 @@
+{
+  "candidate": "PRC-REMEDIATION1",
+  "date": "2026-09-12",
+  "scope": "QA only",
+  "database": "baseer_procurement_qa_20260911",
+  "service": "baseer_odoo_dev-procurement_qa-1",
+  "image": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "modules": {
+    "baseer_procurement_requests": "19.0.7.0.0",
+    "baseer_purchase_batch": "19.0.1.2.3",
+    "baseer_arabic_ui": "19.0.1.0.0"
+  },
+  "source_identity": "The workspace has no tracked candidate commit; the following SHA-256 values and aggregate tree digests are the release identity.",
+  "trees": {
+    "custom_addons/baseer_procurement_requests": "390bde6785b84f23e08e7cbc0012fbe16c38665302fbd8678c2f85b168270c02",
+    "custom_addons/baseer_purchase_batch": "0fe02b33412b44c003fc70f8ef2e32d079856e69d175ccbdee56deba81b4b576",
+    "custom_addons/baseer_arabic_ui": "edc3148be1f2921fe408f26ebea37cb27760d6bb05d940306a11fe9bddfc9c35"
+  },
+  "files": {
+    "compose.prc-qa.yaml": "4152BD51ED4B4F524ABD9638881F545560EE337D2883332B37EB06D77A05C625",
+    "custom_addons/baseer_procurement_requests/__manifest__.py": "5D4DCD7CF4DAC1C03147A6B3AAE55B15A74194FF3F3419566EF2A4303E83DC31",
+    "custom_addons/baseer_procurement_requests/__init__.py": "BEA45878180255932966162F20B4B156C34B0BD57BCC39EFC4C9CA53C4503FDE",
+    "custom_addons/baseer_procurement_requests/hooks.py": "0FD4CBF4E4E2846CB663C3C4B6D26DA4B6B8E9C707E36976A991AC9DD4F53B1E",
+    "custom_addons/baseer_procurement_requests/models/custody.py": "2F2B42E0DC718992CB302DECCB690A7B6258F60A9868E30041428CCC95E5A75C",
+    "custom_addons/baseer_procurement_requests/models/procurement.py": "AB74AC0FC7E3147DCA961CCE293BD82BBE56D8A937216464193F09D8D25F49FE",
+    "custom_addons/baseer_procurement_requests/migrations/19.0.7.0.0/pre-migration.py": "36D1DE2E2BB307CADDB3CC5A394F1DB69328E2A41BC6C9FF4724D03F0260A444",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.js": "F7ED0BD86BD1D94FFD3407DF050A70023AF8AF9D928FD5730B823384F85367AA",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.xml": "71312539558F777F2623101DE9AF388835E1016B4E06A16FFC227E55982582F2",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.scss": "0BF378A14F29C37A2A64B7736F0A7E755862F2941AFE06309BFF469A3A3B6587",
+    "custom_addons/baseer_procurement_requests/i18n/ar_001.po": "E25138C2C67C4C59BE1360A12563EAB6E0E57BACC43EB1AFFA1FADB60A1E2395",
+    "custom_addons/baseer_procurement_requests/tests/__init__.py": "A92E67127784472FCCC08CF5C29C991FC3D60E732C3E310FAC52C4E11C6398CD",
+    "custom_addons/baseer_procurement_requests/tests/test_procurement_flow.py": "5A29DB1D3ADC63600664DB8F86FA6397CDAE696BF5B93B1391D43261A92BCE3A",
+    "custom_addons/baseer_procurement_requests/tests/test_catalog_remediation.py": "2ECD88E77456F944048A9B3C4D027C808BBEB34F83D029B818200F1AE28001A6",
+    "custom_addons/baseer_procurement_requests/tests/test_custody_remediation.py": "5C6EFA004B7D6635EB7FE476044B68FA8A97D9B0A3C4B5340FDB8C8899C6593C",
+    "custom_addons/baseer_purchase_batch/models/purchase_batch.py": "07C6390882577BE16762B2B312F6F1B529CC042C74D397FD9316442B208039C0",
+    "tools/prc_concurrency_probe.py": "CAC33300767BC1FA4C7631804C5FC7466701BE91F0F86285DB534D8C5CF5127E",
+    "tools/prc_capacity_approve_probe.py": "32653BDDAA6C1339AFBE410747AE0BFD68ADE3547A8CC8084B523915DE214576",
+    "tools/prc_purchase_batch_bulk_probe.py": "4CE9F8B8A48C1DF731F0D8400B361705AB3F411B569FF577C54EC872999545A7",
+    "docs/releases/2026-09-12-procurement-remediation1/TEST-EVIDENCE.md": "FD2123B8E556D4474D28F90721EC653E3C385C30F464CA77DE175D59BA4AD6B3"
+  },
+  "verification": {
+    "fresh_suite": "32 reported; 26 executed; 0 failed; 0 errors",
+    "concurrency": "PASS in both close-first and settlement-first directions",
+    "capacity": "5 x 20 header-flow approvals; p95 9667.636 ms; 100 bills and 100 settlements; final balance 0",
+    "bulk_regression": "3 rows mapped; 2 direct paid; 1 credit open; duplicate rejected; atomic rollback; 0 leaked moves",
+    "qa_runtime": "healthy; restart count 0; local and Tailscale HTTP 200; websocket 101; no self-reload beyond 240 seconds"
+  },
+  "backup": {
+    "directory": ".local-backups/procurement-remediation1-20260911/pre-upgrade",
+    "database_sha256": "3354D143AF24F8300E9B2CFBC71C798E68606317306EBF7A773F02C367DF27E3",
+    "volume_sha256": "F3A71B183EED1A83AA5B0D66E0E9EEDFF9DFA306FEF90FD543AAF5494D6F4170"
+  },
+  "decision": "GO for QA only. Production is untouched and not approved."
+}

@@ -1,0 +1,188 @@
+{
+  "database": "baseer_sim90_20260910",
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "all business actors use real non-superuser roles",
+      "passed": true
+    },
+    {
+      "name": "cashier and accountant lack payroll manager authority",
+      "passed": true
+    },
+    {
+      "name": "dense three-month HR data loaded",
+      "passed": true
+    },
+    {
+      "name": "cashier sees all own seeded draft batches",
+      "passed": true
+    },
+    {
+      "name": "cashier search contains no other creator batches",
+      "passed": true
+    },
+    {
+      "name": "owner approved production-volume batch present",
+      "passed": true
+    },
+    {
+      "name": "cashier cannot directly read owner batch",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier cannot directly read owner batch row",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier cannot approve even own purchase batch",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "denied cashier approval creates no source bills",
+      "passed": true
+    }
+  ],
+  "hard_commit_guard": true,
+  "rollback": true,
+  "scope": "Cashier batches, bounded advance entry, correction toggle and company isolation",
+  "error": "Traceback (most recent call last):\n  File \"/tmp/sim90/role_journeys.py\", line 95, in <module>\n    accountant_batch.action_approve()\n  File \"/mnt/baseer-addons/baseer_access_roles/models/purchase_batch.py\", line 12, in action_approve\n    return super().action_approve()\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_purchase_batch/models/purchase_batch.py\", line 325, in action_approve\n    bill = batch.env['account.move'].create(values['bill'])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/ic1-addons/baseer_financial_correction/models/lifecycle.py\", line 85, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_hr_services/models/bill.py\", line 22, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/ic1-addons/baseer_pos_summary/models/accounting.py\", line 30, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/correction.py\", line 37, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/end_service.py\", line 334, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/loan.py\", line 467, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/payroll.py\", line 734, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/purchase/models/account_invoice.py\", line 174, in create\n    moves = super(AccountMove, self).create(vals_list)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/l10n_gcc_invoice/models/account_move.py\", line 66, in create\n    moves = super().create(vals_list)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/third-party-addons/erp_heritage_19/eh_account_base/models/account_move.py\", line 665, in create\n    moves = super(AccountMove, create_self).create(vals_list)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/account/models/account_move.py\", line 3888, in create\n    moves = super().create(vals_list)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py\", line 328, in create\n    threads = super(MailThread, self).create(vals_list)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 4711, in create\n    records = self._create(data_list)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 4939, in _create\n    field.create([\n  File \"/usr/lib/python3/dist-packages/odoo/orm/fields_relational.py\", line 735, in create\n    self.write_batch(record_values, True)\n  File \"/usr/lib/python3/dist-packages/odoo/orm/fields_relational.py\", line 761, in write_batch\n    self.write_real(records_commands_list, create)\n  File \"/usr/lib/python3/dist-packages/odoo/orm/fields_relational.py\", line 1045, in write_real\n    flush()\n  File \"/usr/lib/python3/dist-packages/odoo/orm/fields_relational.py\", line 1001, in flush\n    comodel.create(to_create)\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/ic1-addons/baseer_financial_correction/models/lifecycle.py\", line 131, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_hr_services/models/bill.py\", line 50, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/ic1-addons/baseer_pos_summary/models/accounting.py\", line 92, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/end_service.py\", line 357, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/loan.py\", line 501, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_payroll/models/payroll.py\", line 759, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/third-party-addons/erp_heritage_19/eh_account_base/models/account_move.py\", line 2037, in create\n    lines = super(AccountMoveLine, create_self).create(vals_list)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/account/models/account_move_line.py\", line 1785, in create\n    lines = super().create([self._sanitize_vals(vals) for vals in vals_list])\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/analytic/models/analytic_mixin.py\", line 180, in create\n    return super().create(vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 4711, in create\n    records = self._create(data_list)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 4950, in _create\n    records.check_access('create')\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 4115, in check_access\n    raise result[1]()\nodoo.exceptions.AccessError: أوه لا! يبدو أنك عثرت على سجلات سرية للغاية.\n\nعذراً، محاسب محاكاة بصير (id=6) ليس لديه صلاحية 'إنشاء' للوصول إلى:\n- عنصر اليومية (account.move.line)\n\nإذا كنت حقاً تحتاج إلى صلاحية الوصول، قد تتمكن من كسب موافقة مديرك\n",
+  "before": {
+    "res.users": {
+      "count": 7,
+      "identity_and_write_date_sha256": "bed755a1cbd948c6451b515db301cb91a297563940073981cc97d49886aed470"
+    },
+    "hr.employee": {
+      "count": 26,
+      "identity_and_write_date_sha256": "f7ea4a24537062b40ecccd59108cdbff775cbe3d303146466c65969b0f0cb28e"
+    },
+    "hr.version": {
+      "count": 26,
+      "identity_and_write_date_sha256": "91649866748c913f872adfbf506208abdfb63c339ea8f9bba5afe5f9ed756d81"
+    },
+    "hr.payslip": {
+      "count": 71,
+      "identity_and_write_date_sha256": "f870a4d3b5985bd064dc5c105b4f3b61ad2a94bc6ef9a92394e526fdfeca74df"
+    },
+    "hr.payslip.run": {
+      "count": 3,
+      "identity_and_write_date_sha256": "e0fd0c3b6822b942ab07465ca28305ed4ad3852c968ebb094a19ae43fda0fce5"
+    },
+    "baseer.advance.entry": {
+      "count": 0,
+      "identity_and_write_date_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "baseer.hr.loan": {
+      "count": 24,
+      "identity_and_write_date_sha256": "07df9cff8974a5ed1128f5c9aadede575ce3ced6eefb1a3cbdf3ca1848e5f8fd"
+    },
+    "baseer.hr.loan.line": {
+      "count": 48,
+      "identity_and_write_date_sha256": "bfc839d1856493bbc1e6e01c057b3aace7a7572278ecf5199400eba5c74f2767"
+    },
+    "baseer.hr.loan.allocation": {
+      "count": 43,
+      "identity_and_write_date_sha256": "daf9f931ae953b8fb3333f7341136bbe07dc2230fc78a5b62dea9646a360137d"
+    },
+    "baseer.purchase.batch": {
+      "count": 93,
+      "identity_and_write_date_sha256": "643cace7f685ec6311110ad63e87d57ef443bc0025b1c069e08109eb3855a145"
+    },
+    "baseer.purchase.batch.line": {
+      "count": 543,
+      "identity_and_write_date_sha256": "3e90b4c759ad9ee00aa00977e0104b043787342deebc0798818cc6aad13fe357"
+    },
+    "account.move": {
+      "count": 5019,
+      "identity_and_write_date_sha256": "83a464ba2add88de909cd152f1144485db06f3040ed9db465c04cddc00b1ff96"
+    },
+    "account.move.line": {
+      "count": 12852,
+      "identity_and_write_date_sha256": "271e0a191c816dfb895c4b647f2d58939e8bdd9e404115f6a236a64526a66e8f"
+    },
+    "account.payment": {
+      "count": 2463,
+      "identity_and_write_date_sha256": "f0e09866ac9da0bc70686e3bbff3422e05e1cf37b24b8310b5932c743503d0c5"
+    },
+    "res.partner": {
+      "count": 101,
+      "identity_and_write_date_sha256": "d9d30bec0a1d5e8f2fa182e1fe3dfe1eb713594ff9c830efb0ef2fff80620c3f"
+    },
+    "baseer.financial.correction.audit": {
+      "count": 45,
+      "identity_and_write_date_sha256": "ba5b30eb62b399d421b1199e5ca9f675a4e5c961d45f4b2783017be4bfee0408"
+    },
+    "roles_sha256": "2b0390b7d3f4fdf2dad1d2e18b5eec97d3f9403a64430a229638ab2d6261b7b9"
+  },
+  "after": {
+    "res.users": {
+      "count": 7,
+      "identity_and_write_date_sha256": "bed755a1cbd948c6451b515db301cb91a297563940073981cc97d49886aed470"
+    },
+    "hr.employee": {
+      "count": 26,
+      "identity_and_write_date_sha256": "f7ea4a24537062b40ecccd59108cdbff775cbe3d303146466c65969b0f0cb28e"
+    },
+    "hr.version": {
+      "count": 26,
+      "identity_and_write_date_sha256": "91649866748c913f872adfbf506208abdfb63c339ea8f9bba5afe5f9ed756d81"
+    },
+    "hr.payslip": {
+      "count": 71,
+      "identity_and_write_date_sha256": "f870a4d3b5985bd064dc5c105b4f3b61ad2a94bc6ef9a92394e526fdfeca74df"
+    },
+    "hr.payslip.run": {
+      "count": 3,
+      "identity_and_write_date_sha256": "e0fd0c3b6822b942ab07465ca28305ed4ad3852c968ebb094a19ae43fda0fce5"
+    },
+    "baseer.advance.entry": {
+      "count": 0,
+      "identity_and_write_date_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "baseer.hr.loan": {
+      "count": 24,
+      "identity_and_write_date_sha256": "07df9cff8974a5ed1128f5c9aadede575ce3ced6eefb1a3cbdf3ca1848e5f8fd"
+    },
+    "baseer.hr.loan.line": {
+      "count": 48,
+      "identity_and_write_date_sha256": "bfc839d1856493bbc1e6e01c057b3aace7a7572278ecf5199400eba5c74f2767"
+    },
+    "baseer.hr.loan.allocation": {
+      "count": 43,
+      "identity_and_write_date_sha256": "daf9f931ae953b8fb3333f7341136bbe07dc2230fc78a5b62dea9646a360137d"
+    },
+    "baseer.purchase.batch": {
+      "count": 93,
+      "identity_and_write_date_sha256": "643cace7f685ec6311110ad63e87d57ef443bc0025b1c069e08109eb3855a145"
+    },
+    "baseer.purchase.batch.line": {
+      "count": 543,
+      "identity_and_write_date_sha256": "3e90b4c759ad9ee00aa00977e0104b043787342deebc0798818cc6aad13fe357"
+    },
+    "account.move": {
+      "count": 5019,
+      "identity_and_write_date_sha256": "83a464ba2add88de909cd152f1144485db06f3040ed9db465c04cddc00b1ff96"
+    },
+    "account.move.line": {
+      "count": 12852,
+      "identity_and_write_date_sha256": "271e0a191c816dfb895c4b647f2d58939e8bdd9e404115f6a236a64526a66e8f"
+    },
+    "account.payment": {
+      "count": 2463,
+      "identity_and_write_date_sha256": "f0e09866ac9da0bc70686e3bbff3422e05e1cf37b24b8310b5932c743503d0c5"
+    },
+    "res.partner": {
+      "count": 101,
+      "identity_and_write_date_sha256": "d9d30bec0a1d5e8f2fa182e1fe3dfe1eb713594ff9c830efb0ef2fff80620c3f"
+    },
+    "baseer.financial.correction.audit": {
+      "count": 45,
+      "identity_and_write_date_sha256": "ba5b30eb62b399d421b1199e5ca9f675a4e5c961d45f4b2783017be4bfee0408"
+    },
+    "roles_sha256": "2b0390b7d3f4fdf2dad1d2e18b5eec97d3f9403a64430a229638ab2d6261b7b9"
+  },
+  "passed": 10
+}

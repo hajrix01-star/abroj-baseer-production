@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "name": "month_end_2027-02-01",
+      "passed": true
+    },
+    {
+      "name": "editable_date_2027-02-01",
+      "passed": true
+    },
+    {
+      "name": "month_end_2028-02-01",
+      "passed": true
+    },
+    {
+      "name": "editable_date_2028-02-01",
+      "passed": true
+    },
+    {
+      "name": "month_end_2027-04-01",
+      "passed": true
+    },
+    {
+      "name": "editable_date_2027-04-01",
+      "passed": true
+    },
+    {
+      "name": "month_end_2027-12-01",
+      "passed": true
+    },
+    {
+      "name": "editable_date_2027-12-01",
+      "passed": true
+    },
+    {
+      "name": "explicit_date_preserved",
+      "passed": true
+    },
+    {
+      "name": "context_date_preserved",
+      "passed": true
+    },
+    {
+      "name": "explicit_beats_context",
+      "passed": true
+    },
+    {
+      "name": "explicit_empty_date_not_replaced",
+      "passed": true
+    },
+    {
+      "name": "invalid_month",
+      "passed": true
+    },
+    {
+      "name": "empty_required_month",
+      "passed": true
+    },
+    {
+      "name": "later_month_payment_date",
+      "passed": true
+    },
+    {
+      "name": "salary_period_unchanged",
+      "passed": true
+    },
+    {
+      "name": "loan_history_employee_scope",
+      "passed": true
+    },
+    {
+      "name": "repaid_history_visible",
+      "passed": true
+    }
+  ],
+  "status": "passed",
+  "rolled_back": true
+}

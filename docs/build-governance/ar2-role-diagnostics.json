@@ -1,0 +1,154 @@
+[
+  {
+    "case": "computed-admin-groups",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  },
+  {
+    "case": "computed-user-groups",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  },
+  {
+    "case": "context-default-admin-groups",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  },
+  {
+    "case": "context-default-computed-groups",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  },
+  {
+    "case": "context-debug",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  },
+  {
+    "case": "context-default-role",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  },
+  {
+    "case": "notification-inbox",
+    "result": "ValidationError",
+    "message": "These groups exceed the selected access role. Switch to manual access first."
+  },
+  {
+    "case": "notification-email",
+    "result": "created",
+    "groups": [
+      "baseer_access_roles.group_accountant",
+      "base.group_user",
+      "base.group_multi_currency",
+      "base.group_no_one",
+      "analytic.group_analytic_accounting",
+      "product.group_product_pricelist",
+      "sales_team.group_sale_salesman",
+      "sales_team.group_sale_salesman_all_leads",
+      "account.group_account_invoice",
+      "point_of_sale.group_pos_user",
+      "hr_attendance.group_hr_attendance_own_reader",
+      "purchase.group_purchase_user",
+      "purchase.group_purchase_manager",
+      "purchase.group_send_reminder",
+      "base.group_multi_company"
+    ]
+  }
+]

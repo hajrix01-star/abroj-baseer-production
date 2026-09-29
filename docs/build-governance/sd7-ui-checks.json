@@ -1,0 +1,17 @@
+{
+  "status": "pass",
+  "checks": [
+    "recorded values4447/202/889.40 and unavailable dashes retained",
+    "today empty period renders5faint examples and no comparison arrows",
+    "clear Arabic illustrative-preview label before cards",
+    "preview legend labels salesSARbars and customercountline",
+    "three chart/performance outerborders0px",
+    "480px client450 scroll450 no horizontal overflow",
+    "restored month-to-date filter"
+  ],
+  "screenshots": [
+    "qa-real.png",
+    "qa-preview.png",
+    "qa-narrow.png"
+  ]
+}

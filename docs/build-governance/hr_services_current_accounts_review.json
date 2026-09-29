@@ -1,0 +1,2552 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "reviewed_at": "2026-09-08",
+  "mode": "read-only",
+  "accounts": [
+    {
+      "company_id": 1,
+      "company": "My Company",
+      "parent_id": null,
+      "account_id": 1451,
+      "code": "102090",
+      "name": {
+        "en_US": "Employee advances | سلف الموظفين"
+      },
+      "account_type": "asset_receivable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 1,
+      "company": "My Company",
+      "parent_id": null,
+      "account_id": 1449,
+      "code": "201090",
+      "name": {
+        "en_US": "Salaries payable | رواتب مستحقة الدفع"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 1,
+      "company": "My Company",
+      "parent_id": null,
+      "account_id": 19,
+      "code": "230100",
+      "name": {
+        "en_US": "Employee Payroll Taxes",
+        "ar_001": "ضرائب مرتبات الموظفين"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 1455,
+      "code": "102090",
+      "name": {
+        "en_US": "Employee advances | سلف الموظفين"
+      },
+      "account_type": "asset_receivable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 451,
+      "code": "103016",
+      "name": {
+        "en_US": "Shipment Insurance",
+        "ar_001": "تأمين الشحن"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 457,
+      "code": "104021",
+      "name": {
+        "en_US": "Prepaid Medical Insurance",
+        "ar_001": "تأمين طبي مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 458,
+      "code": "104022",
+      "name": {
+        "en_US": "Prepaid Life Insurance",
+        "ar_001": "تأمين على الحياة مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 460,
+      "code": "104024",
+      "name": {
+        "en_US": "Prepaid Other Insurance",
+        "ar_001": "تأمينات اخرى مدفوعة مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 464,
+      "code": "104028",
+      "name": {
+        "en_US": "Prepaid Employees Housing",
+        "ar_001": "بدل سكن للموظفين مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 473,
+      "code": "104037",
+      "name": {
+        "en_US": "Deposit - Office Rent",
+        "ar_001": "رسوم تأمين - ايجار مكتبي"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 474,
+      "code": "104038",
+      "name": {
+        "en_US": "Deposits - Customs",
+        "ar_001": "رسوم تأمين - جمارك"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 475,
+      "code": "104039",
+      "name": {
+        "en_US": "Deposit to Immigration (Visa)",
+        "ar_001": "رسوم تأمين - شؤون الهجرة"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 476,
+      "code": "104040",
+      "name": {
+        "en_US": "Deposit Others",
+        "ar_001": "رسوم تأمين - اخرى"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 490,
+      "code": "106012",
+      "name": {
+        "en_US": "Prepaid Employee Expenses",
+        "ar_001": "مصروفات الموظفين المدفوعة مقدما"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 495,
+      "code": "201005",
+      "name": {
+        "en_US": "Leave Tickets Provision",
+        "ar_001": "مخصص تذاكر"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 500,
+      "code": "201010",
+      "name": {
+        "en_US": "Accrued Other Personnel Cost",
+        "ar_001": "تكاليف موظفين مستحقة"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 511,
+      "code": "201022",
+      "name": {
+        "en_US": "GOSI Employee Payable",
+        "ar_001": "القيمة المستحقة للتأمينات الإجتماعية"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 513,
+      "code": "201031",
+      "name": {
+        "en_US": "Visa & Master Credit Cards",
+        "ar_001": "بطاقات الائتمان فيزا وماستر"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 515,
+      "code": "201033",
+      "name": {
+        "en_US": "Manual Visa & Master Cards",
+        "ar_001": "فيزا وماستر بطاقات"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 1454,
+      "code": "201090",
+      "name": {
+        "en_US": "Salaries payable | رواتب مستحقة الدفع"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 524,
+      "code": "400003",
+      "name": {
+        "en_US": "Basic Salary",
+        "ar_001": "مصروف الراتب الاساسي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 527,
+      "code": "400006",
+      "name": {
+        "en_US": "Leave Ticket",
+        "ar_001": "مصروف تذاكر موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 528,
+      "code": "400007",
+      "name": {
+        "en_US": "Leave Salary",
+        "ar_001": "مصروف اجازة موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 529,
+      "code": "400008",
+      "name": {
+        "en_US": "End Of Service Indemnity",
+        "ar_001": "مصروف نهاية الخدمة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 530,
+      "code": "400009",
+      "name": {
+        "en_US": "Medical Insurance",
+        "ar_001": "مصروف تأمين طبي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 531,
+      "code": "400010",
+      "name": {
+        "en_US": "Life Insurance",
+        "ar_001": "مصروف تأمين على الحياة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 533,
+      "code": "400012",
+      "name": {
+        "en_US": "Staff Other Allowances",
+        "ar_001": "مصروف بدلات اخرى للموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 535,
+      "code": "400014",
+      "name": {
+        "en_US": "Visa Expenses",
+        "ar_001": "مصروف تأشيرة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 536,
+      "code": "400015",
+      "name": {
+        "en_US": "Personnel Cost Others",
+        "ar_001": "مصروف موظفين - اخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 545,
+      "code": "400024",
+      "name": {
+        "en_US": "Air tickets",
+        "ar_001": "مصاريف تذاكر طيران"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 553,
+      "code": "400032",
+      "name": {
+        "en_US": "Trade License Fees",
+        "ar_001": "مصروف رسوم الرخصة التجارية"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 561,
+      "code": "400040",
+      "name": {
+        "en_US": "Insurance",
+        "ar_001": "مصروف تأمين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 6,
+      "company": "QA ARZ",
+      "parent_id": null,
+      "account_id": 594,
+      "code": "400075",
+      "name": {
+        "en_US": "Other Employee Expenses",
+        "ar_001": "مصروفات الموظفين الأخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 1457,
+      "code": "102090",
+      "name": {
+        "en_US": "Employee advances | سلف الموظفين"
+      },
+      "account_type": "asset_receivable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 631,
+      "code": "103016",
+      "name": {
+        "en_US": "Shipment Insurance",
+        "ar_001": "تأمين الشحن"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 637,
+      "code": "104021",
+      "name": {
+        "en_US": "Prepaid Medical Insurance",
+        "ar_001": "تأمين طبي مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 638,
+      "code": "104022",
+      "name": {
+        "en_US": "Prepaid Life Insurance",
+        "ar_001": "تأمين على الحياة مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 640,
+      "code": "104024",
+      "name": {
+        "en_US": "Prepaid Other Insurance",
+        "ar_001": "تأمينات اخرى مدفوعة مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 644,
+      "code": "104028",
+      "name": {
+        "en_US": "Prepaid Employees Housing",
+        "ar_001": "بدل سكن للموظفين مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 653,
+      "code": "104037",
+      "name": {
+        "en_US": "Deposit - Office Rent",
+        "ar_001": "رسوم تأمين - ايجار مكتبي"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 654,
+      "code": "104038",
+      "name": {
+        "en_US": "Deposits - Customs",
+        "ar_001": "رسوم تأمين - جمارك"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 655,
+      "code": "104039",
+      "name": {
+        "en_US": "Deposit to Immigration (Visa)",
+        "ar_001": "رسوم تأمين - شؤون الهجرة"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 656,
+      "code": "104040",
+      "name": {
+        "en_US": "Deposit Others",
+        "ar_001": "رسوم تأمين - اخرى"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 670,
+      "code": "106012",
+      "name": {
+        "en_US": "Prepaid Employee Expenses",
+        "ar_001": "مصروفات الموظفين المدفوعة مقدما"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 675,
+      "code": "201005",
+      "name": {
+        "en_US": "Leave Tickets Provision",
+        "ar_001": "مخصص تذاكر"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 680,
+      "code": "201010",
+      "name": {
+        "en_US": "Accrued Other Personnel Cost",
+        "ar_001": "تكاليف موظفين مستحقة"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 691,
+      "code": "201022",
+      "name": {
+        "en_US": "GOSI Employee Payable",
+        "ar_001": "القيمة المستحقة للتأمينات الإجتماعية"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 693,
+      "code": "201031",
+      "name": {
+        "en_US": "Visa & Master Credit Cards",
+        "ar_001": "بطاقات الائتمان فيزا وماستر"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 695,
+      "code": "201033",
+      "name": {
+        "en_US": "Manual Visa & Master Cards",
+        "ar_001": "فيزا وماستر بطاقات"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 1456,
+      "code": "201090",
+      "name": {
+        "en_US": "Salaries payable | رواتب مستحقة الدفع"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 704,
+      "code": "400003",
+      "name": {
+        "en_US": "Basic Salary",
+        "ar_001": "مصروف الراتب الاساسي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 707,
+      "code": "400006",
+      "name": {
+        "en_US": "Leave Ticket",
+        "ar_001": "مصروف تذاكر موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 708,
+      "code": "400007",
+      "name": {
+        "en_US": "Leave Salary",
+        "ar_001": "مصروف اجازة موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 709,
+      "code": "400008",
+      "name": {
+        "en_US": "End Of Service Indemnity",
+        "ar_001": "مصروف نهاية الخدمة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 710,
+      "code": "400009",
+      "name": {
+        "en_US": "Medical Insurance",
+        "ar_001": "مصروف تأمين طبي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 711,
+      "code": "400010",
+      "name": {
+        "en_US": "Life Insurance",
+        "ar_001": "مصروف تأمين على الحياة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 713,
+      "code": "400012",
+      "name": {
+        "en_US": "Staff Other Allowances",
+        "ar_001": "مصروف بدلات اخرى للموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 715,
+      "code": "400014",
+      "name": {
+        "en_US": "Visa Expenses",
+        "ar_001": "مصروف تأشيرة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 716,
+      "code": "400015",
+      "name": {
+        "en_US": "Personnel Cost Others",
+        "ar_001": "مصروف موظفين - اخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 725,
+      "code": "400024",
+      "name": {
+        "en_US": "Air tickets",
+        "ar_001": "مصاريف تذاكر طيران"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 733,
+      "code": "400032",
+      "name": {
+        "en_US": "Trade License Fees",
+        "ar_001": "مصروف رسوم الرخصة التجارية"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 741,
+      "code": "400040",
+      "name": {
+        "en_US": "Insurance",
+        "ar_001": "مصروف تأمين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 7,
+      "company": "QA المعلم الشامي",
+      "parent_id": null,
+      "account_id": 774,
+      "code": "400075",
+      "name": {
+        "en_US": "Other Employee Expenses",
+        "ar_001": "مصروفات الموظفين الأخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 1459,
+      "code": "102090",
+      "name": {
+        "en_US": "Employee advances | سلف الموظفين"
+      },
+      "account_type": "asset_receivable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 811,
+      "code": "103016",
+      "name": {
+        "en_US": "Shipment Insurance",
+        "ar_001": "تأمين الشحن"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 817,
+      "code": "104021",
+      "name": {
+        "en_US": "Prepaid Medical Insurance",
+        "ar_001": "تأمين طبي مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 818,
+      "code": "104022",
+      "name": {
+        "en_US": "Prepaid Life Insurance",
+        "ar_001": "تأمين على الحياة مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 820,
+      "code": "104024",
+      "name": {
+        "en_US": "Prepaid Other Insurance",
+        "ar_001": "تأمينات اخرى مدفوعة مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 824,
+      "code": "104028",
+      "name": {
+        "en_US": "Prepaid Employees Housing",
+        "ar_001": "بدل سكن للموظفين مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 833,
+      "code": "104037",
+      "name": {
+        "en_US": "Deposit - Office Rent",
+        "ar_001": "رسوم تأمين - ايجار مكتبي"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 834,
+      "code": "104038",
+      "name": {
+        "en_US": "Deposits - Customs",
+        "ar_001": "رسوم تأمين - جمارك"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 835,
+      "code": "104039",
+      "name": {
+        "en_US": "Deposit to Immigration (Visa)",
+        "ar_001": "رسوم تأمين - شؤون الهجرة"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 836,
+      "code": "104040",
+      "name": {
+        "en_US": "Deposit Others",
+        "ar_001": "رسوم تأمين - اخرى"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 850,
+      "code": "106012",
+      "name": {
+        "en_US": "Prepaid Employee Expenses",
+        "ar_001": "مصروفات الموظفين المدفوعة مقدما"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 855,
+      "code": "201005",
+      "name": {
+        "en_US": "Leave Tickets Provision",
+        "ar_001": "مخصص تذاكر"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 860,
+      "code": "201010",
+      "name": {
+        "en_US": "Accrued Other Personnel Cost",
+        "ar_001": "تكاليف موظفين مستحقة"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 871,
+      "code": "201022",
+      "name": {
+        "en_US": "GOSI Employee Payable",
+        "ar_001": "القيمة المستحقة للتأمينات الإجتماعية"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 873,
+      "code": "201031",
+      "name": {
+        "en_US": "Visa & Master Credit Cards",
+        "ar_001": "بطاقات الائتمان فيزا وماستر"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 875,
+      "code": "201033",
+      "name": {
+        "en_US": "Manual Visa & Master Cards",
+        "ar_001": "فيزا وماستر بطاقات"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 1458,
+      "code": "201090",
+      "name": {
+        "en_US": "Salaries payable | رواتب مستحقة الدفع"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 884,
+      "code": "400003",
+      "name": {
+        "en_US": "Basic Salary",
+        "ar_001": "مصروف الراتب الاساسي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 887,
+      "code": "400006",
+      "name": {
+        "en_US": "Leave Ticket",
+        "ar_001": "مصروف تذاكر موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 888,
+      "code": "400007",
+      "name": {
+        "en_US": "Leave Salary",
+        "ar_001": "مصروف اجازة موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 889,
+      "code": "400008",
+      "name": {
+        "en_US": "End Of Service Indemnity",
+        "ar_001": "مصروف نهاية الخدمة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 890,
+      "code": "400009",
+      "name": {
+        "en_US": "Medical Insurance",
+        "ar_001": "مصروف تأمين طبي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 891,
+      "code": "400010",
+      "name": {
+        "en_US": "Life Insurance",
+        "ar_001": "مصروف تأمين على الحياة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 893,
+      "code": "400012",
+      "name": {
+        "en_US": "Staff Other Allowances",
+        "ar_001": "مصروف بدلات اخرى للموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 895,
+      "code": "400014",
+      "name": {
+        "en_US": "Visa Expenses",
+        "ar_001": "مصروف تأشيرة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 896,
+      "code": "400015",
+      "name": {
+        "en_US": "Personnel Cost Others",
+        "ar_001": "مصروف موظفين - اخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 905,
+      "code": "400024",
+      "name": {
+        "en_US": "Air tickets",
+        "ar_001": "مصاريف تذاكر طيران"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 913,
+      "code": "400032",
+      "name": {
+        "en_US": "Trade License Fees",
+        "ar_001": "مصروف رسوم الرخصة التجارية"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 921,
+      "code": "400040",
+      "name": {
+        "en_US": "Insurance",
+        "ar_001": "مصروف تأمين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 8,
+      "company": "QA دوحة المستهلك",
+      "parent_id": null,
+      "account_id": 954,
+      "code": "400075",
+      "name": {
+        "en_US": "Other Employee Expenses",
+        "ar_001": "مصروفات الموظفين الأخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1461,
+      "code": "102090",
+      "name": {
+        "en_US": "Employee advances | سلف الموظفين"
+      },
+      "account_type": "asset_receivable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 991,
+      "code": "103016",
+      "name": {
+        "en_US": "Shipment Insurance",
+        "ar_001": "تأمين الشحن"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 997,
+      "code": "104021",
+      "name": {
+        "en_US": "Prepaid Medical Insurance",
+        "ar_001": "تأمين طبي مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 998,
+      "code": "104022",
+      "name": {
+        "en_US": "Prepaid Life Insurance",
+        "ar_001": "تأمين على الحياة مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1000,
+      "code": "104024",
+      "name": {
+        "en_US": "Prepaid Other Insurance",
+        "ar_001": "تأمينات اخرى مدفوعة مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1004,
+      "code": "104028",
+      "name": {
+        "en_US": "Prepaid Employees Housing",
+        "ar_001": "بدل سكن للموظفين مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1013,
+      "code": "104037",
+      "name": {
+        "en_US": "Deposit - Office Rent",
+        "ar_001": "رسوم تأمين - ايجار مكتبي"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1014,
+      "code": "104038",
+      "name": {
+        "en_US": "Deposits - Customs",
+        "ar_001": "رسوم تأمين - جمارك"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1015,
+      "code": "104039",
+      "name": {
+        "en_US": "Deposit to Immigration (Visa)",
+        "ar_001": "رسوم تأمين - شؤون الهجرة"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1016,
+      "code": "104040",
+      "name": {
+        "en_US": "Deposit Others",
+        "ar_001": "رسوم تأمين - اخرى"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1030,
+      "code": "106012",
+      "name": {
+        "en_US": "Prepaid Employee Expenses",
+        "ar_001": "مصروفات الموظفين المدفوعة مقدما"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1035,
+      "code": "201005",
+      "name": {
+        "en_US": "Leave Tickets Provision",
+        "ar_001": "مخصص تذاكر"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1040,
+      "code": "201010",
+      "name": {
+        "en_US": "Accrued Other Personnel Cost",
+        "ar_001": "تكاليف موظفين مستحقة"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1051,
+      "code": "201022",
+      "name": {
+        "en_US": "GOSI Employee Payable",
+        "ar_001": "القيمة المستحقة للتأمينات الإجتماعية"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1053,
+      "code": "201031",
+      "name": {
+        "en_US": "Visa & Master Credit Cards",
+        "ar_001": "بطاقات الائتمان فيزا وماستر"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1055,
+      "code": "201033",
+      "name": {
+        "en_US": "Manual Visa & Master Cards",
+        "ar_001": "فيزا وماستر بطاقات"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1460,
+      "code": "201090",
+      "name": {
+        "en_US": "Salaries payable | رواتب مستحقة الدفع"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1064,
+      "code": "400003",
+      "name": {
+        "en_US": "Basic Salary",
+        "ar_001": "مصروف الراتب الاساسي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1067,
+      "code": "400006",
+      "name": {
+        "en_US": "Leave Ticket",
+        "ar_001": "مصروف تذاكر موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1068,
+      "code": "400007",
+      "name": {
+        "en_US": "Leave Salary",
+        "ar_001": "مصروف اجازة موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1069,
+      "code": "400008",
+      "name": {
+        "en_US": "End Of Service Indemnity",
+        "ar_001": "مصروف نهاية الخدمة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1070,
+      "code": "400009",
+      "name": {
+        "en_US": "Medical Insurance",
+        "ar_001": "مصروف تأمين طبي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1071,
+      "code": "400010",
+      "name": {
+        "en_US": "Life Insurance",
+        "ar_001": "مصروف تأمين على الحياة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1073,
+      "code": "400012",
+      "name": {
+        "en_US": "Staff Other Allowances",
+        "ar_001": "مصروف بدلات اخرى للموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1075,
+      "code": "400014",
+      "name": {
+        "en_US": "Visa Expenses",
+        "ar_001": "مصروف تأشيرة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1076,
+      "code": "400015",
+      "name": {
+        "en_US": "Personnel Cost Others",
+        "ar_001": "مصروف موظفين - اخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1085,
+      "code": "400024",
+      "name": {
+        "en_US": "Air tickets",
+        "ar_001": "مصاريف تذاكر طيران"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1093,
+      "code": "400032",
+      "name": {
+        "en_US": "Trade License Fees",
+        "ar_001": "مصروف رسوم الرخصة التجارية"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1101,
+      "code": "400040",
+      "name": {
+        "en_US": "Insurance",
+        "ar_001": "مصروف تأمين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1134,
+      "code": "400075",
+      "name": {
+        "en_US": "Other Employee Expenses",
+        "ar_001": "مصروفات الموظفين الأخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 9,
+      "company": "QA الفئات النقدية",
+      "parent_id": null,
+      "account_id": 1161,
+      "code": "QA6004",
+      "name": {
+        "en_US": "رواتب الموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1258,
+      "code": "103016",
+      "name": {
+        "en_US": "Shipment Insurance",
+        "ar_001": "تأمين الشحن"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1264,
+      "code": "104021",
+      "name": {
+        "en_US": "Prepaid Medical Insurance",
+        "ar_001": "تأمين طبي مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1265,
+      "code": "104022",
+      "name": {
+        "en_US": "Prepaid Life Insurance",
+        "ar_001": "تأمين على الحياة مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1267,
+      "code": "104024",
+      "name": {
+        "en_US": "Prepaid Other Insurance",
+        "ar_001": "تأمينات اخرى مدفوعة مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1271,
+      "code": "104028",
+      "name": {
+        "en_US": "Prepaid Employees Housing",
+        "ar_001": "بدل سكن للموظفين مدفوع مسبقا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1280,
+      "code": "104037",
+      "name": {
+        "en_US": "Deposit - Office Rent",
+        "ar_001": "رسوم تأمين - ايجار مكتبي"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1281,
+      "code": "104038",
+      "name": {
+        "en_US": "Deposits - Customs",
+        "ar_001": "رسوم تأمين - جمارك"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1282,
+      "code": "104039",
+      "name": {
+        "en_US": "Deposit to Immigration (Visa)",
+        "ar_001": "رسوم تأمين - شؤون الهجرة"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1283,
+      "code": "104040",
+      "name": {
+        "en_US": "Deposit Others",
+        "ar_001": "رسوم تأمين - اخرى"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1297,
+      "code": "106012",
+      "name": {
+        "en_US": "Prepaid Employee Expenses",
+        "ar_001": "مصروفات الموظفين المدفوعة مقدما"
+      },
+      "account_type": "asset_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1243,
+      "code": "110001",
+      "name": {
+        "en_US": "سلف الموظفين"
+      },
+      "account_type": "asset_receivable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1302,
+      "code": "201005",
+      "name": {
+        "en_US": "Leave Tickets Provision",
+        "ar_001": "مخصص تذاكر"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1307,
+      "code": "201010",
+      "name": {
+        "en_US": "Accrued Other Personnel Cost",
+        "ar_001": "تكاليف موظفين مستحقة"
+      },
+      "account_type": "liability_current",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1318,
+      "code": "201022",
+      "name": {
+        "en_US": "GOSI Employee Payable",
+        "ar_001": "القيمة المستحقة للتأمينات الإجتماعية"
+      },
+      "account_type": "liability_payable",
+      "active": true,
+      "reconcile": true
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1320,
+      "code": "201031",
+      "name": {
+        "en_US": "Visa & Master Credit Cards",
+        "ar_001": "بطاقات الائتمان فيزا وماستر"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1322,
+      "code": "201033",
+      "name": {
+        "en_US": "Manual Visa & Master Cards",
+        "ar_001": "فيزا وماستر بطاقات"
+      },
+      "account_type": "liability_credit_card",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1331,
+      "code": "400003",
+      "name": {
+        "en_US": "Basic Salary",
+        "ar_001": "مصروف الراتب الاساسي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1334,
+      "code": "400006",
+      "name": {
+        "en_US": "Leave Ticket",
+        "ar_001": "مصروف تذاكر موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1335,
+      "code": "400007",
+      "name": {
+        "en_US": "Leave Salary",
+        "ar_001": "مصروف اجازة موظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1336,
+      "code": "400008",
+      "name": {
+        "en_US": "End Of Service Indemnity",
+        "ar_001": "مصروف نهاية الخدمة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1337,
+      "code": "400009",
+      "name": {
+        "en_US": "Medical Insurance",
+        "ar_001": "مصروف تأمين طبي"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1338,
+      "code": "400010",
+      "name": {
+        "en_US": "Life Insurance",
+        "ar_001": "مصروف تأمين على الحياة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1340,
+      "code": "400012",
+      "name": {
+        "en_US": "Staff Other Allowances",
+        "ar_001": "مصروف بدلات اخرى للموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1342,
+      "code": "400014",
+      "name": {
+        "en_US": "Visa Expenses",
+        "ar_001": "مصروف تأشيرة"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1343,
+      "code": "400015",
+      "name": {
+        "en_US": "Personnel Cost Others",
+        "ar_001": "مصروف موظفين - اخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1352,
+      "code": "400024",
+      "name": {
+        "en_US": "Air tickets",
+        "ar_001": "مصاريف تذاكر طيران"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1360,
+      "code": "400032",
+      "name": {
+        "en_US": "Trade License Fees",
+        "ar_001": "مصروف رسوم الرخصة التجارية"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1368,
+      "code": "400040",
+      "name": {
+        "en_US": "Insurance",
+        "ar_001": "مصروف تأمين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1401,
+      "code": "400075",
+      "name": {
+        "en_US": "Other Employee Expenses",
+        "ar_001": "مصروفات الموظفين الأخرى"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    },
+    {
+      "company_id": 10,
+      "company": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "account_id": 1240,
+      "code": "910001",
+      "name": {
+        "en_US": "رواتب الموظفين"
+      },
+      "account_type": "expense",
+      "active": true,
+      "reconcile": false
+    }
+  ],
+  "companies": [
+    {
+      "id": 1,
+      "name": "My Company",
+      "parent_id": null,
+      "chart_template": "generic_coa",
+      "baseer_salary_expense_id": 1448,
+      "baseer_salary_payable_id": 1449,
+      "baseer_deduction_account_id": 1450,
+      "baseer_loan_account_id": 1451,
+      "baseer_eos_expense_id": 1452
+    },
+    {
+      "id": 6,
+      "name": "QA ARZ",
+      "parent_id": null,
+      "chart_template": "sa",
+      "baseer_salary_expense_id": 524,
+      "baseer_salary_payable_id": 1454,
+      "baseer_deduction_account_id": 593,
+      "baseer_loan_account_id": 1455,
+      "baseer_eos_expense_id": 529
+    },
+    {
+      "id": 7,
+      "name": "QA المعلم الشامي",
+      "parent_id": null,
+      "chart_template": "sa",
+      "baseer_salary_expense_id": 704,
+      "baseer_salary_payable_id": 1456,
+      "baseer_deduction_account_id": 773,
+      "baseer_loan_account_id": 1457,
+      "baseer_eos_expense_id": 709
+    },
+    {
+      "id": 8,
+      "name": "QA دوحة المستهلك",
+      "parent_id": null,
+      "chart_template": "sa",
+      "baseer_salary_expense_id": 884,
+      "baseer_salary_payable_id": 1458,
+      "baseer_deduction_account_id": 953,
+      "baseer_loan_account_id": 1459,
+      "baseer_eos_expense_id": 889
+    },
+    {
+      "id": 9,
+      "name": "QA الفئات النقدية",
+      "parent_id": null,
+      "chart_template": "sa",
+      "baseer_salary_expense_id": 1064,
+      "baseer_salary_payable_id": 1460,
+      "baseer_deduction_account_id": 1133,
+      "baseer_loan_account_id": 1461,
+      "baseer_eos_expense_id": 1069
+    },
+    {
+      "id": 10,
+      "name": "تجربة الرواتب والسلف",
+      "parent_id": null,
+      "chart_template": "sa",
+      "baseer_salary_expense_id": 1240,
+      "baseer_salary_payable_id": 1241,
+      "baseer_deduction_account_id": 1242,
+      "baseer_loan_account_id": 1243,
+      "baseer_eos_expense_id": 1336
+    }
+  ],
+  "duplicate_codes": null,
+  "duplicate_names": [
+    {
+      "company_id": 7,
+      "name": "ضريبة مستقطعة مستحقة",
+      "n": 3,
+      "ids": [
+        690,
+        697,
+        701
+      ]
+    },
+    {
+      "company_id": 10,
+      "name": "ضريبة القيمة المضافة المستحقة",
+      "n": 2,
+      "ids": [
+        1319,
+        1327
+      ]
+    },
+    {
+      "company_id": 8,
+      "name": "ضريبة مستقطعة مستحقة",
+      "n": 3,
+      "ids": [
+        870,
+        877,
+        881
+      ]
+    },
+    {
+      "company_id": 10,
+      "name": "مدخلات ضريبة القيمة المضافة",
+      "n": 2,
+      "ids": [
+        1284,
+        1285
+      ]
+    },
+    {
+      "company_id": 8,
+      "name": "مدخلات ضريبة القيمة المضافة",
+      "n": 2,
+      "ids": [
+        837,
+        838
+      ]
+    },
+    {
+      "company_id": 9,
+      "name": "ضريبة مستقطعة مستحقة",
+      "n": 3,
+      "ids": [
+        1050,
+        1057,
+        1061
+      ]
+    },
+    {
+      "company_id": 10,
+      "name": "ضريبة مستقطعة مستحقة",
+      "n": 3,
+      "ids": [
+        1317,
+        1324,
+        1328
+      ]
+    },
+    {
+      "company_id": 9,
+      "name": "مدخلات ضريبة القيمة المضافة",
+      "n": 2,
+      "ids": [
+        1017,
+        1018
+      ]
+    },
+    {
+      "company_id": 6,
+      "name": "ضريبة مستقطعة مستحقة",
+      "n": 3,
+      "ids": [
+        510,
+        517,
+        521
+      ]
+    },
+    {
+      "company_id": 10,
+      "name": "خصومات الرواتب",
+      "n": 2,
+      "ids": [
+        1242,
+        1400
+      ]
+    },
+    {
+      "company_id": 9,
+      "name": "ضريبة القيمة المضافة المستحقة",
+      "n": 2,
+      "ids": [
+        1052,
+        1060
+      ]
+    },
+    {
+      "company_id": 8,
+      "name": "ضريبة القيمة المضافة المستحقة",
+      "n": 2,
+      "ids": [
+        872,
+        880
+      ]
+    },
+    {
+      "company_id": 6,
+      "name": "مدخلات ضريبة القيمة المضافة",
+      "n": 2,
+      "ids": [
+        477,
+        478
+      ]
+    },
+    {
+      "company_id": 6,
+      "name": "ضريبة القيمة المضافة المستحقة",
+      "n": 2,
+      "ids": [
+        512,
+        520
+      ]
+    },
+    {
+      "company_id": 7,
+      "name": "ضريبة القيمة المضافة المستحقة",
+      "n": 2,
+      "ids": [
+        692,
+        700
+      ]
+    },
+    {
+      "company_id": 7,
+      "name": "مدخلات ضريبة القيمة المضافة",
+      "n": 2,
+      "ids": [
+        657,
+        658
+      ]
+    }
+  ],
+  "company1_expenses": [
+    {
+      "id": 11,
+      "code": "141000",
+      "name": {
+        "en_US": "Prepayments",
+        "ar_001": "المدفوعات المسددة مقدمًا"
+      },
+      "account_type": "asset_prepayments",
+      "active": true
+    },
+    {
+      "id": 1448,
+      "code": "400090",
+      "name": {
+        "en_US": "Salary expense | مصروف الرواتب"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 1450,
+      "code": "400091",
+      "name": {
+        "en_US": "Salary deductions | خصومات الرواتب"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 1452,
+      "code": "400092",
+      "name": {
+        "en_US": "End-of-service expense | مصروف نهاية الخدمة"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 29,
+      "code": "443000",
+      "name": {
+        "en_US": "Cash Discount Loss",
+        "ar_001": "خسائر الخصم النقدي"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 32,
+      "code": "600000",
+      "name": {
+        "en_US": "Expenses",
+        "ar_001": "النفقات"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 33,
+      "code": "610000",
+      "name": {
+        "en_US": "Stock Variation",
+        "ar_001": "تباين المخزون"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 34,
+      "code": "611000",
+      "name": {
+        "en_US": "Purchase of Equipments",
+        "ar_001": "شراء المعدات"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 35,
+      "code": "612000",
+      "name": {
+        "en_US": "Rent",
+        "ar_001": "إيجار"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 36,
+      "code": "620000",
+      "name": {
+        "en_US": "Bank Fees",
+        "ar_001": "رسوم بنكية"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 37,
+      "code": "630000",
+      "name": {
+        "en_US": "Salary Expenses",
+        "ar_001": "نفقات المرتبات"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 38,
+      "code": "641000",
+      "name": {
+        "en_US": "Foreign Exchange Loss",
+        "ar_001": "خسائر تحويل العملة الأجنبية"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 39,
+      "code": "642000",
+      "name": {
+        "en_US": "Cash Difference Loss",
+        "ar_001": "خسائر الفروقات النقدية"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 41,
+      "code": "961000",
+      "name": {
+        "en_US": "RD Expenses",
+        "ar_001": "نفقات البحث والتطوير"
+      },
+      "account_type": "expense",
+      "active": true
+    },
+    {
+      "id": 42,
+      "code": "962000",
+      "name": {
+        "en_US": "Sales Expenses",
+        "ar_001": "نفقات المبيعات"
+      },
+      "account_type": "expense",
+      "active": true
+    }
+  ],
+  "findings": {
+    "sa_company_ids": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "all_candidate_accounts_active": true,
+    "candidate_expense_codes": [
+      "400006",
+      "400009",
+      "400014",
+      "400015",
+      "400024",
+      "400075"
+    ],
+    "candidate_prepayment_code": "104021",
+    "no_duplicate_codes": true,
+    "company_1_chart": "generic_coa",
+    "company_1_generic_expense": "600000",
+    "company_1_generic_prepayment": "141000",
+    "distinct_service_expense_for_iqama_found_by_name": false,
+    "reusable_employee_advance_account_ids": {
+      "1": 1451,
+      "6": 1455,
+      "7": 1457,
+      "8": 1459,
+      "9": 1461,
+      "10": 1243
+    },
+    "interpretation": "Existing expense accounts cover most proposed services; choose explicit per-company mappings. Similar ticket/personnel expense names represent classification choices, not automatic merge candidates. Do not reload the Saudi chart into company 1. No application or accounting data changed."
+  }
+}

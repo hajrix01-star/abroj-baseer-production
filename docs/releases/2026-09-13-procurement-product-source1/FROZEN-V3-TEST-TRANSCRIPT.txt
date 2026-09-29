@@ -1,0 +1,21 @@
+Command executed from the frozen candidate-v3 mount:
+docker compose -f compose.yaml -f compose.noorix-migration-qa.yaml run -d --name baseer-prc-product-source1-v3-test --no-deps noorix_migration_qa odoo --config=/etc/odoo/odoo.local.conf --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19 --database=baseer_prc_product_source1_v3_clean_test_20260913 --db-filter=^baseer_prc_product_source1_v3_clean_test_20260913$ --no-database-list --without-demo=all --stop-after-init --max-cron-threads=0 --limit-time-real=0 --test-enable --test-tags=/baseer_procurement_requests -i baseer_procurement_requests
+
+Container mount under test:
+D:\Codex\Baseer-odoo\.local-backups\procurement-product-source1-20260913\candidate-v3\custom_addons -> /mnt/baseer-addons (read-only)
+
+2026-09-12 21:39:22,208 INFO ... Starting ProcurementProductSourceCase.test_injected_history_failure_rolls_back_receipt_cost_and_state ...
+2026-09-12 21:39:22,820 INFO ... Starting ProcurementProductSourceCase.test_purchase_uom_price_is_converted_to_inventory_uom_cost ...
+2026-09-12 21:39:23,062 INFO ... Starting ProcurementProductSourceCase.test_second_purchase_carries_precise_previous_cost ...
+2026-09-12 21:39:23,406 INFO ... Starting ProcurementProductSourceCase.test_used_option_identity_and_history_product_snapshot_are_immutable ...
+2026-09-12 21:39:25,774 INFO ... odoo.tests.stats: baseer_procurement_requests: 45 tests 10.69s 13326 queries
+2026-09-12 21:39:25,774 INFO ... odoo.tests.result: 0 failed, 0 error(s) of 37 tests when loading database 'baseer_prc_product_source1_v3_clean_test_20260913'
+2026-09-12 21:39:25,774 INFO ... Initiating shutdown
+
+Two purchase-batch integration tests were skipped because the disposable fresh database has no SAR company. The module's result is 0 failed / 0 errors. The exited container returned code 0. Shutdown-time cursor messages came only from the disposable container health probe after Odoo had emitted the successful test result.
+
+Cleanup proof:
+- database baseer_prc_product_source1_v3_clean_test_20260913: dropped; post-check count 0
+- filestore /var/lib/odoo/filestore/baseer_prc_product_source1_v3_clean_test_20260913: 436 files before cleanup; exact path removed; post-check absent
+- container baseer-prc-product-source1-v3-test: removed
+

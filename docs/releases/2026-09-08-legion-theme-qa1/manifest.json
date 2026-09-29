@@ -1,0 +1,571 @@
+{
+  "candidate": "LEGION1 QA",
+  "vendor_version": "19.0.1.0.1",
+  "compat_version": "19.0.1.0.0",
+  "original_zip_sha256": "823b6de6e81a11ba722fcbae9a8c996c0fccefbd033a5af020f7fe49158be899",
+  "backup_sha256": "d33c957c79e12c6ba70e94277cb4dcec652065863df736924fe71761bdf068b4",
+  "files": [
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/.gitignore",
+      "sha256": "4a04d7ef4ea03c4988e5ae6a96f2923dddf91088d1b9d4f5805afd43dce836a2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/__init__.py",
+      "sha256": "e45434b3fdab3dad95a63fdd3a1a7abac5d70073d3f57f8c0555592cfd94a2aa"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/__manifest__.py",
+      "sha256": "b14ddf7f2f9804964f09729aaea0a7f76a0a20f06d64ef54d8c82b80f151bbd0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/18.png",
+      "sha256": "ac26b0a153efaa99a19c90f7e3c28a9b66869cf4aea8382281ba690c23aa0962"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/18.svg",
+      "sha256": "49a6734acdc94514f4dfaadc591c07c7b29e2029f8fe988d5b40170d073b858b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 2-100.jpg",
+      "sha256": "6ce90f2a550c9c7bd5badb82b6d2cc99d1f8646440b80b1cda1925aa04bc4256"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 2.png",
+      "sha256": "c2a48c7d5600452fce234a33dcd072377aed2998a70d425ff5cedf90c5f48fcb"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 20.png",
+      "sha256": "81c732a9a8c104c5852d257434608656c532ca247122cc46fb24b10ec77fe19c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 21.svg",
+      "sha256": "8a1463d4b9290fe2b6924a7fc7bab02cba851655d1015c548570297cc4b651d3"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 22.svg",
+      "sha256": "cc7a26ab74a004fcc6e362e2adbbf31d49fe79685ad5f25ae8b499a726cd353a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 23.svg",
+      "sha256": "43cdbc9a8f1e9fb765c1055e277fc1a244e5db0f970f82efc0e384d600e6cbfc"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 3.png",
+      "sha256": "6654e0047c69be7ae362c8739d91856fe1e62dcb4663036237cc449f64f4a3cf"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 4.png",
+      "sha256": "9dde0c63b76a8856f627f072f634640fee42056d403a63690fc62a07dd054f0f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 5.png",
+      "sha256": "540c0a1cfa34bec8e450228c935c295ad61c762dbffeb79221d76f139fb70e4a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 6.png",
+      "sha256": "7cb8eb3611ba914298e6918ada15ed5b71e98210938e30801b87213d004380f7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 7-100.jpg",
+      "sha256": "112999980ded19f178aab9bbd6e114357ebf2cd0f988bee2ec18912b91821e4e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset0.png",
+      "sha256": "f7eb8626dd37d2671f488bc58db14972f6c28407e64936e7d2ac6da5540126e9"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/banner.gif",
+      "sha256": "eaf423d4343c7cc1d02b107053b38b47771b6c3efd31a39016d5336199028554"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/consulting.png",
+      "sha256": "fb49d3db8dd66c3036dd45c7341a2d83b20e02048eef8418de26558b781caa79"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/countries.png",
+      "sha256": "665168dcafcaac5c7f777fd97c4ce0c4b7a26e5ed824d85166d1c4b059669c24"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/custom apps.png",
+      "sha256": "664a93bf35f160f17f385b665667c114aa4bcb7972f959f8ba003b7db128fa9b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/enterprise implementation.png",
+      "sha256": "605bb8ac0eb9d16d00d174f675b8f0c032776afc9ba0a321cb7164e920efc29e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/ept_odoo_partner.png",
+      "sha256": "93d58b54d86f13b30def15a35e70a9355d8c0a0707ffb90810904a17eab33fe8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_support_desk.svg",
+      "sha256": "84e1ff968a7c4a568e7f199a24912b61dd0dc1471975d13b80c038955dc059ad"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_support_policy.svg",
+      "sha256": "d94b8a45ae1bc4b150e29bb32a8ee8049c7a73ec9fa18d31481acee2a2dfa755"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_user_guide.svg",
+      "sha256": "7ba945c88466231cadf63efd9ece98201cc97b52d168b21cfa873484768571cb"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_video_tutorial.svg",
+      "sha256": "c72105be3d19d0edce32acb7b148ca938808031e2369e15e7a1e61f1c2b2e071"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/FAQ.png",
+      "sha256": "7eec4d7f2799a1447ea019fdac41a5ed1de1adf2f2b54314fab3f99ede64a1d6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/faq.svg",
+      "sha256": "c3dff49fac72eb9825683f0121e66d5fa76d3d0cbdf24361881ded4579c5d77c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Features.png",
+      "sha256": "c418e9916fa2d6e6700ba5e8f3056ab4bbee725a6a3e1126d6473857fc81fca4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Happy Customer.png",
+      "sha256": "f85b6d1ee1f57fe965e211347e7e878458851a4a8f23dc863dccbc8929adab7a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/horizontal_line.svg",
+      "sha256": "c0708917f0d0a20bf10ecd150cfd65c4c90b7a6585480e075588f6bb4f4ebaee"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/hosting.png",
+      "sha256": "8fbb26245e5dac73fc5ae345f98f9b37cc5b650add60f448eab079351a21bb00"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/how to use.png",
+      "sha256": "7ca75e8c79e2bee4c10f27e8001121e5d71778628931cb91f48567c597180066"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/icon.png",
+      "sha256": "5795d4261691312cefd55776dfeee9da9fce5611651b87cf58866cf3b531a773"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/18.png",
+      "sha256": "d8318dfaf007f07de2190e9aec695ff50443ab5a8b95ea539a1e24ff6dc0e7f7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/arsalan.png",
+      "sha256": "7255d3ab3dc7d2d0e70d6d3166340517982c59c3a3fa390adfb2c6713325f3a2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Asset.png",
+      "sha256": "f7eb8626dd37d2671f488bc58db14972f6c28407e64936e7d2ac6da5540126e9"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/banners odoo store (1).png",
+      "sha256": "24a6956428fc39b34e663448f9cff0725aaf69842aec43b89f4b157b0686f893"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/byte legions.png",
+      "sha256": "9bfb73e57f17d6e9158a3ed4a4b8238000655332be290345d292021cd33392e5"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/byte logo.png",
+      "sha256": "719f02a8829a3ce212f051b4fd3e74746c1f74a5029607ba921a14f09201ad01"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/consulting.png",
+      "sha256": "2c3c8cbcb7b0dc06422bc63d8b5e1562d98cf9162a4e6d2d921e5a67cfc10a23"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/countries.png",
+      "sha256": "caae33055deb130dd8bd997f134315ad0458b7e093fbf3e1c7bb0614c233d712"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/custom apps.png",
+      "sha256": "3a74c2a073d07131669d6401c52d79dd2410842fd86171021418c41105819a6d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Demo-Video-banner.png",
+      "sha256": "ba94f2e7a929cc2298372a24f4903d30c7e9abdb88c4866f4516201d4b903a41"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/email-qr-code.png",
+      "sha256": "c7618a1ff3dc6dc1ad698cd30ae64733cdd4b27acb9d980a6d993b1f49a9eff1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/enterprise implementation.png",
+      "sha256": "605bb8ac0eb9d16d00d174f675b8f0c032776afc9ba0a321cb7164e920efc29e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/hamza.png",
+      "sha256": "5b265d2660d62fe0ca3f2502978e30fe3b32aa8ae02e47d47acc8147130e7285"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Happy Customer.png",
+      "sha256": "adb3a309d36d4297dead919633de1df22124763836e231599d8a0270873db73e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/hosting.png",
+      "sha256": "d3edbd997892b182e866e3fa0db76fe0d30abab89f0c0d4b403a7838407cb2c6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/icon_test.png",
+      "sha256": "75e4497bbf4d6c123808ff933ab49add58dd0b9e7a4759f740697a96f8070f77"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/implementation.png",
+      "sha256": "7c506861c59669bdfff421c826b7d366d2951dd53164570ce1f4c48eff0484d6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/industries.png",
+      "sha256": "3be6bd2cf80125540019675eefbdebc937d49f3bb9b72b10b99e88d317a59f1a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/integration.png",
+      "sha256": "2f33cf4b8ef3101f77104d0eb42682815b744f124d86b2872af2ab5e7766e62d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/kamran.png",
+      "sha256": "f0ca07727720c8f827420a57be425a9f2a8d4f177955b5033bc95ecc3fafdf2b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/lisencing.png",
+      "sha256": "b4b5c1202db31faad09d4aa35198c88ce3f03dd5fd2f3c8c16871342b044b9ec"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/logo 1.png",
+      "sha256": "274b5b2d7c8c413627f1c7ebadeedd689e0ad7fcd6261cfa9b44172962fd357a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/logo 2.png",
+      "sha256": "44b7bdbf11b8a440e72d717266ec62edc9276fb377e56fad75894799348970c0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Logo 3.png",
+      "sha256": "719f02a8829a3ce212f051b4fd3e74746c1f74a5029607ba921a14f09201ad01"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/marletplace.png",
+      "sha256": "4db9ba07cb7302f739d6f51234b99c8f5ba5cee31fbd6e73c7b9c65e2960ede1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/migration.png",
+      "sha256": "409405bf241a84f25cd3ca820c35febd12199b1a989ea6a1cbc8a114bb167857"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/muneeb.png",
+      "sha256": "46600bc5955d303f64a988d225bb2c24edfd29b5739ee93d8f5578b8a6dd3398"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/odoo customization.png",
+      "sha256": "5f5a0230477a4b207ebcd39bb25b9d2056f1b49f37707e630adf95ec937e65d5"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/odoo-banner-review.png",
+      "sha256": "56fb1eb3d21fae2014f58ed6da32ab6a80c826644902e81d4fb876267d0f4bf1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_mail.jpg",
+      "sha256": "80889c2bdec54d8317b49313b8e276cbb0c05d0a3faf1414eb7d288b271cbc63"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_wp (1).jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_wp.jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/read-user-icon.png",
+      "sha256": "70104dc0e774f253a45c2b8859e370f3a1550e9d4e99a2f7131d99cf189fd231"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/rubab.png",
+      "sha256": "6d56f25b6c33e7c28e1ec8e0fbedeb5097ef041ae7136587aa0a676a00a72e7d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/screenshot.png",
+      "sha256": "81df954c8a9f34ff16f855744ef259831fdf85cc05e85f532d4e457f3b9392f0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/slider-img-1.png",
+      "sha256": "2dbdbcd6568649fe98da4863a34f5404f299e5dc398868c2a34cf40d7a941e62"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/slider-img-2.png",
+      "sha256": "4fd0656032a96c017df5e0c08e3460d35db912c7b5b454124fd20c4350559e6d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/support-policy-icon.png",
+      "sha256": "887848f01048dd999ab783ef2069aa41b067a759e459b3053f8741e6a7fc9739"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/support.png",
+      "sha256": "c659f428ff3c426972209e995b4afcb8e71470d362c659aa0861beb3b13f7e96"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Talented healers.png",
+      "sha256": "7a844f7bbee202319d35e34b3af4aa9eb16336e0077932ee609b5b1ba8172d27"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/user-support-icon.png",
+      "sha256": "3e70595d32cd509ad8b7ee1a4bbc82f495f2be244ff39a671db26162c0222d3b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/video-play-btn.png",
+      "sha256": "49de4fab08090d078ed05ca64b5db4662039d59af80c8d2eec152a6ece61aa1e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Wasif.png",
+      "sha256": "4e948ffce62a42c3e57149f2b4587f7c2bf34c904bd642c10f70082ba60aded0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/whatsapp-qr-code.png",
+      "sha256": "05ba8ae1d191aaeac38dd6e3fd238f25bc37b2c5eb01bb0a30519d357a4fdf07"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/why Integration.png",
+      "sha256": "fd7e4634719be4c2b978b37c802249d7b464b94f55f0924b906227631f9547ab"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/why_integration.png",
+      "sha256": "dc1e2bbea9ca76430006e767ca7c16f1762d65dac06f7f42b16cf0ad7aca8a3b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Year of Experience.png",
+      "sha256": "5a4dd161059555a7af920101f68cded4b20f6151424fa00b74b524fbc5081bac"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Year of ExperienceCustomer.png",
+      "sha256": "42d60e57b9d2a4520c29444de2098d99443c4be1892a487db0586a22e7eec59c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/youtube-icon.png",
+      "sha256": "9672090b45e2be441f1fea9170c176034a346af6741dcd054565f1aeb438d33c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/zoom-qr-code.png",
+      "sha256": "95b20426a9b67a8ba850f186523b8433ceff81ce49ffe8e1fcd2f874447332ac"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/implementation.png",
+      "sha256": "d7dcfdf8cef15a8aff7c36f6f3ba891155e40e6b70e6de2f85121fb520480fc5"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/index.html",
+      "sha256": "5194a08050cd8da02c3feb51eb4aaa383a047d748aa88c5cc1caefa18f481d1d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/industries.png",
+      "sha256": "15ae9769001411287c393e9197b65e1313a09c766548883bbb947f8fc7cf1cd8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/industries.svg",
+      "sha256": "811d35b657d87ba65afd79dba779e0d21ed313001ca51f8db7b293acf715f3b6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/integration.png",
+      "sha256": "45a9cb912278727cc3cee377c9529ec127a70ff539b74b495e1678f201d8e79a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/key_feature.svg",
+      "sha256": "34e96ffc0ff8b30087f7adc31a2b014e32a2dba69c9f1826b62bd88fa16028ec"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/lisencing.png",
+      "sha256": "b4b5c1202db31faad09d4aa35198c88ce3f03dd5fd2f3c8c16871342b044b9ec"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/logo 1.png",
+      "sha256": "a1c5dc53c3d8df06c67669b351343bb15dad5f4164c24f002b58fb778550ebb8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/logo 2.png",
+      "sha256": "2e9035fea188cc6ee2b15e9fe57c11bae38a97dcba20ebf151d3149eb7e7dc44"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Logo 3.png",
+      "sha256": "1c47eec3e7bc8177d7f941e0cc828f3021addcaa8f7b8bf3cc536d982b9d5bff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/logo_main.svg",
+      "sha256": "946ef8ab716e36d862eaf9216b40a0a06f5ecc06dd0115391d3b2528a175a991"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/marletplace.png",
+      "sha256": "b77bf291982b48183ffcfa92c67998d1a9846c3eb9ea16a3d4e7927a1db19430"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/migration.png",
+      "sha256": "c1142c896d766f15921c9b7a323064d2740841924823e4e63782501910e10b8f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/odoo customization.png",
+      "sha256": "7aeb108cbbcf085b8ae208bb4b845864058475bbeabbc95da9627faedb00ec4b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/odoo customization.svg",
+      "sha256": "6fab6b994d7df46a8186a685113d12f6e00c75980805f8c03f9429072f3f9334"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/overview.png",
+      "sha256": "0ddf3e5ddb80749147e98ce0a74fa6077b1289fe0f5f801f18fa087a493b374c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/overview.svg",
+      "sha256": "8015ea191ae832cf3505b1d53662e44f85e2c19027ee6500f3e6935ec7326193"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/QR_Coce_mail.jpg",
+      "sha256": "80889c2bdec54d8317b49313b8e276cbb0c05d0a3faf1414eb7d288b271cbc63"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/QR_Coce_wp.jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/README.rst",
+      "sha256": "49cb9629cf530a8b88165b6267a53174b95e548dfc4a17e05de35fdeea381d5b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Redirect.png",
+      "sha256": "9fecf2db1eebe51e9788c956dba03e2258533f95de0ea66170f003ab00db998c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Releases.png",
+      "sha256": "72112877aaf41a9676a17bfbd7b9ed1e8ff220e107a82bd95b09acb8fb1e38da"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Releases.svg",
+      "sha256": "945909a251861a49b8c9e457487d9cb56628e6a7dd597b90ec306ddd031a7538"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/screen_shot.svg",
+      "sha256": "1d4f44464baff369fe8bf819b6ab308a59335184ee8a152d2890aeb8a0a6f12b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/support .svg",
+      "sha256": "d1456404a7f6b9ab7add9be6c41e55aec680b1882b0909bbdf9cec339c4f3c78"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/support.png",
+      "sha256": "d26ac263458d683e73728dc01db5aa3e9da8c881d49e4368b270804c4fe3db5d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Talented healers.png",
+      "sha256": "e7c184c41ab9a8d2b9a6285c13a2e691559db15f64f62ef9ed308fa013cdb408"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Talented healers.svg",
+      "sha256": "4d4208d93f20916160b5cfc854e166e7cbbaab6582733fa55e47d561b7fb8ffb"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_0.png",
+      "sha256": "27986f0b35f8886a07b394de510f7e62c12635f43de354685c772b6aea961811"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_1.png",
+      "sha256": "99f7e681c8e7b6efc22b0e7345bedb442933c3e477bb8afb101caa88ee7f6a80"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_2.png",
+      "sha256": "bee6e2d648178127a98ec042ec57853c777f5147229f3fc78b612e7bfe9f7278"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_3.png",
+      "sha256": "91be685e0fbe629af101b1cb9d3bd17057f2ae2d5f861755fcf83fe9127f1395"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_4.png",
+      "sha256": "06f657aa577d196081cc33e9ba531d8886b4bfcbbc00e63f7ebcbd6d0899a14f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_5.png",
+      "sha256": "a4e8a3db434068665330f85ef5fb37471bfb590e655cd2adef0b8cf912a8b97a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/vertical_line.svg",
+      "sha256": "28abdd0e8ef7acd97538b1816685c23bb391b97b51550e4290c23c7395c11424"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Vertical_Line_1.svg",
+      "sha256": "e6201829e5fa28ef585f0c63a750b00b6077ccaf3e3891c44dfd77b979372908"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/video_tutorial_link.svg",
+      "sha256": "3ca0e46d99f5b1080592b850dbdda1b431024a4278eafc37c37ad7dfecc2f758"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/WhatsApp.svg",
+      "sha256": "8d3c94c9d347acc047d0b0eeec359ebd5033fa35c889824f2d288704b9856849"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Year of Experience.png",
+      "sha256": "5a4dd161059555a7af920101f68cded4b20f6151424fa00b74b524fbc5081bac"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Year of Experience.svg",
+      "sha256": "a87c0f65ac4b4c4922fe38ca26714418b4f080662f54c7e39f5766352b04b4f0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/src/scss/fields_extra_custom.scss",
+      "sha256": "df56c2d1e24f251c752fa57f5e0a53bc313515d5be27ba3ac45d8d696cabc729"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/src/scss/primary_variables_custom.scss",
+      "sha256": "2d85ba856aefb7ea36173692d41717ec12721d382d31c76fc2d98fdb25d4a87e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/src/scss/secondary_variables.scss",
+      "sha256": "813262201bf4909b8d29bf1d18d672bc1e40e9ff689125fc67b573a6cf8a2430"
+    },
+    {
+      "path": "custom_addons/baseer_legion_compat/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "custom_addons/baseer_legion_compat/__manifest__.py",
+      "sha256": "db5efe33e9075878047daa33ef9241e9655eeffcd3865e56720c3f84c5e563a9"
+    },
+    {
+      "path": "custom_addons/baseer_legion_compat/static/src/navbar.scss",
+      "sha256": "e1add8c78bf281669f2b771cf9f7f20c2dbf262bbc5c889b28958be24dfca9ef"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/legion_before_summary.png",
+      "sha256": "a519c9e12d79c3d4de3904abb153817fd37820a005b7300d50f00f4938607036"
+    },
+    {
+      "path": "docs/build-governance/legion_cash_desktop.png",
+      "sha256": "7e28400fde73e6572a687c1417362a597806ec9c58e296d37180277af28aa043"
+    },
+    {
+      "path": "docs/build-governance/legion_fixed_summary_mobile.png",
+      "sha256": "208ac7b7d41e16ef71338f4e79acb8088f8de880174985ae336d8fb1c28f4107"
+    },
+    {
+      "path": "docs/build-governance/legion_menu_desktop.png",
+      "sha256": "10c84af07505506543eb4f7969be3a4799c64e26ce01c9a21ef46d9d3abceb32"
+    },
+    {
+      "path": "docs/build-governance/legion_purchase_desktop.png",
+      "sha256": "d5e6a647eb1bf609cca6d88ff494743b740053ea6e0a6c4ef174e5c651ba9916"
+    },
+    {
+      "path": "docs/build-governance/legion_purchase_mobile.png",
+      "sha256": "4186521952c703fe6183cb57496fb751a2c0780960f847fc18abf12e88325f11"
+    },
+    {
+      "path": "docs/build-governance/legion_purchase_mobile_fresh.png",
+      "sha256": "2507e586fc9c7c9063e72ab6ea8707b0093470df8c79ed5d32736a5a337d2b5f"
+    },
+    {
+      "path": "docs/build-governance/legion_summary_desktop.png",
+      "sha256": "1f97bfe8e1f90de594b6dfc061510c01d0024e1d09a230b64aff0dbc42501b5f"
+    },
+    {
+      "path": "docs/build-governance/legion_summary_mobile.png",
+      "sha256": "c299550afdabbff34ffda5ab018369fc28acd182c04bd51a638f8587fddf029e"
+    }
+  ]
+}

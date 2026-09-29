@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "database": "baseer_ar1_roles_20260910",
+  "checks": [
+    "cashier-draft-ar.txt",
+    "accountant-draft-ar.txt",
+    "accountant-posted-ar.txt",
+    "cashier-app-menu.txt",
+    "accountant-app-menu.txt",
+    "owner-app-menu.txt",
+    "owner-role-selector-ar.txt",
+    "owner-role-options-ar.txt",
+    "cashier-advance-posted-ar.txt"
+  ],
+  "source_files": {
+    "__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "__manifest__.py": "9d44366b0f6ebad486ab6d92b7f78e1be06dfdf490de2601e5f48001663a4ed2",
+    "data/setup.xml": "8570be73d3cc481f181d15a13e2915398932048fdc985bd81d3a9693b1cb2942",
+    "i18n/ar.po": "390fb3d6e9a7c032d0f62f2a692b715ba1b5a75d0012d42f26e198175e8326bf",
+    "models/__init__.py": "ab83fe6fc5fcf4c840f814756cfee9d36cc435110cd855175ae90eab4426e4e1",
+    "models/advance_entry.py": "9fe8cc37b76c0f1c47e5db4bc5be87f9ad7fb3212b51400e7c4aeec2d58f7b65",
+    "models/ir_ui_menu.py": "06be4b40d461562f143c27a9980f19c39586504bcfee81d9b931a52f742b760c",
+    "models/partner_privacy.py": "158c39635b6c7e545ceb6334035fa22547c56f40f79a16cf25f16a51621fb724",
+    "models/payroll_privacy.py": "a8942d809ef7eda2b4e9821b6cab9f964c89e35dd1822113cd5a0f644aaa1c37",
+    "models/purchase_batch.py": "ff39b50ad351c2a0dbf8d829db1c8e86889fee2908b30224097d6fc9258e32f4",
+    "models/res_users.py": "448b6f547d57af51f71d0239d76a85faa12ffe8ddeb9c91d2fcc158e72377053",
+    "models/role_seed.py": "47d0b44032bdf9d7b80828372e47834021343d53d304f2ebda9da6e8a87f9c7e",
+    "README.md": "81d32b09dce64d9ac3f4bf092e9902c92a46270e6c1cf0df35990b4774ab65e9",
+    "security/advance_entry.xml": "2754369be8b859fd8d61d7d623da9724bef607bf1c87a4be751bdeed2dca00df",
+    "security/cashier.xml": "96e19616288508248fe8f0e3e74f772faba365e7818d92b2369fa28636fddc11",
+    "security/denied_rules.xml": "f05e0f655daf1d1916fa9282316bae0041da81551e5dd8bbac1e281f3afa043f",
+    "security/groups.xml": "72318e56ebbba283d0a1ac164469c326d543665efd08e48e9051fc54163ffdf3",
+    "security/ir.model.access.csv": "ebf3af3a36dd379bb2160c78428d3c47474241a50bfa67d355c7acfbb2a4e475",
+    "views/advance_entry_views.xml": "77ff6449cd0a7c82e26a567836a3c351607643cef924694f67f09c6eb67020a3",
+    "views/purchase_batch_views.xml": "c49d63616a8b693b8c8e8830158a143d8e08bc9ddeafad2107f393175425dcfb",
+    "views/res_users_views.xml": "542ee8c61c234e9d803d750a0975b7f67a511af054e2431a86fe80e1c235b3f4"
+  },
+  "evidence_files": {
+    "accountant-app-menu.txt": "669d418312c080966fa437afe9c0e7c22b49bba537098c02ffab73d1bdaa4c7a",
+    "accountant-draft-ar.txt": "173484e6b304d517eaefd29f652a32d817c1dbaac215af7b5ba123fdefd7e654",
+    "accountant-posted-ar.txt": "d91c615e62c44d10be62a23875a7d0b13d6ad8f86b43638903d95881396baf87",
+    "cashier-advance-posted-ar.png": "48ae93a5548736fb7a117643c22445fa7e0aa301d2a4599b512403aa38355f62",
+    "cashier-advance-posted-ar.txt": "2d628bf08d0f7629c1c6da041a807cb8ac3e96c1da126313a001cf8456209f96",
+    "cashier-app-menu.txt": "042dbfa964b745478292673777306be46d9fa2071947472a11bc2b4df975d075",
+    "cashier-draft-ar.png": "508ec6f0ed4e31c52ba0e05e68aed2507b7d36443e7f947cc42f3540b51b055f",
+    "cashier-draft-ar.txt": "fc1a6cbef877ab67d7c71a5d345ddfe44177d9bf68bac745f3af5361a1f6a73c",
+    "owner-app-menu.txt": "4b31f4ca6bee34bef05fd33d25c7f2b5ea8593b4b8defebcc88f4dc22f525afd",
+    "owner-role-options-ar.txt": "beae06494d28636a3af3d6c0250eca89dc04ea22f8b26c85aed9a8d9860fe8f5",
+    "owner-role-selector-ar.txt": "14e2c02ce41de336435da0e93ee9a4e693f2866e068d71ee88fc73b93f3144be"
+  },
+  "limitations": [
+    "Arabic native desktop forms verified; no separate narrow viewport assertion.",
+    "Both-role advance disbursement covered by 83 backend checks; actual browser disbursement performed as cashier."
+  ]
+}

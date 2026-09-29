@@ -1,0 +1,100 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "registered widget retains native char and endpoint option contract",
+      "passed": true
+    },
+    {
+      "name": "opening combined picker preloads existing HHMM without a record update",
+      "passed": true
+    },
+    {
+      "name": "hour and arbitrary minute selection stage locally",
+      "passed": true
+    },
+    {
+      "name": "Cancel discards draft with no update and invokes native close callback",
+      "passed": true
+    },
+    {
+      "name": "reopening after Cancel restores persisted value rather than abandoned draft",
+      "passed": true
+    },
+    {
+      "name": "Apply sends one exact raw HHMM update and locks popup and trigger immediately",
+      "passed": true
+    },
+    {
+      "name": "pending update ignores duplicate apply, selection, Cancel and trigger reopen",
+      "passed": true
+    },
+    {
+      "name": "successful native update unlocks both components then closes exactly once",
+      "passed": true
+    },
+    {
+      "name": "rejected native update unlocks both components and preserves unsaved draft",
+      "passed": true
+    },
+    {
+      "name": "user can retry once after native error with the same staged value",
+      "passed": true
+    },
+    {
+      "name": "endpoint hour list uses Western padded 00 through24 with all60 minutes",
+      "passed": true
+    },
+    {
+      "name": "24 endpoint stages only24:00 and excludes nonzero minutes",
+      "passed": true
+    },
+    {
+      "name": "24:00 is retained as raw endpoint without date or12-hour conversion",
+      "passed": true
+    },
+    {
+      "name": "moving away from24 restores all60 arbitrary minute choices",
+      "passed": true
+    },
+    {
+      "name": "start-time picker excludes24 and ignores invalid endpoint selection",
+      "passed": true
+    },
+    {
+      "name": "each of60 integer minutes stages exact Western HHMM without updates",
+      "passed": true
+    },
+    {
+      "name": "same reusable picker updates the requested start field only",
+      "passed": true
+    },
+    {
+      "name": "column keyboard navigation stages values and bounds arrows without record updates",
+      "passed": true
+    },
+    {
+      "name": "Tab remains available to the native dialog keyboard system",
+      "passed": true
+    },
+    {
+      "name": "native outside-close callback does not persist draft",
+      "passed": true
+    },
+    {
+      "name": "trigger toggles an already open idle popover without updates",
+      "passed": true
+    },
+    {
+      "name": "panel Escape stops modal propagation and cancels staged changes without updating",
+      "passed": true
+    },
+    {
+      "name": "readonly field cannot open a writable picker",
+      "passed": true
+    }
+  ],
+  "source": "custom_addons/baseer_work_schedule/static/src/time_field.js",
+  "source_sha256": "93d44c60ff2916e7053d4759e0129b36de70765849a7b9e7f93e83b7ef7d7e51",
+  "scope": "Actual component source with stubbed Owl/usePopover/registry and deferred native record.update. Complements browser acceptance; does not simulate rendered Owl lifecycle or overlay placement."
+}

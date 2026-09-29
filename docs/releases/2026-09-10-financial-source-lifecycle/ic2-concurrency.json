@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "database": "baseer_ic1_20260910",
+  "results": [
+    {
+      "id": 150,
+      "status": "committed",
+      "attempt": 1
+    },
+    {
+      "id": 151,
+      "status": "rejected",
+      "message": "The source changed after this correction was opened. Close it and open a fresh correction."
+    }
+  ],
+  "audit_count": 1,
+  "invoice_state": "posted",
+  "payment_state": "paid",
+  "invoice_id": 328,
+  "qa_fixture_committed": true,
+  "main_untouched": true,
+  "scope": "Paid invoice edit versus cancel; one winner and source parity"
+}

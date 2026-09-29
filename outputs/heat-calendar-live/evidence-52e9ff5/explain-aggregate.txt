@@ -1,0 +1,105 @@
+Output format is unaligned.
+SUMMARY_QUERY
+[
+  {
+    "Plan": {
+      "Node Type": "Index Scan",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Scan Direction": "Forward",
+      "Index Name": "baseer_pos_summary__company_id_index",
+      "Relation Name": "baseer_pos_summary",
+      "Alias": "baseer_pos_summary",
+      "Startup Cost": 0.15,
+      "Total Cost": 8.18,
+      "Plan Rows": 1,
+      "Plan Width": 4,
+      "Actual Startup Time": 0.015,
+      "Actual Total Time": 0.016,
+      "Actual Rows": 0,
+      "Actual Loops": 1,
+      "Index Cond": "(company_id = 54)",
+      "Rows Removed by Index Recheck": 0,
+      "Filter": "((business_date >= '2026-07-01'::date) AND (business_date <= '2026-09-30'::date) AND ((state)::text <> 'cancelled'::text))",
+      "Rows Removed by Filter": 0,
+      "Shared Hit Blocks": 1,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning": {
+      "Shared Hit Blocks": 204,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.838,
+    "Triggers": [
+    ],
+    "Execution Time": 0.043
+  }
+]
+CLOSURE_QUERY
+[
+  {
+    "Plan": {
+      "Node Type": "Index Scan",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Scan Direction": "Forward",
+      "Index Name": "baseer_pos_closure__state_index",
+      "Relation Name": "baseer_pos_closure",
+      "Alias": "baseer_pos_closure",
+      "Startup Cost": 0.15,
+      "Total Cost": 8.17,
+      "Plan Rows": 1,
+      "Plan Width": 4,
+      "Actual Startup Time": 0.001,
+      "Actual Total Time": 0.001,
+      "Actual Rows": 0,
+      "Actual Loops": 1,
+      "Index Cond": "((state)::text = 'confirmed'::text)",
+      "Rows Removed by Index Recheck": 0,
+      "Filter": "((date_from <= '2026-09-30'::date) AND (date_to >= '2026-07-01'::date) AND (company_id = 54))",
+      "Rows Removed by Filter": 0,
+      "Shared Hit Blocks": 2,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning": {
+      "Shared Hit Blocks": 118,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.229,
+    "Triggers": [
+    ],
+    "Execution Time": 0.009
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "single_card_draft": [
+    {
+      "id": 179,
+      "business_date": "2026-09-06",
+      "customer_count": 10,
+      "amount_gross": 150.0,
+      "amount_tax": 19.57,
+      "day_schedule": "morning"
+    }
+  ],
+  "ui_closure_audit": [
+    {
+      "id": 16,
+      "date_from": "2026-09-01",
+      "date_to": "2026-09-03",
+      "reason": "eid",
+      "state": "cancelled",
+      "confirmed_by_id": [
+        2,
+        "Administrator"
+      ],
+      "confirmed_at": "2026-09-07 19:21:44",
+      "cancellation_reason": "QA S2 UI — finished test",
+      "cancelled_by_id": [
+        2,
+        "Administrator"
+      ],
+      "cancelled_at": "2026-09-07 19:27:28"
+    }
+  ],
+  "kept_preview": {
+    "entry_id": 28,
+    "summary_ids": [
+      227,
+      228
+    ],
+    "state": "saved drafts",
+    "amounts": [
+      115,
+      230
+    ],
+    "customers": [
+      10,
+      20
+    ]
+  }
+}

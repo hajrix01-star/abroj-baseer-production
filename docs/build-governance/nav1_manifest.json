@@ -1,0 +1,25 @@
+{
+  "candidate": "NAV1",
+  "version": "19.0.1.0.0",
+  "environment": "QA only",
+  "files": [
+    {
+      "path": "custom_addons/baseer_web_navigation/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/__manifest__.py",
+      "sha256": "5dfdc5af5cd2386a8751c2151061d372265d91487f0fe8fbfc89fce528006c7b"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/static/src/apps_menu.scss",
+      "sha256": "3296b03772dacbd9bc94be40dc7b51c5094cff2979b6559de0b4ad10d63c639d"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/static/src/apps_menu.xml",
+      "sha256": "20738ad0b195e1f3b8728c791420ea7c5162ad451adf399051f16a9135277561"
+    }
+  ],
+  "validation": "Python/XML parse and unique native desktop inheritance target passed; eight desktop images loaded; native Enter selection opens POS; mobile eight original images loaded and desktop wrapper absent. Future-app support follows existing dynamic apps loop; fallback reviewed in source. Arabic RTL desktop/mobile replayed; English LTR not replayed.",
+  "rollback": "Uninstall baseer_web_navigation only; no business models/data owned."
+}

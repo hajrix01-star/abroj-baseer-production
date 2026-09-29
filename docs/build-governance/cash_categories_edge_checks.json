@@ -1,0 +1,229 @@
+{
+  "company_id": 9,
+  "synthetic_ledger_company_config_changes_committed": false,
+  "audit_retention_note": "Vendor durable failure audit may remain in the QA database through independent transactions.",
+  "checks": [
+    {
+      "check": "committed showcase unchanged initially",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "distinct receipt channel كاش تجريبي",
+      "actual": "115.00",
+      "expected": "115.00"
+    },
+    {
+      "check": "distinct receipt channel بنك تجريبي",
+      "actual": "230.00",
+      "expected": "230.00"
+    },
+    {
+      "check": "distinct receipt channel شبكة تجريبية",
+      "actual": "115.00",
+      "expected": "115.00"
+    },
+    {
+      "check": "four equal cent lines total",
+      "actual": "0.04",
+      "expected": "0.04"
+    },
+    {
+      "check": "native edge-case payment posted",
+      "passed": true
+    },
+    {
+      "check": "cent category 0 keeps payment sign and line bound",
+      "passed": true
+    },
+    {
+      "check": "cent category 1 keeps payment sign and line bound",
+      "passed": true
+    },
+    {
+      "check": "cent category 2 keeps payment sign and line bound",
+      "passed": true
+    },
+    {
+      "check": "cent category 3 keeps payment sign and line bound",
+      "passed": true
+    },
+    {
+      "check": "all four category cents preserve payment",
+      "actual": "-0.02",
+      "expected": "-0.02"
+    },
+    {
+      "check": "cent payment total",
+      "actual": "-731.02",
+      "expected": "-731.02"
+    },
+    {
+      "check": "cent categories reconcile ledger",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "signed discount invoice native gross",
+      "actual": "115.00",
+      "expected": "115.00"
+    },
+    {
+      "check": "native edge-case payment posted",
+      "passed": true
+    },
+    {
+      "check": "signed charge proportional gross",
+      "actual": "-115.00",
+      "expected": "-115.00"
+    },
+    {
+      "check": "signed discount reduces expense",
+      "actual": "57.50",
+      "expected": "57.50"
+    },
+    {
+      "check": "signed charge excludes actual VAT",
+      "actual": "-100.00",
+      "expected": "-100.00"
+    },
+    {
+      "check": "signed discount VAT reduction",
+      "actual": "50.00",
+      "expected": "50.00"
+    },
+    {
+      "check": "discount allocation cash reconciliation",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "zero-net invoice still has evidenced VAT",
+      "actual": "15.00",
+      "expected": "15.00"
+    },
+    {
+      "check": "native edge-case payment posted",
+      "passed": true
+    },
+    {
+      "check": "zero-net invoice retains charge category",
+      "actual": "-100.00",
+      "expected": "-100.00"
+    },
+    {
+      "check": "zero-net invoice retains offset category",
+      "actual": "100.00",
+      "expected": "100.00"
+    },
+    {
+      "check": "zero-net invoice category amounts offset",
+      "actual": "-277.00",
+      "expected": "-277.00"
+    },
+    {
+      "check": "zero-net invoice still reconciles actual cash",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "unpaired transfer remains visible",
+      "actual": "-761.00",
+      "expected": "-761.00"
+    },
+    {
+      "check": "unpaired transfer decreases cash",
+      "actual": "-301.00",
+      "expected": "-301.00"
+    },
+    {
+      "check": "unpaired transfer remains reconciled",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "paired clearing transfer excluded from receipts",
+      "actual": "460.00",
+      "expected": "460.00"
+    },
+    {
+      "check": "paired clearing transfer excluded from payments",
+      "actual": "-731.00",
+      "expected": "-731.00"
+    },
+    {
+      "check": "paired clearing transfer has zero net cash",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "paired transfer reconciles",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "unposted draft option rejected",
+      "passed": true
+    },
+    {
+      "check": "unsupported journal slicing rejected",
+      "passed": true
+    },
+    {
+      "check": "unsupported account type slicing rejected",
+      "passed": true
+    },
+    {
+      "check": "unsupported analytic slicing rejected",
+      "passed": true
+    },
+    {
+      "check": "unsupported comparison rejected",
+      "passed": true
+    },
+    {
+      "check": "invalid tax toggle rejected",
+      "passed": true
+    },
+    {
+      "check": "unsupported multi-company view rejected",
+      "passed": true
+    },
+    {
+      "check": "unsupported foreign presentation currency rejected",
+      "passed": true
+    },
+    {
+      "check": "internal user without report role denied",
+      "passed": true
+    },
+    {
+      "check": "cache baseline category label visible",
+      "passed": true
+    },
+    {
+      "check": "category rename visible without ledger edit",
+      "passed": true
+    },
+    {
+      "check": "renaming category does not change cash",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "cached tax toggle uses distinct amounts",
+      "actual": "-277.00",
+      "expected": "-277.00"
+    },
+    {
+      "check": "all edge cases rolled back cleanly",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "showcase closing cash preserved",
+      "actual": "729.00",
+      "expected": "729.00"
+    }
+  ]
+}

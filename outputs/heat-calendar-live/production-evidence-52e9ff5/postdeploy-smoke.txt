@@ -1,0 +1,1 @@
+PRODUCTION_HEAT_SMOKE_OK|module=installed|dashboard=9|companies=54,2,3,1

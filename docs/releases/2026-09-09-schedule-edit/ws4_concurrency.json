@@ -1,0 +1,425 @@
+{
+  "checks": [
+    {
+      "name": "two template forms share initial revision",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 1",
+      "passed": true
+    },
+    {
+      "name": "competing_template_edit blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "competing_template_edit remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "competing_template_edit completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "competing_template_edit uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "competing_template_edit ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "only one revision won template race",
+      "passed": true
+    },
+    {
+      "name": "losing template form unapplied",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 2",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins stale edit creates no replacement",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins fresh preview has exact membership",
+      "passed": true
+    },
+    {
+      "name": "membership_create_wins fresh edit succeeds",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 3",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins stale edit creates no replacement",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins fresh preview has exact membership",
+      "passed": true
+    },
+    {
+      "name": "membership_write_wins fresh edit succeeds",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 4",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins stale edit creates no replacement",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins fresh preview has exact membership",
+      "passed": true
+    },
+    {
+      "name": "membership_unlink_wins fresh edit succeeds",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 5",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins stale edit creates no replacement",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins fresh preview has exact membership",
+      "passed": true
+    },
+    {
+      "name": "membership_date_wins fresh edit succeeds",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 6",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins stale edit creates no replacement",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins fresh preview has exact membership",
+      "passed": true
+    },
+    {
+      "name": "membership_active_wins fresh edit succeeds",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 7",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins stale edit creates no replacement",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins fresh preview has exact membership",
+      "passed": true
+    },
+    {
+      "name": "membership_wage_wins fresh edit succeeds",
+      "passed": true
+    },
+    {
+      "name": "fresh fanout copies committed wage",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 8",
+      "passed": true
+    },
+    {
+      "name": "template_edit_wins_incoming_assignment blocks on actual PostgreSQL lock",
+      "passed": true
+    },
+    {
+      "name": "template_edit_wins_incoming_assignment remains pending until holder releases",
+      "passed": true
+    },
+    {
+      "name": "template_edit_wins_incoming_assignment completes after lock release",
+      "passed": true
+    },
+    {
+      "name": "template_edit_wins_incoming_assignment uses native repeatable read",
+      "passed": true
+    },
+    {
+      "name": "template_edit_wins_incoming_assignment ends with rejected",
+      "passed": true
+    },
+    {
+      "name": "incoming rejected assignment leaves no future version",
+      "passed": true
+    },
+    {
+      "name": "all committed QA fixture records cleaned up",
+      "passed": true
+    }
+  ],
+  "fixture_tag": "WS4-CONCURRENCY-1928664ce1",
+  "database": "baseer_reports_qa_20260907",
+  "fixture_committed": true,
+  "competing_template_edit": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "advisory"
+    ],
+    "result": "rejected",
+    "message": "This template was replaced or archived. Open the latest work schedule.",
+    "elapsed_seconds": 0.0733
+  },
+  "membership_create_wins": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "transactionid"
+    ],
+    "result": "rejected",
+    "message": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "elapsed_seconds": 0.0719
+  },
+  "membership_write_wins": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "transactionid"
+    ],
+    "result": "rejected",
+    "message": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "elapsed_seconds": 0.07
+  },
+  "membership_unlink_wins": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "advisory"
+    ],
+    "result": "rejected",
+    "message": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "elapsed_seconds": 0.0709
+  },
+  "membership_date_wins": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "advisory"
+    ],
+    "result": "rejected",
+    "message": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "elapsed_seconds": 0.0705
+  },
+  "membership_active_wins": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "advisory"
+    ],
+    "result": "rejected",
+    "message": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "elapsed_seconds": 0.0718
+  },
+  "membership_wage_wins": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "advisory"
+    ],
+    "result": "rejected",
+    "message": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "elapsed_seconds": 0.0708
+  },
+  "template_edit_wins_incoming_assignment": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "isolation": "repeatable read",
+    "pid": 26062,
+    "observed_wait_locks": [
+      "transactionid"
+    ],
+    "result": "rejected",
+    "message": "This work schedule has been replaced. Choose the latest work schedule.",
+    "elapsed_seconds": 0.0745
+  },
+  "status": "passed",
+  "cleaned_up": true
+}

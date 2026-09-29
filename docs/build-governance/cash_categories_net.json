@@ -1,0 +1,726 @@
+{
+  "columns": [
+    {
+      "name": "Description",
+      "expression_label": "name",
+      "figure_type": "string"
+    },
+    {
+      "name": "Amount excl. evidenced tax",
+      "expression_label": "amount",
+      "figure_type": "monetary"
+    }
+  ],
+  "lines": [
+    {
+      "id": "receipts",
+      "name": "Actual receipts",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 400.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 3,
+        "allocated": true
+      }
+    },
+    {
+      "id": "receipts/journal-65",
+      "name": "بنك تجريبي",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 200.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "receipts/journal-65/cash-account-1148",
+      "name": "101001 Bank",
+      "level": 2,
+      "parent_id": "receipts/journal-65",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 200.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "receipts/journal-70",
+      "name": "شبكة تجريبية",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 100.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "receipts/journal-70/cash-account-1166",
+      "name": "101007 شبكة تجريبية",
+      "level": 2,
+      "parent_id": "receipts/journal-70",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 100.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "receipts/journal-69",
+      "name": "كاش تجريبي",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 100.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "receipts/journal-69/cash-account-1165",
+      "name": "105001 كاش تجريبي",
+      "level": 2,
+      "parent_id": "receipts/journal-69",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 100.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments",
+      "name": "Actual payments",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -677.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 11,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/ledger-1064",
+      "name": "400003 Basic Salary",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -50.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/customer-refunds",
+      "name": "Customer refunds",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -10.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/customer-refunds/category-4",
+      "name": "مشروبات",
+      "level": 2,
+      "parent_id": "payments/customer-refunds",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -10.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/customer-refunds/category-4/category-6",
+      "name": "مياه",
+      "level": 3,
+      "parent_id": "payments/customer-refunds/category-4",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -10.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/unclassified",
+      "name": "Unclassified / needs allocation",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -40.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/category-4",
+      "name": "مشروبات",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -150.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 2,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/category-4/category-5",
+      "name": "مشروبات غازية",
+      "level": 2,
+      "parent_id": "payments/category-4",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -100.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/category-4/category-6",
+      "name": "مياه",
+      "level": 2,
+      "parent_id": "payments/category-4",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -50.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/group-1",
+      "name": "مصاريف تشغيلية تجريبية",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -377.0
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 5,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1158",
+      "name": "QA6001 إيجارات",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -100.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1159",
+      "name": "QA6002 كهرباء ومرافق",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -25.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1160",
+      "name": "QA6003 رسوم بنكية",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -2.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1161",
+      "name": "QA6004 رواتب الموظفين",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -200.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1162",
+      "name": "QA6005 اتصالات وإنترنت",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -50.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "payments/category-7",
+      "name": "مواد غذائية",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -50.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-receipts",
+      "name": "Total receipts",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 400.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-payments",
+      "name": "Total payments",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -677.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-displayed_net_movement",
+      "name": "Net movement (selected tax basis)",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -277.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-excluded_tax_bridge",
+      "name": "Excluded invoice tax: bridge to actual cash",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 6.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-actual_net_movement",
+      "name": "Actual net cash movement",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": -271.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-opening_cash_balance",
+      "name": "Opening cash balance",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 1000.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-closing_cash_balance",
+      "name": "Closing cash balance",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 729.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-total-balance_check",
+      "name": "Reconciliation difference (must be zero)",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": 0.0
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true
+      }
+    },
+    {
+      "id": "baseer-note-0",
+      "name": "QA allocation: partial payments distributed proportionally across invoice lines.",
+      "level": 0,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": null
+        }
+      ],
+      "unfoldable": false,
+      "meta": {
+        "kind": "baseer_note"
+      }
+    },
+    {
+      "id": "baseer-note-1",
+      "name": "Only evidenced invoice tax is excluded; unknown tax retains the full cash amount.",
+      "level": 0,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": null
+        }
+      ],
+      "unfoldable": false,
+      "meta": {
+        "kind": "baseer_note"
+      }
+    },
+    {
+      "id": "baseer-note-2",
+      "name": "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+      "level": 0,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": null
+        }
+      ],
+      "unfoldable": false,
+      "meta": {
+        "kind": "baseer_note"
+      }
+    },
+    {
+      "id": "baseer-note-3",
+      "name": "Unreconciled cash counterpart.",
+      "level": 0,
+      "columns": [
+        {
+          "expression_label": "amount",
+          "value": null
+        }
+      ],
+      "unfoldable": false,
+      "meta": {
+        "kind": "baseer_note"
+      }
+    }
+  ],
+  "totals": {
+    "receipts": 400.0,
+    "payments": -677.0,
+    "displayed_net_movement": -277.0,
+    "excluded_tax_bridge": 6.0,
+    "actual_net_movement": -271.0,
+    "opening_cash_balance": 1000.0,
+    "closing_cash_balance": 729.0,
+    "balance_check": 0.0,
+    "unverified_tax_gross": 267.0
+  },
+  "generated_at": "2026-09-07T09:45:59",
+  "meta": {
+    "report_code": "baseer_cash_categories",
+    "company_ids": [
+      9
+    ],
+    "date_from": "2026-09-01",
+    "date_to": "2026-09-30",
+    "posted_only": true,
+    "baseer_include_tax": false,
+    "exact_totals": {
+      "receipts": "400.00",
+      "payments": "-677.00",
+      "displayed_net_movement": "-277.00",
+      "excluded_tax_bridge": "6.00",
+      "actual_net_movement": "-271.00",
+      "opening_cash_balance": "1000.00",
+      "closing_cash_balance": "729.00",
+      "balance_check": "0.00",
+      "unverified_tax_gross": "267.00"
+    },
+    "allocation_policy": "proportional_invoice_lines_qa",
+    "diagnostics": [
+      "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+      "Unreconciled cash counterpart."
+    ],
+    "tax_note": "Only evidenced invoice tax is excluded; unknown tax retains the full cash amount.",
+    "policy_note": "QA allocation: partial payments distributed proportionally across invoice lines.",
+    "total_figure_types": {
+      "receipts": "monetary",
+      "payments": "monetary",
+      "displayed_net_movement": "monetary",
+      "excluded_tax_bridge": "monetary",
+      "actual_net_movement": "monetary",
+      "opening_cash_balance": "monetary",
+      "closing_cash_balance": "monetary",
+      "balance_check": "monetary",
+      "unverified_tax_gross": "monetary"
+    }
+  },
+  "currency": {
+    "id": 151,
+    "name": "SAR",
+    "symbol": "SR",
+    "position": "after",
+    "decimal_places": 2,
+    "multi_currency": false
+  },
+  "execution_id": 161,
+  "from_cache": false
+}

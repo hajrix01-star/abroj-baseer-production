@@ -1,0 +1,47 @@
+{
+  "database": "baseer_dev",
+  "directory": "D:\\Codex\\Baseer-odoo\\.local-backups\\environment-maintenance\\baseer_dev-20260909T205705372882Z",
+  "utc": "2026-09-09T20:57:12.491034+00:00",
+  "coherent_no_clients": true,
+  "table_count": 787,
+  "database_restore_verified": false,
+  "attachment_references_verified": 651,
+  "files": {
+    ".env": {
+      "bytes": 230,
+      "sha256": "522134790c2368bd6710a261bfe661c4c519003d7f9c3e7304edf416ec892316"
+    },
+    "candidate-source.zip": {
+      "bytes": 35147986,
+      "sha256": "dd1964b5a254bf7cf6d4ad97b0e103e1aa17c8cba771bf0fcd6bd8c4ef336443"
+    },
+    "compose.reports-qa.yaml": {
+      "bytes": 970,
+      "sha256": "866cea0477961420f0b37a86dde4c6382b7198ea9692a75fbfa64173f731323f"
+    },
+    "compose.yaml": {
+      "bytes": 1716,
+      "sha256": "c0b300f80ccca6220208f116ee02d7d755f1f195c6746d3e1c5575d51c81e34a"
+    },
+    "database-metadata.json": {
+      "bytes": 77,
+      "sha256": "13d2fec3c637caea6b2285920398568bd3aa011c3f49f1a25db7977858b0aef8"
+    },
+    "database.dump": {
+      "bytes": 10312203,
+      "sha256": "54882afdd689f98110e05e4933c34b870612f875e168178ded8070c2aa703d72"
+    },
+    "filestore.tar.gz": {
+      "bytes": 7761893,
+      "sha256": "5d1794cdbe4ed1e625ec9e41aaa1c6a6cc888771aede53e0d43c8110b3edc91a"
+    },
+    "odoo.local.conf": {
+      "bytes": 173,
+      "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+    },
+    "rows.json": {
+      "bytes": 91461,
+      "sha256": "6d31cd8fd0686353e52173a05cddaf89356b9c260dd0aa6aef062c9aefdb3d0a"
+    }
+  }
+}

@@ -1,0 +1,2 @@
+ARZ_RESULT={"company": "QA ARZ", "month": "2026-10", "actual_create_employee_count": 0, "employee": "Emma Granger", "salary": 8000.0, "payroll_enabled": true, "contract_start_before": "False", "diagnostic_contract_start": "2026-09-08", "after_refresh_employee_count": 1, "gross": 8000.0, "net": 8000.0, "duplicate_on_second_refresh": false, "accounting_entries_created": 0, "state": "draft", "clone_only": true}
+

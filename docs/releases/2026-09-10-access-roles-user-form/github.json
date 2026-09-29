@@ -1,0 +1,13 @@
+{
+  "source_commit": "6104fc8e6f1d24b3e842f2b43bd9f410840d7759",
+  "github_commit": "4124200cad7d53fab8eab228752d25e3e79f2da9",
+  "files": 1156,
+  "source_only": true,
+  "workflow": {
+    "conclusion": "success",
+    "databaseId": 34484312535,
+    "headSha": "4124200cad7d53fab8eab228752d25e3e79f2da9",
+    "status": "completed",
+    "url": "https://github.com/hajrix01-star/Odoo-Baseer/actions/runs/34484312535"
+  }
+}

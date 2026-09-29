@@ -1,0 +1,108 @@
+[
+  {
+    "file": "cash_monthly_ar_gross",
+    "pdf_bytes": 41403,
+    "xlsx_bytes": 7585,
+    "totals": {
+      "receipts": 1460.0,
+      "payments": -731.0,
+      "displayed_net_movement": 729.0,
+      "excluded_tax_bridge": 0.0,
+      "actual_net_movement": 729.0,
+      "opening_cash_balance": null,
+      "closing_cash_balance": null,
+      "balance_check": 0.0,
+      "unverified_tax_gross": 1267.0,
+      "sales_collections": 460.0
+    }
+  },
+  {
+    "file": "cash_monthly_ar_net",
+    "pdf_bytes": 42022,
+    "xlsx_bytes": 7658,
+    "totals": {
+      "receipts": 1400.0,
+      "payments": -677.0,
+      "displayed_net_movement": 723.0,
+      "excluded_tax_bridge": 6.0,
+      "actual_net_movement": 729.0,
+      "opening_cash_balance": null,
+      "closing_cash_balance": null,
+      "balance_check": 0.0,
+      "unverified_tax_gross": 1267.0,
+      "sales_collections": 400.0
+    }
+  },
+  {
+    "file": "cash_monthly_en_gross",
+    "pdf_bytes": 39704,
+    "xlsx_bytes": 7232,
+    "totals": {
+      "receipts": 1460.0,
+      "payments": -731.0,
+      "displayed_net_movement": 729.0,
+      "excluded_tax_bridge": 0.0,
+      "actual_net_movement": 729.0,
+      "opening_cash_balance": null,
+      "closing_cash_balance": null,
+      "balance_check": 0.0,
+      "unverified_tax_gross": 1267.0,
+      "sales_collections": 460.0
+    }
+  },
+  {
+    "file": "cash_monthly_en_net",
+    "pdf_bytes": 40132,
+    "xlsx_bytes": 7301,
+    "totals": {
+      "receipts": 1400.0,
+      "payments": -677.0,
+      "displayed_net_movement": 723.0,
+      "excluded_tax_bridge": 6.0,
+      "actual_net_movement": 729.0,
+      "opening_cash_balance": null,
+      "closing_cash_balance": null,
+      "balance_check": 0.0,
+      "unverified_tax_gross": 1267.0,
+      "sales_collections": 400.0
+    }
+  },
+  {
+    "file": "cash_monthly_ar_year",
+    "pdf_bytes": 73648,
+    "xlsx_bytes": 8509,
+    "totals": {
+      "receipts": 1460.0,
+      "payments": -731.0,
+      "displayed_net_movement": 729.0,
+      "excluded_tax_bridge": 0.0,
+      "actual_net_movement": 729.0,
+      "opening_cash_balance": null,
+      "closing_cash_balance": null,
+      "balance_check": 0.0,
+      "unverified_tax_gross": 1267.0,
+      "sales_collections": 460.0
+    }
+  },
+  {
+    "existing": "profit_and_loss",
+    "totals": {
+      "income": 900.0,
+      "expenses": 200.0,
+      "net_profit": 700.0,
+      "amount": 700.0
+    }
+  },
+  {
+    "existing": "cash_flow",
+    "totals": {
+      "operating": 150.0,
+      "investing": 0.0,
+      "financing": 0.0,
+      "net_change_in_cash": 150.0,
+      "opening_cash_balance": 1000.0,
+      "closing_cash_balance": 1150.0,
+      "balance_check": 0.0
+    }
+  }
+]

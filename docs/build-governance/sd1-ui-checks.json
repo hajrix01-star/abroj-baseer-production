@@ -1,0 +1,76 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "native record endpoint receives only preset and dashboard record id",
+      "passed": true
+    },
+    {
+      "name": "five cards preserve backend values formatting and comparison without arithmetic",
+      "passed": true
+    },
+    {
+      "name": "source action opens the exact server domain",
+      "passed": true
+    },
+    {
+      "name": "changing period removes previous payload immediately",
+      "passed": true
+    },
+    {
+      "name": "reversed response order cannot replace the latest selected period",
+      "passed": true
+    },
+    {
+      "name": "monthly grouping and exact backend point count pass through unchanged",
+      "passed": true
+    },
+    {
+      "name": "obsolete failure cannot replace a newer successful result",
+      "passed": true
+    },
+    {
+      "name": "custom date draft invalidates a pending preset request without a new query",
+      "passed": true
+    },
+    {
+      "name": "custom dates serialize raw ISO input and leave period policy to backend",
+      "passed": true
+    },
+    {
+      "name": "current validation error is visible and leaves no stale numeric payload",
+      "passed": true
+    },
+    {
+      "name": "refresh recovers after error with the same raw filters",
+      "passed": true
+    },
+    {
+      "name": "navigation away ignores an in-flight reply",
+      "passed": true
+    },
+    {
+      "name": "chart coordinate adapter preserves null gaps and true zero values",
+      "passed": true
+    },
+    {
+      "name": "partial periods use a distinct marker and tooltips use backend display strings",
+      "passed": true
+    },
+    {
+      "name": "redrawing destroys prior chart objects",
+      "passed": true
+    },
+    {
+      "name": "empty periods draw no chart and do not turn gaps into zero",
+      "passed": true
+    },
+    {
+      "name": "comparison arrows are labels only and do not recalculate percentages",
+      "passed": true
+    }
+  ],
+  "source": "custom_addons/baseer_sales_dashboard/static/src/sales_dashboard.js",
+  "source_sha256": "05a76f383b8e0a5d1bffdff2491a1d586e9eb28e50dbeb7d630a68e42962aa27",
+  "scope": "Production Owl component methods with stubbed services/hooks/canvas and deferred ORM. Verifies UI concurrency and faithful presentation, not business formulas or browser layout/lifecycle."
+}

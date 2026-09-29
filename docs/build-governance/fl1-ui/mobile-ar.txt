@@ -1,0 +1,265 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - generic: العمليات المالية
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- button "":
+  - generic: 
+- button "":
+  - generic: 
+- main:
+  - region "الملخص المالي":
+    - generic: الأرصدة الحالية · 2026-09-10
+    - button "تحديث الملخص المالي":
+      - generic: 
+    - generic: SAR
+    - heading "العملاء" [level=3]
+    - generic: 8 مستندات
+    - 'button "العملاء — صافي الفواتير: 258.72SAR"':
+      - generic: صافي الفواتير
+      - generic: "258.72"
+    - 'button "العملاء — المبلغ المسوّى: 86.42SAR"':
+      - generic: المبلغ المسوّى
+      - generic: "86.42"
+    - 'button "العملاء — المتبقي: 172.30SAR"':
+      - generic: المتبقي
+      - generic: "172.30"
+    - 'button "العملاء — مدفوع جزئيًا: 2"':
+      - generic: مدفوع جزئيًا
+      - generic: "2"
+    - 'button "العملاء — صافي المتأخر: 30.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "30.00"
+    - heading "الموردون" [level=3]
+    - generic: 5 مستندات
+    - 'button "الموردون — صافي الفواتير: 1,291.05SAR"':
+      - generic: صافي الفواتير
+      - generic: 1,291.05
+    - 'button "الموردون — المبلغ المسوّى: 60.05SAR"':
+      - generic: المبلغ المسوّى
+      - generic: "60.05"
+    - 'button "الموردون — المتبقي: 1,231.00SAR"':
+      - generic: المتبقي
+      - generic: 1,231.00
+    - 'button "الموردون — مدفوع جزئيًا: 1"':
+      - generic: مدفوع جزئيًا
+      - generic: "1"
+    - 'button "الموردون — صافي المتأخر: 0.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "0.00"
+  - link "RINV/2026/00002 10/09/2026 إشعار دائن للعميل FL1 synthetic partner المعلم الشامي 44.44 SR مدفوع ":
+    - generic: RINV/2026/00002
+    - generic: 10/09/2026
+    - generic: إشعار دائن للعميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 44.44 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+  - link "INV/2026/00006 10/09/2026 فاتورة عميل FL1 synthetic partner المعلم الشامي 44.44 SR معكوس ":
+    - generic: INV/2026/00006
+    - generic: 10/09/2026
+    - generic: فاتورة عميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 44.44 SR
+    - generic: معكوس
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00006 10/09/2026 دفعة واردة FL1 synthetic partner المعلم الشامي $ 12.34 ":
+    - generic: PBNK1/2026/00006
+    - generic: 10/09/2026
+    - generic: دفعة واردة
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: $ 12.34
+    - button "":
+      - generic: 
+  - link "INV/2026/00005 10/09/2026 فاتورة عميل FL1 synthetic partner المعلم الشامي $ 12.34 مدفوع ":
+    - generic: INV/2026/00005
+    - generic: 10/09/2026
+    - generic: فاتورة عميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: $ 12.34
+    - generic: مدفوع
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00005 10/09/2026 دفعة واردة FL1 synthetic partner المعلم الشامي 15.15 SR ":
+    - generic: PBNK1/2026/00005
+    - generic: 10/09/2026
+    - generic: دفعة واردة
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 15.15 SR
+    - button "":
+      - generic: 
+  - link "INV/2026/00004 10/09/2026 فاتورة عميل FL1 synthetic partner المعلم الشامي 15.15 SR بانتظار التسوية ":
+    - generic: INV/2026/00004
+    - generic: 10/09/2026
+    - generic: فاتورة عميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 15.15 SR
+    - generic: بانتظار التسوية
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0004 10/09/2026 فاتورة مورد FL1 private contact المعلم الشامي 987.65 SR غير مدفوع ":
+    - generic: BILL/2026/09/0004
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: FL1 private contact
+    - generic: المعلم الشامي
+    - generic: 987.65 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00004 10/09/2026 دفعة واردة FL1 synthetic partner المعلم الشامي 10.00 SR ":
+    - generic: PBNK1/2026/00004
+    - generic: 10/09/2026
+    - generic: دفعة واردة
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 10.00 SR
+    - button "":
+      - generic: 
+  - link "INV/2026/00003 10/09/2026 فاتورة عميل FL1 synthetic partner المعلم الشامي 100.00 SR مسدد جزئياً ":
+    - generic: INV/2026/00003
+    - generic: 10/09/2026
+    - generic: فاتورة عميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 100.00 SR
+    - generic: مسدد جزئياً
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00003 10/09/2026 دفعة صادرة FL1 synthetic partner المعلم الشامي 10.05 SR ":
+    - generic: PBNK1/2026/00003
+    - generic: 10/09/2026
+    - generic: دفعة صادرة
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 10.05 SR
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00002 10/09/2026 دفعة صادرة FL1 synthetic partner المعلم الشامي 60.05 SR ":
+    - generic: PBNK1/2026/00002
+    - generic: 10/09/2026
+    - generic: دفعة صادرة
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 60.05 SR
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00001 10/09/2026 دفعة واردة FL1 synthetic partner المعلم الشامي 25.05 SR ":
+    - generic: PBNK1/2026/00001
+    - generic: 10/09/2026
+    - generic: دفعة واردة
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 25.05 SR
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0003 10/09/2026 إيصال مشتريات FL1 synthetic partner المعلم الشامي 8.25 SR غير مدفوع ":
+    - generic: BILL/2026/09/0003
+    - generic: 10/09/2026
+    - generic: إيصال مشتريات
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 8.25 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+  - link "INV/2026/00002 10/09/2026 إيصال مبيعات FL1 synthetic partner المعلم الشامي 7.25 SR غير مدفوع ":
+    - generic: INV/2026/00002
+    - generic: 10/09/2026
+    - generic: إيصال مبيعات
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 7.25 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+  - link "RBILL/2026/09/0001 10/09/2026 إشعار دائن من المورد FL1 synthetic partner المعلم الشامي 20.05 SR غير مدفوع ":
+    - generic: RBILL/2026/09/0001
+    - generic: 10/09/2026
+    - generic: إشعار دائن من المورد
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 20.05 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+  - link "RINV/2026/00001 10/09/2026 إشعار دائن للعميل FL1 synthetic partner المعلم الشامي 10.05 SR مدفوع ":
+    - generic: RINV/2026/00001
+    - generic: 10/09/2026
+    - generic: إشعار دائن للعميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 10.05 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0002 10/09/2026 فاتورة مورد FL1 synthetic partner المعلم الشامي 200.20 SR مسدد جزئياً ":
+    - generic: BILL/2026/09/0002
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 200.20 SR
+    - generic: مسدد جزئياً
+    - button "":
+      - generic: 
+  - link "INV/2026/00001 10/09/2026 فاتورة عميل FL1 synthetic partner المعلم الشامي 100.10 SR مسدد جزئياً ":
+    - generic: INV/2026/00001
+    - generic: 10/09/2026
+    - generic: فاتورة عميل
+    - generic: FL1 synthetic partner
+    - generic: المعلم الشامي
+    - generic: 100.10 SR
+    - generic: مسدد جزئياً
+    - button "":
+      - generic: 
+  - link "CSH1/2026/00001 10/09/2026 سلفة موظف المعلم الشامي 100.01 SR ":
+    - generic: CSH1/2026/00001
+    - generic: 10/09/2026
+    - generic: سلفة موظف
+    - generic: المعلم الشامي
+    - generic: 100.01 SR
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0001 10/09/2026 فاتورة مورد AR1 UI Supplier المعلم الشامي 115.00 SR غير مدفوع ":
+    - generic: BILL/2026/09/0001
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: AR1 UI Supplier
+    - generic: المعلم الشامي
+    - generic: 115.00 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

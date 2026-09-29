@@ -1,0 +1,47 @@
+{
+  "release": "cashier-procurement-live-candidate-2026-09-14.2",
+  "status": "live",
+  "production_baseline": "4cd12588a2b447cb14f924f09c913b4fb7b24f43",
+  "candidate_commit": "863bd851dc107ba8911b417263f21b83270701f0",
+  "candidate_tag": "cashier-procurement-live-candidate-2026-09-14.2",
+  "github_repository": "https://github.com/hajrix01-star/abroj-baseer-production.git",
+  "github_branch": "codex/cashier-procurement-live-4cd",
+  "github_published": true,
+  "archive": {
+    "path": "baseer-cashier-procurement-live-863bd85.tar.gz",
+    "sha256": "a387ccbdc764e1a9e0bae90d8fae53456181fd47af290a7e94bab797182e89fa"
+  },
+  "payload_content_sha256": "3fae2bb1d54d5695dbb5be2d84036d173996eb735c02507e12b68cb5a857132f",
+  "module_versions": {
+    "baseer_access_roles": "19.0.1.0.3",
+    "baseer_procurement_requests": "19.0.11.0.2"
+  },
+  "scope": [
+    "cashier role can create, send, and operationally receive raw-material requests",
+    "server-side active-company guard, including rejection of draft company reassignment"
+  ],
+  "explicit_exclusions": [
+    "heat-calendar target-editor changes",
+    "database or data migration",
+    "vendor bills, payments, custody, settlements, and accounting entries"
+  ],
+  "verification": {
+    "database": "isolated local clone baseer_cashier_role_candidate_20260914",
+    "source_database": "baseer_heat_calendar_demo_20260914",
+    "filestore_files_copied": 509,
+    "module_upgrade_log": "../../build-governance/evidence/cashier-procurement-live-candidate-upgrade-863bd85.log",
+    "test_log": "../../build-governance/evidence/cashier-procurement-live-candidate-tests-863bd85.log",
+    "test_result": "52 tests, 0 failures, 0 errors"
+  },
+  "hostinger_rehearsal_completed": true,
+  "hostinger_deployment_completed": true,
+  "hostinger_evidence": {
+    "rehearsal": "isolated database, filestore, network, and loopback service; 52 tests, 0 failures, 0 errors; HTTP smoke passed",
+    "production_backup": "cashier-procurement-20260914T190650Z (database and filestore SHA-256 verified)",
+    "protected_business_snapshot": "identical before and after module upgrade",
+    "public_login_http": 200,
+    "active_release": "863bd85",
+    "read_only_evidence": "HOSTINGER-READ-ONLY-EVIDENCE.md"
+  },
+  "blocker": null
+}

@@ -1,0 +1,126 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "لوحات البيانات"
+    - menu:
+      - menuitem "لوحات البيانات"
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المُستخدِم في إجازة ومتصل بالإنترنت":
+        - img "المستخدم"
+        - img "المُستخدِم في إجازة ومتصل بالإنترنت": 
+        - text: 
+- generic: لوحات البيانات
+- generic "تبديل المفضلة": 
+- button "":
+  - generic: 
+- generic: المبيعات
+- list:
+  - listitem "ملخصات المبيعات":
+    - generic: ملخصات المبيعات
+  - listitem "المبيعات":
+    - generic: المبيعات
+  - listitem "المنتج":
+    - generic: المنتج
+  - listitem "نقطة البيع":
+    - generic: نقطة البيع
+  - listitem "نقطة البيع - مطعم":
+    - generic: نقطة البيع - مطعم
+- generic: المالية
+- list:
+  - listitem "الفوترة":
+    - generic: الفوترة
+  - listitem "النفقات":
+    - generic: النفقات
+- generic: اللوجستيات
+- list:
+  - listitem "مقاييس المستودع":
+    - generic: مقاييس المستودع
+- heading "ملخصات المبيعات" [level=1]
+- paragraph: المبيعات المعتمدة والعملاء المسجلون
+- generic: ARZ
+- generic: 2026-09-01 — 2026-09-09
+- button "تحديث":
+  - generic: 
+  - text: تحديث
+- generic: الفترة
+- combobox "الفترة":
+  - option "هذا الشهر" [selected]
+  - option "الشهر السابق"
+  - option "آخر 30 يومًا"
+  - option "هذه السنة"
+  - option "السنة السابقة"
+  - option "فترة مخصصة"
+- button "عرض الملخصات المعتمدة":
+  - text: عرض الملخصات المعتمدة
+  - generic: 
+- generic: مقارنة بالفترة
+- generic: 2026-08-01 — 2026-08-09
+- article:
+  - heading "إجمالي المبيعات" [level=2]
+  - generic: 
+  - generic: "0.00"
+  - generic: SAR
+  - paragraph: شاملة الضريبة
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- article:
+  - heading "العملاء المسجلون" [level=2]
+  - generic: 
+  - generic: "0"
+  - paragraph: من الملخصات المعتمدة
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- article:
+  - heading "متوسط المبيعات اليومي" [level=2]
+  - generic: 
+  - generic: —
+  - paragraph: أيام التشغيل المكتملة
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- article:
+  - heading "متوسط العملاء اليومي" [level=2]
+  - generic: 
+  - generic: —
+  - paragraph: أيام التشغيل المكتملة
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- article:
+  - heading "معدل الفاتورة" [level=2]
+  - generic: 
+  - generic: —
+  - paragraph: لكل عميل مسجل
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- generic: "0"
+- generic: أيام مكتملة
+- generic: "0"
+- generic: أيام غير مكتملة
+- generic: "0"
+- generic: أيام مغلقة
+- generic: "9"
+- generic: أيام غير مدخلة
+- paragraph: المتوسطات اليومية لأيام التشغيل المكتملة فقط. الإجماليات تشمل جميع الملخصات المعتمدة، بما فيها الأيام غير المكتملة.
+- status:
+  - generic: 
+  - heading "لا توجد ملخصات مبيعات معتمدة في هذه الفترة" [level=2]
+  - paragraph: تظهر الملخصات بعد اعتمادها. الفترات المغلقة أو غير المدخلة تظهر كفجوات في الرسم.
+- generic "تفاصيل الفترةيومي"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

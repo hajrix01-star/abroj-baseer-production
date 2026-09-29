@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "new_midmonth_version_after_draft",
+      "passed": true
+    },
+    {
+      "name": "changed_period_after_draft",
+      "passed": true
+    },
+    {
+      "name": "payroll_locked_date",
+      "passed": true
+    },
+    {
+      "name": "repayment_locked_date",
+      "passed": true
+    },
+    {
+      "name": "disbursement_locked_date",
+      "passed": true
+    }
+  ],
+  "rolled_back": true
+}

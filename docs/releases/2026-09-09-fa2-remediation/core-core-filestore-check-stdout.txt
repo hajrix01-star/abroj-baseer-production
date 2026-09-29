@@ -1,0 +1,3 @@
+{"database": "baseer_fix_core_20260909", "distinct_stored_contents": 792, "bytes_verified": 27693837, "missing_content_paths": [], "checksum_mismatches": []}
+
+STDERR:

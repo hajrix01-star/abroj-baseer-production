@@ -1,0 +1,348 @@
+{
+  "all_exact": true,
+  "tables": 34,
+  "before": [
+    {
+      "name": "account_journal_account_journal_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "discuss_channel_res_groups_rel",
+      "rows": 2,
+      "hash": "3b9bab1cc36d56d3dd6d913d50145cd0"
+    },
+    {
+      "name": "hr_employee_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "ir_act_server_group_rel",
+      "rows": 40,
+      "hash": "7f70c7e24f6255510134318aac58f152"
+    },
+    {
+      "name": "ir_act_window_group_rel",
+      "rows": 14,
+      "hash": "c43bdd3479fc3ad426deaa0989db20b9"
+    },
+    {
+      "name": "ir_embedded_actions_res_groups_rel",
+      "rows": 24,
+      "hash": "15f88abf6778846814c80c5bfd8f1690"
+    },
+    {
+      "name": "ir_model_access",
+      "rows": 1157,
+      "hash": "183c5f3ee225cd176c4941df98215dd3"
+    },
+    {
+      "name": "ir_model_fields_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "ir_rule",
+      "rows": 427,
+      "hash": "36386ce78338b83c33831961ab08f3af"
+    },
+    {
+      "name": "ir_ui_menu_group_rel",
+      "rows": 344,
+      "hash": "67e0650e12d3f57a22da3dbb7fe3c95e"
+    },
+    {
+      "name": "ir_ui_view_group_rel",
+      "rows": 19,
+      "hash": "a9d67edc18541f0f3c8502584f40a231"
+    },
+    {
+      "name": "mail_canned_response_res_groups_rel",
+      "rows": 1,
+      "hash": "e50f721ea5d1bf35abc028190233a811"
+    },
+    {
+      "name": "res_country_group_pricelist_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_country_group_res_country_state_rel",
+      "rows": 7,
+      "hash": "369a994b3d996bfd04a2af9392ab8334"
+    },
+    {
+      "name": "res_country_res_country_group_rel",
+      "rows": 201,
+      "hash": "bd8374320d91a6d76c4865eab91a4900"
+    },
+    {
+      "name": "res_groups",
+      "rows": 94,
+      "hash": "779d332584c3997fd22961583507e490"
+    },
+    {
+      "name": "res_groups_implied_rel",
+      "rows": 85,
+      "hash": "e45bca9518482d5114a7ea5fb4fba83e"
+    },
+    {
+      "name": "res_groups_privilege",
+      "rows": 21,
+      "hash": "31b8aa1524bf820847ed0092d7488f70"
+    },
+    {
+      "name": "res_groups_report_rel",
+      "rows": 8,
+      "hash": "59d5e032bcb433f8c15c64c2aff1162b"
+    },
+    {
+      "name": "res_groups_spreadsheet_dashboard_rel",
+      "rows": 9,
+      "hash": "96d700e81422e0de4decb177be042e12"
+    },
+    {
+      "name": "res_groups_users_rel",
+      "rows": 47,
+      "hash": "096d2de60d0533406543615fc96c3649"
+    },
+    {
+      "name": "res_groups_website_menu_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users",
+      "rows": 7,
+      "hash": "5073ccdd2e3953c1bcbe000e60af35d8"
+    },
+    {
+      "name": "res_users_apikeys",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_apikeys_description",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_deletion",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_identitycheck",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_log",
+      "rows": 1,
+      "hash": "c4d403c3ad441a409ed26eac4841115f"
+    },
+    {
+      "name": "res_users_settings",
+      "rows": 4,
+      "hash": "c2584b62a699d35131044de29f2c3173"
+    },
+    {
+      "name": "res_users_settings_embedded_action",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_settings_volumes",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_spreadsheet_dashboard_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_web_tour_tour_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "rule_group_rel",
+      "rows": 248,
+      "hash": "2bbdbd60327793908ffa1b8fb097cb3d"
+    }
+  ],
+  "after": [
+    {
+      "name": "account_journal_account_journal_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "discuss_channel_res_groups_rel",
+      "rows": 2,
+      "hash": "3b9bab1cc36d56d3dd6d913d50145cd0"
+    },
+    {
+      "name": "hr_employee_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "ir_act_server_group_rel",
+      "rows": 40,
+      "hash": "7f70c7e24f6255510134318aac58f152"
+    },
+    {
+      "name": "ir_act_window_group_rel",
+      "rows": 14,
+      "hash": "c43bdd3479fc3ad426deaa0989db20b9"
+    },
+    {
+      "name": "ir_embedded_actions_res_groups_rel",
+      "rows": 24,
+      "hash": "15f88abf6778846814c80c5bfd8f1690"
+    },
+    {
+      "name": "ir_model_access",
+      "rows": 1157,
+      "hash": "183c5f3ee225cd176c4941df98215dd3"
+    },
+    {
+      "name": "ir_model_fields_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "ir_rule",
+      "rows": 427,
+      "hash": "36386ce78338b83c33831961ab08f3af"
+    },
+    {
+      "name": "ir_ui_menu_group_rel",
+      "rows": 344,
+      "hash": "67e0650e12d3f57a22da3dbb7fe3c95e"
+    },
+    {
+      "name": "ir_ui_view_group_rel",
+      "rows": 19,
+      "hash": "a9d67edc18541f0f3c8502584f40a231"
+    },
+    {
+      "name": "mail_canned_response_res_groups_rel",
+      "rows": 1,
+      "hash": "e50f721ea5d1bf35abc028190233a811"
+    },
+    {
+      "name": "res_country_group_pricelist_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_country_group_res_country_state_rel",
+      "rows": 7,
+      "hash": "369a994b3d996bfd04a2af9392ab8334"
+    },
+    {
+      "name": "res_country_res_country_group_rel",
+      "rows": 201,
+      "hash": "bd8374320d91a6d76c4865eab91a4900"
+    },
+    {
+      "name": "res_groups",
+      "rows": 94,
+      "hash": "779d332584c3997fd22961583507e490"
+    },
+    {
+      "name": "res_groups_implied_rel",
+      "rows": 85,
+      "hash": "e45bca9518482d5114a7ea5fb4fba83e"
+    },
+    {
+      "name": "res_groups_privilege",
+      "rows": 21,
+      "hash": "31b8aa1524bf820847ed0092d7488f70"
+    },
+    {
+      "name": "res_groups_report_rel",
+      "rows": 8,
+      "hash": "59d5e032bcb433f8c15c64c2aff1162b"
+    },
+    {
+      "name": "res_groups_spreadsheet_dashboard_rel",
+      "rows": 9,
+      "hash": "96d700e81422e0de4decb177be042e12"
+    },
+    {
+      "name": "res_groups_users_rel",
+      "rows": 47,
+      "hash": "096d2de60d0533406543615fc96c3649"
+    },
+    {
+      "name": "res_groups_website_menu_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users",
+      "rows": 7,
+      "hash": "5073ccdd2e3953c1bcbe000e60af35d8"
+    },
+    {
+      "name": "res_users_apikeys",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_apikeys_description",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_deletion",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_identitycheck",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_log",
+      "rows": 1,
+      "hash": "c4d403c3ad441a409ed26eac4841115f"
+    },
+    {
+      "name": "res_users_settings",
+      "rows": 4,
+      "hash": "c2584b62a699d35131044de29f2c3173"
+    },
+    {
+      "name": "res_users_settings_embedded_action",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_settings_volumes",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_spreadsheet_dashboard_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "res_users_web_tour_tour_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "rule_group_rel",
+      "rows": 248,
+      "hash": "2bbdbd60327793908ffa1b8fb097cb3d"
+    }
+  ]
+}

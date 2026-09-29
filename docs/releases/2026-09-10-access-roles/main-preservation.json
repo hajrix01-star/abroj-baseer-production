@@ -1,0 +1,10 @@
+{
+  "protected_tables": 367,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "98f9d4dced9f7a844d3d44e63f89d8d0d8218664",
+  "existing_user_memberships_exact": true,
+  "existing_module_versions_exact": true,
+  "no_existing_user_presets": true,
+  "added_schema": "Role selector/security metadata, dedicated advance-entry model and private HR payment marker; no existing user assignment or business transaction migration"
+}

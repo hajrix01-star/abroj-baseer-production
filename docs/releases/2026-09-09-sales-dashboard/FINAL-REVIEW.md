@@ -1,0 +1,14 @@
+# SD1 — Final independent review
+
+**GO — deployed candidate `2d2ff102d11a53fc2fca1b8c1707fc81c77537ab`.**
+
+Reviewer: `/root/payment_seed_review`, 2026-09-09. This closes the bounded sales-summary dashboard review against the approved contract and `PREDEPLOY-GO.md`. No blocking finding remains in the reviewed scope. No application or MAIN data was changed by this reviewer.
+
+- `runtime.json` identifies the approved commit, pinned Odoo image and read-only candidate mounts; HTTP 200, addon `installed|19.0.1.0.0`, no pending modules and a published native dashboard are verified in the recorded deployment result.
+- `main-preservation.json` records exact preservation of existing columns and rows across **367 protected business tables**. The reviewer independently compared `protected-before.json` and `protected-after.json`: identical. Expected changes are dashboard marker/publication metadata; there is no business seed or transaction migration.
+- Independently inspected `main-dom.txt` and `main-empty-ar.jpg`: MAIN ARZ displays all five Arabic cards within native Dashboards/Sales. The current empty period explicitly reports no approved summaries, shows no fabricated averages or percentage movements, and explains the operating-day policy. Deployment owner also reports successful navigation to native Sales and back. MAIN's intentionally empty ledger is an evidence limit, not a defect.
+- QA evidence remains **84 backend checks and 17 component checks**, with exact relevant source hashes and actual browser coverage accepted in `PREDEPLOY-GO.md`. No unchanged tests were rerun for this final review. Positive financial examples were QA fixtures; no claim of actual MAIN sales or new native-posting certification is made.
+- `qa-cleanup.json` confirms removal of 24 tagged preview summaries with zero remaining and unchanged existing rows. `qa-session-cleanup.md` records removal of temporary user 156, partner 1258 and the temporary credential file, plus shutdown of the task-owned QA runtime. No MAIN test data was introduced.
+- `main-backup.json` records a coherent predeployment database/filestore backup with 649 attachment references verified. It explicitly does not claim a restore drill. The deployment owner additionally reports postrelease backup verification of 650 attachment references; that final backup/restart record is to be retained with operational evidence, rather than represented here as independently inspected completion.
+
+Scope limits: local capacity was measured for one reader, approximately 0.025–0.027 seconds for a year and comparison year. Concurrency capacity, a full ERP recertification and a fresh restoration drill were not performed. Preservation establishes equality of the protected table projections, not blanket proof of every database DDL object. These limits do not block this read-only dashboard release.

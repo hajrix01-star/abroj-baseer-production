@@ -1,0 +1,19 @@
+{
+  "source_commit": "4f5d0ff133f4b32fd8ca01b957490b20dba38326",
+  "isolated_repository": "D:\\Codex\\Baseer-odoo\\.local-backups\\fa2-20260909\\candidate",
+  "source_archive_sha256": "c8843337ffabea086892c1defe995032ea7f7c17be7592b60c0abf12df71d3e5",
+  "tracked_source_files": 1089,
+  "source_matches_working_files": true,
+  "engine": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "deployment_input_sha256": {
+    "compose.yaml": "f1b1867f2e0751dc9b22f73d75eab2daa85f37353f0a70612c71b786bffd3035",
+    "compose.reports-qa.yaml": "866cea0477961420f0b37a86dde4c6382b7198ea9692a75fbfa64173f731323f",
+    "docs/build-governance/fa2_ops.py": "6a603ba707d08a917d31715ea4079047972ff6254c2b1ca25ec077845cab8591",
+    "docs/releases/2026-09-09-fa2-remediation/TRANSFER-RUNBOOK.md": "e19ff93a49585ec9f5e576e1174740e58b951b8beb33e1fe3ac17a31ccbae9b5",
+    "docs/releases/2026-09-09-fa2-remediation/update-qa.py": "7c3f93c4efb2ffa987d2bcd22876203f4dc06dc1da88df4749cac992005376e6",
+    "docs/releases/2026-09-09-fa2-remediation/finish-qa.py": "28c1d420802b2cc9d8eb085140566d2dccf4c9cc79483a3dc777cfbeabd23278",
+    "docs/releases/2026-09-09-fa2-remediation/verify-qa.py": "55bac502f7236dfd71bf223a704c2c23f2fd3551bfb88a6a6193d0fe361b00f7"
+  },
+  "main_deployment_executed": false,
+  "notes": "Source commit is in an isolated release repository, not the user workspace. Runtime source is separately sealed in engine-proof.json. Environment secrets are excluded."
+}

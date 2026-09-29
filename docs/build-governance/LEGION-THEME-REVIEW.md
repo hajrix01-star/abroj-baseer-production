@@ -1,0 +1,29 @@
+# LEGION1 independent theme evaluation
+
+Reviewer s2_review; 2026-09-08; QA only. No application/source changes by reviewer.
+
+## R1 — G0–G4 GO for reversible QA evaluation
+
+Read `LEGION-THEME.md`, the quarantined manifest and initializer, and all three SCSS assets. **Approve G0–G4 for copying the supplied vendor module unchanged and installing it on QA after the backup.** This approves an evaluation, not visual acceptance or main rollout. The manifest depends only on web; the initializer contains no executable setup, and there are no registered business models, hooks, migrations or JavaScript. Native application logic remains authoritative. The package's Enterprise-themed name does not provide Enterprise business features.
+
+The stylesheet is broadly global rather than a narrowly scoped Baseer skin. Specific acceptance risks are visible in source: white `o_main_navbar` may leave native app-toggle/hamburger or systray elements at inherited white foreground; global `.table td` sets top alignment, padding and 10px height and may disturb the existing centered purchase monetary/tax/credit controls; list `.text-info` becomes gray and may suppress informational status color; global `.btn` removes rounding and adjusts foreground. Native source remains responsible for click/focus behavior, so verify normal and focused controls remain visible. Cash report category colors and number alignment require a direct visual check rather than assuming custom styles win the cascade.
+
+The global `color: none !important` declaration is invalid CSS and is ignored by the browser; it is a vendor-quality observation, not a reason to block the isolated install. The prepended SCSS references native variables and must pass Odoo's actual asset compilation; source inspection alone cannot prove load-order compatibility. No vendor repair is part of this gate.
+
+G5–G8 remain open for successful native installation/asset compilation and actual Arabic desktop/mobile review of app navigation, sales summary, batch purchases and cash report. Confirm app icons, primary actions, status decorations, numeric alignment and mobile layout; do not post financial data merely to test styling. Preserve vendor/custom source fingerprints and QA recovery. If material regressions require broad overrides, uninstall this theme from QA and report the limitations rather than silently adding a second theme repair layer. Main remains untouched.
+
+## R2 — bounded navbar compatibility correction approved
+
+Lead reproduced white/near-white native mobile hamburger and breadcrumb text on the vendor's white navbar after successful asset compilation. Read LEGION1-003 and native navbar SCSS consumers of `--NavBar-entry-color`, `--NavBar-entry-color--active` and `--NavBar-brand-color`. **G3/G4 GO for the proposed three-file `baseer_legion_compat` companion addon**, dependent on the vendor theme, whose sole stylesheet sets those three native variables to `#212529` within `.o_main_navbar`.
+
+This is a small correction of a demonstrated visibility defect using native styling hooks, not permission for a broader theme rewrite. Keep the supplied vendor files unchanged. No JavaScript, models, other global overrides or changes to native navigation behavior are needed. Final acceptance must confirm computed dark text/icons on white, including active/menu-open state and a freshly loaded mobile view. The earlier rollback threshold still applies if other defects need broad repair. QA-only final G5–G8 remain open.
+
+## R3 — final independent QA visual-evaluation decision
+
+**GO for LEGION1 with its minimal companion, for visual evaluation on QA only; G5–G8 closed for this bounded slice.** This is not approval for main deployment or a certification of every native/custom screen. Independently verified all 131 source hashes and nine evidence hashes in `docs/releases/2026-09-08-legion-theme-qa1/manifest.json`: no mismatch. The 128 vendor files also match their quarantined original files byte-for-byte. All prior POS6 and NAV1 module hashes remain unchanged. Preinstall backup SHA256 matches `d33c957c79e12c6ba70e94277cb4dcec652065863df736924fe71761bdf068b4`.
+
+Read the final companion manifest/stylesheet, native installation evidence and HANDOFF. The companion consists of three files and only sets the three approved native navbar color variables; original vendor source and business logic are intact. Reviewed the fixed summary mobile screenshot: hamburger and title are visible against white. Lead computed-style measurements confirm rgb(33,37,41) over white. Read LEGION1-006: actual mobile sidebar opening and All Apps selection work from the native POS application route. A standalone action without currentApp did not establish a valid sidebar context; no functional patch was applied for that test artifact.
+
+Reviewed cash report and fresh-load mobile purchase screenshots. The cash report retains narrow presentation, green grouping and red outgoing amounts; purchases retain the existing mobile cards. Lead desktop checks show original app icons loaded and gross/VAT/credit cells middle-aligned. Native vendor and companion asset builds succeeded. No further material regression was found in the checked Arabic desktop/mobile sample, and the single confirmed contrast defect has a bounded correction.
+
+The theme remains a broad cosmetic stylesheet: square buttons, bottom-border inputs and gray secondary text are intentional changes, not new Enterprise capabilities. It is suitable for user comparison in QA, with preference and wider rollout evaluated separately. English LTR, PDF and all-app coverage were not replayed; no full compatibility or accounting regression claim is made. No financial posting was used for styling verification. Native uninstall of companion then vendor restores prior styling; the preinstall dump supports exact recovery if needed. Main and unrelated pending feature decisions remain outside this review.

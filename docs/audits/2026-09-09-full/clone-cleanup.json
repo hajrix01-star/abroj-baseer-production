@@ -1,0 +1,18 @@
+[
+  {
+    "database": "baseer_audit_core_20260909",
+    "removed": true
+  },
+  {
+    "database": "baseer_audit_payroll_20260909",
+    "removed": true
+  },
+  {
+    "database": "baseer_audit_sales_20260909",
+    "removed": true
+  },
+  {
+    "database": "baseer_audit_security_20260909",
+    "removed": true
+  }
+]

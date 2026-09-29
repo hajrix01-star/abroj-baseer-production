@@ -1,0 +1,36 @@
+{
+  "summary_ui": {
+    "id": 23,
+    "name": "POS-S/2026/000023",
+    "date": "2026-07-27",
+    "gross": 690.0,
+    "moves": [
+      320,
+      323,
+      322,
+      321
+    ]
+  },
+  "summary_race": {
+    "id": 24,
+    "name": "POS-S/2026/000024",
+    "date": "2026-07-28",
+    "gross": 690.0,
+    "moves": [
+      324,
+      327,
+      326,
+      325
+    ]
+  },
+  "database": "baseer_ic1_20260910",
+  "company_id": 2,
+  "owner_id": 12,
+  "method_ids": [
+    19,
+    20,
+    21
+  ],
+  "qa_fixture_committed": true,
+  "main_untouched": true
+}

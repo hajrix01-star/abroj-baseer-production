@@ -1,0 +1,150 @@
+{
+  "account_move": {
+    "original_count": 63,
+    "original_unchanged": true,
+    "new_ids": [
+      804,
+      805,
+      806,
+      807
+    ]
+  },
+  "account_move_line": {
+    "original_count": 147,
+    "original_unchanged": true,
+    "new_ids": [
+      1811,
+      1812,
+      1813,
+      1814,
+      1815,
+      1816,
+      1817,
+      1818,
+      1819,
+      1820
+    ]
+  },
+  "pos_order": {
+    "original_count": 1,
+    "original_unchanged": true,
+    "new_ids": [
+      61,
+      62
+    ]
+  },
+  "pos_payment": {
+    "original_count": 3,
+    "original_unchanged": true,
+    "new_ids": [
+      130,
+      131
+    ]
+  },
+  "pos_session": {
+    "original_count": 3,
+    "original_unchanged": true,
+    "new_ids": [
+      65,
+      66
+    ]
+  },
+  "preview_summaries": [
+    {
+      "id": 288,
+      "business_date": "2026-09-03",
+      "period_scope": "evening",
+      "customer_count": 20,
+      "amount_gross": 230.0,
+      "state": "approved",
+      "order_id": [
+        61,
+        "QA ARZ — ملخصات المبيعات - 000002"
+      ],
+      "session_id": [
+        65,
+        "QA ARZ — ملخصات المبيعات/00063"
+      ]
+    },
+    {
+      "id": 287,
+      "business_date": "2026-09-03",
+      "period_scope": "morning",
+      "customer_count": 10,
+      "amount_gross": 115.0,
+      "state": "approved",
+      "order_id": [
+        62,
+        "QA ARZ — ملخصات المبيعات - 000003"
+      ],
+      "session_id": [
+        66,
+        "QA ARZ — ملخصات المبيعات/00064"
+      ]
+    }
+  ],
+  "closure": [
+    {
+      "id": 30,
+      "date_from": "2026-09-01",
+      "date_to": "2026-09-02",
+      "reason": "maintenance",
+      "notes": "صيانة وإصلاحات — مثال تجريبي",
+      "state": "confirmed"
+    }
+  ],
+  "daily_totals": {
+    "recorded_sales": "2145.00",
+    "recorded_customers": 90,
+    "complete_sales": "2145.00",
+    "complete_customers": 90,
+    "operating_days": 2,
+    "closed_days": 2,
+    "incomplete_days": 0,
+    "missing_days": 3,
+    "average_daily_sales": "1072.50",
+    "average_daily_customers": "45.00"
+  },
+  "archive": [
+    {
+      "id": 82,
+      "business_date": "2026-09-07",
+      "amount_total": 1800.0,
+      "customer_total": 60,
+      "state": "approved",
+      "is_day_off": false
+    },
+    {
+      "id": 227,
+      "business_date": "2026-09-04",
+      "amount_total": 345.0,
+      "customer_total": 30,
+      "state": "draft",
+      "is_day_off": false
+    },
+    {
+      "id": 287,
+      "business_date": "2026-09-03",
+      "amount_total": 345.0,
+      "customer_total": 30,
+      "state": "approved",
+      "is_day_off": false
+    },
+    {
+      "id": -30001,
+      "business_date": "2026-09-02",
+      "amount_total": 0.0,
+      "customer_total": 0,
+      "state": "closed",
+      "is_day_off": true
+    },
+    {
+      "id": -30000,
+      "business_date": "2026-09-01",
+      "amount_total": 0.0,
+      "customer_total": 0,
+      "state": "closed",
+      "is_day_off": true
+    }
+  ]
+}

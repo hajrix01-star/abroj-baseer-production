@@ -1,0 +1,1850 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "five_existing_sar_companies_available",
+      "passed": true
+    },
+    {
+      "name": "existing_6_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_6_private_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_6_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "existing_6_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "existing_6_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "existing_6_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "existing_6_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "existing_6_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "existing_6_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "existing_6_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "existing_6_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "existing_6_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "existing_6_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_6_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "existing_6_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_water",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_6_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_6_native_account_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_6_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_6_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "existing_6_separate_partner_and_product_records",
+      "passed": true
+    },
+    {
+      "name": "existing_6_same_shared_service_categories",
+      "passed": true
+    },
+    {
+      "name": "existing_9_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_9_private_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_9_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "existing_9_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "existing_9_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "existing_9_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "existing_9_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "existing_9_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "existing_9_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "existing_9_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "existing_9_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "existing_9_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "existing_9_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_9_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "existing_9_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_water",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_9_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_9_native_account_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_9_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_9_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "existing_9_separate_partner_and_product_records",
+      "passed": true
+    },
+    {
+      "name": "existing_9_same_shared_service_categories",
+      "passed": true
+    },
+    {
+      "name": "existing_7_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_7_private_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_7_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "existing_7_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "existing_7_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "existing_7_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "existing_7_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "existing_7_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "existing_7_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "existing_7_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "existing_7_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "existing_7_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "existing_7_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_7_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "existing_7_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_water",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_7_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_7_native_account_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_7_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_7_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "existing_7_separate_partner_and_product_records",
+      "passed": true
+    },
+    {
+      "name": "existing_7_same_shared_service_categories",
+      "passed": true
+    },
+    {
+      "name": "existing_8_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_8_private_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_8_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "existing_8_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "existing_8_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "existing_8_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "existing_8_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "existing_8_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "existing_8_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "existing_8_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "existing_8_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "existing_8_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "existing_8_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_8_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "existing_8_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_water",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_8_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_8_native_account_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_8_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_8_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "existing_8_separate_partner_and_product_records",
+      "passed": true
+    },
+    {
+      "name": "existing_8_same_shared_service_categories",
+      "passed": true
+    },
+    {
+      "name": "existing_10_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_10_private_providers",
+      "passed": true
+    },
+    {
+      "name": "existing_10_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "existing_10_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "existing_10_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "existing_10_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "existing_10_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "existing_10_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "existing_10_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "existing_10_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "existing_10_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "existing_10_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "existing_10_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_10_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "existing_10_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_visa",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_ticket",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_processing",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_other_employee",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_electricity",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_water",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_telecom",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_internet",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_attestation",
+      "passed": true
+    },
+    {
+      "name": "existing_10_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_10_native_account_legal_services",
+      "passed": true
+    },
+    {
+      "name": "existing_10_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "existing_10_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "existing_10_separate_partner_and_product_records",
+      "passed": true
+    },
+    {
+      "name": "existing_10_same_shared_service_categories",
+      "passed": true
+    },
+    {
+      "name": "existing_rerun_preserves_all_seed_configuration",
+      "passed": true
+    },
+    {
+      "name": "existing_non_sar_no_seed_or_change",
+      "passed": true
+    },
+    {
+      "name": "new_sa_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "new_sa_private_providers",
+      "passed": true
+    },
+    {
+      "name": "new_sa_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "new_sa_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "new_sa_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "new_sa_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "new_sa_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "new_sa_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "new_sa_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "new_sa_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "new_sa_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "new_sa_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "new_sa_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "new_sa_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "new_sa_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_visa",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_ticket",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_processing",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_other_employee",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_electricity",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_water",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_telecom",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_internet",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_attestation",
+      "passed": true
+    },
+    {
+      "name": "new_sa_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_account_legal_services",
+      "passed": true
+    },
+    {
+      "name": "new_sa_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "new_sa_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "new_sa_native_chart_automatic",
+      "passed": true
+    },
+    {
+      "name": "new_sa_no_financial_transactions",
+      "passed": true
+    },
+    {
+      "name": "new_company_repeat_exactly_stable",
+      "passed": true
+    },
+    {
+      "name": "localized_seed_timing_under_15s",
+      "passed": true
+    },
+    {
+      "name": "generic_native_template_initially_sets_usd",
+      "passed": true
+    },
+    {
+      "name": "new_generic_twenty_providers",
+      "passed": true
+    },
+    {
+      "name": "new_generic_private_providers",
+      "passed": true
+    },
+    {
+      "name": "new_generic_only_three_verified_vat",
+      "passed": true
+    },
+    {
+      "name": "new_generic_all_providers_have_classification",
+      "passed": true
+    },
+    {
+      "name": "new_generic_exactly_26_approved_services",
+      "passed": true
+    },
+    {
+      "name": "new_generic_one_mapping_per_seed_product",
+      "passed": true
+    },
+    {
+      "name": "new_generic_unique_selectable_leaf",
+      "passed": true
+    },
+    {
+      "name": "new_generic_private_service_products",
+      "passed": true
+    },
+    {
+      "name": "new_generic_no_forced_product_taxes",
+      "passed": true
+    },
+    {
+      "name": "new_generic_owned_expense_accounts",
+      "passed": true
+    },
+    {
+      "name": "new_generic_no_asset_in_expense_mapping",
+      "passed": true
+    },
+    {
+      "name": "new_generic_category_hierarchy_present",
+      "passed": true
+    },
+    {
+      "name": "new_generic_canonical_noupdate_identities",
+      "passed": true
+    },
+    {
+      "name": "new_generic_government_parties_present",
+      "passed": true
+    },
+    {
+      "name": "new_generic_no_government_forced_purchase_category",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_profession_change",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_visa",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_ticket",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_processing",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_other_employee",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_electricity",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_water",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_telecom",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_internet",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_mudad_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_muqeem_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_qiwa_subscription",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_municipal_license",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_commercial_register",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_attestation",
+      "passed": true
+    },
+    {
+      "name": "new_generic_leaf_legal_services",
+      "passed": true
+    },
+    {
+      "name": "new_generic_only_approved_product_identities",
+      "passed": true
+    },
+    {
+      "name": "new_generic_one_permit_account_shared_across_variants",
+      "passed": true
+    },
+    {
+      "name": "new_generic_chart_preserved",
+      "passed": true
+    },
+    {
+      "name": "new_non_sar_native_company_does_not_fail_or_seed",
+      "passed": true
+    },
+    {
+      "name": "seed_category_create_defaults_expense",
+      "passed": true
+    },
+    {
+      "name": "provider_default_category_creates_expense",
+      "passed": true
+    },
+    {
+      "name": "explicit_user_purchase_choice_preserved",
+      "passed": true
+    },
+    {
+      "name": "ordinary_unseeded_category_keeps_purchase",
+      "passed": true
+    },
+    {
+      "name": "category_onchange_suggests_expense",
+      "passed": true
+    },
+    {
+      "name": "provider_onchange_suggests_expense",
+      "passed": true
+    },
+    {
+      "name": "user_can_override_onchange_suggestion",
+      "passed": true
+    },
+    {
+      "name": "seed_retry_does_not_reclassify_saved_rows",
+      "passed": true
+    },
+    {
+      "name": "rename_archive_existing_vat_preserved_without_duplicates",
+      "passed": true
+    },
+    {
+      "name": "configured_category_product_choice_preserved",
+      "passed": true
+    },
+    {
+      "name": "all_other_company_configuration_unchanged",
+      "passed": true
+    },
+    {
+      "name": "cross_company_product_mapping_rejected",
+      "passed": true
+    },
+    {
+      "name": "ordinary_user_cannot_search_other_company_providers",
+      "passed": true
+    },
+    {
+      "name": "ordinary_user_cannot_search_other_company_products",
+      "passed": true
+    },
+    {
+      "name": "foreign_owned_seed_identity_rejected",
+      "passed": true
+    },
+    {
+      "name": "caller_default_context_does_not_mutate_seed",
+      "passed": true
+    },
+    {
+      "name": "no_existing_or_new_financial_history_mutations",
+      "passed": true
+    }
+  ],
+  "timings_seconds": {
+    "rerun_existing_companies": 0.203826,
+    "new_sa_create_precommit_flush": 3.846949,
+    "localized_company_rerun": 0.035715
+  },
+  "fixture_company_ids": [
+    47,
+    48,
+    49
+  ],
+  "rolled_back": true,
+  "check_count": 458
+}

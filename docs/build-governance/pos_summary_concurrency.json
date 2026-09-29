@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "case": "double approval of the same summary",
+      "requests": [
+        {
+          "ok": true,
+          "result": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  82
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 82,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "seconds": 2.0404401529813185
+        },
+        {
+          "ok": true,
+          "result": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  82
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 82,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "seconds": 0.9054800300509669
+        }
+      ]
+    },
+    {
+      "case": "concurrent all-day versus morning creation",
+      "requests": [
+        {
+          "ok": false,
+          "error": "Use either one All Day summary or separate Morning and Evening summaries for this company and date.",
+          "seconds": 0.441332204034552
+        },
+        {
+          "ok": true,
+          "result": 83,
+          "seconds": 0.035632064973469824
+        }
+      ]
+    }
+  ],
+  "preview": {
+    "summary_id": 82,
+    "company_id": 6,
+    "order_id": 15,
+    "session_id": 16,
+    "url": "http://127.0.0.1:18070/odoo/action-490/82"
+  }
+}

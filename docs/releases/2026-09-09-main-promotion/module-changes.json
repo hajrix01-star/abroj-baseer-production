@@ -1,0 +1,27 @@
+{
+  "installed": {
+    "baseer_company_setup": "19.0.1.0.0",
+    "baseer_hr_services": "19.0.1.1.0",
+    "baseer_payroll": "19.0.1.5.0",
+    "baseer_service_seed": "19.0.1.1.1",
+    "om_hr_payroll": "19.0.1.1",
+    "om_hr_payroll_account": "19.0.0.0"
+  },
+  "upgraded": {
+    "baseer_pos_summary": {
+      "before": "19.0.1.3.1",
+      "after": "19.0.1.4.0"
+    },
+    "baseer_purchase_batch": {
+      "before": "19.0.1.2.2",
+      "after": "19.0.1.2.3"
+    },
+    "baseer_web_navigation": {
+      "before": "19.0.1.0.0",
+      "after": "19.0.1.1.0"
+    }
+  },
+  "removed": [],
+  "before_count": 159,
+  "after_count": 165
+}

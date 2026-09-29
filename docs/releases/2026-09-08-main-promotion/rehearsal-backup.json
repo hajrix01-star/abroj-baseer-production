@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".local-backups\\main-promotion-20260908\\rehearsal\\compose.yaml",
+    "bytes": 1421,
+    "sha256": "51dd8c9d248895dd993fed79155ac4a1355e99eb5e1c9130503f63fa65763bf4"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\rehearsal\\database.dump",
+    "bytes": 9371145,
+    "sha256": "4ec6b41858a22d5bb37b1136e17eb84a7785e35cff62065a772f2fc54dc14d49"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\rehearsal\\filestore.tar.gz",
+    "bytes": 6197541,
+    "sha256": "cb8b14d496fc2a876e6825da768cf7941e7c90b7023445b30fc6ea24b59ac645"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\rehearsal\\odoo.local.conf",
+    "bytes": 173,
+    "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+  }
+]

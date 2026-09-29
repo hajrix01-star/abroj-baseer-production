@@ -1,0 +1,190 @@
+{
+  "checks": [
+    {
+      "name": "resignation_day_boundary_729",
+      "passed": true
+    },
+    {
+      "name": "resignation_day_boundary_730",
+      "passed": true
+    },
+    {
+      "name": "resignation_day_boundary_1825",
+      "passed": true
+    },
+    {
+      "name": "resignation_day_boundary_1826",
+      "passed": true
+    },
+    {
+      "name": "resignation_day_boundary_3649",
+      "passed": true
+    },
+    {
+      "name": "resignation_day_boundary_3650",
+      "passed": true
+    },
+    {
+      "name": "leap_days_and_excluded_end",
+      "passed": true
+    },
+    {
+      "name": "five_year_full_award",
+      "passed": true
+    },
+    {
+      "name": "article80_zero",
+      "passed": true
+    },
+    {
+      "name": "zero_service_period",
+      "passed": true
+    },
+    {
+      "name": "invalid_reason",
+      "passed": true
+    },
+    {
+      "name": "active_employee_estimate_no_posting",
+      "passed": true
+    },
+    {
+      "name": "fixed_eos_includes_allowances",
+      "passed": true
+    },
+    {
+      "name": "departure_required_for_bill",
+      "passed": true
+    },
+    {
+      "name": "forged_calculation",
+      "passed": true
+    },
+    {
+      "name": "forged_default_state",
+      "passed": true
+    },
+    {
+      "name": "forged_default_snapshot",
+      "passed": true
+    },
+    {
+      "name": "wrong_company",
+      "passed": true
+    },
+    {
+      "name": "unrecorded_service_start",
+      "passed": true
+    },
+    {
+      "name": "native_departure_recorded",
+      "passed": true
+    },
+    {
+      "name": "stale_salary_source",
+      "passed": true
+    },
+    {
+      "name": "one_posted_taxfree_supplier_bill",
+      "passed": true
+    },
+    {
+      "name": "balanced_native_award_bill",
+      "passed": true
+    },
+    {
+      "name": "approval_replay_one_bill",
+      "passed": true
+    },
+    {
+      "name": "issued_request_mutation",
+      "passed": true
+    },
+    {
+      "name": "issued_request_delete",
+      "passed": true
+    },
+    {
+      "name": "bill_amount_tamper",
+      "passed": true
+    },
+    {
+      "name": "bill_partner_tamper",
+      "passed": true
+    },
+    {
+      "name": "bill_source_unlink",
+      "passed": true
+    },
+    {
+      "name": "bill_delete_preserves_reservation",
+      "passed": true
+    },
+    {
+      "name": "bill_link_default_injection",
+      "passed": true
+    },
+    {
+      "name": "bill_line_default_injection",
+      "passed": true
+    },
+    {
+      "name": "duplicate_departure_event",
+      "passed": true
+    },
+    {
+      "name": "accountant_without_payroll_role",
+      "passed": true
+    },
+    {
+      "name": "accountant_no_award_access",
+      "passed": true
+    },
+    {
+      "name": "native_eos_payment_1000.00",
+      "passed": true
+    },
+    {
+      "name": "partial_native_bill",
+      "passed": true
+    },
+    {
+      "name": "native_eos_payment_18739.18",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_native_bill",
+      "passed": true
+    },
+    {
+      "name": "native_reversal_not_blocked",
+      "passed": true
+    },
+    {
+      "name": "no_reissue_after_reversal",
+      "passed": true
+    },
+    {
+      "name": "employee_financial_navigation",
+      "passed": true
+    },
+    {
+      "name": "zero_award_not_billed",
+      "passed": true
+    },
+    {
+      "name": "special_reason_review_required",
+      "passed": true
+    },
+    {
+      "name": "ordinary_user_award_access",
+      "passed": true
+    },
+    {
+      "name": "ordinary_user_award_create",
+      "passed": true
+    }
+  ],
+  "status": "passed",
+  "rolled_back": true
+}

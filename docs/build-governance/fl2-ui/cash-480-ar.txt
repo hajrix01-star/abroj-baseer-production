@@ -1,0 +1,83 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - button "":
+      - generic: 
+    - generic: الحركات النقدية
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- button "":
+  - generic: 
+- button "":
+  - generic: 
+- main:
+  - region "الملخص المالي":
+    - group "عرض العمليات":
+      - button "جميع العمليات"
+      - button "الحركات النقدية" [disabled] [pressed]
+    - generic: فترة التقرير
+    - textbox "فترة التقرير" [active]: 2026-02
+    - generic: المعلم الشامي
+    - button "تحديث الملخص المالي":
+      - generic: 
+    - generic: SAR
+    - heading "الحركات النقدية" [level=3]
+    - generic: 2 مستندات
+    - 'button "الحركات النقدية — المقبوضات الفعلية: 8,000.00SAR"':
+      - generic: المقبوضات الفعلية
+      - generic: 8,000.00
+    - 'button "الحركات النقدية — المدفوعات الفعلية: -5,000.00SAR"':
+      - generic: المدفوعات الفعلية
+      - generic: "-5,000.00"
+    - 'button "الحركات النقدية — صافي الحركة النقدية: 3,000.00SAR"':
+      - generic: صافي الحركة النقدية
+      - generic: 3,000.00
+  - link "BNK1/2026/00002 10/02/2026 قيد يومية المعلم الشامي المقبوضات الفعلية 0.00 SR المدفوعات الفعلية -5,000.00 SR صافي الحركة النقدية -5,000.00 SR ":
+    - generic: BNK1/2026/00002
+    - generic: 10/02/2026
+    - generic: قيد يومية
+    - generic: المعلم الشامي
+    - generic: المقبوضات الفعلية
+    - generic: 0.00 SR
+    - generic: المدفوعات الفعلية
+    - generic: "-5,000.00 SR"
+    - generic: صافي الحركة النقدية
+    - generic: "-5,000.00 SR"
+    - button "":
+      - generic: 
+  - link "BNK1/2026/00001 10/02/2026 قيد يومية المعلم الشامي المقبوضات الفعلية 8,000.00 SR المدفوعات الفعلية 0.00 SR صافي الحركة النقدية 8,000.00 SR ":
+    - generic: BNK1/2026/00001
+    - generic: 10/02/2026
+    - generic: قيد يومية
+    - generic: المعلم الشامي
+    - generic: المقبوضات الفعلية
+    - generic: 8,000.00 SR
+    - generic: المدفوعات الفعلية
+    - generic: 0.00 SR
+    - generic: صافي الحركة النقدية
+    - generic: 8,000.00 SR
+    - button "":
+      - generic: 
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

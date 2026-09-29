@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "owner": "root actual in-app browser",
+  "database": "baseer_reports_qa_20260907",
+  "checks": [
+    {
+      "name": "Arabic desktop: Edit primary / Copy secondary; unchanged template name, source, date and two linked employees preload",
+      "passed": true
+    },
+    {
+      "name": "Date input uses Western digits 09/09/2026; AR saved effective-date label translated",
+      "passed": true
+    },
+    {
+      "name": "Actual UI changed end15:30 to16:00 via hour/minute selectors; effective10/09/2026; saved successfully",
+      "passed": true
+    },
+    {
+      "name": "Persisted replacement459 retains name; new average11:00/week55:00; previous458 retains10:30/week52:30",
+      "passed": true
+    },
+    {
+      "name": "Fresh native read confirms2 dated employee versions, wages1000 unchanged, old schedule beforedate/new afterdate",
+      "passed": true
+    },
+    {
+      "name": "English desktop and390px mobile edit form display correct English fields and period cards",
+      "passed": true
+    },
+    {
+      "name": "Arabic390px mobile displays full-width dialog/period cards; document and dialog no horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "Mobile period-card editor opens, minute selector interactive; discard/cancel leaves calendar unchanged",
+      "passed": true
+    },
+    {
+      "name": "Previous calendar hides Edit, retains old hours, shows Arabic history note and working Open updated schedule button",
+      "passed": true
+    },
+    {
+      "name": "Future-date invalid save refused with Arabic translated business error; no new calendar saved",
+      "passed": true
+    }
+  ],
+  "mobile_width": 390,
+  "ui_fixture": "ws4-ui-fixture.json",
+  "native_verification": "ws4-ui-persisted.json",
+  "source_sha256": {
+    "custom_addons\\baseer_work_schedule\\models\\schedule.py": "084434d14c16f408332be01fe7f1d32ce240a9a6f1115a7b93cbbf48db833f6d",
+    "custom_addons\\baseer_work_schedule\\views\\schedule_views.xml": "2dd98ca2d83dd4a160a5014e1509e1a03ab8b117cd25279eea76f46b5eb8fce2",
+    "custom_addons\\baseer_work_schedule\\i18n\\ar.po": "70e880441d1f8e614912a046713a2d01142cc154ce4263ef87775d8037b7bd63"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "database.dump": {
+    "bytes": 9958496,
+    "sha256": "c6a38d706e23205da3368e5edacfb2b9154110a054759972512c664bdeaab3c5"
+  },
+  "filestore.tar": {
+    "bytes": 346275840,
+    "sha256": "3a288cf6223699211139e6382e68227adfe00fb2b8c58c10741228e2931982cb"
+  }
+}

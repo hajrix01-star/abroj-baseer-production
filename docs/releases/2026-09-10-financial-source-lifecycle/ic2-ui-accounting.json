@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "database": "baseer_ic1_20260910",
+  "read_only": true,
+  "main_untouched": true,
+  "batch": "Cancelled invoice/payment retained; active neighbor and batch total500",
+  "summary": "Original690 exactly reversed by account; replacement790/15customers approved; one audit"
+}

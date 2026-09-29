@@ -1,0 +1,34 @@
+services:
+  noorix_main_rehearsal:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/noorix-migration-addons,/mnt/noorix-main-replay-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_noorix_main_rehearsal_20260913
+      - --db-filter=^baseer_noorix_main_rehearsal_20260913$
+      - --no-database-list
+      - --max-cron-threads=0
+    ports:
+      - "127.0.0.1:18083:8069"
+    volumes:
+      - noorix-main-rehearsal-odoo-data:/var/lib/odoo
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/procurement-product-source1-20260913/candidate-v16/custom_addons/baseer_noorix_migration:/mnt/noorix-migration-addons/baseer_noorix_migration:ro
+      - ./custom_addons/baseer_noorix_main_replay:/mnt/noorix-main-replay-addons/baseer_noorix_main_replay:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/third_party_addons:/mnt/third-party-addons:ro
+      - ./.local-backups/noorix-migration:/mnt/noorix-payload:ro
+      - ./outputs/01a0926b-3b31-75f2-9e93-1679ceaef536/noorix-main-replay:/mnt/noorix-main-replay-payload:ro
+
+volumes:
+  noorix-main-rehearsal-odoo-data:
+    external: true
+    name: baseer_odoo_dev_noorix-main-rehearsal-odoo-data

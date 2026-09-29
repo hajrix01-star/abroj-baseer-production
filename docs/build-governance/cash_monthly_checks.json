@@ -1,0 +1,1478 @@
+{
+  "checks": [
+    {
+      "check": "selected-month total receipts",
+      "passed": true,
+      "inclusive": true
+    },
+    {
+      "check": "selected-month total payments",
+      "passed": true,
+      "inclusive": true
+    },
+    {
+      "check": "selected-month total actual_net_movement",
+      "passed": true,
+      "inclusive": true
+    },
+    {
+      "check": "selected-month total displayed_net_movement",
+      "passed": true,
+      "inclusive": true
+    },
+    {
+      "check": "selected-month total balance_check",
+      "passed": true,
+      "inclusive": true
+    },
+    {
+      "check": "unique monthly canonical IDs",
+      "passed": true
+    },
+    {
+      "check": "selected months only, ordered columns",
+      "passed": true
+    },
+    {
+      "check": "empty July is zero receipts",
+      "passed": true
+    },
+    {
+      "check": "September correct receipts",
+      "passed": true
+    },
+    {
+      "check": "empty July is zero payments",
+      "passed": true
+    },
+    {
+      "check": "September correct payments",
+      "passed": true
+    },
+    {
+      "check": "percentage uses selected VAT basis",
+      "passed": true,
+      "inclusive": true
+    },
+    {
+      "check": "percentage formatted by backend",
+      "passed": true
+    },
+    {
+      "check": "snapshot total unavailable baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "snapshot total unavailable baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "September opening preserved despite skipped August",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-65 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-65 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-70 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-70 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-69 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-69 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/ledger-1064 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/ledger-1064 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4/category-6 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4/category-6 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/unclassified month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/unclassified amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-5 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-5 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-6 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-6 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1158 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1158 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1162 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1162 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1160 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1160 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1161 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1161 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1159 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1159 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-7 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-7 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-actual_net_movement month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-actual_net_movement amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-opening_cash_balance month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-closing_cash_balance month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-balance_check month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-balance_check amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "empty month never opens unrelated operations",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "percentage opens outgoing evidence",
+      "passed": true
+    },
+    {
+      "check": "Excel percentage points retain literal percent format",
+      "passed": true
+    },
+    {
+      "check": "selected-month total receipts",
+      "passed": true,
+      "inclusive": false
+    },
+    {
+      "check": "selected-month total payments",
+      "passed": true,
+      "inclusive": false
+    },
+    {
+      "check": "selected-month total actual_net_movement",
+      "passed": true,
+      "inclusive": false
+    },
+    {
+      "check": "selected-month total displayed_net_movement",
+      "passed": true,
+      "inclusive": false
+    },
+    {
+      "check": "selected-month total balance_check",
+      "passed": true,
+      "inclusive": false
+    },
+    {
+      "check": "unique monthly canonical IDs",
+      "passed": true
+    },
+    {
+      "check": "selected months only, ordered columns",
+      "passed": true
+    },
+    {
+      "check": "empty July is zero receipts",
+      "passed": true
+    },
+    {
+      "check": "September correct receipts",
+      "passed": true
+    },
+    {
+      "check": "empty July is zero payments",
+      "passed": true
+    },
+    {
+      "check": "September correct payments",
+      "passed": true
+    },
+    {
+      "check": "percentage uses selected VAT basis",
+      "passed": true,
+      "inclusive": false
+    },
+    {
+      "check": "percentage formatted by backend",
+      "passed": true
+    },
+    {
+      "check": "snapshot total unavailable baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "snapshot total unavailable baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "September opening preserved despite skipped August",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-65 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-65 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-70 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-70 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-69 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance receipts/journal-69 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/ledger-1064 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/ledger-1064 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4/category-6 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/customer-refunds/category-4/category-6 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/unclassified month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/unclassified amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-5 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-5 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-6 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-4/category-6 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1158 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1158 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1162 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1162 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1160 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1160 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1161 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1161 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1159 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/group-1/ledger-1159 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-7 month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance payments/category-7 amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-displayed_net_movement month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-displayed_net_movement amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-excluded_tax_bridge month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-excluded_tax_bridge amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-actual_net_movement month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-actual_net_movement amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-opening_cash_balance month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-closing_cash_balance month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-balance_check month_2026_09",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "month/total native provenance baseer-total-balance_check amount",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "empty month never opens unrelated operations",
+      "passed": true
+    },
+    {
+      "check": "source company isolation",
+      "passed": true
+    },
+    {
+      "check": "percentage opens outgoing evidence",
+      "passed": true
+    },
+    {
+      "check": "Excel percentage points retain literal percent format",
+      "passed": true
+    },
+    {
+      "check": "opening capital remains cash receipt",
+      "passed": true
+    },
+    {
+      "check": "capital is not sales; zero denominator unavailable",
+      "passed": true
+    },
+    {
+      "check": "August+September cash receipts combined",
+      "passed": true
+    },
+    {
+      "check": "capital excluded from percentage denominator",
+      "passed": true
+    },
+    {
+      "check": "12 selected months plus label/total/percent",
+      "passed": true
+    },
+    {
+      "check": "12 month cash movement correct",
+      "passed": true
+    },
+    {
+      "check": "invalid monthly options rejected",
+      "passed": true,
+      "mutation": {
+        "baseer_months": []
+      }
+    },
+    {
+      "check": "invalid monthly options rejected",
+      "passed": true,
+      "mutation": {
+        "baseer_months": [
+          "2026-13"
+        ]
+      }
+    },
+    {
+      "check": "invalid monthly options rejected",
+      "passed": true,
+      "mutation": {
+        "baseer_months": [
+          "2026-09",
+          "2026-09"
+        ]
+      }
+    },
+    {
+      "check": "invalid monthly options rejected",
+      "passed": true,
+      "mutation": {
+        "baseer_months": [
+          "2023-01",
+          "2026-09"
+        ]
+      }
+    },
+    {
+      "check": "invalid monthly options rejected",
+      "passed": true,
+      "mutation": {
+        "baseer_months": [
+          "2026-09"
+        ],
+        "company_ids": [
+          6,
+          9
+        ]
+      }
+    },
+    {
+      "check": "forged/nonselected column rejected",
+      "passed": true,
+      "expression": "month_2026_08"
+    },
+    {
+      "check": "forged/nonselected column rejected",
+      "passed": true,
+      "expression": "forged"
+    },
+    {
+      "check": "forged/nonselected column rejected",
+      "passed": true,
+      "expression": "__proto__"
+    }
+  ],
+  "timings": [
+    {
+      "months": [
+        "2026-07",
+        "2026-09"
+      ],
+      "seconds": 0.117
+    },
+    {
+      "months": null,
+      "seconds": 0.015
+    },
+    {
+      "months": [
+        "2026-07",
+        "2026-09"
+      ],
+      "seconds": 0.021
+    },
+    {
+      "months": null,
+      "seconds": 0.013
+    },
+    {
+      "months": [
+        "2026-08"
+      ],
+      "seconds": 0.015
+    },
+    {
+      "months": [
+        "2026-08",
+        "2026-09"
+      ],
+      "seconds": 0.015
+    },
+    {
+      "months": [
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10",
+        "2026-11",
+        "2026-12"
+      ],
+      "seconds": 0.035
+    }
+  ]
+}

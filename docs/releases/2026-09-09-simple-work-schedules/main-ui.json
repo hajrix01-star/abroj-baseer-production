@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "environment": "MAIN baseer_dev http://127.0.0.1:18069",
+  "method": "Root in-app browser actual Arabic UI, own tab7 closed afterwards",
+  "checks": [
+    "Employees > Configuration exposes Work schedule templates, action823.",
+    "Empty template list has New schedule button and Arabic guidance.",
+    "New schedule opens weekdays, periods, import source and Asia/Riyadh timezone; canceled.",
+    "Employee1 Payroll tab shows native resource_calendar_id and Set work schedule button.",
+    "Employee button opens same wizard with effective date, optional template save and Apply work schedule; canceled.",
+    "Original user tab remains untouched, viewport restored."
+  ],
+  "business_mutations": "None; no template or employee schedule saved on MAIN."
+}

@@ -1,0 +1,168 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "ARZ":
+        - text: 
+        - generic: ARZ
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- heading "الحركة النقدية حسب الفئات" [level=2]
+- generic: SAR (SR)
+- generic: المبالغ المحصّلة والمدفوعة فقط
+- generic: "المبيعات المحصّلة المعتمدة للنسبة:"
+- generic: "0.00"
+- generic: SAR
+- group "Report appearance":
+  - button "فاتح" [pressed]:
+    - generic: 
+    - generic: فاتح
+  - button "غامق":
+    - generic: 
+    - generic: غامق
+- button " تحديث":
+  - generic: 
+  - text: تحديث
+- button " طباعة ملف PDF":
+  - generic: 
+  - text: طباعة ملف PDF
+- button " تصدير إلى Excel":
+  - generic: 
+  - text: تصدير إلى Excel
+- checkbox "شامل الضريبة" [checked]
+- generic: شامل الضريبة
+- group "الشركة":
+  - generic: الشركة
+  - radio "ARZ" [checked]
+  - generic: ARZ
+  - radio "المعلم الشامي"
+  - generic: المعلم الشامي
+  - radio "دوحة المستهلك"
+  - generic: دوحة المستهلك
+- group "الأشهر المختارة":
+  - generic: الأشهر المختارة
+  - generic: اختر شهراً
+  - textbox "اختر شهراً": 2026-09
+  - button "إضافة شهر" [disabled]:
+    - generic: 
+    - text: إضافة شهر
+  - generic: حتى 12 شهراً، ويمكن اختيار أشهر غير متتالية
+  - generic: سبتمبر 2026
+  - 'button "إزالة شهر: سبتمبر 2026" [disabled]':
+    - generic: 
+- generic: 
+- text: 12 الصفوف
+- generic: 
+- searchbox ""
+- button " طي الكل":
+  - generic: 
+  - text: طي الكل
+- button " إظهار الكل":
+  - generic: 
+  - text: إظهار الكل
+- region "جدول التقرير النقدي":
+  - table:
+    - rowgroup:
+      - row "الوصف 2026-09 (SR) إجمالي الأشهر المختارة (SR) % من المبيعات المحصّلة":
+        - columnheader "الوصف"
+        - columnheader "2026-09 (SR)":
+          - text: 2026-09
+          - generic: (SR)
+        - columnheader "إجمالي الأشهر المختارة (SR)":
+          - text: إجمالي الأشهر المختارة
+          - generic: (SR)
+        - columnheader "% من المبيعات المحصّلة"
+    - rowgroup:
+      - row "المقبوضات الفعلية  0.00  0.00  ":
+        - cell "المقبوضات الفعلية ":
+          - text: المقبوضات الفعلية
+          - button "":
+            - generic: 
+        - cell "0.00 ":
+          - button "0.00"
+          - button "":
+            - generic: 
+        - cell "0.00 ":
+          - button "0.00"
+          - button "":
+            - generic: 
+        - cell "":
+          - button "":
+            - generic: 
+      - row "المدفوعات الفعلية  0.00  0.00  ":
+        - cell "المدفوعات الفعلية ":
+          - text: المدفوعات الفعلية
+          - button "":
+            - generic: 
+        - cell "0.00 ":
+          - button "0.00"
+          - button "":
+            - generic: 
+        - cell "0.00 ":
+          - button "0.00"
+          - button "":
+            - generic: 
+        - cell "":
+          - button "":
+            - generic: 
+      - row "صافي الحركة النقدية  0.00  0.00  ":
+        - cell "صافي الحركة النقدية ":
+          - text: صافي الحركة النقدية
+          - button "":
+            - generic: 
+        - cell "0.00 ":
+          - button "0.00"
+          - button "":
+            - generic: 
+        - cell "0.00 ":
+          - button "0.00"
+          - button "":
+            - generic: 
+        - cell "":
+          - button "":
+            - generic: 
+      - row "Expand row تفاصيل الأرصدة وطريقة الاحتساب    ":
+        - cell "Expand row تفاصيل الأرصدة وطريقة الاحتساب ":
+          - button "Expand row":
+            - generic: 
+          - text: تفاصيل الأرصدة وطريقة الاحتساب
+          - button "":
+            - generic: 
+        - cell "":
+          - button "":
+            - generic: 
+        - cell "":
+          - button "":
+            - generic: 
+        - cell "":
+          - button "":
+            - generic: 
+- text: صُنع بـ
+- generic: 🤍
+- text: من ملبورن بواسطة
+- strong: ERP Heritage
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

@@ -1,0 +1,4 @@
+/var/lib/odoo/filestore/baseer_prod|files=640
+/var/lib/odoo/filestore/baseer_prod|manifest=46d7ea5715173ee5592f6934af76da91ec06418407b32d63a72cef47db2e222c
+/target/filestore/baseer_heat_rehearsal_52e9ff5|files=640
+/target/filestore/baseer_heat_rehearsal_52e9ff5|manifest=46d7ea5715173ee5592f6934af76da91ec06418407b32d63a72cef47db2e222c

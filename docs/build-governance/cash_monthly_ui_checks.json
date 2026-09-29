@@ -1,0 +1,1959 @@
+{
+  "bodyOverflow": "visible",
+  "direction": "ltr",
+  "monthCount": 12,
+  "rootOverflow": "auto",
+  "rows": [
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n1,000.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n460.00"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n1,460.00"
+        }
+      ],
+      "height": 557.578125,
+      "text": "Actual receipts\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n1,000.00\n2026-09\n460.00\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n1,460.00"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n1,000.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n0.00"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n1,000.00"
+        }
+      ],
+      "height": 555.578125,
+      "text": "Tax Adjustments\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n1,000.00\n2026-09\n0.00\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n1,000.00"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n230.00"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n230.00"
+        }
+      ],
+      "height": 555.578125,
+      "text": "بنك تجريبي\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n230.00\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n230.00"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n115.00"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n115.00"
+        }
+      ],
+      "height": 555.578125,
+      "text": "شبكة تجريبية\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n115.00\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n115.00"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n115.00"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n115.00"
+        }
+      ],
+      "height": 555.578125,
+      "text": "كاش تجريبي\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n115.00\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n115.00"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(731.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(731.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n158.91%"
+        }
+      ],
+      "height": 557.578125,
+      "text": "Actual payments\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(731.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(731.00)\n% of collected sales\n158.91%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(57.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(57.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n12.50%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "Basic Salary\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(57.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(57.50)\n% of collected sales\n12.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(11.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(11.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n2.50%"
+        }
+      ],
+      "height": 557.578125,
+      "text": "Customer refunds\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(11.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(11.50)\n% of collected sales\n2.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(11.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(11.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n2.50%"
+        }
+      ],
+      "height": 557.578125,
+      "text": "مشروبات\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(11.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(11.50)\n% of collected sales\n2.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(11.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(11.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n2.50%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "مياه\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(11.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(11.50)\n% of collected sales\n2.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(40.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(40.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n8.70%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "Unclassified / needs allocation\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(40.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(40.00)\n% of collected sales\n8.70%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(172.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(172.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n37.50%"
+        }
+      ],
+      "height": 557.578125,
+      "text": "مشروبات\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(172.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(172.50)\n% of collected sales\n37.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(115.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(115.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n25.00%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "مشروبات غازية\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(115.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(115.00)\n% of collected sales\n25.00%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(57.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(57.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n12.50%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "مياه\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(57.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(57.50)\n% of collected sales\n12.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(399.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(399.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n86.85%"
+        }
+      ],
+      "height": 557.578125,
+      "text": "مصاريف تشغيلية تجريبية\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(399.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(399.50)\n% of collected sales\n86.85%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(115.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(115.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n25.00%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "إيجارات\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(115.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(115.00)\n% of collected sales\n25.00%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(57.50)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(57.50)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n12.50%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "اتصالات وإنترنت\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(57.50)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(57.50)\n% of collected sales\n12.50%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(2.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(2.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n0.43%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "رسوم بنكية\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(2.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(2.00)\n% of collected sales\n0.43%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(200.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(200.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n43.48%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "رواتب الموظفين\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(200.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(200.00)\n% of collected sales\n43.48%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(25.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(25.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n5.43%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "كهرباء ومرافق\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(25.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(25.00)\n% of collected sales\n5.43%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n0.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(50.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n(50.00)"
+        },
+        {
+          "column": "receipt_share",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "% of collected sales\n10.87%"
+        }
+      ],
+      "height": 555.578125,
+      "text": "مواد غذائية\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n0.00\n2026-09\n(50.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n(50.00)\n% of collected sales\n10.87%"
+    },
+    {
+      "cells": [
+        {
+          "column": "month_2026_01",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-01\n0.00"
+        },
+        {
+          "column": "month_2026_02",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-02\n0.00"
+        },
+        {
+          "column": "month_2026_03",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-03\n0.00"
+        },
+        {
+          "column": "month_2026_04",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-04\n0.00"
+        },
+        {
+          "column": "month_2026_05",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-05\n0.00"
+        },
+        {
+          "column": "month_2026_06",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-06\n0.00"
+        },
+        {
+          "column": "month_2026_07",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-07\n0.00"
+        },
+        {
+          "column": "month_2026_08",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-08\n1,000.00"
+        },
+        {
+          "column": "month_2026_09",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-09\n(271.00)"
+        },
+        {
+          "column": "month_2026_10",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-10\n0.00"
+        },
+        {
+          "column": "month_2026_11",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-11\n0.00"
+        },
+        {
+          "column": "month_2026_12",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "2026-12\n0.00"
+        },
+        {
+          "column": "amount",
+          "insideRow": true,
+          "insideWidth": true,
+          "text": "Selected months total\n729.00"
+        }
+      ],
+      "height": 563.578125,
+      "text": "Net cash movement\n2026-01\n0.00\n2026-02\n0.00\n2026-03\n0.00\n2026-04\n0.00\n2026-05\n0.00\n2026-06\n0.00\n2026-07\n0.00\n2026-08\n1,000.00\n2026-09\n(271.00)\n2026-10\n0.00\n2026-11\n0.00\n2026-12\n0.00\nSelected months total\n729.00"
+    },
+    {
+      "cells": [],
+      "height": 41,
+      "text": "Balance reconciliation details"
+    }
+  ],
+  "scrollWidth": 390,
+  "width": 390
+}

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "salary_count": 40,
+  "job_count": 38,
+  "employees": 49,
+  "current": 34,
+  "archived": 15,
+  "financial_components_reconciled": true,
+  "source_links": 51,
+  "remaining_salary_decisions": 9
+}

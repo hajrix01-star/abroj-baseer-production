@@ -1,0 +1,15 @@
+<odoo>
+  <function model="res.lang" name="write">
+    <value eval="[ref('base.lang_ar')]"/><value eval="{'active': True}"/>
+  </function>
+  <function model="website" name="write">
+    <value eval="[ref('website.default_website')]"/>
+    <value eval="{'name': 'Abroj', 'domain': 'https://abroj.sa', 'language_ids': [(6, 0, [ref('base.lang_ar'), ref('base.lang_en')])], 'default_lang_id': ref('base.lang_ar')}"/>
+  </function>
+  <record id="baseer_website" model="website">
+    <field name="name">Baseer Login</field><field name="domain">https://baseer.abroj.sa</field>
+    <field name="language_ids" eval="[(6, 0, [ref('base.lang_ar'), ref('base.lang_en')])]"/>
+    <field name="default_lang_id" ref="base.lang_ar"/>
+    <field name="company_id" ref="base.main_company"/><field name="user_id" ref="base.public_user"/>
+  </record>
+</odoo>

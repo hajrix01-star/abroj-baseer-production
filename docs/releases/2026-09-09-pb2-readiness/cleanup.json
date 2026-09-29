@@ -1,0 +1,6 @@
+{
+  "review_service_stopped": true,
+  "clone_removed": true,
+  "qa_and_main_retained": true,
+  "backups_and_evidence_retained": true
+}

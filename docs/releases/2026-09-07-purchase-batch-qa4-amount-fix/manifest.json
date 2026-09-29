@@ -1,0 +1,15 @@
+{
+  "scope": "QA only; local monetary edit presentation",
+  "baseline": "2026-09-07-purchase-batch-qa4",
+  "source_file": "custom_addons/baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+  "sha256": "6eee8f712d44c237b0e58aedc10725f1d86efda63c55c2cd1e8659f1e3835792",
+  "validation": [
+    "Native editable zero and1234567.89 rendered without currency/input overlap",
+    "Both ghost value and input share direction and origin; currency rectangle ends before input starts",
+    "Unsaved display test row discarded; no model or accounting changes"
+  ],
+  "evidence": [
+    "docs/build-governance/qa4_amount_zero_fixed.png",
+    "docs/build-governance/qa4_amount_large_fixed.png"
+  ]
+}

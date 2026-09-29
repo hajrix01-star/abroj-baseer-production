@@ -1,0 +1,165 @@
+{
+  "candidate": "BASEER-ODOO-PB1/v1 QA3",
+  "date": "2026-09-07",
+  "scope": "QA preview only; not installed on main",
+  "identity": "SHA256 source manifest and verified zip; workspace has no release commit",
+  "module": "baseer_purchase_batch",
+  "version": "19.0.1.1.1",
+  "dependencies": [
+    "account",
+    "baseer_report_layout",
+    "baseer_category_display"
+  ],
+  "qa_database": "baseer_reports_qa_20260907",
+  "runtime_image_id": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "installed_dependency_versions": {
+    "baseer_category_display": "19.0.1.0.0",
+    "account": "19.0.1.4",
+    "baseer_report_layout": "19.0.1.1.0"
+  },
+  "existing_report_files_verified": 229,
+  "baseline": "Reports R1 with previously accepted cash print 19.0.1.3.1 two-file patch",
+  "main_readonly_check": {
+    "moves": 0,
+    "move_lines": 0,
+    "purchase_batch_installed": 0,
+    "category_display_installed": 0
+  },
+  "archive": {
+    "path": ".local-backups/releases/2026-09-07-purchase-batch-qa3/baseer-purchase-batch-qa3.zip",
+    "sha256": "26de69392482374442637d47521ad734ddd45b87625454ad6f2b29a60b6a4938",
+    "entries_verified": 20
+  },
+  "files": [
+    {
+      "path": "custom_addons/baseer_category_display/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/__manifest__.py",
+      "bytes": 279,
+      "sha256": "80ed4d449408157f892d6ba06c60f5231f91ec36f4b85423666c521d682972ac"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/models/__init__.py",
+      "bytes": 31,
+      "sha256": "2330ebc9ec58477a49dc086dbaa3518d4b78fc5ed1001fcf05f1055175a9b0d1"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/models/product_category.py",
+      "bytes": 424,
+      "sha256": "ea7857a6899c58aa3e8daacbcc6c0966a6ecf723229dbd18f02c2c5720745137"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/README.md",
+      "bytes": 650,
+      "sha256": "906c554d8c2846315bef3ab08067d028473bbe2ba94f26f62c5aa2fb1f4088ee"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/views/product_category_views.xml",
+      "bytes": 543,
+      "sha256": "c357d8726816d7c6bf2583bff6e2c643e8d05b55151d88a9357bf318a9c99996"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__manifest__.py",
+      "bytes": 806,
+      "sha256": "b1e1bdafc1ade055ca508c244754841cfd490f87a55254c4c6a2a64198a8a89f"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/data/sequence.xml",
+      "bytes": 388,
+      "sha256": "42ddb26d2ad842a0b4690809c413256e06f52e574710b0457ac347a4a6a486a0"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/i18n/ar_001.po",
+      "bytes": 40440,
+      "sha256": "c63352a793a0233df3369b77cb24596d8fe655507bddbbfb81c69c93758e1f78"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/__init__.py",
+      "bytes": 29,
+      "sha256": "8b217ad864e026f6455372e15f34d15bafb0be6862c87391a35196de62a316ae"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/purchase_batch.py",
+      "bytes": 36282,
+      "sha256": "1186f0e982d75e8f895f2014ad6774cf1d9a8f20be27742b084e8adbc47e0974"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/README.md",
+      "bytes": 3631,
+      "sha256": "7bc9e1eca3ddb27de98a1d3215c5d797e34ca230645f0ef396e8ed1195945f71"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/report/purchase_batch_report.xml",
+      "bytes": 6321,
+      "sha256": "b1c11d3b00e6924ca8337f6f9fab93d293eb31fde0764cd016461ed5884f20d8"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/ir.model.access.csv",
+      "bytes": 622,
+      "sha256": "c42c7e37f2ba59be5e74532d50d56cd3e969808f3d6d51aaf1d1faefe030e476"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/security.xml",
+      "bytes": 974,
+      "sha256": "dce5ee3927d3c5d2c96dfdef13805af8c7bcf3d9e856c0928d7721aac8a4a08a"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/js/latin_date_field.js",
+      "bytes": 1199,
+      "sha256": "815e79dedbda875caa488dd346afb6a554713b6d12e208d528955445e97341b1"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+      "bytes": 2557,
+      "sha256": "21b895895f008e3fd326ff72fbafc434cee1fd2348af4209833fc604a1bf85cc"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/category_mapping_views.xml",
+      "bytes": 2614,
+      "sha256": "86259719f9860d596ac253e82da472ed05c750b91ebef588e9d17223a77f2505"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/purchase_batch_views.xml",
+      "bytes": 15163,
+      "sha256": "a3b53d42084fa43450211a62e652b99c2e9ba301f0a8afc648e61ce9b524679c"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/category_labels_checks.json",
+      "sha256": "20af28f89eca885cc0516b9d905b3f73a9532fda30742a0251b0b4d27a96cca4"
+    },
+    {
+      "path": "docs/build-governance/category_labels_table.png",
+      "sha256": "dfa7e560d994ad34bfc7557447193333072f1e78e9fdec69b6481832bc7d992b"
+    },
+    {
+      "path": "docs/build-governance/category_labels_selector.png",
+      "sha256": "54e8c341812c109119f651355be1c008123de8310e06d1966b0241f8c2afdf2a"
+    },
+    {
+      "path": "docs/build-governance/category_labels_native.png",
+      "sha256": "9f87d8345cc17f270fe8eb67948ec5c61a203140f9485a701ca735f068fbca6d"
+    },
+    {
+      "path": "docs/build-governance/category_labels_pdf.png",
+      "sha256": "d2f4ecdddce6e1ec3d0e54b15374cd7b3a8a59b21a3ad3bcbb4861c732a0d169"
+    },
+    {
+      "path": "docs/build-governance/category_labels_financial_before.txt",
+      "sha256": "bc431059da08ed4f00822e630a1e8aba6e3ce4b33a48717675f126d430ce14fd"
+    },
+    {
+      "path": "docs/build-governance/category_labels_financial_after.txt",
+      "sha256": "bc431059da08ed4f00822e630a1e8aba6e3ce4b33a48717675f126d430ce14fd"
+    }
+  ]
+}

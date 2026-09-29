@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "database": "baseer_sim90_20260910",
+  "company_id": 2,
+  "counts": {
+    "days": 90,
+    "summary_records": 189,
+    "active_summaries": 180,
+    "native_orders": 450,
+    "native_sessions": 90,
+    "customer_invoice_sources": 180,
+    "invoice_and_credit_records": 198,
+    "platform_claims": 620,
+    "platform_settlements": 538,
+    "corrections": 45,
+    "events": 1219
+  },
+  "seed_checks": 10097,
+  "failed_checks": 0,
+  "manifest": "/tmp/sim90/sales-manifest.json",
+  "committed": true
+}

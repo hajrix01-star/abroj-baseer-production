@@ -1,0 +1,42 @@
+{
+  "schema": "baseer-candidate-provenance-amendment/v1",
+  "candidate": "NSM-KARAK-FINANCIAL-v15",
+  "reason": "The original manifest described but did not version the tree-hash implementation; path-separator and serialization choices made the published aggregate tree hashes non-reproducible.",
+  "business_data_reexecuted": false,
+  "candidate_file_content_changed": false,
+  "checkpoint_manifest_retained_as_historical_evidence": true,
+  "superseded_candidate_manifest_sha256": "f7b2310b294b1413d12a1b103a87337b488dc4898be484dff32f0eb5f2aa6998",
+  "corrected_candidate_manifest_sha256": "d874224d72b9c0e324b9a40f2734ca810d39e924a7d8c251c8da626776bb9bcc",
+  "hash_tool": {
+    "path": "tools/release/hash_candidate_tree.py",
+    "sha256": "645e34a26d560eea39caa01232ca85701adab59f3c576297d7eca4830bac633e"
+  },
+  "authoritative_tree_receipts": [
+    {
+      "scope": "custom_addons",
+      "file_count": 313,
+      "tree_sha256": "6ad802d48ca0d23759820096c3650d6ee2ae4d984d79477e0d58611f6e88bdc4",
+      "receipt": "candidate-v15-custom-addons-tree-receipt.json",
+      "receipt_sha256": "03736d1702dbc07978a30b934c9a1b4c815efeb973c2f5fad7382e8f4695767e"
+    },
+    {
+      "scope": "baseer_noorix_migration",
+      "file_count": 10,
+      "tree_sha256": "8c334d2b90090067f87dfd786372820d6c618278ed3be7cad27e8aae295fb222",
+      "receipt": "candidate-v15-migration-module-tree-receipt.json",
+      "receipt_sha256": "3ae21698669782e4563e097a85095d7f92228076888c48c594033c7cc8da9b8a"
+    },
+    {
+      "scope": "third_party_addons",
+      "file_count": 935,
+      "tree_sha256": "0d1ab8e870d15ac883fed4c8f074603b3f9b5ba11cc42a114b33a8e6b4a0abcf",
+      "receipt": "third-party-addons-tree-receipt.json",
+      "receipt_sha256": "29e663e40a0c9028116849628634e18c4057e1e34ca5e7c0bcbea9d2a94f8ac2"
+    }
+  ],
+  "critical_file_hashes_unchanged": {
+    "purchase_writer_sha256": "fbf7e0f5f9c4177305c7d49618f9006b8a88f5de258df967ea6019348b419dba",
+    "payroll_writer_sha256": "8a5509465feb92c3ff5782e3cfb00f102dd4e2bb89e7c24bb1a0ffd086cb79fc"
+  },
+  "scope": "provenance correction only; QA result retained; original and production remain unauthorized"
+}

@@ -1,0 +1,71 @@
+[
+  {
+    "frameHeight": 726,
+    "frameScrollHeight": 726,
+    "frameScrollWidth": 493,
+    "frameWidth": 349,
+    "page": 390,
+    "pageScroll": 390,
+    "phase": "one-month",
+    "tableDisplay": "table"
+  },
+  {
+    "frameRight": 378,
+    "labelLeft": 216,
+    "labelRight": 376,
+    "phase": "rtl-three-before",
+    "scroll": 0
+  },
+  {
+    "frameRight": 378,
+    "labelLeft": 217,
+    "labelRight": 377,
+    "phase": "rtl-three-after",
+    "scroll": -364
+  },
+  {
+    "columns": [
+      "الوصف",
+      "2026-01 (SR)",
+      "2026-02 (SR)",
+      "2026-03 (SR)",
+      "2026-04 (SR)",
+      "2026-05 (SR)",
+      "2026-06 (SR)",
+      "2026-07 (SR)",
+      "2026-08 (SR)",
+      "2026-09 (SR)",
+      "2026-10 (SR)",
+      "2026-11 (SR)",
+      "2026-12 (SR)",
+      "إجمالي الأشهر المختارة (SR)",
+      "% من المبيعات المحصّلة"
+    ],
+    "display": "table-row",
+    "frameHeight": 754,
+    "frameScrollHeight": 754,
+    "frameScrollWidth": 1703,
+    "frameWidth": 349,
+    "labelRight": 377,
+    "months": 12,
+    "page": 390,
+    "pageScroll": 390,
+    "phase": "rtl-twelve-end",
+    "scroll": -1354
+  },
+  {
+    "direction": "ltr",
+    "frameLeft": 12,
+    "labelLeft": 14,
+    "phase": "ltr-three-before",
+    "scroll": 0
+  },
+  {
+    "frameLeft": 12,
+    "labelLeft": 13,
+    "page": 390,
+    "pageScroll": 390,
+    "phase": "ltr-three-after",
+    "scroll": 364
+  }
+]

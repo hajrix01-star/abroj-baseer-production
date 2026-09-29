@@ -1,0 +1,2573 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "seed": [
+    {
+      "xml_name": "provider_energy_company_6",
+      "id": 510,
+      "name": "الشركة السعودية للطاقة",
+      "company_id": 6,
+      "active": true,
+      "vat": "300000361310003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 24
+      }
+    },
+    {
+      "xml_name": "provider_water_company_6",
+      "id": 511,
+      "name": "شركة المياه الوطنية",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 25
+      }
+    },
+    {
+      "xml_name": "provider_stc_company_6",
+      "id": 512,
+      "name": "شركة الاتصالات السعودية",
+      "company_id": 6,
+      "active": true,
+      "vat": "300000157210003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 26
+      }
+    },
+    {
+      "xml_name": "provider_mobily_company_6",
+      "id": 513,
+      "name": "شركة اتحاد اتصالات",
+      "company_id": 6,
+      "active": true,
+      "vat": "300000699600003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 26
+      }
+    },
+    {
+      "xml_name": "provider_zain_company_6",
+      "id": 514,
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 26
+      }
+    },
+    {
+      "xml_name": "provider_salam_company_6",
+      "id": 515,
+      "name": "شركة اتحاد سلام للاتصالات",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 27
+      }
+    },
+    {
+      "xml_name": "provider_go_company_6",
+      "id": 516,
+      "name": "شركة اتحاد قو للاتصالات",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "6": 26
+      }
+    },
+    {
+      "xml_name": "provider_municipalities_company_6",
+      "id": 517,
+      "name": "وزارة البلديات والإسكان",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_commerce_company_6",
+      "id": 518,
+      "name": "وزارة التجارة",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_business_center_company_6",
+      "id": 519,
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_hrsd_company_6",
+      "id": 520,
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_foreign_affairs_company_6",
+      "id": 521,
+      "name": "وزارة الخارجية",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_justice_company_6",
+      "id": 522,
+      "name": "وزارة العدل",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_passports_company_6",
+      "id": 523,
+      "name": "المديرية العامة للجوازات",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_gosi_company_6",
+      "id": 524,
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_zatca_company_6",
+      "id": 525,
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_balady_company_6",
+      "id": 526,
+      "name": "منصة بلدي",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_mudad_company_6",
+      "id": 527,
+      "name": "منصة مدد",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_muqeem_company_6",
+      "id": 528,
+      "name": "مقيم",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_qiwa_company_6",
+      "id": 529,
+      "name": "منصة قوى",
+      "company_id": 6,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_energy_company_7",
+      "id": 530,
+      "name": "الشركة السعودية للطاقة",
+      "company_id": 7,
+      "active": true,
+      "vat": "300000361310003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 50
+      }
+    },
+    {
+      "xml_name": "provider_water_company_7",
+      "id": 531,
+      "name": "شركة المياه الوطنية",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 51
+      }
+    },
+    {
+      "xml_name": "provider_stc_company_7",
+      "id": 532,
+      "name": "شركة الاتصالات السعودية",
+      "company_id": 7,
+      "active": true,
+      "vat": "300000157210003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 52
+      }
+    },
+    {
+      "xml_name": "provider_mobily_company_7",
+      "id": 533,
+      "name": "شركة اتحاد اتصالات",
+      "company_id": 7,
+      "active": true,
+      "vat": "300000699600003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 52
+      }
+    },
+    {
+      "xml_name": "provider_zain_company_7",
+      "id": 534,
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 52
+      }
+    },
+    {
+      "xml_name": "provider_salam_company_7",
+      "id": 535,
+      "name": "شركة اتحاد سلام للاتصالات",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 53
+      }
+    },
+    {
+      "xml_name": "provider_go_company_7",
+      "id": 536,
+      "name": "شركة اتحاد قو للاتصالات",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "7": 52
+      }
+    },
+    {
+      "xml_name": "provider_municipalities_company_7",
+      "id": 537,
+      "name": "وزارة البلديات والإسكان",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_commerce_company_7",
+      "id": 538,
+      "name": "وزارة التجارة",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_business_center_company_7",
+      "id": 539,
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_hrsd_company_7",
+      "id": 540,
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_foreign_affairs_company_7",
+      "id": 541,
+      "name": "وزارة الخارجية",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_justice_company_7",
+      "id": 542,
+      "name": "وزارة العدل",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_passports_company_7",
+      "id": 543,
+      "name": "المديرية العامة للجوازات",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_gosi_company_7",
+      "id": 544,
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_zatca_company_7",
+      "id": 545,
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_balady_company_7",
+      "id": 546,
+      "name": "منصة بلدي",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_mudad_company_7",
+      "id": 547,
+      "name": "منصة مدد",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_muqeem_company_7",
+      "id": 548,
+      "name": "مقيم",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_qiwa_company_7",
+      "id": 549,
+      "name": "منصة قوى",
+      "company_id": 7,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_energy_company_8",
+      "id": 550,
+      "name": "الشركة السعودية للطاقة",
+      "company_id": 8,
+      "active": true,
+      "vat": "300000361310003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 76
+      }
+    },
+    {
+      "xml_name": "provider_water_company_8",
+      "id": 551,
+      "name": "شركة المياه الوطنية",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 77
+      }
+    },
+    {
+      "xml_name": "provider_stc_company_8",
+      "id": 552,
+      "name": "شركة الاتصالات السعودية",
+      "company_id": 8,
+      "active": true,
+      "vat": "300000157210003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 78
+      }
+    },
+    {
+      "xml_name": "provider_mobily_company_8",
+      "id": 553,
+      "name": "شركة اتحاد اتصالات",
+      "company_id": 8,
+      "active": true,
+      "vat": "300000699600003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 78
+      }
+    },
+    {
+      "xml_name": "provider_zain_company_8",
+      "id": 554,
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 78
+      }
+    },
+    {
+      "xml_name": "provider_salam_company_8",
+      "id": 555,
+      "name": "شركة اتحاد سلام للاتصالات",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 79
+      }
+    },
+    {
+      "xml_name": "provider_go_company_8",
+      "id": 556,
+      "name": "شركة اتحاد قو للاتصالات",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "8": 78
+      }
+    },
+    {
+      "xml_name": "provider_municipalities_company_8",
+      "id": 557,
+      "name": "وزارة البلديات والإسكان",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_commerce_company_8",
+      "id": 558,
+      "name": "وزارة التجارة",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_business_center_company_8",
+      "id": 559,
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_hrsd_company_8",
+      "id": 560,
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_foreign_affairs_company_8",
+      "id": 561,
+      "name": "وزارة الخارجية",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_justice_company_8",
+      "id": 562,
+      "name": "وزارة العدل",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_passports_company_8",
+      "id": 563,
+      "name": "المديرية العامة للجوازات",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_gosi_company_8",
+      "id": 564,
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_zatca_company_8",
+      "id": 565,
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_balady_company_8",
+      "id": 566,
+      "name": "منصة بلدي",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_mudad_company_8",
+      "id": 567,
+      "name": "منصة مدد",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_muqeem_company_8",
+      "id": 568,
+      "name": "مقيم",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_qiwa_company_8",
+      "id": 569,
+      "name": "منصة قوى",
+      "company_id": 8,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_energy_company_9",
+      "id": 570,
+      "name": "الشركة السعودية للطاقة",
+      "company_id": 9,
+      "active": true,
+      "vat": "300000361310003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 102
+      }
+    },
+    {
+      "xml_name": "provider_water_company_9",
+      "id": 571,
+      "name": "شركة المياه الوطنية",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 103
+      }
+    },
+    {
+      "xml_name": "provider_stc_company_9",
+      "id": 572,
+      "name": "شركة الاتصالات السعودية",
+      "company_id": 9,
+      "active": true,
+      "vat": "300000157210003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 104
+      }
+    },
+    {
+      "xml_name": "provider_mobily_company_9",
+      "id": 573,
+      "name": "شركة اتحاد اتصالات",
+      "company_id": 9,
+      "active": true,
+      "vat": "300000699600003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 104
+      }
+    },
+    {
+      "xml_name": "provider_zain_company_9",
+      "id": 574,
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 104
+      }
+    },
+    {
+      "xml_name": "provider_salam_company_9",
+      "id": 575,
+      "name": "شركة اتحاد سلام للاتصالات",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 105
+      }
+    },
+    {
+      "xml_name": "provider_go_company_9",
+      "id": 576,
+      "name": "شركة اتحاد قو للاتصالات",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "9": 104
+      }
+    },
+    {
+      "xml_name": "provider_municipalities_company_9",
+      "id": 577,
+      "name": "وزارة البلديات والإسكان",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_commerce_company_9",
+      "id": 578,
+      "name": "وزارة التجارة",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_business_center_company_9",
+      "id": 579,
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_hrsd_company_9",
+      "id": 580,
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_foreign_affairs_company_9",
+      "id": 581,
+      "name": "وزارة الخارجية",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_justice_company_9",
+      "id": 582,
+      "name": "وزارة العدل",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_passports_company_9",
+      "id": 583,
+      "name": "المديرية العامة للجوازات",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_gosi_company_9",
+      "id": 584,
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_zatca_company_9",
+      "id": 585,
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_balady_company_9",
+      "id": 586,
+      "name": "منصة بلدي",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_mudad_company_9",
+      "id": 587,
+      "name": "منصة مدد",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_muqeem_company_9",
+      "id": 588,
+      "name": "مقيم",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_qiwa_company_9",
+      "id": 589,
+      "name": "منصة قوى",
+      "company_id": 9,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_energy_company_10",
+      "id": 590,
+      "name": "الشركة السعودية للطاقة",
+      "company_id": 10,
+      "active": true,
+      "vat": "300000361310003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 128
+      }
+    },
+    {
+      "xml_name": "provider_water_company_10",
+      "id": 591,
+      "name": "شركة المياه الوطنية",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 129
+      }
+    },
+    {
+      "xml_name": "provider_stc_company_10",
+      "id": 592,
+      "name": "شركة الاتصالات السعودية",
+      "company_id": 10,
+      "active": true,
+      "vat": "300000157210003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 130
+      }
+    },
+    {
+      "xml_name": "provider_mobily_company_10",
+      "id": 593,
+      "name": "شركة اتحاد اتصالات",
+      "company_id": 10,
+      "active": true,
+      "vat": "300000699600003",
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 130
+      }
+    },
+    {
+      "xml_name": "provider_zain_company_10",
+      "id": 594,
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 130
+      }
+    },
+    {
+      "xml_name": "provider_salam_company_10",
+      "id": 595,
+      "name": "شركة اتحاد سلام للاتصالات",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 131
+      }
+    },
+    {
+      "xml_name": "provider_go_company_10",
+      "id": 596,
+      "name": "شركة اتحاد قو للاتصالات",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": {
+        "10": 130
+      }
+    },
+    {
+      "xml_name": "provider_municipalities_company_10",
+      "id": 597,
+      "name": "وزارة البلديات والإسكان",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_commerce_company_10",
+      "id": 598,
+      "name": "وزارة التجارة",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_business_center_company_10",
+      "id": 599,
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_hrsd_company_10",
+      "id": 600,
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_foreign_affairs_company_10",
+      "id": 601,
+      "name": "وزارة الخارجية",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_justice_company_10",
+      "id": 602,
+      "name": "وزارة العدل",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_passports_company_10",
+      "id": 603,
+      "name": "المديرية العامة للجوازات",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_gosi_company_10",
+      "id": 604,
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_zatca_company_10",
+      "id": 605,
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_balady_company_10",
+      "id": 606,
+      "name": "منصة بلدي",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_mudad_company_10",
+      "id": 607,
+      "name": "منصة مدد",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_muqeem_company_10",
+      "id": 608,
+      "name": "مقيم",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    },
+    {
+      "xml_name": "provider_qiwa_company_10",
+      "id": 609,
+      "name": "منصة قوى",
+      "company_id": 10,
+      "active": true,
+      "vat": null,
+      "parent_id": null,
+      "supplier_rank": 1,
+      "property_account_payable_id": null,
+      "property_account_receivable_id": null,
+      "baseer_purchase_category_map_id": null
+    }
+  ],
+  "foreign_key_references": [
+    {
+      "table_name": "res_partner",
+      "column_name": "commercial_partner_id",
+      "delete_rule": "n",
+      "counts": [
+        {
+          "partner_id": 574,
+          "count": 1
+        },
+        {
+          "partner_id": 546,
+          "count": 1
+        },
+        {
+          "partner_id": 562,
+          "count": 1
+        },
+        {
+          "partner_id": 550,
+          "count": 1
+        },
+        {
+          "partner_id": 559,
+          "count": 1
+        },
+        {
+          "partner_id": 552,
+          "count": 1
+        },
+        {
+          "partner_id": 607,
+          "count": 1
+        },
+        {
+          "partner_id": 539,
+          "count": 1
+        },
+        {
+          "partner_id": 511,
+          "count": 1
+        },
+        {
+          "partner_id": 571,
+          "count": 1
+        },
+        {
+          "partner_id": 554,
+          "count": 1
+        },
+        {
+          "partner_id": 516,
+          "count": 1
+        },
+        {
+          "partner_id": 542,
+          "count": 1
+        },
+        {
+          "partner_id": 514,
+          "count": 1
+        },
+        {
+          "partner_id": 582,
+          "count": 1
+        },
+        {
+          "partner_id": 537,
+          "count": 1
+        },
+        {
+          "partner_id": 558,
+          "count": 1
+        },
+        {
+          "partner_id": 540,
+          "count": 1
+        },
+        {
+          "partner_id": 576,
+          "count": 1
+        },
+        {
+          "partner_id": 605,
+          "count": 1
+        },
+        {
+          "partner_id": 598,
+          "count": 1
+        },
+        {
+          "partner_id": 513,
+          "count": 1
+        },
+        {
+          "partner_id": 526,
+          "count": 1
+        },
+        {
+          "partner_id": 541,
+          "count": 1
+        },
+        {
+          "partner_id": 596,
+          "count": 1
+        },
+        {
+          "partner_id": 524,
+          "count": 1
+        },
+        {
+          "partner_id": 581,
+          "count": 1
+        },
+        {
+          "partner_id": 512,
+          "count": 1
+        },
+        {
+          "partner_id": 560,
+          "count": 1
+        },
+        {
+          "partner_id": 547,
+          "count": 1
+        },
+        {
+          "partner_id": 594,
+          "count": 1
+        },
+        {
+          "partner_id": 523,
+          "count": 1
+        },
+        {
+          "partner_id": 518,
+          "count": 1
+        },
+        {
+          "partner_id": 533,
+          "count": 1
+        },
+        {
+          "partner_id": 589,
+          "count": 1
+        },
+        {
+          "partner_id": 609,
+          "count": 1
+        },
+        {
+          "partner_id": 608,
+          "count": 1
+        },
+        {
+          "partner_id": 583,
+          "count": 1
+        },
+        {
+          "partner_id": 556,
+          "count": 1
+        },
+        {
+          "partner_id": 569,
+          "count": 1
+        },
+        {
+          "partner_id": 529,
+          "count": 1
+        },
+        {
+          "partner_id": 555,
+          "count": 1
+        },
+        {
+          "partner_id": 522,
+          "count": 1
+        },
+        {
+          "partner_id": 600,
+          "count": 1
+        },
+        {
+          "partner_id": 577,
+          "count": 1
+        },
+        {
+          "partner_id": 567,
+          "count": 1
+        },
+        {
+          "partner_id": 538,
+          "count": 1
+        },
+        {
+          "partner_id": 575,
+          "count": 1
+        },
+        {
+          "partner_id": 568,
+          "count": 1
+        },
+        {
+          "partner_id": 595,
+          "count": 1
+        },
+        {
+          "partner_id": 527,
+          "count": 1
+        },
+        {
+          "partner_id": 601,
+          "count": 1
+        },
+        {
+          "partner_id": 590,
+          "count": 1
+        },
+        {
+          "partner_id": 588,
+          "count": 1
+        },
+        {
+          "partner_id": 544,
+          "count": 1
+        },
+        {
+          "partner_id": 534,
+          "count": 1
+        },
+        {
+          "partner_id": 561,
+          "count": 1
+        },
+        {
+          "partner_id": 603,
+          "count": 1
+        },
+        {
+          "partner_id": 591,
+          "count": 1
+        },
+        {
+          "partner_id": 586,
+          "count": 1
+        },
+        {
+          "partner_id": 525,
+          "count": 1
+        },
+        {
+          "partner_id": 572,
+          "count": 1
+        },
+        {
+          "partner_id": 606,
+          "count": 1
+        },
+        {
+          "partner_id": 587,
+          "count": 1
+        },
+        {
+          "partner_id": 543,
+          "count": 1
+        },
+        {
+          "partner_id": 565,
+          "count": 1
+        },
+        {
+          "partner_id": 578,
+          "count": 1
+        },
+        {
+          "partner_id": 597,
+          "count": 1
+        },
+        {
+          "partner_id": 566,
+          "count": 1
+        },
+        {
+          "partner_id": 551,
+          "count": 1
+        },
+        {
+          "partner_id": 593,
+          "count": 1
+        },
+        {
+          "partner_id": 532,
+          "count": 1
+        },
+        {
+          "partner_id": 564,
+          "count": 1
+        },
+        {
+          "partner_id": 592,
+          "count": 1
+        },
+        {
+          "partner_id": 535,
+          "count": 1
+        },
+        {
+          "partner_id": 579,
+          "count": 1
+        },
+        {
+          "partner_id": 573,
+          "count": 1
+        },
+        {
+          "partner_id": 510,
+          "count": 1
+        },
+        {
+          "partner_id": 548,
+          "count": 1
+        },
+        {
+          "partner_id": 553,
+          "count": 1
+        },
+        {
+          "partner_id": 519,
+          "count": 1
+        },
+        {
+          "partner_id": 602,
+          "count": 1
+        },
+        {
+          "partner_id": 570,
+          "count": 1
+        },
+        {
+          "partner_id": 521,
+          "count": 1
+        },
+        {
+          "partner_id": 580,
+          "count": 1
+        },
+        {
+          "partner_id": 545,
+          "count": 1
+        },
+        {
+          "partner_id": 530,
+          "count": 1
+        },
+        {
+          "partner_id": 599,
+          "count": 1
+        },
+        {
+          "partner_id": 536,
+          "count": 1
+        },
+        {
+          "partner_id": 584,
+          "count": 1
+        },
+        {
+          "partner_id": 549,
+          "count": 1
+        },
+        {
+          "partner_id": 517,
+          "count": 1
+        },
+        {
+          "partner_id": 528,
+          "count": 1
+        },
+        {
+          "partner_id": 520,
+          "count": 1
+        },
+        {
+          "partner_id": 563,
+          "count": 1
+        },
+        {
+          "partner_id": 557,
+          "count": 1
+        },
+        {
+          "partner_id": 515,
+          "count": 1
+        },
+        {
+          "partner_id": 531,
+          "count": 1
+        },
+        {
+          "partner_id": 604,
+          "count": 1
+        },
+        {
+          "partner_id": 585,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "table_name": "res_partner_res_partner_category_rel",
+      "column_name": "partner_id",
+      "delete_rule": "c",
+      "counts": [
+        {
+          "partner_id": 574,
+          "count": 2
+        },
+        {
+          "partner_id": 546,
+          "count": 2
+        },
+        {
+          "partner_id": 562,
+          "count": 2
+        },
+        {
+          "partner_id": 550,
+          "count": 2
+        },
+        {
+          "partner_id": 559,
+          "count": 2
+        },
+        {
+          "partner_id": 552,
+          "count": 2
+        },
+        {
+          "partner_id": 607,
+          "count": 2
+        },
+        {
+          "partner_id": 539,
+          "count": 2
+        },
+        {
+          "partner_id": 511,
+          "count": 2
+        },
+        {
+          "partner_id": 571,
+          "count": 2
+        },
+        {
+          "partner_id": 554,
+          "count": 2
+        },
+        {
+          "partner_id": 516,
+          "count": 2
+        },
+        {
+          "partner_id": 542,
+          "count": 2
+        },
+        {
+          "partner_id": 514,
+          "count": 2
+        },
+        {
+          "partner_id": 582,
+          "count": 2
+        },
+        {
+          "partner_id": 537,
+          "count": 2
+        },
+        {
+          "partner_id": 558,
+          "count": 2
+        },
+        {
+          "partner_id": 540,
+          "count": 2
+        },
+        {
+          "partner_id": 576,
+          "count": 2
+        },
+        {
+          "partner_id": 605,
+          "count": 2
+        },
+        {
+          "partner_id": 598,
+          "count": 2
+        },
+        {
+          "partner_id": 513,
+          "count": 2
+        },
+        {
+          "partner_id": 526,
+          "count": 2
+        },
+        {
+          "partner_id": 541,
+          "count": 2
+        },
+        {
+          "partner_id": 596,
+          "count": 2
+        },
+        {
+          "partner_id": 524,
+          "count": 2
+        },
+        {
+          "partner_id": 581,
+          "count": 2
+        },
+        {
+          "partner_id": 512,
+          "count": 2
+        },
+        {
+          "partner_id": 560,
+          "count": 2
+        },
+        {
+          "partner_id": 547,
+          "count": 2
+        },
+        {
+          "partner_id": 594,
+          "count": 2
+        },
+        {
+          "partner_id": 523,
+          "count": 2
+        },
+        {
+          "partner_id": 518,
+          "count": 2
+        },
+        {
+          "partner_id": 533,
+          "count": 2
+        },
+        {
+          "partner_id": 589,
+          "count": 2
+        },
+        {
+          "partner_id": 609,
+          "count": 2
+        },
+        {
+          "partner_id": 608,
+          "count": 2
+        },
+        {
+          "partner_id": 583,
+          "count": 2
+        },
+        {
+          "partner_id": 556,
+          "count": 2
+        },
+        {
+          "partner_id": 569,
+          "count": 2
+        },
+        {
+          "partner_id": 529,
+          "count": 2
+        },
+        {
+          "partner_id": 555,
+          "count": 2
+        },
+        {
+          "partner_id": 522,
+          "count": 2
+        },
+        {
+          "partner_id": 600,
+          "count": 2
+        },
+        {
+          "partner_id": 577,
+          "count": 2
+        },
+        {
+          "partner_id": 567,
+          "count": 2
+        },
+        {
+          "partner_id": 538,
+          "count": 2
+        },
+        {
+          "partner_id": 575,
+          "count": 2
+        },
+        {
+          "partner_id": 568,
+          "count": 2
+        },
+        {
+          "partner_id": 595,
+          "count": 2
+        },
+        {
+          "partner_id": 527,
+          "count": 2
+        },
+        {
+          "partner_id": 601,
+          "count": 2
+        },
+        {
+          "partner_id": 590,
+          "count": 2
+        },
+        {
+          "partner_id": 588,
+          "count": 2
+        },
+        {
+          "partner_id": 544,
+          "count": 2
+        },
+        {
+          "partner_id": 534,
+          "count": 2
+        },
+        {
+          "partner_id": 561,
+          "count": 2
+        },
+        {
+          "partner_id": 603,
+          "count": 2
+        },
+        {
+          "partner_id": 591,
+          "count": 2
+        },
+        {
+          "partner_id": 586,
+          "count": 2
+        },
+        {
+          "partner_id": 525,
+          "count": 2
+        },
+        {
+          "partner_id": 572,
+          "count": 2
+        },
+        {
+          "partner_id": 606,
+          "count": 2
+        },
+        {
+          "partner_id": 587,
+          "count": 2
+        },
+        {
+          "partner_id": 543,
+          "count": 2
+        },
+        {
+          "partner_id": 565,
+          "count": 2
+        },
+        {
+          "partner_id": 578,
+          "count": 2
+        },
+        {
+          "partner_id": 597,
+          "count": 2
+        },
+        {
+          "partner_id": 566,
+          "count": 2
+        },
+        {
+          "partner_id": 551,
+          "count": 2
+        },
+        {
+          "partner_id": 593,
+          "count": 2
+        },
+        {
+          "partner_id": 532,
+          "count": 2
+        },
+        {
+          "partner_id": 564,
+          "count": 2
+        },
+        {
+          "partner_id": 592,
+          "count": 2
+        },
+        {
+          "partner_id": 535,
+          "count": 2
+        },
+        {
+          "partner_id": 579,
+          "count": 2
+        },
+        {
+          "partner_id": 573,
+          "count": 2
+        },
+        {
+          "partner_id": 510,
+          "count": 2
+        },
+        {
+          "partner_id": 548,
+          "count": 2
+        },
+        {
+          "partner_id": 553,
+          "count": 2
+        },
+        {
+          "partner_id": 519,
+          "count": 2
+        },
+        {
+          "partner_id": 602,
+          "count": 2
+        },
+        {
+          "partner_id": 570,
+          "count": 2
+        },
+        {
+          "partner_id": 521,
+          "count": 2
+        },
+        {
+          "partner_id": 580,
+          "count": 2
+        },
+        {
+          "partner_id": 545,
+          "count": 2
+        },
+        {
+          "partner_id": 530,
+          "count": 2
+        },
+        {
+          "partner_id": 599,
+          "count": 2
+        },
+        {
+          "partner_id": 536,
+          "count": 2
+        },
+        {
+          "partner_id": 584,
+          "count": 2
+        },
+        {
+          "partner_id": 549,
+          "count": 2
+        },
+        {
+          "partner_id": 517,
+          "count": 2
+        },
+        {
+          "partner_id": 528,
+          "count": 2
+        },
+        {
+          "partner_id": 520,
+          "count": 2
+        },
+        {
+          "partner_id": 563,
+          "count": 2
+        },
+        {
+          "partner_id": 557,
+          "count": 2
+        },
+        {
+          "partner_id": 515,
+          "count": 2
+        },
+        {
+          "partner_id": 531,
+          "count": 2
+        },
+        {
+          "partner_id": 604,
+          "count": 2
+        },
+        {
+          "partner_id": 585,
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "active_supplier_duplicates": [
+    {
+      "name": "الشركة السعودية للطاقة",
+      "vat": "300000361310003",
+      "count": 5,
+      "ids": [
+        510,
+        530,
+        550,
+        570,
+        590
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        524,
+        544,
+        564,
+        584,
+        604
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "المديرية العامة للجوازات",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        523,
+        543,
+        563,
+        583,
+        603
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        519,
+        539,
+        559,
+        579,
+        599
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "شركة اتحاد اتصالات",
+      "vat": "300000699600003",
+      "count": 5,
+      "ids": [
+        513,
+        533,
+        553,
+        573,
+        593
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "شركة اتحاد سلام للاتصالات",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        515,
+        535,
+        555,
+        575,
+        595
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "شركة اتحاد قو للاتصالات",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        516,
+        536,
+        556,
+        576,
+        596
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "شركة الاتصالات السعودية",
+      "vat": "300000157210003",
+      "count": 5,
+      "ids": [
+        512,
+        532,
+        552,
+        572,
+        592
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        514,
+        534,
+        554,
+        574,
+        594
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "شركة المياه الوطنية",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        511,
+        531,
+        551,
+        571,
+        591
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "مقيم",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        528,
+        548,
+        568,
+        588,
+        608
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "منصة بلدي",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        526,
+        546,
+        566,
+        586,
+        606
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "منصة قوى",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        529,
+        549,
+        569,
+        589,
+        609
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "منصة مدد",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        527,
+        547,
+        567,
+        587,
+        607
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        525,
+        545,
+        565,
+        585,
+        605
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "وزارة البلديات والإسكان",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        517,
+        537,
+        557,
+        577,
+        597
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "وزارة التجارة",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        518,
+        538,
+        558,
+        578,
+        598
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "وزارة الخارجية",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        521,
+        541,
+        561,
+        581,
+        601
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "وزارة العدل",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        522,
+        542,
+        562,
+        582,
+        602
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "vat": null,
+      "count": 5,
+      "ids": [
+        520,
+        540,
+        560,
+        580,
+        600
+      ],
+      "companies": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  ]
+}

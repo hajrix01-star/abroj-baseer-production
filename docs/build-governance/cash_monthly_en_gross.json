@@ -1,0 +1,1554 @@
+{
+  "columns": [
+    {
+      "name": "Description",
+      "expression_label": "name",
+      "figure_type": "string"
+    },
+    {
+      "name": "2026-07",
+      "expression_label": "month_2026_07",
+      "figure_type": "monetary",
+      "baseer_month": "2026-07",
+      "scope": {
+        "date_from": "2026-07-01",
+        "date_to": "2026-07-31",
+        "company_ids": [
+          9
+        ]
+      }
+    },
+    {
+      "name": "2026-08",
+      "expression_label": "month_2026_08",
+      "figure_type": "monetary",
+      "baseer_month": "2026-08",
+      "scope": {
+        "date_from": "2026-08-01",
+        "date_to": "2026-08-31",
+        "company_ids": [
+          9
+        ]
+      }
+    },
+    {
+      "name": "2026-09",
+      "expression_label": "month_2026_09",
+      "figure_type": "monetary",
+      "baseer_month": "2026-09",
+      "scope": {
+        "date_from": "2026-09-01",
+        "date_to": "2026-09-30",
+        "company_ids": [
+          9
+        ]
+      }
+    },
+    {
+      "name": "Selected months total",
+      "expression_label": "amount",
+      "figure_type": "monetary",
+      "scope": {
+        "baseer_months": [
+          "2026-07",
+          "2026-08",
+          "2026-09"
+        ],
+        "company_ids": [
+          9
+        ]
+      }
+    },
+    {
+      "name": "% of collected sales",
+      "expression_label": "receipt_share",
+      "figure_type": "baseer_percentage",
+      "scope": {
+        "baseer_months": [
+          "2026-07",
+          "2026-08",
+          "2026-09"
+        ],
+        "company_ids": [
+          9
+        ]
+      }
+    }
+  ],
+  "lines": [
+    {
+      "id": "receipts",
+      "name": "Actual receipts",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 1000.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 460.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 1460.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 0,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "section"
+      }
+    },
+    {
+      "id": "receipts/journal-66",
+      "name": "Tax Adjustments",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 1000.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 0.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 1000.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "receipts/journal-65",
+      "name": "بنك تجريبي",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 230.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 230.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "receipts/journal-70",
+      "name": "شبكة تجريبية",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 115.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 115.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "receipts/journal-69",
+      "name": "كاش تجريبي",
+      "level": 1,
+      "parent_id": "receipts",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 115.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 115.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments",
+      "name": "Actual payments",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -731.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -731.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 158.91,
+          "display_value": "158.91%"
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 0,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "section"
+      }
+    },
+    {
+      "id": "payments/ledger-1064",
+      "name": "Basic Salary",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -57.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -57.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 12.5,
+          "display_value": "12.50%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/customer-refunds",
+      "name": "Customer refunds",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -11.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -11.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 2.5,
+          "display_value": "2.50%"
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "group"
+      }
+    },
+    {
+      "id": "payments/customer-refunds/category-4",
+      "name": "مشروبات",
+      "level": 2,
+      "parent_id": "payments/customer-refunds",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -11.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -11.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 2.5,
+          "display_value": "2.50%"
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "group"
+      }
+    },
+    {
+      "id": "payments/customer-refunds/category-4/category-6",
+      "name": "مياه",
+      "level": 3,
+      "parent_id": "payments/customer-refunds/category-4",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -11.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -11.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 2.5,
+          "display_value": "2.50%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/unclassified",
+      "name": "Unclassified / needs allocation",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -40.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -40.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 8.7,
+          "display_value": "8.70%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/category-4",
+      "name": "مشروبات",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -172.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -172.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 37.5,
+          "display_value": "37.50%"
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 2,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "group"
+      }
+    },
+    {
+      "id": "payments/category-4/category-5",
+      "name": "مشروبات غازية",
+      "level": 2,
+      "parent_id": "payments/category-4",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -115.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -115.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 25.0,
+          "display_value": "25.00%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/category-4/category-6",
+      "name": "مياه",
+      "level": 2,
+      "parent_id": "payments/category-4",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -57.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -57.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 12.5,
+          "display_value": "12.50%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/group-1",
+      "name": "مصاريف تشغيلية تجريبية",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -399.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -399.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 86.85,
+          "display_value": "86.85%"
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 5,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "group"
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1158",
+      "name": "إيجارات",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -115.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -115.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 25.0,
+          "display_value": "25.00%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1162",
+      "name": "اتصالات وإنترنت",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -57.5
+        },
+        {
+          "expression_label": "amount",
+          "value": -57.5
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 12.5,
+          "display_value": "12.50%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1160",
+      "name": "رسوم بنكية",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -2.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -2.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 0.43,
+          "display_value": "0.43%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1161",
+      "name": "رواتب الموظفين",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -200.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -200.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 43.48,
+          "display_value": "43.48%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/group-1/ledger-1159",
+      "name": "كهرباء ومرافق",
+      "level": 2,
+      "parent_id": "payments/group-1",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -25.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -25.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 5.43,
+          "display_value": "5.43%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "payments/category-7",
+      "name": "مواد غذائية",
+      "level": 1,
+      "parent_id": "payments",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -50.0
+        },
+        {
+          "expression_label": "amount",
+          "value": -50.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": 10.87,
+          "display_value": "10.87%"
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "baseer_cash_category",
+        "source_count": 1,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "baseer-total-actual_net_movement",
+      "name": "Net cash movement",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 1000.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": -271.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 729.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "net"
+      }
+    },
+    {
+      "id": "baseer-reconciliation",
+      "name": "Balance reconciliation details",
+      "level": 0,
+      "parent_id": null,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": true,
+      "unfolded": false,
+      "meta": {
+        "kind": "baseer_reconciliation",
+        "baseer_role": "group"
+      }
+    },
+    {
+      "id": "baseer-total-opening_cash_balance",
+      "name": "Opening cash balance",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 1000.0
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "baseer-total-closing_cash_balance",
+      "name": "Closing cash balance",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 1000.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 729.0
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "baseer-total-balance_check",
+      "name": "Reconciliation difference (must be zero)",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": 0.0
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": 0.0
+        },
+        {
+          "expression_label": "amount",
+          "value": 0.0
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null,
+          "display_value": ""
+        }
+      ],
+      "unfoldable": false,
+      "unfolded": true,
+      "meta": {
+        "kind": "section_total",
+        "source_count": 0,
+        "allocated": true,
+        "baseer_source_drilldown": true,
+        "baseer_role": "detail"
+      }
+    },
+    {
+      "id": "baseer-note-0",
+      "name": "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "unfoldable": false,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null
+        }
+      ],
+      "meta": {
+        "kind": "baseer_note",
+        "baseer_role": "note"
+      }
+    },
+    {
+      "id": "baseer-note-1",
+      "name": "Only evidenced invoice tax is excluded; unknown tax retains the full cash amount.",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "unfoldable": false,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null
+        }
+      ],
+      "meta": {
+        "kind": "baseer_note",
+        "baseer_role": "note"
+      }
+    },
+    {
+      "id": "baseer-note-2",
+      "name": "Opening and closing balances are monthly snapshots; their total is intentionally blank.",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "unfoldable": false,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null
+        }
+      ],
+      "meta": {
+        "kind": "baseer_note",
+        "baseer_role": "note"
+      }
+    },
+    {
+      "id": "baseer-note-3",
+      "name": "QA allocation: partial payments distributed proportionally across invoice lines.",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "unfoldable": false,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null
+        }
+      ],
+      "meta": {
+        "kind": "baseer_note",
+        "baseer_role": "note"
+      }
+    },
+    {
+      "id": "baseer-note-4",
+      "name": "Sales percentage uses positive collections traced to customer invoices or sales receipts. Loans, capital, supplier refunds, unclassified receipts and untraced POS are excluded. Customer refunds remain outgoing and are not deducted from this denominator.",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "unfoldable": false,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null
+        }
+      ],
+      "meta": {
+        "kind": "baseer_note",
+        "baseer_role": "note"
+      }
+    },
+    {
+      "id": "baseer-note-5",
+      "name": "Unreconciled cash counterpart.",
+      "level": 1,
+      "parent_id": "baseer-reconciliation",
+      "unfoldable": false,
+      "columns": [
+        {
+          "expression_label": "month_2026_07",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_08",
+          "value": null
+        },
+        {
+          "expression_label": "month_2026_09",
+          "value": null
+        },
+        {
+          "expression_label": "amount",
+          "value": null
+        },
+        {
+          "expression_label": "receipt_share",
+          "value": null
+        }
+      ],
+      "meta": {
+        "kind": "baseer_note",
+        "baseer_role": "note"
+      }
+    }
+  ],
+  "totals": {
+    "receipts": 1460.0,
+    "payments": -731.0,
+    "displayed_net_movement": 729.0,
+    "excluded_tax_bridge": 0.0,
+    "actual_net_movement": 729.0,
+    "opening_cash_balance": null,
+    "closing_cash_balance": null,
+    "balance_check": 0.0,
+    "unverified_tax_gross": 1267.0,
+    "sales_collections": 460.0
+  },
+  "generated_at": "2026-09-07T11:54:38",
+  "meta": {
+    "report_code": "baseer_cash_categories",
+    "company_ids": [
+      9
+    ],
+    "date_from": "2026-07-01",
+    "date_to": "2026-09-30",
+    "posted_only": true,
+    "baseer_include_tax": true,
+    "exact_totals": {
+      "receipts": "1460.00",
+      "payments": "-731.00",
+      "displayed_net_movement": "729.00",
+      "excluded_tax_bridge": "0.00",
+      "actual_net_movement": "729.00",
+      "opening_cash_balance": null,
+      "closing_cash_balance": null,
+      "balance_check": "0.00",
+      "unverified_tax_gross": "1267.00",
+      "sales_collections": "460.00"
+    },
+    "allocation_policy": "proportional_invoice_lines_qa",
+    "diagnostics": [
+      "Direct journal entries retain their full amount; invoice VAT was not inferred.",
+      "Unreconciled cash counterpart."
+    ],
+    "tax_note": "Only evidenced invoice tax is excluded; unknown tax retains the full cash amount.",
+    "policy_note": "QA allocation: partial payments distributed proportionally across invoice lines.",
+    "total_figure_types": {
+      "receipts": "monetary",
+      "payments": "monetary",
+      "displayed_net_movement": "monetary",
+      "excluded_tax_bridge": "monetary",
+      "actual_net_movement": "monetary",
+      "opening_cash_balance": "monetary",
+      "closing_cash_balance": "monetary",
+      "balance_check": "monetary",
+      "unverified_tax_gross": "monetary",
+      "sales_collections": "monetary"
+    },
+    "baseer_months": [
+      "2026-07",
+      "2026-08",
+      "2026-09"
+    ],
+    "exact_rows": {
+      "receipts": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "1000.00",
+        "month_2026_09": "460.00",
+        "amount": "1460.00",
+        "receipt_share": null
+      },
+      "payments": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-731.00",
+        "amount": "-731.00",
+        "receipt_share": "158.91"
+      },
+      "baseer-total-actual_net_movement": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "1000.00",
+        "month_2026_09": "-271.00",
+        "amount": "729.00",
+        "receipt_share": null
+      },
+      "baseer-reconciliation": {
+        "month_2026_07": null,
+        "month_2026_08": null,
+        "month_2026_09": null,
+        "amount": null,
+        "receipt_share": null
+      },
+      "baseer-total-opening_cash_balance": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "1000.00",
+        "amount": null,
+        "receipt_share": null
+      },
+      "baseer-total-closing_cash_balance": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "1000.00",
+        "month_2026_09": "729.00",
+        "amount": null,
+        "receipt_share": null
+      },
+      "baseer-total-balance_check": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "0.00",
+        "amount": "0.00",
+        "receipt_share": null
+      },
+      "receipts/journal-66": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "1000.00",
+        "month_2026_09": "0.00",
+        "amount": "1000.00",
+        "receipt_share": null
+      },
+      "receipts/journal-65": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "230.00",
+        "amount": "230.00",
+        "receipt_share": null
+      },
+      "receipts/journal-70": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "115.00",
+        "amount": "115.00",
+        "receipt_share": null
+      },
+      "receipts/journal-69": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "115.00",
+        "amount": "115.00",
+        "receipt_share": null
+      },
+      "payments/ledger-1064": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-57.50",
+        "amount": "-57.50",
+        "receipt_share": "12.50"
+      },
+      "payments/customer-refunds": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-11.50",
+        "amount": "-11.50",
+        "receipt_share": "2.50"
+      },
+      "payments/customer-refunds/category-4": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-11.50",
+        "amount": "-11.50",
+        "receipt_share": "2.50"
+      },
+      "payments/customer-refunds/category-4/category-6": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-11.50",
+        "amount": "-11.50",
+        "receipt_share": "2.50"
+      },
+      "payments/unclassified": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-40.00",
+        "amount": "-40.00",
+        "receipt_share": "8.70"
+      },
+      "payments/category-4": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-172.50",
+        "amount": "-172.50",
+        "receipt_share": "37.50"
+      },
+      "payments/category-4/category-5": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-115.00",
+        "amount": "-115.00",
+        "receipt_share": "25.00"
+      },
+      "payments/category-4/category-6": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-57.50",
+        "amount": "-57.50",
+        "receipt_share": "12.50"
+      },
+      "payments/group-1": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-399.50",
+        "amount": "-399.50",
+        "receipt_share": "86.85"
+      },
+      "payments/group-1/ledger-1158": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-115.00",
+        "amount": "-115.00",
+        "receipt_share": "25.00"
+      },
+      "payments/group-1/ledger-1162": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-57.50",
+        "amount": "-57.50",
+        "receipt_share": "12.50"
+      },
+      "payments/group-1/ledger-1160": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-2.00",
+        "amount": "-2.00",
+        "receipt_share": "0.43"
+      },
+      "payments/group-1/ledger-1161": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-200.00",
+        "amount": "-200.00",
+        "receipt_share": "43.48"
+      },
+      "payments/group-1/ledger-1159": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-25.00",
+        "amount": "-25.00",
+        "receipt_share": "5.43"
+      },
+      "payments/category-7": {
+        "month_2026_07": "0.00",
+        "month_2026_08": "0.00",
+        "month_2026_09": "-50.00",
+        "amount": "-50.00",
+        "receipt_share": "10.87"
+      }
+    },
+    "month_exact_totals": {
+      "2026-07": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "displayed_net_movement": "0.00",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "0.00",
+        "opening_cash_balance": "0.00",
+        "closing_cash_balance": "0.00",
+        "balance_check": "0.00",
+        "unverified_tax_gross": "0.00"
+      },
+      "2026-08": {
+        "receipts": "1000.00",
+        "payments": "0.00",
+        "displayed_net_movement": "1000.00",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "1000.00",
+        "opening_cash_balance": "0.00",
+        "closing_cash_balance": "1000.00",
+        "balance_check": "0.00",
+        "unverified_tax_gross": "1000.00"
+      },
+      "2026-09": {
+        "receipts": "460.00",
+        "payments": "-731.00",
+        "displayed_net_movement": "-271.00",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "-271.00",
+        "opening_cash_balance": "1000.00",
+        "closing_cash_balance": "729.00",
+        "balance_check": "0.00",
+        "unverified_tax_gross": "267.00"
+      }
+    },
+    "exact_sales_collections": "460.00",
+    "sales_collection_policy": "positive_evidenced_customer_collections_refunds_separate",
+    "aggregate_records_used": 54
+  },
+  "currency": {
+    "id": 151,
+    "name": "SAR",
+    "symbol": "SR",
+    "position": "after",
+    "decimal_places": 2,
+    "multi_currency": false
+  },
+  "execution_id": 643,
+  "from_cache": false
+}

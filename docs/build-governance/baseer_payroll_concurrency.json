@@ -1,0 +1,43 @@
+{
+  "case": "two_independent_transactions_approve_same_run",
+  "results": [
+    true,
+    true
+  ],
+  "seconds": 2.059,
+  "payslips": 2,
+  "moves": 2,
+  "loan_recoveries": 1,
+  "passed": true,
+  "preview": {
+    "company": 10,
+    "company_name": "تجربة الرواتب والسلف",
+    "january": 48,
+    "february_draft": 49,
+    "loan": 13,
+    "outstanding": 850.0,
+    "employee_ids": [
+      31,
+      32
+    ],
+    "march_draft": 61
+  },
+  "concurrent_deferral": {
+    "passed": true,
+    "defer_history_rows": 1,
+    "balance": 850
+  },
+  "concurrent_partial_salary_payment": {
+    "passed": true,
+    "payment_ids": [
+      [
+        272
+      ],
+      [
+        272
+      ]
+    ],
+    "paid": 1000,
+    "remaining": 2000
+  }
+}

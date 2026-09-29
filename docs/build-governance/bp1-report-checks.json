@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "scope": "Existing QA native reports; four sequential renders, not a load test",
+  "files": [
+    {
+      "file": "invoice-ar.pdf",
+      "report": "account.report_invoice",
+      "document_ids": [
+        130
+      ],
+      "company_ids": [
+        6
+      ],
+      "language": "ar_001",
+      "bytes": 43747,
+      "pages": 1,
+      "text_characters": 667,
+      "arabic_characters": 52,
+      "seconds": 3.014,
+      "sha256": "838b21a49b18421b7527b7baec7e989df9662e469ab42cc20cb65d2e3de67029",
+      "pdf_signature": true
+    },
+    {
+      "file": "invoice-en.pdf",
+      "report": "account.report_invoice",
+      "document_ids": [
+        130
+      ],
+      "company_ids": [
+        6
+      ],
+      "language": "en_US",
+      "bytes": 32753,
+      "pages": 1,
+      "text_characters": 526,
+      "arabic_characters": 4,
+      "seconds": 2.397,
+      "sha256": "9477668af268f209d4d5fb6d07a902166b8aec613976d220c07015f2c9792d9d",
+      "pdf_signature": true
+    },
+    {
+      "file": "payslip-ar.pdf",
+      "report": "om_hr_payroll.action_report_payslip",
+      "document_ids": [
+        84
+      ],
+      "company_ids": [
+        10
+      ],
+      "language": "ar_001",
+      "bytes": 40297,
+      "pages": 1,
+      "text_characters": 576,
+      "arabic_characters": 34,
+      "seconds": 2.212,
+      "sha256": "526832a3713964958bbf1d0cf425646273b8eec664a8454fe0a42d8c24ee3520",
+      "pdf_signature": true
+    },
+    {
+      "file": "invoices-multipage.pdf",
+      "report": "account.report_invoice",
+      "document_ids": [
+        130,
+        138,
+        146
+      ],
+      "company_ids": [
+        6,
+        7,
+        8
+      ],
+      "language": "en_US",
+      "bytes": 64069,
+      "pages": 3,
+      "text_characters": 1534,
+      "arabic_characters": 9,
+      "seconds": 2.35,
+      "sha256": "5e3f5f675441564fd866db53b84bba78bae8bf891ed0159790bb4c1e75a99c29",
+      "pdf_signature": true
+    }
+  ],
+  "unchanged_before_rollback": true,
+  "rollback": true,
+  "existing_rows_preserved": true,
+  "private_evidence_directory": ".local-backups/browser-print-20260909/pdf-evidence"
+}

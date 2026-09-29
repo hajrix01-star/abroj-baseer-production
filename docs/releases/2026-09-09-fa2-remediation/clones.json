@@ -1,0 +1,30 @@
+{
+  "source": "baseer_reports_qa_20260907",
+  "module_count": 142,
+  "clones": [
+    {
+      "scope": "core",
+      "database": "baseer_fix_core_20260909",
+      "restore_seconds": 217.02
+    },
+    {
+      "scope": "payroll",
+      "database": "baseer_fix_payroll_20260909",
+      "restore_seconds": 216.86
+    },
+    {
+      "scope": "sales",
+      "database": "baseer_fix_sales_20260909",
+      "restore_seconds": 216.86
+    },
+    {
+      "scope": "security",
+      "database": "baseer_fix_security_20260909",
+      "restore_seconds": 216.86
+    }
+  ],
+  "backup_seconds_total": 230.95,
+  "database_sha256": "fd812ee39287349b8becf148df06fa44e900bfb7a21a342d4a7dbf8b79b89896",
+  "filestore_sha256": "fb40087280171852c2a90f4b4893050334ee3f2c0a664a192cf5db76a3ebc000",
+  "backup_directory": "D:\\Codex\\Baseer-odoo\\.local-backups\\fa2-20260909"
+}

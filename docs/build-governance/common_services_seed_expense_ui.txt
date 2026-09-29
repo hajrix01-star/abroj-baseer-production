@@ -1,0 +1,142 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "تجربة الرواتب والسلف":
+        - text: 
+        - generic: تجربة الرواتب والسلف
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "دفعات إدخال المشتريات":
+    - /url: /odoo/action-323
+- generic: جديد
+- button "قائمة الإجراءات":
+  - generic: 
+- button "الحفظ يدوياً":
+  - generic: 
+- button "إهمال كافة التغييرات":
+  - generic: 
+- main:
+  - button "حفظ واعتماد"
+  - radiogroup "شريط الحالة":
+    - radio "معتمدة" [disabled]
+    - radio "مسودة" [checked] [disabled]
+  - heading "جديد" [level=1]:
+    - generic: جديد
+  - generic: الشركة
+  - link "تجربة الرواتب والسلف":
+    - /url: /odoo/res.company/10
+  - text: تاريخ الإدخال
+  - superscript: "?"
+  - button "تاريخ الإدخال?": 08/09/2026
+  - generic: الحفظ العادي يبقي البيانات مسودة. «حفظ واعتماد» ينشئ فواتير الموردين ويسجّل الدفعات المختارة. تاريخ الإدخال إداري، ويُستخدم تاريخ الفاتورة لكل صف.
+  - table:
+    - rowgroup:
+      - row "المورد  تاريخ الفاتورة  مرجع الفاتورة  النوع  الفئة  الإجمالي شامل الضريبة  ضريبة 15% آجل  طريقة الدفع  ":
+        - columnheader
+        - columnheader "المورد ":
+          - generic: المورد
+          - generic: 
+        - columnheader "تاريخ الفاتورة ":
+          - generic: تاريخ الفاتورة
+          - generic: 
+        - columnheader "مرجع الفاتورة ":
+          - generic: مرجع الفاتورة
+          - generic: 
+        - columnheader "النوع ":
+          - generic: النوع
+          - generic: 
+        - columnheader "الفئة ":
+          - generic: الفئة
+          - generic: 
+        - columnheader "الإجمالي شامل الضريبة ":
+          - generic: الإجمالي شامل الضريبة
+          - generic: 
+        - columnheader "ضريبة 15%":
+          - generic: ضريبة 15%
+          - text: 
+        - columnheader "آجل ":
+          - generic: آجل
+          - generic: 
+        - columnheader "طريقة الدفع ":
+          - generic: طريقة الدفع
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " الشركة السعودية للطاقة رابط داخلي 08/09/2026 مصروف الكهرباء 0.00 0.00 فتح في نافذة عرض الاستمارة حذف صف":
+        - cell "":
+          - generic: 
+        - cell "الشركة السعودية للطاقة رابط داخلي":
+          - combobox [active]: الشركة السعودية للطاقة
+          - button "رابط داخلي":
+            - generic: 
+        - cell "08/09/2026":
+          - button "08/09/2026"
+        - cell:
+          - textbox
+        - cell "مصروف":
+          - textbox: مصروف
+        - cell "الكهرباء":
+          - combobox: الكهرباء
+        - cell "0.00 0.00":
+          - generic: "0.00"
+          - textbox: "0.00"
+        - cell:
+          - checkbox
+        - cell:
+          - checkbox
+        - cell:
+          - combobox "اختر النقد أو البنك"
+        - cell "فتح في نافذة عرض الاستمارة":
+          - button "فتح في نافذة عرض الاستمارة": أداة العرض
+        - cell "حذف صف":
+          - button "حذف صف": 
+      - row "إضافة فاتورة":
+        - cell
+        - cell "إضافة فاتورة":
+          - button "إضافة فاتورة"
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+        - cell
+  - paragraph: فعّل «آجل» للدفع لاحقًا، أو اختر النقد أو البنك. تاريخ الدفع هو تاريخ الفاتورة.
+  - generic: "الصافي قبل الضريبة:"
+  - generic: 0.00 SR
+  - generic: "قيمة الضريبة:"
+  - generic: 0.00 SR
+  - generic: "الإجمالي شامل الضريبة:"
+  - generic: 0.00 SR

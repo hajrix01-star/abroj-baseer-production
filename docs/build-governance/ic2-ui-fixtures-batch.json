@@ -1,0 +1,19 @@
+{
+  "database": "baseer_ic1_20260910",
+  "batch_id": 9,
+  "company_id": 2,
+  "rows": [
+    {
+      "id": 13,
+      "invoice_id": 338,
+      "payment_id": 125
+    },
+    {
+      "id": 14,
+      "invoice_id": 340,
+      "payment_id": 126
+    }
+  ],
+  "qa_fixture_committed": true,
+  "main_untouched": true
+}

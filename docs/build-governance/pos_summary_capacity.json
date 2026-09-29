@@ -1,0 +1,29 @@
+{
+  "results": [
+    {
+      "methods": 1,
+      "seconds": 0.27166708098957315,
+      "gross": 115.0,
+      "tax": 15.0,
+      "native_moves": 2,
+      "passed": true
+    },
+    {
+      "methods": 10,
+      "seconds": 1.3043788590002805,
+      "gross": 1150.0,
+      "tax": 150.0,
+      "native_moves": 11,
+      "passed": true
+    },
+    {
+      "methods": 25,
+      "seconds": 3.3141424549976364,
+      "gross": 2875.0,
+      "tax": 375.0,
+      "native_moves": 26,
+      "passed": true
+    }
+  ],
+  "environment": "local QA only; single approvals, not a production load certification"
+}

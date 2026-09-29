@@ -1,0 +1,11 @@
+{
+  "users": {
+    "cashier": 13,
+    "accountant": 14,
+    "owner": 15
+  },
+  "batch": 13,
+  "action": 784,
+  "company": 2,
+  "supplier": 191
+}

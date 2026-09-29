@@ -1,0 +1,158 @@
+[
+  {
+    "company": "المعلم الشامي",
+    "config": 3,
+    "valid": true,
+    "methods": [
+      {
+        "id": 19,
+        "name_ar": "نقدي | Cash",
+        "name_en": "نقدي | Cash",
+        "kind": "cash",
+        "journal": "صندوق ملخص المبيعات | Sales summary cash",
+        "account": "105090",
+        "account_type": "asset_cash"
+      },
+      {
+        "id": 20,
+        "name_ar": "بنك | Bank",
+        "name_en": "بنك | Bank",
+        "kind": "bank",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "101090",
+        "account_type": "asset_cash"
+      },
+      {
+        "id": 21,
+        "name_ar": "هنقرستيشن | HungerStation",
+        "name_en": "هنقرستيشن | HungerStation",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102110",
+        "account_type": "asset_current"
+      },
+      {
+        "id": 22,
+        "name_ar": "كيتا | Keeta",
+        "name_en": "كيتا | Keeta",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102111",
+        "account_type": "asset_current"
+      },
+      {
+        "id": 23,
+        "name_ar": "جاهز | Jahez",
+        "name_en": "جاهز | Jahez",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102112",
+        "account_type": "asset_current"
+      }
+    ]
+  },
+  {
+    "company": "دوحة المستهلك",
+    "config": 4,
+    "valid": true,
+    "methods": [
+      {
+        "id": 24,
+        "name_ar": "نقدي | Cash",
+        "name_en": "نقدي | Cash",
+        "kind": "cash",
+        "journal": "صندوق ملخص المبيعات | Sales summary cash",
+        "account": "105090",
+        "account_type": "asset_cash"
+      },
+      {
+        "id": 25,
+        "name_ar": "بنك | Bank",
+        "name_en": "بنك | Bank",
+        "kind": "bank",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "101090",
+        "account_type": "asset_cash"
+      },
+      {
+        "id": 26,
+        "name_ar": "هنقرستيشن | HungerStation",
+        "name_en": "هنقرستيشن | HungerStation",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102110",
+        "account_type": "asset_current"
+      },
+      {
+        "id": 27,
+        "name_ar": "كيتا | Keeta",
+        "name_en": "كيتا | Keeta",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102111",
+        "account_type": "asset_current"
+      },
+      {
+        "id": 28,
+        "name_ar": "جاهز | Jahez",
+        "name_en": "جاهز | Jahez",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102112",
+        "account_type": "asset_current"
+      }
+    ]
+  },
+  {
+    "company": "ARZ",
+    "config": 2,
+    "valid": true,
+    "methods": [
+      {
+        "id": 14,
+        "name_ar": "نقدي | Cash",
+        "name_en": "نقدي | Cash",
+        "kind": "cash",
+        "journal": "صندوق ملخص المبيعات | Sales summary cash",
+        "account": "105090",
+        "account_type": "asset_cash"
+      },
+      {
+        "id": 15,
+        "name_ar": "بنك | Bank",
+        "name_en": "بنك | Bank",
+        "kind": "bank",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "101090",
+        "account_type": "asset_cash"
+      },
+      {
+        "id": 16,
+        "name_ar": "هنقرستيشن | HungerStation",
+        "name_en": "هنقرستيشن | HungerStation",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102110",
+        "account_type": "asset_current"
+      },
+      {
+        "id": 17,
+        "name_ar": "كيتا | Keeta",
+        "name_en": "كيتا | Keeta",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102111",
+        "account_type": "asset_current"
+      },
+      {
+        "id": 18,
+        "name_ar": "جاهز | Jahez",
+        "name_en": "جاهز | Jahez",
+        "kind": "platform",
+        "journal": "تحصيلات ملخص المبيعات | Sales summary receipts",
+        "account": "102112",
+        "account_type": "asset_current"
+      }
+    ]
+  }
+]

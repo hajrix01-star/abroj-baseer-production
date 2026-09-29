@@ -1,0 +1,95 @@
+{
+  "summary": 19,
+  "order": 3,
+  "session": 3,
+  "state": "approved",
+  "return_model": "baseer.pos.summary",
+  "gross": 1800.0,
+  "net": 1565.22,
+  "tax": 234.78,
+  "average": 30.0,
+  "cash_difference": 0.0,
+  "moves": [
+    {
+      "id": 596,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "account": 507,
+          "type": "liability_current",
+          "balance": -234.78
+        },
+        {
+          "account": 595,
+          "type": "income",
+          "balance": -1565.22
+        },
+        {
+          "account": 447,
+          "type": "asset_receivable",
+          "balance": 700.0
+        },
+        {
+          "account": 447,
+          "type": "asset_receivable",
+          "balance": 600.0
+        },
+        {
+          "account": 447,
+          "type": "asset_receivable",
+          "balance": 500.0
+        }
+      ]
+    },
+    {
+      "id": 599,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "account": 1185,
+          "type": "asset_cash",
+          "balance": 500.0
+        },
+        {
+          "account": 447,
+          "type": "asset_receivable",
+          "balance": -500.0
+        }
+      ]
+    },
+    {
+      "id": 598,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "account": 1188,
+          "type": "asset_current",
+          "balance": 600.0
+        },
+        {
+          "account": 447,
+          "type": "asset_receivable",
+          "balance": -600.0
+        }
+      ]
+    },
+    {
+      "id": 597,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "account": 1186,
+          "type": "asset_cash",
+          "balance": 700.0
+        },
+        {
+          "account": 447,
+          "type": "asset_receivable",
+          "balance": -700.0
+        }
+      ]
+    }
+  ],
+  "assertions": "PASS",
+  "rollback": true
+}

@@ -1,0 +1,128 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - generic: POS-S/2026/000023
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- button "جديد"
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- button:
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button " فتح واتساب":
+    - generic: 
+    - text: فتح واتساب
+  - button "":
+    - generic: 
+  - radiogroup "شريط الحالة":
+    - button "معتمد" [disabled]
+  - heading "POS-S/2026/000023" [level=1]:
+    - generic: POS-S/2026/000023
+  - generic: بيانات يوم المبيعات
+  - generic: الشركة
+  - generic: المعلم الشامي
+  - generic: تاريخ المبيعات
+  - generic: 27/07/2026
+  - generic: نظام دوام اليوم
+  - radiogroup "نظام دوام اليوم":
+    - radio "دوام كامل" [checked] [disabled]
+    - generic: دوام كامل
+    - radio "صباحي ومسائي" [disabled]
+    - generic: صباحي ومسائي
+    - radio "صباحي فقط" [disabled]
+    - generic: صباحي فقط
+    - radio "مسائي فقط" [disabled]
+    - generic: مسائي فقط
+  - generic: العملاء
+  - generic: عدد العملاء
+  - generic: "12"
+  - generic: تشغيل دون مبيعات
+  - checkbox [disabled]
+  - generic: المبيعات حسب طريقة الدفع
+  - generic: نقدي | Cash
+  - generic: "115.00"
+  - generic: بنك | Bank
+  - generic: "230.00"
+  - generic: هنقرستيشن | HungerStation
+  - generic: "345.00"
+  - generic: الإجمالي شامل الضريبة
+  - generic: 690.00 SR
+  - generic: العملاء
+  - generic: "12"
+  - generic: متوسط المبيعات للعميل
+  - generic: 57.50 SR
+  - generic: ملاحظات
+  - generic: مرفقات التقرير
+  - generic: المبيعات دون الضريبة
+  - generic: 600.00 SR
+  - generic: الضريبة
+  - generic: 90.00 SR
+  - generic: اعتمد بواسطة
+  - link "IC1 QA owner":
+    - /url: /odoo/res.users/12
+  - generic: تاريخ الاعتماد
+  - generic: 10/09/2026 08:37:18 م
+- dialog:
+  - banner:
+    - heading "تعديل / إلغاء العملية" [level=4]
+    - button "إغلاق"
+  - main:
+    - main:
+      - radiogroup "العملية":
+        - radio "تعديل" [checked]
+        - generic: تعديل
+        - radio "إلغاء العملية"
+        - generic: إلغاء العملية
+      - generic: الملخص
+      - generic: POS-S/2026/000023
+      - generic: السبب
+      - textbox "السبب": اختبار تعديل الملخص وقيوده من الهاتف
+      - generic: المبيعات الأصلية شاملة الضريبة
+      - generic: 690.00 SR
+      - generic: عدد العملاء
+      - textbox "عدد العملاء" [active]: "15"
+      - generic: تشغيل دون مبيعات
+      - checkbox "تشغيل دون مبيعات تشغيل دون مبيعات"
+      - 'link "نقدي | Cash 105090 صندوق ملخص المبيعات | Sales summary cash المبلغ المسجل: 115.00 SR المبلغ الصحيح: 115.00"':
+        - generic: نقدي | Cash
+        - generic: 105090 صندوق ملخص المبيعات | Sales summary cash
+        - generic: "المبلغ المسجل: 115.00 SR"
+        - generic: "المبلغ الصحيح: 115.00"
+      - 'link "بنك | Bank 101090 البنك - ملخص المبيعات | Bank - sales summaries المبلغ المسجل: 230.00 SR المبلغ الصحيح: 230.00"':
+        - generic: بنك | Bank
+        - generic: 101090 البنك - ملخص المبيعات | Bank - sales summaries
+        - generic: "المبلغ المسجل: 230.00 SR"
+        - generic: "المبلغ الصحيح: 230.00"
+      - 'link "هنقرستيشن | HungerStation 102110 مستحقات هنقرستيشن | HungerStation receivable المبلغ المسجل: 345.00 SR المبلغ الصحيح: 345.00"':
+        - generic: هنقرستيشن | HungerStation
+        - generic: 102110 مستحقات هنقرستيشن | HungerStation receivable
+        - generic: "المبلغ المسجل: 345.00 SR"
+        - generic: "المبلغ الصحيح: 345.00"
+      - generic: أؤكد أن العملية تصحح السجلات المحاسبية ولا تمثل رد مبلغ فعلي
+      - checkbox "أؤكد أن العملية تصحح السجلات المحاسبية ولا تمثل رد مبلغ فعلي"
+      - paragraph: إذا تحرك المال فعليًا، استخدم مسار الإشعار الدائن أو رد المبلغ الأصلي. هذه العملية تصحح السجلات المحاسبية فقط.
+  - contentinfo:
+    - button "تأكيد"
+    - button "إغلاق"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

@@ -1,0 +1,1159 @@
+{
+  "release": "baseer-reports-r1",
+  "date": "2026-09-07",
+  "identity": "SHA256 source manifest; no Git release commit",
+  "scope": "Frozen report modules; not deployed to main",
+  "modules": {
+    "eh_account_base": "19.0.1.8.0",
+    "baseer_report_layout": "19.0.1.1.0",
+    "baseer_cash_categories": "19.0.1.3.0",
+    "eh_account_dynamic_reports": "19.0.1.8.1"
+  },
+  "files": [
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/__init__.py",
+      "bytes": 76,
+      "sha256": "33d2ee72e989be872a10d35692e0b6976cc014e4372b59d1f72404baef81b83d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/deferred_schedule.py",
+      "bytes": 20330,
+      "sha256": "4a81c304d60120b4eedb5dd9bf903ebaa7cb1c97a8af67a22d0211aa9e4cc70f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/executive_summary.py",
+      "bytes": 30571,
+      "sha256": "92f6f80a466900f35f91e383b322d48ce54bfa0109c0a1eaa995125a8864ce86"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/general_ledger.py",
+      "bytes": 48887,
+      "sha256": "7718aeabfd4eb9354770379127f6eb5d291cbe63bc2d447b9daf321bbc18bea0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/noncash_transaction.py",
+      "bytes": 10766,
+      "sha256": "34db77676a91f6221c1375d2e73d0ddbc336174db1b3af2604e405a9962a1796"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/partner_ledger.py",
+      "bytes": 33018,
+      "sha256": "05d66eeb6e3a25a10058beed5e579d10326ae4232a01d2251139140fc433e82e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/partner_statement_action.py",
+      "bytes": 2190,
+      "sha256": "c5cdd02bed9ea05ab04a6e750bb88789897426175aa9983d26c39cd3f4e38941"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/profit_and_loss.py",
+      "bytes": 46063,
+      "sha256": "8207d0b95c406bd78fded1acff08f29d2c5646bc074c53409c69dc0fb18a5681"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/report_dynamic_pdf.py",
+      "bytes": 23371,
+      "sha256": "302d1035c2405f5952e0e188af2131ba6138b9073b3302a26e356e540235cced"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/sectioned_cash_basis.py",
+      "bytes": 2178,
+      "sha256": "c994c6ecf089c47d1a3082a7d569353ac586c8c2a9ecf25ebdc5769ccd960b2c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/trial_balance.py",
+      "bytes": 76440,
+      "sha256": "63f72afa76e3696a80d55347494b9277111c10e4d87cac19e1dd0a15979f0ae4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/report/__init__.py",
+      "bytes": 126,
+      "sha256": "3c32bab3b4e9ffab3dd45da782a3eb234588d55f55ff7e4e99cb13d8dc335b1e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/customer_statement.py",
+      "bytes": 15295,
+      "sha256": "827ac6c9a1d2b73d69e3fd0d4a888028cea13c65a07e40244c0fdb9283416929"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/report/report_dynamic_pdf_template.xml",
+      "bytes": 12288,
+      "sha256": "53cdb5950cf14bff8ae1c3bcd39dce3941d3b20612e79ac23395b3cb3114e38e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/security/ir.model.access.csv",
+      "bytes": 485,
+      "sha256": "24274dc7c3e7a307aa3081e3b13076839ae2faf2a39769cd80d2281a2ec0ea38"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/_screenshots_block.html",
+      "bytes": 2166,
+      "sha256": "87cecdcbaaac7255fe02e4a39cbeafd2875a75b349217cb4515b5c05e7c029b9"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/banner.gif",
+      "bytes": 232394,
+      "sha256": "eec7f42e491a19e50c5b7a65b1a885fa4e88b4986a5544a6dc971524d466867e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/banner.png",
+      "bytes": 62247,
+      "sha256": "529b36422bf222414383817aa143d38821f8bf8fa03e71c4f80a6c2b5f4818c8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/icon.png",
+      "bytes": 19010,
+      "sha256": "2531bf2453097cbee9770bde1be87e0f7d122fb0be5e792cb10aba351a5e4eb7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/icon.svg",
+      "bytes": 594,
+      "sha256": "feb65da6479744a54cf36f11b56a28b24507f76c170b22b07529757c67c72c1c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/icon@2x.png",
+      "bytes": 18235,
+      "sha256": "8aa6688d75381675c1ac36ddec213741d28d81a5a52d47190c3b2597e29f665f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/index.html",
+      "bytes": 149641,
+      "sha256": "119d53dc9ff13c43167b050b8480b145776ecaca63021250eb3cdc7194832a82"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/cell_ellipsis.js",
+      "bytes": 4682,
+      "sha256": "0371b13432a3029db9c3910172ebd1bcdc54603b84a6d77974d340824fb63f33"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/cell_ellipsis.xml",
+      "bytes": 1608,
+      "sha256": "36e4f7908f16883e9589a3bc574fc8774127e0ea10c510d4862af4f845afbbfc"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.js",
+      "bytes": 89096,
+      "sha256": "ea2d501a82f7363a4e6424170ac8fc9c9d0128a60c77b31a7b99fd219e70feff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/security/eh_isolation_rules.xml",
+      "bytes": 703,
+      "sha256": "f8cba64a80f27bae4ba361d704b3f89fcb6df470087adb3c84362b2728cfbaaf"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/cash_flow.py",
+      "bytes": 84852,
+      "sha256": "e09a100ffdd6a5cfa342069f444ccf4c17cc5cd9c90d72f61daa779a6b81ced9"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/bank_reconciliation_proof.py",
+      "bytes": 25432,
+      "sha256": "0fded5a80eabc4bf137e947b36fb9599817a4b2f5f4164161b62f89222afdf11"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/balance_sheet.py",
+      "bytes": 28333,
+      "sha256": "9f371563f0aaaa747becba373e9a22a3df0c35fe599a8509f4dc00f6a7477f2c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/de.po",
+      "bytes": 76610,
+      "sha256": "ddf3d9d8180106786057223f9a1514a19483442aca76db67528f074cc2149131"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/eh_account_dynamic_reports.pot",
+      "bytes": 65803,
+      "sha256": "429e7443a074d0b1f8e3e53255479a2e1d675e4b8b6e8c92fc6acf7b3aa4b967"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/es.po",
+      "bytes": 76893,
+      "sha256": "5a33f78e89f4d06f19003ffeb530df13350f41d1d52681970cef39d58944bf56"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/fr.po",
+      "bytes": 77324,
+      "sha256": "cae1499999e460721ac8806bd9939f8b9691d41405a0fd0c3c8e64fb29ca4103"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/hi.po",
+      "bytes": 87870,
+      "sha256": "bd6ddc308c4e39b81be44d8b2be305962b7d67377ab2d3d2c4ac3d5529e09171"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/id.po",
+      "bytes": 75524,
+      "sha256": "21469c31d702593d716b1bdf3d68ac3259af162e72b774d44e684c7a11672494"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/it.po",
+      "bytes": 76662,
+      "sha256": "9275b9cf1fb5e50dce88cd778a8a0fa19b694054d26ff0f4fb344eeb763b9453"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ja.po",
+      "bytes": 76861,
+      "sha256": "30849eee0a0f6f848cc31325a999632984025b050e23b0b2ba9046e788e14aa4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ko.po",
+      "bytes": 75743,
+      "sha256": "53d1c06df0cc233b9bce247d0971bdc5c3691a40ea5237892f29d0b98286e2a6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/nl.po",
+      "bytes": 75936,
+      "sha256": "9b04704e1d197c616bb0be693a3d18c2137aaee2c7466eb7f80f923612d0c47e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/pl.po",
+      "bytes": 77011,
+      "sha256": "cd8e8e9f7aea38fc756a41a1f2824a90143bb8d51b2f1ae6784e9a2b339954b3"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/pt_BR.po",
+      "bytes": 76861,
+      "sha256": "1b865728b66f2c848ce7afca6ce0ffb5952cae251ca562c2514d2bbda21478aa"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ru.po",
+      "bytes": 85742,
+      "sha256": "e4b9c98755aa91fe017009c87e8aa3bbebc3c9c39648771450c9750da65abc18"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/sv.po",
+      "bytes": 76246,
+      "sha256": "0503b79aed0a195b4771b89dc0d6300d7ab538a90b505f20ec77228ef383d214"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/th.po",
+      "bytes": 90944,
+      "sha256": "69557c4f8be49852a3454a1360d11330636266ea91d642e49f429fe4b82c9053"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/tr.po",
+      "bytes": 76431,
+      "sha256": "4f0f84dc5205151f7cfef7645fb4b14fe94ae6f828e5747d4cca2d1ed8c388d2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/vi.po",
+      "bytes": 78827,
+      "sha256": "46bd17d334525ebe4ba4a29572a224d10d835163a32283187eab5e59af5fcf3d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/zh_CN.po",
+      "bytes": 74160,
+      "sha256": "f3c787287a550b9570ec80db020e500312e1741d8ff2dd60d5c0641a6864ab32"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/zh_TW.po",
+      "bytes": 74187,
+      "sha256": "267701dc8fb8936588d5b0588c94e5e33c0107ffed716b5fd73577314b4f18f4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/migrations/19.0.1.7.0/post-migration.py",
+      "bytes": 307,
+      "sha256": "70b91a1494333a8081815291f99bccdc2219dcb615e398053040ab086d72c312"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/__init__.py",
+      "bytes": 558,
+      "sha256": "c204912caf8d095e5daf6e2f7f273f3dbefb72a6c85b1aa70b8de7144ab4a6bd"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/aged_base.py",
+      "bytes": 29942,
+      "sha256": "132a23be4a9572e193b0a51932b5eb5fecc82bd3c35c1060cc82ec8f3d979300"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/aged_payable.py",
+      "bytes": 1021,
+      "sha256": "30f2201386c3a4c0bfa575043689b95372ec4f342114cc9c297e2ceb7d2311c8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/aged_receivable.py",
+      "bytes": 1096,
+      "sha256": "611e671dafaac4ab04d0df9151d0104401484afef38fe6dc9ff6c0a6aab332ed"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/analytic_balance.py",
+      "bytes": 14923,
+      "sha256": "2d8e2a96eb33808838c61a06f7720a8d5d948557fd5a3642aee4a2ede5b3e685"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.scss",
+      "bytes": 39474,
+      "sha256": "569d286953cbb1b181dab50cbdc3c97b0093a4cded82cceb2135c63429c76cf7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml",
+      "bytes": 54319,
+      "sha256": "d6a59133e381ed34d9e7b604080958266d1efe79d991ec5c4b99fca1502d59ee"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_format.js",
+      "bytes": 28441,
+      "sha256": "b58d2c58af146b8c804ef1722d3c554a9b7a8f971ee40a0d5e745bd1a02283c6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_table_logic.js",
+      "bytes": 5351,
+      "sha256": "475924c8d48ea1b9b0c8ea416ba76b4b759972a4cf015527c8c68de6dd8b7b75"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_profit_and_loss.py",
+      "bytes": 79861,
+      "sha256": "ac1ef71d79cf2606186880e99eff6e4b3f142bffef89c57b6231139bd0b63714"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_trial_balance_hierarchy.py",
+      "bytes": 4540,
+      "sha256": "dbdbf73824688c04ed2fd5562aaaf326edb5c5be63a19645e12afd65641da90c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_trial_balance.py",
+      "bytes": 62725,
+      "sha256": "8b25af49aef7effef579f4188a1f9fd036426278eba314769f3ca9233470487b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_xlsx_export.py",
+      "bytes": 6179,
+      "sha256": "b470092b4d7bca4c88c41ef944af2386f8d542b39b9aaeb2dc00dd392b0c1048"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/views/noncash_transaction_views.xml",
+      "bytes": 5516,
+      "sha256": "d49a2d388280cd0736d85c68d795d5027f474853001165f95c27e0c0772cbcd3"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/views/res_partner_views.xml",
+      "bytes": 1964,
+      "sha256": "c92b75f342a0a99e21133b877b48dd3865cbe8bd2c3cdd1a199ea400140757e1"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/__init__.py",
+      "bytes": 57,
+      "sha256": "c06b9ebcbdc951e33341c821997954811a8ad2fa663f1c9383abb08601e2847a"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/__manifest__.py",
+      "bytes": 531,
+      "sha256": "0b9772fe046b53cdf6199a5db000fa1c0209598350ef8ee40f45e6d197f6fccd"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/README.md",
+      "bytes": 1533,
+      "sha256": "7bc5455ffe723dd1da567c3d679c3c341e1d3850385885fd78684dcaa3c4c24d"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/report/arabic_pdf_font.xml",
+      "bytes": 2642,
+      "sha256": "d77a6877798e1c09a44894a799bbbd42b8bb962ffa9117e9fdcea6c0e9359c91"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Bold.ttf",
+      "bytes": 247896,
+      "sha256": "b74f809dead12442ed56e02a12c3bcc02076c9ad4e32f17d0a9ca6fc1aafc89e"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Regular.ttf",
+      "bytes": 236708,
+      "sha256": "8e0f1046c736bf939d4939ee3ae0116acf61cbcd6592deae7656761627080981"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/LICENSE.txt",
+      "bytes": 4456,
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/SOURCE.md",
+      "bytes": 697,
+      "sha256": "8fb1c17142f3bbc5e7db937e6a3e7b92c8807c4a306c90ede204216092f91a74"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/report_layout.scss",
+      "bytes": 1996,
+      "sha256": "1fe93af3b7ba25e3b2d50a69b35953cb7ece656142e8db6a89617c8650a4ed18"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/report_layout.xml",
+      "bytes": 784,
+      "sha256": "151f624d23dba4fd509b585151d7dd9f806347be84e8655badf871dcb13a34d0"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/__manifest__.py",
+      "bytes": 629,
+      "sha256": "a33b09a448c675f09dfed98664a99a33a96c7db99be8984f31e4ebe624206f3a"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/data/report.xml",
+      "bytes": 1117,
+      "sha256": "8e3e00e3e6ad5b0323813cc78c9f86190101846835091c6b1404f8aa67fac1bb"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/i18n/ar_001.po",
+      "bytes": 16151,
+      "sha256": "bde61ad3859632554ed900ead2f1cb1c8c896da789420c735792cd129a74938b"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/models/__init__.py",
+      "bytes": 53,
+      "sha256": "e6e47f90052e68bff038844f79037cbd2151461e28765993620d1256649af756"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/models/cash_categories.py",
+      "bytes": 46371,
+      "sha256": "54cab5ca4d32f9308e835f7e957eec7d6fc4cb33aa6fad5aab5cbfc5d3ca9da3"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/models/cash_pdf.py",
+      "bytes": 5851,
+      "sha256": "7470a0b53d8117db147d60eab82872fd35ca10ba9201130ccb36618c0540463f"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/report/report_note.xml",
+      "bytes": 5060,
+      "sha256": "a45ebab01ed40c3c9c71ace7b390bf927ebb62019f29cd901c22ea03fec60c9b"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/static/src/cash_categories.js",
+      "bytes": 8482,
+      "sha256": "4663cb6871b754f5246071f5f7481fb507e9d8189ea8eb86b04bc5092ba9816b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_perf_render.py",
+      "bytes": 6673,
+      "sha256": "bd4bcbc0e3f1d3855b600abde1f9c088a507f663198641de3a9e7068c4d8cc7c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ar.po",
+      "bytes": 81223,
+      "sha256": "7e8095fe72ad6d38dd2a09d1dcb139417e9d3a16e0da63aaece714c583ee2ced"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_pdf_export.py",
+      "bytes": 28284,
+      "sha256": "0ac687cec1f592153843945ad60c0e097c3ffdec210ab0c7d897d29779bffafd"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_partner_ledger_lazy.py",
+      "bytes": 12915,
+      "sha256": "c1ed32c75fb65aafb8e5026323846ca59f2ac67d82b6bfffb9197e95273d5e62"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_theme.js",
+      "bytes": 4298,
+      "sha256": "973a710ebaa6653339be3789c168cba8c90a1c1cd42f493adbca66d432996209"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/tests/report_capabilities.test.js",
+      "bytes": 53731,
+      "sha256": "74182bf85119c141b82e67ec27b69a18a605d93b10ba40e803895544d9736a00"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/tests/report_table_logic.test.js",
+      "bytes": 7803,
+      "sha256": "c4446be886fe21fbdcd546f0046397d832415b9c214dd150f2cfc53e399de5e6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/tests/report_theme.test.js",
+      "bytes": 3878,
+      "sha256": "ad57ce978bf274e1c490317b68d95b4fdb7dac5256bd5011abbfcbdf17a2ebac"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/__init__.py",
+      "bytes": 2789,
+      "sha256": "bd6a4debb1ca5d360631dfe22d90ef8818c95d7d4a5dc3adf2a51bfaf20fb187"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_payable.py",
+      "bytes": 8289,
+      "sha256": "0b72b2fa831361873f25e3f2373a3ec9970127e25c7fd6dd55e45c6930b775e8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_receivable.py",
+      "bytes": 18806,
+      "sha256": "05432a297e04bbd7d193ff4afed1d42932db2a7aa4bb8d1ee0ba1160af0567ca"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_unfold.py",
+      "bytes": 15988,
+      "sha256": "1dcba6128a52aeb113fbab1a585c4931abded79491a61e4dce6edaea63f0cf81"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_analytic_balance.py",
+      "bytes": 11613,
+      "sha256": "1465a3c05fba24199f4dd9faf886ea35a6db1e6f8183db26da4b6d7108c60dd3"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_annotations.py",
+      "bytes": 8745,
+      "sha256": "a0da3b19dca34c61580e76dfb0b39439013fb82143db6374e652987fcb4a57da"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_balance_sheet.py",
+      "bytes": 35954,
+      "sha256": "c2d5435fe189819df1fe1581f1a2bce3a8904620c8c8b0066f6ce46b09583fac"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_bank_reconciliation_proof.py",
+      "bytes": 29796,
+      "sha256": "9bb5cc6f527a0aeffcdb10264603162507e3188410b40b8f4640fe590d8adc63"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_cash_flow.py",
+      "bytes": 53866,
+      "sha256": "d20640f955152d4af34a6adb54552fb89e2be904f587ef71b0f8db999d1f4a19"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_customer_statement.py",
+      "bytes": 12319,
+      "sha256": "09d6c9545ad4ab6f9bc15f23fd672378970032e79bb23d0272d3b2c33dfadf96"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_deferred_schedule.py",
+      "bytes": 19432,
+      "sha256": "473676093717e25724c5245c77a3ff2b4aaf4c834bb0e22a0b55a789de667bff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_executive_summary.py",
+      "bytes": 21307,
+      "sha256": "9024a327e093b302364b4d9d428b0c05d0cfa5ecd444540fd115bc1b864a8e17"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_expense_other.py",
+      "bytes": 8327,
+      "sha256": "336ada3c63efa0a48f6060e84e71b2c9580331630385d0b2a1448ee2de927e0f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_fold_consistency.py",
+      "bytes": 8738,
+      "sha256": "ea3eec3707c7c35f491b3ba0c772f5e5f9616ef25230d1daeef3e907ca89f606"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_general_ledger.py",
+      "bytes": 49623,
+      "sha256": "69c22cadbaa32313c78f2e0aa7729e779060a1756c1123ea10d5604b3ff00530"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_golden_cash_flow_ias7.py",
+      "bytes": 39740,
+      "sha256": "094409f9dabf1e91239e36b90460408a81ddf228a6b3b67fd11011b824778d97"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_hierarchical_groups.py",
+      "bytes": 6200,
+      "sha256": "f8b148b3a71acc060ecb7132052727e554463aeaa09474f50ed2b8b588bd6cb8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_historical_residual_dates.py",
+      "bytes": 7258,
+      "sha256": "d3bff6bba7cd78a84108f0b1f4d3a0f3844212d661318834b320cc8c2e9692b1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_ias7_auto_tag_security.py",
+      "bytes": 4249,
+      "sha256": "33ce1fc3935c3954b46804c4c92c90b6ca9087ed33bf6900210ec5f77e99a150"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_lazy_expand_engine.py",
+      "bytes": 18767,
+      "sha256": "ab4cf6436288922a3904bd5e71a63ccfccc9274bc21a1e558daf60076ab91c03"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_multicurrency_render.py",
+      "bytes": 10828,
+      "sha256": "cc93c7e78cad5683b27fa3fafd553b54c2182f87b00af14acc0504083ae9f029"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_partner_ledger.py",
+      "bytes": 14524,
+      "sha256": "f759fad58d9137289f1ab82d8103685df2c1d858f2bb82352b831c3757786e71"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/static/src/cash_categories.scss",
+      "bytes": 8609,
+      "sha256": "d0077013b59da03aab6ae59c6ae9def564fe6866aea221cccdfaeb8597a04202"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/reports.xml",
+      "bytes": 10843,
+      "sha256": "9348e826acfa5ca95661160154da5c15e06efd9e99b8e96ef23d7dce9bc70859"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/paperformat.xml",
+      "bytes": 1253,
+      "sha256": "d0d2787543046fd13a35f60512ef7ac69e3cd15b8d574c474f0cc548f28a18be"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.5/post-migration.py",
+      "bytes": 11634,
+      "sha256": "3ab080ad1f66968e5b16f267bdc7eb014f383ee0d11a0a3522a520ea5f34353b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.6/post-migration.py",
+      "bytes": 4711,
+      "sha256": "4b5921dd519047dfe56a81210aad6b30bd42e63fe47d3fa2fed95338587b8964"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.8/post-migration.py",
+      "bytes": 13494,
+      "sha256": "ac23298c6aed978ba8a0d10c541b923befb94f922e7a63f1f63ba39fc4ce5d51"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/__init__.py",
+      "bytes": 606,
+      "sha256": "43b2af1440dd11bf973f9479f850570ddb969d8025a99851564b884f898c0af8"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/account_account.py",
+      "bytes": 2885,
+      "sha256": "b2da18f8d3e47fc146ce0086a9321665b9d43aa6ae48263ea6ad12c62c508672"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/account_move.py",
+      "bytes": 111609,
+      "sha256": "5aa69b1b9284b0ba86245d874f6a4be5204da4c661dec4050cc6b9ec90dfa45d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/audit_mixins.py",
+      "bytes": 5237,
+      "sha256": "2eb5140232d55b44ba177cb092b7608199942d5b53d2b90d63e6cd4fd06e8576"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/base.py",
+      "bytes": 872,
+      "sha256": "f9bd33acae5a9bb4d4b54a467d1eeda19631569bed03ae5531ad1742220d7075"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/dynamic_report.py",
+      "bytes": 54444,
+      "sha256": "8ac2de28828b0cdc3b82e97c419b94e1ccbe88472063173d9ec363a5cdd03b37"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/legacy_seal_reversal.py",
+      "bytes": 2956,
+      "sha256": "5b5705a518b53cd9862e40e52cf9c50369c13935dcb2b2e0b9ddfd603fa30c9d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/list_statistics.py",
+      "bytes": 4066,
+      "sha256": "05d08e162c2c3e16d9b784db2a91e4aafffc728c0e83974e8bcab24f0c488448"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.4/post-migration.py",
+      "bytes": 817,
+      "sha256": "20ddf4ef4920f4bfe295fe1aaf53236d88a050ea3ff536b2213dfe754c7b8786"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_annotation.py",
+      "bytes": 3045,
+      "sha256": "b482ca033003ffa7723b99e5731b1bcb7dcbca7c1f20422c707ab08a56eccf04"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_fold_state.py",
+      "bytes": 5317,
+      "sha256": "6f31320e977d4df05867a7bf3839da5afbf7472586dd7cc06ff16601ce7d99ee"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_handler_base.py",
+      "bytes": 69224,
+      "sha256": "03cba779c7a8e521e4d9182f1d22144fef1fe6a592881730eb4dd2d0cbde63a0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_handler_sectioned.py",
+      "bytes": 63067,
+      "sha256": "6037adc4e8ef49eca2acac6e235e39e5ed7b8fb98f4d47d7585a0c569667a010"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_input_invalidation.py",
+      "bytes": 12549,
+      "sha256": "0fe24fc859e24f59e6a13843ee9cd28dfb1081a484727b23be2c897ee12cc435"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_wizard.py",
+      "bytes": 10721,
+      "sha256": "1e9d3b570f55312ee013cc266a3723e45ae115d4f17c7136c4dbe801ac8fb90a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_company.py",
+      "bytes": 22286,
+      "sha256": "c3f8c164bb895468926135f905720d758c8448131c6c7a4d18095fd1ad77063f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_config_settings.py",
+      "bytes": 9465,
+      "sha256": "ece5aac50f73d59725d7939335333fb64ad20593a886efacc6831a28e85c3633"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_currency_rate.py",
+      "bytes": 1494,
+      "sha256": "1c97ad2a6be1f1b05c06ad35bc64621ec740235f651223c6a875d9c43430843b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_partner.py",
+      "bytes": 2129,
+      "sha256": "246dc5033ece1ebb1be6e36c3122594363e4512e9e9b8ef2d2451365152281cd"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/saved_view.py",
+      "bytes": 8820,
+      "sha256": "6fa9f89751957e560d41212e91db693c29580cf19802ad37e09cbb46f067f9bc"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/workflow_mixins.py",
+      "bytes": 12041,
+      "sha256": "1e7f1659d185914804d8851d01d625beb8b4f1509878bd18638b23f1b565d491"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_execution.py",
+      "bytes": 36285,
+      "sha256": "0b8bcc1f768903e8574654eb585f0d35f0bc4c5a300c13cfe263f5a29155e562"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.20/post-migration.py",
+      "bytes": 831,
+      "sha256": "a2574bdd68db73e431c697f0e78bc8053659e2414f73ca77578d94b8db0da8f2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.16/post-migration.py",
+      "bytes": 1891,
+      "sha256": "f34f03c6f57786ba5a10e10587cd2e68beb645604a04aedeca5430f594e8e4e3"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.0.1/post-migration.py",
+      "bytes": 3213,
+      "sha256": "057812148c3bae5d921515223267ae445a60af7ba787a4f0611e4b953c4f87c4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/__manifest__.py",
+      "bytes": 5578,
+      "sha256": "3787b17c365fb7cddcf052368c9132624a37fabd930e372690c36c6dc717c9c4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/hooks.py",
+      "bytes": 4592,
+      "sha256": "c7faa5fcc9c1d8202a492e03ca6639fc30b78c2e8a5a0a9da2229f1da0d9a248"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/data/menus.xml",
+      "bytes": 7301,
+      "sha256": "b8797724ffe9a93299dee2f29936ca6d0530c8cf5731dabb5e519a596e9ebdd7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/data/paperformat.xml",
+      "bytes": 2731,
+      "sha256": "acc801cfb45a9035c43cfa773c6eb080510469ae3e1ddc3d2d8163060f9c5e58"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/demo/base_demo.xml",
+      "bytes": 3741,
+      "sha256": "a60229ff15997d8b8d56b94c5f83857fdef50bf64de7bb7d19e2241e40fa8613"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ar.po",
+      "bytes": 69512,
+      "sha256": "4085cf92c412686cf25f5bcb87041b975767369aefc66ead5d77eb589719e6ff"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/de.po",
+      "bytes": 64594,
+      "sha256": "45ed15bada2ca05713f4774660ee85aa415c46d2c418b631813ef71bec673fb7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/eh_account_base.pot",
+      "bytes": 52762,
+      "sha256": "89657d822ce4232ed95cc71a48c80566cf87fa92638d7e7acdef7c8a7e5abce6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/es.po",
+      "bytes": 65322,
+      "sha256": "140b43dfe73bf2f0c430245342fb64e7fbf07dd20c23745ec1be1442a00dd6e0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/fr.po",
+      "bytes": 65583,
+      "sha256": "de6868e6723d6890ff30e360d86fa942d6fe1de4f4722a68a93b554e442e182d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/hi.po",
+      "bytes": 77961,
+      "sha256": "59825db027fac0a3fb0c93f9b8ef87eda8e8f5d575cb805e25c9bc6d3fd1d699"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/id.po",
+      "bytes": 63624,
+      "sha256": "c370ead0c923732f698bc7627eac6cd98d2047fbba6d0cdfaf359eecc6f8441a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/it.po",
+      "bytes": 64995,
+      "sha256": "33d0ec2d6ab7251bddf9a358ef23a0846f80ff5ec5ff2747b0c3b5a2bbf9fac2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ja.po",
+      "bytes": 65840,
+      "sha256": "82b663f71dd1789d17932c0255910eead9d2593de259f314f84c18fe79afd48e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ko.po",
+      "bytes": 64046,
+      "sha256": "85556ef2961379a3ee695192c17c72c5375f1dae7099d0199fdeebfd25e7465a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/nl.po",
+      "bytes": 64058,
+      "sha256": "2e8caa61055cdcb15130c3fabe6cfe0c3e33a130014278a663cf212b8d77970e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/pl.po",
+      "bytes": 64789,
+      "sha256": "ba2abf3788ea2c88f274af60c745838d11ff81ef74c23cbcb0eba24f2c70d94b"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/pt_BR.po",
+      "bytes": 65048,
+      "sha256": "9d55dd89f384ea070be224bb9f5fa8872e4cc0f992fe53450258653730dd0c74"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ru.po",
+      "bytes": 73349,
+      "sha256": "e1da49c6e7204db1d35eae855bb9e2a3df5cae3175d7a5b55490178733ecb302"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/sv.po",
+      "bytes": 63986,
+      "sha256": "d5e057c0b59fd955868d331baf3d4bf3a122c1f262fd6992782b8c3961d42499"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/th.po",
+      "bytes": 78796,
+      "sha256": "e1161c38771a7629e2a1f5ad63e0e4c830a3309f8a9cdb59f4187bcb0cef2c08"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/tr.po",
+      "bytes": 64493,
+      "sha256": "3029c9a4ed7c038a2fdccc022f8e61ba275b54a865645b51c1fa009a03283bb3"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/vi.po",
+      "bytes": 66873,
+      "sha256": "de44cc20abd1ace1eedde162e919a0a4a67adeb4939bc1c7c57a2a13afce976f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/zh_CN.po",
+      "bytes": 61748,
+      "sha256": "224811a628ab33bb0dfb75ef421ab7a200e503fb6f7f34891b1184170fa3e719"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/zh_TW.po",
+      "bytes": 61867,
+      "sha256": "d46ca7580237b8b8661e5616d2bcc5f318e40f6bc9d989a23c4ceb29dfa41c5a"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/report/account_move_report.xml",
+      "bytes": 18499,
+      "sha256": "8ec46476904aeaeff5ce9337d29b5ad47310f9e278799537f89b60c703619afb"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/report/eh_report_base.xml",
+      "bytes": 10068,
+      "sha256": "a1c4a7bc79c15642e12f1ce5308e11db7a1974bb2b5ddfdc35cdea5522190bbb"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/security/eh_isolation_rules.xml",
+      "bytes": 3365,
+      "sha256": "438e16603928684908a1bedd164489d050931481a199e8cb8f2164c58848f1df"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/security/eh_security.xml",
+      "bytes": 3707,
+      "sha256": "7bc07e67fdbcee46ce655728c84d8016f35de98194d82ec9f66f73a86170d3e0"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_report_wizard.py",
+      "bytes": 15674,
+      "sha256": "a2631d7cca85411949e7719346db34debc43b44b523e38c6ad48a7b64bc2c00c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_saved_view_annotation_security.py",
+      "bytes": 7424,
+      "sha256": "66e35dd2379931d0ede551010010f3d03c9139e83d1e711b7b975d56261ef264"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_sql_builder_integration.py",
+      "bytes": 19349,
+      "sha256": "e6b460a7ae84a31059572387ee7ff104983ee3e401333594873b314387144c91"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_sql_builder_unit.py",
+      "bytes": 22755,
+      "sha256": "0dd1bb9810a979ef4a618d7f0928f08232ed001ee5ad63d5c411a8a9ee4d540c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_workflow_mixins.py",
+      "bytes": 1802,
+      "sha256": "e53475d2e9b389e038aff638c15eba498d4a7b32bd89fa07efce82569598874e"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_xlsx_writer.py",
+      "bytes": 27288,
+      "sha256": "fbd999b16822aa36371d3fc766cb7b90bb8f5dd10382b44686468c31f47d6332"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/__init__.py",
+      "bytes": 104,
+      "sha256": "5be13fc6cb677e25cb2e8ad3d9b68264dcf0514bd0522519bd7ff05c11408038"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/currency_table.py",
+      "bytes": 14472,
+      "sha256": "97ce09449b3049d33abf40cf17114a6f1d217520c99c1a9ed44fff8b377ee72d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/eh_sql_compat.py",
+      "bytes": 4045,
+      "sha256": "073c9c573a3151c2489ac4378baa30123f0dd7317256448f5c5f139e67659ad1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/net_guard.py",
+      "bytes": 9380,
+      "sha256": "9486440da6a8b4bf3eb76e9b474996605f8e6ef2378f009bf92b3ae89fc15056"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/orm_compat.py",
+      "bytes": 4883,
+      "sha256": "ed8aa0f8cf21e79c34d12933ffbc7802c61500ecbf2d8cd7064e8c2c3bcf5970"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/payload_codec.py",
+      "bytes": 4294,
+      "sha256": "9feb798923b457082024aba51ba8e684bd15964311b5bb212fb80aa61ff2f3e7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/sql_builder.py",
+      "bytes": 29945,
+      "sha256": "ccb129c0f066db9a8191388e0a3b345e1d822e8f273d4c9112d07072ed4d86e1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/xlsx_writer.py",
+      "bytes": 30570,
+      "sha256": "232f9156a09bc673273984d27c72827cb0dc41c9e4daf484dd70ec6879fcb708"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/dynamic_report_views.xml",
+      "bytes": 2893,
+      "sha256": "7b9f73b9675e9f02fe97f001947415a3ddd8fd40c99374fe2f0c2b14f678cf61"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/legacy_seal_reversal_views.xml",
+      "bytes": 2074,
+      "sha256": "1b8278382ef5bf66bf5c9e9be3e4133fc67d458fa5f0e105c4b3708dee900005"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/report_execution_views.xml",
+      "bytes": 5742,
+      "sha256": "fe6407ae0ff7e62906adf7100cae6a89c6e57fbe4bbf01742247ccba353e5652"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/report_wizard_views.xml",
+      "bytes": 3262,
+      "sha256": "5370ebf5a479f40c49f3552ccfaf9044c27aabfe7ba4369c5f9a92712920e880"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/res_config_settings_views.xml",
+      "bytes": 9140,
+      "sha256": "ab3cf745966ac8482b3fc104bbe1b4d9aeccaa8fd4915adad461973cb08ecdd2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/res_partner_statistics_legacy_views.xml",
+      "bytes": 756,
+      "sha256": "04999695b7f2d479c4d40555a9215377f74af371429ee0822d67cadee4c7ffd4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/res_partner_statistics_views.xml",
+      "bytes": 712,
+      "sha256": "64cfc491d92dab87bd1861b7757a3c8d1d2f232501962f5cca8293f071eeb2d5"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/__init__.py",
+      "bytes": 530,
+      "sha256": "8020faa00dbdeb860d6f4456eb17ce1422f2d8b97a6ea9997e2bc5b2cb039389"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/__manifest__.py",
+      "bytes": 6431,
+      "sha256": "b7b04285072a10a0030000afcd355ebf723342c1339fd8181a0777e3abe3eed4"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/account_tags.xml",
+      "bytes": 3616,
+      "sha256": "b9e131e528a0592f37da647cc6d804af5c17f87d5a213796b27273369d3b0a97"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/menus.xml",
+      "bytes": 9389,
+      "sha256": "6d1533e2a6ac8cd8ea26a3dbbe2ce77471c13dec16fbbdbcf8b74c96bdce0286"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_report_fold_state.py",
+      "bytes": 4584,
+      "sha256": "b9cdf701c9776a395290c63a1462eeeca19f77544589190480c9768c4d7f3cc2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/report_pdf.xml",
+      "bytes": 1166,
+      "sha256": "ed13a232102c5c5415b7b969c7872946dc223015128efcb72f9233733fc9a342"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_report_execution.py",
+      "bytes": 29685,
+      "sha256": "cfd4fc55de07165a7cb319335d3ad9b0fa73c1b2b7b8b0026491396f3689aa2f"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_posted_line_edit_invalidation.py",
+      "bytes": 11517,
+      "sha256": "9d4210ee57ed5ec6f59e1101a9e801b206231f05ab2fbf35fbddc66dd27be075"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/security/ir.model.access.csv",
+      "bytes": 2825,
+      "sha256": "7b0e1276807bc4b22e6524f136b3dd88d4ed4f326f2a76b126dd3d9699319690"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/banner.gif",
+      "bytes": 228293,
+      "sha256": "59e3577a82665b963a9fbb3a084c36c9a9a83fc041f660963191824c487eb758"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/banner.png",
+      "bytes": 64975,
+      "sha256": "c82d3e21c850602f5ba83de864cda20d796d802b96b91a3a34f9a68092c2c5d5"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/icon.png",
+      "bytes": 20566,
+      "sha256": "d29623a9f2296571d3e1fd5a8f6c99fecc5b42eb535775e9c17a36565374f61c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/icon.svg",
+      "bytes": 709,
+      "sha256": "3b48b5b21237406b745711f327bfa7d18acac4b6e94b2be6d592ec6d107d658c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/icon@2x.png",
+      "bytes": 19023,
+      "sha256": "a97eeb4b4c897840cf6abb7714344537e49865e73eed3d6c22960f15dc039fe7"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/index.html",
+      "bytes": 35324,
+      "sha256": "a6738dd58e715d1fe00a2b2fec148ce41abcc11ba28bbb5829b016fe10f2f72c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/scss/eh_tokens.scss",
+      "bytes": 3145,
+      "sha256": "e00eba1fc00c27733c3e5fafe848eb6abdbd744f655aff8c5cdc62e3fb2865c2"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.js",
+      "bytes": 4298,
+      "sha256": "5029e887b74dfdbe0aa900a8c0375b12c734c73261a3e3bbd126bd49eb65fd63"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.scss",
+      "bytes": 721,
+      "sha256": "527b79c80874ca06b5557fa966b59fc16906c4608acab4ad3ff79edc8d72209c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.xml",
+      "bytes": 1632,
+      "sha256": "7adc8e2accb4ebb1fe3bf6fd2d85dae4b37ec04b1b6f598f57026ecfe713eede"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/__init__.py",
+      "bytes": 1653,
+      "sha256": "e92048164c185e6c7615b6efca269634551e93d27b6c42fc0cdd080f1e58514d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/common.py",
+      "bytes": 18619,
+      "sha256": "7daaacded3c04269414ab55738c26159f1761dd2d8d6a9b2da516db38c99b4d5"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/golden_common.py",
+      "bytes": 5060,
+      "sha256": "e291d4a6d3a7f20b83c895005c17009cc21ff7f7c66dfc88c8c207c4e06c4064"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/pairwise.py",
+      "bytes": 3777,
+      "sha256": "4ef506e070ddbe8dd959dcf76d9c6144d001db7b91e587a6298340071084be6d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_account_move_report.py",
+      "bytes": 7081,
+      "sha256": "ff0936d84cf3f659d28f56a4d4e53dd926e95ad39b295e01bbb13a4c1a0d492c"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_base_metadata.py",
+      "bytes": 2486,
+      "sha256": "5200b261dd539e761e9e751585456c2ca37ddf59a52ce2c87aa80d4324eff713"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_cache_invalidation.py",
+      "bytes": 19667,
+      "sha256": "4a3f4cd7f819d0857a722d70e34264be841d56bc1df96bf281f8e7364ebdf600"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_dynamic_report.py",
+      "bytes": 65145,
+      "sha256": "a96833950e96074194448680dc0cda6a215f0b7bd36e976375296dc3f6bf92a6"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_golden_common.py",
+      "bytes": 1477,
+      "sha256": "d98afdcf90517c35a16df919698c947ed11704ea9c680ac4d4de98d01a69cdae"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_list_statistics.py",
+      "bytes": 4309,
+      "sha256": "39f70e8105fb38a202f7c4f23a7e2b1252da1929621cb0d752673ba21ada5d70"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_move_seal.py",
+      "bytes": 95612,
+      "sha256": "9ee7942aed1cab0cbb9aa2033c7781645713ba1ce58d762fac7c8cb8d54e090d"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_net_guard.py",
+      "bytes": 9909,
+      "sha256": "525064b7941110c714287f8b1a0f8c4a3fe16fee20a4d28463c180634df9cfdc"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_payload_codec.py",
+      "bytes": 4028,
+      "sha256": "85032d8aa9b1119df253fd778eebef34cc509ae2f49fc6f98ad6458b2b41f2d1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_perf_sql_builder.py",
+      "bytes": 7079,
+      "sha256": "10dff4adac5ba17b9ea958b54c2a04913f77f040c22b0d37ed6f01cf8c7717a1"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_privilege_groups.py",
+      "bytes": 3715,
+      "sha256": "70f2b9d13dc9e40340614cd2475ecd9ef6511cde8510d7db0bf095414fcb32da"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/static/src/cash_categories.xml",
+      "bytes": 7136,
+      "sha256": "3a678333524bae3bae3d732456361d00633c0b0d0356dd0b9be0dda941e4f490"
+    }
+  ]
+}

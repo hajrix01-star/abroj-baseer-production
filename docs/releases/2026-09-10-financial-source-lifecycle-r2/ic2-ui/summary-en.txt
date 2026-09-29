@@ -1,0 +1,166 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Discuss"
+    - menu:
+      - menuitem "Discuss"
+      - menuitem "Channels"
+      - button "Configuration":
+        - generic: Configuration
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- button "New"
+- generic: POS-S/2026/000023
+- button "Actions menu":
+  - generic: 
+- button " POS order":
+  - generic: 
+  - generic: POS order
+- button " Session":
+  - generic: 
+  - generic: Session
+- button " Journal entries":
+  - generic: 
+  - generic: Journal entries
+- search:
+  - navigation "Pager":
+    - generic: "1"
+    - text: / 1
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- main:
+  - button " Open WhatsApp":
+    - generic: 
+    - text: Open WhatsApp
+  - button "Edit / cancel operation"
+  - radiogroup "Statusbar":
+    - radio "Approved" [checked] [disabled]
+    - radio "Draft" [disabled]
+  - heading "POS-S/2026/000023" [level=1]:
+    - generic: POS-S/2026/000023
+  - generic: Sales day
+  - generic: Company
+  - generic: المعلم الشامي
+  - generic: Business Date
+  - generic: 07/27/2026
+  - generic: Day schedule
+  - radiogroup "Day schedule":
+    - radio "Full day" [checked] [disabled]
+    - generic: Full day
+    - radio "Morning and evening" [disabled]
+    - generic: Morning and evening
+    - radio "Morning only" [disabled]
+    - generic: Morning only
+    - radio "Evening only" [disabled]
+    - generic: Evening only
+  - generic: Customers
+  - generic: Customer Count
+  - generic: "12"
+  - generic: Worked with no sales
+  - checkbox [disabled]
+  - generic: Sales by payment method
+  - generic: نقدي | Cash
+  - generic: "115.00"
+  - generic: بنك | Bank
+  - generic: "230.00"
+  - generic: هنقرستيشن | HungerStation
+  - generic: "345.00"
+  - generic: Total including VAT
+  - generic: 690.00 SR
+  - generic: Customers
+  - generic: "12"
+  - generic: Average per customer
+  - generic: 57.50 SR
+  - generic: Notes
+  - generic: Source Attachments
+  - generic: Amount Net
+  - generic: 600.00 SR
+  - generic: Amount Tax
+  - generic: 90.00 SR
+  - generic: Approved By
+  - link "IC1 QA owner":
+    - /url: /odoo/res.users/12
+  - generic: Approved At
+  - generic: 09/10/2026 08:37:18 PM
+- dialog:
+  - banner:
+    - heading "Edit / cancel operation" [level=4]
+    - button "Close"
+  - main:
+    - main:
+      - radiogroup "Operation":
+        - radio "Edit" [checked] [active]
+        - generic: Edit
+        - radio "Cancel operation"
+        - generic: Cancel operation
+      - generic: Summary
+      - generic: POS-S/2026/000023
+      - generic: Reason
+      - textbox "Reason"
+      - generic: Original sales incl. tax
+      - generic: 690.00 SR
+      - generic: Customer count
+      - textbox "Customer count": "12"
+      - generic: Worked with no sales
+      - checkbox "Worked with no sales Worked with no sales"
+      - table:
+        - rowgroup:
+          - row "Payment Method  Account Recorded amount  Correct amount ":
+            - columnheader "Payment Method ":
+              - generic: Payment Method
+              - generic: 
+            - columnheader "Account":
+              - generic: Account
+              - text: 
+            - columnheader "Recorded amount ":
+              - generic: Recorded amount
+              - generic: 
+            - columnheader "Correct amount ":
+              - generic: Correct amount
+              - generic: 
+        - rowgroup:
+          - row "نقدي | Cash 105090 صندوق ملخص المبيعات | Sales summary cash 115.00 SR 115.00":
+            - cell "نقدي | Cash"
+            - cell "105090 صندوق ملخص المبيعات | Sales summary cash"
+            - cell "115.00 SR"
+            - cell "115.00"
+          - row "بنك | Bank 101090 البنك - ملخص المبيعات | Bank - sales summaries 230.00 SR 230.00":
+            - cell "بنك | Bank"
+            - cell "101090 البنك - ملخص المبيعات | Bank - sales summaries"
+            - cell "230.00 SR"
+            - cell "230.00"
+          - row "هنقرستيشن | HungerStation 102110 مستحقات هنقرستيشن | HungerStation receivable 345.00 SR 345.00":
+            - cell "هنقرستيشن | HungerStation"
+            - cell "102110 مستحقات هنقرستيشن | HungerStation receivable"
+            - cell "345.00 SR"
+            - cell "345.00"
+          - row:
+            - cell
+        - rowgroup:
+          - row:
+            - cell
+      - generic: I confirm this corrects the bookkeeping, not a real-money refund
+      - checkbox "I confirm this corrects the bookkeeping, not a real-money refund"
+      - paragraph: If money actually moved, use the native credit or refund workflow. This operation corrects the recorded bookkeeping only.
+  - contentinfo:
+    - button "Confirm"
+    - button "Close"
+- paragraph: Press esc to exit full screen

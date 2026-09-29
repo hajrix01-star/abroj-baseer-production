@@ -1,0 +1,23 @@
+{
+    'name': 'Baseer Ready Access Roles',
+    'summary': 'Owner, accountant and cashier presets with company and draft controls',
+    'version': '19.0.1.0.6',
+    'license': 'LGPL-3',
+    'depends': ['baseer_service_seed', 'baseer_pos_summary', 'sale_management', 'purchase', 'baseer_payroll', 'baseer_procurement_requests'],
+    'data': [
+        'security/groups.xml',
+        'security/denied_rules.xml',
+        'security/ir.model.access.csv',
+        'security/cashier.xml',
+        'security/purchase_batch_approval_audit.xml',
+        'security/advance_entry.xml',
+        'views/res_users_views.xml',
+        'views/settings_views.xml',
+        'views/purchase_batch_views.xml',
+        'views/purchase_batch_approval_audit_views.xml',
+        'views/advance_entry_views.xml',
+        'data/setup.xml',
+    ],
+    'installable': True,
+    'application': True,
+}

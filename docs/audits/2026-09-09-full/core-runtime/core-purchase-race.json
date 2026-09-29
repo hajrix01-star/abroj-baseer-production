@@ -1,0 +1,63 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "case": "same batch twice",
+      "requests": [
+        {
+          "batch": 213,
+          "approved": true,
+          "attempts": 1
+        },
+        {
+          "batch": 213,
+          "approved": true,
+          "attempts": 2
+        }
+      ]
+    },
+    {
+      "case": "same normalized reference",
+      "requests": [
+        {
+          "batch": 214,
+          "approved": false,
+          "attempts": 2,
+          "error": "A draft or posted supplier document already uses this reference in this company."
+        },
+        {
+          "batch": 215,
+          "approved": true,
+          "attempts": 1
+        }
+      ]
+    },
+    {
+      "case": "independent bills",
+      "requests": [
+        {
+          "batch": 216,
+          "approved": true,
+          "attempts": 2
+        },
+        {
+          "batch": 217,
+          "approved": true,
+          "attempts": 1
+        }
+      ]
+    }
+  ],
+  "one_bill_payment_per_source": true,
+  "three_real_races": true,
+  "pdf_bytes": 45963,
+  "native_balances": {
+    "bank": -460,
+    "expense": 400,
+    "vat": 60,
+    "payable": 0
+  },
+  "approved_sources": 4,
+  "bills": 4,
+  "payments": 4
+}

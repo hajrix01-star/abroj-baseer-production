@@ -1,0 +1,261 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ar_001\n"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "A cancelled summary must not create a replacement."
+msgstr "يجب ألا ينشئ الملخص الملغى ملخصًا بديلًا."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "A no-sales operation must have zero sales and zero customers."
+msgstr "يجب أن تكون المبيعات وعدد العملاء صفرًا عند إعلان التشغيل دون مبيعات."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "A summary correction supports at most 25 payment methods."
+msgstr "يدعم تصحيح الملخص 25 طريقة دفع كحد أقصى."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Account"
+msgstr "الحساب"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Confirm the bookkeeping effect before continuing."
+msgstr "أكّد أثر العملية على السجلات المحاسبية قبل المتابعة."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Correct amount"
+msgstr "المبلغ الصحيح"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Customer count"
+msgstr "عدد العملاء"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Customer count must be a whole number between 0 and 10000000."
+msgstr "يجب أن يكون عدد العملاء عددًا صحيحًا بين 0 و10000000."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Enter a correction reason of at most 2000 characters."
+msgstr "أدخل سبب التصحيح بما لا يتجاوز 2000 حرف."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "I confirm this corrects the bookkeeping, not a real-money refund"
+msgstr "أؤكد أن العملية تصحح السجلات المحاسبية ولا تمثل رد مبلغ فعلي"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "If money actually moved, use the native credit or refund workflow. This operation corrects the recorded bookkeeping only."
+msgstr "إذا تحرك المال فعليًا، استخدم مسار الإشعار الدائن أو رد المبلغ الأصلي. هذه العملية تصحح السجلات المحاسبية فقط."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Only an approved summary can be corrected."
+msgstr "يمكن تصحيح ملخص معتمد فقط."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Only the amounts of original payment methods can be edited."
+msgstr "يمكن تعديل مبالغ طرق الدفع الأصلية فقط."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Only the correction creator can use this request."
+msgstr "يمكن لمنشئ التصحيح فقط استخدام هذا الطلب."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Open summary corrections from the original summary."
+msgstr "افتح تصحيح الملخص من الملخص الأصلي."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Original sales incl. tax"
+msgstr "المبيعات الأصلية شاملة الضريبة"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Recorded amount"
+msgstr "المبلغ المسجل"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Sales summary"
+msgstr "ملخص المبيعات"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Summary correction requests must be retained until automatic cleanup."
+msgstr "يجب الاحتفاظ بطلبات تصحيح الملخص إلى أن ينظفها النظام تلقائيًا."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Summary correction rows are prepared by the system."
+msgstr "يُجهز النظام بنود تصحيح الملخص."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Summary correction source and history are managed by the system."
+msgstr "يدير النظام مصدر تصحيح الملخص وسجله."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "The corrected summary was not approved."
+msgstr "لم يتم اعتماد الملخص المصحح."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "The correction must contain exactly the original payment methods."
+msgstr "يجب أن يحتوي التصحيح على طرق الدفع الأصلية نفسها تمامًا."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "The original payment method cannot be changed."
+msgstr "لا يمكن تغيير طريقة الدفع الأصلية."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "The original payment method cannot be removed."
+msgstr "لا يمكن حذف طريقة الدفع الأصلية."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "The source changed after this correction was opened. Close it and open a fresh correction."
+msgstr "تغيّر المصدر بعد فتح هذا التصحيح. أغلقه وافتح تصحيحًا جديدًا."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "This correction has already been completed."
+msgstr "اكتمل هذا التصحيح بالفعل."
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Worked with no sales"
+msgstr "تشغيل دون مبيعات"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Edit / cancel operation"
+msgstr "تعديل / إلغاء العملية"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Edit"
+msgstr "تعديل"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Cancel operation"
+msgstr "إلغاء العملية"
+
+#. module: baseer_financial_correction
+#. odoo-python
+#: code:addons/baseer_financial_correction/models/summary_lifecycle.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_correction
+#: model_terms:ir.ui.view,arch_db:baseer_financial_correction.view_summary_lifecycle_button
+msgid "Confirm"
+msgstr "تأكيد"
+

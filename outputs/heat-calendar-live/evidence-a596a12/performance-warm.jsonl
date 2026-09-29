@@ -1,0 +1,4 @@
+{"mode": "warm", "company_id": 54, "runs": 20, "p50_seconds": 0.0309, "p95_seconds": 0.0456, "max_seconds": 0.0483}
+{"mode": "warm", "company_id": 2, "runs": 20, "p50_seconds": 0.0364, "p95_seconds": 0.0455, "max_seconds": 0.0575}
+{"mode": "warm", "company_id": 3, "runs": 20, "p50_seconds": 0.0327, "p95_seconds": 0.0482, "max_seconds": 0.063}
+{"mode": "warm", "company_id": 1, "runs": 20, "p50_seconds": 0.0372, "p95_seconds": 0.0596, "max_seconds": 0.085}

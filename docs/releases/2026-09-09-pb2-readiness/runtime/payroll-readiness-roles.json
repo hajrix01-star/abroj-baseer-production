@@ -1,0 +1,65 @@
+{
+  "checks": [
+    {
+      "name": "HR officer create enabled",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR officer no payroll manager",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "HR officer no HR manager",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "non HR cannot create employee",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR cannot create explicit payroll flag",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR cannot default payroll flag",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR cannot read salary related",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR cannot write salary related",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "authorized explicit false remains false",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "authorized context false remains false",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    }
+  ],
+  "status": "passed"
+}

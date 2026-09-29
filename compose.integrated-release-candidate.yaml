@@ -1,0 +1,31 @@
+services:
+  integrated_release_candidate:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_integrated_release_candidate_20260914
+      - --db-filter=^baseer_integrated_release_candidate_20260914$
+      - --no-database-list
+      - --max-cron-threads=0
+      - --http-port=8069
+    ports:
+      - "127.0.0.1:18086:8069"
+    volumes:
+      - integrated-release-candidate-odoo-data:/var/lib/odoo
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./release_candidates/2026-09-14-abroj-baseer/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/third_party_addons:/mnt/third-party-addons:ro
+
+volumes:
+  integrated-release-candidate-odoo-data:
+    external: true
+    name: baseer_odoo_dev_integrated-release-candidate-odoo-data-v1

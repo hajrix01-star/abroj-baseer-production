@@ -1,0 +1,144 @@
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "VAT No."
+msgstr "الرقم الضريبي"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Company logo"
+msgstr "شعار الشركة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Reference"
+msgstr "المرجع"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Employee"
+msgstr "الموظف"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Employee ID"
+msgstr "رقم الموظف"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Job Title"
+msgstr "المسمى الوظيفي"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Service Start"
+msgstr "بداية الخدمة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Service End"
+msgstr "نهاية الخدمة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Departure Reason"
+msgstr "سبب انتهاء الخدمة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Service Days"
+msgstr "أيام الخدمة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Award Calculation"
+msgstr "احتساب المكافأة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Wage used for calculation"
+msgstr "الأجر المعتمد للاحتساب"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Full service award"
+msgstr "المكافأة الكاملة عن مدة الخدمة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Entitlement factor"
+msgstr "معامل الاستحقاق"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Award Amount"
+msgstr "مبلغ المكافأة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Paid Amount"
+msgstr "المبلغ المسدد"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Remaining Amount"
+msgstr "المبلغ المتبقي"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Bill Reference:"
+msgstr "مرجع الفاتورة:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Payment Date:"
+msgstr "تاريخ السداد:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Payment Methods:"
+msgstr "طرق السداد:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Approval Reference:"
+msgstr "مرجع الاعتماد:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Approval Date:"
+msgstr "تاريخ الاعتماد:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Approved By:"
+msgstr "اعتمد بواسطة:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Note:"
+msgstr "ملاحظة:"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Employee Signature"
+msgstr "توقيع الموظف"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Company Representative Signature"
+msgstr "توقيع ممثل الشركة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.report_end_service_document
+msgid "Date:"
+msgstr "التاريخ:"
+
+#. module: baseer_payroll
+#: model:ir.actions.report,name:baseer_payroll.action_report_baseer_end_service
+msgid "End-of-Service Statement"
+msgstr "بيان مستحقات نهاية الخدمة"
+
+#. module: baseer_payroll
+#: model:report.paperformat,name:baseer_payroll.paperformat_baseer_end_service
+msgid "Baseer End-of-Service A4"
+msgstr "بصير نهاية الخدمة A4"

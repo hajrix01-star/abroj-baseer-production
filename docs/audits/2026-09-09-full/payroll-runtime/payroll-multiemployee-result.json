@@ -1,0 +1,16 @@
+{
+  "run": 107,
+  "month": "2026-10-01",
+  "employees": [
+    32,
+    31
+  ],
+  "slips": [
+    394,
+    393
+  ],
+  "net": 4400.0,
+  "paid": 4400.0,
+  "residual": 0.0,
+  "rolled_back": true
+}

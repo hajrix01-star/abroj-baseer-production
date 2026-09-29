@@ -1,0 +1,161 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "دفعات إدخال المشتريات":
+    - /url: /odoo/action-323?displayName=%D8%AF%D9%81%D8%B9%D8%A7%D8%AA%20%D8%A5%D8%AF%D8%AE%D8%A7%D9%84%20%D8%A7%D9%84%D9%85%D8%B4%D8%AA%D8%B1%D9%8A%D8%A7%D8%AA&view_type=list
+- generic: PB/2026/00016
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "حفظ واعتماد"
+  - button "طباعة الملخص"
+  - radiogroup "شريط الحالة":
+    - radio "معتمدة" [disabled]
+    - radio "مسودة" [checked] [disabled]
+  - heading "PB/2026/00016" [level=1]:
+    - generic: PB/2026/00016
+  - generic: الشركة
+  - combobox "الشركة": QA ARZ
+  - text: تاريخ الإدخال
+  - superscript: "?"
+  - button "تاريخ الإدخال?": 07/09/2026
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - generic: الحفظ العادي يبقي البيانات مسودة. «حفظ واعتماد» ينشئ فواتير الموردين ويسجّل الدفعات المختارة. تاريخ الإدخال إداري، ويُستخدم تاريخ الفاتورة لكل صف.
+  - table:
+    - rowgroup:
+      - row "تاريخ الفاتورة  المورد  مرجع الفاتورة  النوع  الفئة  الإجمالي شامل الضريبة  الضريبة  طريقة الدفع  ":
+        - columnheader
+        - columnheader "تاريخ الفاتورة ":
+          - generic: تاريخ الفاتورة
+          - generic: 
+        - columnheader "المورد ":
+          - generic: المورد
+          - generic: 
+        - columnheader "مرجع الفاتورة ":
+          - generic: مرجع الفاتورة
+          - generic: 
+        - columnheader "النوع ":
+          - generic: النوع
+          - generic: 
+        - columnheader "الفئة ":
+          - generic: الفئة
+          - generic: 
+        - columnheader "الإجمالي شامل الضريبة ":
+          - generic: الإجمالي شامل الضريبة
+          - generic: 
+        - columnheader "الضريبة ":
+          - generic: الضريبة
+          - generic: 
+        - columnheader "طريقة الدفع ":
+          - generic: طريقة الدفع
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " 06/09/2026 مورد تجريبي — مواد استهلاكية PB1 Preview/001 مشتريات تجربة الإدخال الجماعي / مياه ومشروبات 115.00 SR 15% الدفع اليدوي (كاش تجريبي — الإدخال الجماعي) فتح في نافذة عرض الاستمارة حذف صف":
+        - cell "":
+          - generic: 
+        - cell "06/09/2026":
+          - generic: 06/09/2026
+        - cell "مورد تجريبي — مواد استهلاكية"
+        - cell "PB1 Preview/001"
+        - cell "مشتريات"
+        - cell "تجربة الإدخال الجماعي / مياه ومشروبات"
+        - cell "115.00 SR"
+        - cell "15%"
+        - cell "الدفع اليدوي (كاش تجريبي — الإدخال الجماعي)"
+        - cell "فتح في نافذة عرض الاستمارة":
+          - button "فتح في نافذة عرض الاستمارة": أداة العرض
+        - cell "حذف صف":
+          - button "حذف صف": 
+      - row " 05/09/2026 مورد تجريبي — اتصالات PB1 Preview/002 مصروف تجربة الإدخال الجماعي / اتصالات وإنترنت 230.00 SR 15% الدفع اليدوي (بنك تجريبي — الإدخال الجماعي) فتح في نافذة عرض الاستمارة حذف صف":
+        - cell "":
+          - generic: 
+        - cell "05/09/2026":
+          - generic: 05/09/2026
+        - cell "مورد تجريبي — اتصالات"
+        - cell "PB1 Preview/002"
+        - cell "مصروف"
+        - cell "تجربة الإدخال الجماعي / اتصالات وإنترنت"
+        - cell "230.00 SR"
+        - cell "15%"
+        - cell "الدفع اليدوي (بنك تجريبي — الإدخال الجماعي)"
+        - cell "فتح في نافذة عرض الاستمارة":
+          - button "فتح في نافذة عرض الاستمارة": أداة العرض
+        - cell "حذف صف":
+          - button "حذف صف": 
+      - row " 06/09/2026 مورد تجريبي — مواد استهلاكية PB1 Preview/003 مشتريات تجربة الإدخال الجماعي / مياه ومشروبات 57.50 SR 15% فتح في نافذة عرض الاستمارة حذف صف":
+        - cell "":
+          - generic: 
+        - cell "06/09/2026":
+          - generic: 06/09/2026
+        - cell "مورد تجريبي — مواد استهلاكية"
+        - cell "PB1 Preview/003"
+        - cell "مشتريات"
+        - cell "تجربة الإدخال الجماعي / مياه ومشروبات"
+        - cell "57.50 SR"
+        - cell "15%"
+        - cell
+        - cell "فتح في نافذة عرض الاستمارة":
+          - button "فتح في نافذة عرض الاستمارة": أداة العرض
+        - cell "حذف صف":
+          - button "حذف صف": 
+      - row "إضافة بند":
+        - cell
+        - cell "إضافة بند":
+          - button "إضافة بند"
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+        - cell
+  - paragraph: اترك طريقة الدفع فارغة للشراء الآجل. تُسجّل دفعات الفواتير المسددة بتاريخ الفاتورة نفسه.
+  - generic: "الصافي قبل الضريبة:"
+  - generic: 350.00 SR
+  - generic: "قيمة الضريبة:"
+  - generic: 52.50 SR
+  - generic: "الإجمالي شامل الضريبة:"
+  - generic: 402.50 SR

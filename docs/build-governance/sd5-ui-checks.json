@@ -1,0 +1,16 @@
+{
+  "status": "pass",
+  "checks": [
+    "four tabs icon-only with native graph/pivot glyphs",
+    "Arabic title and aria-label retained",
+    "both details tables displayed after click",
+    "both chart canvases restored after click",
+    "keyboard End selects details and Home restores chart",
+    "480px viewport: both tab groups clientWidth408 equals scrollWidth408"
+  ],
+  "screenshots": [
+    "qa-details.png",
+    "qa-narrow.png"
+  ],
+  "scope": "UI only; no financial/backend logic changed"
+}

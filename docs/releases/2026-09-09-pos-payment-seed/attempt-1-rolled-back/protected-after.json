@@ -1,0 +1,632 @@
+[
+  {
+    "name": "account_bank_statement",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "account_bank_statement_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "account_full_reconcile",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "account_move",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "account_move_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "account_partial_reconcile",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "account_payment",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_eos",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_loan",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_loan_allocation",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_loan_defer",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_loan_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_loan_repay",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_hr_service",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_payroll_correction",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_payroll_create",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_payroll_settlement",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_payroll_settlement_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_closure",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_closure_baseer_pos_daily_report_line_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_daily_report",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_daily_report_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_daily_report_line_baseer_pos_summary_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_day_archive",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_day_entry",
+    "rows": 8,
+    "hash": "04f98fce0d3fc9a5d752c3218940fec1"
+  },
+  {
+    "name": "baseer_pos_day_entry_baseer_pos_summary_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_day_entry_line",
+    "rows": 8,
+    "hash": "33d14c8d1f1e32a648a5aaacf0ef65dc"
+  },
+  {
+    "name": "baseer_pos_summary",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_summary_allocation",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_summary_correction",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_summary_ir_attachment_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_pos_summary_reversal_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_purchase_batch",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_purchase_batch_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "baseer_purchase_category_map",
+    "rows": 78,
+    "hash": "986b3441359cad7034b4497eeec676cd"
+  },
+  {
+    "name": "baseer_schedule_day",
+    "rows": 7,
+    "hash": "bd67580d2318711b60d85b6ba1359551"
+  },
+  {
+    "name": "baseer_schedule_day_baseer_schedule_period_rel",
+    "rows": 26,
+    "hash": "c35269fc1e6e69b90a3eb82cb999d004"
+  },
+  {
+    "name": "baseer_schedule_day_baseer_schedule_wizard_rel",
+    "rows": 14,
+    "hash": "8a3488d039fb10dcab80d435b3941b78"
+  },
+  {
+    "name": "baseer_schedule_period",
+    "rows": 6,
+    "hash": "f106a7d7152de7eedff94e923d108bce"
+  },
+  {
+    "name": "baseer_schedule_wizard",
+    "rows": 2,
+    "hash": "d555846ad8e53dc8485c3607fc4400b0"
+  },
+  {
+    "name": "hr_attendance",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_attendance_overtime_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_attendance_overtime_line_hr_attendance_overtime_rule_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_attendance_overtime_rule",
+    "rows": 2,
+    "hash": "ba72a4cf500f0d4f4b149343698e95ca"
+  },
+  {
+    "name": "hr_attendance_overtime_ruleset",
+    "rows": 1,
+    "hash": "8678008a0fa4e2a075a254e293feec82"
+  },
+  {
+    "name": "hr_bank_account_allocation_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_bank_account_allocation_wizard_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_contract_advantage_template",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_contract_type",
+    "rows": 12,
+    "hash": "bcd57d611c5ce10df08fb81b175a0e3a"
+  },
+  {
+    "name": "hr_contribution_register",
+    "rows": 1,
+    "hash": "65a733c09d3bf01654270fd57ace2f5b"
+  },
+  {
+    "name": "hr_department",
+    "rows": 5,
+    "hash": "6e367c0e640c7cfc4ad2988b9147fc78"
+  },
+  {
+    "name": "hr_department_hr_leave_mandatory_day_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_departure_reason",
+    "rows": 3,
+    "hash": "cac101ad907dd25b402c6bd2d3bf2565"
+  },
+  {
+    "name": "hr_departure_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_departure_wizard_hr_employee_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee",
+    "rows": 52,
+    "hash": "4f3550e2bfded49e43264bbbe8a03ead"
+  },
+  {
+    "name": "hr_employee_category",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_certification_report",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_cv_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_group_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_hr_employee_cv_wizard_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_hr_leave_allocation_generate_multi_wizard_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_hr_leave_generate_multi_wizard_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_hr_skill_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_location",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_public",
+    "rows": 52,
+    "hash": "2825d27e693253af6c9903e45fb794d2"
+  },
+  {
+    "name": "hr_employee_skill",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_skill_history_report",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_employee_skill_report",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_approve_duplicate",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_hr_expense_approve_duplicate_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_hr_expense_refuse_wizard_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_post_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_refuse_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_split",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_expense_split_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_holidays_cancel_leave",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_holidays_summary_employee",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_job",
+    "rows": 28,
+    "hash": "880b150875c2175d178ceb6f913638bc"
+  },
+  {
+    "name": "hr_job_hr_leave_mandatory_day_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_job_hr_skill_rel",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_job_skill",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave",
+    "rows": 1,
+    "hash": "f5236adb0d852487aabdeefe5384dd12"
+  },
+  {
+    "name": "hr_leave_accrual_level",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_accrual_plan",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_allocation",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_allocation_generate_multi_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_attendance_report",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_employee_type_report",
+    "rows": 1,
+    "hash": "46bd4844e45490ff90e6fd69f9267b82"
+  },
+  {
+    "name": "hr_leave_generate_multi_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_mandatory_day",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_leave_report",
+    "rows": 1,
+    "hash": "09f48d300e82dcb95c8a53d39963901a"
+  },
+  {
+    "name": "hr_leave_report_calendar",
+    "rows": 1,
+    "hash": "93e202a2e7445e7371cd2cfcf0ba84c0"
+  },
+  {
+    "name": "hr_leave_type",
+    "rows": 74,
+    "hash": "e70a3f708630439f82a83448b1639c6f"
+  },
+  {
+    "name": "hr_leave_type_res_users_rel",
+    "rows": 9,
+    "hash": "35ee410d0c3d96c06a5275f7253924c2"
+  },
+  {
+    "name": "hr_payroll_structure",
+    "rows": 1,
+    "hash": "5fdff7923b6e923e5189faf6d362c1d2"
+  },
+  {
+    "name": "hr_payroll_structure_type",
+    "rows": 4,
+    "hash": "66894c40799925b8319b80ce0b815ea3"
+  },
+  {
+    "name": "hr_payslip",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_payslip_employees",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_payslip_input",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_payslip_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_payslip_run",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_payslip_worked_days",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_resume_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_resume_line_type",
+    "rows": 3,
+    "hash": "ce16af417e5fee586fc2dd0eaeca9ac2"
+  },
+  {
+    "name": "hr_rule_input",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_salary_rule",
+    "rows": 8,
+    "hash": "bf19f0cccc87a745d1dd7fc1f34b5969"
+  },
+  {
+    "name": "hr_salary_rule_category",
+    "rows": 12,
+    "hash": "4f4d2b32b564943d997526ff614d2bd9"
+  },
+  {
+    "name": "hr_skill",
+    "rows": 36,
+    "hash": "df2eddf9dfb04ea013b28c43c1541322"
+  },
+  {
+    "name": "hr_skill_level",
+    "rows": 11,
+    "hash": "efdcfef3d11104f0126a820db4afbaca"
+  },
+  {
+    "name": "hr_skill_type",
+    "rows": 2,
+    "hash": "a48299a64e9bf7466ca9ea37da721bb4"
+  },
+  {
+    "name": "hr_structure_salary_rule_rel",
+    "rows": 3,
+    "hash": "eedfefc8c3fa6ed073a17812586ca898"
+  },
+  {
+    "name": "hr_version",
+    "rows": 52,
+    "hash": "56c4a59afb36175cab5425eb52ede72a"
+  },
+  {
+    "name": "hr_version_wizard",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "hr_work_location",
+    "rows": 3,
+    "hash": "f0caefff4f3bc05d08c31e229d131e70"
+  },
+  {
+    "name": "pos_order",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "pos_order_line",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "pos_payment",
+    "rows": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  {
+    "name": "pos_session",
+    "rows": 1,
+    "hash": "750cae22e7eb5bca9ea295e2a84517f0"
+  },
+  {
+    "name": "res_company",
+    "rows": 3,
+    "hash": "d03188338e024c23481b7adcda36ea57"
+  },
+  {
+    "name": "res_partner",
+    "rows": 77,
+    "hash": "2a0a49dc938d44744c6cf2dfe5f8045a"
+  },
+  {
+    "name": "resource_calendar",
+    "rows": 23,
+    "hash": "ae69dad421e296ed6d754b246bff2a9d"
+  },
+  {
+    "name": "resource_calendar_attendance",
+    "rows": 128,
+    "hash": "b44e7ef36553c4c329846e982b1de4e7"
+  },
+  {
+    "name": "resource_calendar_leaves",
+    "rows": 1,
+    "hash": "2bd7ebae84a4892ed7df715686304af8"
+  },
+  {
+    "name": "resource_resource",
+    "rows": 52,
+    "hash": "6b4280caa360a6ea9922f2567d13e7f7"
+  }
+]

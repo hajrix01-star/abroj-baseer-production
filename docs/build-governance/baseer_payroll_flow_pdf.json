@@ -1,0 +1,61 @@
+{
+  "status": "passed",
+  "run_id": 107,
+  "total_paid": 4400.0,
+  "rows": [
+    {
+      "employee_name": "موظف تجريبي — أحمد",
+      "date": "2026-10-31",
+      "method": "Bank",
+      "payment_name": "PBNK1/2026/00006",
+      "payment_id": 373,
+      "amount": 500.0,
+      "state": "Paid"
+    },
+    {
+      "employee_name": "موظف تجريبي — خالد",
+      "date": "2026-10-31",
+      "method": "Bank",
+      "payment_name": "PBNK1/2026/00007",
+      "payment_id": 374,
+      "amount": 500.0,
+      "state": "Paid"
+    },
+    {
+      "employee_name": "موظف تجريبي — أحمد",
+      "date": "2026-10-31",
+      "method": "Bank",
+      "payment_name": "PBNK1/2026/00008",
+      "payment_id": 375,
+      "amount": 1900.0,
+      "state": "Paid"
+    },
+    {
+      "employee_name": "موظف تجريبي — خالد",
+      "date": "2026-10-31",
+      "method": "Bank",
+      "payment_name": "PBNK1/2026/00009",
+      "payment_id": 376,
+      "amount": 1500.0,
+      "state": "Paid"
+    }
+  ],
+  "files": [
+    {
+      "file": "baseer_payroll_flow_statement_ar_001.pdf",
+      "bytes": 38809
+    },
+    {
+      "file": "baseer_payroll_flow_payslips_ar_001.pdf",
+      "bytes": 51737
+    },
+    {
+      "file": "baseer_payroll_flow_statement_en_US.pdf",
+      "bytes": 36608
+    },
+    {
+      "file": "baseer_payroll_flow_payslips_en_US.pdf",
+      "bytes": 47997
+    }
+  ]
+}

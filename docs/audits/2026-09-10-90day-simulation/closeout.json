@@ -1,0 +1,18 @@
+{
+  "database": "baseer_ic1_20260910",
+  "port": 18075,
+  "main_tables_identical": 206,
+  "backup_files": {
+    "simulation-final.dump": {
+      "bytes": 10526886,
+      "sha256": "481dd9b919482a677ea51f9a28bd86f10a16d4d7aa714b6ce9f889984c0f020e"
+    },
+    "simulation-final-filestore.tar.gz": {
+      "bytes": 2192931,
+      "sha256": "798fe2eb3963f2a4a3e9fc8b4075816dff51d4ef1835a34299efb0bb53d8164f"
+    }
+  },
+  "ui_png_count": 33,
+  "source_code_changes": false,
+  "github_changes": false
+}

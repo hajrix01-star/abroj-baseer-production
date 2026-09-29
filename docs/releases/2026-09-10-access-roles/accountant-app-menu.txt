@@ -1,0 +1,279 @@
+- banner:
+  - navigation:
+    - button "" [expanded] [active]:
+      - generic: 
+    - menuitem "المبيعات"
+    - menu:
+      - button "الطلبات":
+        - generic: الطلبات
+      - button "بانتظار الفوترة":
+        - generic: بانتظار الفوترة
+      - button "المنتجات":
+        - generic: المنتجات
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "" [disabled]:
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- button "جديد"
+- generic: عروض الأسعار
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - search:
+    - button "بحث...":
+      - img: 
+    - listitem "بحث":
+      - button " ":
+        - generic: 
+        - generic: 
+      - generic "عروض أسعاري"
+      - button "إزالة": 
+    - searchbox "بحث..."
+  - button ""
+- navigation:
+  - button "القائمة View":
+    - generic: 
+  - button "كانبان View":
+    - generic: 
+  - button "التقويم View":
+    - generic: 
+  - button "محور View":
+    - generic: 
+  - button "الرسم البياني View":
+    - generic: 
+  - button "النشاط View":
+    - generic: 
+- main:
+  - button "":
+    - generic: 
+  - heading "تفوَّق على المنافسين بعروض أسعارك المذهلة!" [level=2]
+  - paragraph: قم بتعزيز مبيعاتك من خلال المدفوعات أو التوقيعات عبر الإنترنت وعمليات البيع الإضافية وبوابة العملاء الرائعة.
+  - link "ألقِ نظرة على النموذج. إنه رائع!":
+    - /url: https://www.odoo.com/documentation/latest/_downloads/4c54b867f6472b9cbcc233b4821d5c7b/sample_quotation.pdf
+  - table:
+    - rowgroup:
+      - row "عدد  تاريخ الإنشاء  العميل  مندوب المبيعات  الأنشطة الإجمالي  الحالة  ":
+        - columnheader:
+          - checkbox [disabled]
+        - columnheader "عدد ":
+          - generic: عدد
+          - generic: 
+        - columnheader "تاريخ الإنشاء ":
+          - generic: تاريخ الإنشاء
+          - generic: 
+        - columnheader "العميل ":
+          - generic: العميل
+          - generic: 
+        - columnheader "مندوب المبيعات ":
+          - generic: مندوب المبيعات
+          - generic: 
+        - columnheader "الأنشطة":
+          - generic: الأنشطة
+          - text: 
+        - columnheader "الإجمالي ":
+          - generic: الإجمالي
+          - generic: 
+        - columnheader "الحالة ":
+          - generic: الحالة
+          - generic: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "REF0001 ٣١ أكتوبر، ٦:٤٢ م Henry Campbell Henry Campbell In massa $ 82,632.00 تم إرسال عرض السعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0001"
+        - cell "٣١ أكتوبر، ٦:٤٢ م"
+        - cell "Henry Campbell"
+        - cell "Henry Campbell":
+          - generic: Henry Campbell
+        - cell "In massa":
+          - button "In massa":
+            - img: 
+            - text: In massa
+        - cell "$ 82,632.00":
+          - generic: $ 82,632.00
+        - cell "تم إرسال عرض السعر":
+          - generic: تم إرسال عرض السعر
+        - cell
+      - row "REF0002 ١٦ سبتمبر، ٩:٤٢ ص Henry Campbell John Miller Viverra nam $ 94,735.00 تم إرسال عرض السعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0002"
+        - cell "١٦ سبتمبر، ٩:٤٢ ص"
+        - cell "Henry Campbell"
+        - cell "John Miller":
+          - generic: John Miller
+        - cell "Viverra nam":
+          - button "Viverra nam":
+            - img: 
+            - text: Viverra nam
+        - cell "$ 94,735.00":
+          - generic: $ 94,735.00
+        - cell "تم إرسال عرض السعر":
+          - generic: تم إرسال عرض السعر
+        - cell
+      - row "REF0003 ٢٨ يوليو، ٣:٤٢ ص John Miller Henry Campbell Integer vitae $ 95,418.00 تم إرسال عرض السعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0003"
+        - cell "٢٨ يوليو، ٣:٤٢ ص"
+        - cell "John Miller"
+        - cell "Henry Campbell":
+          - generic: Henry Campbell
+        - cell "Integer vitae":
+          - button "Integer vitae":
+            - img: 
+            - text: Integer vitae
+        - cell "$ 95,418.00":
+          - generic: $ 95,418.00
+        - cell "تم إرسال عرض السعر":
+          - generic: تم إرسال عرض السعر
+        - cell
+      - row "REF0004 ٢٤ أغسطس، ١٠:٤٢ م Carrie Helle Wendi Baltz In massa $ 92,920.00 تم إرسال عرض السعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0004"
+        - cell "٢٤ أغسطس، ١٠:٤٢ م"
+        - cell "Carrie Helle"
+        - cell "Wendi Baltz":
+          - generic: Wendi Baltz
+        - cell "In massa":
+          - button "In massa":
+            - img: 
+            - text: In massa
+        - cell "$ 92,920.00":
+          - generic: $ 92,920.00
+        - cell "تم إرسال عرض السعر":
+          - generic: تم إرسال عرض السعر
+        - cell
+      - row "REF0005 ٩ سبتمبر، ٥:٤٢ ص Thomas Passot Wendi Baltz Laoreet id $ 90,375.00 تم إرسال عرض السعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0005"
+        - cell "٩ سبتمبر، ٥:٤٢ ص"
+        - cell "Thomas Passot"
+        - cell "Wendi Baltz":
+          - generic: Wendi Baltz
+        - cell "Laoreet id":
+          - button "Laoreet id":
+            - img: 
+            - text: Laoreet id
+        - cell "$ 90,375.00":
+          - generic: $ 90,375.00
+        - cell "تم إرسال عرض السعر":
+          - generic: تم إرسال عرض السعر
+        - cell
+      - row "REF0006 ٤ سبتمبر، ١:٤٢ م Thomas Passot John Miller Integer vitae $ 83,168.00 عرض سعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0006"
+        - cell "٤ سبتمبر، ١:٤٢ م"
+        - cell "Thomas Passot"
+        - cell "John Miller":
+          - generic: John Miller
+        - cell "Integer vitae":
+          - button "Integer vitae":
+            - img: 
+            - text: Integer vitae
+        - cell "$ 83,168.00":
+          - generic: $ 83,168.00
+        - cell "عرض سعر":
+          - generic: عرض سعر
+        - cell
+      - row "REF0007 ٥ أكتوبر، ٦:٤٢ ص Henry Campbell Henry Campbell Integer vitae $ 71,044.00 أمر البيع":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0007"
+        - cell "٥ أكتوبر، ٦:٤٢ ص"
+        - cell "Henry Campbell"
+        - cell "Henry Campbell":
+          - generic: Henry Campbell
+        - cell "Integer vitae":
+          - button "Integer vitae":
+            - img: 
+            - text: Integer vitae
+        - cell "$ 71,044.00":
+          - generic: $ 71,044.00
+        - cell "أمر البيع":
+          - generic: أمر البيع
+        - cell
+      - row "REF0008 ٨ أكتوبر، ٨:٤٢ ص Thomas Passot John Miller Laoreet id $ 57,921.00 تم إرسال عرض السعر":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0008"
+        - cell "٨ أكتوبر، ٨:٤٢ ص"
+        - cell "Thomas Passot"
+        - cell "John Miller":
+          - generic: John Miller
+        - cell "Laoreet id":
+          - button "Laoreet id":
+            - img: 
+            - text: Laoreet id
+        - cell "$ 57,921.00":
+          - generic: $ 57,921.00
+        - cell "تم إرسال عرض السعر":
+          - generic: تم إرسال عرض السعر
+        - cell
+      - row "REF0009 ٢٨ أكتوبر، ٨:٤٢ ص Carrie Helle John Miller Laoreet id $ 32,171.00 تم الإلغاء":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0009"
+        - cell "٢٨ أكتوبر، ٨:٤٢ ص"
+        - cell "Carrie Helle"
+        - cell "John Miller":
+          - generic: John Miller
+        - cell "Laoreet id":
+          - button "Laoreet id":
+            - img: 
+            - text: Laoreet id
+        - cell "$ 32,171.00":
+          - generic: $ 32,171.00
+        - cell "تم الإلغاء":
+          - generic: تم الإلغاء
+        - cell
+      - row "REF0010 ٣١ يوليو، ٧:٤٢ ص Wendi Baltz Thomas Passot Volutpat blandit $ 95,076.00 أمر البيع":
+        - cell:
+          - checkbox [disabled]
+        - cell "REF0010"
+        - cell "٣١ يوليو، ٧:٤٢ ص"
+        - cell "Wendi Baltz"
+        - cell "Thomas Passot":
+          - generic: Thomas Passot
+        - cell "Volutpat blandit":
+          - button "Volutpat blandit":
+            - img: 
+            - text: Volutpat blandit
+        - cell "$ 95,076.00":
+          - generic: $ 95,076.00
+        - cell "أمر البيع":
+          - generic: أمر البيع
+        - cell
+    - rowgroup:
+      - row "$ 795,460.00":
+        - cell
+        - cell "$ 795,460.00":
+          - generic: $ 795,460.00
+        - cell
+- menu:
+  - menuitem "المبيعات":
+    - generic: المبيعات
+  - menuitem "نقطة البيع":
+    - generic: نقطة البيع
+  - menuitem "الفوترة":
+    - generic: الفوترة
+  - menuitem "الشراء":
+    - generic: الشراء
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

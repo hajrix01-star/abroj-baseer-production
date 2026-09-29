@@ -1,0 +1,81 @@
+{
+  "success": true,
+  "database": "baseer_reports_qa_20260907",
+  "source_archive_sha256": "c8843337ffabea086892c1defe995032ea7f7c17be7592b60c0abf12df71d3e5",
+  "accounting_history_unchanged": true,
+  "new_accounting_transactions": 0,
+  "main_unchanged": true,
+  "backup_directory": "D:\\Codex\\Baseer-odoo\\.local-backups\\fa2-20260909\\before-qa-update",
+  "strict_guard_stopped_before_reopening": true,
+  "audit_metadata_changed_tables": [
+    "account_move",
+    "hr_payslip"
+  ],
+  "narrow_native_flag_exception": [
+    {
+      "id": 646,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      },
+      "move_type": "entry",
+      "state": "posted",
+      "ownership": {
+        "id": 646,
+        "baseer_pos_summary_id": 82,
+        "summary_state": "approved"
+      }
+    },
+    {
+      "id": 647,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      },
+      "move_type": "entry",
+      "state": "posted",
+      "ownership": {
+        "id": 647,
+        "baseer_pos_summary_id": 82,
+        "summary_state": "approved"
+      }
+    },
+    {
+      "id": 805,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      },
+      "move_type": "entry",
+      "state": "posted",
+      "ownership": {
+        "id": 805,
+        "baseer_pos_summary_id": 288,
+        "summary_state": "approved"
+      }
+    },
+    {
+      "id": 811,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      },
+      "move_type": "entry",
+      "state": "posted",
+      "ownership": {
+        "id": 811,
+        "baseer_pos_summary_id": 289,
+        "summary_state": "approved"
+      }
+    }
+  ],
+  "exception_reason": "Native ORM ownership-backfill write marks these four posted POS journal entries manually modified. The only consumer is an imported purchase-bill auto-post suggestion, inapplicable to these entries. Every other original column, financial link, amount, state, posting date and row count is preserved. Exact preimage hash verified against the preserved security clone; no global flag exclusion."
+}

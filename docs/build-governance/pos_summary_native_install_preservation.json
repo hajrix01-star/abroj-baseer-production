@@ -1,0 +1,16 @@
+[
+  {
+    "table": "account_move",
+    "before_count": 59,
+    "after_count": 59,
+    "original_columns_identical": true,
+    "compared_columns": 73
+  },
+  {
+    "table": "account_move_line",
+    "before_count": 136,
+    "after_count": 136,
+    "original_columns_identical": true,
+    "compared_columns": 59
+  }
+]

@@ -1,0 +1,1601 @@
+{
+  "status": "NO-GO financial use; QA restored; no payroll custom code implemented",
+  "upstream_commit": "c70e3f54b50442f46faed15f2643aed278b3fb37",
+  "source_files": [
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/__init__.py",
+      "sha256": "7b8e2af2ac6c5fe5410a45accf54839a303fd7298a193b3064a6ee84f35f9a4e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/__manifest__.py",
+      "sha256": "64ff144461fdcadbc89b7108e4c87b0fbfa482aac5c3ac262f63737846d443e5"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/doc/RELEASE_NOTES.md",
+      "sha256": "98bb2bdf699f08d8c95438cf90b6c900a081b6cb7fa8839abfa680df5b51caca"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/af.po",
+      "sha256": "9ef09b6d2f29d59f5b1914d5259e618b1672b1e49c69f4b6a4c94d5608c205f8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/am.po",
+      "sha256": "b94d60866a49ab0926c7fd4acf4deea663dc316d31e84f26bb47dd5a0f769f99"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ar.po",
+      "sha256": "b56c023b8ffb18fd4069836c2a2404c19dbc6e0fd1cdaa9d6295ff2ba7ca13fd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ar_001.po",
+      "sha256": "dcd15b01700b6142976256e697fbb14eb449e4fc7d7800721d326873b3a23298"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/az.po",
+      "sha256": "85f29a543571d88a72fa469c5716c5ee322deba09b91b0f102a228a7ef618e7f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/bg.po",
+      "sha256": "eae15eb495181758e1c58eb7d0f5ab921b1a1a14874c2db278214ed5cabc6d8c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/bn.po",
+      "sha256": "e4c1d750daa3afe27ac365bbb569efa545b1ecc690c03ffbbadfba64a0087763"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/bs.po",
+      "sha256": "d3ffd5c1376dad21deeb9fe5c8ea86f7f67fec2d95ea84486f24e5cf77cf2f20"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ca.po",
+      "sha256": "d5206eded234fb7004d240bc667ce62198be845a9e070822fc4d6e1d8b83d65a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/cs.po",
+      "sha256": "60746dedd4c678e0474569290126e6fa9777a87ff0a97ce5d7c169932606b31f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/da.po",
+      "sha256": "6029c110f1158cc769df873f32cefdda31df98040290cee27b8c3d683626bbf0"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/de.po",
+      "sha256": "3e8a83508779fc7dfc0ad0c2182bbd632798f2a15abdb6ba8678084f8545ca2d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/el.po",
+      "sha256": "a94a19d9df3550428b4f1ef7d44194f1cc237350e72e5fac3bd8ef55d7d2af0b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/en_GB.po",
+      "sha256": "6822e1f47aba2e55035af617407a79872a9e197e5efccf4b83c52ee48293e26d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es.po",
+      "sha256": "3b3a97c1851aad1083447f6b9519b843f4646287ee315f75f14c3830009493d9"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_AR.po",
+      "sha256": "e3c20e44f28204ae750259d827ab4e5e2d515fcaf4d4ab3565623d477e08775d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_BO.po",
+      "sha256": "f976bdabf55ab24e330aaac26d6fbff6f44f6357e860f16c8321e8469b0a0809"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_CL.po",
+      "sha256": "11ca234028a65143b9f0ee65e7a003f14ab402d6bfd120f40caa94a1e6f32f2a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_CO.po",
+      "sha256": "cee16c39cc029a8afe3076e89a8511b5c9421e329c4ba2a16b1d251c177df954"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_CR.po",
+      "sha256": "d60f3bebdf73681aa222ee9794f701d5b26f874b7504e6a9421796073baba5b4"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_DO.po",
+      "sha256": "30df01c7b660efc18a22e27274182b7b37d1b34e0b021cee0d47cfa0dfedc442"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_EC.po",
+      "sha256": "6bbc05971da0ceb7dc09e00134f2ea2277f9f0bda71d4a1bf4c82233c1d666de"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_PE.po",
+      "sha256": "aa689cfdfc704bfa508eab4e1e837441414d6041921707219d5830ad2471d1bc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_PY.po",
+      "sha256": "c518a96530064a4376addeb0cdef29f1fc4de3319e4a99c7ad312dc0b8253c69"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/es_VE.po",
+      "sha256": "a2ef9ad19a919167776b760cce37f65d3a215e611998140aeb086e5ef7626c31"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/et.po",
+      "sha256": "aec483a734e739ed07b52563cb36607041848a84fbda0f0d61b1fda40194616b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/eu.po",
+      "sha256": "7ee0fd56b5b4445c06962a078bf239c8fd6e529b1a2263aaa2c68d9197032eb6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/fa.po",
+      "sha256": "68a58529c6e9d31f56888f7065c9c71f5a1da447941ba2dcb5b049167cc106e8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/fi.po",
+      "sha256": "64362d19b8a3a8d5c5ef4bad4984eb05e2186aa40b2f4d69531f8ddbde8661a3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/fil.po",
+      "sha256": "5d8ca68b5c4a23384ab5534508c803f5cfe25213f1a367359e961a9e5f0ad9ea"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/fo.po",
+      "sha256": "36caa77d8e95660ace5f0f22e3a888d590f14cac2e31f172dea523426175b2c3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/fr.po",
+      "sha256": "82c8b18c7ca6584fc2d1065186a4256ef5849040bc587908021827ab7bc6801a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/fr_CA.po",
+      "sha256": "f73bf8efcb97b6f3124540b57fb3cfe616f4c4e90442ecb873d155616ab55316"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/gl.po",
+      "sha256": "a30ea744f1178f5449a62840a176764c3c7ceaf54fb3e858301e90606511d5da"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/gu.po",
+      "sha256": "fa6ccf20570d3a12a7cf84769522252152a54e2ff4eed45bdc6b5d158001c87b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/he.po",
+      "sha256": "246906d99cfbc2a3d8506d5df438dc89b0cb32cfd762e1662fe153a4047d3d4f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/hr.po",
+      "sha256": "f1373e167879162860390f08a475389830bfa87551b1c41efe922ae095e34ad1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/hu.po",
+      "sha256": "c8fdb6699ec605922fc7a630fa7d702ebfc611f80713aa67143717e3725250de"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/id.po",
+      "sha256": "70c5908ff49a41113b0b5ce8db054140b299db41287cdb6c5014eb936be152b7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/is.po",
+      "sha256": "9a7d3e3dc3ef54c57ea62fc6658e3ff66d1460f6e8e1a5895ac1d76f8210c93b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/it.po",
+      "sha256": "b7b3738167878ce390d8a718cea07cb796625d9da4f9aced4e450ef1a6bb6b7f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ja.po",
+      "sha256": "d3a0cc0a38c2d4d4c03b633447b8ae753aab12211a1cdde980d839f72ce88ca9"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ka.po",
+      "sha256": "930ae15ba52b318e9cd183bd090a677710326526f0f0b9b2fc47f2a28986edc3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/kab.po",
+      "sha256": "e670e09f48401508cdc7b9ff1867b4f47bd9a6839e1dc1bf61355740a1e4d657"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/km.po",
+      "sha256": "bf24dad7888b6bc2a20db0b1126dcdb8084bb96fc64f06e3a0f1cb694f7bdf7f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ko.po",
+      "sha256": "8e07b0a5ea506ea5f315041e7749abf9365d8650045d64d14c8b582f86794afb"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/lo.po",
+      "sha256": "589e78744bc2f761439c73d9d7eb07f63d9f4a6e5367a52e4f5dbba15da38a85"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/lt.po",
+      "sha256": "c37fe0d66bb734c250078ae5d2e4732c3d525fdd4c2019dd2613b5c489f3cd97"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/lv.po",
+      "sha256": "20824995e26c1ad92530214c487101bd11cc09fd3bd19571f07b8cc385dfd325"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/mk.po",
+      "sha256": "ba583784906552ae7e111a27d51307ef20a21c9678b381033be6421eaabe0669"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/mn.po",
+      "sha256": "29e26fc287fdd392a7da73e87e453368bb7d319ce303b5db9e99f8a8dce33032"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/nb.po",
+      "sha256": "d337de93b79ef1ba1a25a666ec9484d3669c9cef6e616f7e15fca7d06f137b88"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ne.po",
+      "sha256": "a05063c12896bb43d334ec07f84131b8bc3bc97602450a9c542bd2e35751ea77"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/nl.po",
+      "sha256": "fa535e411c65542a0494cd5a73716215c6b3339a857c32df19831e92df6f6590"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/nl_BE.po",
+      "sha256": "a8d0b0d304853a5096aeaf7989b3c412ae8d7f67fadb568aed60fac7656a4936"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/pl.po",
+      "sha256": "be16a83c5aada59e4545736950321961b08879f916750eb2d486f18cbe6bcc0c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/pt.po",
+      "sha256": "ca9270c99fd786e3da972fe3a186b0f7134f5bcb8577711def7ca0509e4ce804"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/pt_BR.po",
+      "sha256": "402fbedb371d4c8fede78c1d98ffab60ddb4902c74e069e5260e8d3f26d88b6f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ro.po",
+      "sha256": "62ae0943d8a1d176785ee5d10d4d4318f4fdd6248889414ce464bd7324810c70"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ru.po",
+      "sha256": "43efa3608e234ff86a97c0779492a4ba52e8c439e640364e56604d189b2531ca"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/sk.po",
+      "sha256": "4816f9deae991ed9225a92321738667219d761464ac5b34f8b206f81b27f0c8a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/sl.po",
+      "sha256": "abe23ede18ad01473a4e6c2da18afa4ff0512f61342d07894a1439515931fdb9"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/sq.po",
+      "sha256": "9a6d0b2d982882e49f4803bf1dd85bee5ea35fb1cdfa8d3a3c1b7bacee138933"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/sr.po",
+      "sha256": "aaf543672e9f0a4c709bafed069c7a472a97b914205216469d95b58c343afd02"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/sr@latin.po",
+      "sha256": "1899b14f9973bcd180ef03313c23bc9f7ae7c0db4ce2a15d2dae77116706c438"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/sv.po",
+      "sha256": "a33d7cce3ac3b3f6071126eb0f5eb1c7a1dba4b3cffbb373c87cd963cb8261f3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/ta.po",
+      "sha256": "f7b9f7d92875285bcf3ec57ce8601a0583c21c056c531426205845ba45660b75"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/th.po",
+      "sha256": "98afb052f8becce29d835c3748c20b2f876309900034799f4ea57a9869be4422"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/tr.po",
+      "sha256": "77367bbd1fec4010808a8ad6adb4ebdbd53aca7417f0402fc20d725ca258a803"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/uk.po",
+      "sha256": "49a0e185ce0adb4a54ea9a230b43ed015a3d6cc0308a8a80820ecc6ffe9a56b2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/vi.po",
+      "sha256": "bc207eb5ca7e5090abf72e5da26ac5a23e977ac32a818515c6dbac5d70797dde"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/zh_CN.po",
+      "sha256": "3c9f29005ec73a58dce1a0409866ca6d88084337c190b45b777ea62a3ddd1070"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/i18n/zh_TW.po",
+      "sha256": "19362299c7ac3307309cca11ea5af5dab4ff70e5630add6c3f7a6bbaf4d6f2d3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/models/__init__.py",
+      "sha256": "551ed3a4389a5a34e7042f194dccf0de48658c974e810fa0cfb866a0b076cd66"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/models/hr_payslip.py",
+      "sha256": "51040be24d9cf2e77726d7b79bd94fcaa3af22ed4183d81aaa4121025c571897"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/models/hr_payslip_line.py",
+      "sha256": "fb018618012bae84b3fc27df951982ce27a1f4a6c46dd87fb476ae0c3160df2c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/models/hr_payslip_run.py",
+      "sha256": "8a62199f5719ede83b8203fb07f649d94f336d31c6fddb8151e13de626eeea3f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/models/hr_salary_rule.py",
+      "sha256": "c632fffc231fddd12816feac4f9eae10d96f0b69be48320d3e08309fc9863254"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/models/hr_version.py",
+      "sha256": "9e8be59f6b71b326b3285a3740a1c452adba21b240148fb37b762a4e71a854f5"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/README.rst",
+      "sha256": "49a0228000bf3fccea66017837e981475ae076461a163a1bf81cf79041ad95f1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/hero.gif",
+      "sha256": "40b14f0ddb8e5c42a0ce506c9a8c1eeb277bcea1f324e0ff5f6199891fec845b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/Img1.png",
+      "sha256": "4d3bf08c1d67e4bb951b2ef74ac138c11f81a2f04c9ff603bd25aada17fa3044"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img2.png",
+      "sha256": "05f6e1cb8002494c3495fb13eb082b720e55067743906a0cf617bed5dac4eaee"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_1.png",
+      "sha256": "defa5e89af9268a09f90d2dd496b9a8c8d34df6231dc205e7b3f6be24d810563"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_3.png",
+      "sha256": "a08ae6618e4b3bf32f8aff3ef7c5354963c584df1dcfede49e6ffbfe2eeaef75"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_4.png",
+      "sha256": "8a89685449179a260220433a894adcb6f325893c4db291c6bc8ec2b220cf94f2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_5.png",
+      "sha256": "6e25e5328feddca594bd4684a53580fc60edbe52e5e61957dd7209e81ce748e7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/banner.jpg",
+      "sha256": "f295bf4188f8f09a877091d005dc124294e31b534999432cb4a32ecb0cdd39bc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/icon.png",
+      "sha256": "4bb9f01fd5fc1be7409915c7dd141b413526779ed0571de2cc1598c94292d1de"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/static/description/index.html",
+      "sha256": "f446d0fac3b8d3c6b685b4877cafe439469907d6d8ed15dd9f246d654b120940"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/tests/__init__.py",
+      "sha256": "0c8b107e279b3a415faa25f025a51d1671907323aba14debf00e3fbb5f7c5d7f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/tests/test_hr_payroll_account.py",
+      "sha256": "bc184db947d5b20dbbcb7bdf9e8cc86b519386bc36cd69a3d9bd03d6ea3c9133"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/views/hr_contract_views.xml",
+      "sha256": "45f4d11767e50ea1f697e6e25962b94a53efc6cd3de26aab64b0f065c045d8c0"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/views/hr_payslip_run_views.xml",
+      "sha256": "c14d1b13c08af08142d00cd508eb9a3aef8f66d1f68d62c724ccbb6edf649adf"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/views/hr_payslip_views.xml",
+      "sha256": "64981d956846a4c33157f972d0a527be73fd3cce017a74c107891b22d65876f8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/views/hr_salary_rule_views.xml",
+      "sha256": "c6497c135d28f3a9cd5e38d1c622c1e2fae6771dbeeb7a67a69107e13c0f985f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/wizard/__init__.py",
+      "sha256": "2814bd543993af6a52799795830dff73567109d273bbc5fed0bb28cdff806fff"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_account_community/wizard/hr_payslip_employees.py",
+      "sha256": "d1c5b9ae9afa8291712ee27ca7735b4f50007d5c64e34871b81fc920fab1c9fa"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/__init__.py",
+      "sha256": "3e07fe5d149dbed2a3b71af9ebe3668512cc385b17f588ff21fde22355a7769b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/__manifest__.py",
+      "sha256": "88fbc2314c0ae614deb8ee8aaf6220d3bd5e125666ce5b564cfbbf14aea496d7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/data/hr_payroll_community_data.xml",
+      "sha256": "4403f786fc46d580cbf2263010b5dbf8635f80cce69bd92fdcd734022bfc6048"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/data/hr_payroll_community_demo.xml",
+      "sha256": "c4790f85fb47c939e3e21d6f4624545a9abcd4b7a257ce3aa1c080b6cea7bf60"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/data/ir_module_category_data.xml",
+      "sha256": "93d83f9ddfa849eff7c12eb190d006322825dfc41890a7d896326ce1984098e2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/data/ir_sequence_data.xml",
+      "sha256": "d7b747b2c3c43bc2bcfbadab8e8d923330cdbb3649139b4e8a3ffdf2a871e228"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/doc/RELEASE_NOTES.md",
+      "sha256": "3afcf6b82fd059336ecab024e249bc287531ef441949d2eca16e454c427a0bd1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/__init__.py",
+      "sha256": "5917cb5517f58f8181ec721c17255edc424155e7bb14e20550ebdddb8271c790"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_contract_advantage_template.py",
+      "sha256": "90f6bba7e20f4c892c62bcdc1eeab8c43124f2f4221d7ad0c09225b524a76fc8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_contribution_register.py",
+      "sha256": "525c1a4cd54926c2b0d5fcfd008e7c101ec3dc537dc9aaafe46c34444e99b26f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_employee.py",
+      "sha256": "ea4b1579309f124712676ce55ea8a356f34f616b64460e3fc18152e2b7a780e8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_leave_type.py",
+      "sha256": "d0330d376b4a586619a8961f7ef4cf74b56d75b292031697b62e912da04024c2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_payroll_structure.py",
+      "sha256": "390453177e14b9d67c6da353e8d9a75f4bb6b7782897b3da142a8b5973456c9f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_payslip.py",
+      "sha256": "00e3ce81ae6323431573d23c7e127428bf562542699affc811e23b0a970084b4"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_payslip_input.py",
+      "sha256": "245d848fa4b81b61263706505cdc0cee2d30273f9268bb463605090302e4425d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_payslip_line.py",
+      "sha256": "1ac42fcb58d30866e7ed4fe21cd5aa10b19f50a0fdd218e1785cdafb30ab1991"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_payslip_run.py",
+      "sha256": "a14246180a2debefd8a66684084e3c6688c7c45b24292498c1f07defd43060b0"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_payslip_worked_days.py",
+      "sha256": "cc4e4ee252fcead5ac66a79af084b29ca6969eb30a6cf637f6d76b807f9fb4b6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_rule_input.py",
+      "sha256": "27b75a878faf51d66d80f429a1e75992f9cf7f23343b1f1dfbb2a6566cf2c63a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_salary_rule.py",
+      "sha256": "475d486a5b7a1a774b3e849586ee18faecfdb225470c25b2be2b2c60f64838f3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_salary_rule_category.py",
+      "sha256": "adf4f2a715d47ef158647d5556a210517b269601593050428f3ded8e84b52b7c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/hr_version.py",
+      "sha256": "871008ad3b9d1be837c9eb42952073ea2f5e565ecfc8540c5e4facd6047012d0"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/res_config_settings.py",
+      "sha256": "cf346b3098656f0377ebcc5f69c11da15270bdff8a586b2d6715f55b1e4f73ef"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/models/resource_mixin.py",
+      "sha256": "c7975d49c11646d9a84e3c8b60d6d5fcc8cbcc2f8c3d85e2b4a77e7afd15dbd3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/README.rst",
+      "sha256": "6ab8fd65aa00c95bc9d4fb78296ed87d37d0026d1c5bc1f91e107e1095e0a88f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/__init__.py",
+      "sha256": "35737806bfd33e01a9c5ab6aa33fc8716b8820d16e0c5bbea5a5029852401e3e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/hr_payroll_report.xml",
+      "sha256": "b35120df4cc846e169b15db3894477449579502359a4fd15f2e4f53c3969666d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/report_contribution_register_templates.xml",
+      "sha256": "f28d226b74591bc37ec16dd5d4920352e93d2b420c20951809de7e4a914e2ac6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/report_hr_payroll_community_report_contribution_register.py",
+      "sha256": "50a1d44215cc2cbbc203ecbfb0f743cf7a42144bc6aa7c31e6d2c13215937477"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/report_hr_payroll_community_report_payslip_details.py",
+      "sha256": "46baee8d5ebc68cd9327b1e383ad6cd4b18e63e41d6681fae557b5622c3576fd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/report_payslip_details_templates.xml",
+      "sha256": "a3bcb55c01fcaca8f9855e9e46f0c142cba28b5fbf90955291ed171110782f1e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/report/report_payslip_templates.xml",
+      "sha256": "2fa3afc799c465cccd34c323689da47dfd843c876c5068b6c6ad3c17f55282c7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/security/hr_payroll_community_security.xml",
+      "sha256": "0d20176738917a714af6f812c9d83e67ca843063d6734a5ccc88fef61239a52e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/security/ir.model.access.csv",
+      "sha256": "25aa983b4fac05081d093ff801436f6934eec0911c13a46a2cc4851cabdc25b5"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/1.png",
+      "sha256": "bf02ae446b6c4ac5590bcf3d07fa8104f75582ce13b1f123eb909deae58a0b76"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/2.png",
+      "sha256": "07117d8c00bccdd74b03ffa81ea9d75a739a9e01d350233ee7dea5b2882aa408"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/3.png",
+      "sha256": "efb7eedcd06729590c85b45483a87e97c722974bc032aae71f072778f426e6ae"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/4.png",
+      "sha256": "49ece0481a6fe5bbb3675f6410e63fcaa67c5c374be442b5fe63606da1edb2ea"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/5.png",
+      "sha256": "2e697daf16501b9ce9ef719f17048e23f6a677395531bfa2c0889ffb14f6445a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/6.png",
+      "sha256": "59d5572999aa4612389779ff4d1861b6a527d6c11c0b90a52eab282ae3107215"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/assets/screenshots/hero.gif",
+      "sha256": "80139091f72fbb50a3f3320296fbcea4e235946e882e2e5c8c5cf5b90491535b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/banner.jpg",
+      "sha256": "b5d5d0f60a6bd902771eee74a48bb7881d5aed03ae770774a96ba8f2085f7bc1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/icon.png",
+      "sha256": "34ac76c326b52166c90a8dff88179d050b5262de25f26dace36aa8a814326a92"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/description/index.html",
+      "sha256": "ce4a067c20622b0e3d45bb9d28ed70406f52d6a47a333cc03776cb2d3de5ace2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/static/img/hr_employee_payroll-image.jpg",
+      "sha256": "f3365aec9e431ad39b08772431cfa87c269fc2c18b88c0713418814a3f215bce"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_contract_advantage_template_views.xml",
+      "sha256": "eb1bcae8754fddaa2e46ed060802426700d74bfebabfcd7bc72ef764467cb9a8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_contribution_register_views.xml",
+      "sha256": "7bfcb96b9311498ebfadcbf93d5773f6b8e98ebf2652b8d424c09e5cf158b092"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_employee_views.xml",
+      "sha256": "c54623d82f8ac61b1fc80081cf9e84856395278b43433aeaf2a6e1136f1b4916"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_leave_type_views.xml",
+      "sha256": "62d158341ccd25eb95b3004b42ae3c5ed34acd92e66ca995e697f50891423567"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_payroll_structure_views.xml",
+      "sha256": "d079890c6bf66dac0ac67c81fdd2ce4e38081023d510b837b4a4ad71a9b424d8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_payslip_line_views.xml",
+      "sha256": "de83db18aa0759a7703ca4946d11c5f88df8f2042281339633a2e8f19b3ee5c4"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_payslip_run_views.xml",
+      "sha256": "c7593dd729c5fb47bda58b9a66832d0b41cb2a6f414275421e54620ee34c1031"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_payslip_views.xml",
+      "sha256": "64190bca6a2072d43ea900cc98fea48e91c64df492ece400a1f1ef58df6731c7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_salary_rule_category_views.xml",
+      "sha256": "e54777f02bcfbd6d7ccc2e389fa841df72336623e7041ced5b59af80ff085825"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_salary_rule_views.xml",
+      "sha256": "4390396d5d47427aae7c2a39accf5cb21fae8033c6eaf9a4c2e0798be187158c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/hr_version_views.xml",
+      "sha256": "2004727289d972c8d7038fcda4dd097dfbdebb7532cb3cb4a67ca36a1f88bf1e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/views/res_config_settings_views.xml",
+      "sha256": "3efc889c48cb8bff26c9b559ac5ea24930e5c9c44b6c314527c2a6c15a58f335"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/wizard/__init__.py",
+      "sha256": "f48a7c151b448370046ef3127b6e5823cabbf835b6aeb1284dae0d4025c329b4"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/wizard/hr_payslips_employees.py",
+      "sha256": "a2a89db0e3c3137b8c3d9c5c723bb84ad4f46eeee5b7decc82aa1351874ca63c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/wizard/hr_payslips_employees_views.xml",
+      "sha256": "88377097f0a451502ed4dddf2c03e138a632022f567b1c1a8882735b95c673d3"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/wizard/payslip_lines_contribution_register.py",
+      "sha256": "9f9ed25cfc9931404a9feec71d83f217f45c63b638c54589ebbd155906b3cd30"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/hr_payroll_community/wizard/payslip_lines_contribution_register_views.xml",
+      "sha256": "5e20724c878d76e4d59ca2b4b5d4a1b9cfc03c09a2da533a32c1dee46a6e4b1e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/__init__.py",
+      "sha256": "677ae476d29c2cb7845bdc2816b392041a1ccdc4e9cec4cba8f8ba2344551762"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/__manifest__.py",
+      "sha256": "5cfd82dde71fd4754fce4c9da26150dd35809e2f704edb3c5659f7614c8b1d6a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/data/hr_rule_input_data.xml",
+      "sha256": "2abc457d1a57a4d865c4678f1799f9a45f0f2dc6a2609457f9f37cbbc49bd663"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/data/hr_salary_rule_data.xml",
+      "sha256": "d2a899d6f6946cb06a898fd42f9dc7188afeac58305c49a3c7433093346189c6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/data/ir_sequence_data.xml",
+      "sha256": "9c1f3bfd480c3cf6e5aa4f520b06decd3bf56accbb2f4cf33885c31da3b67b53"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/data/mail_template_data.xml",
+      "sha256": "d1553a4daccf1334c6c2d1246ffc30e3344369944578fe588d690ad419d17cad"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/doc/RELEASE_NOTES.md",
+      "sha256": "79a5d6c5d2df7115dc4e996391d6ea0d8c0c58556d6a6d47eb5ab3ec5a09796d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/i18n/ar_001.po",
+      "sha256": "b7dcbc043467e8ba2133fd896d63dcfbeed617e09e71fbd6da99666dd1d794f0"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/__init__.py",
+      "sha256": "08c7a2eb32ce4ff6d7f75e49775291fe4d3fc440481ed957b50554cf519b87f6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/hr_employee.py",
+      "sha256": "44a138273226910c715c43be0e30dac88fe9b454198b9fb345eac906cddfa286"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/hr_loan.py",
+      "sha256": "4918a51cba4910a26d56197765938e048a491b596ac859535211df214a4d64b4"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/hr_loan_line.py",
+      "sha256": "c4df6d0d5c72b65c7243756be641220e17ed6b1dea9b1be1e4259a34f6612883"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/hr_payslip.py",
+      "sha256": "bad82f6289b3bdbf01dd884ef1ef61de30f20ab2868ba7915fbebbf36acdc84a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/hr_payslip_input.py",
+      "sha256": "d38060409b00e982f68eb2e62b55f33e3d9cb2f7a314235aa114cd339e345745"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/res_company.py",
+      "sha256": "189adb3fe811d0541464a3297a1a893347e92f9226dcccda2da19eb4ab5563e4"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/models/res_config_settings.py",
+      "sha256": "dd27eb65f8e74c9e083e4d2c2ba673f278b413c7451f93495c77bd71fd349d18"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/README.rst",
+      "sha256": "88d70f23965c8443300ecc6b1213f9acda1c37304ac504ceca12b2c120631bf8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/security/hr_loan_security.xml",
+      "sha256": "960603f1d42e8756934d1143864627c5b9c8b3782c48b0b421c695143a417914"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/security/ir.model.access.csv",
+      "sha256": "954be83f93e84b0f61b5a91ab0b3af84b3e9fc7369346540c698560d98bdea41"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/1.png",
+      "sha256": "62b77f9f5351acbfc073cc79a91851f504728172c593c00619de6f565dfbf6cf"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/10.png",
+      "sha256": "8b007ae8422447933bd7a7dbb65b038f42c6e062516dc7161b33b2da3809aeaf"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/11.png",
+      "sha256": "31c0ec4f3c3e30fa44ac14d6addc0e8124107ff340dc2a2d435a8dff34b04e8b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/12.png",
+      "sha256": "b56b758688a76d989a0ca81f28a533dfa2d0ba6bc12e1f92de50d93de2eeec25"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/13.png",
+      "sha256": "5a20af1ea5038afef83c02d3a9c50718d641ce6e79feb3bcce93f2ef7febbdc1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/14.png",
+      "sha256": "102fdc3be169dd1d01954c4f49df0d8deb1befdc66f7c7ccfa63aa78a0812565"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/15.png",
+      "sha256": "cde64eb7a69074942b59df2f65e10f6216c31c175765aab18b714b50fead4c2b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/2.png",
+      "sha256": "8928fdf975de76e0f96ca2bb65aa6dbac58f77d036d0527216c11df006513bbd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/3.png",
+      "sha256": "fa0df9d81ee13e791baa02c8421d371dbe7a86223be5c8bca3bf4b13a22aa980"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/4.png",
+      "sha256": "491c87de674489bc29f1037e006ba161d6fbafc1b42d7a29b67bc978da95adc5"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/5.png",
+      "sha256": "460b542fd104da25453acc50616322cc48d2f44a7bc8ec74a701093343356a12"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/6.png",
+      "sha256": "cf5d62f68a7f1c86c8b9f943f1f5f60acd89c467a429c405e0af8bfc56461c02"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/7.png",
+      "sha256": "f3f94af7904c6f41fb5e5f7ca43f76c565bcc692f06a16f62c2e8829a3a0725a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/8.png",
+      "sha256": "175a64edd09c99b2d2e43bbed17b9b3aa9aa6de51457e23dfd542fe0d22a6c7d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/assets/screenshots/9.png",
+      "sha256": "92ca8ce78494f2f39264c5b58da5db51a265a1f49dc1ff0fbe04782d2c7edac5"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/banner.jpg",
+      "sha256": "2285519f21caddbb68f0ef7e4dd4e43d074d7277193cd8ee844c59b4c7a52e20"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/icon.png",
+      "sha256": "0e1b9b43f4fa0c2f39d213f6f5e5b76673abe5fcaaad954b588c446805111e41"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/static/description/index.html",
+      "sha256": "1eb4d454e2f1f6dfa96a9a79959fa40d80e060ea54eadb4ac34c3706f747ca5e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/views/hr_employee_views.xml",
+      "sha256": "a7e5e0e25a976f41ef4c1c317190cd23f6494caa49cb9a792088ccfc46a9cfcc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/views/hr_loan_views.xml",
+      "sha256": "02a315dfb494fdc539496b6adcc649ee523835826dcb2a0eb24622007390b77c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/views/hr_payslip_views.xml",
+      "sha256": "0659ae558b114f300107b232d4d17e60c04296912c28a878c2e08b615f0fbd8a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/views/res_config_settings_views.xml",
+      "sha256": "651e0fc18977c93f75e4ea580662de7a2c72cfcc21f323d4b30d6c513dec7f32"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/__init__.py",
+      "sha256": "b99b7976fb80c6596c90f3194d1339250ca635b3fb624e9770a741e09bd2535a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/hr_loan_deferment.py",
+      "sha256": "e83ab1d71bb38529e5ea22875a730a226efafbcfc735a9d4119e2f5d20c2ca10"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/hr_loan_deferment_views.xml",
+      "sha256": "9b7206788bc3a44a4608d8c36945daa391c017c36509c36bc3e76236fadefcbc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/hr_loan_early_settlement.py",
+      "sha256": "4db6838b84ad47c68bca375655040cf9dce87423a58a43d614e1a3e87c709d67"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/hr_loan_early_settlement_views.xml",
+      "sha256": "0c333a0e7a89246f443c164f4aa8ec83bf87cd1fdf40a62722f88b0df3de7563"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/hr_loan_topup.py",
+      "sha256": "31b40e62d23839e7656e35bde65f6b63d1a1aeb8b5e07a57b1300f9bb7199365"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan/wizard/hr_loan_topup_views.xml",
+      "sha256": "5925616a27e38036bc9b27cb800c28d268c3d4c57eb803ff2d6c2c2fc51f272e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/__init__.py",
+      "sha256": "0b985517ab8d4c9666d87db9395d059f5fd38d7b34a43ec84ba1ea9da5875aee"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/__manifest__.py",
+      "sha256": "67ac7d3ce1bc13c9c6b56cd1a5ca7b911edf1d2bd415fab1c2a7051f66c5770d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/doc/RELEASE_NOTES.md",
+      "sha256": "bde5267ff7b44f91664dbabb174b0e3a55881205f6377bb811306dd38ccb7f0d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/i18n/ar_001.po",
+      "sha256": "8826b4d45f740a28ded9b9720b3a3f4fdb3800406da21c07bfe9ea9a447bea9c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/models/__init__.py",
+      "sha256": "16f2bede224ecac852a8c960257d632225049907b3f0d4845cd490dc084c1e7c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/models/account_move_line.py",
+      "sha256": "ab0c274a46b2e74b633d25db56f427af6d843e87865d371037434f3c78f4f2a7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/models/hr_loan.py",
+      "sha256": "9f74f5f749d6a2e4bcaf3f71acfd4729b9daabb0a59cb1f10fc2ab64aff7fd1a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/models/hr_payslip.py",
+      "sha256": "bd739443bd3982fe20d4d350da98ef3e3274bebe8ce6bf4e9e78aaca7004ef64"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/models/res_config_settings.py",
+      "sha256": "fdf975906af1315f562b84cc7d1dc38856460819a6034e9870899ca3baf96d7e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/README.rst",
+      "sha256": "0290f5f02db860d3776a756c91beebef9940b45702771e3bd4c208bef36332a0"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/security/ir.model.access.csv",
+      "sha256": "48e8cdb5ddec93f297d848c6a5eebaabcc25bde41a0aaf777eba4fffec823218"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/security/ohrms_loan_accounting_security.xml",
+      "sha256": "6a761f2f171f0ebac4ef083cc0e46c096e70d1c7b642081cd37eadccc100f58f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/1.png",
+      "sha256": "a594fcce1dfbb12059ea7ea3cbbc0e4f45bd945efd94161c33c29194fc3b6767"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/2.png",
+      "sha256": "62b77f9f5351acbfc073cc79a91851f504728172c593c00619de6f565dfbf6cf"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/222.png",
+      "sha256": "fa58778a41a233f37ec97c91a2a1df05b3347569ba51fe1b652bb62a377c0efc"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/33.png",
+      "sha256": "3837c35f3d4a536f71b7a3f1b28bca442ee377e3b8fb112428eb49113b4b899a"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/4.png",
+      "sha256": "f783166b31d46ca945294ded5a034398c30a988a25f9525c6c0027054b82519b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/5.png",
+      "sha256": "1735f07268c071d228f873faf3b8edf1848f7a2e64eeef2ba6036e4b7f38d94c"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/extra.png",
+      "sha256": "8928fdf975de76e0f96ca2bb65aa6dbac58f77d036d0527216c11df006513bbd"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/banner.jpg",
+      "sha256": "a74b1c14defa94e3a46c1771be6360148a643fb7188d9adca06fd8a648c9f022"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/icon.png",
+      "sha256": "3d0841f06fa018d3f737155bb49bf9df8ef5092a396f50c9a8b2f965f89c0f3b"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/static/description/index.html",
+      "sha256": "c66fa331ef2413366fa378f2212dd331efdba5dced01c86dca43e928c62e8a7d"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/views/hr_loan_views.xml",
+      "sha256": "b08e92b2927fdc1bd2158083093109c6dfaa58ac9b2aa286ff5fb14c657da55f"
+    },
+    {
+      "path": "third_party_addons/openhrms_19/ohrms_loan_accounting/views/res_config_settings_views.xml",
+      "sha256": "b25fa974eab9fcf68107fa30fc9cccfe64f27154f3b98f779aa5db9edab3a0a7"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/payroll_p1_after_restore.txt",
+      "sha256": "395ab79b8f1f392647a435256df4bf557745605c216a4cdd8ed5bfcae9a47674"
+    },
+    {
+      "path": "docs/build-governance/payroll_p1_before_restore.txt",
+      "sha256": "c7e879f1dfe1bb168a3fe3a503e8292696f6cc52d52cecaf3324bd313ce2b4d4"
+    },
+    {
+      "path": "docs/build-governance/payroll_p1_install.log",
+      "sha256": "b65ba6f994512fffa2eb8a853f128ec1d4c8ac3e440e1ff6547af1aefaf3021a"
+    },
+    {
+      "path": "docs/build-governance/payroll_p1_vendor_checks.json",
+      "sha256": "04e783300ed7bb672f64325b977c23579d021a90196ddf4e6622003744ae9c41"
+    },
+    {
+      "path": "docs/build-governance/payroll_p1_vendor_checks.log",
+      "sha256": "8f1e0ceec5e81c0d9d4fb8ffa7eece442b070a44bcbd64e8e8ac488af393b22d"
+    },
+    {
+      "path": "docs/build-governance/payroll_p1_vendor_checks.py",
+      "sha256": "26ce6456fbac27571be718dc86933f8c086855da63148b9af71596afb13bb58c"
+    }
+  ],
+  "backup_sha256": "068f122f4f07cb284585bfa4cc12273dcfbc183569b85ad44605ba815eb7f5e8",
+  "evaluation_db": "baseer_payroll_eval_20260908",
+  "evaluation_connections_allowed": false,
+  "qa_db": "baseer_reports_qa_20260907",
+  "main_unchanged": true
+}

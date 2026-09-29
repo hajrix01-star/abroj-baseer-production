@@ -1,0 +1,142 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "baseer_cash_categories installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_category_display installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_company_setup installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_hr_services installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_legion_compat installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_payroll installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_pos_summary installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_purchase_batch installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_report_layout installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_service_seed installed",
+      "passed": true
+    },
+    {
+      "name": "baseer_web_navigation installed",
+      "passed": true
+    },
+    {
+      "name": "baseer.purchase.batch resolved form",
+      "passed": true
+    },
+    {
+      "name": "baseer.hr.service resolved form",
+      "passed": true
+    },
+    {
+      "name": "baseer.hr.loan resolved form",
+      "passed": true
+    },
+    {
+      "name": "baseer.hr.eos resolved form",
+      "passed": true
+    },
+    {
+      "name": "hr.payslip.run resolved form",
+      "passed": true
+    },
+    {
+      "name": "hr.employee resolved form",
+      "passed": true
+    },
+    {
+      "name": "baseer.pos.summary resolved form",
+      "passed": true
+    },
+    {
+      "name": "baseer.pos.day.entry resolved form",
+      "passed": true
+    },
+    {
+      "name": "eligible Saudi companies",
+      "passed": true
+    },
+    {
+      "name": "company payroll configuration 2",
+      "passed": true
+    },
+    {
+      "name": "company EOS journal 2",
+      "passed": true
+    },
+    {
+      "name": "company EOS expense 2",
+      "passed": true
+    },
+    {
+      "name": "company purchase mappings 2",
+      "passed": true
+    },
+    {
+      "name": "company payroll configuration 3",
+      "passed": true
+    },
+    {
+      "name": "company EOS journal 3",
+      "passed": true
+    },
+    {
+      "name": "company EOS expense 3",
+      "passed": true
+    },
+    {
+      "name": "company purchase mappings 3",
+      "passed": true
+    },
+    {
+      "name": "company payroll configuration 1",
+      "passed": true
+    },
+    {
+      "name": "company EOS journal 1",
+      "passed": true
+    },
+    {
+      "name": "company EOS expense 1",
+      "passed": true
+    },
+    {
+      "name": "company purchase mappings 1",
+      "passed": true
+    },
+    {
+      "name": "shared water provider",
+      "passed": true
+    },
+    {
+      "name": "contribution report namespace",
+      "passed": true
+    }
+  ],
+  "database": "baseer_fix_main_20260909"
+}

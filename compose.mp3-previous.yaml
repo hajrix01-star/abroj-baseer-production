@@ -1,0 +1,6 @@
+services:
+  odoo:
+    volumes:
+      - ./.local-backups/main-promotion-20260909/previous-source/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/main-promotion-20260909/previous-source/custom_addons:/mnt/extra-addons:ro
+      - ./.local-backups/main-promotion-20260909/previous-source/third_party_addons:/mnt/third-party-addons:ro

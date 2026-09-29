@@ -1,0 +1,46 @@
+[
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\__init__.py",
+    "Hash": "5FD10918E1361AD65B4B41BCD8FB525E659267F47C8C4334AE52530E58908E9E"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\__manifest__.py",
+    "Hash": "0B2297D99A566881999F868C2F1007423A1DACA196DE148D44569DA0A58DE656"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\data\\report.xml",
+    "Hash": "8E3E00E3E6AD5B0323813CC78C9F86190101846835091C6B1404F8AA67FAC1BB"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\i18n\\ar_001.po",
+    "Hash": "2CB86EBE45BDDA9CC2796DB0A36CC37E0CA213530219B3223066F5C0380BCF53"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\models\\__init__.py",
+    "Hash": "E6E47F90052E68BFF038844F79037CBD2151461E28765993620D1256649AF756"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\models\\cash_categories.py",
+    "Hash": "635D18E57E91A168E80FFFC683D6D9A22E2767151970212DC7AEA1A2A098D86B"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\models\\cash_pdf.py",
+    "Hash": "94CE0730EF720068BCEE08BEFD426049FE1ACB87636ECF43E230B4C016840B41"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\report\\report_note.xml",
+    "Hash": "4C42DCD85C6719362C014006D33DCEE4C5A5B1444F360CB2DE767ECA36405DE1"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\static\\src\\cash_categories.js",
+    "Hash": "F999004D921D0132DD996DC5E84F7ECFBDA7C1486A6BA23407F93A6337AF2608"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\static\\src\\cash_categories.scss",
+    "Hash": "2023F7196D7421813687E26B84A12E5F9EC92DEFF884FC003064AF5F86D58806"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\static\\src\\cash_categories.xml",
+    "Hash": "4ED9C1584152DE6F3F0CD6EF2B26F746AB08CA35F2166005A392DBB3D5C3AAA3"
+  }
+]

@@ -1,0 +1,20 @@
+# HR2A independent acceptance — scoped GO
+
+**Only the 40 safe salary packages and 38 job assignments are approved. Nine salary packages remain unresolved; overall migration is not complete.**
+
+- Scoped GO for HR2A only: 40 salary packages and 38 job assignments using 28 company-scoped source job definitions. Overall salary migration is NOT COMPLETE.
+- Seven current inclusive salaries with user-edited schedules and two merged historical salary conflicts are excluded; required owner decisions remain pending.
+- Three fixed salary packages preserve user-selected calendars and their existing effective dates. Existing calendar rows and all original company calendars stay unchanged.
+- Eight company-scoped flexible calendars hold only proven/defaulted source calculation hours; weekly hours zero, no clock shifts or attendance/holiday lines. These are salary bases, not completed attendance schedules.
+- Independent execution of actual target common.py split_salary functions reproduced all 40 planned basic/overtime/allowance amounts exactly; individual allowance sums checked. Source evidence records actual compiled Noorix engine verification for 51 packages.
+- Preflight pins employee/version/date/write timestamps, calendar/hours/write timestamp and job/note state; sorted calendar FOR UPDATE locks added before preflight. Changes after planning fail closed; repeatable-read protection and ORM profile locks retained.
+- Successful real ORM rollback: 40 salaries, 38 jobs, 28 job definitions, eight salary calendars, 153 protected tables/baseline rows preserved; Administrator unchanged, no employee/version creation, idempotent second pass.
+- No contract start/end, user accounts, payslips, payments or financial transactions created. Financial allowance breakdowns stay in private local evidence; employee note changes are nonfinancial status only.
+- Nine fresh coherent-backup artifact hashes independently verified; backup reports 646 attachment references verified. No fresh full database restore is claimed.
+- Exact reviewed commit may proceed; post-commit reconciliation and UI inspection remain required. Reviewer has made no database writes.
+
+Writer SHA256: `bece25e83d71161f9bb30e3fec2836ccec42fc85d1e54090557d078bf59a971a`
+
+Driver SHA256: `7334f2a25044ea03cdba4e54a983b05fb39da2906f172b51ff0ea35746ad7744`
+
+Payload SHA256: `a7e2ee9a8323dde0a9e97730bb0c65d0ea65ef57d71b63fb628a86b9a9bebb64`

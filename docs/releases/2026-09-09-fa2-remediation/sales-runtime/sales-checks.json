@@ -1,0 +1,439 @@
+{
+  "checks": [
+    {
+      "name": "upgrade assigns valid service",
+      "actual": "service",
+      "expected": "service",
+      "passed": true
+    },
+    {
+      "name": "original stock product29 unchanged",
+      "actual": "consu",
+      "expected": "consu",
+      "passed": true
+    },
+    {
+      "name": "replacement is separate product",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "repair idempotent product count",
+      "actual": "36",
+      "expected": "36",
+      "passed": true
+    },
+    {
+      "name": "dedicated product type cannot drift",
+      "passed": true,
+      "error": "The dedicated summary product must remain a service. Assign a separate summary service before changing its type."
+    },
+    {
+      "name": "legacy original entries have protected ownership",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "native POS action defaults to excluding cancelled",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "native POS report before correction1150",
+      "actual": "1150.00",
+      "expected": "1150.00",
+      "passed": true
+    },
+    {
+      "name": "source posted ownership",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "native-shaped forged summary order rejected by Baseer",
+      "passed": true,
+      "error": "External summary orders can only be created by the authorized summary approval."
+    },
+    {
+      "name": "native-shaped forged order leaves no side effects",
+      "actual": "{'baseer.pos.summary': 16, 'pos.order': 14, 'pos.session': 18, 'account.move': 61, 'account.move.line': 150, 'account.payment': 16, 'account.partial.reconcile': 76}",
+      "expected": "{'baseer.pos.summary': 16, 'pos.order': 14, 'pos.session': 18, 'account.move': 61, 'account.move.line': 150, 'account.payment': 16, 'account.partial.reconcile': 76}",
+      "passed": true
+    },
+    {
+      "name": "restricted fixture lacks accounting manager",
+      "actual": "False",
+      "expected": "False",
+      "passed": true
+    },
+    {
+      "name": "POS manager without accounting manager cannot correct",
+      "passed": true,
+      "error": "POS and accounting manager permissions are required to configure external summaries."
+    },
+    {
+      "name": "owned session move reset denied",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "owned journal line edit denied",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "owned move forged context denied",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "native income reversal denied",
+      "passed": true,
+      "error": "Use Correct summary to reverse sales. Only an unreversed original receipt can be reversed separately."
+    },
+    {
+      "name": "forged reversed source create denied",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "blank correction denied",
+      "passed": true,
+      "error": "Enter a correction reason of at most 2000 characters."
+    },
+    {
+      "name": "foreign active company correction denied",
+      "passed": true,
+      "error": "Switch to the summary company before creating or changing this summary."
+    },
+    {
+      "name": "RPC boolean cannot cancel native order",
+      "passed": true,
+      "error": "Only a fully reversed summary correction may cancel its retained POS order."
+    },
+    {
+      "name": "owned payment link cannot be cleared",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "owned payment move cannot be cleared",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "owned cash statement link cannot be cleared",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "owned cash statement move cannot be cleared",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "forged new receipt session link denied",
+      "passed": true,
+      "error": "Summary receipt links are controlled by the server."
+    },
+    {
+      "name": "late correction failure denied",
+      "passed": true,
+      "error": "Injected post-reversal failure"
+    },
+    {
+      "name": "late correction rolls back all accounting counts",
+      "actual": "{'baseer.pos.summary': 16, 'pos.order': 14, 'pos.session': 18, 'account.move': 61, 'account.move.line': 150, 'account.payment': 16, 'account.partial.reconcile': 76}",
+      "expected": "{'baseer.pos.summary': 16, 'pos.order': 14, 'pos.session': 18, 'account.move': 61, 'account.move.line': 150, 'account.payment': 16, 'account.partial.reconcile': 76}",
+      "passed": true
+    },
+    {
+      "name": "late correction leaves source approved",
+      "actual": "approved",
+      "expected": "approved",
+      "passed": true
+    },
+    {
+      "name": "injected late failure sees cancelled source and native order",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "failure after source state transition denied",
+      "passed": true,
+      "error": "Injected replacement creation failure after state transition"
+    },
+    {
+      "name": "post-state failure rolls back all accounting counts",
+      "actual": "{'baseer.pos.summary': 16, 'pos.order': 14, 'pos.session': 18, 'account.move': 61, 'account.move.line': 150, 'account.payment': 16, 'account.partial.reconcile': 76}",
+      "expected": "{'baseer.pos.summary': 16, 'pos.order': 14, 'pos.session': 18, 'account.move': 61, 'account.move.line': 150, 'account.payment': 16, 'account.partial.reconcile': 76}",
+      "passed": true
+    },
+    {
+      "name": "post-state failure restores source and native order",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "replacement original date retained",
+      "passed": true,
+      "error": "A replacement must retain the original sales date and shift."
+    },
+    {
+      "name": "replacement original shift retained",
+      "passed": true,
+      "error": "A replacement must retain the original sales date and shift."
+    },
+    {
+      "name": "replacement correction chain cannot be deleted",
+      "passed": true,
+      "error": "A correction replacement must be retained for review and audit."
+    },
+    {
+      "name": "source cancelled",
+      "actual": "cancelled",
+      "expected": "cancelled",
+      "passed": true
+    },
+    {
+      "name": "order cancelled",
+      "actual": "cancel",
+      "expected": "cancel",
+      "passed": true
+    },
+    {
+      "name": "replacement remains reviewable draft",
+      "actual": "draft",
+      "expected": "draft",
+      "passed": true
+    },
+    {
+      "name": "linked chain",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "one reversal for each original",
+      "actual": "4",
+      "expected": "4",
+      "passed": true
+    },
+    {
+      "name": "native correction reversal remains protected",
+      "passed": true,
+      "error": "Summary journal evidence cannot be edited, reset or deleted. Use Correct summary from its original sales summary."
+    },
+    {
+      "name": "replacement draft excluded from sales",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "native POS report after correction0",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "historical source gross retained1150",
+      "actual": "1150.00",
+      "expected": "1150.00",
+      "passed": true
+    },
+    {
+      "name": "historical source customers retained10",
+      "actual": "10",
+      "expected": "10",
+      "passed": true
+    },
+    {
+      "name": "reversal cash net0",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "repeated correction same replacement",
+      "actual": "baseer.pos.summary(444,)",
+      "expected": "baseer.pos.summary(444,)",
+      "passed": true
+    },
+    {
+      "name": "replacement daily gross230",
+      "actual": "230.00",
+      "expected": "230.00",
+      "passed": true
+    },
+    {
+      "name": "native POS report replacement230",
+      "actual": "230.00",
+      "expected": "230.00",
+      "passed": true
+    },
+    {
+      "name": "replacement daily customers20",
+      "actual": "20",
+      "expected": "20",
+      "passed": true
+    },
+    {
+      "name": "replacement daily one day",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "replacement average230",
+      "actual": "230.00",
+      "expected": "230.00",
+      "passed": true
+    },
+    {
+      "name": "net ledger income200",
+      "actual": "200.00",
+      "expected": "200.00",
+      "passed": true
+    },
+    {
+      "name": "net ledger VAT30",
+      "actual": "30.00",
+      "expected": "30.00",
+      "passed": true
+    },
+    {
+      "name": "replacement cash230",
+      "actual": "230.00",
+      "expected": "230.00",
+      "passed": true
+    },
+    {
+      "name": "archive counts replacement only",
+      "actual": "230.00",
+      "expected": "230.00",
+      "passed": true
+    },
+    {
+      "name": "archive customers count replacement only",
+      "actual": "20",
+      "expected": "20",
+      "passed": true
+    },
+    {
+      "name": "cancelled source sharing denied",
+      "passed": true,
+      "error": "Approve and save the summary before preparing a WhatsApp message."
+    },
+    {
+      "name": "replacement WhatsApp gross230",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "receipt-only reversal keeps approved sale",
+      "actual": "approved",
+      "expected": "approved",
+      "passed": true
+    },
+    {
+      "name": "receipt-only reversal daily115",
+      "actual": "115.00",
+      "expected": "115.00",
+      "passed": true
+    },
+    {
+      "name": "receipt-only reversal cash0",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "full correction after receipt reversal explains rejection",
+      "passed": true,
+      "error": "An original entry is no longer posted or already has a reversal. Review the previous receipt or accounting correction before correcting sales."
+    },
+    {
+      "name": "half closure daily complete",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "half closure archive no missing shift",
+      "actual": "False",
+      "expected": "False",
+      "passed": true
+    },
+    {
+      "name": "half closure source accessible",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "external partial settlement blocks full correction",
+      "passed": true,
+      "error": "External settlements are linked to this summary. Review and undo those settlements using their original accounting workflow before correcting sales."
+    },
+    {
+      "name": "external partial match retained",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "external rejection creates no accounting documents",
+      "actual": "{'baseer.pos.summary': 20, 'pos.order': 18, 'pos.session': 22, 'account.move': 75, 'account.move.line': 185, 'account.payment': 17, 'account.partial.reconcile': 90}",
+      "expected": "{'baseer.pos.summary': 20, 'pos.order': 18, 'pos.session': 22, 'account.move': 75, 'account.move.line': 185, 'account.payment': 17, 'account.partial.reconcile': 90}",
+      "passed": true
+    },
+    {
+      "name": "locked business date correction rejected",
+      "passed": true,
+      "error": "The requested business date is locked. Choose an open date; it will not be shifted automatically."
+    },
+    {
+      "name": "zero sales correction uses no financial moves",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "zero sales correction day removed until approval",
+      "actual": "0",
+      "expected": "0",
+      "passed": true
+    },
+    {
+      "name": "zero replacement restores operating denominator",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "Arabic correction label loaded",
+      "actual": "سبب التصحيح",
+      "expected": "سبب التصحيح",
+      "passed": true
+    },
+    {
+      "name": "Arabic corrected state loaded",
+      "actual": "ملغى للتصحيح",
+      "expected": "ملغى للتصحيح",
+      "passed": true
+    }
+  ],
+  "upgrade_product": {
+    "original": 29,
+    "replacement": 268
+  },
+  "status": "passed"
+}

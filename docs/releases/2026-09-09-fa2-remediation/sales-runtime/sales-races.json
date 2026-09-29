@@ -1,0 +1,182 @@
+{
+  "cases": [
+    {
+      "case": "two corrections same original",
+      "requests": [
+        {
+          "ok": true,
+          "value": 441,
+          "attempts": 2,
+          "seconds": 1.7152915300102904
+        },
+        {
+          "ok": true,
+          "value": 441,
+          "attempts": 1,
+          "seconds": 1.3860092340037227
+        }
+      ]
+    },
+    {
+      "case": "two approvals same replacement",
+      "requests": [
+        {
+          "ok": true,
+          "value": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  441
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 441,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "attempts": 2,
+          "seconds": 0.7878608570317738
+        },
+        {
+          "ok": true,
+          "value": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  441
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 441,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "attempts": 1,
+          "seconds": 0.29945720999967307
+        }
+      ]
+    },
+    {
+      "case": "full correction versus receipt reversal",
+      "requests": [
+        {
+          "ok": true,
+          "value": 442,
+          "attempts": 1,
+          "seconds": 1.2196312050218694
+        },
+        {
+          "ok": false,
+          "error": "Use Correct summary to reverse sales. Only an unreversed original receipt can be reversed separately.",
+          "attempts": 2
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "fixture dates empty",
+      "passed": true
+    },
+    {
+      "name": "two corrections same original success count",
+      "passed": true
+    },
+    {
+      "name": "both correction callers see same draft",
+      "passed": true
+    },
+    {
+      "name": "two approvals same replacement success count",
+      "passed": true
+    },
+    {
+      "name": "full correction versus receipt reversal success count",
+      "passed": true
+    },
+    {
+      "name": "one replacement in chain",
+      "passed": true
+    },
+    {
+      "name": "one reversal each original",
+      "passed": true
+    },
+    {
+      "name": "one replacement order and session",
+      "passed": true
+    },
+    {
+      "name": "source cancelled replacement approved",
+      "passed": true
+    },
+    {
+      "name": "one live sale115 customers10 day1",
+      "passed": true
+    },
+    {
+      "name": "posted ledger income100 VAT15",
+      "passed": true
+    },
+    {
+      "name": "all own moves posted",
+      "passed": true
+    },
+    {
+      "name": "competing receipt has only one reversal",
+      "passed": true
+    },
+    {
+      "name": "competing result coherent",
+      "passed": true
+    }
+  ],
+  "retained_clone_fixtures": {
+    "source_ids": [
+      439,
+      440
+    ],
+    "replacement_id": 441,
+    "moves": [
+      1669,
+      1670,
+      1674,
+      1673,
+      1675,
+      1676
+    ]
+  },
+  "status": "passed"
+}

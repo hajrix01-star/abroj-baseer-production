@@ -1,0 +1,28 @@
+{
+  "candidate": "a8d533d67ee4ca3e4a7ce06fc44bc5e459fc192c",
+  "fresh_main_clone": true,
+  "installed": true,
+  "browser_print_installed": true,
+  "protected_tables": 367,
+  "existing_rows_and_columns_exact": true,
+  "company_smoke": [
+    {
+      "company": 2,
+      "returned": 8,
+      "frequency_sorted": true
+    },
+    {
+      "company": 3,
+      "returned": 8,
+      "frequency_sorted": true
+    },
+    {
+      "company": 1,
+      "returned": 8,
+      "frequency_sorted": true
+    }
+  ],
+  "no_http": true,
+  "cron_disabled": true,
+  "no_main_filestore_mount": true
+}

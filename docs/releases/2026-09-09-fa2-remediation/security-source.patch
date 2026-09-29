@@ -1,0 +1,91 @@
+--- a/custom_addons/baseer_payroll/security/security.xml
++++ b/custom_addons/baseer_payroll/security/security.xml
+@@ -11,6 +11,56 @@
+     <record id="rule_payslip_line_company" model="ir.rule"><field name="name">Payslip lines: allowed companies</field><field name="model_id" ref="om_hr_payroll.model_hr_payslip_line"/><field name="domain_force">[('slip_id.company_id','in',company_ids)]</field></record>
+     <record id="rule_payslip_input_company" model="ir.rule"><field name="name">Payslip inputs: allowed companies</field><field name="model_id" ref="om_hr_payroll.model_hr_payslip_input"/><field name="domain_force">[('payslip_id.company_id','in',company_ids)]</field></record>
+     <record id="rule_payslip_worked_company" model="ir.rule"><field name="name">Payslip worked days: allowed companies</field><field name="model_id" ref="om_hr_payroll.model_hr_payslip_worked_days"/><field name="domain_force">[('payslip_id.company_id','in',company_ids)]</field></record>
++    <!-- Match the native Officer parent-payslip scope for every detail model.
++         The global company rules above still intersect the manager allowance. -->
++    <record id="rule_payslip_line_officer_read" model="ir.rule">
++        <field name="name">Payslip lines: officer parent scope</field>
++        <field name="model_id" ref="om_hr_payroll.model_hr_payslip_line"/>
++        <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_user'))]"/>
++        <field name="domain_force">['|', '|', ('slip_id.employee_id.user_id', '=', user.id), ('slip_id.employee_id.department_id', '=', False), ('slip_id.employee_id.department_id.manager_id.user_id', '=', user.id)]</field>
++        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
++        <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
++    </record>
++    <record id="rule_payslip_input_officer_read" model="ir.rule">
++        <field name="name">Payslip inputs: officer parent scope</field>
++        <field name="model_id" ref="om_hr_payroll.model_hr_payslip_input"/>
++        <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_user'))]"/>
++        <field name="domain_force">['|', '|', ('payslip_id.employee_id.user_id', '=', user.id), ('payslip_id.employee_id.department_id', '=', False), ('payslip_id.employee_id.department_id.manager_id.user_id', '=', user.id)]</field>
++        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
++        <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
++    </record>
++    <record id="rule_payslip_worked_officer_read" model="ir.rule">
++        <field name="name">Payslip worked days: officer parent scope</field>
++        <field name="model_id" ref="om_hr_payroll.model_hr_payslip_worked_days"/>
++        <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_user'))]"/>
++        <field name="domain_force">['|', '|', ('payslip_id.employee_id.user_id', '=', user.id), ('payslip_id.employee_id.department_id', '=', False), ('payslip_id.employee_id.department_id.manager_id.user_id', '=', user.id)]</field>
++        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
++        <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
++    </record>
++    <record id="rule_payslip_line_manager_read" model="ir.rule">
++        <field name="name">Payslip lines: manager parent scope</field>
++        <field name="model_id" ref="om_hr_payroll.model_hr_payslip_line"/>
++        <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_manager'))]"/>
++        <field name="domain_force">[(1, '=', 1)]</field>
++        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
++        <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
++    </record>
++    <record id="rule_payslip_input_manager_read" model="ir.rule">
++        <field name="name">Payslip inputs: manager parent scope</field>
++        <field name="model_id" ref="om_hr_payroll.model_hr_payslip_input"/>
++        <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_manager'))]"/>
++        <field name="domain_force">[(1, '=', 1)]</field>
++        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
++        <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
++    </record>
++    <record id="rule_payslip_worked_manager_read" model="ir.rule">
++        <field name="name">Payslip worked days: manager parent scope</field>
++        <field name="model_id" ref="om_hr_payroll.model_hr_payslip_worked_days"/>
++        <field name="groups" eval="[(4, ref('om_hr_payroll.group_hr_payroll_manager'))]"/>
++        <field name="domain_force">[(1, '=', 1)]</field>
++        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/>
++        <field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
++    </record>
+     <record id="rule_loan_company" model="ir.rule"><field name="name">Employee loans: allowed companies</field><field name="model_id" ref="model_baseer_hr_loan"/><field name="domain_force">[('company_id','in',company_ids)]</field></record>
+     <record id="rule_loan_line_company" model="ir.rule"><field name="name">Loan installments: allowed companies</field><field name="model_id" ref="model_baseer_hr_loan_line"/><field name="domain_force">[('company_id','in',company_ids)]</field></record>
+     <record id="rule_loan_allocation_company" model="ir.rule"><field name="name">Loan recoveries: allowed companies</field><field name="model_id" ref="model_baseer_hr_loan_allocation"/><field name="domain_force">[('company_id','in',company_ids)]</field></record>
+--- a/custom_addons/baseer_service_seed/models/purchase_batch.py
++++ b/custom_addons/baseer_service_seed/models/purchase_batch.py
+@@ -9,7 +9,9 @@
+     def _baseer_is_seed_service(self):
+         self.ensure_one()
+         category = self.category_map_id.category_id
+-        return bool(category and self.env['ir.model.data'].search_count([
++        # Only inspect trusted catalog identities after reading the caller's
++        # mapping. Operators need no model-data administration privileges.
++        return bool(category and self.env['ir.model.data'].sudo().search_count([
+             ('module', '=', 'baseer_service_seed'), ('model', '=', 'product.category'),
+             ('res_id', '=', category.id),
+             ('name', 'in', [f'category_{service[0]}' for service in SERVICES]),
+--- a/third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py
++++ b/third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py
+@@ -20,4 +20,4 @@
+              'model': 'hr.contribution.register',
+              'form': self.read()[0]
+         }
+-        return self.env.ref('om_om_hr_payroll.action_contribution_register').report_action([], data=datas)
++        return self.env.ref('om_hr_payroll.action_contribution_register').report_action([], data=datas)
+--- a/third_party_addons/odoomates_19/om_hr_payroll/report/report_contribution_register.py
++++ b/third_party_addons/odoomates_19/om_hr_payroll/report/report_contribution_register.py
+@@ -6,7 +6,7 @@
+ 
+ 
+ class ContributionRegisterReport(models.AbstractModel):
+-    _name = 'report.om_om_hr_payroll.report_contribution_register'
++    _name = 'report.om_hr_payroll.report_contribution_register'
+     _description = 'Payroll Contribution Register Report'
+ 
+     def _get_payslip_lines(self, register_ids, date_from, date_to):

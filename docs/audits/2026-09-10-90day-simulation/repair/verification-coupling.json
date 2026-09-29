@@ -1,0 +1,859 @@
+{
+  "status": "FAIL",
+  "database": "baseer_sim90_fix_20260911",
+  "user_id": 5,
+  "su": false,
+  "company_id": 2,
+  "database_enforced_read_only": true,
+  "rollback": true,
+  "checks": [
+    {
+      "key": "input:events-present",
+      "status": "PASS",
+      "actual": "True",
+      "expected": "True"
+    },
+    {
+      "key": "input:summary-covered-calendar-days",
+      "status": "PASS",
+      "actual": "90",
+      "expected": "90"
+    },
+    {
+      "key": "2026-01:inout|2026-01-01:inout:receipts:input-oracle",
+      "status": "PASS",
+      "actual": "1,673,951.49",
+      "expected": "1673951.49"
+    },
+    {
+      "key": "2026-01:inout|2026-01-01:inout:receipts:row-card-parity",
+      "status": "PASS",
+      "actual": "1673951.49",
+      "expected": "1,673,951.49"
+    },
+    {
+      "key": "2026-01:inout|2026-01-01:inout:payments:input-oracle",
+      "status": "PASS",
+      "actual": "-242,942.27",
+      "expected": "-242942.27"
+    },
+    {
+      "key": "2026-01:inout|2026-01-01:inout:payments:row-card-parity",
+      "status": "PASS",
+      "actual": "-242942.27",
+      "expected": "-242,942.27"
+    },
+    {
+      "key": "2026-01:inout|2026-01-01:inout:net:input-oracle",
+      "status": "PASS",
+      "actual": "1,431,009.22",
+      "expected": "1431009.22"
+    },
+    {
+      "key": "2026-01:inout|2026-01-01:inout:net:row-card-parity",
+      "status": "PASS",
+      "actual": "1431009.22",
+      "expected": "1,431,009.22"
+    },
+    {
+      "key": "2026-02:inout|2026-02-01:inout:receipts:input-oracle",
+      "status": "PASS",
+      "actual": "433,677.93",
+      "expected": "433677.93"
+    },
+    {
+      "key": "2026-02:inout|2026-02-01:inout:receipts:row-card-parity",
+      "status": "PASS",
+      "actual": "433677.93",
+      "expected": "433,677.93"
+    },
+    {
+      "key": "2026-02:inout|2026-02-01:inout:payments:input-oracle",
+      "status": "PASS",
+      "actual": "-358,348.12",
+      "expected": "-358348.12"
+    },
+    {
+      "key": "2026-02:inout|2026-02-01:inout:payments:row-card-parity",
+      "status": "PASS",
+      "actual": "-358348.12",
+      "expected": "-358,348.12"
+    },
+    {
+      "key": "2026-02:inout|2026-02-01:inout:net:input-oracle",
+      "status": "PASS",
+      "actual": "75,329.81",
+      "expected": "75329.81"
+    },
+    {
+      "key": "2026-02:inout|2026-02-01:inout:net:row-card-parity",
+      "status": "PASS",
+      "actual": "75329.81",
+      "expected": "75,329.81"
+    },
+    {
+      "key": "2026-03:inout|2026-03-01:inout:receipts:input-oracle",
+      "status": "PASS",
+      "actual": "484,296.02",
+      "expected": "484296.02"
+    },
+    {
+      "key": "2026-03:inout|2026-03-01:inout:receipts:row-card-parity",
+      "status": "PASS",
+      "actual": "484296.02",
+      "expected": "484,296.02"
+    },
+    {
+      "key": "2026-03:inout|2026-03-01:inout:payments:input-oracle",
+      "status": "PASS",
+      "actual": "-360,254.17",
+      "expected": "-360254.17"
+    },
+    {
+      "key": "2026-03:inout|2026-03-01:inout:payments:row-card-parity",
+      "status": "PASS",
+      "actual": "-360254.17",
+      "expected": "-360,254.17"
+    },
+    {
+      "key": "2026-03:inout|2026-03-01:inout:net:input-oracle",
+      "status": "PASS",
+      "actual": "124,041.85",
+      "expected": "124041.85"
+    },
+    {
+      "key": "2026-03:inout|2026-03-01:inout:net:row-card-parity",
+      "status": "PASS",
+      "actual": "124041.85",
+      "expected": "124,041.85"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:coverage",
+      "status": "PASS",
+      "actual": "0",
+      "expected": "0"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:total:input-oracle",
+      "status": "PASS",
+      "actual": "1,428,070.00",
+      "expected": "1428070.00"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:total:row-card-parity",
+      "status": "PASS",
+      "actual": "1428070.00",
+      "expected": "1,428,070.00"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:settled:input-oracle",
+      "status": "PASS",
+      "actual": "1,351,083.25",
+      "expected": "1351083.25"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:settled:row-card-parity",
+      "status": "PASS",
+      "actual": "1351083.25",
+      "expected": "1,351,083.25"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:outstanding:input-oracle",
+      "status": "PASS",
+      "actual": "76,986.75",
+      "expected": "76986.75"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:outstanding:row-card-parity",
+      "status": "PASS",
+      "actual": "76986.75",
+      "expected": "76,986.75"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:partial:input-oracle",
+      "status": "PASS",
+      "actual": "69",
+      "expected": "69"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:partial:drill-count",
+      "status": "PASS",
+      "actual": "69",
+      "expected": "69"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:customer:overdue:native-maturity",
+      "status": "PASS",
+      "actual": "73,594.25",
+      "expected": "73594.25"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:total:input-oracle",
+      "status": "PASS",
+      "actual": "973,674.07",
+      "expected": "973674.07"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:total:row-card-parity",
+      "status": "PASS",
+      "actual": "973674.07",
+      "expected": "973,674.07"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:settled:input-oracle",
+      "status": "PASS",
+      "actual": "686,347.59",
+      "expected": "686347.59"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:settled:row-card-parity",
+      "status": "PASS",
+      "actual": "686347.59",
+      "expected": "686,347.59"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:outstanding:input-oracle",
+      "status": "PASS",
+      "actual": "287,326.48",
+      "expected": "287326.48"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:outstanding:row-card-parity",
+      "status": "PASS",
+      "actual": "287326.48",
+      "expected": "287,326.48"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:partial:input-oracle",
+      "status": "PASS",
+      "actual": "223",
+      "expected": "223"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:partial:drill-count",
+      "status": "PASS",
+      "actual": "223",
+      "expected": "223"
+    },
+    {
+      "key": "all-quarter|2026-01-01:all:supplier:overdue:native-maturity",
+      "status": "FAIL",
+      "actual": "287,326.48",
+      "expected": "182768.14"
+    },
+    {
+      "key": "selected-section-coverage",
+      "status": "PASS",
+      "actual": "{'2026-03:inout', 'all-quarter', '2026-01:inout', '2026-02:inout'}",
+      "expected": "{'2026-03:inout', '2026-01:inout', 'all-quarter', '2026-02:inout'}"
+    },
+    {
+      "key": "database:enforced-read-only-at-end",
+      "status": "PASS",
+      "actual": "on",
+      "expected": "on"
+    }
+  ],
+  "timings": [
+    {
+      "key": "2026-01:inout",
+      "milliseconds": 15952.45
+    },
+    {
+      "key": "2026-02:inout",
+      "milliseconds": 19798.71
+    },
+    {
+      "key": "2026-03:inout",
+      "milliseconds": 21567.71
+    },
+    {
+      "key": "all-quarter",
+      "milliseconds": 41005.67
+    }
+  ],
+  "endpoint_timings": [
+    {
+      "endpoint": "inout-kpis",
+      "from": "2026-01-01",
+      "to": "2026-01-31",
+      "milliseconds": 5057.93
+    },
+    {
+      "endpoint": "inout-kpis",
+      "from": "2026-02-01",
+      "to": "2026-02-28",
+      "milliseconds": 5805.63
+    },
+    {
+      "endpoint": "inout-kpis",
+      "from": "2026-03-01",
+      "to": "2026-03-31",
+      "milliseconds": 6538.98
+    },
+    {
+      "endpoint": "all-kpis",
+      "from": "2026-01-01",
+      "to": "2026-03-31",
+      "milliseconds": 1919.49
+    }
+  ],
+  "samples": {
+    "2026-01-01..2026-01-31:inout": {
+      "currency_groups": [
+        {
+          "currency_id": 151,
+          "currency_name": "SAR",
+          "sections": [
+            {
+              "key": "cash",
+              "label": "Incoming / outgoing",
+              "document_count_display": "826",
+              "cards": [
+                {
+                  "key": "receipts",
+                  "label": "Incoming",
+                  "display": "1,673,951.49",
+                  "is_count": false,
+                  "domain": [
+                    [
+                      "baseer_register_cash_receipts",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                },
+                {
+                  "key": "payments",
+                  "label": "Outgoing",
+                  "display": "-242,942.27",
+                  "is_count": false,
+                  "domain": [
+                    [
+                      "baseer_register_cash_payments",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                },
+                {
+                  "key": "net",
+                  "label": "Net",
+                  "display": "1,431,009.22",
+                  "is_count": false,
+                  "domain": [],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cash_month": "2026-01",
+      "company_name": "بصير التجريبية — محاكاة 90 يوماً",
+      "coverage_warning": "",
+      "as_of": "2026-01-31"
+    },
+    "2026-02-01..2026-02-28:inout": {
+      "currency_groups": [
+        {
+          "currency_id": 151,
+          "currency_name": "SAR",
+          "sections": [
+            {
+              "key": "cash",
+              "label": "Incoming / outgoing",
+              "document_count_display": "855",
+              "cards": [
+                {
+                  "key": "receipts",
+                  "label": "Incoming",
+                  "display": "433,677.93",
+                  "is_count": false,
+                  "domain": [
+                    [
+                      "baseer_register_cash_receipts",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                },
+                {
+                  "key": "payments",
+                  "label": "Outgoing",
+                  "display": "-358,348.12",
+                  "is_count": false,
+                  "domain": [
+                    [
+                      "baseer_register_cash_payments",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                },
+                {
+                  "key": "net",
+                  "label": "Net",
+                  "display": "75,329.81",
+                  "is_count": false,
+                  "domain": [],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cash_month": "2026-02",
+      "company_name": "بصير التجريبية — محاكاة 90 يوماً",
+      "coverage_warning": "",
+      "as_of": "2026-02-28"
+    },
+    "2026-03-01..2026-03-31:inout": {
+      "currency_groups": [
+        {
+          "currency_id": 151,
+          "currency_name": "SAR",
+          "sections": [
+            {
+              "key": "cash",
+              "label": "Incoming / outgoing",
+              "document_count_display": "924",
+              "cards": [
+                {
+                  "key": "receipts",
+                  "label": "Incoming",
+                  "display": "484,296.02",
+                  "is_count": false,
+                  "domain": [
+                    [
+                      "baseer_register_cash_receipts",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                },
+                {
+                  "key": "payments",
+                  "label": "Outgoing",
+                  "display": "-360,254.17",
+                  "is_count": false,
+                  "domain": [
+                    [
+                      "baseer_register_cash_payments",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                },
+                {
+                  "key": "net",
+                  "label": "Net",
+                  "display": "124,041.85",
+                  "is_count": false,
+                  "domain": [],
+                  "tooltip": "Incoming includes posted Applications sales and adjusts their later collections and refunds. Outgoing retains actual payments. Net is not a cash balance or profit."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cash_month": "2026-03",
+      "company_name": "بصير التجريبية — محاكاة 90 يوماً",
+      "coverage_warning": "",
+      "as_of": "2026-03-31"
+    },
+    "2026-01-01..2026-03-31:all": {
+      "currency_groups": [
+        {
+          "currency_id": 151,
+          "currency_name": "SAR",
+          "sections": [
+            {
+              "key": "customer",
+              "label": "Sales",
+              "document_count_display": "509",
+              "cards": [
+                {
+                  "key": "total",
+                  "label": "Net sales",
+                  "display": "1,428,070.00",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "customer"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ]
+                  ],
+                  "tooltip": "Posted invoices and native POS sales, net of credit notes and sales reversals."
+                },
+                {
+                  "key": "settled",
+                  "label": "Settled amount",
+                  "display": "1,351,083.25",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "customer"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_has_settlement",
+                      "=",
+                      true
+                    ]
+                  ],
+                  "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+                },
+                {
+                  "key": "outstanding",
+                  "label": "Outstanding",
+                  "display": "76,986.75",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "customer"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_outstanding",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Current outstanding receivable or payable balance."
+                },
+                {
+                  "key": "partial",
+                  "label": "Partially settled operations",
+                  "display": "69",
+                  "is_count": true,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "customer"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_payment_state",
+                      "=",
+                      "partial"
+                    ]
+                  ],
+                  "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+                },
+                {
+                  "key": "overdue",
+                  "label": "Net overdue",
+                  "display": "73,594.25",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "customer"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_is_overdue",
+                      "=",
+                      true
+                    ]
+                  ],
+                  "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+                }
+              ]
+            },
+            {
+              "key": "supplier",
+              "label": "Suppliers",
+              "document_count_display": "1,026",
+              "cards": [
+                {
+                  "key": "total",
+                  "label": "Net invoices",
+                  "display": "973,674.07",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "supplier"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ]
+                  ],
+                  "tooltip": "Posted vendor bills and credit notes; journal entries and payments are excluded."
+                },
+                {
+                  "key": "settled",
+                  "label": "Settled amount",
+                  "display": "686,347.59",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "supplier"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_has_settlement",
+                      "=",
+                      true
+                    ]
+                  ],
+                  "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+                },
+                {
+                  "key": "outstanding",
+                  "label": "Outstanding",
+                  "display": "287,326.48",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "supplier"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_outstanding",
+                      "!=",
+                      0
+                    ]
+                  ],
+                  "tooltip": "Current outstanding receivable or payable balance."
+                },
+                {
+                  "key": "partial",
+                  "label": "Partially settled operations",
+                  "display": "223",
+                  "is_count": true,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "supplier"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_payment_state",
+                      "=",
+                      "partial"
+                    ]
+                  ],
+                  "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+                },
+                {
+                  "key": "overdue",
+                  "label": "Net overdue",
+                  "display": "287,326.48",
+                  "is_count": false,
+                  "domain": [
+                    "&",
+                    "&",
+                    "&",
+                    [
+                      "baseer_register_scope",
+                      "=",
+                      "supplier"
+                    ],
+                    [
+                      "baseer_register_contributor",
+                      "=",
+                      true
+                    ],
+                    [
+                      "company_currency_id",
+                      "=",
+                      151
+                    ],
+                    [
+                      "baseer_register_is_overdue",
+                      "=",
+                      true
+                    ]
+                  ],
+                  "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "as_of": "2026-09-11",
+      "uncovered_count": 0,
+      "coverage_warning": ""
+    }
+  },
+  "selected_sections": [
+    "2026-01:inout",
+    "2026-02:inout",
+    "2026-03:inout",
+    "all-quarter"
+  ],
+  "counts": {
+    "events": 3700,
+    "summaries": 189,
+    "field_manifest": 1541
+  },
+  "limits": [
+    "Single-reader timings only; no concurrent-load or capacity certification.",
+    "Card-row parity is secondary; manifest input amounts are the independent oracle.",
+    "Browser, print/export and mutation-denial journeys require separate evidence."
+  ],
+  "phase": "coupling",
+  "manifest_files": [
+    {
+      "name": "context.json",
+      "sha256": "a3fa5e97e259da30ddd2290f243fa2c5645e81c7ea7ea9bd6808176fe665b4fb"
+    },
+    {
+      "name": "sales-manifest.json",
+      "sha256": "9f151b726e9fe0f1caac39ed69b069516193ea9d8c8e65bfbdaea052d973b7f7"
+    },
+    {
+      "name": "hr.json",
+      "sha256": "ab70a45dc40ddba65847757d9cdb10b59dcec5bbbdda20e883a5dc33278138be"
+    },
+    {
+      "name": "purchases.json",
+      "sha256": "5e9dcd1a63c6ec73faf179a881a0b6ed33df87541594cedde2dcca720d540638"
+    }
+  ],
+  "script_files": [
+    {
+      "name": "verify_repair.py",
+      "sha256": "8a0390bdf4813549595ee77d8d93814272090dd7d86f43430ce4d80b57ddd5c5"
+    },
+    {
+      "name": "verify_simulation.py",
+      "sha256": "63d47caff4f93dd1710082870d3e262921289622ff7c198aec1edd96921243a2"
+    }
+  ],
+  "counts_final": {
+    "checks": 41,
+    "failed": 1
+  },
+  "evidence_output": "verification-coupling.json"
+}

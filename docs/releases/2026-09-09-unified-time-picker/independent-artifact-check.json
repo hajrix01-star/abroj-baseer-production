@@ -1,0 +1,20 @@
+{
+  "candidate": "96dd7960f30a0863772139423e037e127faf3c52",
+  "files": 1104,
+  "source_hash_failures": [],
+  "zip_entries": 1104,
+  "zip_hash_failures": [],
+  "archive_sha256": "daf1516cee41593f8155d0fa59cce50613a01ee972916971dffdac4dbdc68ab5",
+  "archive_matches": true,
+  "changed_files": [
+    "custom_addons/baseer_work_schedule/__manifest__.py",
+    "custom_addons/baseer_work_schedule/i18n/ar.po",
+    "custom_addons/baseer_work_schedule/static/src/schedule.scss",
+    "custom_addons/baseer_work_schedule/static/src/time_field.js",
+    "custom_addons/baseer_work_schedule/static/src/time_field.xml"
+  ],
+  "removed_files": [],
+  "component_test_source_matches": true,
+  "component_checks": 23,
+  "backend_unchanged": true
+}

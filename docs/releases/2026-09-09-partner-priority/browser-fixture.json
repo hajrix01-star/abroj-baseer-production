@@ -1,0 +1,23 @@
+{
+  "user": 8,
+  "partners": [
+    10198,
+    10199
+  ],
+  "companies": [
+    {
+      "id": 1,
+      "name": "ARZ"
+    },
+    {
+      "id": 2,
+      "name": "المعلم الشامي"
+    },
+    {
+      "id": 3,
+      "name": "دوحة المستهلك"
+    }
+  ],
+  "supplier_action": 299,
+  "batch_action": 784
+}

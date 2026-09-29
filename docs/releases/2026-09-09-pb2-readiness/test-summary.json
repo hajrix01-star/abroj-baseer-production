@@ -1,0 +1,13 @@
+{
+  "checks": {
+    "payroll-critical-regression": 125,
+    "payroll-readiness-matrix": 52,
+    "payroll-readiness-race": 10,
+    "payroll-readiness-roles": 10,
+    "payroll-readiness-smoke": 31
+  },
+  "total": 228,
+  "candidate": "807712c3dd78db4bdbec15d6a264b5b72feec951",
+  "main_unchanged": true,
+  "qa_updated": true
+}

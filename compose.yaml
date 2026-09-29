@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  odoo:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_dev
+      - --db-filter=^baseer_dev$
+      - --no-database-list
+    ports:
+      - "127.0.0.1:${ODOO_HTTP_PORT}:8069"
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/custom_addons:/mnt/extra-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/third_party_addons:/mnt/third-party-addons:ro
+      - ./odoo:/opt/baseer-odoo-source:ro
+    restart: unless-stopped
+
+volumes:
+  odoo-data:
+  postgres-data:

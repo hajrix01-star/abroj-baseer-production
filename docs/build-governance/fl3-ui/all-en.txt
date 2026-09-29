@@ -1,0 +1,855 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Invoicing"
+    - menu:
+      - menuitem "Dashboard"
+      - button "Customers":
+        - generic: Customers
+      - button "Vendors":
+        - generic: Vendors
+      - button "Accounting":
+        - generic: Accounting
+      - menuitem "Financial operations"
+      - button "Review":
+        - generic: Review
+      - button "Reporting":
+        - generic: Reporting
+      - button "":
+        - generic: 
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- generic: Financial operations
+- button "Actions menu":
+  - generic: 
+- search:
+  - search:
+    - button "Search...":
+      - img: 
+    - searchbox "Search..." [active]
+  - button ""
+- search:
+  - navigation "Pager":
+    - generic: 1-32
+    - text: / 32
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- navigation:
+  - button "القائمة View":
+    - generic: 
+  - button "كانبان View":
+    - generic: 
+- main:
+  - region "Financial summary":
+    - group "Operation view":
+      - button "All operations" [disabled] [pressed]
+      - button "Cash movements"
+    - generic: Current balances · 2026-09-10
+    - button "Refresh financial summary":
+      - generic: 
+    - generic: SAR
+    - heading "Sales" [level=3]
+    - generic: 6 operations
+    - 'button "Sales — Net sales: 1,580.00SAR"':
+      - generic: Net sales
+      - generic: 1,580.00
+    - 'button "Sales — Settled amount: 1,580.00SAR"':
+      - generic: Settled amount
+      - generic: 1,580.00
+    - 'button "Sales — Outstanding: 0.00SAR"':
+      - generic: Outstanding
+      - generic: "0.00"
+    - 'button "Sales — Partially settled operations: 0"':
+      - generic: Partially settled operations
+      - generic: "0"
+    - 'button "Sales — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+    - heading "Suppliers" [level=3]
+    - generic: 6 documents
+    - 'button "Suppliers — Net invoices: 3,100.00SAR"':
+      - generic: Net invoices
+      - generic: 3,100.00
+    - 'button "Suppliers — Settled amount: 1,000.00SAR"':
+      - generic: Settled amount
+      - generic: 1,000.00
+    - 'button "Suppliers — Outstanding: 2,100.00SAR"':
+      - generic: Outstanding
+      - generic: 2,100.00
+    - 'button "Suppliers — Partially settled operations: 1"':
+      - generic: Partially settled operations
+      - generic: "1"
+    - 'button "Suppliers — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+  - table:
+    - rowgroup:
+      - row "Date  Number  Operation Partner  Journal  Company  Amount Settled Outstanding Payment Status ":
+        - columnheader:
+          - checkbox
+        - columnheader "Date ":
+          - generic: Date
+          - generic: 
+        - columnheader "Number ":
+          - generic: Number
+          - generic: 
+        - columnheader "Operation":
+          - generic: Operation
+          - text: 
+        - columnheader "Partner ":
+          - generic: Partner
+          - generic: 
+        - columnheader "Journal ":
+          - generic: Journal
+          - generic: 
+        - columnheader "Company ":
+          - generic: Company
+          - generic: 
+        - columnheader "Amount":
+          - generic: Amount
+          - text: 
+        - columnheader "Settled":
+          - generic: Settled
+          - text: 
+        - columnheader "Outstanding":
+          - generic: Outstanding
+          - text: 
+        - columnheader "Payment Status":
+          - generic: Payment Status
+          - text: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "09/10/2026 PBNK1/2026/00003 Outgoing payment IC1 QA supplier — correction preview Bank المعلم الشامي 500.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00003"
+        - cell "Outgoing payment"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0007 Vendor bill IC1 QA supplier — correction preview Purchases المعلم الشامي 500.00 SR 500.00 SR 0.00 SR Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0007"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00001 Outgoing payment IC1 QA supplier — correction preview Bank المعلم الشامي 500.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00001"
+        - cell "Outgoing payment"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0005 Vendor bill IC1 QA supplier — correction preview Purchases المعلم الشامي 600.00 SR 500.00 SR 100.00 SR Partially Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0005"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "600.00 SR":
+          - generic: 600.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "100.00 SR":
+          - generic: 100.00 SR
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0004 Vendor bill IC1 QA supplier — correction preview Purchases المعلم الشامي 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0004"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0003 Vendor bill IC1 QA supplier — correction preview Purchases المعلم الشامي 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0003"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0002 Vendor bill IC1 QA supplier — correction preview Purchases المعلم الشامي 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0002"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0001 Vendor bill IC1 QA supplier — correction preview Purchases المعلم الشامي 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0001"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 PSCSH/2026/00004 Sales summary صندوق ملخص المبيعات | Sales summary cash المعلم الشامي 215.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PSCSH/2026/00004"
+        - cell "Sales summary"
+        - cell
+        - cell "صندوق ملخص المبيعات | Sales summary cash"
+        - cell "المعلم الشامي"
+        - cell "215.00 SR":
+          - generic: 215.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 PPSBNK/2026/00006 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 345.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PPSBNK/2026/00006"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "345.00 SR":
+          - generic: 345.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 PPSBNK/2026/00005 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 230.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PPSBNK/2026/00005"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "230.00 SR":
+          - generic: 230.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 POSS/2026/07/0004 Sales summary Point of Sale المعلم الشامي 790.00 SR 790.00 SR 0.00 SR Paid  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "POSS/2026/07/0004"
+        - cell "Sales summary"
+        - cell
+        - cell "Point of Sale"
+        - cell "المعلم الشامي"
+        - cell "790.00 SR":
+          - generic: 790.00 SR
+        - cell "790.00 SR":
+          - generic: 790.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/28/2026 PSBNK/2026/00002 Reversal: Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 230.00 SR  "':
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PSBNK/2026/00002"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "230.00 SR":
+          - generic: 230.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/28/2026 PSBNK/2026/00001 Reversal: Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 345.00 SR  "':
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PSBNK/2026/00001"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "345.00 SR":
+          - generic: 345.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/28/2026 PSCSH/2026/00003 Reversal: Sales summary صندوق ملخص المبيعات | Sales summary cash المعلم الشامي 115.00 SR  "':
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PSCSH/2026/00003"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "صندوق ملخص المبيعات | Sales summary cash"
+        - cell "المعلم الشامي"
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/28/2026 POSS/2026/07/0003 Reversal: Sales summary Point of Sale المعلم الشامي -690.00 SR -690.00 SR 0.00 SR Paid  "':
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "POSS/2026/07/0003"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "Point of Sale"
+        - cell "المعلم الشامي"
+        - cell "-690.00 SR":
+          - generic: "-690.00 SR"
+        - cell "-690.00 SR":
+          - generic: "-690.00 SR"
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 PSCSH/2026/00002 Sales summary صندوق ملخص المبيعات | Sales summary cash المعلم الشامي 115.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PSCSH/2026/00002"
+        - cell "Sales summary"
+        - cell
+        - cell "صندوق ملخص المبيعات | Sales summary cash"
+        - cell "المعلم الشامي"
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 PPSBNK/2026/00004 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 345.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PPSBNK/2026/00004"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "345.00 SR":
+          - generic: 345.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 PPSBNK/2026/00003 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 230.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "PPSBNK/2026/00003"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "230.00 SR":
+          - generic: 230.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/28/2026 POSS/2026/07/0002 Sales summary Point of Sale المعلم الشامي 690.00 SR 690.00 SR 0.00 SR Paid  ":
+        - cell:
+          - checkbox
+        - cell "07/28/2026":
+          - generic: 07/28/2026
+        - cell "POSS/2026/07/0002"
+        - cell "Sales summary"
+        - cell
+        - cell "Point of Sale"
+        - cell "المعلم الشامي"
+        - cell "690.00 SR":
+          - generic: 690.00 SR
+        - cell "690.00 SR":
+          - generic: 690.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 PSCSH/2026/00006 Sales summary صندوق ملخص المبيعات | Sales summary cash المعلم الشامي 215.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PSCSH/2026/00006"
+        - cell "Sales summary"
+        - cell
+        - cell "صندوق ملخص المبيعات | Sales summary cash"
+        - cell "المعلم الشامي"
+        - cell "215.00 SR":
+          - generic: 215.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 PPSBNK/2026/00008 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 345.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PPSBNK/2026/00008"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "345.00 SR":
+          - generic: 345.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 PPSBNK/2026/00007 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 230.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PPSBNK/2026/00007"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "230.00 SR":
+          - generic: 230.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 POSS/2026/07/0006 Sales summary Point of Sale المعلم الشامي 790.00 SR 790.00 SR 0.00 SR Paid  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "POSS/2026/07/0006"
+        - cell "Sales summary"
+        - cell
+        - cell "Point of Sale"
+        - cell "المعلم الشامي"
+        - cell "790.00 SR":
+          - generic: 790.00 SR
+        - cell "790.00 SR":
+          - generic: 790.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/27/2026 PSBNK/2026/00004 Reversal: Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 230.00 SR  "':
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PSBNK/2026/00004"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "230.00 SR":
+          - generic: 230.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/27/2026 PSBNK/2026/00003 Reversal: Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 345.00 SR  "':
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PSBNK/2026/00003"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "345.00 SR":
+          - generic: 345.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/27/2026 PSCSH/2026/00005 Reversal: Sales summary صندوق ملخص المبيعات | Sales summary cash المعلم الشامي 115.00 SR  "':
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PSCSH/2026/00005"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "صندوق ملخص المبيعات | Sales summary cash"
+        - cell "المعلم الشامي"
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - 'row "07/27/2026 POSS/2026/07/0005 Reversal: Sales summary Point of Sale المعلم الشامي -690.00 SR -690.00 SR 0.00 SR Paid  "':
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "POSS/2026/07/0005"
+        - 'cell "Reversal: Sales summary"'
+        - cell
+        - cell "Point of Sale"
+        - cell "المعلم الشامي"
+        - cell "-690.00 SR":
+          - generic: "-690.00 SR"
+        - cell "-690.00 SR":
+          - generic: "-690.00 SR"
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 PSCSH/2026/00001 Sales summary صندوق ملخص المبيعات | Sales summary cash المعلم الشامي 115.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PSCSH/2026/00001"
+        - cell "Sales summary"
+        - cell
+        - cell "صندوق ملخص المبيعات | Sales summary cash"
+        - cell "المعلم الشامي"
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 PPSBNK/2026/00002 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 345.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PPSBNK/2026/00002"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "345.00 SR":
+          - generic: 345.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 PPSBNK/2026/00001 Sales summary تحصيلات ملخص المبيعات | Sales summary receipts المعلم الشامي 230.00 SR  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "PPSBNK/2026/00001"
+        - cell "Sales summary"
+        - cell
+        - cell "تحصيلات ملخص المبيعات | Sales summary receipts"
+        - cell "المعلم الشامي"
+        - cell "230.00 SR":
+          - generic: 230.00 SR
+        - cell
+        - cell
+        - cell
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "07/27/2026 POSS/2026/07/0001 Sales summary Point of Sale المعلم الشامي 690.00 SR 690.00 SR 0.00 SR Paid  ":
+        - cell:
+          - checkbox
+        - cell "07/27/2026":
+          - generic: 07/27/2026
+        - cell "POSS/2026/07/0001"
+        - cell "Sales summary"
+        - cell
+        - cell "Point of Sale"
+        - cell "المعلم الشامي"
+        - cell "690.00 SR":
+          - generic: 690.00 SR
+        - cell "690.00 SR":
+          - generic: 690.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- paragraph: Press esc to exit full screen

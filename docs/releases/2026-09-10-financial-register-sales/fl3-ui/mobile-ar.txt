@@ -1,0 +1,418 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - button "":
+      - generic: 
+    - generic: العمليات المالية
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- button "":
+  - generic: 
+- button "":
+  - generic: 
+- main:
+  - region "الملخص المالي":
+    - group "عرض العمليات":
+      - button "جميع العمليات" [disabled] [pressed]
+      - button "الحركات النقدية"
+    - generic: الأرصدة الحالية · 2026-09-10
+    - button "تحديث الملخص المالي":
+      - generic: 
+    - generic: SAR
+    - heading "المبيعات" [level=3]
+    - generic: 6 عملية
+    - 'button "المبيعات — صافي المبيعات: 1,580.00SAR"':
+      - generic: صافي المبيعات
+      - generic: 1,580.00
+    - 'button "المبيعات — المبلغ المسوّى: 1,580.00SAR"':
+      - generic: المبلغ المسوّى
+      - generic: 1,580.00
+    - 'button "المبيعات — المتبقي: 0.00SAR"':
+      - generic: المتبقي
+      - generic: "0.00"
+    - 'button "المبيعات — عمليات مسوّاة جزئيًا: 0"':
+      - generic: عمليات مسوّاة جزئيًا
+      - generic: "0"
+    - 'button "المبيعات — صافي المتأخر: 0.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "0.00"
+    - heading "الموردون" [level=3]
+    - generic: 6 مستندات
+    - 'button "الموردون — صافي الفواتير: 3,100.00SAR"':
+      - generic: صافي الفواتير
+      - generic: 3,100.00
+    - 'button "الموردون — المبلغ المسوّى: 1,000.00SAR"':
+      - generic: المبلغ المسوّى
+      - generic: 1,000.00
+    - 'button "الموردون — المتبقي: 2,100.00SAR"':
+      - generic: المتبقي
+      - generic: 2,100.00
+    - 'button "الموردون — عمليات مسوّاة جزئيًا: 1"':
+      - generic: عمليات مسوّاة جزئيًا
+      - generic: "1"
+    - 'button "الموردون — صافي المتأخر: 0.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "0.00"
+  - link "PBNK1/2026/00003 10/09/2026 دفعة صادرة IC1 QA supplier — correction preview المعلم الشامي 500.00 SR  ":
+    - generic: PBNK1/2026/00003
+    - generic: 10/09/2026
+    - generic: دفعة صادرة
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0007 10/09/2026 فاتورة مورد IC1 QA supplier — correction preview المعلم الشامي 500.00 SR مدفوع  ":
+    - generic: BILL/2026/09/0007
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PBNK1/2026/00001 10/09/2026 دفعة صادرة IC1 QA supplier — correction preview المعلم الشامي 500.00 SR  ":
+    - generic: PBNK1/2026/00001
+    - generic: 10/09/2026
+    - generic: دفعة صادرة
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0005 10/09/2026 فاتورة مورد IC1 QA supplier — correction preview المعلم الشامي 600.00 SR مدفوع جزئيًا  ":
+    - generic: BILL/2026/09/0005
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 600.00 SR
+    - generic: مدفوع جزئيًا
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0004 10/09/2026 فاتورة مورد IC1 QA supplier — correction preview المعلم الشامي 500.00 SR غير مدفوع  ":
+    - generic: BILL/2026/09/0004
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0003 10/09/2026 فاتورة مورد IC1 QA supplier — correction preview المعلم الشامي 500.00 SR غير مدفوع  ":
+    - generic: BILL/2026/09/0003
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0002 10/09/2026 فاتورة مورد IC1 QA supplier — correction preview المعلم الشامي 500.00 SR غير مدفوع  ":
+    - generic: BILL/2026/09/0002
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "BILL/2026/09/0001 10/09/2026 فاتورة مورد IC1 QA supplier — correction preview المعلم الشامي 500.00 SR غير مدفوع  ":
+    - generic: BILL/2026/09/0001
+    - generic: 10/09/2026
+    - generic: فاتورة مورد
+    - generic: IC1 QA supplier — correction preview
+    - generic: المعلم الشامي
+    - generic: 500.00 SR
+    - generic: غير مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PSCSH/2026/00004 28/07/2026 ملخص المبيعات المعلم الشامي 215.00 SR  ":
+    - generic: PSCSH/2026/00004
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 215.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00006 28/07/2026 ملخص المبيعات المعلم الشامي 345.00 SR  ":
+    - generic: PPSBNK/2026/00006
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00005 28/07/2026 ملخص المبيعات المعلم الشامي 230.00 SR  ":
+    - generic: PPSBNK/2026/00005
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0004 28/07/2026 ملخص المبيعات المعلم الشامي 790.00 SR مدفوع  ":
+    - generic: POSS/2026/07/0004
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 790.00 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "PSBNK/2026/00002 28/07/2026 عكس: ملخص المبيعات المعلم الشامي 230.00 SR  "':
+    - generic: PSBNK/2026/00002
+    - generic: 28/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "PSBNK/2026/00001 28/07/2026 عكس: ملخص المبيعات المعلم الشامي 345.00 SR  "':
+    - generic: PSBNK/2026/00001
+    - generic: 28/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "PSCSH/2026/00003 28/07/2026 عكس: ملخص المبيعات المعلم الشامي 115.00 SR  "':
+    - generic: PSCSH/2026/00003
+    - generic: 28/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: 115.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "POSS/2026/07/0003 28/07/2026 عكس: ملخص المبيعات المعلم الشامي -690.00 SR مدفوع  "':
+    - generic: POSS/2026/07/0003
+    - generic: 28/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: "-690.00 SR"
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PSCSH/2026/00002 28/07/2026 ملخص المبيعات المعلم الشامي 115.00 SR  ":
+    - generic: PSCSH/2026/00002
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 115.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00004 28/07/2026 ملخص المبيعات المعلم الشامي 345.00 SR  ":
+    - generic: PPSBNK/2026/00004
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00003 28/07/2026 ملخص المبيعات المعلم الشامي 230.00 SR  ":
+    - generic: PPSBNK/2026/00003
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0002 28/07/2026 ملخص المبيعات المعلم الشامي 690.00 SR مدفوع  ":
+    - generic: POSS/2026/07/0002
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 690.00 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PSCSH/2026/00006 27/07/2026 ملخص المبيعات المعلم الشامي 215.00 SR  ":
+    - generic: PSCSH/2026/00006
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 215.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00008 27/07/2026 ملخص المبيعات المعلم الشامي 345.00 SR  ":
+    - generic: PPSBNK/2026/00008
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00007 27/07/2026 ملخص المبيعات المعلم الشامي 230.00 SR  ":
+    - generic: PPSBNK/2026/00007
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0006 27/07/2026 ملخص المبيعات المعلم الشامي 790.00 SR مدفوع  ":
+    - generic: POSS/2026/07/0006
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 790.00 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "PSBNK/2026/00004 27/07/2026 عكس: ملخص المبيعات المعلم الشامي 230.00 SR  "':
+    - generic: PSBNK/2026/00004
+    - generic: 27/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "PSBNK/2026/00003 27/07/2026 عكس: ملخص المبيعات المعلم الشامي 345.00 SR  "':
+    - generic: PSBNK/2026/00003
+    - generic: 27/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "PSCSH/2026/00005 27/07/2026 عكس: ملخص المبيعات المعلم الشامي 115.00 SR  "':
+    - generic: PSCSH/2026/00005
+    - generic: 27/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: 115.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "POSS/2026/07/0005 27/07/2026 عكس: ملخص المبيعات المعلم الشامي -690.00 SR مدفوع  "':
+    - generic: POSS/2026/07/0005
+    - generic: 27/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: "-690.00 SR"
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PSCSH/2026/00001 27/07/2026 ملخص المبيعات المعلم الشامي 115.00 SR  ":
+    - generic: PSCSH/2026/00001
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 115.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00002 27/07/2026 ملخص المبيعات المعلم الشامي 345.00 SR  ":
+    - generic: PPSBNK/2026/00002
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00001 27/07/2026 ملخص المبيعات المعلم الشامي 230.00 SR  ":
+    - generic: PPSBNK/2026/00001
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0001 27/07/2026 ملخص المبيعات المعلم الشامي 690.00 SR مدفوع  ":
+    - generic: POSS/2026/07/0001
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: 690.00 SR
+    - generic: مدفوع
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

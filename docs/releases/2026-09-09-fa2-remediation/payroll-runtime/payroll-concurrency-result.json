@@ -1,0 +1,132 @@
+{
+  "checks": [
+    {
+      "name": "nonadmin payroll without accounting denied",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "different wizards one success",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "different wizards one stale block",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "same wizard both calls succeed",
+      "expected": "2",
+      "actual": "2",
+      "pass": true
+    },
+    {
+      "name": "payment correction one success",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "payment correction one stale block",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "different correction one journal",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "same correction one journal",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "same correction net exactly3011",
+      "expected": "3011",
+      "actual": "3011.0",
+      "pass": true
+    },
+    {
+      "name": "race salary debt nonnegative",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    }
+  ],
+  "races": [
+    {
+      "name": "different correction wizards",
+      "results": [
+        {
+          "result": "blocked",
+          "attempts": 2,
+          "errors": [
+            "SerializationFailure"
+          ],
+          "message": "The source balance or history changed. Reopen correction and review the current evidence."
+        },
+        {
+          "result": "success",
+          "attempts": 1,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "same correction replay",
+      "results": [
+        {
+          "result": "success",
+          "attempts": 2,
+          "errors": [
+            "SerializationFailure"
+          ]
+        },
+        {
+          "result": "success",
+          "attempts": 1,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "payment versus salary reduction",
+      "results": [
+        {
+          "result": "success",
+          "attempts": 1,
+          "errors": []
+        },
+        {
+          "result": "blocked",
+          "attempts": 2,
+          "errors": [
+            "SerializationFailure"
+          ],
+          "message": "A salary balance changed after this payment screen was opened. Reopen payment to review the current balances."
+        }
+      ]
+    }
+  ],
+  "database": "baseer_fix_payroll_20260909",
+  "fixtures": {
+    "slips": [
+      462,
+      463,
+      464
+    ],
+    "users": [
+      127,
+      128
+    ]
+  },
+  "status": "completed"
+}

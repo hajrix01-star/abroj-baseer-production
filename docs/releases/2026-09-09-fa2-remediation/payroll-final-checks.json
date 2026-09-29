@@ -1,0 +1,101 @@
+{
+  "results": [
+    {
+      "name": "payroll-independent-result",
+      "status": "completed",
+      "checks": 125,
+      "passed": 125,
+      "expected_denials_in_observations": 5
+    },
+    {
+      "name": "payroll-eos-leave-result",
+      "status": "completed",
+      "checks": 20,
+      "passed": 20,
+      "expected_denials_in_observations": 5
+    },
+    {
+      "name": "payroll-boundary-result",
+      "status": "completed",
+      "checks": 13,
+      "passed": 13,
+      "expected_denials_in_observations": 0
+    },
+    {
+      "name": "payroll-security-result",
+      "status": "completed",
+      "checks": 4,
+      "passed": 4,
+      "expected_denials_in_observations": 9
+    },
+    {
+      "name": "payroll-concurrency-result",
+      "status": "completed",
+      "checks": 10,
+      "passed": 10,
+      "expected_denials_in_observations": 0
+    },
+    {
+      "name": "payroll-rpc-result",
+      "status": "completed",
+      "checks": 11,
+      "passed": 11,
+      "expected_denials_in_observations": 0
+    },
+    {
+      "name": "payroll-view-policy-result",
+      "status": "completed",
+      "checks": 2,
+      "passed": 2,
+      "expected_denials_in_observations": 0
+    },
+    {
+      "name": "company_accounting_seed_checks",
+      "status": "passed",
+      "checks": 137,
+      "passed": 137,
+      "expected_denials_in_observations": 0
+    },
+    {
+      "name": "payroll-dialog-translation-result",
+      "status": "completed",
+      "checks": 11,
+      "passed": 11,
+      "expected_denials_in_observations": 0
+    }
+  ],
+  "source_hashes": {
+    "custom_addons/baseer_payroll/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons/baseer_payroll/__manifest__.py": "8c8fcd04d708dee265b9924da7f581953409883a642eb30c5b86d2d5af7fc2ec",
+    "custom_addons/baseer_payroll/data/work_schedules.xml": "25a9c85daaf88290daff69b61dceec14a822d04b00478346905fc3b72bd21fc9",
+    "custom_addons/baseer_payroll/i18n/ar.po": "852d89da254babc6303f625e2b8c9e1109828cd456c12588976ed9095252d1a7",
+    "custom_addons/baseer_payroll/models/common.py": "13413fc8c1bb415f99946579a72796b5d132c91781717c5009532191ef7c16a8",
+    "custom_addons/baseer_payroll/models/correction.py": "29f1cf80d743dc1494e497a89db61aea8b6ea4c744f870338be948e809e32da0",
+    "custom_addons/baseer_payroll/models/end_service.py": "ed87294f0ce7c0b6781db743a8cca3ad1006f5dee7ac7d71899f3a0d6ce07a6f",
+    "custom_addons/baseer_payroll/models/eos_workflow.py": "2e23df3e8f9c2249391b562a54fc8918a45dc321455a86a52a7acbaca8062f30",
+    "custom_addons/baseer_payroll/models/financial_record.py": "2829b4c558ae775902440b9ec2204189cd41806fad8bda81059b723584194858",
+    "custom_addons/baseer_payroll/models/guards.py": "2b1a0c3be2a21f82531ae244c096d12cbb213a0f4b9a6ddd8d9b3d3447c33378",
+    "custom_addons/baseer_payroll/models/loan.py": "e7346aadeade0613055a565e6ea8554069c1fd0ab3a90b7f257022fd54f2e776",
+    "custom_addons/baseer_payroll/models/payroll.py": "f4e0aad5cd369dcda971ba04105c72b7bcc7958008c0989922b742dc9f4d51d9",
+    "custom_addons/baseer_payroll/models/settings.py": "165fa5a5df6fce0e86470ceb070bcbfccece17ae01a4c3f8316c412728facb8b",
+    "custom_addons/baseer_payroll/models/settlement.py": "3b6b6ac7748a682a13b83f72ecbb51233710449b04091560cd8784f88989d11b",
+    "custom_addons/baseer_payroll/models/work_schedules.py": "42eae1c2a58ba310b8235abeded2c537ef2e142f11221c5a5e9e6bb18bfe418a",
+    "custom_addons/baseer_payroll/models/__init__.py": "d194329a47c6850de849902621e0a5c641adc9a9671d30bb60cdcbfa7525108f",
+    "custom_addons/baseer_payroll/report/end_service_report.xml": "a5b5c52bc3bcf5316f54da5312eec2fd75227337e7dcb8f95d89733147ef54b6",
+    "custom_addons/baseer_payroll/report/payment_receipt.xml": "0f5975fd8a1621d5728e461915c19bae16746d93960314860b2e555b8fa7a44a",
+    "custom_addons/baseer_payroll/report/payslip_report.xml": "7b2dc655c7386b11aed09953d2287dbd02695a79ed506bc5513fb573ee358508",
+    "custom_addons/baseer_payroll/security/end_service_security.xml": "774af294a1d920589c8c4ccf2e98ea9ee57f99123ea97293515d771784f40ba5",
+    "custom_addons/baseer_payroll/security/ir.model.access.csv": "f075dc023f17263609d70b812dd1dd90f3df7214e45a6c3124327c2ffda14d1b",
+    "custom_addons/baseer_payroll/views/correction_views.xml": "df78f9d4369fff5b9db4363662fa2bed8ee191d119b55800a536820f9075e4d8",
+    "custom_addons/baseer_payroll/views/end_service_views.xml": "e698a95ccfe8725e4a93fc6c99490c0d1ea3d6ab06cb4e005df1536a4ba6b15c",
+    "custom_addons/baseer_payroll/views/eos_workflow_views.xml": "be9ce89055be8bc43fef93699f8a405ee95d8a84febb2dd29c57540c27eb0ef4",
+    "custom_addons/baseer_payroll/views/loan_views.xml": "8f809200b9c78f19c5c0992a68fb1d6f17c57f95d559b2d1c1b6c09f8cc1d264",
+    "custom_addons/baseer_payroll/views/payroll_views.xml": "31fe1c000554b122eda84cfa850e48335c24ef29413d4db6d6e03898c8a15a38",
+    "custom_addons/baseer_payroll/views/settings_views.xml": "cabd5afb392bd2f9c54193c498891f561ebbb2f0da8a885f5d823346bfa170bd",
+    "custom_addons/baseer_payroll/views/settlement_views.xml": "023422f1e5955cd8e74e82a8dcd1a8be1631f6442499e8adaf531621303cfbf5",
+    "custom_addons/baseer_payroll/static/src/payroll.scss": "d9171f84d50892034491dee7a93402c98a88750cf5a814f5eca25e9486559ceb",
+    "custom_addons/baseer_payroll/static/src/payroll_month_field.js": "2c6b355df7049aa2b9444bc05750c6d2d28c5b5c7609833accfaeed189efd3cb",
+    "custom_addons/baseer_payroll/static/src/payroll_month_field.xml": "a3fd32a1129ce6a14920134d5c8c9381694f8a77cd96b62c489c8f30ca6b7e1c"
+  },
+  "seed_source_sha256": "5e75319478c40a03805a5a6bc82b01582c0cf64c022e8de9856cd86dd567a796"
+}

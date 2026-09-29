@@ -1,0 +1,297 @@
+{
+  "status": "PASS",
+  "database": "baseer_sim90_fix_20260911",
+  "checks": [
+    {
+      "name": "wage correction posted through native workflow",
+      "actual": "posted",
+      "expected": "posted",
+      "passed": true
+    },
+    {
+      "name": "wage immutable source points to original payslip",
+      "actual": "51",
+      "expected": "51",
+      "passed": true
+    },
+    {
+      "name": "wage immutable original accounting link",
+      "actual": "314",
+      "expected": "314",
+      "passed": true
+    },
+    {
+      "name": "wage posting date remains actual source date",
+      "actual": "2026-03-31",
+      "expected": "2026-03-31",
+      "passed": true
+    },
+    {
+      "name": "wage input funded expense exact",
+      "actual": "100.01",
+      "expected": "100.01",
+      "passed": true
+    },
+    {
+      "name": "wage one native cash payment",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "wage actual payment posted",
+      "actual": "paid",
+      "expected": "paid",
+      "passed": true
+    },
+    {
+      "name": "wage actual liquidity exact",
+      "actual": "-100.01",
+      "expected": "-100.01",
+      "passed": true
+    },
+    {
+      "name": "wage source boundary conserves actual cash",
+      "actual": "-100.01",
+      "expected": "-100.01",
+      "passed": true
+    },
+    {
+      "name": "wage no invented tax",
+      "actual": "-100.01",
+      "expected": "-100.01",
+      "passed": true
+    },
+    {
+      "name": "wage no unresolved source",
+      "actual": "False",
+      "expected": "False",
+      "passed": true
+    },
+    {
+      "name": "wage all allocated evidence stays in correction source",
+      "actual": "{7198}",
+      "expected": "{7198}",
+      "passed": true
+    },
+    {
+      "name": "wage correction account category only",
+      "actual": "{143}",
+      "expected": "{143}",
+      "passed": true
+    },
+    {
+      "name": "wage future correction payment not classified before cutoff",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "wage cutoff fallback still conserves amount",
+      "actual": "-100.01",
+      "expected": "-100.01",
+      "passed": true
+    },
+    {
+      "name": "deduction correction posted through native workflow",
+      "actual": "posted",
+      "expected": "posted",
+      "passed": true
+    },
+    {
+      "name": "deduction immutable source points to original payslip",
+      "actual": "51",
+      "expected": "51",
+      "passed": true
+    },
+    {
+      "name": "deduction immutable original accounting link",
+      "actual": "314",
+      "expected": "314",
+      "passed": true
+    },
+    {
+      "name": "deduction posting date remains actual source date",
+      "actual": "2026-03-31",
+      "expected": "2026-03-31",
+      "passed": true
+    },
+    {
+      "name": "deduction input funded expense exact",
+      "actual": "25.01",
+      "expected": "25.01",
+      "passed": true
+    },
+    {
+      "name": "deduction one native cash payment",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "deduction actual payment posted",
+      "actual": "paid",
+      "expected": "paid",
+      "passed": true
+    },
+    {
+      "name": "deduction actual liquidity exact",
+      "actual": "-25.01",
+      "expected": "-25.01",
+      "passed": true
+    },
+    {
+      "name": "deduction source boundary conserves actual cash",
+      "actual": "-25.01",
+      "expected": "-25.01",
+      "passed": true
+    },
+    {
+      "name": "deduction no invented tax",
+      "actual": "-25.01",
+      "expected": "-25.01",
+      "passed": true
+    },
+    {
+      "name": "deduction no unresolved source",
+      "actual": "False",
+      "expected": "False",
+      "passed": true
+    },
+    {
+      "name": "deduction all allocated evidence stays in correction source",
+      "actual": "{7200}",
+      "expected": "{7200}",
+      "passed": true
+    },
+    {
+      "name": "deduction correction account category only",
+      "actual": "{212}",
+      "expected": "{212}",
+      "passed": true
+    },
+    {
+      "name": "deduction future correction payment not classified before cutoff",
+      "actual": "True",
+      "expected": "True",
+      "passed": true
+    },
+    {
+      "name": "deduction cutoff fallback still conserves amount",
+      "actual": "-25.01",
+      "expected": "-25.01",
+      "passed": true
+    },
+    {
+      "name": "two native adjustments increase net by declared 125.02",
+      "actual": "2580.50",
+      "expected": "2580.50",
+      "passed": true
+    },
+    {
+      "name": "two correction-only payments increase paid by 125.02",
+      "actual": "125.02",
+      "expected": "125.02",
+      "passed": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "wage",
+      "payslip_id": 51,
+      "correction_id": 1,
+      "correction_move_id": 7198,
+      "payment_id": 3590,
+      "payment_move_id": 7199,
+      "expected_account_id": 143,
+      "expected_cash": "-100.01",
+      "fragment_source_ids": [
+        18106
+      ]
+    },
+    {
+      "kind": "deduction",
+      "payslip_id": 51,
+      "correction_id": 2,
+      "correction_move_id": 7200,
+      "payment_id": 3591,
+      "payment_move_id": 7201,
+      "expected_account_id": 212,
+      "expected_cash": "-25.01",
+      "fragment_source_ids": [
+        18110
+      ]
+    }
+  ],
+  "hard_commit_guard": true,
+  "rolled_back": true,
+  "before": {
+    "account.move": {
+      "count": 5019,
+      "sha256": "dbf33c5dae08a3d0131a6a75f3cddb508d96643f130c6493e7f8e746df00426c"
+    },
+    "account.move.line": {
+      "count": 12852,
+      "sha256": "533d001d73986ce06e2f9e62fe136c08cac65d71a4a1695b9d861a35c2713b91"
+    },
+    "account.payment": {
+      "count": 2463,
+      "sha256": "9f055289704e285f527ebd39cbeae478fde19e235b6df8b7152ef5c492f1a4da"
+    },
+    "account.partial.reconcile": {
+      "count": 3634,
+      "sha256": "e5543c4705026b00c082d28310d9907637009e37e9c38d57cfc69d3712ea7010"
+    },
+    "baseer.hr.loan": {
+      "count": 24,
+      "sha256": "222fdf86f08130e2fb72fa55930e44344358ad9555126527ec1d6b2f4e87f7da"
+    },
+    "baseer.hr.loan.allocation": {
+      "count": 43,
+      "sha256": "0568896626f33aa541ec98b67ed664ea179802bacef05ac2280139503339f110"
+    },
+    "hr.payslip": {
+      "count": 71,
+      "sha256": "c953999f0993ac3e58191218473461166824105c49607e8ea8e2ec02cc1f5e9b"
+    },
+    "res.users": {
+      "count": 7,
+      "sha256": "560bd8d131fde1b973fedf0e33b487e327a5a28d12083d41c5b13421b5c536ff"
+    }
+  },
+  "after": {
+    "account.move": {
+      "count": 5019,
+      "sha256": "dbf33c5dae08a3d0131a6a75f3cddb508d96643f130c6493e7f8e746df00426c"
+    },
+    "account.move.line": {
+      "count": 12852,
+      "sha256": "533d001d73986ce06e2f9e62fe136c08cac65d71a4a1695b9d861a35c2713b91"
+    },
+    "account.payment": {
+      "count": 2463,
+      "sha256": "9f055289704e285f527ebd39cbeae478fde19e235b6df8b7152ef5c492f1a4da"
+    },
+    "account.partial.reconcile": {
+      "count": 3634,
+      "sha256": "e5543c4705026b00c082d28310d9907637009e37e9c38d57cfc69d3712ea7010"
+    },
+    "baseer.hr.loan": {
+      "count": 24,
+      "sha256": "222fdf86f08130e2fb72fa55930e44344358ad9555126527ec1d6b2f4e87f7da"
+    },
+    "baseer.hr.loan.allocation": {
+      "count": 43,
+      "sha256": "0568896626f33aa541ec98b67ed664ea179802bacef05ac2280139503339f110"
+    },
+    "hr.payslip": {
+      "count": 71,
+      "sha256": "c953999f0993ac3e58191218473461166824105c49607e8ea8e2ec02cc1f5e9b"
+    },
+    "res.users": {
+      "count": 7,
+      "sha256": "560bd8d131fde1b973fedf0e33b487e327a5a28d12083d41c5b13421b5c536ff"
+    }
+  },
+  "checks_passed": 32
+}

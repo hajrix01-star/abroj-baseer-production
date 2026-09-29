@@ -1,0 +1,134 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "تجربة الرواتب والسلف":
+        - text: 
+        - generic: تجربة الرواتب والسلف
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "الموردين":
+    - /url: /odoo/vendors
+- generic: الشركة السعودية للطاقة
+- button "قائمة الإجراءات":
+  - generic: 
+- button " كشف حساب المورّد":
+  - generic: 
+  - generic: كشف حساب المورّد
+- button " 0 المبيعات":
+  - generic: 
+  - generic: "0"
+  - generic: المبيعات
+- button " 0.00 SR مفوتر":
+  - generic: 
+  - generic: 0.00 SR
+  - generic: مفوتر
+- button " 0 الاجتماعات":
+  - generic: 
+  - generic: "0"
+  - generic: الاجتماعات
+- button " 0 المشتريات":
+  - generic: 
+  - generic: "0"
+  - generic: المشتريات
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "3"
+    - text: / 22
+    - button "السابق":
+      - generic: 
+    - button "التالي":
+      - generic: 
+- main:
+  - button "إضافة صورة"
+  - img "ملف ثنائي"
+  - radiogroup "نوع الشركة":
+    - radio "شخص"
+    - generic: شخص
+    - radio "الشركة" [checked]
+    - generic: الشركة
+  - heading "الشركة السعودية للطاقة" [level=1]:
+    - 'combobox "مثال: Lumber Inc"': الشركة السعودية للطاقة
+  - generic "البريد الإلكتروني": 
+  - textbox "البريد الإلكتروني"
+  - generic "رقم الهاتف": 
+  - textbox "رقم الهاتف"
+  - generic: العنوان
+  - combobox "الشارع..."
+  - textbox "الشارع 2..."
+  - textbox "المدينة"
+  - combobox "الولاية"
+  - textbox "الرمز البريدي"
+  - combobox "الدولة": المملكة العربية السعودية
+  - text: VAT Number
+  - superscript: "?"
+  - combobox "310175397400003 [مكوّن من 15 رقم، ويجب أن يكون أول وآخر رقم \"3\"]": "300000361310003"
+  - generic: الموقع الإلكتروني
+  - textbox "الموقع الإلكتروني":
+    - /placeholder: مثل https://www.odoo.com
+  - text: اللغة
+  - superscript: "?"
+  - textbox "اللغة?": English (US)
+  - generic: علامات التصنيف
+  - generic "مقدمو الخدمات":
+    - generic: مقدمو الخدمات
+    - link "حذف":
+      - /url: "#"
+      - generic: 
+  - generic "مقدمو الخدمات / مقدمو الكهرباء":
+    - generic: مقدمو الخدمات / مقدمو الكهرباء
+    - link "حذف":
+      - /url: "#"
+      - generic: 
+  - combobox "علامات التصنيف"
+  - list:
+    - tab "جهات الاتصال"
+    - tab "المبيعات والمشتريات"
+    - tab "الفوترة"
+    - tab "الملاحظات"
+  - generic: إضافة جهة الاتصال
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - separator
+  - generic: اليوم
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: OdooBot
+    - generic "٨‏/٩‏/٢٠٢٦، ١١:٠٢:١٠ م": ١١:٠٢ م
+    - paragraph: Contact created

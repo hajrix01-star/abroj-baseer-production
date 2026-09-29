@@ -1,0 +1,12 @@
+.abroj-brand img { width: 420px; }
+.abroj-header { height: 158px; position: relative; border-bottom: 0; }
+.abroj-header:after {
+  content: ''; position: absolute; height: 1px; background: var(--line);
+  inset-inline-start: 484px; inset-inline-end: 0; bottom: 28px;
+}
+[dir='rtl'] .abroj-header:after { inset-inline-start: auto; inset-inline-end: auto; left: 484px; right: 0; }
+@media (max-width: 700px) {
+  .abroj-header { min-height: 124px; }
+  .abroj-brand img { width: 275px; }
+  .abroj-header:after { display: none; }
+}

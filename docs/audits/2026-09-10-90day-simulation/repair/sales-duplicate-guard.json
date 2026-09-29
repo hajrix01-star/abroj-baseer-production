@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "database": "baseer_sim90_fix_20260911",
+  "checks": [
+    {
+      "label": "existing bank receipt exact source",
+      "passed": true
+    },
+    {
+      "label": "retained summary reversal has exact independent ledger proof",
+      "passed": true
+    },
+    {
+      "label": "repeated reversal proof reuses budgeted evidence",
+      "passed": true
+    },
+    {
+      "label": "single native receipt proves original460",
+      "passed": true
+    },
+    {
+      "label": "real duplicate payment posts balanced native ledger",
+      "passed": true
+    },
+    {
+      "label": "duplicate source179 retains460 without fabricated sales/VAT",
+      "passed": true
+    },
+    {
+      "label": "duplicate source3593 retains460 without fabricated sales/VAT",
+      "passed": true
+    },
+    {
+      "label": "all duplicate fixture rows rolled back",
+      "passed": true
+    },
+    {
+      "label": "original proof restored after rollback",
+      "passed": true
+    }
+  ],
+  "rollback": true
+}

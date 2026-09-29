@@ -1,0 +1,3 @@
+PURCHASE_BATCH_OK 80 [{'rows': 3, 'seconds': 1.4413444999954663}, {'rows': 1, 'seconds': 0.11795921600423753}, {'rows': 10, 'seconds': 1.127240678993985}, {'rows': 50, 'seconds': 5.006737392046489}]
+
+STDERR:

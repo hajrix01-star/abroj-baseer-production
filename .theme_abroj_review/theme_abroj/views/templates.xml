@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="abroj_homepage" inherit_id="website.homepage" name="Abroj Homepage">
+        <xpath expr="//div[@id='wrap']" position="replace">
+            <div id="wrap" class="oe_structure abroj-site" dir="rtl">
+                <section class="abroj-hero" id="home">
+                    <div class="abroj-hero__media" role="img" aria-label="فيلا سكنية حديثة تظهر بتنفيذ واقعي مع كشف تقني لأنظمة المبنى"></div>
+                    <div class="abroj-hero__veil"></div>
+                    <div class="container abroj-container abroj-hero__inner">
+                        <nav class="abroj-nav" aria-label="التنقل الرئيسي">
+                            <a href="#home" class="abroj-brand" aria-label="أبرج للإنشاءات المتكاملة">
+                                <span class="abroj-brand__latin">ABROJ</span>
+                                <span class="abroj-brand__arabic">للإنشاءات المتكاملة</span>
+                            </a>
+                            <div class="abroj-nav__links">
+                                <a href="#services">الخدمات</a>
+                                <a href="#approach">طريقة العمل</a>
+                                <a href="#work">الأعمال</a>
+                                <a href="#contact">تواصل معنا</a>
+                            </div>
+                            <a href="#contact" class="abroj-btn abroj-btn--nav">طلب عرض سعر</a>
+                        </nav>
+
+                        <div class="abroj-hero__copy">
+                            <span class="abroj-kicker">أبرج للإنشاءات المتكاملة</span>
+                            <h1>من المخطط إلى مساحة<br/>جاهزة للاستخدام.</h1>
+                            <p>
+                                نبني المنازل والفلل، نعيد تأهيل المساحات القائمة، ونجهز المحلات وأنظمة التكييف ضمن تنفيذ واحد واضح من البداية حتى التسليم.
+                            </p>
+                            <div class="abroj-actions">
+                                <a href="#contact" class="abroj-btn abroj-btn--primary">اطلب معاينة للمشروع</a>
+                                <a href="#services" class="abroj-btn abroj-btn--ghost">استكشف خدماتنا</a>
+                            </div>
+                        </div>
+
+                        <div class="abroj-hero__rail" aria-label="مجالات العمل">
+                            <span>بناء سكني</span>
+                            <span>ترميم وتأهيل</span>
+                            <span>تجهيز تجاري</span>
+                            <span>تكييف وتهوية</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="abroj-section abroj-intro" id="services">
+                    <div class="container abroj-container">
+                        <div class="abroj-heading-grid">
+                            <div>
+                                <span class="abroj-kicker abroj-kicker--dark">خدمات أبرج</span>
+                                <h2>تنفيذ متكامل للمساحات التي تعيش وتعمل فيها.</h2>
+                            </div>
+                            <p class="abroj-lead">
+                                نتعامل مع المشروع كمنظومة واحدة: الهيكل، الترميم، التشطيبات، تجهيز المحل والخدمات الميكانيكية. الهدف أن تصل إلى نتيجة نهائية متناسقة بدل إدارة عدة جهات منفصلة لكل تفصيلة.
+                            </p>
+                        </div>
+
+                        <div class="abroj-services-grid">
+                            <article class="abroj-service-card abroj-service-card--villa">
+                                <div class="abroj-service-card__image"></div>
+                                <div class="abroj-service-card__content">
+                                    <span class="abroj-service-card__index">01</span>
+                                    <h3>بناء المنازل والفلل</h3>
+                                    <p>تنفيذ الأعمال الإنشائية والمعمارية والتشطيبات حتى الوصول إلى مبنى جاهز للاستخدام.</p>
+                                </div>
+                            </article>
+                            <article class="abroj-service-card abroj-service-card--renovation">
+                                <div class="abroj-service-card__image"></div>
+                                <div class="abroj-service-card__content">
+                                    <span class="abroj-service-card__index">02</span>
+                                    <h3>الترميم وإعادة التأهيل</h3>
+                                    <p>معالجة المساحات القائمة وتحديثها وظيفيًا وبصريًا، مع فهم ما يحتاج إلى إصلاح قبل تغطيته بالتشطيب.</p>
+                                </div>
+                            </article>
+                            <article class="abroj-service-card abroj-service-card--retail">
+                                <div class="abroj-service-card__image"></div>
+                                <div class="abroj-service-card__content">
+                                    <span class="abroj-service-card__index">03</span>
+                                    <h3>تجهيز المحلات والمتاجر</h3>
+                                    <p>تهيئة المتجر من الأعمال الأساسية إلى الأسقف والإضاءة والواجهات والتفاصيل النهائية الجاهزة للتشغيل.</p>
+                                </div>
+                            </article>
+                            <article class="abroj-service-card abroj-service-card--hvac">
+                                <div class="abroj-service-card__image"></div>
+                                <div class="abroj-service-card__content">
+                                    <span class="abroj-service-card__index">04</span>
+                                    <h3>التكييف والتهوية</h3>
+                                    <p>تنسيق وتنفيذ أنظمة التكييف والتهوية بما يحافظ على كفاءة النظام ونظافة التشطيب النهائي.</p>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="abroj-xray" id="approach">
+                    <div class="abroj-xray__media"></div>
+                    <div class="abroj-xray__overlay"></div>
+                    <div class="container abroj-container abroj-xray__content">
+                        <div class="abroj-xray__copy">
+                            <span class="abroj-kicker">ما لا تراه مهم</span>
+                            <h2>ما خلف التشطيب مهم بقدر ما تراه.</h2>
+                            <p>
+                                جودة المشروع لا تبدأ من الدهان ولا تنتهي عند الواجهة. التمديدات، مسارات التكييف، العزل، نقاط الصيانة والتنسيق بين الأنظمة هي ما يحافظ على جودة المساحة بعد التسليم.
+                            </p>
+                            <div class="abroj-points">
+                                <span>تنسيق الخدمات قبل الإغلاق</span>
+                                <span>معالجة التعارضات مبكرًا</span>
+                                <span>تشطيب نهائي أنظف وأسهل للصيانة</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="abroj-section abroj-process">
+                    <div class="container abroj-container">
+                        <div class="abroj-heading-grid abroj-heading-grid--compact">
+                            <div>
+                                <span class="abroj-kicker abroj-kicker--dark">طريقة العمل</span>
+                                <h2>نبدأ بالموقع، لا بالتخمين.</h2>
+                            </div>
+                            <p class="abroj-lead">كل مرحلة يجب أن تحسم سؤالًا واضحًا قبل الانتقال للمرحلة التالية: ماذا سننفذ، كيف سننفذه، وما الذي يجب تنسيقه قبل إغلاق الأعمال.</p>
+                        </div>
+
+                        <div class="abroj-steps">
+                            <article>
+                                <span>01</span>
+                                <h3>معاينة وفهم النطاق</h3>
+                                <p>نراجع الموقع، الحالة القائمة، الاحتياج والقيود التي تؤثر على التنفيذ.</p>
+                            </article>
+                            <article>
+                                <span>02</span>
+                                <h3>تحديد الأعمال والتكلفة</h3>
+                                <p>نحوّل الاحتياج إلى نطاق عمل واضح يساعد على التسعير والتنفيذ دون مناطق رمادية.</p>
+                            </article>
+                            <article>
+                                <span>03</span>
+                                <h3>تنسيق التنفيذ</h3>
+                                <p>نرتب الأعمال الإنشائية والتشطيبات والخدمات بالترتيب الذي يمنع إعادة العمل والتعارض.</p>
+                            </article>
+                            <article>
+                                <span>04</span>
+                                <h3>الاختبار والتسليم</h3>
+                                <p>نراجع الأعمال النهائية ونختبر الأنظمة قبل تسليم مساحة جاهزة للاستخدام.</p>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="abroj-section abroj-work" id="work">
+                    <div class="container abroj-container">
+                        <div class="abroj-heading-grid">
+                            <div>
+                                <span class="abroj-kicker abroj-kicker--dark">نطاق أعمالنا</span>
+                                <h2>منزل جديد، مساحة قائمة، أو متجر يستعد للافتتاح.</h2>
+                            </div>
+                            <p class="abroj-lead">بدل عرض صور لا تعبّر عن طبيعة العمل، نوضح هنا أنواع المشاريع التي صُممت أبرج لخدمتها. المشاريع الفعلية تُضاف لاحقًا بأسمائها وصورها وبياناتها الحقيقية.</p>
+                        </div>
+
+                        <div class="abroj-work-grid">
+                            <article class="abroj-work-card abroj-work-card--home">
+                                <div class="abroj-work-card__shade"></div>
+                                <div class="abroj-work-card__copy">
+                                    <span>سكني</span>
+                                    <h3>بناء وتشطيب فيلا</h3>
+                                    <p>من الأعمال الأساسية إلى التشطيب النهائي.</p>
+                                </div>
+                            </article>
+                            <article class="abroj-work-card abroj-work-card--renewal">
+                                <div class="abroj-work-card__shade"></div>
+                                <div class="abroj-work-card__copy">
+                                    <span>ترميم</span>
+                                    <h3>إعادة تأهيل منزل قائم</h3>
+                                    <p>تحديث البنية والخدمات والمظهر دون فقدان ما يمكن الحفاظ عليه.</p>
+                                </div>
+                            </article>
+                            <article class="abroj-work-card abroj-work-card--shop">
+                                <div class="abroj-work-card__shade"></div>
+                                <div class="abroj-work-card__copy">
+                                    <span>تجاري</span>
+                                    <h3>تجهيز متجر</h3>
+                                    <p>أعمال متكاملة للوصول إلى مساحة جاهزة للتشغيل.</p>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="abroj-section abroj-value">
+                    <div class="container abroj-container">
+                        <div class="abroj-value__panel">
+                            <div>
+                                <span class="abroj-kicker">تنفيذ مترابط</span>
+                                <h2>أقل تعارضات. مسؤولية أوضح. نتيجة أكثر اتساقًا.</h2>
+                            </div>
+                            <div class="abroj-value__list">
+                                <div><strong>01</strong><span>ربط الأعمال المدنية والتشطيبات والخدمات ضمن خطة تنفيذ واحدة.</span></div>
+                                <div><strong>02</strong><span>قرارات مبكرة في النقاط التي تصبح مكلفة إذا عولجت بعد الإغلاق.</span></div>
+                                <div><strong>03</strong><span>تواصل واضح حول نطاق العمل والتغييرات وما تم إنجازه.</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="abroj-cta" id="contact">
+                    <div class="abroj-cta__media"></div>
+                    <div class="abroj-cta__overlay"></div>
+                    <div class="container abroj-container abroj-cta__content">
+                        <span class="abroj-kicker">ابدأ من الموقع</span>
+                        <h2>لديك منزل، محل أو مساحة تحتاج إلى تنفيذ؟</h2>
+                        <p>أرسل تفاصيل المشروع، ونبدأ بتحديد النطاق الذي يحتاجه فعلًا قبل الدخول في التنفيذ.</p>
+                        <a href="/contactus" class="abroj-btn abroj-btn--primary">اطلب معاينة أو عرض سعر</a>
+                    </div>
+                </section>
+
+                <footer class="abroj-footer">
+                    <div class="container abroj-container abroj-footer__grid">
+                        <div class="abroj-brand abroj-brand--footer">
+                            <span class="abroj-brand__latin">ABROJ</span>
+                            <span class="abroj-brand__arabic">للإنشاءات المتكاملة</span>
+                        </div>
+                        <p>بناء سكني · ترميم وتأهيل · تجهيز متاجر · تكييف وتهوية</p>
+                        <a href="/contactus">تواصل معنا</a>
+                    </div>
+                </footer>
+            </div>
+        </xpath>
+    </template>
+</odoo>

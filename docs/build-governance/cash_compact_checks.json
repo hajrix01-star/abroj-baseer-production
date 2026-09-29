@@ -1,0 +1,1603 @@
+{
+  "company_id": 9,
+  "checks": [
+    {
+      "check": "gross: unchanged receipts",
+      "passed": true,
+      "actual": "460.0",
+      "expected": "460"
+    },
+    {
+      "check": "gross: unchanged payments",
+      "passed": true,
+      "actual": "-731.0",
+      "expected": "-731"
+    },
+    {
+      "check": "gross: unchanged displayed_net_movement",
+      "passed": true,
+      "actual": "-271.0",
+      "expected": "-271"
+    },
+    {
+      "check": "gross: unchanged actual_net_movement",
+      "passed": true,
+      "actual": "-271.0",
+      "expected": "-271"
+    },
+    {
+      "check": "gross: unchanged opening_cash_balance",
+      "passed": true,
+      "actual": "1000.0",
+      "expected": "1000"
+    },
+    {
+      "check": "gross: unchanged closing_cash_balance",
+      "passed": true,
+      "actual": "729.0",
+      "expected": "729"
+    },
+    {
+      "check": "gross: unchanged balance_check",
+      "passed": true,
+      "actual": "0.0",
+      "expected": "0"
+    },
+    {
+      "check": "gross: unchanged excluded_tax_bridge",
+      "passed": true,
+      "actual": "0.0",
+      "expected": "0"
+    },
+    {
+      "check": "gross screen: stable unique row IDs",
+      "passed": true
+    },
+    {
+      "check": "gross screen: no redundant receipt account children",
+      "passed": true
+    },
+    {
+      "check": "gross screen: no repeated receipt/payment subtotal rows",
+      "passed": true
+    },
+    {
+      "check": "gross screen: one header per cash direction",
+      "passed": true
+    },
+    {
+      "check": "gross screen: gross actual net appears once",
+      "passed": true
+    },
+    {
+      "check": "gross: audit parent is nonnumeric and collapsed initially",
+      "passed": true
+    },
+    {
+      "check": "gross: correct audit nesting baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: correct audit nesting baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: correct audit nesting baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "gross: explanatory notes belong inside collapsed audit detail",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-note-0",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-note-1",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-note-2",
+      "passed": true
+    },
+    {
+      "check": "gross: consistent hierarchy level baseer-note-3",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action receipts",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope receipts",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope receipts",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged receipts",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "gross: numeric amount retains native action baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "gross: source company scope baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "gross: source posted scope baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "gross: original source provenance unchanged baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "gross: monetary drilldown coverage includes categories and audit amounts",
+      "passed": true,
+      "count": 24
+    },
+    {
+      "check": "gross: zero reconciliation still present in drillable audit detail",
+      "passed": true,
+      "actual": "0.0",
+      "expected": "0"
+    },
+    {
+      "check": "gross PDF: stable unique row IDs",
+      "passed": true
+    },
+    {
+      "check": "gross PDF: no redundant receipt account children",
+      "passed": true
+    },
+    {
+      "check": "gross PDF: no repeated receipt/payment subtotal rows",
+      "passed": true
+    },
+    {
+      "check": "gross PDF: one header per cash direction",
+      "passed": true
+    },
+    {
+      "check": "gross PDF: gross actual net appears once",
+      "passed": true
+    },
+    {
+      "check": "gross: PDF output has exactly canonical rows without hidden duplicate totals",
+      "passed": true,
+      "count": 29
+    },
+    {
+      "check": "gross: XLSX output contains exactly canonical report rows",
+      "passed": true,
+      "count": 29
+    },
+    {
+      "check": "gross: XLSX monetary value receipts",
+      "passed": true,
+      "actual": "460",
+      "expected": "460.0"
+    },
+    {
+      "check": "gross: XLSX monetary value receipts/journal-65",
+      "passed": true,
+      "actual": "230",
+      "expected": "230.0"
+    },
+    {
+      "check": "gross: XLSX monetary value receipts/journal-70",
+      "passed": true,
+      "actual": "115",
+      "expected": "115.0"
+    },
+    {
+      "check": "gross: XLSX monetary value receipts/journal-69",
+      "passed": true,
+      "actual": "115",
+      "expected": "115.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments",
+      "passed": true,
+      "actual": "-731",
+      "expected": "-731.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/ledger-1064",
+      "passed": true,
+      "actual": "-57.5",
+      "expected": "-57.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/customer-refunds",
+      "passed": true,
+      "actual": "-11.5",
+      "expected": "-11.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/customer-refunds/category-4",
+      "passed": true,
+      "actual": "-11.5",
+      "expected": "-11.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/customer-refunds/category-4/category-6",
+      "passed": true,
+      "actual": "-11.5",
+      "expected": "-11.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/unclassified",
+      "passed": true,
+      "actual": "-40",
+      "expected": "-40.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/category-4",
+      "passed": true,
+      "actual": "-172.5",
+      "expected": "-172.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/category-4/category-5",
+      "passed": true,
+      "actual": "-115",
+      "expected": "-115.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/category-4/category-6",
+      "passed": true,
+      "actual": "-57.5",
+      "expected": "-57.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/group-1",
+      "passed": true,
+      "actual": "-399.5",
+      "expected": "-399.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/group-1/ledger-1158",
+      "passed": true,
+      "actual": "-115",
+      "expected": "-115.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/group-1/ledger-1162",
+      "passed": true,
+      "actual": "-57.5",
+      "expected": "-57.5"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/group-1/ledger-1160",
+      "passed": true,
+      "actual": "-2",
+      "expected": "-2.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/group-1/ledger-1161",
+      "passed": true,
+      "actual": "-200",
+      "expected": "-200.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/group-1/ledger-1159",
+      "passed": true,
+      "actual": "-25",
+      "expected": "-25.0"
+    },
+    {
+      "check": "gross: XLSX monetary value payments/category-7",
+      "passed": true,
+      "actual": "-50",
+      "expected": "-50.0"
+    },
+    {
+      "check": "gross: XLSX monetary value baseer-total-actual_net_movement",
+      "passed": true,
+      "actual": "-271",
+      "expected": "-271.0"
+    },
+    {
+      "check": "gross: XLSX monetary value baseer-total-opening_cash_balance",
+      "passed": true,
+      "actual": "1000",
+      "expected": "1000.0"
+    },
+    {
+      "check": "gross: XLSX monetary value baseer-total-closing_cash_balance",
+      "passed": true,
+      "actual": "729",
+      "expected": "729.0"
+    },
+    {
+      "check": "gross: XLSX monetary value baseer-total-balance_check",
+      "passed": true,
+      "actual": "0",
+      "expected": "0.0"
+    },
+    {
+      "check": "gross: XLSX has no additional monetary footer duplicating totals",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: unchanged receipts",
+      "passed": true,
+      "actual": "400.0",
+      "expected": "400"
+    },
+    {
+      "check": "tax-excluded: unchanged payments",
+      "passed": true,
+      "actual": "-677.0",
+      "expected": "-677"
+    },
+    {
+      "check": "tax-excluded: unchanged displayed_net_movement",
+      "passed": true,
+      "actual": "-277.0",
+      "expected": "-277"
+    },
+    {
+      "check": "tax-excluded: unchanged actual_net_movement",
+      "passed": true,
+      "actual": "-271.0",
+      "expected": "-271"
+    },
+    {
+      "check": "tax-excluded: unchanged opening_cash_balance",
+      "passed": true,
+      "actual": "1000.0",
+      "expected": "1000"
+    },
+    {
+      "check": "tax-excluded: unchanged closing_cash_balance",
+      "passed": true,
+      "actual": "729.0",
+      "expected": "729"
+    },
+    {
+      "check": "tax-excluded: unchanged balance_check",
+      "passed": true,
+      "actual": "0.0",
+      "expected": "0"
+    },
+    {
+      "check": "tax-excluded: unchanged excluded_tax_bridge",
+      "passed": true,
+      "actual": "6.0",
+      "expected": "6"
+    },
+    {
+      "check": "tax-excluded screen: stable unique row IDs",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded screen: no redundant receipt account children",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded screen: no repeated receipt/payment subtotal rows",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded screen: one header per cash direction",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded screen: separate selected-basis net and actual cash reconciling amount",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: audit parent is nonnumeric and collapsed initially",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: correct audit nesting baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: correct audit nesting baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: correct audit nesting baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: explanatory notes belong inside collapsed audit detail",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: actual cash amount is in detail rather than repeated at top level",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-total-excluded_tax_bridge",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-note-0",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-note-1",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-note-2",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: consistent hierarchy level baseer-note-3",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action receipts",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope receipts",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope receipts",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged receipts",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged receipts/journal-65",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged receipts/journal-70",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged receipts/journal-69",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/ledger-1064",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/customer-refunds",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/customer-refunds/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/customer-refunds/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/unclassified",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/category-4",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/category-4/category-5",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/category-4/category-6",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/group-1",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/group-1/ledger-1158",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/group-1/ledger-1162",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/group-1/ledger-1160",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/group-1/ledger-1161",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/group-1/ledger-1159",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged payments/category-7",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action baseer-total-displayed_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope baseer-total-displayed_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope baseer-total-displayed_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged baseer-total-displayed_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action baseer-total-excluded_tax_bridge",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope baseer-total-excluded_tax_bridge",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope baseer-total-excluded_tax_bridge",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged baseer-total-excluded_tax_bridge",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged baseer-total-actual_net_movement",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged baseer-total-opening_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged baseer-total-closing_cash_balance",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: numeric amount retains native action baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source company scope baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: source posted scope baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: original source provenance unchanged baseer-total-balance_check",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: monetary drilldown coverage includes categories and audit amounts",
+      "passed": true,
+      "count": 26
+    },
+    {
+      "check": "tax-excluded: zero reconciliation still present in drillable audit detail",
+      "passed": true,
+      "actual": "0.0",
+      "expected": "0"
+    },
+    {
+      "check": "tax-excluded PDF: stable unique row IDs",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded PDF: no redundant receipt account children",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded PDF: no repeated receipt/payment subtotal rows",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded PDF: one header per cash direction",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded PDF: separate selected-basis net and actual cash reconciling amount",
+      "passed": true
+    },
+    {
+      "check": "tax-excluded: PDF output has exactly canonical rows without hidden duplicate totals",
+      "passed": true,
+      "count": 31
+    },
+    {
+      "check": "tax-excluded: XLSX output contains exactly canonical report rows",
+      "passed": true,
+      "count": 31
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value receipts",
+      "passed": true,
+      "actual": "400",
+      "expected": "400.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value receipts/journal-65",
+      "passed": true,
+      "actual": "200",
+      "expected": "200.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value receipts/journal-70",
+      "passed": true,
+      "actual": "100",
+      "expected": "100.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value receipts/journal-69",
+      "passed": true,
+      "actual": "100",
+      "expected": "100.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments",
+      "passed": true,
+      "actual": "-677",
+      "expected": "-677.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/ledger-1064",
+      "passed": true,
+      "actual": "-50",
+      "expected": "-50.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/customer-refunds",
+      "passed": true,
+      "actual": "-10",
+      "expected": "-10.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/customer-refunds/category-4",
+      "passed": true,
+      "actual": "-10",
+      "expected": "-10.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/customer-refunds/category-4/category-6",
+      "passed": true,
+      "actual": "-10",
+      "expected": "-10.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/unclassified",
+      "passed": true,
+      "actual": "-40",
+      "expected": "-40.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/category-4",
+      "passed": true,
+      "actual": "-150",
+      "expected": "-150.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/category-4/category-5",
+      "passed": true,
+      "actual": "-100",
+      "expected": "-100.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/category-4/category-6",
+      "passed": true,
+      "actual": "-50",
+      "expected": "-50.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/group-1",
+      "passed": true,
+      "actual": "-377",
+      "expected": "-377.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/group-1/ledger-1158",
+      "passed": true,
+      "actual": "-100",
+      "expected": "-100.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/group-1/ledger-1162",
+      "passed": true,
+      "actual": "-50",
+      "expected": "-50.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/group-1/ledger-1160",
+      "passed": true,
+      "actual": "-2",
+      "expected": "-2.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/group-1/ledger-1161",
+      "passed": true,
+      "actual": "-200",
+      "expected": "-200.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/group-1/ledger-1159",
+      "passed": true,
+      "actual": "-25",
+      "expected": "-25.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value payments/category-7",
+      "passed": true,
+      "actual": "-50",
+      "expected": "-50.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value baseer-total-displayed_net_movement",
+      "passed": true,
+      "actual": "-277",
+      "expected": "-277.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value baseer-total-excluded_tax_bridge",
+      "passed": true,
+      "actual": "6",
+      "expected": "6.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value baseer-total-actual_net_movement",
+      "passed": true,
+      "actual": "-271",
+      "expected": "-271.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value baseer-total-opening_cash_balance",
+      "passed": true,
+      "actual": "1000",
+      "expected": "1000.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value baseer-total-closing_cash_balance",
+      "passed": true,
+      "actual": "729",
+      "expected": "729.0"
+    },
+    {
+      "check": "tax-excluded: XLSX monetary value baseer-total-balance_check",
+      "passed": true,
+      "actual": "0",
+      "expected": "0.0"
+    },
+    {
+      "check": "tax-excluded: XLSX has no additional monetary footer duplicating totals",
+      "passed": true
+    }
+  ],
+  "modes": [
+    {
+      "mode": "gross",
+      "canonical_row_count": 29,
+      "numeric_action_count": 24,
+      "audit_child_count": 7,
+      "pdf_row_count": 29,
+      "xlsx_data_row_count": 29
+    },
+    {
+      "mode": "tax-excluded",
+      "canonical_row_count": 31,
+      "numeric_action_count": 26,
+      "audit_child_count": 9,
+      "pdf_row_count": 31,
+      "xlsx_data_row_count": 31
+    }
+  ],
+  "ledger_config_mutations": false,
+  "audit_retention_note": "Vendor durable failure audit may remain in QA."
+}

@@ -1,0 +1,171 @@
+{
+  "database": "baseer_company_seed_race",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "fresh_disposable_fixture",
+      "passed": true
+    },
+    {
+      "name": "fixture_is_localized_independent_sa",
+      "passed": true
+    },
+    {
+      "name": "initial_native_seed_complete",
+      "passed": true
+    },
+    {
+      "name": "fixture_has_no_financial_documents",
+      "passed": true
+    },
+    {
+      "name": "exact_fixture_identity_baseer_salary_payable_id",
+      "passed": true
+    },
+    {
+      "name": "exclusive_unused_fixture_record_baseer_salary_payable_id",
+      "passed": true
+    },
+    {
+      "name": "exact_fixture_identity_baseer_loan_account_id",
+      "passed": true
+    },
+    {
+      "name": "exclusive_unused_fixture_record_baseer_loan_account_id",
+      "passed": true
+    },
+    {
+      "name": "exact_fixture_identity_payroll",
+      "passed": true
+    },
+    {
+      "name": "exclusive_unused_fixture_record_payroll",
+      "passed": true
+    },
+    {
+      "name": "all_seven_settings_empty_before_race",
+      "passed": true
+    },
+    {
+      "name": "native_chart_preserved_before_race",
+      "passed": true
+    },
+    {
+      "name": "two_independent_database_connections",
+      "passed": true
+    },
+    {
+      "name": "both_workers_return_same_settings",
+      "passed": true
+    },
+    {
+      "name": "actual_collision_retry_observed",
+      "passed": true
+    },
+    {
+      "name": "persisted_settings_equal_both_workers",
+      "passed": true
+    },
+    {
+      "name": "all_seven_settings_ready",
+      "passed": true
+    },
+    {
+      "name": "same_native_sa_chart",
+      "passed": true
+    },
+    {
+      "name": "exactly_two_new_accounts",
+      "passed": true
+    },
+    {
+      "name": "exactly_one_new_payroll_journal",
+      "passed": true
+    },
+    {
+      "name": "native_chart_accounts_unchanged",
+      "passed": true
+    },
+    {
+      "name": "native_starter_journals_unchanged",
+      "passed": true
+    },
+    {
+      "name": "no_new_accounting_moves",
+      "passed": true
+    },
+    {
+      "name": "one_canonical_identity_baseer_salary_payable_id",
+      "passed": true
+    },
+    {
+      "name": "one_canonical_identity_baseer_loan_account_id",
+      "passed": true
+    },
+    {
+      "name": "one_canonical_identity_payroll",
+      "passed": true
+    },
+    {
+      "name": "prior_fixture_identity_preserved_cash_company_24",
+      "passed": true
+    },
+    {
+      "name": "payroll_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "employee_advances_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "all_setting_records_company_owned",
+      "passed": true
+    },
+    {
+      "name": "replay_exactly_stable",
+      "passed": true
+    }
+  ],
+  "fixture_company_id": 24,
+  "fixtures_committed": true,
+  "workers": [
+    {
+      "backend_pid": 220072,
+      "initial_snapshot": "107526:107526:",
+      "attempts": 2,
+      "retries": [
+        {
+          "attempt": 1,
+          "sqlstate": "40001",
+          "constraint": null,
+          "table": null
+        }
+      ],
+      "settings": {
+        "baseer_salary_expense_id": 1732,
+        "baseer_salary_payable_id": 1828,
+        "baseer_deduction_account_id": 1801,
+        "baseer_loan_account_id": 1829,
+        "baseer_eos_expense_id": 1737,
+        "baseer_payroll_journal_id": 177,
+        "baseer_eos_journal_id": 166
+      }
+    },
+    {
+      "backend_pid": 220074,
+      "initial_snapshot": "107529:107529:",
+      "attempts": 1,
+      "retries": [],
+      "settings": {
+        "baseer_salary_expense_id": 1732,
+        "baseer_salary_payable_id": 1828,
+        "baseer_deduction_account_id": 1801,
+        "baseer_loan_account_id": 1829,
+        "baseer_eos_expense_id": 1737,
+        "baseer_payroll_journal_id": 177,
+        "baseer_eos_journal_id": 166
+      }
+    }
+  ]
+}

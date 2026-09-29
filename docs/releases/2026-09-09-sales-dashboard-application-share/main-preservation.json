@@ -1,0 +1,7 @@
+{
+  "protected_tables": 367,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "1108f2a8fc0edee2f61d728135feee02590a8f46",
+  "added_schema": "Dashboard module update only; no business seed, schema or transaction migration"
+}

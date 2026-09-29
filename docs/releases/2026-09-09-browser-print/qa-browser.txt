@@ -1,0 +1,237 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد" [disabled]
+- list:
+  - link "فواتير العملاء":
+    - /url: /odoo/customer-invoices?displayName=%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1%20%D8%A7%D9%84%D8%B9%D9%85%D9%84%D8%A7%D8%A1&view_type=list
+- generic: INV/2026/00001
+- button "قائمة الإجراءات" [disabled]:
+  - generic: 
+- button " 2 الدفعات" [disabled]:
+  - generic: 
+  - generic: "2"
+  - generic: الدفعات
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "إرسال" [disabled]
+  - button "طباعة" [disabled]
+  - button "معاينة" [disabled]
+  - button "إشعار دائن" [disabled]
+  - button "إشعار مدين" [disabled]
+  - button "إعادة التعيين كمسودة" [disabled]
+  - radiogroup "شريط الحالة":
+    - radio "مُرحّل" [checked] [disabled]
+    - radio "مسودة" [disabled]
+  - generic: مدفوع
+  - generic: فاتورة العميل
+  - heading "INV/2026/00001" [level=1]:
+    - generic: INV/2026/00001
+  - generic: العميل
+  - link "QA Counterparty 1":
+    - /url: /odoo/res.partner/19
+  - generic: تاريخ الفاتورة
+  - generic: ١ سبتمبر
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق" [disabled]: ٧ سبتمبر
+  - generic: تاريخ التوصيل
+  - generic: ١ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "معلومات أخرى"
+  - table:
+    - rowgroup:
+      - row "المنتج الكمية الوحدة السعر الضرائب مبلغ ":
+        - columnheader
+        - columnheader "المنتج":
+          - generic: المنتج
+          - text: 
+        - columnheader "الكمية":
+          - generic: الكمية
+          - text: 
+        - columnheader "الوحدة":
+          - generic: الوحدة
+          - text: 
+        - columnheader "السعر":
+          - generic: السعر
+          - text: 
+        - columnheader "الضرائب":
+          - generic: الضرائب
+          - text: 
+        - columnheader "مبلغ":
+          - generic: مبلغ
+          - text: 
+        - columnheader "":
+          - button "" [disabled]:
+            - generic: 
+    - rowgroup:
+      - row " QA tax-neutral service 1.00 1,000.00 1,000.00 SR":
+        - cell "":
+          - generic: 
+        - cell "QA tax-neutral service":
+          - generic: QA tax-neutral service
+        - cell "1.00"
+        - cell
+        - cell "1,000.00"
+        - cell
+        - cell "1,000.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 1,000.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "1,000.00 SR"
+      - 'row "الإجمالي: 1,000.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "1,000.00 SR"
+  - table:
+    - row "معلومات تم الدفع في ٠٧/٠٩/٢٠٢٦ 600.00 SR":
+      - cell "معلومات":
+        - button "معلومات": 
+      - cell "تم الدفع في ٠٧/٠٩/٢٠٢٦":
+        - generic: تم الدفع في ٠٧/٠٩/٢٠٢٦
+      - cell "600.00 SR"
+    - row "معلومات تم الدفع في ٠٢/٠٩/٢٠٢٦ 400.00 SR":
+      - cell "معلومات":
+        - button "معلومات": 
+      - cell "تم الدفع في ٠٢/٠٩/٢٠٢٦":
+        - generic: تم الدفع في ٠٢/٠٩/٢٠٢٦
+      - cell "400.00 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 0.00 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل" [disabled]:
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - separator
+  - generic: ٨ سبتمبر ٢٠٢٦
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: OdooBot
+    - generic "٨‏/٩‏/٢٠٢٦، ١٢:٥٤:٠٤ م": أمس الساعة ١٢:٥٤ م
+    - list:
+      - text: لا شيء
+      - generic: 
+      - text: Sales
+      - generic: (فريق المبيعات)
+  - separator
+  - generic: ٧ سبتمبر ٢٠٢٦
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: Administrator
+    - generic "٧‏/٩‏/٢٠٢٦، ٨:٢٤:١٨ م": ٧ سبتمبر، ٨:٢٤ م
+    - paragraph: تم سداد قيمة الفاتورة
+    - list:
+      - text: مسدد جزئياً
+      - generic: 
+      - text: مدفوع
+      - generic: (حالة الدفع)
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: OdooBot
+    - generic "٧‏/٩‏/٢٠٢٦، ١١:٥١:٣٠ ص": ٧ سبتمبر، ١١:٥١ ص
+    - paragraph:
+      - text: This entry has been
+      - link "reversed":
+        - /url: "#"
+- dialog:
+  - banner:
+    - heading "طباعة التقرير" [level=4]
+    - button "إغلاق"
+  - main:
+    - iframe [active]:
+      - button "Toggle Sidebar":
+        - generic: Toggle Sidebar
+      - button "Find":
+        - generic: Find
+      - spinbutton "Page"
+      - generic: of ⁨1⁩
+      - button "Zoom Out":
+        - generic: Zoom Out
+      - button "Zoom In":
+        - generic: Zoom In
+      - combobox "Zoom":
+        - option "Automatic Zoom"
+        - option "Actual Size"
+        - option "Page Fit" [selected]
+        - option "Page Width"
+        - option "⁨50⁩%"
+        - option "⁨75⁩%"
+        - option "⁨100⁩%"
+        - option "⁨125⁩%"
+        - option "⁨150⁩%"
+        - option "⁨200⁩%"
+        - option "⁨300⁩%"
+        - option "⁨400⁩%"
+      - button "Tools":
+        - generic: Tools
+      - region "Page ⁨1⁩":
+        - generic: "QA Counterparty 1 Simplified Tax Invoice INV/2026/00001 Invoice Date 2026-09-01 Due Date 2026-09-07 Supply Date 2026-09-01 Payment Communication: INV/2026/00001 DESCRIPTION QUANTITY UNIT PRICE VAT AMOUNT SUBTOTAL (EXCLUSIVE OF VAT) SUBTOTAL (INCLUSIVE OF VAT) QA tax-neutral service 1.00 units 1,000.00 SR 0.00 SR 1,000.00 SR 1,000.00 SR Invoice Gross Total (Inclusive of VAT) 1,000.00 SR Paid on 2026-09-07 600.00 SR Paid on 2026-09-02 400.00 SR Amount Due 0.00 SR THIS IS NOT A LEGAL DOCUMENT QA ARZ ا ﻟ ﺴ ﻌ ﻮ د ﻳ ﺔ ا ﻟ ﻌ ﺮ ﺑ ﻴ ﺔ ا ﻟ ﻤ ﻤ ﻠ ﻜ ﺔ Al Khobar qa@example.invalid 11:51:29 2026-09-01 Page 1 / 1"
+  - contentinfo:
+    - button " طباعة":
+      - generic: 
+      - text: طباعة
+    - button " تحميل PDF":
+      - generic: 
+      - text: تحميل PDF
+    - button "إغلاق"

@@ -1,0 +1,712 @@
+[
+  {
+    "name": "account",
+    "state": "installed",
+    "latest_version": "19.0.1.4"
+  },
+  {
+    "name": "account_add_gln",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "account_debit_note",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "account_edi_ubl_cii",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "account_payment",
+    "state": "installed",
+    "latest_version": "19.0.2.0"
+  },
+  {
+    "name": "analytic",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "api_doc",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "auth_passkey",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "auth_passkey_portal",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "auth_signup",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "auth_totp",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "auth_totp_mail",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "auth_totp_portal",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "barcodes",
+    "state": "installed",
+    "latest_version": "19.0.2.0"
+  },
+  {
+    "name": "barcodes_gs1_nomenclature",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "base",
+    "state": "installed",
+    "latest_version": "19.0.1.3"
+  },
+  {
+    "name": "baseer_cash_categories",
+    "state": "installed",
+    "latest_version": "19.0.1.3.1"
+  },
+  {
+    "name": "baseer_category_display",
+    "state": "installed",
+    "latest_version": "19.0.1.0.0"
+  },
+  {
+    "name": "baseer_company_setup",
+    "state": "installed",
+    "latest_version": "19.0.1.0.0"
+  },
+  {
+    "name": "baseer_hr_services",
+    "state": "installed",
+    "latest_version": "19.0.1.1.0"
+  },
+  {
+    "name": "baseer_legion_compat",
+    "state": "installed",
+    "latest_version": "19.0.1.0.0"
+  },
+  {
+    "name": "baseer_payroll",
+    "state": "installed",
+    "latest_version": "19.0.1.3.0"
+  },
+  {
+    "name": "baseer_pos_summary",
+    "state": "installed",
+    "latest_version": "19.0.1.3.1"
+  },
+  {
+    "name": "baseer_purchase_batch",
+    "state": "installed",
+    "latest_version": "19.0.1.2.3"
+  },
+  {
+    "name": "baseer_report_layout",
+    "state": "installed",
+    "latest_version": "19.0.1.1.1"
+  },
+  {
+    "name": "baseer_service_seed",
+    "state": "installed",
+    "latest_version": "19.0.1.1.0"
+  },
+  {
+    "name": "baseer_web_navigation",
+    "state": "installed",
+    "latest_version": "19.0.1.1.0"
+  },
+  {
+    "name": "base_import",
+    "state": "installed",
+    "latest_version": "19.0.2.0"
+  },
+  {
+    "name": "base_import_module",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "base_install_request",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "base_setup",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "bus",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "calendar",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "calendar_sms",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "contacts",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "digest",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "eh_account_base",
+    "state": "installed",
+    "latest_version": "19.0.1.8.0"
+  },
+  {
+    "name": "eh_account_dynamic_reports",
+    "state": "installed",
+    "latest_version": "19.0.1.8.1"
+  },
+  {
+    "name": "google_address_autocomplete",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "google_gmail",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "hr",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "hr_calendar",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "hr_holidays",
+    "state": "installed",
+    "latest_version": "19.0.1.6"
+  },
+  {
+    "name": "hr_holidays_homeworking",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "hr_homeworking",
+    "state": "installed",
+    "latest_version": "19.0.2.0"
+  },
+  {
+    "name": "hr_homeworking_calendar",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "hr_hourly_cost",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "hr_org_chart",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "hr_skills",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "hr_timesheet",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "html_editor",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "http_routing",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "iap",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "iap_mail",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "iot_base",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "l10n_account_withholding_tax",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "l10n_account_withholding_tax_pos",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "l10n_gcc_invoice",
+    "state": "installed",
+    "latest_version": "19.0.1.0.1"
+  },
+  {
+    "name": "l10n_gcc_invoice_stock_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "l10n_gcc_pos",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "l10n_sa",
+    "state": "installed",
+    "latest_version": "19.0.2.2"
+  },
+  {
+    "name": "l10n_sa_pos",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "l10n_sa_withholding_tax",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "legion_enterprise_theme",
+    "state": "installed",
+    "latest_version": "19.0.1.0.1"
+  },
+  {
+    "name": "link_tracker",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "mail",
+    "state": "installed",
+    "latest_version": "19.0.1.19"
+  },
+  {
+    "name": "mail_bot",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "mail_bot_hr",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "microsoft_outlook",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "om_hr_payroll",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "om_hr_payroll_account",
+    "state": "installed",
+    "latest_version": "19.0.0.0"
+  },
+  {
+    "name": "onboarding",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "partner_autocomplete",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "payment",
+    "state": "installed",
+    "latest_version": "19.0.2.0"
+  },
+  {
+    "name": "phone_validation",
+    "state": "installed",
+    "latest_version": "19.0.2.1"
+  },
+  {
+    "name": "point_of_sale",
+    "state": "installed",
+    "latest_version": "19.0.1.0.2"
+  },
+  {
+    "name": "portal",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "portal_rating",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_hr",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_hr_restaurant",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_online_payment",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_online_payment_self_order",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_restaurant",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_sale",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "pos_self_order",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "pos_self_order_sale",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "privacy_lookup",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "product",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "project",
+    "state": "installed",
+    "latest_version": "19.0.1.4"
+  },
+  {
+    "name": "project_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_hr_skills",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_purchase",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_purchase_stock",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_sms",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "project_stock",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_stock_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_timesheet_holidays",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "project_todo",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "purchase",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "purchase_edi_ubl_bis3",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "purchase_stock",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "rating",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "resource",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "resource_mail",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "rpc",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale",
+    "state": "installed",
+    "latest_version": "19.0.1.2"
+  },
+  {
+    "name": "sale_edi_ubl",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_management",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_pdf_quote_builder",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_project",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_project_stock",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_project_stock_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_purchase",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_purchase_project",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_purchase_stock",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_service",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_sms",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sales_team",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "sale_stock",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sale_timesheet",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "sms",
+    "state": "installed",
+    "latest_version": "19.0.3.0"
+  },
+  {
+    "name": "snailmail",
+    "state": "installed",
+    "latest_version": "19.0.0.4"
+  },
+  {
+    "name": "snailmail_account",
+    "state": "installed",
+    "latest_version": "19.0.0.1"
+  },
+  {
+    "name": "spreadsheet",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_hr_timesheet",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_pos_hr",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_pos_restaurant",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_sale",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_sale_timesheet",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "spreadsheet_dashboard_stock_account",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "stock",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "stock_account",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "stock_sms",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "uom",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "utm",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  },
+  {
+    "name": "web",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "web_hierarchy",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "web_tour",
+    "state": "installed",
+    "latest_version": "19.0.1.0"
+  },
+  {
+    "name": "web_unsplash",
+    "state": "installed",
+    "latest_version": "19.0.1.1"
+  }
+]

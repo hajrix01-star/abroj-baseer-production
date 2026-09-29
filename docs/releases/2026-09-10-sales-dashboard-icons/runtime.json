@@ -1,0 +1,60 @@
+{
+  "http": 200,
+  "mounts": [
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\sales-dashboard-icons-20260910\\candidate\\custom_addons",
+      "Destination": "/mnt/extra-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\config\\odoo.local.conf",
+      "Destination": "/etc/odoo/odoo.local.conf",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\sales-dashboard-icons-20260910\\candidate\\custom_addons",
+      "Destination": "/mnt/baseer-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\sales-dashboard-icons-20260910\\candidate\\third_party_addons",
+      "Destination": "/mnt/third-party-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\odoo",
+      "Destination": "/opt/baseer-odoo-source",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "volume",
+      "Name": "baseer_odoo_dev_odoo-data",
+      "Source": "/var/lib/docker/volumes/baseer_odoo_dev_odoo-data/_data",
+      "Destination": "/var/lib/odoo",
+      "Driver": "local",
+      "Mode": "rw",
+      "RW": true,
+      "Propagation": ""
+    }
+  ],
+  "image": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "installed": "installed|19.0.1.1.3",
+  "no_pending_modules": true,
+  "published_dashboard": true,
+  "candidate": "de89a85675cb7d36a503618a4fa5fb9faf6ad696"
+}

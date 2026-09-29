@@ -1,0 +1,80 @@
+/* Abroj v2: editorial construction identity, scoped so it does not alter Odoo's Website editor. */
+.abroj-v2 {
+  --abroj-navy: #0a2638;
+  --abroj-ink: #10212e;
+  --abroj-muted: #5c6871;
+  --abroj-line: #dce2e4;
+  --abroj-paper: #f8f8f6;
+  --abroj-stone: #ebeae6;
+  --abroj-accent: #d8e7ea;
+  --abroj-ease-out: cubic-bezier(.23, 1, .32, 1);
+  color: var(--abroj-ink);
+  background: #fff;
+  font-family: Tajawal, 'Open Sans', Arial, sans-serif;
+  overflow: clip;
+}
+.abroj-v2 *, .abroj-v2 *::before, .abroj-v2 *::after { box-sizing: border-box; }
+.abroj-v2 a { color: inherit; text-decoration: none; }
+.abroj-v2 a:focus-visible, .abroj-v2 summary:focus-visible { outline: 3px solid #76b6c6; outline-offset: 4px; }
+.abroj-v2__hero { min-height: 710px; position: relative; color: #fff; display: flex; flex-direction: column; isolation: isolate; }
+.abroj-v2__hero-media { position: absolute; inset: 0; z-index: -2; background: url('/abroj_website/static/src/img/visuals/hero_villa_xray.webp') 43% center / cover no-repeat; }
+.abroj-v2__hero-veil { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(7, 22, 31, .12), rgba(7, 22, 31, .14) 47%, rgba(7, 22, 31, .76) 100%); }
+[dir='rtl'] .abroj-v2__hero-veil { background: linear-gradient(270deg, rgba(7, 22, 31, .12), rgba(7, 22, 31, .14) 47%, rgba(7, 22, 31, .76) 100%); }
+.abroj-v2__header { width: calc(100% - 80px); max-width: 1420px; min-height: 96px; margin: 0 auto; border-bottom: 1px solid rgba(255, 255, 255, .28); display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; gap: 28px; align-items: center; }
+.abroj-v2__brand { width: 185px; display: block; }
+.abroj-v2__brand img { width: 100%; height: auto; display: block; filter: brightness(0) invert(1); }
+.abroj-v2__nav { display: flex; align-items: center; gap: clamp(17px, 2vw, 34px); }
+.abroj-v2__nav a { color: rgba(255, 255, 255, .9); font-size: .86rem; font-weight: 500; white-space: nowrap; }
+.abroj-v2__nav a:first-child { color: #fff; position: relative; }
+.abroj-v2__nav a:first-child::after { content: ''; position: absolute; height: 2px; background: #fff; inset-inline: 0; bottom: -11px; }
+.abroj-v2__header-actions { display: flex; align-items: center; gap: 22px; }
+.abroj-v2__language { color: rgba(255, 255, 255, .86); font-family: 'Open Sans', Tajawal, sans-serif; font-size: .77rem; letter-spacing: .08em; }
+.abroj-v2__header-cta, .abroj-v2__button { display: inline-flex; align-items: center; justify-content: center; gap: 13px; min-height: 46px; padding: 0 20px; font-weight: 700; transition: transform 160ms var(--abroj-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
+.abroj-v2__header-cta { color: #fff; background: rgba(10, 27, 39, .88); border: 1px solid rgba(255, 255, 255, .18); font-size: .86rem; }
+.abroj-v2__button:active, .abroj-v2__header-cta:active { transform: scale(.98); }
+.abroj-v2__mobile-menu { display: none; }
+.abroj-v2__hero-content { width: calc(100% - 80px); max-width: 1420px; margin: auto auto 72px; padding-inline-start: 48%; }
+[dir='rtl'] .abroj-v2__hero-content { padding-inline-start: 0; padding-inline-end: 48%; }
+.abroj-v2__eyebrow { margin: 0 0 18px; color: rgba(255, 255, 255, .78); font-family: 'Open Sans', Tajawal, sans-serif; font-size: .7rem; font-weight: 600; letter-spacing: .12em; line-height: 1.4; text-transform: uppercase; }
+.abroj-v2__eyebrow--ink { color: #4a6875; }
+.abroj-v2__hero h1 { max-width: 600px; margin: 0; font-size: clamp(3.2rem, 5.4vw, 5.85rem); line-height: .98; letter-spacing: -.055em; font-weight: 700; }
+.abroj-v2__hero-lead { max-width: 530px; margin: 24px 0 0; color: rgba(255, 255, 255, .9); font-size: clamp(1rem, 1.25vw, 1.18rem); line-height: 1.95; }
+.abroj-v2__hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 31px; }
+.abroj-v2__button--light { color: var(--abroj-ink) !important; background: #fff; border: 1px solid #fff; }
+.abroj-v2__button--outline { color: #fff; background: transparent; border: 1px solid rgba(255, 255, 255, .65); }
+.abroj-v2__hero-note { width: calc(100% - 80px); max-width: 1420px; margin: 0 auto 22px; display: flex; align-items: center; gap: 18px; color: rgba(255, 255, 255, .78); font-family: 'Open Sans', Tajawal, sans-serif; font-size: .74rem; }
+.abroj-v2__hero-note span { letter-spacing: .08em; }
+.abroj-v2__hero-note span::after { content: ''; display: inline-block; width: 62px; height: 1px; margin-inline-start: 13px; vertical-align: middle; background: rgba(255,255,255,.55); }
+.abroj-v2__hero-note p { margin: 0 0 0 auto; }
+[dir='rtl'] .abroj-v2__hero-note p { margin: 0 auto 0 0; }
+
+.abroj-v2__section { width: calc(100% - 80px); max-width: 1320px; margin: 0 auto; padding: 112px 0; }
+.abroj-v2__section-heading { display: grid; grid-template-columns: 1.12fr .75fr; gap: clamp(50px, 10vw, 150px); align-items: end; margin-bottom: 52px; }
+.abroj-v2__section-heading h2, .abroj-v2__detail h2, .abroj-v2__contact h2 { margin: 0; max-width: 730px; font-size: clamp(2.25rem, 4.1vw, 4.45rem); line-height: 1.07; letter-spacing: -.045em; }
+.abroj-v2__section-heading > p, .abroj-v2__detail-copy > p { margin: 0; color: var(--abroj-muted); font-size: 1.03rem; line-height: 2; }
+.abroj-v2__service-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.abroj-v2__service-card { min-height: 470px; display: flex; flex-direction: column; background: var(--abroj-paper); border: 1px solid rgba(16, 33, 46, .06); overflow: hidden; }
+.abroj-v2__service-image { position: relative; height: 252px; flex: 0 0 auto; background: center / cover no-repeat; }
+.abroj-v2__service-card--building .abroj-v2__service-image { background-image: url('/abroj_website/static/src/img/visuals/villa_sketch.webp'); }
+.abroj-v2__service-card--hvac .abroj-v2__service-image { background-image: url('/abroj_website/static/src/img/visuals/hvac-sketch-to-finish-v1.png'); }
+.abroj-v2__service-card--roads .abroj-v2__service-image { background-image: url('/abroj_website/static/src/img/visuals/roads-sketch-to-finish-v1.png'); }
+.abroj-v2__service-card--retail .abroj-v2__service-image { background-image: url('/abroj_website/static/src/img/visuals/retail-sketch-to-finish-v1.png'); }
+.abroj-v2__service-image .abroj-v2__image-label { position: absolute; top: 13px; z-index: 1; padding: 6px 9px; color: #fff; background: rgba(6, 24, 35, .76); font-family: Tajawal, 'Open Sans', sans-serif; font-size: .66rem; font-weight: 700; letter-spacing: 0; line-height: 1; }.abroj-v2__image-label--before { left: 13px; }.abroj-v2__image-label--after { right: 13px; }
+.abroj-v2__service-card > div:last-child { padding: 25px 29px 30px; }.abroj-v2__service-card span { color: #547a89; font-family: 'Open Sans', Tajawal, sans-serif; font-size: .72rem; font-weight: 600; letter-spacing: .12em; }.abroj-v2__service-card h3 { margin: 11px 0 9px; font-size: clamp(1.35rem, 2vw, 1.75rem); line-height: 1.3; }.abroj-v2__service-card p { margin: 0; color: var(--abroj-muted); font-size: .95rem; line-height: 1.85; }
+
+.abroj-v2__detail { width: calc(100% - 80px); max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 1.12fr .88fr; gap: clamp(50px, 9vw, 135px); align-items: center; padding: 0 0 118px; }
+.abroj-v2__detail-media { min-height: 440px; position: relative; overflow: hidden; background: var(--abroj-navy); }
+.abroj-v2__detail-media::after { content: ''; position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.42); pointer-events: none; }
+.abroj-v2__detail-media video { width: 100%; height: 100%; min-height: 440px; display: block; object-fit: cover; }
+.abroj-v2__detail-media span { position: absolute; inset-inline-start: 32px; bottom: 29px; z-index: 1; color: #fff; font-size: .92rem; font-weight: 600; }
+.abroj-v2__detail-copy h2 { margin-bottom: 24px; }.abroj-v2__text-link { display: inline-flex; gap: 10px; margin-top: 27px; color: var(--abroj-ink); font-weight: 700; border-bottom: 1px solid var(--abroj-ink); padding-bottom: 4px; }
+
+.abroj-v2__reasons { width: calc(100% - 80px); max-width: 1320px; margin: 0 auto; padding: 72px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }.abroj-v2__reason-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: #e7ecec; color: #456571; font-family: 'Open Sans', Tajawal, sans-serif; font-size: .73rem; font-weight: 600; }.abroj-v2__reasons h3 { margin: 17px 0 6px; font-size: 1.14rem; }.abroj-v2__reasons p { margin: 0; color: var(--abroj-muted); font-size: .92rem; }
+
+.abroj-v2__contact { min-height: 370px; position: relative; display: flex; align-items: end; justify-content: space-between; gap: 40px; padding: 72px 40px; color: #fff; background: url('/abroj_website/static/src/img/visuals/hero_villa_xray.webp') center / cover; isolation: isolate; }.abroj-v2__contact-overlay { position: absolute; inset: 0; z-index: -1; background: rgba(6, 24, 35, .82); }.abroj-v2__contact-content { max-width: 770px; }.abroj-v2__contact h2 { max-width: 750px; }.abroj-v2__contact-content > p:not(.abroj-v2__eyebrow) { margin: 20px 0 0; max-width: 590px; color: rgba(255,255,255,.78); font-size: 1.02rem; line-height: 1.9; }.abroj-v2__contact .abroj-v2__button { flex: 0 0 auto; }
+.abroj-v2__footer { width: calc(100% - 80px); max-width: 1320px; margin: 0 auto; padding: 42px 0; display: grid; grid-template-columns: 180px 1fr auto; gap: 36px; align-items: center; color: var(--abroj-muted); font-size: .82rem; }.abroj-v2__footer img { width: 155px; height: auto; }.abroj-v2__footer div { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }.abroj-v2__footer a { color: var(--abroj-ink); }.abroj-v2__footer small { text-align: end; }
+
+@media (hover: hover) and (pointer: fine) { .abroj-v2__header-cta:hover { background: #fff; color: var(--abroj-ink); }.abroj-v2__button--light:hover { background: #e4eff0; border-color: #e4eff0; transform: translateY(-2px); }.abroj-v2__button--outline:hover { background: rgba(255,255,255,.13); }.abroj-v2__text-link:hover { color: #537986; border-color: #537986; }.abroj-v2__service-card:hover .abroj-v2__service-image { transform: scale(1.025); }.abroj-v2__service-image { transition: transform 300ms var(--abroj-ease-out); }.abroj-v2__footer a:hover { color: #527582; } }
+@media (max-width: 1040px) { .abroj-v2__header { width: calc(100% - 48px); gap: 18px; }.abroj-v2__brand { width: 160px; }.abroj-v2__nav { gap: 15px; }.abroj-v2__header-actions { gap: 13px; }.abroj-v2__header-cta { padding: 0 14px; }.abroj-v2__hero-content { width: calc(100% - 48px); padding-inline-start: 46%; }.abroj-v2__hero-note, .abroj-v2__section, .abroj-v2__detail, .abroj-v2__reasons, .abroj-v2__footer { width: calc(100% - 48px); }.abroj-v2__section-heading, .abroj-v2__detail { gap: 50px; }.abroj-v2__service-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 780px) { .abroj-v2__hero { min-height: 725px; }.abroj-v2__header { width: calc(100% - 40px); min-height: 82px; grid-template-columns: 1fr auto; }.abroj-v2__brand { width: 147px; }.abroj-v2__nav, .abroj-v2__header-actions { display: none; }.abroj-v2__mobile-menu { display: block; position: relative; }.abroj-v2__mobile-menu summary { list-style: none; display: flex; align-items: center; gap: 10px; color: #fff; cursor: pointer; font-size: .87rem; }.abroj-v2__mobile-menu summary::-webkit-details-marker { display: none; }.abroj-v2__mobile-menu summary i, .abroj-v2__mobile-menu summary i::before, .abroj-v2__mobile-menu summary i::after { width: 18px; height: 1px; display: block; position: relative; background: #fff; content: ''; }.abroj-v2__mobile-menu summary i::before { position: absolute; top: -6px; }.abroj-v2__mobile-menu summary i::after { position: absolute; top: 6px; }.abroj-v2__mobile-menu[open] summary i { background: transparent; }.abroj-v2__mobile-menu[open] summary i::before { top: 0; transform: rotate(45deg); }.abroj-v2__mobile-menu[open] summary i::after { top: 0; transform: rotate(-45deg); }.abroj-v2__mobile-menu nav { position: absolute; z-index: 4; top: 42px; inset-inline-end: 0; width: 230px; display: grid; padding: 10px 18px; background: #fff; box-shadow: 0 16px 42px rgba(5,22,31,.2); }.abroj-v2__mobile-menu nav a { padding: 13px 0; color: var(--abroj-ink); border-bottom: 1px solid var(--abroj-line); }.abroj-v2__mobile-menu nav a:last-child { border: 0; }.abroj-v2__hero-content, [dir='rtl'] .abroj-v2__hero-content { width: calc(100% - 40px); padding-inline: 0; margin: auto auto 50px; }.abroj-v2__hero h1 { font-size: clamp(3rem, 14vw, 4.5rem); max-width: 390px; }.abroj-v2__hero-lead { max-width: 470px; }.abroj-v2__hero-note { width: calc(100% - 40px); margin-bottom: 18px; }.abroj-v2__hero-note p { display: none; }.abroj-v2__section, .abroj-v2__detail, .abroj-v2__reasons, .abroj-v2__footer { width: calc(100% - 40px); }.abroj-v2__section { padding: 76px 0; }.abroj-v2__section-heading, .abroj-v2__detail { grid-template-columns: 1fr; gap: 29px; margin-bottom: 36px; }.abroj-v2__section-heading h2, .abroj-v2__detail h2, .abroj-v2__contact h2 { font-size: clamp(2.25rem, 11vw, 3.4rem); }.abroj-v2__service-grid, .abroj-v2__reasons { grid-template-columns: 1fr; }.abroj-v2__service-card { min-height: 0; }.abroj-v2__service-image { height: 210px; }.abroj-v2__detail { padding-bottom: 75px; }.abroj-v2__detail-media, .abroj-v2__detail-media video { min-height: 310px; }.abroj-v2__reasons { padding: 58px 0; gap: 31px; }.abroj-v2__contact { min-height: 440px; display: block; padding: 65px 20px; }.abroj-v2__contact .abroj-v2__button { margin-top: 32px; }.abroj-v2__footer { grid-template-columns: 1fr; text-align: center; gap: 24px; }.abroj-v2__footer img { margin: 0 auto; }.abroj-v2__footer div { gap: 16px 20px; }.abroj-v2__footer small { text-align: center; } }
+@media (prefers-reduced-motion: reduce) { .abroj-v2 *, .abroj-v2 *::before, .abroj-v2 *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }.abroj-v2__detail-media video { display: none; }.abroj-v2__detail-media { background: url('/abroj_website/static/src/img/visuals/hvac-sketch-to-finish-v1.png') center / cover; } }

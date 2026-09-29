@@ -1,0 +1,1 @@
+{"companies" : [{"id" : 1, "name" : "ARZ", "currency_id" : 151, "parent_id" : null}, {"id" : 2, "name" : "المعلم الشامي", "currency_id" : 151, "parent_id" : null}, {"id" : 3, "name" : "دوحة المستهلك", "currency_id" : 151, "parent_id" : null}], "moves" : 0, "lines" : 0, "accounts" : 534, "taxes" : 117, "journals" : 30, "partners" : 8}

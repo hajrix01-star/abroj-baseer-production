@@ -1,0 +1,46 @@
+[
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\__init__.py",
+    "Hash": "5FD10918E1361AD65B4B41BCD8FB525E659267F47C8C4334AE52530E58908E9E"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\__manifest__.py",
+    "Hash": "57A50524A31D590FAB29CA21F4B684F149D21E2198C1081106216B192E547309"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\README.md",
+    "Hash": "2B2897D671CB5992881205641A23AEE2A82C41BF6ABC01940AEA1C8CB51751D6"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\i18n\\ar.po",
+    "Hash": "870884E9742274F83D8FDBA4AB913CAC38981F302A8A07FA055CFDF77FDCCCC4"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\models\\__init__.py",
+    "Hash": "BA6E843AD76A212FD0F11EBD13BA88975F110924662E254BF18D315ED39F239A"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\models\\cash_register.py",
+    "Hash": "5CB439AB5E80362DF45744D51F0A651496C14252D154FAB11FFE17214F16C990"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\models\\financial_register.py",
+    "Hash": "67117B1D78BE8A2B2D43C68BF09C761C36B4F090D167192055DAB403C70202AC"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\static\\src\\financial_register.js",
+    "Hash": "EFD3F4EF14FBE03D3E01CCA7887199EA4F7EA65618954F42E9BDFAD1225E5516"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\static\\src\\financial_register.scss",
+    "Hash": "1CAA8B6DF008796D080E7581F862FCD632E86D311EB1CD8A4EE678304C858ACE"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\static\\src\\financial_register.xml",
+    "Hash": "A0D5DFCB4CB56B713220D6D2B6D6A858781D9CEA7F6ABDAE3EA8DDED7FF63ADA"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_financial_register\\views\\financial_register_views.xml",
+    "Hash": "A61072825B78766632FA9C3BB4D552C9512D5A21483ADF8DF3166B4FD111D648"
+  }
+]

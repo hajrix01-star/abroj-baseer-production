@@ -1,0 +1,166 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "المناقشة"
+    - menu:
+      - menuitem "المناقشة"
+      - menuitem "القنوات"
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد"
+- generic: POS-S/2026/000023
+- button "قائمة الإجراءات":
+  - generic: 
+- button " طلب نقاط البيع":
+  - generic: 
+  - generic: طلب نقاط البيع
+- button " الجلسة":
+  - generic: 
+  - generic: الجلسة
+- button " القيود المحاسبية":
+  - generic: 
+  - generic: القيود المحاسبية
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button " فتح واتساب":
+    - generic: 
+    - text: فتح واتساب
+  - button "تعديل / إلغاء العملية"
+  - radiogroup "شريط الحالة":
+    - radio "معتمد" [checked] [disabled]
+    - radio "مسودة" [disabled]
+  - heading "POS-S/2026/000023" [level=1]:
+    - generic: POS-S/2026/000023
+  - generic: بيانات يوم المبيعات
+  - generic: الشركة
+  - generic: المعلم الشامي
+  - generic: تاريخ المبيعات
+  - generic: 27/07/2026
+  - generic: نظام دوام اليوم
+  - radiogroup "نظام دوام اليوم":
+    - radio "دوام كامل" [checked] [disabled]
+    - generic: دوام كامل
+    - radio "صباحي ومسائي" [disabled]
+    - generic: صباحي ومسائي
+    - radio "صباحي فقط" [disabled]
+    - generic: صباحي فقط
+    - radio "مسائي فقط" [disabled]
+    - generic: مسائي فقط
+  - generic: العملاء
+  - generic: عدد العملاء
+  - generic: "12"
+  - generic: تشغيل دون مبيعات
+  - checkbox [disabled]
+  - generic: المبيعات حسب طريقة الدفع
+  - generic: نقدي | Cash
+  - generic: "115.00"
+  - generic: بنك | Bank
+  - generic: "230.00"
+  - generic: هنقرستيشن | HungerStation
+  - generic: "345.00"
+  - generic: الإجمالي شامل الضريبة
+  - generic: 690.00 SR
+  - generic: العملاء
+  - generic: "12"
+  - generic: متوسط المبيعات للعميل
+  - generic: 57.50 SR
+  - generic: ملاحظات
+  - generic: مرفقات التقرير
+  - generic: المبيعات دون الضريبة
+  - generic: 600.00 SR
+  - generic: الضريبة
+  - generic: 90.00 SR
+  - generic: اعتمد بواسطة
+  - link "IC1 QA owner":
+    - /url: /odoo/res.users/12
+  - generic: تاريخ الاعتماد
+  - generic: 10/09/2026 08:37:18 م
+- dialog:
+  - banner:
+    - heading "تعديل / إلغاء العملية" [level=4]
+    - button "إغلاق"
+  - main:
+    - main:
+      - radiogroup "العملية":
+        - radio "تعديل" [checked] [active]
+        - generic: تعديل
+        - radio "إلغاء العملية"
+        - generic: إلغاء العملية
+      - generic: الملخص
+      - generic: POS-S/2026/000023
+      - generic: السبب
+      - textbox "السبب"
+      - generic: المبيعات الأصلية شاملة الضريبة
+      - generic: 690.00 SR
+      - generic: عدد العملاء
+      - textbox "عدد العملاء": "12"
+      - generic: تشغيل دون مبيعات
+      - checkbox "تشغيل دون مبيعات تشغيل دون مبيعات"
+      - table:
+        - rowgroup:
+          - row "طريقة الدفع  الحساب المبلغ المسجل  المبلغ الصحيح ":
+            - columnheader "طريقة الدفع ":
+              - generic: طريقة الدفع
+              - generic: 
+            - columnheader "الحساب":
+              - generic: الحساب
+              - text: 
+            - columnheader "المبلغ المسجل ":
+              - generic: المبلغ المسجل
+              - generic: 
+            - columnheader "المبلغ الصحيح ":
+              - generic: المبلغ الصحيح
+              - generic: 
+        - rowgroup:
+          - row "نقدي | Cash 105090 صندوق ملخص المبيعات | Sales summary cash 115.00 SR 115.00":
+            - cell "نقدي | Cash"
+            - cell "105090 صندوق ملخص المبيعات | Sales summary cash"
+            - cell "115.00 SR"
+            - cell "115.00"
+          - row "بنك | Bank 101090 البنك - ملخص المبيعات | Bank - sales summaries 230.00 SR 230.00":
+            - cell "بنك | Bank"
+            - cell "101090 البنك - ملخص المبيعات | Bank - sales summaries"
+            - cell "230.00 SR"
+            - cell "230.00"
+          - row "هنقرستيشن | HungerStation 102110 مستحقات هنقرستيشن | HungerStation receivable 345.00 SR 345.00":
+            - cell "هنقرستيشن | HungerStation"
+            - cell "102110 مستحقات هنقرستيشن | HungerStation receivable"
+            - cell "345.00 SR"
+            - cell "345.00"
+          - row:
+            - cell
+        - rowgroup:
+          - row:
+            - cell
+      - generic: أؤكد أن العملية تصحح السجلات المحاسبية ولا تمثل رد مبلغ فعلي
+      - checkbox "أؤكد أن العملية تصحح السجلات المحاسبية ولا تمثل رد مبلغ فعلي"
+      - paragraph: إذا تحرك المال فعليًا، استخدم مسار الإشعار الدائن أو رد المبلغ الأصلي. هذه العملية تصحح السجلات المحاسبية فقط.
+  - contentinfo:
+    - button "تأكيد"
+    - button "إغلاق"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

@@ -1,0 +1,44 @@
+account_move.py: 6315     def _check_draftable(self):
+        exchange_move_ids = set()
+        if self:
+            self.env['account.partial.reconcile'].flush_model(['exchange_move_id'])
+            sql = SQL(
+                """
+                    SELECT DISTINCT exchange_move_id
+                    FROM account_partial_reconcile
+                    WHERE exchange_move_id IN %s
+                """,
+                tuple(self.ids),
+            )
+            exchange_move_ids = {id_ for id_, in self.env.execute_query(sql)}
+
+        for move in self:
+            if move.id in exchange_move_ids:
+                raise UserError(_('You cannot reset to draft an exchange difference journal entry.'))
+            if move.tax_cash_basis_rec_id or move.tax_cash_basis_origin_move_id:
+                # If the reconciliation was undone, move.tax_cash_basis_rec_id will be empty;
+                # but we still don't want to allow setting the caba entry to draft
+                # (it'll have been reversed automatically, so no manual intervention is required),
+                # so we also check tax_cash_basis_origin_move_id, which stays unchanged
+                # (we need both, as tax_cash_basis_origin_move_id did not exist in older versions).
+                raise UserError(_('You cannot reset to draft a tax cash basis journal entry.'))
+            if move.inalterable_hash:
+                raise UserError(_('You cannot reset to draft a locked journal entry.'))
+
+    def button_hash(self):
+        self._hash_moves(force_hash=True)
+
+    def button_request_cancel(self):
+        """ Hook allowing the localizations to request a cancellation from the government before cancelling the invoice. """
+        self.ensure_one()
+        if not self.need_cancel_request:
+            raise UserError(_("You can only request a cancellation for invoice sent to the government."))
+
+    def button_cancel(self):
+        # Shortcut to move from posted to cancelled directly. This is useful for E-invoices that must not be changed
+        # when sent to the government.
+        moves_to_reset_draft = self.filtered(lambda x: x.state == 'posted')
+        if moves_to_reset_draft:
+            moves_to_reset_draft.button_draft()
+
+        if any(move.state != 'draft' for move in self):

@@ -1,0 +1,374 @@
+{
+  "database": "baseer_sim90_20260910",
+  "status": "FAIL",
+  "checks": [
+    {
+      "name": "all business actors use real non-superuser roles",
+      "passed": true
+    },
+    {
+      "name": "cashier and accountant lack payroll manager authority",
+      "passed": true
+    },
+    {
+      "name": "dense three-month HR data loaded",
+      "passed": true
+    },
+    {
+      "name": "cashier sees all own seeded draft batches",
+      "passed": true
+    },
+    {
+      "name": "cashier search contains no other creator batches",
+      "passed": true
+    },
+    {
+      "name": "owner approved production-volume batch present",
+      "passed": true
+    },
+    {
+      "name": "cashier cannot directly read owner batch",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier cannot directly read owner batch row",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier cannot approve even own purchase batch",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "denied cashier approval creates no source bills",
+      "passed": true
+    },
+    {
+      "name": "accountant approves cashier draft through batch workflow",
+      "passed": true
+    },
+    {
+      "name": "accountant approval posts exact batch gross",
+      "passed": true
+    },
+    {
+      "name": "cashier retains read-only view of own reviewed batch",
+      "passed": true
+    },
+    {
+      "name": "cashier cannot edit approved own batch input",
+      "passed": true,
+      "denial": "UserError"
+    },
+    {
+      "name": "cashier advance employee field is public projection",
+      "passed": true
+    },
+    {
+      "name": "cashier public employee search supports advance workflow",
+      "passed": true
+    },
+    {
+      "name": "cashier employee wage read denied",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier payroll version wage read denied",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier payslip read denied",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier disbursement creates one native posted loan",
+      "passed": true
+    },
+    {
+      "name": "cashier disbursement preserves real creator",
+      "passed": true
+    },
+    {
+      "name": "cashier native loan and public balance match declared amount",
+      "passed": true
+    },
+    {
+      "name": "cashier bounded workflow records balanced principal and disbursement",
+      "passed": true
+    },
+    {
+      "name": "cashier installment rounding conserves cents",
+      "passed": true
+    },
+    {
+      "name": "cashier no external bank payment or salary record created",
+      "passed": true
+    },
+    {
+      "name": "cashier repeat disbursement is idempotent",
+      "passed": true
+    },
+    {
+      "name": "cashier private loan relation remains inaccessible",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier native loan read remains inaccessible",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier issued advance amount is immutable",
+      "passed": true,
+      "denial": "UserError"
+    },
+    {
+      "name": "accountant advance employee field is public projection",
+      "passed": true
+    },
+    {
+      "name": "accountant public employee search supports advance workflow",
+      "passed": true
+    },
+    {
+      "name": "accountant employee wage read denied",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "accountant payroll version wage read denied",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "accountant payslip read denied",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "accountant disbursement creates one native posted loan",
+      "passed": true
+    },
+    {
+      "name": "accountant disbursement preserves real creator",
+      "passed": true
+    },
+    {
+      "name": "accountant native loan and public balance match declared amount",
+      "passed": true
+    },
+    {
+      "name": "accountant bounded workflow records balanced principal and disbursement",
+      "passed": true
+    },
+    {
+      "name": "accountant installment rounding conserves cents",
+      "passed": true
+    },
+    {
+      "name": "accountant no external bank payment or salary record created",
+      "passed": true
+    },
+    {
+      "name": "accountant repeat disbursement is idempotent",
+      "passed": true
+    },
+    {
+      "name": "accountant private loan relation remains inaccessible",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "accountant native loan read remains inaccessible",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "accountant issued advance amount is immutable",
+      "passed": true,
+      "denial": "UserError"
+    },
+    {
+      "name": "owner disabling accountant permission hides correction entry",
+      "passed": true
+    },
+    {
+      "name": "disabled accountant cannot reopen correction",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "permission revoked after opening prevents confirmation",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "accountant cannot self-enable correction permission",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier cannot open financial correction even with enabled flag",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "cashier cannot confirm another correction wizard",
+      "passed": true,
+      "denial": "AccessError"
+    },
+    {
+      "name": "reenabled accountant correction applies through native workflow",
+      "passed": true
+    },
+    {
+      "name": "correction audit identifies the real accountant",
+      "passed": true
+    }
+  ],
+  "hard_commit_guard": true,
+  "rollback": true,
+  "scope": "Cashier batches, bounded advance entry, correction toggle and company isolation",
+  "error": "Traceback (most recent call last):\n  File \"/tmp/sim90/role_journeys.py\", line 192, in <module>\n    other_batch = admin_other['baseer.purchase.batch'].create({'company_id': 3, 'entry_date': DAY})\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/decorators.py\", line 369, in create\n    return method(self, vals_list)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/baseer-addons/baseer_purchase_batch/models/purchase_batch.py\", line 252, in create\n    records._check_has_invoice_rows()\n  File \"/mnt/baseer-addons/baseer_purchase_batch/models/purchase_batch.py\", line 232, in _check_has_invoice_rows\n    raise UserError(_('Add at least one invoice before saving this batch, or discard it to leave without saving.'))\nodoo.exceptions.UserError: Add at least one invoice before saving this batch, or discard it to leave without saving.\n",
+  "before": {
+    "res.users": {
+      "count": 7,
+      "identity_and_write_date_sha256": "bed755a1cbd948c6451b515db301cb91a297563940073981cc97d49886aed470"
+    },
+    "hr.employee": {
+      "count": 26,
+      "identity_and_write_date_sha256": "f7ea4a24537062b40ecccd59108cdbff775cbe3d303146466c65969b0f0cb28e"
+    },
+    "hr.version": {
+      "count": 26,
+      "identity_and_write_date_sha256": "91649866748c913f872adfbf506208abdfb63c339ea8f9bba5afe5f9ed756d81"
+    },
+    "hr.payslip": {
+      "count": 71,
+      "identity_and_write_date_sha256": "f870a4d3b5985bd064dc5c105b4f3b61ad2a94bc6ef9a92394e526fdfeca74df"
+    },
+    "hr.payslip.run": {
+      "count": 3,
+      "identity_and_write_date_sha256": "e0fd0c3b6822b942ab07465ca28305ed4ad3852c968ebb094a19ae43fda0fce5"
+    },
+    "baseer.advance.entry": {
+      "count": 0,
+      "identity_and_write_date_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "baseer.hr.loan": {
+      "count": 24,
+      "identity_and_write_date_sha256": "07df9cff8974a5ed1128f5c9aadede575ce3ced6eefb1a3cbdf3ca1848e5f8fd"
+    },
+    "baseer.hr.loan.line": {
+      "count": 48,
+      "identity_and_write_date_sha256": "bfc839d1856493bbc1e6e01c057b3aace7a7572278ecf5199400eba5c74f2767"
+    },
+    "baseer.hr.loan.allocation": {
+      "count": 43,
+      "identity_and_write_date_sha256": "daf9f931ae953b8fb3333f7341136bbe07dc2230fc78a5b62dea9646a360137d"
+    },
+    "baseer.purchase.batch": {
+      "count": 93,
+      "identity_and_write_date_sha256": "643cace7f685ec6311110ad63e87d57ef443bc0025b1c069e08109eb3855a145"
+    },
+    "baseer.purchase.batch.line": {
+      "count": 543,
+      "identity_and_write_date_sha256": "3e90b4c759ad9ee00aa00977e0104b043787342deebc0798818cc6aad13fe357"
+    },
+    "account.move": {
+      "count": 5019,
+      "identity_and_write_date_sha256": "df90659550fe3fc7f27aa986b6de538f8ed222c412bcd224d8202c71e0b27821"
+    },
+    "account.move.line": {
+      "count": 12852,
+      "identity_and_write_date_sha256": "7f0f072aece1a839e9a011d82b825bcb6cdaf770901eaa45b4bd37146312dc9d"
+    },
+    "account.payment": {
+      "count": 2463,
+      "identity_and_write_date_sha256": "f0e09866ac9da0bc70686e3bbff3422e05e1cf37b24b8310b5932c743503d0c5"
+    },
+    "res.partner": {
+      "count": 101,
+      "identity_and_write_date_sha256": "d9d30bec0a1d5e8f2fa182e1fe3dfe1eb713594ff9c830efb0ef2fff80620c3f"
+    },
+    "baseer.financial.correction.audit": {
+      "count": 45,
+      "identity_and_write_date_sha256": "ba5b30eb62b399d421b1199e5ca9f675a4e5c961d45f4b2783017be4bfee0408"
+    },
+    "roles_sha256": "2b0390b7d3f4fdf2dad1d2e18b5eec97d3f9403a64430a229638ab2d6261b7b9"
+  },
+  "after": {
+    "res.users": {
+      "count": 7,
+      "identity_and_write_date_sha256": "bed755a1cbd948c6451b515db301cb91a297563940073981cc97d49886aed470"
+    },
+    "hr.employee": {
+      "count": 26,
+      "identity_and_write_date_sha256": "f7ea4a24537062b40ecccd59108cdbff775cbe3d303146466c65969b0f0cb28e"
+    },
+    "hr.version": {
+      "count": 26,
+      "identity_and_write_date_sha256": "91649866748c913f872adfbf506208abdfb63c339ea8f9bba5afe5f9ed756d81"
+    },
+    "hr.payslip": {
+      "count": 71,
+      "identity_and_write_date_sha256": "f870a4d3b5985bd064dc5c105b4f3b61ad2a94bc6ef9a92394e526fdfeca74df"
+    },
+    "hr.payslip.run": {
+      "count": 3,
+      "identity_and_write_date_sha256": "e0fd0c3b6822b942ab07465ca28305ed4ad3852c968ebb094a19ae43fda0fce5"
+    },
+    "baseer.advance.entry": {
+      "count": 0,
+      "identity_and_write_date_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "baseer.hr.loan": {
+      "count": 24,
+      "identity_and_write_date_sha256": "07df9cff8974a5ed1128f5c9aadede575ce3ced6eefb1a3cbdf3ca1848e5f8fd"
+    },
+    "baseer.hr.loan.line": {
+      "count": 48,
+      "identity_and_write_date_sha256": "bfc839d1856493bbc1e6e01c057b3aace7a7572278ecf5199400eba5c74f2767"
+    },
+    "baseer.hr.loan.allocation": {
+      "count": 43,
+      "identity_and_write_date_sha256": "daf9f931ae953b8fb3333f7341136bbe07dc2230fc78a5b62dea9646a360137d"
+    },
+    "baseer.purchase.batch": {
+      "count": 93,
+      "identity_and_write_date_sha256": "643cace7f685ec6311110ad63e87d57ef443bc0025b1c069e08109eb3855a145"
+    },
+    "baseer.purchase.batch.line": {
+      "count": 543,
+      "identity_and_write_date_sha256": "3e90b4c759ad9ee00aa00977e0104b043787342deebc0798818cc6aad13fe357"
+    },
+    "account.move": {
+      "count": 5019,
+      "identity_and_write_date_sha256": "df90659550fe3fc7f27aa986b6de538f8ed222c412bcd224d8202c71e0b27821"
+    },
+    "account.move.line": {
+      "count": 12852,
+      "identity_and_write_date_sha256": "7f0f072aece1a839e9a011d82b825bcb6cdaf770901eaa45b4bd37146312dc9d"
+    },
+    "account.payment": {
+      "count": 2463,
+      "identity_and_write_date_sha256": "f0e09866ac9da0bc70686e3bbff3422e05e1cf37b24b8310b5932c743503d0c5"
+    },
+    "res.partner": {
+      "count": 101,
+      "identity_and_write_date_sha256": "d9d30bec0a1d5e8f2fa182e1fe3dfe1eb713594ff9c830efb0ef2fff80620c3f"
+    },
+    "baseer.financial.correction.audit": {
+      "count": 45,
+      "identity_and_write_date_sha256": "ba5b30eb62b399d421b1199e5ca9f675a4e5c961d45f4b2783017be4bfee0408"
+    },
+    "roles_sha256": "2b0390b7d3f4fdf2dad1d2e18b5eec97d3f9403a64430a229638ab2d6261b7b9"
+  },
+  "passed": 52
+}

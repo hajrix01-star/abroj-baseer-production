@@ -1,0 +1,25 @@
+{
+  "company_id": 6,
+  "preview_id": 24,
+  "same_batch_id": 25,
+  "duplicate_batch_ids": [
+    26,
+    27
+  ],
+  "separate_batch_ids": [
+    28,
+    29
+  ],
+  "mapping_ids": [
+    2,
+    3
+  ],
+  "partner_ids": [
+    32,
+    33
+  ],
+  "payment_method_ids": [
+    34,
+    36
+  ]
+}

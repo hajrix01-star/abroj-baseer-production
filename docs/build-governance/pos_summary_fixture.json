@@ -1,0 +1,85 @@
+{
+  "company_id": 6,
+  "config_id": 1,
+  "product_id": 29,
+  "tax_id": 83,
+  "methods": [
+    {
+      "id": 1,
+      "name": "كاش",
+      "journal_id": [
+        92,
+        "QA ملخصات — كاش"
+      ],
+      "outstanding_account_id": false,
+      "baseer_category_id": [
+        1,
+        "النقد"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "بنك",
+      "journal_id": [
+        93,
+        "QA ملخصات — بنك"
+      ],
+      "outstanding_account_id": [
+        1186,
+        "QA ملخصات — بنك"
+      ],
+      "baseer_category_id": [
+        2,
+        "البنوك"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "هنقرستيشن",
+      "journal_id": [
+        94,
+        "QA ملخصات — هنقرستيشن"
+      ],
+      "outstanding_account_id": [
+        1188,
+        "QA تسوية — هنقرستيشن"
+      ],
+      "baseer_category_id": [
+        3,
+        "تطبيقات التوصيل"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "جاهز",
+      "journal_id": [
+        95,
+        "QA ملخصات — جاهز"
+      ],
+      "outstanding_account_id": [
+        1190,
+        "QA تسوية — جاهز"
+      ],
+      "baseer_category_id": [
+        3,
+        "تطبيقات التوصيل"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "كيتا",
+      "journal_id": [
+        96,
+        "QA ملخصات — كيتا"
+      ],
+      "outstanding_account_id": [
+        1192,
+        "QA تسوية — كيتا"
+      ],
+      "baseer_category_id": [
+        3,
+        "تطبيقات التوصيل"
+      ]
+    }
+  ]
+}

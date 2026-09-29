@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "requests": [
+    {
+      "result": {
+        "type": "ir.actions.act_window",
+        "res_model": "baseer.pos.day.entry",
+        "res_id": 2,
+        "view_mode": "form",
+        "target": "current"
+      },
+      "attempts": 1,
+      "seconds": 0.062240511004347354
+    },
+    {
+      "result": {
+        "type": "ir.actions.act_window",
+        "res_model": "baseer.pos.day.entry",
+        "res_id": 2,
+        "view_mode": "form",
+        "target": "current"
+      },
+      "attempts": 2,
+      "seconds": 0.922664440004155
+    }
+  ],
+  "created_summary_ids": [
+    187,
+    186
+  ],
+  "assertions": "Both requests return same entry; exactly two original drafts, gross345/customers30; no native financial documents; fixtures cleaned."
+}

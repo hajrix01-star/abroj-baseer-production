@@ -1,0 +1,31 @@
+# BP-S5 native work schedule seeds — 2026-09-08
+
+## G0 contract (review pending)
+User requests two reusable native Odoo working schedules for every new company:84 weekly hours/7 days (12 daily),60 weekly hours/6 days (10 daily). Add these options also to existing QA companies so they can be used now. Do not assign either automatically or rewrite employee versions, monthly payroll basis, existing calendars, or accounting data. Scope baseer_payroll19.0.1.2.1, QA only. Main excluded.
+
+Assumption: six-day template excludes Friday; administrators can edit weekdays. Use native duration-based calendar so user specifies daily duration, not invented shift start/end clock times. This is template configuration, not an attendance policy or legal compliance certification. Explain the editable rest-day assumption to user.
+
+ERP flow: company authorized creation → two optional native calendars → administrator explicitly selects employee native calendar → existing salary calculator reads native hours. No payroll document/posting/payment created. Preserve all financial and existing schedule/employee values.
+
+## G1 capacity
+Bounded addition:2 calendars and13 attendance rows per company, once. Assume up to100 companies and occasional concurrent company administration (2 requests), no cron, no frontend loading of all calendars. Native indexed company_id and XMLID unique identity reused. Initialization iterates company IDs; no new operational queries except company creation. Benchmark QA creation/replay; no production SLA claim. Atomic transaction rollback and pre-upgrade DB backup; do not uninstall data-used schedules as rollback.
+
+## G2 source and boundary
+Native resource.calendar and resource.calendar.attendance own schedule/duration; exact integer12/10 seeded, native backend computes84/60 and12/10. Native Float representation holds these integers exactly, no custom financial arithmetic or frontend number calculation. Native duration_based/full_day means one day per row. Per-company XMLIDs in baseer_payroll namespace with noupdate preserve edits and archived templates across repeat/module update. Company row lock serializes seed attempts, XMLID uniqueness backstop. Private helper (not RPC) with sudo only after native authorized company creation or trusted XML installation function. Native ACL/rules for selecting/editing calendars unchanged. No new schema, shared widget, core or vendor edit.
+
+## G3 direct path
+Reuse installed Odoo19 resource capability instead of a new scheduler/addon/dependency. Read native resource/models/res_company.py,resource_calendar.py,resource_calendar_attendance.py and prior BP-S4 registry. A small res.company extension and module data function are the owner. Built-in calendars/fields/forms supply Arabic/English and RTL/LTR; schedule names bilingual data labels with Western numbers because native name is not translated. No new UI or library. Python compilation, actual Odoo shell rollback tests, repeated seed/update, preservation, native selection visibility required.
+
+## G4 native UX
+Existing employee Payroll→Working Hours and native calendar form. Names clearly include weekly hours/days; native duration rows editable. No custom component or layout. Native full_day labels localized. Existing BP-S4 mobile/desktop form retained.
+
+## Acceptance
+Existing company receives two additional choices; new/multi-create companies each receive distinct company-owned pairs.84/7/12 and60/6/10 totals with correct one-day rows. Default company/employee calendars unchanged. Repeat seed/update preserve customized names/durations/archive; no duplicate. Cross-company native record rules unchanged. Readonly preservation hashes before/after for account_move,account_move_line,account_payment,hr_employee,hr_version,existing resource_calendar/attendance,res_company. Backup/candidate/review evidence archived separately from BP-S4.
+
+## Live record
+- WS-001 intent/read: inspect build/architecture skills, governance/ERP/capacity references, registry BP-S4, addon manifest/imports, native resource models and QA compose/ops. Result: native duration_based supported; no existing central seed implementation. No application mutations. Root executor; independent gate reviewer om_review requested.
+- WS-002 G0–G4 proposal recorded above; awaiting independent gate approval before source edit. Next: minimal seed extension, QA backup/upgrade, bounded rollback verification and independent delivery.
+- WS-003 independent reviewer approved G0–G4. Implement native company create extension/private seed, company lock/XMLID identity and data initializer. Explicit invalid reference guard; preserve customized/archived choices. No schedule assignments. Next backup and native QA upgrade/tests.
+- WS-004 QA backup and upgrade succeeded; native totals, multi-create, context cleaning and preservation of edits/archive passed. Initial test incorrectly assumed calendar read isolation: native resource.calendar has internal-user read ACL and no company record rule. Correct test to preserve native read behavior and verify native hr.version check_company assignment rejection. No security scope expansion; existing payroll/company access unchanged. Initial failed test fully rolled back.
+- WS-005 clarification to WS-004: native hr.version does not enable _check_company_auto, so plain ORM assignment does not automatically invoke the check. Test explicit native _check_company helper and native UI selection company filtering; do not claim RPC assignment protection or introduce new global behavior in a seed-only change. Native employee31 UI lists exactly standard40 and new84/60 options for active company10. Both prior assertion failures concern incorrect assumptions in tests, not seed totals or company ownership; all fixtures rolled back.
+- WS-006 final43 assertions pass, rollback confirmed; two-company creation0.633s. Repeat actual upgrade loaded Arabic translation successfully. Preservation hashes QA/main true for existing rows including calendar and employee sources. Native dropdown checked desktop/mobile, screenshots saved; no employee values selected/saved. Candidate27sourcefiles frozen in docs/releases/2026-09-08-baseer-work-schedules with backup fingerprint and handoff. Independent alpha-delivery G8 requested.

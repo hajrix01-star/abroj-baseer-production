@@ -1,0 +1,267 @@
+[
+  {
+    "table": "res_company",
+    "id": 1,
+    "change": "update",
+    "fields": [
+      "internal_project_id",
+      "leave_timesheet_task_id",
+      "project_time_mode_id",
+      "timesheet_encode_uom_id",
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T17:12:53.242377",
+        "after": "2026-09-08T22:14:25.20746"
+      }
+    }
+  },
+  {
+    "table": "res_company",
+    "id": 6,
+    "change": "update",
+    "fields": [
+      "internal_project_id",
+      "leave_timesheet_task_id",
+      "project_time_mode_id",
+      "timesheet_encode_uom_id",
+      "write_date",
+      "write_uid"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T21:04:07.092894",
+        "after": "2026-09-08T22:14:25.20746"
+      },
+      "write_uid": {
+        "before": 2,
+        "after": 1
+      }
+    }
+  },
+  {
+    "table": "res_company",
+    "id": 7,
+    "change": "update",
+    "fields": [
+      "internal_project_id",
+      "leave_timesheet_task_id",
+      "project_time_mode_id",
+      "timesheet_encode_uom_id",
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T17:12:53.242377",
+        "after": "2026-09-08T22:14:25.20746"
+      }
+    }
+  },
+  {
+    "table": "res_company",
+    "id": 8,
+    "change": "update",
+    "fields": [
+      "internal_project_id",
+      "leave_timesheet_task_id",
+      "project_time_mode_id",
+      "timesheet_encode_uom_id",
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T17:12:53.242377",
+        "after": "2026-09-08T22:14:25.20746"
+      }
+    }
+  },
+  {
+    "table": "res_company",
+    "id": 9,
+    "change": "update",
+    "fields": [
+      "internal_project_id",
+      "leave_timesheet_task_id",
+      "project_time_mode_id",
+      "timesheet_encode_uom_id",
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T17:12:53.242377",
+        "after": "2026-09-08T22:14:25.20746"
+      }
+    }
+  },
+  {
+    "table": "res_company",
+    "id": 10,
+    "change": "update",
+    "fields": [
+      "internal_project_id",
+      "leave_timesheet_task_id",
+      "project_time_mode_id",
+      "timesheet_encode_uom_id",
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T17:12:53.242377",
+        "after": "2026-09-08T22:14:25.20746"
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 2,
+    "change": "update",
+    "fields": [
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T11:54:18.57828",
+        "after": "2026-09-08T22:14:23.295178"
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 3,
+    "change": "update",
+    "fields": [
+      "write_date",
+      "write_uid"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T21:54:24.78358",
+        "after": "2026-09-08T22:14:23.295178"
+      },
+      "write_uid": {
+        "before": 2,
+        "after": 1
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 24,
+    "change": "update",
+    "fields": [
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-07T16:06:50.620418",
+        "after": "2026-09-08T22:14:27.030922"
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 27,
+    "change": "update",
+    "fields": [
+      "write_date"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-07T16:06:50.620418",
+        "after": "2026-09-08T22:14:27.030922"
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 76,
+    "change": "update",
+    "fields": [
+      "write_date",
+      "write_uid"
+    ],
+    "non_sensitive_metadata": {
+      "write_date": {
+        "before": "2026-09-08T09:58:39.568027",
+        "after": "2026-09-08T22:14:27.030922"
+      },
+      "write_uid": {
+        "before": 2,
+        "after": 1
+      }
+    }
+  },
+  {
+    "table": "hr_employee",
+    "id": 1,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 2,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 3,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 4,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 5,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 6,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 31,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  },
+  {
+    "table": "hr_employee",
+    "id": 32,
+    "change": "update",
+    "fields": [
+      "hourly_cost"
+    ],
+    "non_sensitive_metadata": {}
+  }
+]

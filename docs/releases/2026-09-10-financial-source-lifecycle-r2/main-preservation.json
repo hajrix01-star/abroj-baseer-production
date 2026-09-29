@@ -1,0 +1,15 @@
+{
+  "protected_tables": 372,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "3d96581c2eef324df3b5ed69f7ba526bb37035fc",
+  "existing_user_memberships_exact": true,
+  "existing_module_versions_exact": true,
+  "existing_user_presets_exact": true,
+  "no_automatic_role_assignments": true,
+  "existing_audit_preserved": true,
+  "new_lifecycle_defaults_exact": true,
+  "restored_rows": 47,
+  "failed_candidate": "31330640045c448f453f0430a9caa9fd66c74f5a",
+  "no_second_module_upgrade": true
+}

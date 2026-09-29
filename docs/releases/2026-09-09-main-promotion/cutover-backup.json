@@ -1,0 +1,16 @@
+{
+  "database": "baseer_dev",
+  "coherent": true,
+  "files": {
+    "database.dump": {
+      "size": 9568953,
+      "sha256": "fa15e5ee86c34d1dd46bd5a6130034f61349376518dabe95bf0799a4ec867418"
+    },
+    "filestore.tar.gz": {
+      "size": 6144213,
+      "sha256": "ff3eff4ad59ac5b443b775b0d3c0b63199d0f8e2c604eb803a753719ebd72746"
+    }
+  },
+  "private_directory": "D:\\Codex\\Baseer-odoo\\.local-backups\\main-promotion-20260909\\cutover",
+  "restoration_source": "D:\\Codex\\Baseer-odoo\\.local-backups\\main-promotion-20260909\\previous-source"
+}

@@ -1,0 +1,72 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "نقطة البيع"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - menuitem "ملخصات المبيعات"
+      - menuitem "الإجازات والإغلاقات"
+      - button "الطلبات":
+        - generic: الطلبات
+      - button "المنتجات":
+        - generic: المنتجات
+      - menuitem "دفعات مشترياتي"
+      - button "":
+        - generic: 
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي" [disabled]:
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "سلف الموظفين":
+    - /url: /odoo/action-824
+- generic: سلفة موظف
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - radiogroup "شريط الحالة":
+    - radio "مسددة" [disabled]
+    - radio "قائمة" [checked] [disabled]
+    - radio "مسودة" [disabled]
+  - heading "سلفة موظف" [level=1]:
+    - generic: سلفة موظف
+  - generic: الموظف
+  - generic: AR1 UI Employee
+  - generic: المبلغ
+  - generic: 100.01 SR
+  - generic: دفتر الصرف
+  - generic: Cash | النقد
+  - generic: تاريخ الصرف
+  - generic: 10/09/2026
+  - generic: تاريخ أول قسط
+  - generic: 10/09/2026
+  - generic: عدد الأقساط
+  - generic: "3"
+  - generic: المتبقي
+  - generic: 100.01 SR
+  - generic: مرجع السلفة
+  - generic: سلفة موظف
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

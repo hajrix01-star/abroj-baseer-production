@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "UI-created batch is posted and paid, gross115/net100/tax15",
+    "category search uses category text and returns only matching map",
+    "native PDF draft/ar_001: 47804 bytes",
+    "native PDF approved/ar_001: 45260 bytes",
+    "native PDF draft/en_US: 40703 bytes",
+    "native PDF approved/en_US: 37249 bytes",
+    "foreign-currency payment journal rejected with Arabic message"
+  ],
+  "passed": 7,
+  "draft_id": 24,
+  "ui_approved_id": 55,
+  "ui_invoice_id": 412
+}

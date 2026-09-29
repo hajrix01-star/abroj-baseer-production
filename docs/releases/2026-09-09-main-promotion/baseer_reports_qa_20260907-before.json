@@ -1,0 +1,50 @@
+{
+  "account_move": {
+    "count": 101,
+    "hash": "9d3a0a6ae78d441cf21a5c91daebc87c"
+  },
+  "account_move_line": {
+    "count": 238,
+    "hash": "99efe456211d5beeea97e8bddb77b189"
+  },
+  "account_payment": {
+    "count": 37,
+    "hash": "e8bcf610dc1be59588373d6f1a107386"
+  },
+  "account_partial_reconcile": {
+    "count": 59,
+    "hash": "ef7c5b242e3e055f4dbfebf833d3c7eb"
+  },
+  "res_company": {
+    "count": 6,
+    "hash": "6a857127ba093bce515f8df3f0ba7092"
+  },
+  "res_partner": {
+    "count": 45,
+    "hash": "38d1bc3040ae594a698484933636c59d"
+  },
+  "hr_employee": {
+    "count": 8,
+    "hash": "84e7eb3d93470f4bc033e32de55e90e1"
+  },
+  "hr_payslip": {
+    "count": 12,
+    "hash": "8ea70d9a95eaeb331df0e3d26209a13c"
+  },
+  "hr_payslip_run": {
+    "count": 14,
+    "hash": "219d9504fe5db614414dd8205eade3eb"
+  },
+  "baseer_hr_service": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "baseer_pos_summary": {
+    "count": 7,
+    "hash": "5c04c1e9e41357e491a830edcd563505"
+  },
+  "baseer_purchase_batch": {
+    "count": 11,
+    "hash": "6e2ff2f2fb52a0af223a479e2e09f7b6"
+  }
+}

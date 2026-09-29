@@ -1,0 +1,14 @@
+services:
+  pcl_release_candidate_test:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./release_candidates/2026-09-15-purchase-classification-dashboard/source-4919723/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/third_party_addons:/mnt/third-party-addons:ro

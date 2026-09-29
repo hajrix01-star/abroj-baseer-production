@@ -1,0 +1,13 @@
+# Cash PDF cleanup — 2026-09-07
+
+User request: remove the verbose bottom section from printed cash category reports.
+
+The native exporter eagerly expands the reconciliation appendix, including the screen's folded explanatory rows. Version 19.0.1.3.1 filters that appendix in the custom PDF renderer only. Category details, all amounts and percentages, month headers, company, currency and VAT basis remain. A reconciliation difference is still printed when any monetary month/total cell is nonzero at currency precision; offsetting monthly differences cannot hide behind a zero total. Its existing translated label and values remain, without indentation.
+
+The backend payload, financial computations, screen drilldowns, XLSX export and vendor modules are unchanged. No new schema, dependencies, accounting records or settings. Source delta: models/cash_pdf.py and __manifest__.py in baseer_cash_categories. Candidate hashes: cash_print_candidate_hashes.json. The immutable Reports R1 ZIP remains unchanged.
+
+QA: verify_cash_clean_print.py passed 842 assertions on baseer_reports_qa_20260907. Covered 1/3/12 months, Arabic/English, both VAT settings, exact retained numeric cells and formatted percentages, panel alignment, unchanged input, retained XLSX appendix, zero and offsetting nonzero reconciliation differences, and another report with identical row IDs. Native cash PDF exports and original P&L exported successfully. No financial records were created; transaction rolled back. Cash A4 portrait; P&L A4 landscape. Visuals: cash_print_qa_preview.png and cash_print_qa_net_preview.png, ending at net movement with no appendix. Twelve months retain the existing three compact panels/pages.
+
+Main plan: independent acceptance, stop original, back up database/filestore/config plus prior source from verified R1 archive, upgrade only baseer_cash_categories, restart, run the same read/render checks against real data and inspect the actual main PDF. Rollback uses the prepatch database/filestore/config backup and the two archived source files; no test data is transferred. Do not run a restore unless the deployment fails and recovery is needed.
+
+Main completed: independent QA GO received. Stopped original, saved pg_dump custom-format database plus filestore/config/old source under .local-backups/reports-r1-print-prepatch, verified dump catalog and recorded SHA256 hashes. Upgraded only cash module to19.0.1.3.1 and restarted successfully. Same focused checks passed170assertions on original real zero-data state; exported4cashPDF+P&L and checkedXLSX appendix; 0moves/0lines unchanged. Actual cash_print_main_preview.png confirms ArabicPDF ends at net with no appendix. No test data transferred. Source hashes remain candidate hashes; R1archive unchanged.

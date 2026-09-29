@@ -1,0 +1,155 @@
+{
+  "before_count": 113,
+  "after_count": 142,
+  "newly_installed": [
+    {
+      "name": "hr_hourly_cost",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_timesheet",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "link_tracker",
+      "state": "installed",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "portal_rating",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_hr_restaurant",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_online_payment_self_order",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_restaurant",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_self_order",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_self_order_sale",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project",
+      "state": "installed",
+      "latest_version": "19.0.1.4"
+    },
+    {
+      "name": "project_account",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_hr_skills",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_purchase",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_purchase_stock",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_sms",
+      "state": "installed",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "project_stock",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_stock_account",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_timesheet_holidays",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_todo",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "rating",
+      "state": "installed",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "sale_project",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_project_stock",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_project_stock_account",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_purchase_project",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_service",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_timesheet",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_hr_timesheet",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_pos_restaurant",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_sale_timesheet",
+      "state": "installed",
+      "latest_version": "19.0.1.0"
+    }
+  ],
+  "removed": [],
+  "version_changed": [],
+  "audit_scope": "frozen candidate, not newly installed modules",
+  "cause": "not attributed by this read-only evidence"
+}

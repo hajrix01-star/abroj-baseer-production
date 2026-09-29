@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "changed_tables": [
+    "hr_payslip"
+  ],
+  "financial_history_unchanged": true,
+  "main_unchanged": true,
+  "source_commit": "807712c3dd78db4bdbec15d6a264b5b72feec951"
+}

@@ -1,0 +1,88 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "same fresh entry one-step Save twice",
+      "requests": [
+        {
+          "result": {
+            "type": "ir.actions.act_window",
+            "res_model": "baseer.pos.day.entry",
+            "res_id": 41,
+            "view_mode": "form",
+            "target": "current"
+          },
+          "attempts": 1,
+          "seconds": 0.0913889579824172
+        },
+        {
+          "result": {
+            "type": "ir.actions.act_window",
+            "res_model": "baseer.pos.day.entry",
+            "res_id": 41,
+            "view_mode": "form",
+            "target": "current"
+          },
+          "attempts": 2,
+          "seconds": 0.20332809002138674
+        }
+      ]
+    },
+    {
+      "case": "saved entry Save versus independent original approval",
+      "requests": [
+        {
+          "result": {
+            "type": "ir.actions.act_window",
+            "res_model": "baseer.pos.day.entry",
+            "res_id": 42,
+            "view_mode": "form",
+            "target": "current"
+          },
+          "attempts": 2,
+          "seconds": 0.7689215409918688
+        },
+        {
+          "result": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  249
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 249,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "attempts": 1,
+          "seconds": 0.04494706995319575
+        }
+      ]
+    }
+  ],
+  "original_summary_ids": [
+    252,
+    251,
+    250,
+    249
+  ],
+  "scope": "Explicit zero sales tests lock/replay paths without native financial documents. Positive posting/late rollback separately covered by pos_s3_checks.",
+  "cleanup": "Exact entries and zero-summary fixtures removed."
+}

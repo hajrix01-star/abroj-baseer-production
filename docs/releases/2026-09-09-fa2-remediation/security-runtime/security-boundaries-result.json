@@ -1,0 +1,266 @@
+{
+  "database": "baseer_fix_security_20260909",
+  "status": "completed",
+  "checks": [
+    {
+      "name": "pos_user_can_create_draft_summary",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "pos_user_without_invoice_cannot_approve",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "pos_user_cannot_archive",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "pos_user_cannot_forge_approved_state",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "summary_cannot_change_company",
+      "passed": true,
+      "evidence": "ValidationError"
+    },
+    {
+      "name": "hr_user_cannot_read_sales_summary",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "pos_native_session_cannot_forge_summary_link",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "caller_default_state_and_link_are_discarded",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "policy_pos_user_can_confirm_closure",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "pos_user_cannot_cancel_confirmed_closure",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "pos_user_cannot_read_other_company_closure",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "inactive_allowed_company_closure_mutation_rejected",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "invoice_operator_can_create_with_service_default",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "invoice_operator_supplier_default_category_create_works",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "invoice_operator_explicit_entry_type_create_works",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "invoice_operator_onchange_category_map_id_works",
+      "passed": true,
+      "evidence": {
+        "value": {
+          "entry_type": "expense"
+        }
+      }
+    },
+    {
+      "name": "invoice_operator_onchange_partner_id_works",
+      "passed": true,
+      "evidence": {
+        "value": {
+          "entry_type": "expense"
+        }
+      }
+    },
+    {
+      "name": "hr_user_cannot_read_purchase_batch",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "invoice_user_cannot_forge_batch_state",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "batch_company_immutable",
+      "passed": true,
+      "evidence": "UserError"
+    },
+    {
+      "name": "invoice_user_cannot_forge_bill_link",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "officer_cannot_read_foreign_company_salary_child",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "foreign_company_child_search_hidden",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "manager_cannot_read_foreign_company_salary_child",
+      "passed": true,
+      "evidence": "AccessError"
+    },
+    {
+      "name": "manager_foreign_company_child_search_hidden",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "all_boundary_database_writes_rolled_back",
+      "passed": true,
+      "evidence": null
+    }
+  ],
+  "observations": [
+    {
+      "name": "pos_fixture_config_exists",
+      "exists": true
+    }
+  ],
+  "rules": [
+    {
+      "id": 296,
+      "name": "Payslip worked days: allowed companies",
+      "domain_force": "[('payslip_id.company_id','in',company_ids)]",
+      "groups": [],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 354,
+      "name": "Payslip worked days: officer parent scope",
+      "domain_force": "['|', '|', ('payslip_id.employee_id.user_id', '=', user.id), ('payslip_id.employee_id.department_id', '=', False), ('payslip_id.employee_id.department_id.manager_id.user_id', '=', user.id)]",
+      "groups": [
+        70
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 357,
+      "name": "Payslip worked days: manager parent scope",
+      "domain_force": "[(1, '=', 1)]",
+      "groups": [
+        71
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 294,
+      "name": "Payslip lines: allowed companies",
+      "domain_force": "[('slip_id.company_id','in',company_ids)]",
+      "groups": [],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 352,
+      "name": "Payslip lines: officer parent scope",
+      "domain_force": "['|', '|', ('slip_id.employee_id.user_id', '=', user.id), ('slip_id.employee_id.department_id', '=', False), ('slip_id.employee_id.department_id.manager_id.user_id', '=', user.id)]",
+      "groups": [
+        70
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 355,
+      "name": "Payslip lines: manager parent scope",
+      "domain_force": "[(1, '=', 1)]",
+      "groups": [
+        71
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 295,
+      "name": "Payslip inputs: allowed companies",
+      "domain_force": "[('payslip_id.company_id','in',company_ids)]",
+      "groups": [],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 353,
+      "name": "Payslip inputs: officer parent scope",
+      "domain_force": "['|', '|', ('payslip_id.employee_id.user_id', '=', user.id), ('payslip_id.employee_id.department_id', '=', False), ('payslip_id.employee_id.department_id.manager_id.user_id', '=', user.id)]",
+      "groups": [
+        70
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 356,
+      "name": "Payslip inputs: manager parent scope",
+      "domain_force": "[(1, '=', 1)]",
+      "groups": [
+        71
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 278,
+      "name": "Officer and subordinates Payslip",
+      "domain_force": "['|','|', ('employee_id.user_id', '=', user.id), ('employee_id.department_id',\n                '=', False), ('employee_id.department_id.manager_id.user_id', '=', user.id)]\n            ",
+      "groups": [
+        70
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 279,
+      "name": "All Payslip",
+      "domain_force": "[(1,'=',1)]",
+      "groups": [
+        71
+      ],
+      "perm_read": true,
+      "active": true
+    },
+    {
+      "id": 292,
+      "name": "Payslips: allowed companies",
+      "domain_force": "[('company_id','in',company_ids)]",
+      "groups": [],
+      "perm_read": true,
+      "active": true
+    }
+  ],
+  "check_count": 26,
+  "failed_checks": []
+}

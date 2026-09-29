@@ -1,0 +1,48 @@
+{
+  "release": "heat-calendar-targets-live-candidate-2026-09-14.1",
+  "status": "live",
+  "production_baseline": "863bd851dc107ba8911b417263f21b83270701f0",
+  "candidate_commit": "f1b0034cfce8390a8274b59e900b823ae7590d97",
+  "candidate_tag": "heat-calendar-targets-live-candidate-2026-09-14.1",
+  "github_repository": "https://github.com/hajrix01-star/abroj-baseer-production.git",
+  "github_branch": "codex/heat-calendar-targets-live-863",
+  "github_published": true,
+  "archive": {
+    "path": "baseer-heat-calendar-targets-live-f1b0034.tar.gz",
+    "sha256": "23d77acc0dfe3ae811d5b80b1e27299236d94dc6daf68ba55aa4bc04cd909ced"
+  },
+  "module_versions": {
+    "baseer_sales_heat_calendar": "19.0.1.0.8"
+  },
+  "scope": [
+    "manager-only batch target editor for selected month × weekday cells",
+    "all or selected months and weekdays, maximum 84 exact cells",
+    "server-side active-company isolation, exact money validation, stale-write detection, and atomic save"
+  ],
+  "explicit_exclusions": [
+    "sales-summary, accounting, inventory, payroll, HR, and occasion writes",
+    "database schema or data migration",
+    "cashier-procurement scope already deployed in the baseline"
+  ],
+  "verification": {
+    "baseline_review": "target-only diff from 863bd85; 10 add-on files plus release receipt",
+    "fresh_isolated_candidate_tests": "16 Odoo test methods, 0 failures, 0 errors; module upgraded only in QA database",
+    "required_before_live": [
+      "fresh isolated Hostinger rehearsal from the current live source",
+      "target-focused test and business acceptance evidence",
+      "independent Alpha Delivery GO",
+      "fresh production recovery pair and constrained module update"
+    ]
+  },
+  "hostinger_rehearsal_completed": true,
+  "hostinger_deployment_completed": true,
+  "blocker": null,
+  "live_deployment": {
+    "release_directory": "f1b0034",
+    "module_state": "installed:19.0.1.0.8",
+    "protected_snapshot_match": true,
+    "local_login_http": 200,
+    "public_login_http": 200,
+    "recovery_pair": "heat-calendar-targets-live-20260914T195202Z"
+  }
+}

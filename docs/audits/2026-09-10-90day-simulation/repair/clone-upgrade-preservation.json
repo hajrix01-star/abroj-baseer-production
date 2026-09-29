@@ -1,0 +1,73 @@
+{
+  "tables": 316,
+  "all_exact": false,
+  "all_business_exact": true,
+  "changed_tables": [
+    "res_groups",
+    "res_partner"
+  ],
+  "technical_metadata_only": {
+    "res_groups": [
+      {
+        "id": 92,
+        "fields": {
+          "write_date": {
+            "before": "2026-09-10T19:33:47.292479",
+            "after": "2026-09-10T21:05:20.085378"
+          }
+        }
+      },
+      {
+        "id": 93,
+        "fields": {
+          "write_date": {
+            "before": "2026-09-10T19:33:47.292479",
+            "after": "2026-09-10T21:05:20.085378"
+          }
+        }
+      },
+      {
+        "id": 94,
+        "fields": {
+          "write_date": {
+            "before": "2026-09-10T19:33:47.292479",
+            "after": "2026-09-10T21:05:20.085378"
+          }
+        }
+      }
+    ],
+    "res_partner": [
+      {
+        "id": 29,
+        "fields": {
+          "write_uid": {
+            "before": 5,
+            "after": 1
+          },
+          "write_date": {
+            "before": "2026-09-10T20:23:35.492703",
+            "after": "2026-09-10T21:05:20.085378"
+          }
+        }
+      },
+      {
+        "id": 30,
+        "fields": {
+          "write_date": {
+            "before": "2026-09-10T20:00:30.316681",
+            "after": "2026-09-10T21:05:20.085378"
+          }
+        }
+      },
+      {
+        "id": 31,
+        "fields": {
+          "write_date": {
+            "before": "2026-09-10T20:00:30.316681",
+            "after": "2026-09-10T21:05:20.085378"
+          }
+        }
+      }
+    ]
+  }
+}

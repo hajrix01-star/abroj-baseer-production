@@ -1,0 +1,10 @@
+{
+  "database.dump": {
+    "path": ".local-backups\\shared-partners-20260909\\database.dump",
+    "sha256": "24be765b990a361887f64b176d8579239ab1baec6bfa45d7df0355e95ad74907"
+  },
+  "filestore.tar.gz": {
+    "path": ".local-backups\\shared-partners-20260909\\filestore.tar.gz",
+    "sha256": "18f5abbd6cfdec99a8f698a3690617901c39ef4140bd2edbe52883d2631a6e00"
+  }
+}

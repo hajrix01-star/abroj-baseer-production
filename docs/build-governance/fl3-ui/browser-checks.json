@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Arabic existing QA sales1580 and suppliers3100/1000/2100",
+    "Sales drill shows6 signed source/reversal rows and excludes every collection",
+    "September Cash remains0/-1000/-1000",
+    "July Cash890 retained separately from sales1580",
+    "English labels and same1580 monetaryvalues",
+    "480px English nativekanban and cards without page overflow",
+    "480px Arabic RTL nativekanban nooverflow and Western digits",
+    "Arabic mobile salesdrill opens actual approved790 summary25"
+  ],
+  "passed": 8
+}

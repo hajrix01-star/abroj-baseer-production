@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "database": "baseer_ar1_roles_20260910",
+  "checks": [
+    "Native Invoicing menu opens financial register, paginated list and ten invoice cards",
+    "Arabic labels, source names, Western figures and native payment badges render",
+    "Partial customer card shows two matching rows: total200.10, settled35.05, outstanding165.05",
+    "Native number/reference query remains after toggling off the owned KPI facet",
+    "Source button opens the existing partially settled native invoice",
+    "480px fresh navigation selects native kanban with two KPI columns and document width480",
+    "English labels, amounts and source types render; existing native view-switch labels may retain Arabic",
+    "No-match search shows zero invoice indicators and no operations"
+  ],
+  "mobile_measurement": {
+    "viewport_width": 480,
+    "document_width": 480,
+    "native_kanban": true,
+    "grid_columns": "216.5px 216.5px"
+  },
+  "viewport_restored": true,
+  "language_restored": "ar_001",
+  "limitations": [
+    "UI uses the existing isolated QA database and synthetic fixtures left by an earlier test-only localization install; this is not financial preservation evidence.",
+    "Authoritative accounting/rollback evidence uses separate clean MAIN clone baseer_ar1_fl1_clean_20260910.",
+    "Access denial, native installment arithmetic and source-summary navigation are covered in backend integration evidence; no claim of browser execution of those cases."
+  ],
+  "source_files": {
+    "__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "__manifest__.py": "fe41137a751918002fd60e371f4ffc3c879f3091dfccf145ccdb9fafe8de95be",
+    "i18n/ar.po": "9bf1e4a40290e565963286f8b0e6efd7d05c001127b8cee94bde46db98557c1d",
+    "models/__init__.py": "d07061010ffa9702c92ed314c725c73e8c0d21e5d49edd30c9a46086e37c183d",
+    "models/financial_register.py": "f94b9490b1ec1f98b47e9f6e409881d963fe3e0a0d0242c65d3eb6d69b4db6ca",
+    "README.md": "2b2897d671cb5992881205641a23aee2a82c41bf6abc01940aea1c8cb51751d6",
+    "static/src/financial_register.js": "36051ca83719f23441d535b17b057a1e006c0f7b58a86c05ba4c52012b7e753c",
+    "static/src/financial_register.scss": "d2932faf9097721dfefd2a19b38aaf3d0a3d80bbdd3f70a9cdc150aa7255eb24",
+    "static/src/financial_register.xml": "b88d63f1aae30987a2c6640f0c2a9fa04b34f4345fa8e1afab7d5b9b6d43d53e",
+    "views/financial_register_views.xml": "fd9b4db5f7cda874998c2e98c3a55f155825f47b820b1941c261e1568292141a"
+  },
+  "evidence_files": {
+    "partial-ar.txt": "e43baff3dfe7448e98114fe757805d4468816c6a22d92cbcec8c84ed964b5470",
+    "partial-ar.png": "7b503456a66f500d06095bf6f49abe4446ec101b3d7b24cbc9cac1e7c58d4d51",
+    "filter-preserved-ar.txt": "955c9c5aea33a67ac83a59c1e8c936e096754f575ad36563d6ca2e7208337b38",
+    "source-ar.txt": "15a082c259a1756e14c2b20f19745d26636df54eb8f8be11fa250bc3a35d0ce7",
+    "mobile-ar.txt": "14ddafc1dc12bd0d6e337b3a983cebf425534c459c5f96d79072a53fd353c420",
+    "mobile-ar.png": "62f04332ebde206ec4892c29f34eba8c1c721285383ad3a7a63ca25410feec2f",
+    "desktop-en.txt": "d6536d6518f1f2c7f7b3321041ac55ece7299294ef768494a188e0acc3ea3961",
+    "desktop-en.png": "0b019070544d27448128bf300e23a41a0bc2b857154d45bb9a0a30b474da9db4",
+    "empty-en.txt": "93ef8492d32991ffd447a238aa692e5b70519d14ae54491d7caf0d0362e7fab8"
+  }
+}

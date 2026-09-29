@@ -1,0 +1,22 @@
+{
+  "database": "baseer_audit_security_20260909",
+  "method": "pg_dump -Fc and pg_restore, then read-only/rollback security probes",
+  "compared_tables": [
+    "account_move",
+    "account_move_line",
+    "account_payment",
+    "account_partial_reconcile",
+    "res_company",
+    "res_partner",
+    "hr_employee",
+    "hr_payslip",
+    "hr_payslip_run",
+    "baseer_hr_service",
+    "baseer_pos_summary",
+    "baseer_purchase_batch"
+  ],
+  "differences": [],
+  "business_rows_match_qa_baseline": true,
+  "filestore_restored": false,
+  "full_disaster_recovery_claimed": false
+}

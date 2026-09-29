@@ -1,0 +1,19 @@
+{
+  "database": "baseer_fix_main_20260909",
+  "compared_tables": [
+    "account_move",
+    "account_move_line",
+    "account_payment",
+    "account_partial_reconcile",
+    "res_company",
+    "res_partner",
+    "hr_employee"
+  ],
+  "changed_preexisting_rows": [
+    "res_company",
+    "res_partner",
+    "hr_employee"
+  ],
+  "financial_preexisting_rows_unchanged": true,
+  "comparison": "Original columns and original row IDs; additive fields/seed records explicitly excluded."
+}

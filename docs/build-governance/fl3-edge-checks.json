@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": [
+    "balanced COGS/inventory ledger additions do not inflate sales",
+    "native cash rounding uses posted receivable115 not unrounded order115.02",
+    "foreign POS displays historical company ledger currency instead of order currency"
+  ],
+  "rollback": true,
+  "stock_scope": "Native posted POS entry plus balanced synthetic COGS/inventory lines; not an end-to-end stock valuation workflow.",
+  "foreign_company_amount": "460.00",
+  "hard_commit_guard": true,
+  "passed": 3
+}

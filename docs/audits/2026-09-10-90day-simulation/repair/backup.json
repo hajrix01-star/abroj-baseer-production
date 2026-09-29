@@ -1,0 +1,16 @@
+{
+  "database": "baseer_ic1_20260910",
+  "backups": [
+    {
+      "name": "same-data-before.dump",
+      "bytes": 10527359,
+      "sha256": "d8645dd5aed2104483a5a870d927a8044e69fca391d5e7935c0721c5b46d2cf1"
+    },
+    {
+      "name": "same-data-before-filestore.tar.gz",
+      "bytes": 2193834,
+      "sha256": "5c2a1ae1ebe3181f761c38198e68c7cfd91908d526dc790a9133a1864cf14437"
+    }
+  ],
+  "original_database_untouched": true
+}

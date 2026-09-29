@@ -1,0 +1,912 @@
+{
+  "commit": "bf4b5867315da40466c2a830a087986427c61b9a",
+  "archive_sha256": "ca5df0581a0ae1cc3654214f392b78c14542e0be73e71d296e23acb6b29f838c",
+  "manifests": {
+    "om_hr_payroll": {
+      "name": "Odoo 19 HR Payroll",
+      "category": "Generic Modules/Human Resources",
+      "version": "19.0.1.1",
+      "sequence": 1,
+      "author": "Odoo Mates, Odoo SA",
+      "summary": "Payroll For Odoo 18 Community Edition",
+      "live_test_url": "https://www.youtube.com/watch?v=0kaHMTtn7oY",
+      "description": "Odoo 18 Payroll, Payroll Odoo 18, Odoo Community Payroll",
+      "website": "https://www.odoomates.tech",
+      "license": "LGPL-3",
+      "depends": [
+        "mail",
+        "hr_holidays"
+      ],
+      "data": [
+        "security/hr_payroll_security.xml",
+        "security/ir.model.access.csv",
+        "data/hr_payroll_sequence.xml",
+        "data/hr_payroll_category.xml",
+        "data/hr_payroll_data.xml",
+        "wizard/hr_payroll_payslips_by_employees_views.xml",
+        "views/hr_contract_type_views.xml",
+        "views/hr_contract_views.xml",
+        "views/hr_salary_rule_views.xml",
+        "views/hr_payslip_views.xml",
+        "views/hr_employee_views.xml",
+        "views/hr_payroll_report.xml",
+        "wizard/hr_payroll_contribution_register_report_views.xml",
+        "views/res_config_settings_views.xml",
+        "views/report_contribution_register_templates.xml",
+        "views/report_payslip_templates.xml",
+        "views/report_payslip_details_templates.xml",
+        "views/hr_leave_type_view.xml",
+        "data/mail_template.xml"
+      ],
+      "images": [
+        "static/description/banner.png"
+      ],
+      "application": true
+    },
+    "om_hr_payroll_account": {
+      "name": "Odoo 19 HR Payroll Accounting",
+      "category": "Generic Modules/Human Resources",
+      "author": "Odoo Mates, Odoo SA",
+      "version": "19.0.0.0",
+      "sequence": 1,
+      "website": "https://www.odoomates.tech",
+      "license": "LGPL-3",
+      "live_test_url": "https://www.youtube.com/watch?v=0kaHMTtn7oY",
+      "summary": "Generic Payroll system Integrated with Accounting",
+      "description": "Generic Payroll system Integrated with Accounting.",
+      "depends": [
+        "om_hr_payroll",
+        "account"
+      ],
+      "data": [
+        "views/hr_payroll_account_views.xml"
+      ],
+      "images": [
+        "static/description/banner.png"
+      ],
+      "application": true
+    }
+  },
+  "files": [
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/__init__.py",
+      "sha256": "6b55c9b334c649e9cae6a8c466b964f5bda7f71dd1ad33ce8b64f8c25179b813"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/__manifest__.py",
+      "sha256": "a8b8e0a73b4f9929cdc07ab8497cf39031f2e8a617d779e597ca5be0b26f6744"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/data/hr_contract_type.xml",
+      "sha256": "c1ce7815ad4687140d37da936a66742a1191c0d1de2b9fcaeb2bd6a2ccb2f37e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/data/hr_payroll_category.xml",
+      "sha256": "a5c2a2ed424e93080e02856729d107e89cbbc78255b9d428b660d1d6a1e3eb2f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/data/hr_payroll_data.xml",
+      "sha256": "8de337f19fe8afae4d64c2e0491b4ec53f2a55a21df0998013ae3fa1e7897c3c"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/data/hr_payroll_demo.xml",
+      "sha256": "532856fa1495e8efad8e439fad0ecad94e1a95c618425c116f08b0999f1efb3d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/data/hr_payroll_sequence.xml",
+      "sha256": "f8d774f9869f744c72f2ea1b326b7855a8904579fc0e6d33a616af7f4ae42262"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/data/mail_template.xml",
+      "sha256": "656564339c03e6f56c251346043b1422a912eaee37c914f7b8b9ac9f3784c29b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/doc/RELEASE_NOTES.md",
+      "sha256": "55921bae1be3c840a7a15a9b6d3f55145ed2c490e45da52528661f3dcb57cf66"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/af.po",
+      "sha256": "c3e5f9c6097191dcf83597c94da4d089cab891fada640f3f69b25ca4a04ab591"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/am.po",
+      "sha256": "e96d83d312fb05d7472720e3b9d1035899482c1b3755b0e7bd42a2d495571120"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ar.po",
+      "sha256": "6c360ee5c6132fc4963f9afa4393fd1cbf144f26e43ac303ca33cceffac31d50"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/az.po",
+      "sha256": "a2c24247b0e7b541765ef89edd0229ca2403709ee5bc01c1032a084010df629f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/bg.po",
+      "sha256": "e69cf19cbf2449ba2e40ff7bfec9dab27b52fc61f37f172f7c8559978c5424ef"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/bn.po",
+      "sha256": "245f44174200db9582324668c6d176c37c6aab739b0ec5c54cd2b649d253c8e0"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/bs.po",
+      "sha256": "68ce8386bf225c5015cebc2b459fa98a45370009fcfcf0bcda99aac0c5e28693"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ca.po",
+      "sha256": "d8529d7b2f46779fc834963a6ad0aac0814c9e2afd5221588eccec84ebe08609"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/cs.po",
+      "sha256": "860b4cee96fa259702edc496cfc4d59e78e2228b7190a0440d64753a50816100"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/da.po",
+      "sha256": "68f5fec6e7d27140ffdb2916d5630df9c1ebc230405aa6641ad5728817b1c23a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/de.po",
+      "sha256": "7c25279f8176dfa15825ac29553bd68ac9727d1c91655c9ea5873bcd82509ed7"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/el.po",
+      "sha256": "722003526bf6703df1b1f2a97ca414795ba469c696d3a32aa4d19657d80910e9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/en_GB.po",
+      "sha256": "f00e95db9bd7cba7cbfbafa8b87c2ab8b8143771157dbacc2243a6761ec9f48f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es.po",
+      "sha256": "91c6b69edc01a744c41432146ee58e9c8b03989a035e91a2788d667ac92a41cd"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_AR.po",
+      "sha256": "278ff4de9567637c42fc13b9e4762fa8dbf6811de527cd35a1003e10efefce23"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_BO.po",
+      "sha256": "ec3fdd11d153e285eb6495df7a3e057a8b4ff55ecdb62b9bfac75e4a4c33b8da"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_CL.po",
+      "sha256": "77687ffd91a6b5e51baee5d3d959e328592ec0fc6d72bc34de9a3cbf3953358d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_CO.po",
+      "sha256": "216db684f90565dddab323e941938f3aa872d44b93c5afe31451fa33b55b1883"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_CR.po",
+      "sha256": "b8b4939534a0391dbac2c5dcaaf7ae88bee8b0b6e99c9f9e3b04475197d752e6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_DO.po",
+      "sha256": "b5c884941ce18d129dcef0a1438d2ee4639eb157c3979dcdba6fa0c15bad7926"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_EC.po",
+      "sha256": "b937dd2c913662b85c22bc565c02144143d62879576a93d6fedfebcb68a33cc2"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_PE.po",
+      "sha256": "a7a329c1db99e55dd47f8ff09b9a2eaba5f35b2322e00c26c28f9f367cae83fc"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/es_VE.po",
+      "sha256": "b504a22151ae4cc51d4e75fb9152a223289c33093467d221f04c653d44340adc"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/et.po",
+      "sha256": "2e4d7088acda5700a3234d15eed47d88bf0a0bcd9ab08a4e3691e6d6597c66bb"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/eu.po",
+      "sha256": "9771da0f04e8ae2e708dc6fab9b78d57912d62602bd58c60ae1a419480bcadac"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fa.po",
+      "sha256": "79fe24ae7df336c4bcc0ba58bf609bc583359373aad7a0fb8a46330da9076f28"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fi.po",
+      "sha256": "a1e23c2d52637ea09b0770df61e42c9fd92a5d436810781959b5a4434702e41a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fil.po",
+      "sha256": "f2a8d936e668326004704527713b33d12d0acd9b1800687355eba8a782c20c84"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fo.po",
+      "sha256": "be562ade876dbbce9513e958ab09973f435f1ba598ef9c32c9070214d9a6b29e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fr.po",
+      "sha256": "a33bb74d9ab4653005b3410491ddafb97d6fa76f1809c12aa992d40ffe635d0d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fr_BE.po",
+      "sha256": "683106f0708f76387a535e58f5ef81502ef07a2ee4601804e40b1334abde386f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/fr_CA.po",
+      "sha256": "ee66e30c09d90e721f7494ce1d2905e8804956fbac93974d9e45aa58b6bd563c"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/gl.po",
+      "sha256": "9ebc06f6bcc2fcab25ca470cac4452b6c52487ca93f926afee05638803cd6f98"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/gu.po",
+      "sha256": "b5ec401842b22a4bbac1c2df08122990558633fbdb38a3c84724da56c85ebfe6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/he.po",
+      "sha256": "e2e5c98e0005de14e57f6ed1c67e579cfbddd7c5ff7e2531e53a69fad6dd8167"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/hi.po",
+      "sha256": "33c054f03a3af6b2aff17d59f35fc302ec14520c1ef2dd113dfdb68b48f09fb1"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/hr.po",
+      "sha256": "5f07720b6b7c9087f228675d8329fefe933ed998f10427cbb8b9146bdea94696"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/hr_payroll.pot",
+      "sha256": "5300eecc913afb7daa8df3d647e3ed0428ea74b5c6ef28087a41901ff6868034"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/hu.po",
+      "sha256": "24d7fc16956b59468d2327b22a78b3bb475839d983f737ea73a7c1a9eca564ae"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/id.po",
+      "sha256": "9c8af2619a615e4edddb1f71dbad73fac899fdaf2bc7d6bc47f171c6890b8d39"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/is.po",
+      "sha256": "b80d0eff2234f0e11572e48ef57ed607eda15854016bce16821108e5abbd20e5"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/it.po",
+      "sha256": "24109fea3404ad9340bd2f4d4802c1ddcd6c8dc09b8594d6114e146b5c103c3b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ja.po",
+      "sha256": "fe46a8539ea93714cb410d51946c9991c557a17a13768496465343540e1d720e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ka.po",
+      "sha256": "924cf51c6323b8a4b926af132e58e1ba75cafbc9c6a241b8d06c6cd69126ef04"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/kab.po",
+      "sha256": "74d346911e49ea7afdf2534c92ef30c9977587536845515333ecca6a53357c69"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/km.po",
+      "sha256": "c20eebcf909d713db8bbe7082bb2f713f9f47f54fa3eebfa23df406d3032b8a3"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ko.po",
+      "sha256": "11d653f984b3f1988ac0cc149e8ab63e36330479aedf9ab229b4369330c3589f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/lo.po",
+      "sha256": "f588b0baea069ce3a6db9eea5edd35f9b7cf5a14579f100eda4d51e4ded2db8b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/lt.po",
+      "sha256": "a98a5375c81c20857051692fff88799a87e27bdf2560b08a52373f9adb0a0dca"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/lv.po",
+      "sha256": "b5c576e1b6f17b295c8dcc2a3f4e0573bf23e355b598010e52299ce34d7e13ec"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/mk.po",
+      "sha256": "4bbc8f05c901063d307ce1c3b77e51318537265eb541cf4fce1e955b60958c6a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/mn.po",
+      "sha256": "0bd6cdfbbe0c0486dda7c2e87a5114e5475a47d10441b172815dc4f46e02773d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/nb.po",
+      "sha256": "a2324c91684326410604717bb60343e2ef59ab759cbf2e62118c4d8a97d20654"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ne.po",
+      "sha256": "b41bfa3a3ee6b61bc2724db87afcac8a7b6b727eebe23799a988a0d289c33d19"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/nl.po",
+      "sha256": "723952344b522f9041e96e47d4d11ed7d6957d9e450af40e76100b56b54dc11f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/nl_BE.po",
+      "sha256": "5e5d50a9773a70c70e061b047f0a2bb5dfaf538e16f38b031b41436a5c35db9b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/pl.po",
+      "sha256": "6159917913ef436e096e50301374dbe8bf8a9f2b177ab1c12497bbca812c93ff"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/pt.po",
+      "sha256": "ba746c5225b7583f3f9838b1a12c70947d2dabd3e5d7e4843264c1761ec899b6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/pt_BR.po",
+      "sha256": "39621cf6d274d2463bf94199837620c56b57d278fa3f3b936d99100a81bebd47"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ro.po",
+      "sha256": "33dfa10154d985b7d56cbd02dba023c92cadabcc915ada9cd2d375465fce8566"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ru.po",
+      "sha256": "23fc263e8d4d264c86dc2d9a622b452d92d1391aa0c86f9a5b9afe1672569753"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/sk.po",
+      "sha256": "d0014b94192680b11557c08e1c5874baa051a661cd27090a6e3f71812ffa1be9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/sl.po",
+      "sha256": "8d7ddeaa2cac0471c79fad54c62eda4352bb6789b38f5a4af80a8619f6b278ce"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/sq.po",
+      "sha256": "5c7d01eb5ddd4e04d28b084bcceab429832d55abf7a878e8d328958cf363165d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/sr.po",
+      "sha256": "0db453396696654d7cd61b2b503a74c7bccd3325b534dd1d6141e730012111a6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/sr@latin.po",
+      "sha256": "96aef6770ab551f8adf55f0c4c45a73e45d84bb1485b6235874f5af57cdc4f4b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/sv.po",
+      "sha256": "e67f6ff02ca1dc7bd8911472d828cbd2df00736316ed96bcfff35bbe56ff4016"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/ta.po",
+      "sha256": "8ed090d437b5d4f184735e48f7187ec2251ee10c59e130ded322d83332059115"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/th.po",
+      "sha256": "82291a76920e5ee7231d14533cabbec55b3c65929c6334e62384fefa0bb702ae"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/tr.po",
+      "sha256": "af2548c231d159a6e508e360b2b1752baacb5c5c2e90a3a653455a59da7eee6e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/uk.po",
+      "sha256": "6549a34518d3e356a13817c0a867ee02d55b1102d07329a482653b028b904a84"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/vi.po",
+      "sha256": "ef8290257f071eff5d7b473e37edb36770ffd3a4f71420c92ce88f0695c776fc"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/zh_CN.po",
+      "sha256": "797d98691af9084e3f81dcad2703a9d85770c3fef64bfafe4ff08c5900b95443"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/i18n/zh_TW.po",
+      "sha256": "a7640c1d9091234f1bb3f451a902e6ba4bf090c232e94d0a16e5c99c78c1d3e8"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/__init__.py",
+      "sha256": "471be1c1b7d237bff08c0750436b54d969f37fa8508db6900479d26578b29d65"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/hr_contract.py",
+      "sha256": "b9d6b904e2d85bda4cc09c9c914b75fe372f774c272abb2ccae3220b94a0348a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/hr_employee.py",
+      "sha256": "d9a572d83ab3d855f21eebdc0514ca7f7cc0bbbc82478fbad63d8bf7283b634c"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/hr_leave_type.py",
+      "sha256": "68d1ae9b628a588be135f49c5fb8d80ef999c131e034b78d890a643dfa9b05d9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/hr_payslip.py",
+      "sha256": "cf98f6bd1a43b5290cdb01740e8d3ff421e214c3680ee01142fb9a8b92bef871"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/hr_salary_rule.py",
+      "sha256": "4555263d9371567ba7f083e2cabcbf8abca66be6634158eed3c8a713c9c66ca9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/res_config_settings.py",
+      "sha256": "1154eddc7878706de9b8147d6e1763d365c60bb80ec381f9d82d77658f6424f5"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/models/resource_mixin.py",
+      "sha256": "e5f377d7a6d657be6b0390302bc76a57f4ddcc66f0288a67bc93ffe5ffe7a037"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/report/__init__.py",
+      "sha256": "f1438dac72d659f8b834e263cc1da35e877007049d01fbc04c6a13b09ce1dbe2"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/report/report_contribution_register.py",
+      "sha256": "1b8515587d46d315dfae45a4922aa46c54837215d94aa95daf8a526fd4fb0e66"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/report/report_payslip_details.py",
+      "sha256": "227cef81b35a8e6543b6f3a2b96e6e74573300425844ac6899d237cb90df39d6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/security/hr_payroll_security.xml",
+      "sha256": "76cf0c882b72655e2e4af033b33144b34c7359e680f77572421dfeafc59b5fa8"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/security/ir.model.access.csv",
+      "sha256": "53f86c7c95deb4086c0d69976ea565fc68343a0042b02e3ce835cecb82ae1719"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/description/banner.png",
+      "sha256": "a5333c6e530461f4c601261df7fb5ee422e1916d4305f6e05cbedca69550ccdb"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/description/icon.png",
+      "sha256": "c0bdc62f3971f9f9f80ba7b154d5eaa864a0b10ab34e8bed20e524ff7e529487"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/description/icon.svg",
+      "sha256": "418780d5e17ac58f2d9fc549f188684bf225039172028c9d8bf8cde6f70dc5d9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/description/index.html",
+      "sha256": "00428bd8e05bd8752a5858cb06233be1821ceeef847fbcba9ec79ed59bf8462b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/description/odoo14_payslip.png",
+      "sha256": "a31b3b85847ff40e77b11e398f85cb078eb5d9e058595bb9710aff1840609083"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/description/odoo_mates.png",
+      "sha256": "088fe1561e4e9db8585c3da580564678b4d0270ab786a147da47817d7d43e1d0"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/static/img/hr_employee_payroll-image.jpg",
+      "sha256": "f3365aec9e431ad39b08772431cfa87c269fc2c18b88c0713418814a3f215bce"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_contract_history_views.xml",
+      "sha256": "ff28acc135ee783c5d67386e58f07d4924fad0fe9a4402cd1f8a784b6ae3e3e7"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_contract_type_views.xml",
+      "sha256": "a4958a8d41e0b25c855803295a81715bddc1b032618c169e444af2c597c9f6af"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_contract_views.xml",
+      "sha256": "e3cb59964e1a8532358ae313f122086ac6c4040d6125b88096e66f431f16c3b4"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_employee_views.xml",
+      "sha256": "6bb0a9530dbff166f7357694d3901ab6cab66de53a0cc2f7cfc5f55e98d4941f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_leave_type_view.xml",
+      "sha256": "caaf86a69e086b48cdcad749c9507bedda9252635610bc177c9dfb26bae45fa0"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_payroll_report.xml",
+      "sha256": "eb647ccce45f58ad63d8227f2564b0940352d8838786c0c57a09df2177ea3e95"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_payslip_views.xml",
+      "sha256": "56a268c0bf3dfdd6a8a7754c97b736f598443660871ff4fb3893b92d2cce29ce"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/hr_salary_rule_views.xml",
+      "sha256": "a395eb245379a697a94ed5429093dcbf471fa9de8ff4db29ea1944b05205cf1e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/report_contribution_register_templates.xml",
+      "sha256": "1c37fdac95b7d4e4419482c8f1a871460d3179e7be73451330dfa9f6fb40e6de"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/report_payslip_details_templates.xml",
+      "sha256": "adaed2f28d408f461ebab195e696e5bafd904ab8ac514d6821b6e23f37ffcf3b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/report_payslip_templates.xml",
+      "sha256": "43f039280425ab2207c23ade407817eec057a30e9e27b824ec8b2b3c8571689d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/views/res_config_settings_views.xml",
+      "sha256": "3e6301a04e93637ffcf578fb126387a2d728bc4ba5f93a57e0e36ee0aefc4aa2"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/wizard/__init__.py",
+      "sha256": "6e3d18ced6169cf8d207fde6d9e269073add45b58a0497b8a2abd0dc5f23837c"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py",
+      "sha256": "b80fc17ca0d698d2d7859f8610e648601f700f0d8b416bdba5aa8cc3ea413f45"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report_views.xml",
+      "sha256": "ede99b700ed65d9ef7dc7792de50d2922de7a9610a6617e6d94b1dd18fe08fb2"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_payslips_by_employees.py",
+      "sha256": "89f819bab85580f5eb509fc0d166e15cba2346fbfb41ced737bb142f59a17536"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_payslips_by_employees_views.xml",
+      "sha256": "00a4144fc29001d50307e2ece23de6f1f53666b53e7156c9f0ca433ae6617712"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/__init__.py",
+      "sha256": "e31036c043fe542d07028a5a152f22850d558d00d3837e00bc8bce9aaf9a96b3"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/__manifest__.py",
+      "sha256": "57de7d7a7db5eea72f91d59b6ff90ca1661ae8ef4ed7707ce1783bb58cb7b684"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/__pycache__/__init__.cpython-310.pyc",
+      "sha256": "8a94d64989e48c0ba9d15811157e9e9c0fe200608c7e7dd7cc3fac791512c875"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/doc/RELEASE_NOTES.md",
+      "sha256": "45f2c377eb5a82d9a6243006a428f19bde6e76d34594ca66b0ed24876e79ecfa"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/af.po",
+      "sha256": "fe3e7a95c26c83f5edf793ac191bb6ba832e89223e8a952e943aea96bff85d18"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/am.po",
+      "sha256": "b24aaecf5ddb8c2706e40c7189d1f13a229698d53dff74c731cc057e41a326ca"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ar.po",
+      "sha256": "a21b4fff68a37da42c8e078e5ac6699da824c0989fb77eee85fa5c2aad827446"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/az.po",
+      "sha256": "39a3f37c1eb2384be8bdfa8e60f0bf7bfe22998257862ff085683b8e533b45f4"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/bg.po",
+      "sha256": "3f8d5069e1a1611bd1440d1c9075e7ed5086444fd4651402af862946953fa51f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/bn.po",
+      "sha256": "4dabd1f36ecce63d0f127b4bcb1f70c3fe570a5da763f113639e755d76a34cd7"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/bs.po",
+      "sha256": "3078f1c935cc89ab30a9760bdb24b47609d2f226bd0070c4f5221d65fb47ec57"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ca.po",
+      "sha256": "1033f7609d86ca6aa10e57e937963c01e5e2287aa283274b8964718953544544"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/cs.po",
+      "sha256": "737fe4ff5ebd68a2cfca12ae7e05a3e51d80b3112cd1f674057cef2691a88e77"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/da.po",
+      "sha256": "f7b9ebcbcb02195ef6be1d3c3d037ed4c5c06032b7e1484a95cc80fb94f554d8"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/de.po",
+      "sha256": "8d867e6bb52f6cbea5ff7a9377089be893dd82c0efd2e773a87a124620251e26"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/el.po",
+      "sha256": "121b427407c6737d3f2fbaff10b486d1463ae9b3d9cdbe4acf68879a5df7c443"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/en_GB.po",
+      "sha256": "d2b0fa754845175a246c9ba927c1dbae90e97bbaa123ff7ddd3247ab61e1179a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es.po",
+      "sha256": "ee06b89f47b594ff07d14f9c1a870da6c3a98f388cc39294afc19f3a5d70aa9d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_AR.po",
+      "sha256": "dd68832cf27cb71dcf9761738d7d5dff58b8f0a9c01fef2ef37179303a56dc83"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_BO.po",
+      "sha256": "a8e1685ecc4961615c9b46a13859b87071659730b03808c160d0c65e964d15e7"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_CL.po",
+      "sha256": "5307891d64be268db978b0e0bc3e442a9b46cbc7a1abded759b031459bc3ff1d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_CO.po",
+      "sha256": "54562e136dc9127465665cbc5a4267e8338d4501b4976530ba983fbe637b3b9d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_CR.po",
+      "sha256": "951dc3cac8c58dac72a21af8da6649480672bc4519134beed3fd5cfca2af6e85"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_DO.po",
+      "sha256": "4485b0fdcbcca1a3e7075b58f7109273ad86c9d388c654a5385193a433bdf25a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_EC.po",
+      "sha256": "a06a2ef8761f57abb4320c56d9af9b5ee9cd3df1b4b545028d077c9dd2f06fea"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_PE.po",
+      "sha256": "680da0766ddf5214f4122269210e9d0e6317d0f8e85f2e07673734db98c0d7e9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/es_VE.po",
+      "sha256": "5dde7453fff4e4cdf3e84b0e200c700571f5067617ca95dcfb1b7d9a1f25407b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/et.po",
+      "sha256": "1e69de2062b95730d88d3fd5f416b65b3cf192a1311cdc76cc1ebb8a597e3036"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/eu.po",
+      "sha256": "555078e3040d9c106d68a1b756f4492ff4525dee52b304aa787c70e2edbb2b2e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/fa.po",
+      "sha256": "4e6b30136d33d82c43e4ed58322082290b28da4cfec2f6bb8732330c25352b45"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/fi.po",
+      "sha256": "c232a4b5a6b70fa34465df5a33f48e179edd160717ec321b6c5af13de612142e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/fil.po",
+      "sha256": "8d36d7cea124d52e014eb9e7e7a10ea32eca87b6035a1d879b1c5babaf84bd1f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/fo.po",
+      "sha256": "5853d22eb8080fe7ec8cf8bce13323f3a41bfcd7435d57f3c039b4d9d23455c4"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/fr.po",
+      "sha256": "285a5781d44d56b5213b28998e618792ba2f496f9473d163b2f8ec71d9a7a5c2"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/fr_CA.po",
+      "sha256": "f9e879f5d4756d835a5e6c26470f6faa6ce8a9208e64eab768e26eb102e56c2d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/gl.po",
+      "sha256": "635493ff5387996b14abfe85ec32153db33ae4faed7c97405bed3b65718208df"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/gu.po",
+      "sha256": "3b8fcb0d61be49bae517dec68772761b3006fdc79686a75a0db1c36adf4de807"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/he.po",
+      "sha256": "90a081783d430f0a8b13961046d121c27414a7bd7c7613afa842dc3b6eb369ce"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/hr.po",
+      "sha256": "0b871472abe5e97793ba8a9969daef655b89529c8f72f4486bf73584a93a4c04"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/hr_payroll_account.pot",
+      "sha256": "fdc7282472ede1ce569d731957580a24beb3b838cfb994a8f1536bb059c077b8"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/hu.po",
+      "sha256": "f02913acfe7433ae6c740d6feb539ef959ee0f437b310c8ffc5fd58f6a5f26c6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/id.po",
+      "sha256": "3830010a07ed0855662d41684758d3d665eae8f32e4744466216af6d8825337f"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/is.po",
+      "sha256": "ba6d6e715a29201912646ff03bedbcbc0b6ed10c43fc7a620c4d0e3cfc845906"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/it.po",
+      "sha256": "9dc8ba0d8269665c1dee04b8fe673b559ff03cadb0f930ccdef18ea039ec589b"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ja.po",
+      "sha256": "cf994067dbd73f57bfb83ff9b012c566a6e4fb867bc35c948fd6eae75b872ca4"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ka.po",
+      "sha256": "c55cdf4314848593b165657b869f7ea4b078267bd7cd397cf1dd29d35edca3ca"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/kab.po",
+      "sha256": "a9155f2ae312022d3c0d52260e948fdba2a932b4b80401a3231474e28ccf11fc"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/km.po",
+      "sha256": "435ac7cb49eefab8b5ebd306d4537646788e48d0b5a617eb0dbe638fb08e8430"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ko.po",
+      "sha256": "0de6b57e6b1cc0abd0a37701f0479fce440d268abd4ef1d9b20e0c6faaba1ffb"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/lo.po",
+      "sha256": "f03aeca3eff9241157e8c4b61d310b5e461884f03674cb3703a1495099b47dc3"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/lt.po",
+      "sha256": "b780d82d6db154e9a2de80352a8200aae718d26cf36e9a642475f6b557a08306"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/lv.po",
+      "sha256": "aebe31413c929cbb59757d28334ad53d9ae1225a640cbec745379565cc3b8759"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/mk.po",
+      "sha256": "3f37c58059187b1dbef792e7d6fb118dfb13c4e8fcef7b39fe742d856120ee77"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/mn.po",
+      "sha256": "4f18ef4d2675d6cdeeca9bb114d38af4513cbc78a1842a13a1cfabe60e1fda83"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/nb.po",
+      "sha256": "286cefa7b78b374e5b0dd39f730863254760fa930e12f6cac899a2de72518514"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ne.po",
+      "sha256": "5f00a991feec1c1ce6d8df4f9cddc2b45eef223aad49cb8b4ef3b8ad36ca16ef"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/nl.po",
+      "sha256": "4270817153f9476600efa73d9f3a2cfc3dc0a8eb689b6dfdc53feca6d4bbe3ee"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/nl_BE.po",
+      "sha256": "ba5813a189287bfb44d2445428ad4f57f9af7366bdffff5afa0b48e8807fa6c4"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/pl.po",
+      "sha256": "c9e441e26e0c401c88d39ffeefe3058af5374c5076531966432ce4c958ae19c7"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/pt.po",
+      "sha256": "fb943f43f3b1fe54547600443979c3a2ca9e2b5174e448838d8b6d73212d0f66"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/pt_BR.po",
+      "sha256": "9614d47682a6cb62461b4f591cba9b0f520cb0027bb15f14a72c5f7c53cf7333"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ro.po",
+      "sha256": "e713ff2c738d3ac5dd8340c97c4c22cef445bab9df48f633c008565a23f6d4e6"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ru.po",
+      "sha256": "6d90abd0c22427306fe490994c5aa932bdb1de2dc74e308424643502c3f47e51"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/sk.po",
+      "sha256": "84befb15385fbad663ba6a0c51f77d75d4fce6207ad4b408ec6278e6dd874276"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/sl.po",
+      "sha256": "b2fb224e0d4aab15d6194cf231c6f0e0bef46694364b85c27a4cb4443c9e5a0e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/sq.po",
+      "sha256": "d8441c2719029327b79250e697f2d21f1053c57c953e2710d24a15fcb63f9b74"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/sr.po",
+      "sha256": "09680d08a603a0009286d7fea850b9f1ece3e889fdae335541c3f2e637318388"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/sr@latin.po",
+      "sha256": "5b117c35071f29ad698c7b34cd37d80cc4a47440374197940d191145a146b01d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/sv.po",
+      "sha256": "1c3a3d6c1b4e47c080ef02944b7ad8eb6d35b14f76d4498c83c913c8d08975c5"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/ta.po",
+      "sha256": "1a89d40755dddff7a9c39dea599fc6ebfafbed57d5233cece1ed7ba2f5f34e09"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/th.po",
+      "sha256": "5bbfa9dc06bcf947d76bbee1d27d16bcbfa40cfa7f8b591c751cac17ca386b6e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/tr.po",
+      "sha256": "f1b3256ba1a9ec4712ce9dfdf7b6e39ca2c4f925eef1e6e07e5cfe579e357381"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/uk.po",
+      "sha256": "345e664e511f1fa75bd2facd1fc82194f35f2b5c35fa59b06fdcce076237b68a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/vi.po",
+      "sha256": "6691c613ab304f961fb3abeccb4b157b0e06ca73de1e51508ed36e4b41c8f70d"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/zh_CN.po",
+      "sha256": "a93fbf1dc719fa723f27014d75925e7f8aa3529804eef5dfd8993430c91d80f7"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/i18n/zh_TW.po",
+      "sha256": "3357ccc7f07def1e59eae18bb29fc3caf79bb90ad7feae6a63947af74a8843a4"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/models/__init__.py",
+      "sha256": "293cc5ffaf76d4fa697989f481f731ddeb568afa0007ab701b62a2c8373adba3"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/models/__pycache__/__init__.cpython-310.pyc",
+      "sha256": "b46d3e55dccf3db2ce339e492a386d9ed32c05a039d31fbd2103404090ce7dfc"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/models/__pycache__/hr_payroll_account.cpython-310.pyc",
+      "sha256": "b105abc043f1f217467ee7f3bdb44f1c3d8205482d7b51d4ba055bc4109136fe"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/models/hr_payroll_account.py",
+      "sha256": "3e5a417bbb5977d39a9cca0c145f8070587858c8c7ded2aedb6be1b65ea6aeed"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/static/description/banner.png",
+      "sha256": "a5333c6e530461f4c601261df7fb5ee422e1916d4305f6e05cbedca69550ccdb"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/static/description/icon.png",
+      "sha256": "c0bdc62f3971f9f9f80ba7b154d5eaa864a0b10ab34e8bed20e524ff7e529487"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/static/description/icon.svg",
+      "sha256": "418780d5e17ac58f2d9fc549f188684bf225039172028c9d8bf8cde6f70dc5d9"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/static/description/index.html",
+      "sha256": "77cc99b7f6ddefd2252e91e8d4b1e0a06028d3cd0d557fff68cf341b3b69af1a"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/static/description/odoo_mates.png",
+      "sha256": "088fe1561e4e9db8585c3da580564678b4d0270ab786a147da47817d7d43e1d0"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/views/hr_payroll_account_views.xml",
+      "sha256": "203eef5b301aea6df4a612178ecae48f1e7afbd3a60a58c666eec21a5cb4746e"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/wizard/__init__.py",
+      "sha256": "26fdc5d82ba47e303b1c7c16fb6d5c554ca4734fdcc347e3341a1bd1d4793082"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/wizard/__pycache__/__init__.cpython-310.pyc",
+      "sha256": "40165c411ab9db200c13516b36c70b75017b0d20dbfc130061f2bcdaf6b2d0b3"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/wizard/__pycache__/hr_payroll_payslips_by_employees.cpython-310.pyc",
+      "sha256": "f4c3db68b5f0c5a0cbec09efcf8511a1a559c62a663a8b4e603f72014b7d6bf0"
+    },
+    {
+      "path": "third_party_addons/odoomates_19/om_hr_payroll_account/wizard/hr_payroll_payslips_by_employees.py",
+      "sha256": "80a73d687c0b22102222faed1f6e55bc342a1a684c44cbb6fe06102411d465b4"
+    }
+  ]
+}

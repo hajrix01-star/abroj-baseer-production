@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "language": "ar_001",
+      "inclusive": true,
+      "pdf_bytes": 35255,
+      "xlsx_bytes": 6615
+    },
+    {
+      "language": "ar_001",
+      "inclusive": false,
+      "pdf_bytes": 35991,
+      "xlsx_bytes": 6677
+    },
+    {
+      "language": "en_US",
+      "inclusive": true,
+      "pdf_bytes": 35088,
+      "xlsx_bytes": 6399
+    },
+    {
+      "language": "en_US",
+      "inclusive": false,
+      "pdf_bytes": 35236,
+      "xlsx_bytes": 6459
+    },
+    {
+      "existing_report": "profit_and_loss",
+      "totals": {
+        "income": 900.0,
+        "expenses": 200.0,
+        "net_profit": 700.0,
+        "amount": 700.0
+      }
+    },
+    {
+      "existing_report": "cash_flow",
+      "totals": {
+        "operating": 150.0,
+        "investing": 0.0,
+        "financing": 0.0,
+        "net_change_in_cash": 150.0,
+        "opening_cash_balance": 1000.0,
+        "closing_cash_balance": 1150.0,
+        "balance_check": 0.0
+      }
+    }
+  ],
+  "action_id": 322,
+  "company_id": 9
+}

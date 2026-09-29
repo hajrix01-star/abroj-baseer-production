@@ -1,0 +1,164 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Discuss"
+    - menu:
+      - menuitem "Discuss"
+      - menuitem "Channels"
+      - button "Configuration":
+        - generic: Configuration
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- button "New"
+- generic: PB/2026/00007
+- button "Actions menu":
+  - generic: 
+- button " 2 Vendor Bills":
+  - generic: 
+  - generic: "2"
+  - generic: Vendor Bills
+- search:
+  - navigation "Pager":
+    - generic: "1"
+    - text: / 1
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- main:
+  - button "Print Summary"
+  - radiogroup "Statusbar":
+    - radio "Approved" [checked] [disabled]
+    - radio "Draft" [disabled]
+  - heading "PB/2026/00007" [level=1]:
+    - generic: PB/2026/00007
+  - generic: Company
+  - link "المعلم الشامي":
+    - /url: /odoo/res.company/2
+  - text: Entry Date
+  - superscript: "?"
+  - generic: 09/10/2026
+  - generic: Approved By
+  - link "IC1 QA owner":
+    - /url: /odoo/res.users/12
+  - generic: Approved At
+  - generic: 09/10/2026 08:38:15 PM
+  - table:
+    - rowgroup:
+      - row "Supplier  Invoice Date  Invoice Ref.  Type  Category  Amount incl. VAT  VAT 15% Credit  Payment Method  Cancelled  ":
+        - columnheader
+        - columnheader "Supplier ":
+          - generic: Supplier
+          - generic: 
+        - columnheader "Invoice Date ":
+          - generic: Invoice Date
+          - generic: 
+        - columnheader "Invoice Ref. ":
+          - generic: Invoice Ref.
+          - generic: 
+        - columnheader "Type ":
+          - generic: Type
+          - generic: 
+        - columnheader "Category ":
+          - generic: Category
+          - generic: 
+        - columnheader "Amount incl. VAT ":
+          - generic: Amount incl. VAT
+          - generic: 
+        - columnheader "VAT 15%":
+          - generic: VAT 15%
+          - text: 
+        - columnheader "Credit ":
+          - generic: Credit
+          - generic: 
+        - columnheader "Payment Method ":
+          - generic: Payment Method
+          - generic: 
+        - columnheader "Cancelled ":
+          - generic: Cancelled
+          - generic: 
+        - columnheader
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " IC1 QA supplier — correction preview 09/10/2026 IC2-UI-BATCH-0 Expense اشتراك مقيم 500.00 Manual Payment (Bank) Open in form view":
+        - cell "":
+          - generic: 
+        - cell "IC1 QA supplier — correction preview"
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "IC2-UI-BATCH-0"
+        - cell "Expense"
+        - cell "اشتراك مقيم"
+        - cell "500.00"
+        - cell:
+          - checkbox [disabled]
+        - cell:
+          - checkbox [disabled]
+        - cell "Manual Payment (Bank)"
+        - cell:
+          - checkbox [checked] [disabled]
+        - cell
+        - cell "Open in form view":
+          - button "Open in form view": View
+        - cell
+      - row " IC1 QA supplier — correction preview 09/10/2026 IC2-UI-BATCH-1 Expense اشتراك مقيم 500.00 Manual Payment (Bank)   Open in form view":
+        - cell "":
+          - generic: 
+        - cell "IC1 QA supplier — correction preview"
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "IC2-UI-BATCH-1"
+        - cell "Expense"
+        - cell "اشتراك مقيم"
+        - cell "500.00"
+        - cell:
+          - checkbox [disabled]
+        - cell:
+          - checkbox [disabled]
+        - cell "Manual Payment (Bank)"
+        - cell:
+          - checkbox [disabled]
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell "Open in form view":
+          - button "Open in form view": View
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+        - cell
+  - paragraph: Enable Credit to pay later; otherwise choose cash or bank. Payment date equals the invoice date.
+  - generic: "Net:"
+  - generic: 500.00 SR
+  - generic: "Tax Amount:"
+  - generic: 0.00 SR
+  - generic: "Amount incl. VAT:"
+  - generic: 500.00 SR
+- paragraph: Press esc to exit full screen

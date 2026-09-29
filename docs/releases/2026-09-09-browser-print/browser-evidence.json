@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "environment": "QA localhost:18070",
+  "report": "existing invoice130, company6",
+  "native_iframe": "Embedded browser stayed blank; compatible fallback required",
+  "compatible_viewer": "Original invoice visible; print button enabled; explicit Print and Download PDF clicked without application errors",
+  "final_ui": "Arabic dialog and controls; native Odoo helper hides editing and duplicate download controls; sidebar closed and page-fit enabled",
+  "width": 973,
+  "dialog_width": 650,
+  "iframe_width": 648,
+  "close": "Preview closed using native Close button",
+  "screenshots": ["qa-preview.png"],
+  "dom": "qa-browser.txt",
+  "limits": ["No physical printer or paper-output verification", "No independent Chrome/Edge/Firefox or actual mobile-width run", "PDF.js compatible print uses existing150dpi raster path; original PDF download preserves server bytes", "Embedded viewer toolbar follows its own language settings"]
+}

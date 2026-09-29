@@ -1,0 +1,4684 @@
+{
+  "schema": "baseer-candidate-tree-receipt/v1",
+  "method": "sha256 of UTF-8 concatenation of sorted relative-posix-path|file-sha256|byte-length\\n records; excluding __pycache__ directories and .pyc files",
+  "root_name": "third_party_addons",
+  "file_count": 935,
+  "tree_sha256": "0d1ab8e870d15ac883fed4c8f074603b3f9b5ba11cc42a114b33a8e6b4a0abcf",
+  "records": [
+    {
+      "path": "README.md",
+      "sha256": "337d2cf325286fb162b7e5490432413c34ebb3aee1229498d1d494abd306b18c",
+      "bytes": 310
+    },
+    {
+      "path": "eh_account_base-19.0.1.8.0.zip",
+      "sha256": "2fd1b92d51a51e1f753dc2266a3afeeacd4713a7514e42c4fcd3602170f299eb",
+      "bytes": 829264
+    },
+    {
+      "path": "eh_account_dynamic_reports-19.0.1.8.1.zip",
+      "sha256": "3348c7e071e33046f8b8ece108952ebc8d5c73768ce891a99c972ed8e7eb62ff",
+      "bytes": 1758591
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/__init__.py",
+      "sha256": "33d2ee72e989be872a10d35692e0b6976cc014e4372b59d1f72404baef81b83d",
+      "bytes": 76
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/__manifest__.py",
+      "sha256": "3787b17c365fb7cddcf052368c9132624a37fabd930e372690c36c6dc717c9c4",
+      "bytes": 5578
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/data/menus.xml",
+      "sha256": "b8797724ffe9a93299dee2f29936ca6d0530c8cf5731dabb5e519a596e9ebdd7",
+      "bytes": 7301
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/data/paperformat.xml",
+      "sha256": "acc801cfb45a9035c43cfa773c6eb080510469ae3e1ddc3d2d8163060f9c5e58",
+      "bytes": 2731
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/demo/base_demo.xml",
+      "sha256": "a60229ff15997d8b8d56b94c5f83857fdef50bf64de7bb7d19e2241e40fa8613",
+      "bytes": 3741
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/hooks.py",
+      "sha256": "c7faa5fcc9c1d8202a492e03ca6639fc30b78c2e8a5a0a9da2229f1da0d9a248",
+      "bytes": 4592
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/ar.po",
+      "sha256": "4085cf92c412686cf25f5bcb87041b975767369aefc66ead5d77eb589719e6ff",
+      "bytes": 69512
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/de.po",
+      "sha256": "45ed15bada2ca05713f4774660ee85aa415c46d2c418b631813ef71bec673fb7",
+      "bytes": 64594
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/eh_account_base.pot",
+      "sha256": "89657d822ce4232ed95cc71a48c80566cf87fa92638d7e7acdef7c8a7e5abce6",
+      "bytes": 52762
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/es.po",
+      "sha256": "140b43dfe73bf2f0c430245342fb64e7fbf07dd20c23745ec1be1442a00dd6e0",
+      "bytes": 65322
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/fr.po",
+      "sha256": "de6868e6723d6890ff30e360d86fa942d6fe1de4f4722a68a93b554e442e182d",
+      "bytes": 65583
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/hi.po",
+      "sha256": "59825db027fac0a3fb0c93f9b8ef87eda8e8f5d575cb805e25c9bc6d3fd1d699",
+      "bytes": 77961
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/id.po",
+      "sha256": "c370ead0c923732f698bc7627eac6cd98d2047fbba6d0cdfaf359eecc6f8441a",
+      "bytes": 63624
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/it.po",
+      "sha256": "33d0ec2d6ab7251bddf9a358ef23a0846f80ff5ec5ff2747b0c3b5a2bbf9fac2",
+      "bytes": 64995
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/ja.po",
+      "sha256": "82b663f71dd1789d17932c0255910eead9d2593de259f314f84c18fe79afd48e",
+      "bytes": 65840
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/ko.po",
+      "sha256": "85556ef2961379a3ee695192c17c72c5375f1dae7099d0199fdeebfd25e7465a",
+      "bytes": 64046
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/nl.po",
+      "sha256": "2e8caa61055cdcb15130c3fabe6cfe0c3e33a130014278a663cf212b8d77970e",
+      "bytes": 64058
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/pl.po",
+      "sha256": "ba2abf3788ea2c88f274af60c745838d11ff81ef74c23cbcb0eba24f2c70d94b",
+      "bytes": 64789
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/pt_BR.po",
+      "sha256": "9d55dd89f384ea070be224bb9f5fa8872e4cc0f992fe53450258653730dd0c74",
+      "bytes": 65048
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/ru.po",
+      "sha256": "e1da49c6e7204db1d35eae855bb9e2a3df5cae3175d7a5b55490178733ecb302",
+      "bytes": 73349
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/sv.po",
+      "sha256": "d5e057c0b59fd955868d331baf3d4bf3a122c1f262fd6992782b8c3961d42499",
+      "bytes": 63986
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/th.po",
+      "sha256": "e1161c38771a7629e2a1f5ad63e0e4c830a3309f8a9cdb59f4187bcb0cef2c08",
+      "bytes": 78796
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/tr.po",
+      "sha256": "3029c9a4ed7c038a2fdccc022f8e61ba275b54a865645b51c1fa009a03283bb3",
+      "bytes": 64493
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/vi.po",
+      "sha256": "de44cc20abd1ace1eedde162e919a0a4a67adeb4939bc1c7c57a2a13afce976f",
+      "bytes": 66873
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/zh_CN.po",
+      "sha256": "224811a628ab33bb0dfb75ef421ab7a200e503fb6f7f34891b1184170fa3e719",
+      "bytes": 61748
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/i18n/zh_TW.po",
+      "sha256": "d46ca7580237b8b8661e5616d2bcc5f318e40f6bc9d989a23c4ceb29dfa41c5a",
+      "bytes": 61867
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.0.1/post-migration.py",
+      "sha256": "057812148c3bae5d921515223267ae445a60af7ba787a4f0611e4b953c4f87c4",
+      "bytes": 3213
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.7.16/post-migration.py",
+      "sha256": "f34f03c6f57786ba5a10e10587cd2e68beb645604a04aedeca5430f594e8e4e3",
+      "bytes": 1891
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.7.20/post-migration.py",
+      "sha256": "a2574bdd68db73e431c697f0e78bc8053659e2414f73ca77578d94b8db0da8f2",
+      "bytes": 831
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.7.4/post-migration.py",
+      "sha256": "20ddf4ef4920f4bfe295fe1aaf53236d88a050ea3ff536b2213dfe754c7b8786",
+      "bytes": 817
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.7.5/post-migration.py",
+      "sha256": "3ab080ad1f66968e5b16f267bdc7eb014f383ee0d11a0a3522a520ea5f34353b",
+      "bytes": 11634
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.7.6/post-migration.py",
+      "sha256": "4b5921dd519047dfe56a81210aad6b30bd42e63fe47d3fa2fed95338587b8964",
+      "bytes": 4711
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/migrations/19.0.1.7.8/post-migration.py",
+      "sha256": "ac23298c6aed978ba8a0d10c541b923befb94f922e7a63f1f63ba39fc4ce5d51",
+      "bytes": 13494
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/__init__.py",
+      "sha256": "43b2af1440dd11bf973f9479f850570ddb969d8025a99851564b884f898c0af8",
+      "bytes": 606
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/account_account.py",
+      "sha256": "b2da18f8d3e47fc146ce0086a9321665b9d43aa6ae48263ea6ad12c62c508672",
+      "bytes": 2885
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/account_move.py",
+      "sha256": "5aa69b1b9284b0ba86245d874f6a4be5204da4c661dec4050cc6b9ec90dfa45d",
+      "bytes": 111609
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/audit_mixins.py",
+      "sha256": "2eb5140232d55b44ba177cb092b7608199942d5b53d2b90d63e6cd4fd06e8576",
+      "bytes": 5237
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/base.py",
+      "sha256": "f9bd33acae5a9bb4d4b54a467d1eeda19631569bed03ae5531ad1742220d7075",
+      "bytes": 872
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/dynamic_report.py",
+      "sha256": "8ac2de28828b0cdc3b82e97c419b94e1ccbe88472063173d9ec363a5cdd03b37",
+      "bytes": 54444
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/legacy_seal_reversal.py",
+      "sha256": "5b5705a518b53cd9862e40e52cf9c50369c13935dcb2b2e0b9ddfd603fa30c9d",
+      "bytes": 2956
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/list_statistics.py",
+      "sha256": "05d08e162c2c3e16d9b784db2a91e4aafffc728c0e83974e8bcab24f0c488448",
+      "bytes": 4066
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_annotation.py",
+      "sha256": "b482ca033003ffa7723b99e5731b1bcb7dcbca7c1f20422c707ab08a56eccf04",
+      "bytes": 3045
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_execution.py",
+      "sha256": "0b8bcc1f768903e8574654eb585f0d35f0bc4c5a300c13cfe263f5a29155e562",
+      "bytes": 36285
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_fold_state.py",
+      "sha256": "6f31320e977d4df05867a7bf3839da5afbf7472586dd7cc06ff16601ce7d99ee",
+      "bytes": 5317
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_handler_base.py",
+      "sha256": "03cba779c7a8e521e4d9182f1d22144fef1fe6a592881730eb4dd2d0cbde63a0",
+      "bytes": 69224
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_handler_sectioned.py",
+      "sha256": "6037adc4e8ef49eca2acac6e235e39e5ed7b8fb98f4d47d7585a0c569667a010",
+      "bytes": 63067
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_input_invalidation.py",
+      "sha256": "0fe24fc859e24f59e6a13843ee9cd28dfb1081a484727b23be2c897ee12cc435",
+      "bytes": 12549
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/report_wizard.py",
+      "sha256": "1e9d3b570f55312ee013cc266a3723e45ae115d4f17c7136c4dbe801ac8fb90a",
+      "bytes": 10721
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/res_company.py",
+      "sha256": "c3f8c164bb895468926135f905720d758c8448131c6c7a4d18095fd1ad77063f",
+      "bytes": 22286
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/res_config_settings.py",
+      "sha256": "ece5aac50f73d59725d7939335333fb64ad20593a886efacc6831a28e85c3633",
+      "bytes": 9465
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/res_currency_rate.py",
+      "sha256": "1c97ad2a6be1f1b05c06ad35bc64621ec740235f651223c6a875d9c43430843b",
+      "bytes": 1494
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/res_partner.py",
+      "sha256": "246dc5033ece1ebb1be6e36c3122594363e4512e9e9b8ef2d2451365152281cd",
+      "bytes": 2129
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/saved_view.py",
+      "sha256": "6fa9f89751957e560d41212e91db693c29580cf19802ad37e09cbb46f067f9bc",
+      "bytes": 8820
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/models/workflow_mixins.py",
+      "sha256": "1e7f1659d185914804d8851d01d625beb8b4f1509878bd18638b23f1b565d491",
+      "bytes": 12041
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/report/account_move_report.xml",
+      "sha256": "8ec46476904aeaeff5ce9337d29b5ad47310f9e278799537f89b60c703619afb",
+      "bytes": 18499
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/report/eh_report_base.xml",
+      "sha256": "a1c4a7bc79c15642e12f1ce5308e11db7a1974bb2b5ddfdc35cdea5522190bbb",
+      "bytes": 10068
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/security/eh_isolation_rules.xml",
+      "sha256": "438e16603928684908a1bedd164489d050931481a199e8cb8f2164c58848f1df",
+      "bytes": 3365
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/security/eh_security.xml",
+      "sha256": "7bc07e67fdbcee46ce655728c84d8016f35de98194d82ec9f66f73a86170d3e0",
+      "bytes": 3707
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/security/ir.model.access.csv",
+      "sha256": "7b0e1276807bc4b22e6524f136b3dd88d4ed4f326f2a76b126dd3d9699319690",
+      "bytes": 2825
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/description/banner.gif",
+      "sha256": "59e3577a82665b963a9fbb3a084c36c9a9a83fc041f660963191824c487eb758",
+      "bytes": 228293
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/description/banner.png",
+      "sha256": "c82d3e21c850602f5ba83de864cda20d796d802b96b91a3a34f9a68092c2c5d5",
+      "bytes": 64975
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/description/icon.png",
+      "sha256": "d29623a9f2296571d3e1fd5a8f6c99fecc5b42eb535775e9c17a36565374f61c",
+      "bytes": 20566
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/description/icon.svg",
+      "sha256": "3b48b5b21237406b745711f327bfa7d18acac4b6e94b2be6d592ec6d107d658c",
+      "bytes": 709
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/description/icon@2x.png",
+      "sha256": "a97eeb4b4c897840cf6abb7714344537e49865e73eed3d6c22960f15dc039fe7",
+      "bytes": 19023
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/description/index.html",
+      "sha256": "a6738dd58e715d1fe00a2b2fec148ce41abcc11ba28bbb5829b016fe10f2f72c",
+      "bytes": 35324
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/src/scss/eh_tokens.scss",
+      "sha256": "e00eba1fc00c27733c3e5fafe848eb6abdbd744f655aff8c5cdc62e3fb2865c2",
+      "bytes": 3145
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.js",
+      "sha256": "5029e887b74dfdbe0aa900a8c0375b12c734c73261a3e3bbd126bd49eb65fd63",
+      "bytes": 4298
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.scss",
+      "sha256": "527b79c80874ca06b5557fa966b59fc16906c4608acab4ad3ff79edc8d72209c",
+      "bytes": 721
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.xml",
+      "sha256": "7adc8e2accb4ebb1fe3bf6fd2d85dae4b37ec04b1b6f598f57026ecfe713eede",
+      "bytes": 1632
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/__init__.py",
+      "sha256": "e92048164c185e6c7615b6efca269634551e93d27b6c42fc0cdd080f1e58514d",
+      "bytes": 1653
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/common.py",
+      "sha256": "7daaacded3c04269414ab55738c26159f1761dd2d8d6a9b2da516db38c99b4d5",
+      "bytes": 18619
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/golden_common.py",
+      "sha256": "e291d4a6d3a7f20b83c895005c17009cc21ff7f7c66dfc88c8c207c4e06c4064",
+      "bytes": 5060
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/pairwise.py",
+      "sha256": "4ef506e070ddbe8dd959dcf76d9c6144d001db7b91e587a6298340071084be6d",
+      "bytes": 3777
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_account_move_report.py",
+      "sha256": "ff0936d84cf3f659d28f56a4d4e53dd926e95ad39b295e01bbb13a4c1a0d492c",
+      "bytes": 7081
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_base_metadata.py",
+      "sha256": "5200b261dd539e761e9e751585456c2ca37ddf59a52ce2c87aa80d4324eff713",
+      "bytes": 2486
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_cache_invalidation.py",
+      "sha256": "4a3f4cd7f819d0857a722d70e34264be841d56bc1df96bf281f8e7364ebdf600",
+      "bytes": 19667
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_dynamic_report.py",
+      "sha256": "a96833950e96074194448680dc0cda6a215f0b7bd36e976375296dc3f6bf92a6",
+      "bytes": 65145
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_golden_common.py",
+      "sha256": "d98afdcf90517c35a16df919698c947ed11704ea9c680ac4d4de98d01a69cdae",
+      "bytes": 1477
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_list_statistics.py",
+      "sha256": "39f70e8105fb38a202f7c4f23a7e2b1252da1929621cb0d752673ba21ada5d70",
+      "bytes": 4309
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_move_seal.py",
+      "sha256": "9ee7942aed1cab0cbb9aa2033c7781645713ba1ce58d762fac7c8cb8d54e090d",
+      "bytes": 95612
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_net_guard.py",
+      "sha256": "525064b7941110c714287f8b1a0f8c4a3fe16fee20a4d28463c180634df9cfdc",
+      "bytes": 9909
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_payload_codec.py",
+      "sha256": "85032d8aa9b1119df253fd778eebef34cc509ae2f49fc6f98ad6458b2b41f2d1",
+      "bytes": 4028
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_perf_sql_builder.py",
+      "sha256": "10dff4adac5ba17b9ea958b54c2a04913f77f040c22b0d37ed6f01cf8c7717a1",
+      "bytes": 7079
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_posted_line_edit_invalidation.py",
+      "sha256": "9d4210ee57ed5ec6f59e1101a9e801b206231f05ab2fbf35fbddc66dd27be075",
+      "bytes": 11517
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_privilege_groups.py",
+      "sha256": "70f2b9d13dc9e40340614cd2475ecd9ef6511cde8510d7db0bf095414fcb32da",
+      "bytes": 3715
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_report_execution.py",
+      "sha256": "cfd4fc55de07165a7cb319335d3ad9b0fa73c1b2b7b8b0026491396f3689aa2f",
+      "bytes": 29685
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_report_fold_state.py",
+      "sha256": "b9cdf701c9776a395290c63a1462eeeca19f77544589190480c9768c4d7f3cc2",
+      "bytes": 4584
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_report_wizard.py",
+      "sha256": "a2631d7cca85411949e7719346db34debc43b44b523e38c6ad48a7b64bc2c00c",
+      "bytes": 15674
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_saved_view_annotation_security.py",
+      "sha256": "66e35dd2379931d0ede551010010f3d03c9139e83d1e711b7b975d56261ef264",
+      "bytes": 7424
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_sql_builder_integration.py",
+      "sha256": "e6b460a7ae84a31059572387ee7ff104983ee3e401333594873b314387144c91",
+      "bytes": 19349
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_sql_builder_unit.py",
+      "sha256": "0dd1bb9810a979ef4a618d7f0928f08232ed001ee5ad63d5c411a8a9ee4d540c",
+      "bytes": 22755
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_workflow_mixins.py",
+      "sha256": "e53475d2e9b389e038aff638c15eba498d4a7b32bd89fa07efce82569598874e",
+      "bytes": 1802
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tests/test_xlsx_writer.py",
+      "sha256": "fbd999b16822aa36371d3fc766cb7b90bb8f5dd10382b44686468c31f47d6332",
+      "bytes": 27288
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/__init__.py",
+      "sha256": "5be13fc6cb677e25cb2e8ad3d9b68264dcf0514bd0522519bd7ff05c11408038",
+      "bytes": 104
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/currency_table.py",
+      "sha256": "97ce09449b3049d33abf40cf17114a6f1d217520c99c1a9ed44fff8b377ee72d",
+      "bytes": 14472
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/eh_sql_compat.py",
+      "sha256": "073c9c573a3151c2489ac4378baa30123f0dd7317256448f5c5f139e67659ad1",
+      "bytes": 4045
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/net_guard.py",
+      "sha256": "9486440da6a8b4bf3eb76e9b474996605f8e6ef2378f009bf92b3ae89fc15056",
+      "bytes": 9380
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/orm_compat.py",
+      "sha256": "ed8aa0f8cf21e79c34d12933ffbc7802c61500ecbf2d8cd7064e8c2c3bcf5970",
+      "bytes": 4883
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/payload_codec.py",
+      "sha256": "9feb798923b457082024aba51ba8e684bd15964311b5bb212fb80aa61ff2f3e7",
+      "bytes": 4294
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/sql_builder.py",
+      "sha256": "ccb129c0f066db9a8191388e0a3b345e1d822e8f273d4c9112d07072ed4d86e1",
+      "bytes": 29945
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/tools/xlsx_writer.py",
+      "sha256": "232f9156a09bc673273984d27c72827cb0dc41c9e4daf484dd70ec6879fcb708",
+      "bytes": 30570
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/dynamic_report_views.xml",
+      "sha256": "7b9f73b9675e9f02fe97f001947415a3ddd8fd40c99374fe2f0c2b14f678cf61",
+      "bytes": 2893
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/legacy_seal_reversal_views.xml",
+      "sha256": "1b8278382ef5bf66bf5c9e9be3e4133fc67d458fa5f0e105c4b3708dee900005",
+      "bytes": 2074
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/report_execution_views.xml",
+      "sha256": "fe6407ae0ff7e62906adf7100cae6a89c6e57fbe4bbf01742247ccba353e5652",
+      "bytes": 5742
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/report_wizard_views.xml",
+      "sha256": "5370ebf5a479f40c49f3552ccfaf9044c27aabfe7ba4369c5f9a92712920e880",
+      "bytes": 3262
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/res_config_settings_views.xml",
+      "sha256": "ab3cf745966ac8482b3fc104bbe1b4d9aeccaa8fd4915adad461973cb08ecdd2",
+      "bytes": 9140
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/res_partner_statistics_legacy_views.xml",
+      "sha256": "04999695b7f2d479c4d40555a9215377f74af371429ee0822d67cadee4c7ffd4",
+      "bytes": 756
+    },
+    {
+      "path": "erp_heritage_19/eh_account_base/views/res_partner_statistics_views.xml",
+      "sha256": "64cfc491d92dab87bd1861b7757a3c8d1d2f232501962f5cca8293f071eeb2d5",
+      "bytes": 712
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/__init__.py",
+      "sha256": "8020faa00dbdeb860d6f4456eb17ce1422f2d8b97a6ea9997e2bc5b2cb039389",
+      "bytes": 530
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/__manifest__.py",
+      "sha256": "b7b04285072a10a0030000afcd355ebf723342c1339fd8181a0777e3abe3eed4",
+      "bytes": 6431
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/data/account_tags.xml",
+      "sha256": "b9e131e528a0592f37da647cc6d804af5c17f87d5a213796b27273369d3b0a97",
+      "bytes": 3616
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/data/menus.xml",
+      "sha256": "6d1533e2a6ac8cd8ea26a3dbbe2ce77471c13dec16fbbdbcf8b74c96bdce0286",
+      "bytes": 9389
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/data/paperformat.xml",
+      "sha256": "d0d2787543046fd13a35f60512ef7ac69e3cd15b8d574c474f0cc548f28a18be",
+      "bytes": 1253
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/data/report_pdf.xml",
+      "sha256": "ed13a232102c5c5415b7b969c7872946dc223015128efcb72f9233733fc9a342",
+      "bytes": 1166
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/data/reports.xml",
+      "sha256": "9348e826acfa5ca95661160154da5c15e06efd9e99b8e96ef23d7dce9bc70859",
+      "bytes": 10843
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/ar.po",
+      "sha256": "7e8095fe72ad6d38dd2a09d1dcb139417e9d3a16e0da63aaece714c583ee2ced",
+      "bytes": 81223
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/de.po",
+      "sha256": "ddf3d9d8180106786057223f9a1514a19483442aca76db67528f074cc2149131",
+      "bytes": 76610
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/eh_account_dynamic_reports.pot",
+      "sha256": "429e7443a074d0b1f8e3e53255479a2e1d675e4b8b6e8c92fc6acf7b3aa4b967",
+      "bytes": 65803
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/es.po",
+      "sha256": "5a33f78e89f4d06f19003ffeb530df13350f41d1d52681970cef39d58944bf56",
+      "bytes": 76893
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/fr.po",
+      "sha256": "cae1499999e460721ac8806bd9939f8b9691d41405a0fd0c3c8e64fb29ca4103",
+      "bytes": 77324
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/hi.po",
+      "sha256": "bd6ddc308c4e39b81be44d8b2be305962b7d67377ab2d3d2c4ac3d5529e09171",
+      "bytes": 87870
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/id.po",
+      "sha256": "21469c31d702593d716b1bdf3d68ac3259af162e72b774d44e684c7a11672494",
+      "bytes": 75524
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/it.po",
+      "sha256": "9275b9cf1fb5e50dce88cd778a8a0fa19b694054d26ff0f4fb344eeb763b9453",
+      "bytes": 76662
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/ja.po",
+      "sha256": "30849eee0a0f6f848cc31325a999632984025b050e23b0b2ba9046e788e14aa4",
+      "bytes": 76861
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/ko.po",
+      "sha256": "53d1c06df0cc233b9bce247d0971bdc5c3691a40ea5237892f29d0b98286e2a6",
+      "bytes": 75743
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/nl.po",
+      "sha256": "9b04704e1d197c616bb0be693a3d18c2137aaee2c7466eb7f80f923612d0c47e",
+      "bytes": 75936
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/pl.po",
+      "sha256": "cd8e8e9f7aea38fc756a41a1f2824a90143bb8d51b2f1ae6784e9a2b339954b3",
+      "bytes": 77011
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/pt_BR.po",
+      "sha256": "1b865728b66f2c848ce7afca6ce0ffb5952cae251ca562c2514d2bbda21478aa",
+      "bytes": 76861
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/ru.po",
+      "sha256": "e4b9c98755aa91fe017009c87e8aa3bbebc3c9c39648771450c9750da65abc18",
+      "bytes": 85742
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/sv.po",
+      "sha256": "0503b79aed0a195b4771b89dc0d6300d7ab538a90b505f20ec77228ef383d214",
+      "bytes": 76246
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/th.po",
+      "sha256": "69557c4f8be49852a3454a1360d11330636266ea91d642e49f429fe4b82c9053",
+      "bytes": 90944
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/tr.po",
+      "sha256": "4f0f84dc5205151f7cfef7645fb4b14fe94ae6f828e5747d4cca2d1ed8c388d2",
+      "bytes": 76431
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/vi.po",
+      "sha256": "46bd17d334525ebe4ba4a29572a224d10d835163a32283187eab5e59af5fcf3d",
+      "bytes": 78827
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/zh_CN.po",
+      "sha256": "f3c787287a550b9570ec80db020e500312e1741d8ff2dd60d5c0641a6864ab32",
+      "bytes": 74160
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/i18n/zh_TW.po",
+      "sha256": "267701dc8fb8936588d5b0588c94e5e33c0107ffed716b5fd73577314b4f18f4",
+      "bytes": 74187
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/migrations/19.0.1.7.0/post-migration.py",
+      "sha256": "70b91a1494333a8081815291f99bccdc2219dcb615e398053040ab086d72c312",
+      "bytes": 307
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/__init__.py",
+      "sha256": "c204912caf8d095e5daf6e2f7f273f3dbefb72a6c85b1aa70b8de7144ab4a6bd",
+      "bytes": 558
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/aged_base.py",
+      "sha256": "132a23be4a9572e193b0a51932b5eb5fecc82bd3c35c1060cc82ec8f3d979300",
+      "bytes": 29942
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/aged_payable.py",
+      "sha256": "30f2201386c3a4c0bfa575043689b95372ec4f342114cc9c297e2ceb7d2311c8",
+      "bytes": 1021
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/aged_receivable.py",
+      "sha256": "611e671dafaac4ab04d0df9151d0104401484afef38fe6dc9ff6c0a6aab332ed",
+      "bytes": 1096
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/analytic_balance.py",
+      "sha256": "2d8e2a96eb33808838c61a06f7720a8d5d948557fd5a3642aee4a2ede5b3e685",
+      "bytes": 14923
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/balance_sheet.py",
+      "sha256": "9f371563f0aaaa747becba373e9a22a3df0c35fe599a8509f4dc00f6a7477f2c",
+      "bytes": 28333
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/bank_reconciliation_proof.py",
+      "sha256": "0fded5a80eabc4bf137e947b36fb9599817a4b2f5f4164161b62f89222afdf11",
+      "bytes": 25432
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/cash_flow.py",
+      "sha256": "e09a100ffdd6a5cfa342069f444ccf4c17cc5cd9c90d72f61daa779a6b81ced9",
+      "bytes": 84852
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/customer_statement.py",
+      "sha256": "827ac6c9a1d2b73d69e3fd0d4a888028cea13c65a07e40244c0fdb9283416929",
+      "bytes": 15295
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/deferred_schedule.py",
+      "sha256": "4a81c304d60120b4eedb5dd9bf903ebaa7cb1c97a8af67a22d0211aa9e4cc70f",
+      "bytes": 20330
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/executive_summary.py",
+      "sha256": "92f6f80a466900f35f91e383b322d48ce54bfa0109c0a1eaa995125a8864ce86",
+      "bytes": 30571
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/general_ledger.py",
+      "sha256": "7718aeabfd4eb9354770379127f6eb5d291cbe63bc2d447b9daf321bbc18bea0",
+      "bytes": 48887
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/noncash_transaction.py",
+      "sha256": "34db77676a91f6221c1375d2e73d0ddbc336174db1b3af2604e405a9962a1796",
+      "bytes": 10766
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/partner_ledger.py",
+      "sha256": "05d66eeb6e3a25a10058beed5e579d10326ae4232a01d2251139140fc433e82e",
+      "bytes": 33018
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/partner_statement_action.py",
+      "sha256": "c5cdd02bed9ea05ab04a6e750bb88789897426175aa9983d26c39cd3f4e38941",
+      "bytes": 2190
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/profit_and_loss.py",
+      "sha256": "8207d0b95c406bd78fded1acff08f29d2c5646bc074c53409c69dc0fb18a5681",
+      "bytes": 46063
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/report_dynamic_pdf.py",
+      "sha256": "302d1035c2405f5952e0e188af2131ba6138b9073b3302a26e356e540235cced",
+      "bytes": 23371
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/sectioned_cash_basis.py",
+      "sha256": "c994c6ecf089c47d1a3082a7d569353ac586c8c2a9ecf25ebdc5769ccd960b2c",
+      "bytes": 2178
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/models/trial_balance.py",
+      "sha256": "63f72afa76e3696a80d55347494b9277111c10e4d87cac19e1dd0a15979f0ae4",
+      "bytes": 76440
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/report/__init__.py",
+      "sha256": "3c32bab3b4e9ffab3dd45da782a3eb234588d55f55ff7e4e99cb13d8dc335b1e",
+      "bytes": 126
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/report/report_dynamic_pdf_template.xml",
+      "sha256": "53cdb5950cf14bff8ae1c3bcd39dce3941d3b20612e79ac23395b3cb3114e38e",
+      "bytes": 12288
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/security/eh_isolation_rules.xml",
+      "sha256": "f8cba64a80f27bae4ba361d704b3f89fcb6df470087adb3c84362b2728cfbaaf",
+      "bytes": 703
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/security/ir.model.access.csv",
+      "sha256": "24274dc7c3e7a307aa3081e3b13076839ae2faf2a39769cd80d2281a2ec0ea38",
+      "bytes": 485
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/_screenshots_block.html",
+      "sha256": "87cecdcbaaac7255fe02e4a39cbeafd2875a75b349217cb4515b5c05e7c029b9",
+      "bytes": 2166
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/banner.gif",
+      "sha256": "eec7f42e491a19e50c5b7a65b1a885fa4e88b4986a5544a6dc971524d466867e",
+      "bytes": 232394
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/banner.png",
+      "sha256": "529b36422bf222414383817aa143d38821f8bf8fa03e71c4f80a6c2b5f4818c8",
+      "bytes": 62247
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/icon.png",
+      "sha256": "2531bf2453097cbee9770bde1be87e0f7d122fb0be5e792cb10aba351a5e4eb7",
+      "bytes": 19010
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/icon.svg",
+      "sha256": "feb65da6479744a54cf36f11b56a28b24507f76c170b22b07529757c67c72c1c",
+      "bytes": 594
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/icon@2x.png",
+      "sha256": "8aa6688d75381675c1ac36ddec213741d28d81a5a52d47190c3b2597e29f665f",
+      "bytes": 18235
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/description/index.html",
+      "sha256": "119d53dc9ff13c43167b050b8480b145776ecaca63021250eb3cdc7194832a82",
+      "bytes": 149641
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/cell_ellipsis.js",
+      "sha256": "0371b13432a3029db9c3910172ebd1bcdc54603b84a6d77974d340824fb63f33",
+      "bytes": 4682
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/cell_ellipsis.xml",
+      "sha256": "36e4f7908f16883e9589a3bc574fc8774127e0ea10c510d4862af4f845afbbfc",
+      "bytes": 1608
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.js",
+      "sha256": "ea2d501a82f7363a4e6424170ac8fc9c9d0128a60c77b31a7b99fd219e70feff",
+      "bytes": 89096
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.scss",
+      "sha256": "569d286953cbb1b181dab50cbdc3c97b0093a4cded82cceb2135c63429c76cf7",
+      "bytes": 39474
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml",
+      "sha256": "d6a59133e381ed34d9e7b604080958266d1efe79d991ec5c4b99fca1502d59ee",
+      "bytes": 54319
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_format.js",
+      "sha256": "b58d2c58af146b8c804ef1722d3c554a9b7a8f971ee40a0d5e745bd1a02283c6",
+      "bytes": 28441
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_table_logic.js",
+      "sha256": "475924c8d48ea1b9b0c8ea416ba76b4b759972a4cf015527c8c68de6dd8b7b75",
+      "bytes": 5351
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_theme.js",
+      "sha256": "973a710ebaa6653339be3789c168cba8c90a1c1cd42f493adbca66d432996209",
+      "bytes": 4298
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/tests/report_capabilities.test.js",
+      "sha256": "74182bf85119c141b82e67ec27b69a18a605d93b10ba40e803895544d9736a00",
+      "bytes": 53731
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/tests/report_table_logic.test.js",
+      "sha256": "c4446be886fe21fbdcd546f0046397d832415b9c214dd150f2cfc53e399de5e6",
+      "bytes": 7803
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/static/tests/report_theme.test.js",
+      "sha256": "ad57ce978bf274e1c490317b68d95b4fdb7dac5256bd5011abbfcbdf17a2ebac",
+      "bytes": 3878
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/__init__.py",
+      "sha256": "bd6a4debb1ca5d360631dfe22d90ef8818c95d7d4a5dc3adf2a51bfaf20fb187",
+      "bytes": 2789
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_payable.py",
+      "sha256": "0b72b2fa831361873f25e3f2373a3ec9970127e25c7fd6dd55e45c6930b775e8",
+      "bytes": 8289
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_receivable.py",
+      "sha256": "05432a297e04bbd7d193ff4afed1d42932db2a7aa4bb8d1ee0ba1160af0567ca",
+      "bytes": 18806
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_unfold.py",
+      "sha256": "1dcba6128a52aeb113fbab1a585c4931abded79491a61e4dce6edaea63f0cf81",
+      "bytes": 15988
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_analytic_balance.py",
+      "sha256": "1465a3c05fba24199f4dd9faf886ea35a6db1e6f8183db26da4b6d7108c60dd3",
+      "bytes": 11613
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_annotations.py",
+      "sha256": "a0da3b19dca34c61580e76dfb0b39439013fb82143db6374e652987fcb4a57da",
+      "bytes": 8745
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_balance_sheet.py",
+      "sha256": "c2d5435fe189819df1fe1581f1a2bce3a8904620c8c8b0066f6ce46b09583fac",
+      "bytes": 35954
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_bank_reconciliation_proof.py",
+      "sha256": "9bb5cc6f527a0aeffcdb10264603162507e3188410b40b8f4640fe590d8adc63",
+      "bytes": 29796
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_cash_flow.py",
+      "sha256": "d20640f955152d4af34a6adb54552fb89e2be904f587ef71b0f8db999d1f4a19",
+      "bytes": 53866
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_customer_statement.py",
+      "sha256": "09d6c9545ad4ab6f9bc15f23fd672378970032e79bb23d0272d3b2c33dfadf96",
+      "bytes": 12319
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_deferred_schedule.py",
+      "sha256": "473676093717e25724c5245c77a3ff2b4aaf4c834bb0e22a0b55a789de667bff",
+      "bytes": 19432
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_executive_summary.py",
+      "sha256": "9024a327e093b302364b4d9d428b0c05d0cfa5ecd444540fd115bc1b864a8e17",
+      "bytes": 21307
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_expense_other.py",
+      "sha256": "336ada3c63efa0a48f6060e84e71b2c9580331630385d0b2a1448ee2de927e0f",
+      "bytes": 8327
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_fold_consistency.py",
+      "sha256": "ea3eec3707c7c35f491b3ba0c772f5e5f9616ef25230d1daeef3e907ca89f606",
+      "bytes": 8738
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_general_ledger.py",
+      "sha256": "69c22cadbaa32313c78f2e0aa7729e779060a1756c1123ea10d5604b3ff00530",
+      "bytes": 49623
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_golden_cash_flow_ias7.py",
+      "sha256": "094409f9dabf1e91239e36b90460408a81ddf228a6b3b67fd11011b824778d97",
+      "bytes": 39740
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_hierarchical_groups.py",
+      "sha256": "f8b148b3a71acc060ecb7132052727e554463aeaa09474f50ed2b8b588bd6cb8",
+      "bytes": 6200
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_historical_residual_dates.py",
+      "sha256": "d3bff6bba7cd78a84108f0b1f4d3a0f3844212d661318834b320cc8c2e9692b1",
+      "bytes": 7258
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_ias7_auto_tag_security.py",
+      "sha256": "33ce1fc3935c3954b46804c4c92c90b6ca9087ed33bf6900210ec5f77e99a150",
+      "bytes": 4249
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_lazy_expand_engine.py",
+      "sha256": "ab4cf6436288922a3904bd5e71a63ccfccc9274bc21a1e558daf60076ab91c03",
+      "bytes": 18767
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_multicurrency_render.py",
+      "sha256": "cc93c7e78cad5683b27fa3fafd553b54c2182f87b00af14acc0504083ae9f029",
+      "bytes": 10828
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_partner_ledger.py",
+      "sha256": "f759fad58d9137289f1ab82d8103685df2c1d858f2bb82352b831c3757786e71",
+      "bytes": 14524
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_partner_ledger_lazy.py",
+      "sha256": "c1ed32c75fb65aafb8e5026323846ca59f2ac67d82b6bfffb9197e95273d5e62",
+      "bytes": 12915
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_pdf_export.py",
+      "sha256": "0ac687cec1f592153843945ad60c0e097c3ffdec210ab0c7d897d29779bffafd",
+      "bytes": 28284
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_perf_render.py",
+      "sha256": "bd4bcbc0e3f1d3855b600abde1f9c088a507f663198641de3a9e7068c4d8cc7c",
+      "bytes": 6673
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_profit_and_loss.py",
+      "sha256": "ac1ef71d79cf2606186880e99eff6e4b3f142bffef89c57b6231139bd0b63714",
+      "bytes": 79861
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_trial_balance.py",
+      "sha256": "8b25af49aef7effef579f4188a1f9fd036426278eba314769f3ca9233470487b",
+      "bytes": 62725
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_trial_balance_hierarchy.py",
+      "sha256": "dbdbf73824688c04ed2fd5562aaaf326edb5c5be63a19645e12afd65641da90c",
+      "bytes": 4540
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/tests/test_xlsx_export.py",
+      "sha256": "b470092b4d7bca4c88c41ef944af2386f8d542b39b9aaeb2dc00dd392b0c1048",
+      "bytes": 6179
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/views/noncash_transaction_views.xml",
+      "sha256": "d49a2d388280cd0736d85c68d795d5027f474853001165f95c27e0c0772cbcd3",
+      "bytes": 5516
+    },
+    {
+      "path": "erp_heritage_19/eh_account_dynamic_reports/views/res_partner_views.xml",
+      "sha256": "c92b75f342a0a99e21133b877b48dd3865cbe8bd2c3cdd1a199ea400140757e1",
+      "bytes": 1964
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/.gitignore",
+      "sha256": "4a04d7ef4ea03c4988e5ae6a96f2923dddf91088d1b9d4f5805afd43dce836a2",
+      "bytes": 741
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/__init__.py",
+      "sha256": "e45434b3fdab3dad95a63fdd3a1a7abac5d70073d3f57f8c0555592cfd94a2aa",
+      "bytes": 23
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/__manifest__.py",
+      "sha256": "b14ddf7f2f9804964f09729aaea0a7f76a0a20f06d64ef54d8c82b80f151bbd0",
+      "bytes": 880
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/18.png",
+      "sha256": "ac26b0a153efaa99a19c90f7e3c28a9b66869cf4aea8382281ba690c23aa0962",
+      "bytes": 15230
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/18.svg",
+      "sha256": "49a6734acdc94514f4dfaadc591c07c7b29e2029f8fe988d5b40170d073b858b",
+      "bytes": 140006
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 2-100.jpg",
+      "sha256": "6ce90f2a550c9c7bd5badb82b6d2cc99d1f8646440b80b1cda1925aa04bc4256",
+      "bytes": 719260
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 2.png",
+      "sha256": "c2a48c7d5600452fce234a33dcd072377aed2998a70d425ff5cedf90c5f48fcb",
+      "bytes": 5390
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 20.png",
+      "sha256": "81c732a9a8c104c5852d257434608656c532ca247122cc46fb24b10ec77fe19c",
+      "bytes": 113253
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 21.svg",
+      "sha256": "8a1463d4b9290fe2b6924a7fc7bab02cba851655d1015c548570297cc4b651d3",
+      "bytes": 679
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 22.svg",
+      "sha256": "cc7a26ab74a004fcc6e362e2adbbf31d49fe79685ad5f25ae8b499a726cd353a",
+      "bytes": 624
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 23.svg",
+      "sha256": "43cdbc9a8f1e9fb765c1055e277fc1a244e5db0f970f82efc0e384d600e6cbfc",
+      "bytes": 637
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 3.png",
+      "sha256": "6654e0047c69be7ae362c8739d91856fe1e62dcb4663036237cc449f64f4a3cf",
+      "bytes": 5835
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 4.png",
+      "sha256": "9dde0c63b76a8856f627f072f634640fee42056d403a63690fc62a07dd054f0f",
+      "bytes": 5245
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 5.png",
+      "sha256": "540c0a1cfa34bec8e450228c935c295ad61c762dbffeb79221d76f139fb70e4a",
+      "bytes": 5129
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 6.png",
+      "sha256": "7cb8eb3611ba914298e6918ada15ed5b71e98210938e30801b87213d004380f7",
+      "bytes": 5538
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset 7-100.jpg",
+      "sha256": "112999980ded19f178aab9bbd6e114357ebf2cd0f988bee2ec18912b91821e4e",
+      "bytes": 485060
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Asset0.png",
+      "sha256": "f7eb8626dd37d2671f488bc58db14972f6c28407e64936e7d2ac6da5540126e9",
+      "bytes": 885907
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/FAQ.png",
+      "sha256": "7eec4d7f2799a1447ea019fdac41a5ed1de1adf2f2b54314fab3f99ede64a1d6",
+      "bytes": 12396
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Features.png",
+      "sha256": "c418e9916fa2d6e6700ba5e8f3056ab4bbee725a6a3e1126d6473857fc81fca4",
+      "bytes": 13946
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Happy Customer.png",
+      "sha256": "f85b6d1ee1f57fe965e211347e7e878458851a4a8f23dc863dccbc8929adab7a",
+      "bytes": 14344
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Logo 3.png",
+      "sha256": "1c47eec3e7bc8177d7f941e0cc828f3021addcaa8f7b8bf3cc536d982b9d5bff",
+      "bytes": 36398
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/QR_Coce_mail.jpg",
+      "sha256": "80889c2bdec54d8317b49313b8e276cbb0c05d0a3faf1414eb7d288b271cbc63",
+      "bytes": 64998
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/QR_Coce_wp.jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff",
+      "bytes": 116305
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/README.rst",
+      "sha256": "49cb9629cf530a8b88165b6267a53174b95e548dfc4a17e05de35fdeea381d5b",
+      "bytes": 1837
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Redirect.png",
+      "sha256": "9fecf2db1eebe51e9788c956dba03e2258533f95de0ea66170f003ab00db998c",
+      "bytes": 518
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Releases.png",
+      "sha256": "72112877aaf41a9676a17bfbd7b9ed1e8ff220e107a82bd95b09acb8fb1e38da",
+      "bytes": 14464
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Releases.svg",
+      "sha256": "945909a251861a49b8c9e457487d9cb56628e6a7dd597b90ec306ddd031a7538",
+      "bytes": 102998
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Talented healers.png",
+      "sha256": "e7c184c41ab9a8d2b9a6285c13a2e691559db15f64f62ef9ed308fa013cdb408",
+      "bytes": 15046
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Talented healers.svg",
+      "sha256": "4d4208d93f20916160b5cfc854e166e7cbbaab6582733fa55e47d561b7fb8ffb",
+      "bytes": 84143
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Vertical_Line_1.svg",
+      "sha256": "e6201829e5fa28ef585f0c63a750b00b6077ccaf3e3891c44dfd77b979372908",
+      "bytes": 1046
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/WhatsApp.svg",
+      "sha256": "8d3c94c9d347acc047d0b0eeec359ebd5033fa35c889824f2d288704b9856849",
+      "bytes": 2004
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Year of Experience.png",
+      "sha256": "5a4dd161059555a7af920101f68cded4b20f6151424fa00b74b524fbc5081bac",
+      "bytes": 14596
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/Year of Experience.svg",
+      "sha256": "a87c0f65ac4b4c4922fe38ca26714418b4f080662f54c7e39f5766352b04b4f0",
+      "bytes": 85129
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/banner.gif",
+      "sha256": "eaf423d4343c7cc1d02b107053b38b47771b6c3efd31a39016d5336199028554",
+      "bytes": 5404911
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/consulting.png",
+      "sha256": "fb49d3db8dd66c3036dd45c7341a2d83b20e02048eef8418de26558b781caa79",
+      "bytes": 14493
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/countries.png",
+      "sha256": "665168dcafcaac5c7f777fd97c4ce0c4b7a26e5ed824d85166d1c4b059669c24",
+      "bytes": 13663
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/custom apps.png",
+      "sha256": "664a93bf35f160f17f385b665667c114aa4bcb7972f959f8ba003b7db128fa9b",
+      "bytes": 13544
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/enterprise implementation.png",
+      "sha256": "605bb8ac0eb9d16d00d174f675b8f0c032776afc9ba0a321cb7164e920efc29e",
+      "bytes": 17296
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/ept_odoo_partner.png",
+      "sha256": "93d58b54d86f13b30def15a35e70a9355d8c0a0707ffb90810904a17eab33fe8",
+      "bytes": 8682
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/etpl_support_desk.svg",
+      "sha256": "84e1ff968a7c4a568e7f199a24912b61dd0dc1471975d13b80c038955dc059ad",
+      "bytes": 1056
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/etpl_support_policy.svg",
+      "sha256": "d94b8a45ae1bc4b150e29bb32a8ee8049c7a73ec9fa18d31481acee2a2dfa755",
+      "bytes": 667
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/etpl_user_guide.svg",
+      "sha256": "7ba945c88466231cadf63efd9ece98201cc97b52d168b21cfa873484768571cb",
+      "bytes": 1331
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/etpl_video_tutorial.svg",
+      "sha256": "c72105be3d19d0edce32acb7b148ca938808031e2369e15e7a1e61f1c2b2e071",
+      "bytes": 556
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/faq.svg",
+      "sha256": "c3dff49fac72eb9825683f0121e66d5fa76d3d0cbdf24361881ded4579c5d77c",
+      "bytes": 851
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/horizontal_line.svg",
+      "sha256": "c0708917f0d0a20bf10ecd150cfd65c4c90b7a6585480e075588f6bb4f4ebaee",
+      "bytes": 1736
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/hosting.png",
+      "sha256": "8fbb26245e5dac73fc5ae345f98f9b37cc5b650add60f448eab079351a21bb00",
+      "bytes": 19268
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/how to use.png",
+      "sha256": "7ca75e8c79e2bee4c10f27e8001121e5d71778628931cb91f48567c597180066",
+      "bytes": 14017
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/icon.png",
+      "sha256": "5795d4261691312cefd55776dfeee9da9fce5611651b87cf58866cf3b531a773",
+      "bytes": 10742
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/18.png",
+      "sha256": "d8318dfaf007f07de2190e9aec695ff50443ab5a8b95ea539a1e24ff6dc0e7f7",
+      "bytes": 15230
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Asset.png",
+      "sha256": "f7eb8626dd37d2671f488bc58db14972f6c28407e64936e7d2ac6da5540126e9",
+      "bytes": 885907
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Demo-Video-banner.png",
+      "sha256": "ba94f2e7a929cc2298372a24f4903d30c7e9abdb88c4866f4516201d4b903a41",
+      "bytes": 36944
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Happy Customer.png",
+      "sha256": "adb3a309d36d4297dead919633de1df22124763836e231599d8a0270873db73e",
+      "bytes": 20529
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Logo 3.png",
+      "sha256": "719f02a8829a3ce212f051b4fd3e74746c1f74a5029607ba921a14f09201ad01",
+      "bytes": 34805
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_mail.jpg",
+      "sha256": "80889c2bdec54d8317b49313b8e276cbb0c05d0a3faf1414eb7d288b271cbc63",
+      "bytes": 64998
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_wp (1).jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff",
+      "bytes": 116305
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_wp.jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff",
+      "bytes": 116305
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Talented healers.png",
+      "sha256": "7a844f7bbee202319d35e34b3af4aa9eb16336e0077932ee609b5b1ba8172d27",
+      "bytes": 21650
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Wasif.png",
+      "sha256": "4e948ffce62a42c3e57149f2b4587f7c2bf34c904bd642c10f70082ba60aded0",
+      "bytes": 12144
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Year of Experience.png",
+      "sha256": "5a4dd161059555a7af920101f68cded4b20f6151424fa00b74b524fbc5081bac",
+      "bytes": 14596
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/Year of ExperienceCustomer.png",
+      "sha256": "42d60e57b9d2a4520c29444de2098d99443c4be1892a487db0586a22e7eec59c",
+      "bytes": 19467
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/arsalan.png",
+      "sha256": "7255d3ab3dc7d2d0e70d6d3166340517982c59c3a3fa390adfb2c6713325f3a2",
+      "bytes": 14380
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/banners odoo store (1).png",
+      "sha256": "24a6956428fc39b34e663448f9cff0725aaf69842aec43b89f4b157b0686f893",
+      "bytes": 921670
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/byte legions.png",
+      "sha256": "9bfb73e57f17d6e9158a3ed4a4b8238000655332be290345d292021cd33392e5",
+      "bytes": 9554
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/byte logo.png",
+      "sha256": "719f02a8829a3ce212f051b4fd3e74746c1f74a5029607ba921a14f09201ad01",
+      "bytes": 34805
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/consulting.png",
+      "sha256": "2c3c8cbcb7b0dc06422bc63d8b5e1562d98cf9162a4e6d2d921e5a67cfc10a23",
+      "bytes": 22846
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/countries.png",
+      "sha256": "caae33055deb130dd8bd997f134315ad0458b7e093fbf3e1c7bb0614c233d712",
+      "bytes": 21976
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/custom apps.png",
+      "sha256": "3a74c2a073d07131669d6401c52d79dd2410842fd86171021418c41105819a6d",
+      "bytes": 21699
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/email-qr-code.png",
+      "sha256": "c7618a1ff3dc6dc1ad698cd30ae64733cdd4b27acb9d980a6d993b1f49a9eff1",
+      "bytes": 96538
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/enterprise implementation.png",
+      "sha256": "605bb8ac0eb9d16d00d174f675b8f0c032776afc9ba0a321cb7164e920efc29e",
+      "bytes": 17296
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/hamza.png",
+      "sha256": "5b265d2660d62fe0ca3f2502978e30fe3b32aa8ae02e47d47acc8147130e7285",
+      "bytes": 11108
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/hosting.png",
+      "sha256": "d3edbd997892b182e866e3fa0db76fe0d30abab89f0c0d4b403a7838407cb2c6",
+      "bytes": 25886
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/icon_test.png",
+      "sha256": "75e4497bbf4d6c123808ff933ab49add58dd0b9e7a4759f740697a96f8070f77",
+      "bytes": 20761
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/implementation.png",
+      "sha256": "7c506861c59669bdfff421c826b7d366d2951dd53164570ce1f4c48eff0484d6",
+      "bytes": 19808
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/industries.png",
+      "sha256": "3be6bd2cf80125540019675eefbdebc937d49f3bb9b72b10b99e88d317a59f1a",
+      "bytes": 23100
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/integration.png",
+      "sha256": "2f33cf4b8ef3101f77104d0eb42682815b744f124d86b2872af2ab5e7766e62d",
+      "bytes": 20826
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/kamran.png",
+      "sha256": "f0ca07727720c8f827420a57be425a9f2a8d4f177955b5033bc95ecc3fafdf2b",
+      "bytes": 16707
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/lisencing.png",
+      "sha256": "b4b5c1202db31faad09d4aa35198c88ce3f03dd5fd2f3c8c16871342b044b9ec",
+      "bytes": 13614
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/logo 1.png",
+      "sha256": "274b5b2d7c8c413627f1c7ebadeedd689e0ad7fcd6261cfa9b44172962fd357a",
+      "bytes": 38540
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/logo 2.png",
+      "sha256": "44b7bdbf11b8a440e72d717266ec62edc9276fb377e56fad75894799348970c0",
+      "bytes": 32947
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/marletplace.png",
+      "sha256": "4db9ba07cb7302f739d6f51234b99c8f5ba5cee31fbd6e73c7b9c65e2960ede1",
+      "bytes": 19877
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/migration.png",
+      "sha256": "409405bf241a84f25cd3ca820c35febd12199b1a989ea6a1cbc8a114bb167857",
+      "bytes": 20171
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/muneeb.png",
+      "sha256": "46600bc5955d303f64a988d225bb2c24edfd29b5739ee93d8f5578b8a6dd3398",
+      "bytes": 14247
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/odoo customization.png",
+      "sha256": "5f5a0230477a4b207ebcd39bb25b9d2056f1b49f37707e630adf95ec937e65d5",
+      "bytes": 25796
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/odoo-banner-review.png",
+      "sha256": "56fb1eb3d21fae2014f58ed6da32ab6a80c826644902e81d4fb876267d0f4bf1",
+      "bytes": 363093
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/read-user-icon.png",
+      "sha256": "70104dc0e774f253a45c2b8859e370f3a1550e9d4e99a2f7131d99cf189fd231",
+      "bytes": 1243
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/rubab.png",
+      "sha256": "6d56f25b6c33e7c28e1ec8e0fbedeb5097ef041ae7136587aa0a676a00a72e7d",
+      "bytes": 17280
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/screenshot.png",
+      "sha256": "81df954c8a9f34ff16f855744ef259831fdf85cc05e85f532d4e457f3b9392f0",
+      "bytes": 352881
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/slider-img-1.png",
+      "sha256": "2dbdbcd6568649fe98da4863a34f5404f299e5dc398868c2a34cf40d7a941e62",
+      "bytes": 53598
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/slider-img-2.png",
+      "sha256": "4fd0656032a96c017df5e0c08e3460d35db912c7b5b454124fd20c4350559e6d",
+      "bytes": 50477
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/support-policy-icon.png",
+      "sha256": "887848f01048dd999ab783ef2069aa41b067a759e459b3053f8741e6a7fc9739",
+      "bytes": 544
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/support.png",
+      "sha256": "c659f428ff3c426972209e995b4afcb8e71470d362c659aa0861beb3b13f7e96",
+      "bytes": 21619
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/user-support-icon.png",
+      "sha256": "3e70595d32cd509ad8b7ee1a4bbc82f495f2be244ff39a671db26162c0222d3b",
+      "bytes": 1147
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/video-play-btn.png",
+      "sha256": "49de4fab08090d078ed05ca64b5db4662039d59af80c8d2eec152a6ece61aa1e",
+      "bytes": 7185
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/whatsapp-qr-code.png",
+      "sha256": "05ba8ae1d191aaeac38dd6e3fd238f25bc37b2c5eb01bb0a30519d357a4fdf07",
+      "bytes": 110055
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/why Integration.png",
+      "sha256": "fd7e4634719be4c2b978b37c802249d7b464b94f55f0924b906227631f9547ab",
+      "bytes": 378015
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/why_integration.png",
+      "sha256": "dc1e2bbea9ca76430006e767ca7c16f1762d65dac06f7f42b16cf0ad7aca8a3b",
+      "bytes": 57125
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/youtube-icon.png",
+      "sha256": "9672090b45e2be441f1fea9170c176034a346af6741dcd054565f1aeb438d33c",
+      "bytes": 701
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/images/zoom-qr-code.png",
+      "sha256": "95b20426a9b67a8ba850f186523b8433ceff81ce49ffe8e1fcd2f874447332ac",
+      "bytes": 104690
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/implementation.png",
+      "sha256": "d7dcfdf8cef15a8aff7c36f6f3ba891155e40e6b70e6de2f85121fb520480fc5",
+      "bytes": 15154
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/index.html",
+      "sha256": "5194a08050cd8da02c3feb51eb4aaa383a047d748aa88c5cc1caefa18f481d1d",
+      "bytes": 104414
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/industries.png",
+      "sha256": "15ae9769001411287c393e9197b65e1313a09c766548883bbb947f8fc7cf1cd8",
+      "bytes": 17987
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/industries.svg",
+      "sha256": "811d35b657d87ba65afd79dba779e0d21ed313001ca51f8db7b293acf715f3b6",
+      "bytes": 92895
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/integration.png",
+      "sha256": "45a9cb912278727cc3cee377c9529ec127a70ff539b74b495e1678f201d8e79a",
+      "bytes": 14587
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/key_feature.svg",
+      "sha256": "34e96ffc0ff8b30087f7adc31a2b014e32a2dba69c9f1826b62bd88fa16028ec",
+      "bytes": 608
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/lisencing.png",
+      "sha256": "b4b5c1202db31faad09d4aa35198c88ce3f03dd5fd2f3c8c16871342b044b9ec",
+      "bytes": 13614
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/logo 1.png",
+      "sha256": "a1c5dc53c3d8df06c67669b351343bb15dad5f4164c24f002b58fb778550ebb8",
+      "bytes": 43793
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/logo 2.png",
+      "sha256": "2e9035fea188cc6ee2b15e9fe57c11bae38a97dcba20ebf151d3149eb7e7dc44",
+      "bytes": 45814
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/logo_main.svg",
+      "sha256": "946ef8ab716e36d862eaf9216b40a0a06f5ecc06dd0115391d3b2528a175a991",
+      "bytes": 14396
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/marletplace.png",
+      "sha256": "b77bf291982b48183ffcfa92c67998d1a9846c3eb9ea16a3d4e7927a1db19430",
+      "bytes": 15440
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/migration.png",
+      "sha256": "c1142c896d766f15921c9b7a323064d2740841924823e4e63782501910e10b8f",
+      "bytes": 13979
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/odoo customization.png",
+      "sha256": "7aeb108cbbcf085b8ae208bb4b845864058475bbeabbc95da9627faedb00ec4b",
+      "bytes": 46446
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/odoo customization.svg",
+      "sha256": "6fab6b994d7df46a8186a685113d12f6e00c75980805f8c03f9429072f3f9334",
+      "bytes": 101528
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/overview.png",
+      "sha256": "0ddf3e5ddb80749147e98ce0a74fa6077b1289fe0f5f801f18fa087a493b374c",
+      "bytes": 15180
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/overview.svg",
+      "sha256": "8015ea191ae832cf3505b1d53662e44f85e2c19027ee6500f3e6935ec7326193",
+      "bytes": 84143
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/screen_shot.svg",
+      "sha256": "1d4f44464baff369fe8bf819b6ab308a59335184ee8a152d2890aeb8a0a6f12b",
+      "bytes": 774
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/support .svg",
+      "sha256": "d1456404a7f6b9ab7add9be6c41e55aec680b1882b0909bbdf9cec339c4f3c78",
+      "bytes": 81114
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/support.png",
+      "sha256": "d26ac263458d683e73728dc01db5aa3e9da8c881d49e4368b270804c4fe3db5d",
+      "bytes": 12564
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_0.png",
+      "sha256": "27986f0b35f8886a07b394de510f7e62c12635f43de354685c772b6aea961811",
+      "bytes": 170350
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_1.png",
+      "sha256": "99f7e681c8e7b6efc22b0e7345bedb442933c3e477bb8afb101caa88ee7f6a80",
+      "bytes": 79688
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_2.png",
+      "sha256": "bee6e2d648178127a98ec042ec57853c777f5147229f3fc78b612e7bfe9f7278",
+      "bytes": 169606
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_3.png",
+      "sha256": "91be685e0fbe629af101b1cb9d3bd17057f2ae2d5f861755fcf83fe9127f1395",
+      "bytes": 96355
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_4.png",
+      "sha256": "06f657aa577d196081cc33e9ba531d8886b4bfcbbc00e63f7ebcbd6d0899a14f",
+      "bytes": 141721
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_5.png",
+      "sha256": "a4e8a3db434068665330f85ef5fb37471bfb590e655cd2adef0b8cf912a8b97a",
+      "bytes": 87323
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/vertical_line.svg",
+      "sha256": "28abdd0e8ef7acd97538b1816685c23bb391b97b51550e4290c23c7395c11424",
+      "bytes": 1730
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/description/video_tutorial_link.svg",
+      "sha256": "3ca0e46d99f5b1080592b850dbdda1b431024a4278eafc37c37ad7dfecc2f758",
+      "bytes": 579
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/src/scss/fields_extra_custom.scss",
+      "sha256": "df56c2d1e24f251c752fa57f5e0a53bc313515d5be27ba3ac45d8d696cabc729",
+      "bytes": 5315
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/src/scss/primary_variables_custom.scss",
+      "sha256": "2d85ba856aefb7ea36173692d41717ec12721d382d31c76fc2d98fdb25d4a87e",
+      "bytes": 810
+    },
+    {
+      "path": "erp_heritage_19/legion_enterprise_theme/static/src/scss/secondary_variables.scss",
+      "sha256": "813262201bf4909b8d29bf1d18d672bc1e40e9ff689125fc67b573a6cf8a2430",
+      "bytes": 764
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/__init__.py",
+      "sha256": "6b55c9b334c649e9cae6a8c466b964f5bda7f71dd1ad33ce8b64f8c25179b813",
+      "bytes": 63
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/__manifest__.py",
+      "sha256": "a8b8e0a73b4f9929cdc07ab8497cf39031f2e8a617d779e597ca5be0b26f6744",
+      "bytes": 1503
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/data/hr_contract_type.xml",
+      "sha256": "c1ce7815ad4687140d37da936a66742a1191c0d1de2b9fcaeb2bd6a2ccb2f37e",
+      "bytes": 636
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/data/hr_payroll_category.xml",
+      "sha256": "a5c2a2ed424e93080e02856729d107e89cbbc78255b9d428b660d1d6a1e3eb2f",
+      "bytes": 2391
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/data/hr_payroll_data.xml",
+      "sha256": "8de337f19fe8afae4d64c2e0491b4ec53f2a55a21df0998013ae3fa1e7897c3c",
+      "bytes": 4950
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/data/hr_payroll_demo.xml",
+      "sha256": "532856fa1495e8efad8e439fad0ecad94e1a95c618425c116f08b0999f1efb3d",
+      "bytes": 7386
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/data/hr_payroll_sequence.xml",
+      "sha256": "f8d774f9869f744c72f2ea1b326b7855a8904579fc0e6d33a616af7f4ae42262",
+      "bytes": 371
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/data/mail_template.xml",
+      "sha256": "656564339c03e6f56c251346043b1422a912eaee37c914f7b8b9ac9f3784c29b",
+      "bytes": 1321
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/doc/RELEASE_NOTES.md",
+      "sha256": "55921bae1be3c840a7a15a9b6d3f55145ed2c490e45da52528661f3dcb57cf66",
+      "bytes": 94
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/af.po",
+      "sha256": "c3e5f9c6097191dcf83597c94da4d089cab891fada640f3f69b25ca4a04ab591",
+      "bytes": 58764
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/am.po",
+      "sha256": "e96d83d312fb05d7472720e3b9d1035899482c1b3755b0e7bd42a2d495571120",
+      "bytes": 58603
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ar.po",
+      "sha256": "6c360ee5c6132fc4963f9afa4393fd1cbf144f26e43ac303ca33cceffac31d50",
+      "bytes": 70924
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/az.po",
+      "sha256": "a2c24247b0e7b541765ef89edd0229ca2403709ee5bc01c1032a084010df629f",
+      "bytes": 61315
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/bg.po",
+      "sha256": "e69cf19cbf2449ba2e40ff7bfec9dab27b52fc61f37f172f7c8559978c5424ef",
+      "bytes": 58888
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/bn.po",
+      "sha256": "245f44174200db9582324668c6d176c37c6aab739b0ec5c54cd2b649d253c8e0",
+      "bytes": 61934
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/bs.po",
+      "sha256": "68ce8386bf225c5015cebc2b459fa98a45370009fcfcf0bcda99aac0c5e28693",
+      "bytes": 66747
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ca.po",
+      "sha256": "d8529d7b2f46779fc834963a6ad0aac0814c9e2afd5221588eccec84ebe08609",
+      "bytes": 67653
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/cs.po",
+      "sha256": "860b4cee96fa259702edc496cfc4d59e78e2228b7190a0440d64753a50816100",
+      "bytes": 63629
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/da.po",
+      "sha256": "68f5fec6e7d27140ffdb2916d5630df9c1ebc230405aa6641ad5728817b1c23a",
+      "bytes": 63945
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/de.po",
+      "sha256": "7c25279f8176dfa15825ac29553bd68ac9727d1c91655c9ea5873bcd82509ed7",
+      "bytes": 68298
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/el.po",
+      "sha256": "722003526bf6703df1b1f2a97ca414795ba469c696d3a32aa4d19657d80910e9",
+      "bytes": 63647
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/en_GB.po",
+      "sha256": "f00e95db9bd7cba7cbfbafa8b87c2ab8b8143771157dbacc2243a6761ec9f48f",
+      "bytes": 58691
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es.po",
+      "sha256": "91c6b69edc01a744c41432146ee58e9c8b03989a035e91a2788d667ac92a41cd",
+      "bytes": 81638
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_AR.po",
+      "sha256": "278ff4de9567637c42fc13b9e4762fa8dbf6811de527cd35a1003e10efefce23",
+      "bytes": 58703
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_BO.po",
+      "sha256": "ec3fdd11d153e285eb6495df7a3e057a8b4ff55ecdb62b9bfac75e4a4c33b8da",
+      "bytes": 58668
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_CL.po",
+      "sha256": "77687ffd91a6b5e51baee5d3d959e328592ec0fc6d72bc34de9a3cbf3953358d",
+      "bytes": 58730
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_CO.po",
+      "sha256": "216db684f90565dddab323e941938f3aa872d44b93c5afe31451fa33b55b1883",
+      "bytes": 58704
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_CR.po",
+      "sha256": "b8b4939534a0391dbac2c5dcaaf7ae88bee8b0b6e99c9f9e3b04475197d752e6",
+      "bytes": 58611
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_DO.po",
+      "sha256": "b5c884941ce18d129dcef0a1438d2ee4639eb157c3979dcdba6fa0c15bad7926",
+      "bytes": 58742
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_EC.po",
+      "sha256": "b937dd2c913662b85c22bc565c02144143d62879576a93d6fedfebcb68a33cc2",
+      "bytes": 58715
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_PE.po",
+      "sha256": "a7a329c1db99e55dd47f8ff09b9a2eaba5f35b2322e00c26c28f9f367cae83fc",
+      "bytes": 58704
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/es_VE.po",
+      "sha256": "b504a22151ae4cc51d4e75fb9152a223289c33093467d221f04c653d44340adc",
+      "bytes": 58716
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/et.po",
+      "sha256": "2e4d7088acda5700a3234d15eed47d88bf0a0bcd9ab08a4e3691e6d6597c66bb",
+      "bytes": 67941
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/eu.po",
+      "sha256": "9771da0f04e8ae2e708dc6fab9b78d57912d62602bd58c60ae1a419480bcadac",
+      "bytes": 58644
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fa.po",
+      "sha256": "79fe24ae7df336c4bcc0ba58bf609bc583359373aad7a0fb8a46330da9076f28",
+      "bytes": 62745
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fi.po",
+      "sha256": "a1e23c2d52637ea09b0770df61e42c9fd92a5d436810781959b5a4434702e41a",
+      "bytes": 64906
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fil.po",
+      "sha256": "f2a8d936e668326004704527713b33d12d0acd9b1800687355eba8a782c20c84",
+      "bytes": 61220
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fo.po",
+      "sha256": "be562ade876dbbce9513e958ab09973f435f1ba598ef9c32c9070214d9a6b29e",
+      "bytes": 58653
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fr.po",
+      "sha256": "a33bb74d9ab4653005b3410491ddafb97d6fa76f1809c12aa992d40ffe635d0d",
+      "bytes": 69375
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fr_BE.po",
+      "sha256": "683106f0708f76387a535e58f5ef81502ef07a2ee4601804e40b1334abde386f",
+      "bytes": 56298
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/fr_CA.po",
+      "sha256": "ee66e30c09d90e721f7494ce1d2905e8804956fbac93974d9e45aa58b6bd563c",
+      "bytes": 58716
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/gl.po",
+      "sha256": "9ebc06f6bcc2fcab25ca470cac4452b6c52487ca93f926afee05638803cd6f98",
+      "bytes": 58652
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/gu.po",
+      "sha256": "b5ec401842b22a4bbac1c2df08122990558633fbdb38a3c84724da56c85ebfe6",
+      "bytes": 62335
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/he.po",
+      "sha256": "e2e5c98e0005de14e57f6ed1c67e579cfbddd7c5ff7e2531e53a69fad6dd8167",
+      "bytes": 62597
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/hi.po",
+      "sha256": "33c054f03a3af6b2aff17d59f35fc302ec14520c1ef2dd113dfdb68b48f09fb1",
+      "bytes": 56565
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/hr.po",
+      "sha256": "5f07720b6b7c9087f228675d8329fefe933ed998f10427cbb8b9146bdea94696",
+      "bytes": 64459
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/hr_payroll.pot",
+      "sha256": "5300eecc913afb7daa8df3d647e3ed0428ea74b5c6ef28087a41901ff6868034",
+      "bytes": 60996
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/hu.po",
+      "sha256": "24d7fc16956b59468d2327b22a78b3bb475839d983f737ea73a7c1a9eca564ae",
+      "bytes": 68495
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/id.po",
+      "sha256": "9c8af2619a615e4edddb1f71dbad73fac899fdaf2bc7d6bc47f171c6890b8d39",
+      "bytes": 67965
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/is.po",
+      "sha256": "b80d0eff2234f0e11572e48ef57ed607eda15854016bce16821108e5abbd20e5",
+      "bytes": 62111
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/it.po",
+      "sha256": "24109fea3404ad9340bd2f4d4802c1ddcd6c8dc09b8594d6114e146b5c103c3b",
+      "bytes": 64489
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ja.po",
+      "sha256": "fe46a8539ea93714cb410d51946c9991c557a17a13768496465343540e1d720e",
+      "bytes": 67836
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ka.po",
+      "sha256": "924cf51c6323b8a4b926af132e58e1ba75cafbc9c6a241b8d06c6cd69126ef04",
+      "bytes": 62622
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/kab.po",
+      "sha256": "74d346911e49ea7afdf2534c92ef30c9977587536845515333ecca6a53357c69",
+      "bytes": 64005
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/km.po",
+      "sha256": "c20eebcf909d713db8bbe7082bb2f713f9f47f54fa3eebfa23df406d3032b8a3",
+      "bytes": 62266
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ko.po",
+      "sha256": "11d653f984b3f1988ac0cc149e8ab63e36330479aedf9ab229b4369330c3589f",
+      "bytes": 64537
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/lo.po",
+      "sha256": "f588b0baea069ce3a6db9eea5edd35f9b7cf5a14579f100eda4d51e4ded2db8b",
+      "bytes": 58682
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/lt.po",
+      "sha256": "a98a5375c81c20857051692fff88799a87e27bdf2560b08a52373f9adb0a0dca",
+      "bytes": 69998
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/lv.po",
+      "sha256": "b5c576e1b6f17b295c8dcc2a3f4e0573bf23e355b598010e52299ce34d7e13ec",
+      "bytes": 64531
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/mk.po",
+      "sha256": "4bbc8f05c901063d307ce1c3b77e51318537265eb541cf4fce1e955b60958c6a",
+      "bytes": 58886
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/mn.po",
+      "sha256": "0bd6cdfbbe0c0486dda7c2e87a5114e5475a47d10441b172815dc4f46e02773d",
+      "bytes": 71921
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/nb.po",
+      "sha256": "a2324c91684326410604717bb60343e2ef59ab759cbf2e62118c4d8a97d20654",
+      "bytes": 63668
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ne.po",
+      "sha256": "b41bfa3a3ee6b61bc2724db87afcac8a7b6b727eebe23799a988a0d289c33d19",
+      "bytes": 58375
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/nl.po",
+      "sha256": "723952344b522f9041e96e47d4d11ed7d6957d9e450af40e76100b56b54dc11f",
+      "bytes": 69225
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/nl_BE.po",
+      "sha256": "5e5d50a9773a70c70e061b047f0a2bb5dfaf538e16f38b031b41436a5c35db9b",
+      "bytes": 58717
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/pl.po",
+      "sha256": "6159917913ef436e096e50301374dbe8bf8a9f2b177ab1c12497bbca812c93ff",
+      "bytes": 66609
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/pt.po",
+      "sha256": "ba746c5225b7583f3f9838b1a12c70947d2dabd3e5d7e4843264c1761ec899b6",
+      "bytes": 67704
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/pt_BR.po",
+      "sha256": "39621cf6d274d2463bf94199837620c56b57d278fa3f3b936d99100a81bebd47",
+      "bytes": 68147
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ro.po",
+      "sha256": "33dfa10154d985b7d56cbd02dba023c92cadabcc915ada9cd2d375465fce8566",
+      "bytes": 67926
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ru.po",
+      "sha256": "23fc263e8d4d264c86dc2d9a622b452d92d1391aa0c86f9a5b9afe1672569753",
+      "bytes": 74052
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/sk.po",
+      "sha256": "d0014b94192680b11557c08e1c5874baa051a661cd27090a6e3f71812ffa1be9",
+      "bytes": 67200
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/sl.po",
+      "sha256": "8d7ddeaa2cac0471c79fad54c62eda4352bb6789b38f5a4af80a8619f6b278ce",
+      "bytes": 66143
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/sq.po",
+      "sha256": "5c7d01eb5ddd4e04d28b084bcceab429832d55abf7a878e8d328958cf363165d",
+      "bytes": 58698
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/sr.po",
+      "sha256": "0db453396696654d7cd61b2b503a74c7bccd3325b534dd1d6141e730012111a6",
+      "bytes": 61943
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/sr@latin.po",
+      "sha256": "96aef6770ab551f8adf55f0c4c45a73e45d84bb1485b6235874f5af57cdc4f4b",
+      "bytes": 59522
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/sv.po",
+      "sha256": "e67f6ff02ca1dc7bd8911472d828cbd2df00736316ed96bcfff35bbe56ff4016",
+      "bytes": 66577
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/ta.po",
+      "sha256": "8ed090d437b5d4f184735e48f7187ec2251ee10c59e130ded322d83332059115",
+      "bytes": 62871
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/th.po",
+      "sha256": "82291a76920e5ee7231d14533cabbec55b3c65929c6334e62384fefa0bb702ae",
+      "bytes": 66986
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/tr.po",
+      "sha256": "af2548c231d159a6e508e360b2b1752baacb5c5c2e90a3a653455a59da7eee6e",
+      "bytes": 68098
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/uk.po",
+      "sha256": "6549a34518d3e356a13817c0a867ee02d55b1102d07329a482653b028b904a84",
+      "bytes": 75283
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/vi.po",
+      "sha256": "ef8290257f071eff5d7b473e37edb36770ffd3a4f71420c92ce88f0695c776fc",
+      "bytes": 69954
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/zh_CN.po",
+      "sha256": "797d98691af9084e3f81dcad2703a9d85770c3fef64bfafe4ff08c5900b95443",
+      "bytes": 67306
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/i18n/zh_TW.po",
+      "sha256": "a7640c1d9091234f1bb3f451a902e6ba4bf090c232e94d0a16e5c99c78c1d3e8",
+      "bytes": 67029
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/__init__.py",
+      "sha256": "471be1c1b7d237bff08c0750436b54d969f37fa8508db6900479d26578b29d65",
+      "bytes": 197
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/hr_contract.py",
+      "sha256": "b9d6b904e2d85bda4cc09c9c914b75fe372f774c272abb2ccae3220b94a0348a",
+      "bytes": 3384
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/hr_employee.py",
+      "sha256": "d9a572d83ab3d855f21eebdc0514ca7f7cc0bbbc82478fbad63d8bf7283b634c",
+      "bytes": 695
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/hr_leave_type.py",
+      "sha256": "68d1ae9b628a588be135f49c5fb8d80ef999c131e034b78d890a643dfa9b05d9",
+      "bytes": 141
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/hr_payslip.py",
+      "sha256": "cf98f6bd1a43b5290cdb01740e8d3ff421e214c3680ee01142fb9a8b92bef871",
+      "bytes": 94628
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/hr_salary_rule.py",
+      "sha256": "4555263d9371567ba7f083e2cabcbf8abca66be6634158eed3c8a713c9c66ca9",
+      "bytes": 25768
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/res_config_settings.py",
+      "sha256": "1154eddc7878706de9b8147d6e1763d365c60bb80ec381f9d82d77658f6424f5",
+      "bytes": 200
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/models/resource_mixin.py",
+      "sha256": "e5f377d7a6d657be6b0390302bc76a57f4ddcc66f0288a67bc93ffe5ffe7a037",
+      "bytes": 2405
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/report/__init__.py",
+      "sha256": "f1438dac72d659f8b834e263cc1da35e877007049d01fbc04c6a13b09ce1dbe2",
+      "bytes": 80
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/report/report_contribution_register.py",
+      "sha256": "414239251f12bda837445249ae4ba51274fc7b0e7801cd78173bad2f7260eee6",
+      "bytes": 2149
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/report/report_payslip_details.py",
+      "sha256": "227cef81b35a8e6543b6f3a2b96e6e74573300425844ac6899d237cb90df39d6",
+      "bytes": 4257
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/security/hr_payroll_security.xml",
+      "sha256": "76cf0c882b72655e2e4af033b33144b34c7359e680f77572421dfeafc59b5fa8",
+      "bytes": 4392
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/security/ir.model.access.csv",
+      "sha256": "53f86c7c95deb4086c0d69976ea565fc68343a0042b02e3ce835cecb82ae1719",
+      "bytes": 1942
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/description/banner.png",
+      "sha256": "a5333c6e530461f4c601261df7fb5ee422e1916d4305f6e05cbedca69550ccdb",
+      "bytes": 434098
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/description/icon.png",
+      "sha256": "c0bdc62f3971f9f9f80ba7b154d5eaa864a0b10ab34e8bed20e524ff7e529487",
+      "bytes": 9024
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/description/icon.svg",
+      "sha256": "418780d5e17ac58f2d9fc549f188684bf225039172028c9d8bf8cde6f70dc5d9",
+      "bytes": 7587
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/description/index.html",
+      "sha256": "00428bd8e05bd8752a5858cb06233be1821ceeef847fbcba9ec79ed59bf8462b",
+      "bytes": 2778
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/description/odoo14_payslip.png",
+      "sha256": "a31b3b85847ff40e77b11e398f85cb078eb5d9e058595bb9710aff1840609083",
+      "bytes": 74574
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/description/odoo_mates.png",
+      "sha256": "088fe1561e4e9db8585c3da580564678b4d0270ab786a147da47817d7d43e1d0",
+      "bytes": 7810
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/static/img/hr_employee_payroll-image.jpg",
+      "sha256": "f3365aec9e431ad39b08772431cfa87c269fc2c18b88c0713418814a3f215bce",
+      "bytes": 9971
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_contract_history_views.xml",
+      "sha256": "ff28acc135ee783c5d67386e58f07d4924fad0fe9a4402cd1f8a784b6ae3e3e7",
+      "bytes": 572
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_contract_type_views.xml",
+      "sha256": "a4958a8d41e0b25c855803295a81715bddc1b032618c169e444af2c597c9f6af",
+      "bytes": 274
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_contract_views.xml",
+      "sha256": "e3cb59964e1a8532358ae313f122086ac6c4040d6125b88096e66f431f16c3b4",
+      "bytes": 6356
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_employee_views.xml",
+      "sha256": "6bb0a9530dbff166f7357694d3901ab6cab66de53a0cc2f7cfc5f55e98d4941f",
+      "bytes": 4116
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_leave_type_view.xml",
+      "sha256": "caaf86a69e086b48cdcad749c9507bedda9252635610bc177c9dfb26bae45fa0",
+      "bytes": 1360
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_payroll_report.xml",
+      "sha256": "eb647ccce45f58ad63d8227f2564b0940352d8838786c0c57a09df2177ea3e95",
+      "bytes": 1802
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_payslip_views.xml",
+      "sha256": "56a268c0bf3dfdd6a8a7754c97b736f598443660871ff4fb3893b92d2cce29ce",
+      "bytes": 25152
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/hr_salary_rule_views.xml",
+      "sha256": "a395eb245379a697a94ed5429093dcbf471fa9de8ff4db29ea1944b05205cf1e",
+      "bytes": 19440
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/report_contribution_register_templates.xml",
+      "sha256": "1c37fdac95b7d4e4419482c8f1a871460d3179e7be73451330dfa9f6fb40e6de",
+      "bytes": 3970
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/report_payslip_details_templates.xml",
+      "sha256": "adaed2f28d408f461ebab195e696e5bafd904ab8ac514d6821b6e23f37ffcf3b",
+      "bytes": 6349
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/report_payslip_templates.xml",
+      "sha256": "43f039280425ab2207c23ade407817eec057a30e9e27b824ec8b2b3c8571689d",
+      "bytes": 4992
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/views/res_config_settings_views.xml",
+      "sha256": "3e6301a04e93637ffcf578fb126387a2d728bc4ba5f93a57e0e36ee0aefc4aa2",
+      "bytes": 1853
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/wizard/__init__.py",
+      "sha256": "6e3d18ced6169cf8d207fde6d9e269073add45b58a0497b8a2abd0dc5f23837c",
+      "bytes": 101
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py",
+      "sha256": "4c171ef4cb8d0861c4383d926205caddc549d124d38881979a53e07f88a4c3ab",
+      "bytes": 893
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report_views.xml",
+      "sha256": "ede99b700ed65d9ef7dc7792de50d2922de7a9610a6617e6d94b1dd18fe08fb2",
+      "bytes": 1360
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/wizard/hr_payroll_payslips_by_employees.py",
+      "sha256": "89f819bab85580f5eb509fc0d166e15cba2346fbfb41ced737bb142f59a17536",
+      "bytes": 1986
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll/wizard/hr_payroll_payslips_by_employees_views.xml",
+      "sha256": "00a4144fc29001d50307e2ece23de6f1f53666b53e7156c9f0ca433ae6617712",
+      "bytes": 1413
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/__init__.py",
+      "sha256": "e31036c043fe542d07028a5a152f22850d558d00d3837e00bc8bce9aaf9a96b3",
+      "bytes": 42
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/__manifest__.py",
+      "sha256": "57de7d7a7db5eea72f91d59b6ff90ca1661ae8ef4ed7707ce1783bb58cb7b684",
+      "bytes": 673
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/doc/RELEASE_NOTES.md",
+      "sha256": "45f2c377eb5a82d9a6243006a428f19bde6e76d34594ca66b0ed24876e79ecfa",
+      "bytes": 103
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/af.po",
+      "sha256": "fe3e7a95c26c83f5edf793ac191bb6ba832e89223e8a952e943aea96bff85d18",
+      "bytes": 4368
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/am.po",
+      "sha256": "b24aaecf5ddb8c2706e40c7189d1f13a229698d53dff74c731cc057e41a326ca",
+      "bytes": 4365
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ar.po",
+      "sha256": "a21b4fff68a37da42c8e078e5ac6699da824c0989fb77eee85fa5c2aad827446",
+      "bytes": 5399
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/az.po",
+      "sha256": "39a3f37c1eb2384be8bdfa8e60f0bf7bfe22998257862ff085683b8e533b45f4",
+      "bytes": 4385
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/bg.po",
+      "sha256": "3f8d5069e1a1611bd1440d1c9075e7ed5086444fd4651402af862946953fa51f",
+      "bytes": 4511
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/bn.po",
+      "sha256": "4dabd1f36ecce63d0f127b4bcb1f70c3fe570a5da763f113639e755d76a34cd7",
+      "bytes": 4381
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/bs.po",
+      "sha256": "3078f1c935cc89ab30a9760bdb24b47609d2f226bd0070c4f5221d65fb47ec57",
+      "bytes": 4841
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ca.po",
+      "sha256": "1033f7609d86ca6aa10e57e937963c01e5e2287aa283274b8964718953544544",
+      "bytes": 4813
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/cs.po",
+      "sha256": "737fe4ff5ebd68a2cfca12ae7e05a3e51d80b3112cd1f674057cef2691a88e77",
+      "bytes": 4725
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/da.po",
+      "sha256": "f7b9ebcbcb02195ef6be1d3c3d037ed4c5c06032b7e1484a95cc80fb94f554d8",
+      "bytes": 4865
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/de.po",
+      "sha256": "8d867e6bb52f6cbea5ff7a9377089be893dd82c0efd2e773a87a124620251e26",
+      "bytes": 4903
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/el.po",
+      "sha256": "121b427407c6737d3f2fbaff10b486d1463ae9b3d9cdbe4acf68879a5df7c443",
+      "bytes": 4771
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/en_GB.po",
+      "sha256": "d2b0fa754845175a246c9ba927c1dbae90e97bbaa123ff7ddd3247ab61e1179a",
+      "bytes": 4515
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es.po",
+      "sha256": "ee06b89f47b594ff07d14f9c1a870da6c3a98f388cc39294afc19f3a5d70aa9d",
+      "bytes": 4999
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_AR.po",
+      "sha256": "dd68832cf27cb71dcf9761738d7d5dff58b8f0a9c01fef2ef37179303a56dc83",
+      "bytes": 4511
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_BO.po",
+      "sha256": "a8e1685ecc4961615c9b46a13859b87071659730b03808c160d0c65e964d15e7",
+      "bytes": 4509
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_CL.po",
+      "sha256": "5307891d64be268db978b0e0bc3e442a9b46cbc7a1abded759b031459bc3ff1d",
+      "bytes": 4507
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_CO.po",
+      "sha256": "54562e136dc9127465665cbc5a4267e8338d4501b4976530ba983fbe637b3b9d",
+      "bytes": 4510
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_CR.po",
+      "sha256": "951dc3cac8c58dac72a21af8da6649480672bc4519134beed3fd5cfca2af6e85",
+      "bytes": 4512
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_DO.po",
+      "sha256": "4485b0fdcbcca1a3e7075b58f7109273ad86c9d388c654a5385193a433bdf25a",
+      "bytes": 4520
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_EC.po",
+      "sha256": "a06a2ef8761f57abb4320c56d9af9b5ee9cd3df1b4b545028d077c9dd2f06fea",
+      "bytes": 4509
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_PE.po",
+      "sha256": "680da0766ddf5214f4122269210e9d0e6317d0f8e85f2e07673734db98c0d7e9",
+      "bytes": 4506
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/es_VE.po",
+      "sha256": "5dde7453fff4e4cdf3e84b0e200c700571f5067617ca95dcfb1b7d9a1f25407b",
+      "bytes": 4511
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/et.po",
+      "sha256": "1e69de2062b95730d88d3fd5f416b65b3cf192a1311cdc76cc1ebb8a597e3036",
+      "bytes": 4999
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/eu.po",
+      "sha256": "555078e3040d9c106d68a1b756f4492ff4525dee52b304aa787c70e2edbb2b2e",
+      "bytes": 4491
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/fa.po",
+      "sha256": "4e6b30136d33d82c43e4ed58322082290b28da4cfec2f6bb8732330c25352b45",
+      "bytes": 4627
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/fi.po",
+      "sha256": "c232a4b5a6b70fa34465df5a33f48e179edd160717ec321b6c5af13de612142e",
+      "bytes": 5209
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/fil.po",
+      "sha256": "8d36d7cea124d52e014eb9e7e7a10ea32eca87b6035a1d879b1c5babaf84bd1f",
+      "bytes": 4447
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/fo.po",
+      "sha256": "5853d22eb8080fe7ec8cf8bce13323f3a41bfcd7435d57f3c039b4d9d23455c4",
+      "bytes": 4495
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/fr.po",
+      "sha256": "285a5781d44d56b5213b28998e618792ba2f496f9473d163b2f8ec71d9a7a5c2",
+      "bytes": 5057
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/fr_CA.po",
+      "sha256": "f9e879f5d4756d835a5e6c26470f6faa6ce8a9208e64eab768e26eb102e56c2d",
+      "bytes": 4379
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/gl.po",
+      "sha256": "635493ff5387996b14abfe85ec32153db33ae4faed7c97405bed3b65718208df",
+      "bytes": 4493
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/gu.po",
+      "sha256": "3b8fcb0d61be49bae517dec68772761b3006fdc79686a75a0db1c36adf4de807",
+      "bytes": 4532
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/he.po",
+      "sha256": "90a081783d430f0a8b13961046d121c27414a7bd7c7613afa842dc3b6eb369ce",
+      "bytes": 4782
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/hr.po",
+      "sha256": "0b871472abe5e97793ba8a9969daef655b89529c8f72f4486bf73584a93a4c04",
+      "bytes": 5117
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/hr_payroll_account.pot",
+      "sha256": "fdc7282472ede1ce569d731957580a24beb3b838cfb994a8f1536bb059c077b8",
+      "bytes": 4304
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/hu.po",
+      "sha256": "f02913acfe7433ae6c740d6feb539ef959ee0f437b310c8ffc5fd58f6a5f26c6",
+      "bytes": 5140
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/id.po",
+      "sha256": "3830010a07ed0855662d41684758d3d665eae8f32e4744466216af6d8825337f",
+      "bytes": 5061
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/is.po",
+      "sha256": "ba6d6e715a29201912646ff03bedbcbc0b6ed10c43fc7a620c4d0e3cfc845906",
+      "bytes": 4612
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/it.po",
+      "sha256": "9dc8ba0d8269665c1dee04b8fe673b559ff03cadb0f930ccdef18ea039ec589b",
+      "bytes": 4974
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ja.po",
+      "sha256": "cf994067dbd73f57bfb83ff9b012c566a6e4fb867bc35c948fd6eae75b872ca4",
+      "bytes": 5107
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ka.po",
+      "sha256": "c55cdf4314848593b165657b869f7ea4b078267bd7cd397cf1dd29d35edca3ca",
+      "bytes": 4685
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/kab.po",
+      "sha256": "a9155f2ae312022d3c0d52260e948fdba2a932b4b80401a3231474e28ccf11fc",
+      "bytes": 4872
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/km.po",
+      "sha256": "435ac7cb49eefab8b5ebd306d4537646788e48d0b5a617eb0dbe638fb08e8430",
+      "bytes": 4500
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ko.po",
+      "sha256": "0de6b57e6b1cc0abd0a37701f0479fce440d268abd4ef1d9b20e0c6faaba1ffb",
+      "bytes": 5057
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/lo.po",
+      "sha256": "f03aeca3eff9241157e8c4b61d310b5e461884f03674cb3703a1495099b47dc3",
+      "bytes": 4355
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/lt.po",
+      "sha256": "b780d82d6db154e9a2de80352a8200aae718d26cf36e9a642475f6b557a08306",
+      "bytes": 5354
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/lv.po",
+      "sha256": "aebe31413c929cbb59757d28334ad53d9ae1225a640cbec745379565cc3b8759",
+      "bytes": 4802
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/mk.po",
+      "sha256": "3f37c58059187b1dbef792e7d6fb118dfb13c4e8fcef7b39fe742d856120ee77",
+      "bytes": 4542
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/mn.po",
+      "sha256": "4f18ef4d2675d6cdeeca9bb114d38af4513cbc78a1842a13a1cfabe60e1fda83",
+      "bytes": 5295
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/nb.po",
+      "sha256": "286cefa7b78b374e5b0dd39f730863254760fa930e12f6cac899a2de72518514",
+      "bytes": 4905
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ne.po",
+      "sha256": "5f00a991feec1c1ce6d8df4f9cddc2b45eef223aad49cb8b4ef3b8ad36ca16ef",
+      "bytes": 4365
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/nl.po",
+      "sha256": "4270817153f9476600efa73d9f3a2cfc3dc0a8eb689b6dfdc53feca6d4bbe3ee",
+      "bytes": 5059
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/nl_BE.po",
+      "sha256": "ba5813a189287bfb44d2445428ad4f57f9af7366bdffff5afa0b48e8807fa6c4",
+      "bytes": 4504
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/pl.po",
+      "sha256": "c9e441e26e0c401c88d39ffeefe3058af5374c5076531966432ce4c958ae19c7",
+      "bytes": 5301
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/pt.po",
+      "sha256": "fb943f43f3b1fe54547600443979c3a2ca9e2b5174e448838d8b6d73212d0f66",
+      "bytes": 5210
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/pt_BR.po",
+      "sha256": "9614d47682a6cb62461b4f591cba9b0f520cb0027bb15f14a72c5f7c53cf7333",
+      "bytes": 5065
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ro.po",
+      "sha256": "e713ff2c738d3ac5dd8340c97c4c22cef445bab9df48f633c008565a23f6d4e6",
+      "bytes": 5021
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ru.po",
+      "sha256": "6d90abd0c22427306fe490994c5aa932bdb1de2dc74e308424643502c3f47e51",
+      "bytes": 5712
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/sk.po",
+      "sha256": "84befb15385fbad663ba6a0c51f77d75d4fce6207ad4b408ec6278e6dd874276",
+      "bytes": 5141
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/sl.po",
+      "sha256": "b2fb224e0d4aab15d6194cf231c6f0e0bef46694364b85c27a4cb4443c9e5a0e",
+      "bytes": 5095
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/sq.po",
+      "sha256": "d8441c2719029327b79250e697f2d21f1053c57c953e2710d24a15fcb63f9b74",
+      "bytes": 4495
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/sr.po",
+      "sha256": "09680d08a603a0009286d7fea850b9f1ece3e889fdae335541c3f2e637318388",
+      "bytes": 4684
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/sr@latin.po",
+      "sha256": "5b117c35071f29ad698c7b34cd37d80cc4a47440374197940d191145a146b01d",
+      "bytes": 5077
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/sv.po",
+      "sha256": "1c3a3d6c1b4e47c080ef02944b7ad8eb6d35b14f76d4498c83c913c8d08975c5",
+      "bytes": 5078
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/ta.po",
+      "sha256": "1a89d40755dddff7a9c39dea599fc6ebfafbed57d5233cece1ed7ba2f5f34e09",
+      "bytes": 4650
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/th.po",
+      "sha256": "5bbfa9dc06bcf947d76bbee1d27d16bcbfa40cfa7f8b591c751cac17ca386b6e",
+      "bytes": 5642
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/tr.po",
+      "sha256": "f1b3256ba1a9ec4712ce9dfdf7b6e39ca2c4f925eef1e6e07e5cfe579e357381",
+      "bytes": 5103
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/uk.po",
+      "sha256": "345e664e511f1fa75bd2facd1fc82194f35f2b5c35fa59b06fdcce076237b68a",
+      "bytes": 5656
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/vi.po",
+      "sha256": "6691c613ab304f961fb3abeccb4b157b0e06ca73de1e51508ed36e4b41c8f70d",
+      "bytes": 5115
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/zh_CN.po",
+      "sha256": "a93fbf1dc719fa723f27014d75925e7f8aa3529804eef5dfd8993430c91d80f7",
+      "bytes": 4964
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/i18n/zh_TW.po",
+      "sha256": "3357ccc7f07def1e59eae18bb29fc3caf79bb90ad7feae6a63947af74a8843a4",
+      "bytes": 4915
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/models/__init__.py",
+      "sha256": "293cc5ffaf76d4fa697989f481f731ddeb568afa0007ab701b62a2c8373adba3",
+      "bytes": 108
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/models/hr_payroll_account.py",
+      "sha256": "3e5a417bbb5977d39a9cca0c145f8070587858c8c7ded2aedb6be1b65ea6aeed",
+      "bytes": 7806
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/static/description/banner.png",
+      "sha256": "a5333c6e530461f4c601261df7fb5ee422e1916d4305f6e05cbedca69550ccdb",
+      "bytes": 434098
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/static/description/icon.png",
+      "sha256": "c0bdc62f3971f9f9f80ba7b154d5eaa864a0b10ab34e8bed20e524ff7e529487",
+      "bytes": 9024
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/static/description/icon.svg",
+      "sha256": "418780d5e17ac58f2d9fc549f188684bf225039172028c9d8bf8cde6f70dc5d9",
+      "bytes": 7587
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/static/description/index.html",
+      "sha256": "77cc99b7f6ddefd2252e91e8d4b1e0a06028d3cd0d557fff68cf341b3b69af1a",
+      "bytes": 1849
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/static/description/odoo_mates.png",
+      "sha256": "088fe1561e4e9db8585c3da580564678b4d0270ab786a147da47817d7d43e1d0",
+      "bytes": 7810
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/views/hr_payroll_account_views.xml",
+      "sha256": "203eef5b301aea6df4a612178ecae48f1e7afbd3a60a58c666eec21a5cb4746e",
+      "bytes": 3983
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/wizard/__init__.py",
+      "sha256": "26fdc5d82ba47e303b1c7c16fb6d5c554ca4734fdcc347e3341a1bd1d4793082",
+      "bytes": 47
+    },
+    {
+      "path": "odoomates_19/om_hr_payroll_account/wizard/hr_payroll_payslips_by_employees.py",
+      "sha256": "80a73d687c0b22102222faed1f6e55bc342a1a684c44cbb6fe06102411d465b4",
+      "bytes": 428
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/README.rst",
+      "sha256": "49a0228000bf3fccea66017837e981475ae076461a163a1bf81cf79041ad95f1",
+      "bytes": 1268
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/__init__.py",
+      "sha256": "7b8e2af2ac6c5fe5410a45accf54839a303fd7298a193b3064a6ee84f35f9a4e",
+      "bytes": 1023
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/__manifest__.py",
+      "sha256": "64ff144461fdcadbc89b7108e4c87b0fbfa482aac5c3ac262f63737846d443e5",
+      "bytes": 1891
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/doc/RELEASE_NOTES.md",
+      "sha256": "98bb2bdf699f08d8c95438cf90b6c900a081b6cb7fa8839abfa680df5b51caca",
+      "bytes": 245
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/af.po",
+      "sha256": "9ef09b6d2f29d59f5b1914d5259e618b1672b1e49c69f4b6a4c94d5608c205f8",
+      "bytes": 4814
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/am.po",
+      "sha256": "b94d60866a49ab0926c7fd4acf4deea663dc316d31e84f26bb47dd5a0f769f99",
+      "bytes": 4811
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ar.po",
+      "sha256": "b56c023b8ffb18fd4069836c2a2404c19dbc6e0fd1cdaa9d6295ff2ba7ca13fd",
+      "bytes": 5845
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ar_001.po",
+      "sha256": "dcd15b01700b6142976256e697fbb14eb449e4fc7d7800721d326873b3a23298",
+      "bytes": 7571
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/az.po",
+      "sha256": "85f29a543571d88a72fa469c5716c5ee322deba09b91b0f102a228a7ef618e7f",
+      "bytes": 4831
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/bg.po",
+      "sha256": "eae15eb495181758e1c58eb7d0f5ab921b1a1a14874c2db278214ed5cabc6d8c",
+      "bytes": 4957
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/bn.po",
+      "sha256": "e4c1d750daa3afe27ac365bbb569efa545b1ecc690c03ffbbadfba64a0087763",
+      "bytes": 4827
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/bs.po",
+      "sha256": "d3ffd5c1376dad21deeb9fe5c8ea86f7f67fec2d95ea84486f24e5cf77cf2f20",
+      "bytes": 5287
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ca.po",
+      "sha256": "d5206eded234fb7004d240bc667ce62198be845a9e070822fc4d6e1d8b83d65a",
+      "bytes": 5259
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/cs.po",
+      "sha256": "60746dedd4c678e0474569290126e6fa9777a87ff0a97ce5d7c169932606b31f",
+      "bytes": 5171
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/da.po",
+      "sha256": "6029c110f1158cc769df873f32cefdda31df98040290cee27b8c3d683626bbf0",
+      "bytes": 5311
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/de.po",
+      "sha256": "3e8a83508779fc7dfc0ad0c2182bbd632798f2a15abdb6ba8678084f8545ca2d",
+      "bytes": 5349
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/el.po",
+      "sha256": "a94a19d9df3550428b4f1ef7d44194f1cc237350e72e5fac3bd8ef55d7d2af0b",
+      "bytes": 5217
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/en_GB.po",
+      "sha256": "6822e1f47aba2e55035af617407a79872a9e197e5efccf4b83c52ee48293e26d",
+      "bytes": 4961
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es.po",
+      "sha256": "3b3a97c1851aad1083447f6b9519b843f4646287ee315f75f14c3830009493d9",
+      "bytes": 5445
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_AR.po",
+      "sha256": "e3c20e44f28204ae750259d827ab4e5e2d515fcaf4d4ab3565623d477e08775d",
+      "bytes": 4957
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_BO.po",
+      "sha256": "f976bdabf55ab24e330aaac26d6fbff6f44f6357e860f16c8321e8469b0a0809",
+      "bytes": 4955
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_CL.po",
+      "sha256": "11ca234028a65143b9f0ee65e7a003f14ab402d6bfd120f40caa94a1e6f32f2a",
+      "bytes": 4953
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_CO.po",
+      "sha256": "cee16c39cc029a8afe3076e89a8511b5c9421e329c4ba2a16b1d251c177df954",
+      "bytes": 4956
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_CR.po",
+      "sha256": "d60f3bebdf73681aa222ee9794f701d5b26f874b7504e6a9421796073baba5b4",
+      "bytes": 4958
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_DO.po",
+      "sha256": "30df01c7b660efc18a22e27274182b7b37d1b34e0b021cee0d47cfa0dfedc442",
+      "bytes": 4966
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_EC.po",
+      "sha256": "6bbc05971da0ceb7dc09e00134f2ea2277f9f0bda71d4a1bf4c82233c1d666de",
+      "bytes": 4955
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_PE.po",
+      "sha256": "aa689cfdfc704bfa508eab4e1e837441414d6041921707219d5830ad2471d1bc",
+      "bytes": 4952
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_PY.po",
+      "sha256": "c518a96530064a4376addeb0cdef29f1fc4de3319e4a99c7ad312dc0b8253c69",
+      "bytes": 4956
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/es_VE.po",
+      "sha256": "a2ef9ad19a919167776b760cce37f65d3a215e611998140aeb086e5ef7626c31",
+      "bytes": 4957
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/et.po",
+      "sha256": "aec483a734e739ed07b52563cb36607041848a84fbda0f0d61b1fda40194616b",
+      "bytes": 5445
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/eu.po",
+      "sha256": "7ee0fd56b5b4445c06962a078bf239c8fd6e529b1a2263aaa2c68d9197032eb6",
+      "bytes": 4937
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/fa.po",
+      "sha256": "68a58529c6e9d31f56888f7065c9c71f5a1da447941ba2dcb5b049167cc106e8",
+      "bytes": 5073
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/fi.po",
+      "sha256": "64362d19b8a3a8d5c5ef4bad4984eb05e2186aa40b2f4d69531f8ddbde8661a3",
+      "bytes": 5655
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/fil.po",
+      "sha256": "5d8ca68b5c4a23384ab5534508c803f5cfe25213f1a367359e961a9e5f0ad9ea",
+      "bytes": 4893
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/fo.po",
+      "sha256": "36caa77d8e95660ace5f0f22e3a888d590f14cac2e31f172dea523426175b2c3",
+      "bytes": 4941
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/fr.po",
+      "sha256": "82c8b18c7ca6584fc2d1065186a4256ef5849040bc587908021827ab7bc6801a",
+      "bytes": 5503
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/fr_CA.po",
+      "sha256": "f73bf8efcb97b6f3124540b57fb3cfe616f4c4e90442ecb873d155616ab55316",
+      "bytes": 4825
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/gl.po",
+      "sha256": "a30ea744f1178f5449a62840a176764c3c7ceaf54fb3e858301e90606511d5da",
+      "bytes": 4939
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/gu.po",
+      "sha256": "fa6ccf20570d3a12a7cf84769522252152a54e2ff4eed45bdc6b5d158001c87b",
+      "bytes": 4978
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/he.po",
+      "sha256": "246906d99cfbc2a3d8506d5df438dc89b0cb32cfd762e1662fe153a4047d3d4f",
+      "bytes": 5228
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/hr.po",
+      "sha256": "f1373e167879162860390f08a475389830bfa87551b1c41efe922ae095e34ad1",
+      "bytes": 5563
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/hu.po",
+      "sha256": "c8fdb6699ec605922fc7a630fa7d702ebfc611f80713aa67143717e3725250de",
+      "bytes": 5586
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/id.po",
+      "sha256": "70c5908ff49a41113b0b5ce8db054140b299db41287cdb6c5014eb936be152b7",
+      "bytes": 5507
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/is.po",
+      "sha256": "9a7d3e3dc3ef54c57ea62fc6658e3ff66d1460f6e8e1a5895ac1d76f8210c93b",
+      "bytes": 5058
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/it.po",
+      "sha256": "b7b3738167878ce390d8a718cea07cb796625d9da4f9aced4e450ef1a6bb6b7f",
+      "bytes": 5420
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ja.po",
+      "sha256": "d3a0cc0a38c2d4d4c03b633447b8ae753aab12211a1cdde980d839f72ce88ca9",
+      "bytes": 5553
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ka.po",
+      "sha256": "930ae15ba52b318e9cd183bd090a677710326526f0f0b9b2fc47f2a28986edc3",
+      "bytes": 4806
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/kab.po",
+      "sha256": "e670e09f48401508cdc7b9ff1867b4f47bd9a6839e1dc1bf61355740a1e4d657",
+      "bytes": 5318
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/km.po",
+      "sha256": "bf24dad7888b6bc2a20db0b1126dcdb8084bb96fc64f06e3a0f1cb694f7bdf7f",
+      "bytes": 4946
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ko.po",
+      "sha256": "8e07b0a5ea506ea5f315041e7749abf9365d8650045d64d14c8b582f86794afb",
+      "bytes": 5503
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/lo.po",
+      "sha256": "589e78744bc2f761439c73d9d7eb07f63d9f4a6e5367a52e4f5dbba15da38a85",
+      "bytes": 4801
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/lt.po",
+      "sha256": "c37fe0d66bb734c250078ae5d2e4732c3d525fdd4c2019dd2613b5c489f3cd97",
+      "bytes": 5800
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/lv.po",
+      "sha256": "20824995e26c1ad92530214c487101bd11cc09fd3bd19571f07b8cc385dfd325",
+      "bytes": 5248
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/mk.po",
+      "sha256": "ba583784906552ae7e111a27d51307ef20a21c9678b381033be6421eaabe0669",
+      "bytes": 4988
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/mn.po",
+      "sha256": "29e26fc287fdd392a7da73e87e453368bb7d319ce303b5db9e99f8a8dce33032",
+      "bytes": 5741
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/nb.po",
+      "sha256": "d337de93b79ef1ba1a25a666ec9484d3669c9cef6e616f7e15fca7d06f137b88",
+      "bytes": 5351
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ne.po",
+      "sha256": "a05063c12896bb43d334ec07f84131b8bc3bc97602450a9c542bd2e35751ea77",
+      "bytes": 4811
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/nl.po",
+      "sha256": "fa535e411c65542a0494cd5a73716215c6b3339a857c32df19831e92df6f6590",
+      "bytes": 5505
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/nl_BE.po",
+      "sha256": "a8d0b0d304853a5096aeaf7989b3c412ae8d7f67fadb568aed60fac7656a4936",
+      "bytes": 4950
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/pl.po",
+      "sha256": "be16a83c5aada59e4545736950321961b08879f916750eb2d486f18cbe6bcc0c",
+      "bytes": 5747
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/pt.po",
+      "sha256": "ca9270c99fd786e3da972fe3a186b0f7134f5bcb8577711def7ca0509e4ce804",
+      "bytes": 5656
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/pt_BR.po",
+      "sha256": "402fbedb371d4c8fede78c1d98ffab60ddb4902c74e069e5260e8d3f26d88b6f",
+      "bytes": 5511
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ro.po",
+      "sha256": "62ae0943d8a1d176785ee5d10d4d4318f4fdd6248889414ce464bd7324810c70",
+      "bytes": 5467
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ru.po",
+      "sha256": "43efa3608e234ff86a97c0779492a4ba52e8c439e640364e56604d189b2531ca",
+      "bytes": 6158
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/sk.po",
+      "sha256": "4816f9deae991ed9225a92321738667219d761464ac5b34f8b206f81b27f0c8a",
+      "bytes": 5587
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/sl.po",
+      "sha256": "abe23ede18ad01473a4e6c2da18afa4ff0512f61342d07894a1439515931fdb9",
+      "bytes": 5541
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/sq.po",
+      "sha256": "9a6d0b2d982882e49f4803bf1dd85bee5ea35fb1cdfa8d3a3c1b7bacee138933",
+      "bytes": 4941
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/sr.po",
+      "sha256": "aaf543672e9f0a4c709bafed069c7a472a97b914205216469d95b58c343afd02",
+      "bytes": 5130
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/sr@latin.po",
+      "sha256": "1899b14f9973bcd180ef03313c23bc9f7ae7c0db4ce2a15d2dae77116706c438",
+      "bytes": 5523
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/sv.po",
+      "sha256": "a33d7cce3ac3b3f6071126eb0f5eb1c7a1dba4b3cffbb373c87cd963cb8261f3",
+      "bytes": 5524
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/ta.po",
+      "sha256": "f7b9f7d92875285bcf3ec57ce8601a0583c21c056c531426205845ba45660b75",
+      "bytes": 5096
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/th.po",
+      "sha256": "98afb052f8becce29d835c3748c20b2f876309900034799f4ea57a9869be4422",
+      "bytes": 6088
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/tr.po",
+      "sha256": "77367bbd1fec4010808a8ad6adb4ebdbd53aca7417f0402fc20d725ca258a803",
+      "bytes": 5549
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/uk.po",
+      "sha256": "49a0e185ce0adb4a54ea9a230b43ed015a3d6cc0308a8a80820ecc6ffe9a56b2",
+      "bytes": 6102
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/vi.po",
+      "sha256": "bc207eb5ca7e5090abf72e5da26ac5a23e977ac32a818515c6dbac5d70797dde",
+      "bytes": 5561
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/zh_CN.po",
+      "sha256": "3c9f29005ec73a58dce1a0409866ca6d88084337c190b45b777ea62a3ddd1070",
+      "bytes": 5410
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/i18n/zh_TW.po",
+      "sha256": "19362299c7ac3307309cca11ea5af5dab4ff70e5630add6c3f7a6bbaf4d6f2d3",
+      "bytes": 5361
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/models/__init__.py",
+      "sha256": "551ed3a4389a5a34e7042f194dccf0de48658c974e810fa0cfb866a0b076cd66",
+      "bytes": 1119
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/models/hr_payslip.py",
+      "sha256": "51040be24d9cf2e77726d7b79bd94fcaa3af22ed4183d81aaa4121025c571897",
+      "bytes": 8916
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/models/hr_payslip_line.py",
+      "sha256": "fb018618012bae84b3fc27df951982ce27a1f4a6c46dd87fb476ae0c3160df2c",
+      "bytes": 1731
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/models/hr_payslip_run.py",
+      "sha256": "8a62199f5719ede83b8203fb07f649d94f336d31c6fddb8151e13de626eeea3f",
+      "bytes": 1794
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/models/hr_salary_rule.py",
+      "sha256": "c632fffc231fddd12816feac4f9eae10d96f0b69be48320d3e08309fc9863254",
+      "bytes": 2192
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/models/hr_version.py",
+      "sha256": "9e8be59f6b71b326b3285a3740a1c452adba21b240148fb37b762a4e71a854f5",
+      "bytes": 1474
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159",
+      "bytes": 1109
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f",
+      "bytes": 111419
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74",
+      "bytes": 495
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a",
+      "bytes": 1039
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77",
+      "bytes": 355892
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a",
+      "bytes": 624
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865",
+      "bytes": 219337
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8",
+      "bytes": 709089
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440",
+      "bytes": 929
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418",
+      "bytes": 3362
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a",
+      "bytes": 17281
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f",
+      "bytes": 492
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc",
+      "bytes": 715
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e",
+      "bytes": 1216
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056",
+      "bytes": 1744
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a",
+      "bytes": 2239
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c",
+      "bytes": 616
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1",
+      "bytes": 803
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7",
+      "bytes": 1269
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd",
+      "bytes": 5845
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86",
+      "bytes": 600
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab",
+      "bytes": 462
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6",
+      "bytes": 2121
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70",
+      "bytes": 926
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab",
+      "bytes": 9192
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e",
+      "bytes": 23876
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc",
+      "bytes": 7183
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98",
+      "bytes": 1233
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2",
+      "bytes": 800
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29",
+      "bytes": 1639
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6",
+      "bytes": 2997
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13",
+      "bytes": 1165
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7",
+      "bytes": 875
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88",
+      "bytes": 1336986
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727",
+      "bytes": 92765
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969",
+      "bytes": 99558
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04",
+      "bytes": 86062
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b",
+      "bytes": 92094
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355",
+      "bytes": 83144
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/Img1.png",
+      "sha256": "4d3bf08c1d67e4bb951b2ef74ac138c11f81a2f04c9ff603bd25aada17fa3044",
+      "bytes": 65108
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/hero.gif",
+      "sha256": "40b14f0ddb8e5c42a0ce506c9a8c1eeb277bcea1f324e0ff5f6199891fec845b",
+      "bytes": 137532
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img2.png",
+      "sha256": "05f6e1cb8002494c3495fb13eb082b720e55067743906a0cf617bed5dac4eaee",
+      "bytes": 59263
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_1.png",
+      "sha256": "defa5e89af9268a09f90d2dd496b9a8c8d34df6231dc205e7b3f6be24d810563",
+      "bytes": 74563
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_3.png",
+      "sha256": "a08ae6618e4b3bf32f8aff3ef7c5354963c584df1dcfede49e6ffbfe2eeaef75",
+      "bytes": 61278
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_4.png",
+      "sha256": "8a89685449179a260220433a894adcb6f325893c4db291c6bc8ec2b220cf94f2",
+      "bytes": 107104
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/assets/screenshots/img_5.png",
+      "sha256": "6e25e5328feddca594bd4684a53580fc60edbe52e5e61957dd7209e81ce748e7",
+      "bytes": 143600
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/banner.jpg",
+      "sha256": "f295bf4188f8f09a877091d005dc124294e31b534999432cb4a32ecb0cdd39bc",
+      "bytes": 233442
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/icon.png",
+      "sha256": "4bb9f01fd5fc1be7409915c7dd141b413526779ed0571de2cc1598c94292d1de",
+      "bytes": 51771
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/static/description/index.html",
+      "sha256": "f446d0fac3b8d3c6b685b4877cafe439469907d6d8ed15dd9f246d654b120940",
+      "bytes": 66615
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/tests/__init__.py",
+      "sha256": "0c8b107e279b3a415faa25f025a51d1671907323aba14debf00e3fbb5f7c5d7f",
+      "bytes": 1019
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/tests/test_hr_payroll_account.py",
+      "sha256": "bc184db947d5b20dbbcb7bdf9e8cc86b519386bc36cd69a3d9bd03d6ea3c9133",
+      "bytes": 6583
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/views/hr_contract_views.xml",
+      "sha256": "45f4d11767e50ea1f697e6e25962b94a53efc6cd3de26aab64b0f065c045d8c0",
+      "bytes": 747
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/views/hr_payslip_run_views.xml",
+      "sha256": "c14d1b13c08af08142d00cd508eb9a3aef8f66d1f68d62c724ccbb6edf649adf",
+      "bytes": 1923
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/views/hr_payslip_views.xml",
+      "sha256": "64981d956846a4c33157f972d0a527be73fd3cce017a74c107891b22d65876f8",
+      "bytes": 799
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/views/hr_salary_rule_views.xml",
+      "sha256": "c6497c135d28f3a9cd5e38d1c622c1e2fae6771dbeeb7a67a69107e13c0f985f",
+      "bytes": 1094
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/wizard/__init__.py",
+      "sha256": "2814bd543993af6a52799795830dff73567109d273bbc5fed0bb28cdff806fff",
+      "bytes": 1016
+    },
+    {
+      "path": "openhrms_19/hr_payroll_account_community/wizard/hr_payslip_employees.py",
+      "sha256": "d1c5b9ae9afa8291712ee27ca7735b4f50007d5c64e34871b81fc920fab1c9fa",
+      "bytes": 1801
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/README.rst",
+      "sha256": "6ab8fd65aa00c95bc9d4fb78296ed87d37d0026d1c5bc1f91e107e1095e0a88f",
+      "bytes": 1201
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/__init__.py",
+      "sha256": "3e07fe5d149dbed2a3b71af9ebe3668512cc385b17f588ff21fde22355a7769b",
+      "bytes": 1044
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/__manifest__.py",
+      "sha256": "88fbc2314c0ae614deb8ee8aaf6220d3bd5e125666ce5b564cfbbf14aea496d7",
+      "bytes": 3203
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/data/hr_payroll_community_data.xml",
+      "sha256": "4403f786fc46d580cbf2263010b5dbf8635f80cce69bd92fdcd734022bfc6048",
+      "bytes": 8282
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/data/hr_payroll_community_demo.xml",
+      "sha256": "c4790f85fb47c939e3e21d6f4624545a9abcd4b7a257ce3aa1c080b6cea7bf60",
+      "bytes": 6749
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/data/ir_module_category_data.xml",
+      "sha256": "93d83f9ddfa849eff7c12eb190d006322825dfc41890a7d896326ce1984098e2",
+      "bytes": 351
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/data/ir_sequence_data.xml",
+      "sha256": "d7b747b2c3c43bc2bcfbadab8e8d923330cdbb3649139b4e8a3ffdf2a871e228",
+      "bytes": 400
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/doc/RELEASE_NOTES.md",
+      "sha256": "3afcf6b82fd059336ecab024e249bc287531ef441949d2eca16e454c427a0bd1",
+      "bytes": 264
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/__init__.py",
+      "sha256": "5917cb5517f58f8181ec721c17255edc424155e7bb14e20550ebdddb8271c790",
+      "bytes": 1489
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_contract_advantage_template.py",
+      "sha256": "90f6bba7e20f4c892c62bcdc1eeab8c43124f2f4221d7ad0c09225b524a76fc8",
+      "bytes": 1971
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_contribution_register.py",
+      "sha256": "525c1a4cd54926c2b0d5fcfd008e7c101ec3dc537dc9aaafe46c34444e99b26f",
+      "bytes": 1996
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_employee.py",
+      "sha256": "ea4b1579309f124712676ce55ea8a356f34f616b64460e3fc18152e2b7a780e8",
+      "bytes": 2004
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_leave_type.py",
+      "sha256": "d0330d376b4a586619a8961f7ef4cf74b56d75b292031697b62e912da04024c2",
+      "bytes": 1198
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_payroll_structure.py",
+      "sha256": "390453177e14b9d67c6da353e8d9a75f4bb6b7782897b3da142a8b5973456c9f",
+      "bytes": 3733
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_payslip.py",
+      "sha256": "00e3ce81ae6323431573d23c7e127428bf562542699affc811e23b0a970084b4",
+      "bytes": 33899
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_payslip_input.py",
+      "sha256": "245d848fa4b81b61263706505cdc0cee2d30273f9268bb463605090302e4425d",
+      "bytes": 3072
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_payslip_line.py",
+      "sha256": "1ac42fcb58d30866e7ed4fe21cd5aa10b19f50a0fdd218e1785cdafb30ab1991",
+      "bytes": 3694
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_payslip_run.py",
+      "sha256": "a14246180a2debefd8a66684084e3c6688c7c45b24292498c1f07defd43060b0",
+      "bytes": 2945
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_payslip_worked_days.py",
+      "sha256": "cc4e4ee252fcead5ac66a79af084b29ca6969eb30a6cf637f6d76b807f9fb4b6",
+      "bytes": 2393
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_rule_input.py",
+      "sha256": "27b75a878faf51d66d80f429a1e75992f9cf7f23343b1f1dfbb2a6566cf2c63a",
+      "bytes": 1602
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_salary_rule.py",
+      "sha256": "475d486a5b7a1a774b3e849586ee18faecfdb225470c25b2be2b2c60f64838f3",
+      "bytes": 12627
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_salary_rule_category.py",
+      "sha256": "adf4f2a715d47ef158647d5556a210517b269601593050428f3ded8e84b52b7c",
+      "bytes": 2564
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/hr_version.py",
+      "sha256": "871008ad3b9d1be837c9eb42952073ea2f5e565ecfc8540c5e4facd6047012d0",
+      "bytes": 3611
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/res_config_settings.py",
+      "sha256": "cf346b3098656f0377ebcc5f69c11da15270bdff8a586b2d6715f55b1e4f73ef",
+      "bytes": 1770
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/models/resource_mixin.py",
+      "sha256": "c7975d49c11646d9a84e3c8b60d6d5fcc8cbcc2f8c3d85e2b4a77e7afd15dbd3",
+      "bytes": 3783
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/__init__.py",
+      "sha256": "35737806bfd33e01a9c5ab6aa33fc8716b8820d16e0c5bbea5a5029852401e3e",
+      "bytes": 1117
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/hr_payroll_report.xml",
+      "sha256": "b35120df4cc846e169b15db3894477449579502359a4fd15f2e4f53c3969666d",
+      "bytes": 1173
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/report_contribution_register_templates.xml",
+      "sha256": "f28d226b74591bc37ec16dd5d4920352e93d2b420c20951809de7e4a914e2ac6",
+      "bytes": 4066
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/report_hr_payroll_community_report_contribution_register.py",
+      "sha256": "50a1d44215cc2cbbc203ecbfb0f743cf7a42144bc6aa7c31e6d2c13215937477",
+      "bytes": 3639
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/report_hr_payroll_community_report_payslip_details.py",
+      "sha256": "46baee8d5ebc68cd9327b1e383ad6cd4b18e63e41d6681fae557b5622c3576fd",
+      "bytes": 5797
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/report_payslip_details_templates.xml",
+      "sha256": "a3bcb55c01fcaca8f9855e9e46f0c142cba28b5fbf90955291ed171110782f1e",
+      "bytes": 6468
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/report/report_payslip_templates.xml",
+      "sha256": "2fa3afc799c465cccd34c323689da47dfd843c876c5068b6c6ad3c17f55282c7",
+      "bytes": 5064
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/security/hr_payroll_community_security.xml",
+      "sha256": "0d20176738917a714af6f812c9d83e67ca843063d6734a5ccc88fef61239a52e",
+      "bytes": 2665
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/security/ir.model.access.csv",
+      "sha256": "25aa983b4fac05081d093ff801436f6934eec0911c13a46a2cc4851cabdc25b5",
+      "bytes": 2701
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159",
+      "bytes": 1109
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f",
+      "bytes": 111419
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74",
+      "bytes": 495
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a",
+      "bytes": 1039
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77",
+      "bytes": 355892
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a",
+      "bytes": 624
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865",
+      "bytes": 219337
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8",
+      "bytes": 709089
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440",
+      "bytes": 929
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418",
+      "bytes": 3362
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a",
+      "bytes": 17281
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f",
+      "bytes": 492
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc",
+      "bytes": 715
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e",
+      "bytes": 1216
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056",
+      "bytes": 1744
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a",
+      "bytes": 2239
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c",
+      "bytes": 616
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1",
+      "bytes": 803
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7",
+      "bytes": 1269
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd",
+      "bytes": 5845
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86",
+      "bytes": 600
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab",
+      "bytes": 462
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6",
+      "bytes": 2121
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70",
+      "bytes": 926
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab",
+      "bytes": 9192
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e",
+      "bytes": 23876
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc",
+      "bytes": 7183
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98",
+      "bytes": 1233
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2",
+      "bytes": 800
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29",
+      "bytes": 1639
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6",
+      "bytes": 2997
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13",
+      "bytes": 1165
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7",
+      "bytes": 875
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88",
+      "bytes": 1336986
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727",
+      "bytes": 92765
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969",
+      "bytes": 99558
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04",
+      "bytes": 86062
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b",
+      "bytes": 92094
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355",
+      "bytes": 83144
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/1.png",
+      "sha256": "bf02ae446b6c4ac5590bcf3d07fa8104f75582ce13b1f123eb909deae58a0b76",
+      "bytes": 183094
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/2.png",
+      "sha256": "07117d8c00bccdd74b03ffa81ea9d75a739a9e01d350233ee7dea5b2882aa408",
+      "bytes": 109128
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/3.png",
+      "sha256": "efb7eedcd06729590c85b45483a87e97c722974bc032aae71f072778f426e6ae",
+      "bytes": 91094
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/4.png",
+      "sha256": "49ece0481a6fe5bbb3675f6410e63fcaa67c5c374be442b5fe63606da1edb2ea",
+      "bytes": 58456
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/5.png",
+      "sha256": "2e697daf16501b9ce9ef719f17048e23f6a677395531bfa2c0889ffb14f6445a",
+      "bytes": 143298
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/6.png",
+      "sha256": "59d5572999aa4612389779ff4d1861b6a527d6c11c0b90a52eab282ae3107215",
+      "bytes": 142989
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/assets/screenshots/hero.gif",
+      "sha256": "80139091f72fbb50a3f3320296fbcea4e235946e882e2e5c8c5cf5b90491535b",
+      "bytes": 170496
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/banner.jpg",
+      "sha256": "b5d5d0f60a6bd902771eee74a48bb7881d5aed03ae770774a96ba8f2085f7bc1",
+      "bytes": 218194
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/icon.png",
+      "sha256": "34ac76c326b52166c90a8dff88179d050b5262de25f26dace36aa8a814326a92",
+      "bytes": 54364
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/description/index.html",
+      "sha256": "ce4a067c20622b0e3d45bb9d28ed70406f52d6a47a333cc03776cb2d3de5ace2",
+      "bytes": 74326
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/static/img/hr_employee_payroll-image.jpg",
+      "sha256": "f3365aec9e431ad39b08772431cfa87c269fc2c18b88c0713418814a3f215bce",
+      "bytes": 9971
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_contract_advantage_template_views.xml",
+      "sha256": "eb1bcae8754fddaa2e46ed060802426700d74bfebabfcd7bc72ef764467cb9a8",
+      "bytes": 2322
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_contribution_register_views.xml",
+      "sha256": "7bfcb96b9311498ebfadcbf93d5773f6b8e98ebf2652b8d424c09e5cf158b092",
+      "bytes": 2967
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_employee_views.xml",
+      "sha256": "c54623d82f8ac61b1fc80081cf9e84856395278b43433aeaf2a6e1136f1b4916",
+      "bytes": 877
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_leave_type_views.xml",
+      "sha256": "62d158341ccd25eb95b3004b42ae3c5ed34acd92e66ca995e697f50891423567",
+      "bytes": 686
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_payroll_structure_views.xml",
+      "sha256": "d079890c6bf66dac0ac67c81fdd2ce4e38081023d510b837b4a4ad71a9b424d8",
+      "bytes": 5355
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_payslip_line_views.xml",
+      "sha256": "de83db18aa0759a7703ca4946d11c5f88df8f2042281339633a2e8f19b3ee5c4",
+      "bytes": 14134
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_payslip_run_views.xml",
+      "sha256": "c7593dd729c5fb47bda58b9a66832d0b41cb2a6f414275421e54620ee34c1031",
+      "bytes": 5764
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_payslip_views.xml",
+      "sha256": "64190bca6a2072d43ea900cc98fea48e91c64df492ece400a1f1ef58df6731c7",
+      "bytes": 4899
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_salary_rule_category_views.xml",
+      "sha256": "e54777f02bcfbd6d7ccc2e389fa841df72336623e7041ced5b59af80ff085825",
+      "bytes": 2482
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_salary_rule_views.xml",
+      "sha256": "4390396d5d47427aae7c2a39accf5cb21fae8033c6eaf9a4c2e0798be187158c",
+      "bytes": 8674
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/hr_version_views.xml",
+      "sha256": "2004727289d972c8d7038fcda4dd097dfbdebb7532cb3cb4a67ca36a1f88bf1e",
+      "bytes": 2902
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/views/res_config_settings_views.xml",
+      "sha256": "3efc889c48cb8bff26c9b559ac5ea24930e5c9c44b6c314527c2a6c15a58f335",
+      "bytes": 4141
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/wizard/__init__.py",
+      "sha256": "f48a7c151b448370046ef3127b6e5823cabbf835b6aeb1284dae0d4025c329b4",
+      "bytes": 1067
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/wizard/hr_payslips_employees.py",
+      "sha256": "a2a89db0e3c3137b8c3d9c5c723bb84ad4f46eeee5b7decc82aa1351874ca63c",
+      "bytes": 3403
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/wizard/hr_payslips_employees_views.xml",
+      "sha256": "88377097f0a451502ed4dddf2c03e138a632022f567b1c1a8882735b95c673d3",
+      "bytes": 1535
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/wizard/payslip_lines_contribution_register.py",
+      "sha256": "9f9ed25cfc9931404a9feec71d83f217f45c63b638c54589ebbd155906b3cd30",
+      "bytes": 2283
+    },
+    {
+      "path": "openhrms_19/hr_payroll_community/wizard/payslip_lines_contribution_register_views.xml",
+      "sha256": "5e20724c878d76e4d59ca2b4b5d4a1b9cfc03c09a2da533a32c1dee46a6e4b1e",
+      "bytes": 1570
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/README.rst",
+      "sha256": "88d70f23965c8443300ecc6b1213f9acda1c37304ac504ceca12b2c120631bf8",
+      "bytes": 1218
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/__init__.py",
+      "sha256": "677ae476d29c2cb7845bdc2816b392041a1ccdc4e9cec4cba8f8ba2344551762",
+      "bytes": 1023
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/__manifest__.py",
+      "sha256": "5cfd82dde71fd4754fce4c9da26150dd35809e2f704edb3c5659f7614c8b1d6a",
+      "bytes": 2358
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/data/hr_rule_input_data.xml",
+      "sha256": "2abc457d1a57a4d865c4678f1799f9a45f0f2dc6a2609457f9f37cbbc49bd663",
+      "bytes": 356
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/data/hr_salary_rule_data.xml",
+      "sha256": "d2a899d6f6946cb06a898fd42f9dc7188afeac58305c49a3c7433093346189c6",
+      "bytes": 634
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/data/ir_sequence_data.xml",
+      "sha256": "9c1f3bfd480c3cf6e5aa4f520b06decd3bf56accbb2f4cf33885c31da3b67b53",
+      "bytes": 566
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/data/mail_template_data.xml",
+      "sha256": "d1553a4daccf1334c6c2d1246ffc30e3344369944578fe588d690ad419d17cad",
+      "bytes": 4422
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/doc/RELEASE_NOTES.md",
+      "sha256": "79a5d6c5d2df7115dc4e996391d6ea0d8c0c58556d6a6d47eb5ab3ec5a09796d",
+      "bytes": 231
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/i18n/ar_001.po",
+      "sha256": "b7dcbc043467e8ba2133fd896d63dcfbeed617e09e71fbd6da99666dd1d794f0",
+      "bytes": 20195
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/__init__.py",
+      "sha256": "08c7a2eb32ce4ff6d7f75e49775291fe4d3fc440481ed957b50554cf519b87f6",
+      "bytes": 1172
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/hr_employee.py",
+      "sha256": "44a138273226910c715c43be0e30dac88fe9b454198b9fb345eac906cddfa286",
+      "bytes": 2074
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/hr_loan.py",
+      "sha256": "4918a51cba4910a26d56197765938e048a491b596ac859535211df214a4d64b4",
+      "bytes": 16291
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/hr_loan_line.py",
+      "sha256": "c4df6d0d5c72b65c7243756be641220e17ed6b1dea9b1be1e4259a34f6612883",
+      "bytes": 5620
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/hr_payslip.py",
+      "sha256": "bad82f6289b3bdbf01dd884ef1ef61de30f20ab2868ba7915fbebbf36acdc84a",
+      "bytes": 2902
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/hr_payslip_input.py",
+      "sha256": "d38060409b00e982f68eb2e62b55f33e3d9cb2f7a314235aa114cd339e345745",
+      "bytes": 1747
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/res_company.py",
+      "sha256": "189adb3fe811d0541464a3297a1a893347e92f9226dcccda2da19eb4ab5563e4",
+      "bytes": 1364
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/models/res_config_settings.py",
+      "sha256": "dd27eb65f8e74c9e083e4d2c2ba673f278b413c7451f93495c77bd71fd349d18",
+      "bytes": 1450
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/security/hr_loan_security.xml",
+      "sha256": "960603f1d42e8756934d1143864627c5b9c8b3782c48b0b421c695143a417914",
+      "bytes": 1738
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/security/ir.model.access.csv",
+      "sha256": "954be83f93e84b0f61b5a91ab0b3af84b3e9fc7369346540c698560d98bdea41",
+      "bytes": 1035
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159",
+      "bytes": 1109
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f",
+      "bytes": 111419
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74",
+      "bytes": 495
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a",
+      "bytes": 1039
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77",
+      "bytes": 355892
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a",
+      "bytes": 624
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865",
+      "bytes": 219337
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8",
+      "bytes": 709089
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440",
+      "bytes": 929
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418",
+      "bytes": 3362
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a",
+      "bytes": 17281
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f",
+      "bytes": 492
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc",
+      "bytes": 715
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e",
+      "bytes": 1216
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056",
+      "bytes": 1744
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a",
+      "bytes": 2239
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c",
+      "bytes": 616
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1",
+      "bytes": 803
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7",
+      "bytes": 1269
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd",
+      "bytes": 5845
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86",
+      "bytes": 600
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab",
+      "bytes": 462
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6",
+      "bytes": 2121
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70",
+      "bytes": 926
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab",
+      "bytes": 9192
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e",
+      "bytes": 23876
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc",
+      "bytes": 7183
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98",
+      "bytes": 1233
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2",
+      "bytes": 800
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29",
+      "bytes": 1639
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6",
+      "bytes": 2997
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13",
+      "bytes": 1165
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7",
+      "bytes": 875
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88",
+      "bytes": 1336986
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727",
+      "bytes": 92765
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969",
+      "bytes": 99558
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04",
+      "bytes": 86062
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b",
+      "bytes": 92094
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355",
+      "bytes": 83144
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/1.png",
+      "sha256": "62b77f9f5351acbfc073cc79a91851f504728172c593c00619de6f565dfbf6cf",
+      "bytes": 96940
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/10.png",
+      "sha256": "8b007ae8422447933bd7a7dbb65b038f42c6e062516dc7161b33b2da3809aeaf",
+      "bytes": 180151
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/11.png",
+      "sha256": "31c0ec4f3c3e30fa44ac14d6addc0e8124107ff340dc2a2d435a8dff34b04e8b",
+      "bytes": 184075
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/12.png",
+      "sha256": "b56b758688a76d989a0ca81f28a533dfa2d0ba6bc12e1f92de50d93de2eeec25",
+      "bytes": 292128
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/13.png",
+      "sha256": "5a20af1ea5038afef83c02d3a9c50718d641ce6e79feb3bcce93f2ef7febbdc1",
+      "bytes": 147671
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/14.png",
+      "sha256": "102fdc3be169dd1d01954c4f49df0d8deb1befdc66f7c7ccfa63aa78a0812565",
+      "bytes": 229346
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/15.png",
+      "sha256": "cde64eb7a69074942b59df2f65e10f6216c31c175765aab18b714b50fead4c2b",
+      "bytes": 157438
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/2.png",
+      "sha256": "8928fdf975de76e0f96ca2bb65aa6dbac58f77d036d0527216c11df006513bbd",
+      "bytes": 580490
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/3.png",
+      "sha256": "fa0df9d81ee13e791baa02c8421d371dbe7a86223be5c8bca3bf4b13a22aa980",
+      "bytes": 130412
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/4.png",
+      "sha256": "491c87de674489bc29f1037e006ba161d6fbafc1b42d7a29b67bc978da95adc5",
+      "bytes": 131960
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/5.png",
+      "sha256": "460b542fd104da25453acc50616322cc48d2f44a7bc8ec74a701093343356a12",
+      "bytes": 143203
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/6.png",
+      "sha256": "cf5d62f68a7f1c86c8b9f943f1f5f60acd89c467a429c405e0af8bfc56461c02",
+      "bytes": 178714
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/7.png",
+      "sha256": "f3f94af7904c6f41fb5e5f7ca43f76c565bcc692f06a16f62c2e8829a3a0725a",
+      "bytes": 186191
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/8.png",
+      "sha256": "175a64edd09c99b2d2e43bbed17b9b3aa9aa6de51457e23dfd542fe0d22a6c7d",
+      "bytes": 214900
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/assets/screenshots/9.png",
+      "sha256": "92ca8ce78494f2f39264c5b58da5db51a265a1f49dc1ff0fbe04782d2c7edac5",
+      "bytes": 184120
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/banner.jpg",
+      "sha256": "2285519f21caddbb68f0ef7e4dd4e43d074d7277193cd8ee844c59b4c7a52e20",
+      "bytes": 222179
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/icon.png",
+      "sha256": "0e1b9b43f4fa0c2f39d213f6f5e5b76673abe5fcaaad954b588c446805111e41",
+      "bytes": 53761
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/static/description/index.html",
+      "sha256": "1eb4d454e2f1f6dfa96a9a79959fa40d80e060ea54eadb4ac34c3706f747ca5e",
+      "bytes": 102114
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/views/hr_employee_views.xml",
+      "sha256": "a7e5e0e25a976f41ef4c1c317190cd23f6494caa49cb9a792088ccfc46a9cfcc",
+      "bytes": 905
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/views/hr_loan_views.xml",
+      "sha256": "02a315dfb494fdc539496b6adcc649ee523835826dcb2a0eb24622007390b77c",
+      "bytes": 9329
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/views/hr_payslip_views.xml",
+      "sha256": "0659ae558b114f300107b232d4d17e60c04296912c28a878c2e08b615f0fbd8a",
+      "bytes": 694
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/views/res_config_settings_views.xml",
+      "sha256": "651e0fc18977c93f75e4ea580662de7a2c72cfcc21f323d4b30d6c513dec7f32",
+      "bytes": 818
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/__init__.py",
+      "sha256": "b99b7976fb80c6596c90f3194d1339250ca635b3fb624e9770a741e09bd2535a",
+      "bytes": 1080
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/hr_loan_deferment.py",
+      "sha256": "e83ab1d71bb38529e5ea22875a730a226efafbcfc735a9d4119e2f5d20c2ca10",
+      "bytes": 3334
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/hr_loan_deferment_views.xml",
+      "sha256": "9b7206788bc3a44a4608d8c36945daa391c017c36509c36bc3e76236fadefcbc",
+      "bytes": 865
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/hr_loan_early_settlement.py",
+      "sha256": "4db6838b84ad47c68bca375655040cf9dce87423a58a43d614e1a3e87c709d67",
+      "bytes": 6369
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/hr_loan_early_settlement_views.xml",
+      "sha256": "0c333a0e7a89246f443c164f4aa8ec83bf87cd1fdf40a62722f88b0df3de7563",
+      "bytes": 1299
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/hr_loan_topup.py",
+      "sha256": "31b40e62d23839e7656e35bde65f6b63d1a1aeb8b5e07a57b1300f9bb7199365",
+      "bytes": 3402
+    },
+    {
+      "path": "openhrms_19/ohrms_loan/wizard/hr_loan_topup_views.xml",
+      "sha256": "5925616a27e38036bc9b27cb800c28d268c3d4c57eb803ff2d6c2c2fc51f272e",
+      "bytes": 1145
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/README.rst",
+      "sha256": "0290f5f02db860d3776a756c91beebef9940b45702771e3bd4c208bef36332a0",
+      "bytes": 1236
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/__init__.py",
+      "sha256": "0b985517ab8d4c9666d87db9395d059f5fd38d7b34a43ec84ba1ea9da5875aee",
+      "bytes": 1002
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/__manifest__.py",
+      "sha256": "67ac7d3ce1bc13c9c6b56cd1a5ca7b911edf1d2bd415fab1c2a7051f66c5770d",
+      "bytes": 1842
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/doc/RELEASE_NOTES.md",
+      "sha256": "bde5267ff7b44f91664dbabb174b0e3a55881205f6377bb811306dd38ccb7f0d",
+      "bytes": 242
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/i18n/ar_001.po",
+      "sha256": "8826b4d45f740a28ded9b9720b3a3f4fdb3800406da21c07bfe9ea9a447bea9c",
+      "bytes": 6387
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/models/__init__.py",
+      "sha256": "16f2bede224ecac852a8c960257d632225049907b3f0d4845cd490dc084c1e7c",
+      "bytes": 1094
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/models/account_move_line.py",
+      "sha256": "ab0c274a46b2e74b633d25db56f427af6d843e87865d371037434f3c78f4f2a7",
+      "bytes": 1262
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/models/hr_loan.py",
+      "sha256": "9f74f5f749d6a2e4bcaf3f71acfd4729b9daabb0a59cb1f10fc2ab64aff7fd1a",
+      "bytes": 14073
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/models/hr_payslip.py",
+      "sha256": "bd739443bd3982fe20d4d350da98ef3e3274bebe8ce6bf4e9e78aaca7004ef64",
+      "bytes": 6562
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/models/res_config_settings.py",
+      "sha256": "fdf975906af1315f562b84cc7d1dc38856460819a6034e9870899ca3baf96d7e",
+      "bytes": 2410
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/security/ir.model.access.csv",
+      "sha256": "48e8cdb5ddec93f297d848c6a5eebaabcc25bde41a0aaf777eba4fffec823218",
+      "bytes": 1459
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/security/ohrms_loan_accounting_security.xml",
+      "sha256": "6a761f2f171f0ebac4ef083cc0e46c096e70d1c7b642081cd37eadccc100f58f",
+      "bytes": 616
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/arrows-repeat.svg",
+      "sha256": "8188312dcacb34796b0784d510ac7c38b01e4aab3cf1377035f92190eb35a159",
+      "bytes": 1109
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-bg.png",
+      "sha256": "43e881a8ef26f764d0cf83f7107955ce36c1f01942eca00ab4bf49644e79387f",
+      "bytes": 111419
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-bg.svg",
+      "sha256": "22d954094d36bba4886cadf80843a57dd5129f2ce5632867edf6c555368a7a74",
+      "bytes": 495
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-call.svg",
+      "sha256": "23fbd46714453573966dd3d7fe587836727fc884e723ba737bcf52db17b54f0a",
+      "bytes": 1039
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-logo-pattern.svg",
+      "sha256": "d70aa5aa526a771eb1e4d36dd6ca7ca8f15afa5adf7e13cb9684182f455c1e77",
+      "bytes": 355892
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-mail.svg",
+      "sha256": "1c7a4aac677544693418278e90d2fc9ec9d4a91f55fb5eb56d7d1d364ec1c81a",
+      "bytes": 624
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/banner-promo.svg",
+      "sha256": "cb234ad4a607cc4c47f0502ddef2b68c1143a8205d641f9f346d5d65203f9865",
+      "bytes": 219337
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/blue-abstract-gradient-wave-wallpaper.jpg",
+      "sha256": "530089b7c7e474829d9a90c7b995f6ad90ebdc63459d5734e2735210286fbac8",
+      "bytes": 709089
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/close-icon.svg",
+      "sha256": "6b0300c587cefa1c398edd4e316c42542e99cd2264d7b47a5968f44d35de3440",
+      "bytes": 929
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/collabarate-icon.svg",
+      "sha256": "260ebf71a3a5b1fe50b5786fb3bd8f74c3e2e634178896992d0b2d61b2453418",
+      "bytes": 3362
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/cybro-logo.png",
+      "sha256": "7c805a1108e68ecffbd97396abe0f0151ca2f47a989fff0d26ac9f1dd75a850a",
+      "bytes": 17281
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/down (1).svg",
+      "sha256": "65bf2c6698e82f5c6c79c80ce1d2f0c2812e16cc524cb621edf86cd1cdf8f78f",
+      "bytes": 492
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/email (2).svg",
+      "sha256": "e8de1e6e33a31aa163d9f5e90c7a1bb0c8dc5595fecdae56fe89bb228703d1dc",
+      "bytes": 715
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/feature-icon.svg",
+      "sha256": "ebdb686f7731902a450a93dc5c4f632001caa33689f9689895a61f917067874e",
+      "bytes": 1216
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/gear.svg",
+      "sha256": "5474f5a25cbb729e3456ac0e25c26f46a9c5d1fb80f218298134772f89a26056",
+      "bytes": 1744
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/hire-odoo.svg",
+      "sha256": "585dc4ad9c48beabf232f79a16e90fe52e8771282fc281ba46aecbc49cad159a",
+      "bytes": 2239
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/key-benefits-pattern.svg",
+      "sha256": "110b4b2314d44be19b99a72bbbbecd07ca918363e52515df6d1f116a8bafb55c",
+      "bytes": 616
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/key-benefits.svg",
+      "sha256": "a3765dde66eb43c1eff18e87b5f79c24d1ed4b3bd74030520aee7a1c6979dba1",
+      "bytes": 803
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/life-ring-icon.svg",
+      "sha256": "21d91e33a265b1cb2ebaa9ed6cc2245fcd299e010d85ecd95a5376b7a0f1c0b7",
+      "bytes": 1269
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/logo-openhrms.png",
+      "sha256": "fe3919c33d1080cb4abb87641dfb701c90406ba042fc0876934b63ac805581cd",
+      "bytes": 5845
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/mail.svg",
+      "sha256": "48e17c104cea3c5dd2e3c5e0bc5b1e071033c2bbae04789c36d832df81379b86",
+      "bytes": 600
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/notification icon.svg",
+      "sha256": "6228cea6c919acf819e0a033087c3ce53db1ee8ed3adfde2567a3be97f7249ab",
+      "bytes": 462
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/odoo-consultancy.svg",
+      "sha256": "9b1ef67035d24a02d06a1b1ae5ca78a397138e42fb6630bf9a03dd8c43512df6",
+      "bytes": 2121
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/odoo-licencing.svg",
+      "sha256": "9543c178355079dd04853fdc3e3441fa5bf3aa30963a2b261f998a479ac29d70",
+      "bytes": 926
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/odoo-logo.png",
+      "sha256": "b61689f156e372c10833d7df85e12df1e499c103dbdeaca5bddf68e41d2395ab",
+      "bytes": 9192
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/patter.svg",
+      "sha256": "2c9516f35aaff0487ba765d2116ede69b31fc4e3e711b822e08ed00bfb60824e",
+      "bytes": 23876
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/pattern1.png",
+      "sha256": "69dc1e49a38ffc1b4665f003725f2d36863a743e5b38f3e733db0205cc4bc4cc",
+      "bytes": 7183
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/puzzle-piece-icon.svg",
+      "sha256": "2da4434982ec890cde695550c8b952c3fec79f87e9a37d1adaa98bb6e3fd3b98",
+      "bytes": 1233
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/replace-icon.svg",
+      "sha256": "e2cabbcc1ee83ebd945aad6793f7ba8938f3641a15de024690a087f839c30cb2",
+      "bytes": 800
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/skype.svg",
+      "sha256": "9c944e9ac0f84dd824eb352766cf1ddd00ea5c169870a3a0a05c1bbac1b3eb29",
+      "bytes": 1639
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/tms.png",
+      "sha256": "da0541a398498b253765e03529d3e966b6bd003219d3c6244224c728663e2fa6",
+      "bytes": 2997
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/translate.svg",
+      "sha256": "3f35a03137699dc466fb715782f6e7098151fb4da806be29a0bad3fc641e1d13",
+      "bytes": 1165
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/icons/wrench-icon.svg",
+      "sha256": "ea6034bc07c1da85544b1ff85285d52e476caef62d846ebd163ecba469aab8f7",
+      "bytes": 875
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/modules/1.gif",
+      "sha256": "990bd122704eace394f47e72e1029a7f0c15c7c44dada31f8c0ba9e2b35a6a88",
+      "bytes": 1336986
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/modules/2.png",
+      "sha256": "88c4581af962207c172d7b9a8de18c81bafbb5cf1dd79444fe78c2b59565e727",
+      "bytes": 92765
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/modules/3.png",
+      "sha256": "082910ded8763c2facc311dd9f26a4e84d02836e6940224b77a2da337fbd2969",
+      "bytes": 99558
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/modules/4.png",
+      "sha256": "7dcc3042ec0cf234e3b53ed7450dc21d160e45d166233e51cb9378156dd8ec04",
+      "bytes": 86062
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/modules/5.png",
+      "sha256": "e8c13076f039657316866dbb507d3ffdef4e41b574c28768415f502c20c35c6b",
+      "bytes": 92094
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/modules/6.png",
+      "sha256": "4925183f2216a5296b117a28a7285e32cd01c5d470825390ea76aac8fe49b355",
+      "bytes": 83144
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/1.png",
+      "sha256": "a594fcce1dfbb12059ea7ea3cbbc0e4f45bd945efd94161c33c29194fc3b6767",
+      "bytes": 168751
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/2.png",
+      "sha256": "62b77f9f5351acbfc073cc79a91851f504728172c593c00619de6f565dfbf6cf",
+      "bytes": 96940
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/222.png",
+      "sha256": "fa58778a41a233f37ec97c91a2a1df05b3347569ba51fe1b652bb62a377c0efc",
+      "bytes": 178053
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/33.png",
+      "sha256": "3837c35f3d4a536f71b7a3f1b28bca442ee377e3b8fb112428eb49113b4b899a",
+      "bytes": 148817
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/4.png",
+      "sha256": "f783166b31d46ca945294ded5a034398c30a988a25f9525c6c0027054b82519b",
+      "bytes": 190154
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/5.png",
+      "sha256": "1735f07268c071d228f873faf3b8edf1848f7a2e64eeef2ba6036e4b7f38d94c",
+      "bytes": 137033
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/assets/screenshots/extra.png",
+      "sha256": "8928fdf975de76e0f96ca2bb65aa6dbac58f77d036d0527216c11df006513bbd",
+      "bytes": 580490
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/banner.jpg",
+      "sha256": "a74b1c14defa94e3a46c1771be6360148a643fb7188d9adca06fd8a648c9f022",
+      "bytes": 227773
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/icon.png",
+      "sha256": "3d0841f06fa018d3f737155bb49bf9df8ef5092a396f50c9a8b2f965f89c0f3b",
+      "bytes": 52986
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/static/description/index.html",
+      "sha256": "c66fa331ef2413366fa378f2212dd331efdba5dced01c86dca43e928c62e8a7d",
+      "bytes": 52967
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/views/hr_loan_views.xml",
+      "sha256": "b08e92b2927fdc1bd2158083093109c6dfaa58ac9b2aa286ff5fb14c657da55f",
+      "bytes": 4139
+    },
+    {
+      "path": "openhrms_19/ohrms_loan_accounting/views/res_config_settings_views.xml",
+      "sha256": "b25fa974eab9fcf68107fa30fc9cccfe64f27154f3b98f779aa5db9edab3a0a7",
+      "bytes": 1255
+    }
+  ]
+}

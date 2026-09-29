@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".local-backups\\main-promotion-20260908\\cutover\\compose.yaml",
+    "bytes": 1421,
+    "sha256": "51dd8c9d248895dd993fed79155ac4a1355e99eb5e1c9130503f63fa65763bf4"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\cutover\\database.dump",
+    "bytes": 9371198,
+    "sha256": "6b0e73f062d9ecdaedf917e3cea06ebd67cd90fd3a6bc28defdb11478a0eaf36"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\cutover\\filestore.tar.gz",
+    "bytes": 6197541,
+    "sha256": "cb8b14d496fc2a876e6825da768cf7941e7c90b7023445b30fc6ea24b59ac645"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\cutover\\odoo.local.conf",
+    "bytes": 173,
+    "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+  }
+]

@@ -1,0 +1,92 @@
+{
+  "original_changes": [
+    {
+      "table": "account_payment_method_line",
+      "id": 4,
+      "columns": [
+        "payment_account_id",
+        "write_date"
+      ]
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 6,
+      "columns": [
+        "payment_account_id",
+        "write_date"
+      ]
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 8,
+      "columns": [
+        "payment_account_id",
+        "write_date"
+      ]
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 10,
+      "columns": [
+        "payment_account_id",
+        "write_uid",
+        "write_date"
+      ]
+    },
+    {
+      "table": "hr_employee",
+      "id": 1,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 1,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 2,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 3,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_partner",
+      "id": 2,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_partner",
+      "id": 3,
+      "columns": [
+        "write_uid",
+        "write_date"
+      ]
+    }
+  ],
+  "added_rows": {
+    "account_account": 11,
+    "account_account_res_company_rel": 11,
+    "account_journal": 5,
+    "account_payment_method_line": 4,
+    "baseer_purchase_category_map": 78,
+    "product_category": 36,
+    "product_product": 78,
+    "product_template": 78,
+    "res_groups_users_rel": 2,
+    "res_partner": 20
+  }
+}

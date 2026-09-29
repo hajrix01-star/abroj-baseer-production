@@ -1,0 +1,164 @@
+{
+  "status": "PASS",
+  "database": "baseer_dev",
+  "checks": [
+    "2:customer:total:row-card-parity",
+    "2:customer:settled:row-card-parity",
+    "2:customer:outstanding:row-card-parity",
+    "2:customer:partial:row-card-parity",
+    "2:supplier:total:row-card-parity",
+    "2:supplier:settled:row-card-parity",
+    "2:supplier:outstanding:row-card-parity",
+    "2:supplier:partial:row-card-parity",
+    "2:2026-09:incoming-outgoing:receipts:row-card-parity",
+    "2:2026-09:incoming-outgoing:payments:row-card-parity",
+    "2:2026-09:incoming-outgoing:net:row-card-parity",
+    "3:customer:total:row-card-parity",
+    "3:customer:settled:row-card-parity",
+    "3:customer:outstanding:row-card-parity",
+    "3:customer:partial:row-card-parity",
+    "3:supplier:total:row-card-parity",
+    "3:supplier:settled:row-card-parity",
+    "3:supplier:outstanding:row-card-parity",
+    "3:supplier:partial:row-card-parity",
+    "3:2026-09:incoming-outgoing:receipts:row-card-parity",
+    "3:2026-09:incoming-outgoing:payments:row-card-parity",
+    "3:2026-09:incoming-outgoing:net:row-card-parity",
+    "1:customer:total:row-card-parity",
+    "1:customer:settled:row-card-parity",
+    "1:customer:outstanding:row-card-parity",
+    "1:customer:partial:row-card-parity",
+    "1:supplier:total:row-card-parity",
+    "1:supplier:settled:row-card-parity",
+    "1:supplier:outstanding:row-card-parity",
+    "1:supplier:partial:row-card-parity",
+    "1:2026-09:incoming-outgoing:receipts:row-card-parity",
+    "1:2026-09:incoming-outgoing:payments:row-card-parity",
+    "1:2026-09:incoming-outgoing:net:row-card-parity"
+  ],
+  "companies": [
+    {
+      "id": 2,
+      "currency": "SAR",
+      "sections": [
+        {
+          "key": "customer",
+          "values": {
+            "total": "0.00",
+            "settled": "0.00",
+            "outstanding": "0.00",
+            "partial": "0",
+            "overdue": "0.00"
+          }
+        },
+        {
+          "key": "supplier",
+          "values": {
+            "total": "0.00",
+            "settled": "0.00",
+            "outstanding": "0.00",
+            "partial": "0",
+            "overdue": "0.00"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "currency": "SAR",
+      "sections": [
+        {
+          "key": "customer",
+          "values": {
+            "total": "0.00",
+            "settled": "0.00",
+            "outstanding": "0.00",
+            "partial": "0",
+            "overdue": "0.00"
+          }
+        },
+        {
+          "key": "supplier",
+          "values": {
+            "total": "0.00",
+            "settled": "0.00",
+            "outstanding": "0.00",
+            "partial": "0",
+            "overdue": "0.00"
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "currency": "SAR",
+      "sections": [
+        {
+          "key": "customer",
+          "values": {
+            "total": "0.00",
+            "settled": "0.00",
+            "outstanding": "0.00",
+            "partial": "0",
+            "overdue": "0.00"
+          }
+        },
+        {
+          "key": "supplier",
+          "values": {
+            "total": "0.00",
+            "settled": "0.00",
+            "outstanding": "0.00",
+            "partial": "0",
+            "overdue": "0.00"
+          }
+        }
+      ]
+    }
+  ],
+  "incoming_outgoing": [
+    {
+      "company": 2,
+      "month": "2026-09",
+      "values": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "net": "0.00"
+      }
+    },
+    {
+      "company": 3,
+      "month": "2026-09",
+      "values": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "net": "0.00"
+      }
+    },
+    {
+      "company": 1,
+      "month": "2026-09",
+      "values": {
+        "receipts": "0.00",
+        "payments": "-1.00",
+        "net": "-1.00"
+      }
+    }
+  ],
+  "database_enforced_read_only": true,
+  "rollback": true,
+  "actor": {
+    "id": 2,
+    "role": false,
+    "native_xmlid": "base.user_admin",
+    "company_ids": [
+      2,
+      3,
+      1
+    ],
+    "superuser": false
+  },
+  "selector_note": "Existing native administrator used because MAIN has no owner preset; no roles assigned.",
+  "runner_sha256": "bf03d908e39e4cdf405f956f1e6c839ca176bc7071e5a370b5a1b427452168a2",
+  "executed_script_sha256": "66af7aa98e4263ce60d98083ba873de44836c00d0307699bad6f04e7d740cd40"
+}

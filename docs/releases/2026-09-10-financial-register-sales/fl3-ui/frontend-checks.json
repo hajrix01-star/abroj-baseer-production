@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "assertions": 7,
+  "scope": "FL3 coverage-warning state and unchanged Cash response compatibility; mocked frontend only.",
+  "checks": [
+    "server warning is displayed without client financial calculations",
+    "loading clears prior coverage warning immediately",
+    "complete response clears warning",
+    "failed refresh cannot retain previous warning",
+    "late stale response cannot restore warning",
+    "cash endpoint remains unchanged",
+    "cash payload without coverage metadata remains valid"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "removed_databases": [
+    "baseer_payroll_eval_20260908",
+    "baseer_promotion_rehearsal_20260908",
+    "baseer_release_rehearsal_20260907"
+  ],
+  "removed_containers": [
+    "baseer_odoo_dev-pb2_review-1",
+    "baseer_odoo_dev-fa2_review-1",
+    "baseer_odoo_dev-promotion_rehearsal-1",
+    "baseer_odoo_dev-reports_rehearsal-1"
+  ],
+  "remaining_odoo_databases": [
+    "baseer_dev",
+    "baseer_reports_qa_20260907"
+  ],
+  "volumes_removed": false,
+  "utc": "2026-09-09T11:48:31.748103+00:00"
+}

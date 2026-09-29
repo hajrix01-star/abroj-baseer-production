@@ -1,0 +1,28 @@
+{
+  "status": "FAIL",
+  "database": "baseer_sim90_fix_20260911",
+  "checks": [
+    {
+      "label": "existing bank receipt exact source",
+      "passed": true
+    },
+    {
+      "label": "retained summary reversal has exact independent ledger proof",
+      "passed": true
+    },
+    {
+      "label": "repeated reversal proof reuses budgeted evidence",
+      "passed": true
+    },
+    {
+      "label": "single native receipt proves original460",
+      "passed": true
+    },
+    {
+      "label": "real duplicate payment posts balanced native ledger",
+      "passed": true
+    }
+  ],
+  "rollback": true,
+  "error": "Traceback (most recent call last):\n  File \"/tmp/sim90/repair/sales_duplicate_guard.py\", line 70, in <module>\n    fragments = handler._baseer_pos_receipt_boundary(line, Decimal('460'), state())\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/repair-addons/baseer_pos_summary/models/cash_report.py\", line 195, in _baseer_pos_receipt_boundary\n    return self._unknown(amount, line, state, _('The POS receipt has ambiguous native payment evidence.'))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/repair-addons/baseer_cash_categories/models/cash_categories.py\", line 157, in _unknown\n    state['diagnostics'].add(reason)\n    ~~~~~^^^^^^^^^^^^^^^\nKeyError: 'diagnostics'\n"
+}

@@ -1,0 +1,4 @@
+{"mode": "cold", "company_id": 54, "end_to_end_seconds": 2.5165, "rpc_seconds": 0.8087}
+{"mode": "cold", "company_id": 2, "end_to_end_seconds": 0.5269, "rpc_seconds": 0.0502}
+{"mode": "cold", "company_id": 3, "end_to_end_seconds": 1.0123, "rpc_seconds": 0.0578}
+{"mode": "cold", "company_id": 1, "end_to_end_seconds": 0.7648, "rpc_seconds": 0.0544}

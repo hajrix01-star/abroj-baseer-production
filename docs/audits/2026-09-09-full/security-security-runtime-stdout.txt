@@ -1,0 +1,3 @@
+{"database": "baseer_audit_security_20260909", "status": "completed", "check_count": 36, "failed_checks": ["vendor_contribution_report_action_resolves", "officer_cannot_read_restricted_child_hr.payslip.line", "officer_cannot_read_restricted_child_hr.payslip.input", "officer_cannot_read_restricted_child_hr.payslip.worked_days"]}
+
+STDERR:

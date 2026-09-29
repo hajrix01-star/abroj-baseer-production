@@ -1,0 +1,315 @@
+{
+  "checks": [
+    {
+      "check": "invalid months rejected: []",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Select between 1 and 12 calendar months."
+    },
+    {
+      "check": "invalid months rejected: ['2026-13']",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Months must use YYYY-MM format."
+    },
+    {
+      "check": "invalid months rejected: ['0000-01']",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Invalid calendar month."
+    },
+    {
+      "check": "invalid months rejected: ['2026-1']",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Months must use YYYY-MM format."
+    },
+    {
+      "check": "invalid months rejected: [202601]",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Months must use YYYY-MM format."
+    },
+    {
+      "check": "invalid months rejected: ['2026-01', '2026-01']",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Select each month only once."
+    },
+    {
+      "check": "invalid months rejected: ['2024-01', '2026-01']",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Selected months must fit within a 24-month span."
+    },
+    {
+      "check": "invalid months rejected: ['2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10', '2025-11', '2025-12', '2026-01']",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Select between 1 and 12 calendar months."
+    },
+    {
+      "check": "inclusive 24-month span accepted",
+      "passed": true
+    },
+    {
+      "check": "leap February ends on 29",
+      "passed": true
+    },
+    {
+      "check": "ordinary February ends on 28",
+      "passed": true
+    },
+    {
+      "check": "restricted authorized-company baseline works",
+      "passed": true
+    },
+    {
+      "check": "single unauthorized company render denied",
+      "passed": true,
+      "exception": "AccessError",
+      "message": "Report baseer_cash_categories was requested for companies you are not allowed to access (6)."
+    },
+    {
+      "check": "single unauthorized company source denied",
+      "passed": true,
+      "exception": "AccessError",
+      "message": "Report baseer_cash_categories was requested for companies you are not allowed to access (6)."
+    },
+    {
+      "check": "authorized report company6 overrides header company9",
+      "passed": true
+    },
+    {
+      "check": "switched-company amount equals its independent posted cash ledger",
+      "passed": true,
+      "actual": "150.0",
+      "expected": "150.0"
+    },
+    {
+      "check": "switched source action uses company6",
+      "passed": true
+    },
+    {
+      "check": "switched source action contains exactly company6 posted cash items",
+      "passed": true
+    },
+    {
+      "check": "report selection does not mutate header environment",
+      "passed": true
+    },
+    {
+      "check": "independent native payment posted 2026-01-15",
+      "passed": true
+    },
+    {
+      "check": "independent native payment posted 2026-01-15",
+      "passed": true
+    },
+    {
+      "check": "partial bill retains half unpaid 01",
+      "passed": true,
+      "actual": "20.0",
+      "expected": "20"
+    },
+    {
+      "check": "independent native payment posted 2026-02-15",
+      "passed": true
+    },
+    {
+      "check": "independent native payment posted 2026-02-15",
+      "passed": true
+    },
+    {
+      "check": "partial bill retains half unpaid 02",
+      "passed": true,
+      "actual": "777.0",
+      "expected": "777"
+    },
+    {
+      "check": "independent native payment posted 2026-03-15",
+      "passed": true
+    },
+    {
+      "check": "independent native payment posted 2026-03-15",
+      "passed": true
+    },
+    {
+      "check": "partial bill retains half unpaid 03",
+      "passed": true,
+      "actual": "180.0",
+      "expected": "180"
+    },
+    {
+      "check": "unsorted input canonical order",
+      "passed": true
+    },
+    {
+      "check": "noncontiguous month receipts 01",
+      "passed": true,
+      "actual": "100.0",
+      "expected": "100"
+    },
+    {
+      "check": "noncontiguous month payments 01",
+      "passed": true,
+      "actual": "-20.0",
+      "expected": "-20"
+    },
+    {
+      "check": "source action stays in fixture company",
+      "passed": true
+    },
+    {
+      "check": "monthly outgoing original bill provenance 01",
+      "passed": true,
+      "actual": [
+        235
+      ],
+      "expected": [
+        235
+      ],
+      "model": "account.move"
+    },
+    {
+      "check": "noncontiguous month receipts 03",
+      "passed": true,
+      "actual": "300.0",
+      "expected": "300"
+    },
+    {
+      "check": "noncontiguous month payments 03",
+      "passed": true,
+      "actual": "-180.0",
+      "expected": "-180"
+    },
+    {
+      "check": "source action stays in fixture company",
+      "passed": true
+    },
+    {
+      "check": "monthly outgoing original bill provenance 03",
+      "passed": true,
+      "actual": [
+        243
+      ],
+      "expected": [
+        243
+      ],
+      "model": "account.move"
+    },
+    {
+      "check": "skipped February 999 excluded from receipts",
+      "passed": true,
+      "actual": "400.0",
+      "expected": "400"
+    },
+    {
+      "check": "skipped February 777 excluded from payments",
+      "passed": true,
+      "actual": "-200.0",
+      "expected": "-200"
+    },
+    {
+      "check": "skipped February excluded from sales denominator",
+      "passed": true,
+      "actual": "400.0",
+      "expected": "400"
+    },
+    {
+      "check": "ratio of sums is50, not average40",
+      "passed": true,
+      "actual": "50.0",
+      "expected": "50"
+    },
+    {
+      "check": "selected movement excludes gap",
+      "passed": true,
+      "actual": "200.0",
+      "expected": "200"
+    },
+    {
+      "check": "opening snapshots never summed across gap",
+      "passed": true
+    },
+    {
+      "check": "closing snapshots never summed across gap",
+      "passed": true
+    },
+    {
+      "check": "source action stays in fixture company",
+      "passed": true
+    },
+    {
+      "check": "total/percentage provenance union excludes February amount",
+      "passed": true
+    },
+    {
+      "check": "source action stays in fixture company",
+      "passed": true
+    },
+    {
+      "check": "total/percentage provenance union excludes February receipt_share",
+      "passed": true
+    },
+    {
+      "check": "forged column rejected 'month_2026_02'",
+      "passed": true,
+      "exception": "UserError",
+      "message": "The requested column is outside the selected months."
+    },
+    {
+      "check": "forged column rejected 'month_2026_13'",
+      "passed": true,
+      "exception": "UserError",
+      "message": "The requested column is outside the selected months."
+    },
+    {
+      "check": "forged column rejected 'month_2026_01__forged'",
+      "passed": true,
+      "exception": "UserError",
+      "message": "The requested column is outside the selected months."
+    },
+    {
+      "check": "forged column rejected '__proto__'",
+      "passed": true,
+      "exception": "UserError",
+      "message": "The requested column is outside the selected months."
+    },
+    {
+      "check": "forged column rejected 1",
+      "passed": true,
+      "exception": "UserError",
+      "message": "Invalid cash report column."
+    },
+    {
+      "check": "aggregate read budget raises, never truncates",
+      "passed": true,
+      "exception": "UserError",
+      "message": "The monthly preview limit is 30,000 read and trace records. Select fewer months."
+    },
+    {
+      "check": "canonical row budget raises, never truncates",
+      "passed": true,
+      "exception": "UserError",
+      "message": "The cash preview supports at most 1,000 report rows. Narrow the selection."
+    },
+    {
+      "check": "temporary capacity limits restored",
+      "passed": true
+    },
+    {
+      "check": "normal rendering resumes after guard probes",
+      "passed": true,
+      "actual": "400.0",
+      "expected": "400"
+    },
+    {
+      "check": "synthetic independent monthly invoices rolled back",
+      "passed": true
+    }
+  ],
+  "scope": "QA only",
+  "ledger_configuration_changes_rolled_back": true,
+  "audit_note": "Vendor durable failure audits may remain in QA."
+}

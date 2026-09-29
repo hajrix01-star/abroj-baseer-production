@@ -1,0 +1,52 @@
+2026-09-09 20:57:21,802 113 WARNING ? odoo.tools.config: option addons_path, invalid addons directory '/mnt/extra-addons', skipped 
+2026-09-09 20:57:21,803 113 INFO ? odoo: Odoo version 19.0-20260817 
+2026-09-09 20:57:21,803 113 INFO ? odoo: Using configuration file at /etc/odoo/odoo.local.conf 
+2026-09-09 20:57:21,803 113 INFO ? odoo: addons paths: _NamespacePath(['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/19.0', '/mnt/baseer-addons', '/mnt/third-party-addons/erp_heritage_19', '/mnt/third-party-addons/odoomates_19', '/mnt/pp1-addons', '/usr/lib/python3/dist-packages/addons']) 
+2026-09-09 20:57:21,804 113 INFO ? odoo: database: odoo@db:default 
+2026-09-09 20:57:22,012 113 INFO ? odoo.service.server: Initiating shutdown 
+2026-09-09 20:57:22,012 113 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-09 20:57:22,033 113 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: loading 1 modules... 
+2026-09-09 20:57:22,035 113 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-09 20:57:22,048 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-09 20:57:22,053 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-09 20:57:22,055 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-09 20:57:22,059 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-09 20:57:22,067 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-09 20:57:22,088 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-09 20:57:22,099 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-09 20:57:22,104 113 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-09 20:57:22,105 113 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: loading 168 modules... 
+2026-09-09 20:57:23,331 113 WARNING baseer_partner_priority_qa_20260909 py.warnings: /usr/lib/python3/dist-packages/odoo/osv/__init__.py:4: DeprecationWarning: Since 19.0, odoo.osv is deprecated use odoo.fields.Domain
+  File "/usr/bin/odoo", line 6, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 133, in main
+    command().run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 162, in run
+    self.shell(dbnames[0])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 137, in shell
+    registry = Registry(dbname)
+  File "/usr/lib/python3/dist-packages/odoo/orm/registry.py", line 108, in __new__
+    return cls.new(db_name)
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 88, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/orm/registry.py", line 189, in new
+    load_modules(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 464, in load_modules
+    load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 178, in load_module_graph
+    load_openerp_module(package.name)
+  File "/usr/lib/python3/dist-packages/odoo/modules/module.py", line 506, in load_openerp_module
+    __import__(qualname)
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/__init__.py", line 1, in <module>
+    from . import models
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/models/__init__.py", line 1, in <module>
+    from . import trial_balance
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/models/trial_balance.py", line 33, in <module>
+    from odoo.osv import expression
+  File "/usr/lib/python3/dist-packages/odoo/osv/__init__.py", line 4, in <module>
+    warnings.warn("Since 19.0, odoo.osv is deprecated use odoo.fields.Domain", DeprecationWarning)
+ 
+2026-09-09 20:57:25,029 113 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: 168 modules loaded in 2.92s, 0 queries (+0 extra) 
+2026-09-09 20:57:25,294 113 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: Modules loaded. 
+2026-09-09 20:57:25,410 113 INFO baseer_partner_priority_qa_20260909 odoo.registry: Registry loaded in 3.398s 
+PP1 CAPACITY {"contacts": 10000, "synthetic_recent_bills": 100000, "readers_measured": 1, "lookup_ms": [54.82, 39.35, 39.32, 48.36, 43.12, 42.51], "warm_median_ms": 42.51, "limit": 8, "favorite_before_limit": true, "rolled_back": true, "limits": "Synthetic query load only; no 20-user or financial posting capacity claim."}

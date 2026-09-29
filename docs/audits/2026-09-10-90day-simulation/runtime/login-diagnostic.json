@@ -1,0 +1,86 @@
+{
+  "database": "baseer_ic1_20260910",
+  "read_only": true,
+  "public_user_xmlid": 3,
+  "users": [
+    {
+      "id": 3,
+      "name": "Public user",
+      "active": false,
+      "share": true,
+      "company_id": 1,
+      "company_ids": [
+        1
+      ],
+      "groups": [
+        {
+          "id": 11,
+          "name": "Role / Public"
+        }
+      ],
+      "public_group": true,
+      "portal_group": false,
+      "internal_group": false,
+      "website_read_test": [
+        {
+          "id": 1,
+          "name": "My Website",
+          "company_id": [
+            1,
+            "بصير — إعدادات النظام بلا معاملات"
+          ]
+        }
+      ]
+    }
+  ],
+  "websites": [
+    {
+      "id": 1,
+      "name": "My Website",
+      "company_id": [
+        1,
+        "بصير — إعدادات النظام بلا معاملات"
+      ],
+      "user_id": [
+        3,
+        "Public user"
+      ],
+      "domain": false
+    }
+  ],
+  "website_acl": [
+    {
+      "name": "website.website.designer",
+      "active": true,
+      "group_id": 61,
+      "group": "Editor and Designer",
+      "perm_read": true,
+      "perm_write": true
+    },
+    {
+      "name": "website.public",
+      "active": true,
+      "group_id": 10,
+      "group": "Role / Portal",
+      "perm_read": true,
+      "perm_write": false
+    },
+    {
+      "name": "website.public",
+      "active": true,
+      "group_id": 11,
+      "group": "Role / Public",
+      "perm_read": true,
+      "perm_write": false
+    },
+    {
+      "name": "website.public",
+      "active": true,
+      "group_id": 1,
+      "group": "Role / User",
+      "perm_read": true,
+      "perm_write": false
+    }
+  ],
+  "public_group_id": 11
+}

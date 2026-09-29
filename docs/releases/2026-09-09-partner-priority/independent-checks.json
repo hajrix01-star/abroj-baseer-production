@@ -1,0 +1,12 @@
+{
+  "passed": 6,
+  "checks": [
+    "Create rejects explicit favorite on other-company private partner",
+    "Create rejects context-default favorite on other-company private partner",
+    "Search More filters private B with both companies allowed",
+    "Favorite obeys native partner write record rule",
+    "Denied write preserves favorite value",
+    "No-bill reader web autocomplete returns favorite metadata"
+  ],
+  "rolled_back": true
+}

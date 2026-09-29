@@ -1,0 +1,88 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "دفعات إدخال المشتريات":
+    - /url: /odoo/action-323
+  - text: /
+  - link "PB/2026/00039":
+    - /url: /odoo/action-323/55
+- generic: baseer.purchase.batch.line,271
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - generic: الفاتورة
+  - generic: تاريخ الفاتورة
+  - generic: 07/09/2026
+  - generic: المورد
+  - link "مورد تجريبي — مواد استهلاكية":
+    - /url: /odoo/res.partner/32
+  - generic: مرجع فاتورة المورد
+  - generic: PB1 UI/001
+  - generic: النوع
+  - generic: مشتريات
+  - generic: الفئة
+  - link "تجربة الإدخال الجماعي / مياه ومشروبات":
+    - /url: /odoo/baseer.purchase.category.map/2
+  - generic: الوصف
+  - generic: المبلغ والدفع
+  - generic: الإجمالي شامل الضريبة
+  - generic: 115.00 SR
+  - generic: الضريبة
+  - link "15%":
+    - /url: /odoo/account.tax/100
+  - generic: الصافي قبل الضريبة
+  - generic: 100.00 SR
+  - generic: قيمة الضريبة
+  - generic: 15.00 SR
+  - generic: طريقة الدفع
+  - link "الدفع اليدوي (كاش تجريبي — الإدخال الجماعي)":
+    - /url: /odoo/account.payment.method.line/34
+  - generic: اترك طريقة الدفع فارغة للشراء الآجل. تُسجّل دفعات الفواتير المسددة بتاريخ الفاتورة نفسه.
+  - generic: المستندات الأصلية
+  - generic: فاتورة المورد
+  - link "BILL/2026/09/0006 (PB1 UI/001)":
+    - /url: /odoo/account.move/412
+  - generic: الدفعة
+  - link "PP1C/2026/00005":
+    - /url: /odoo/account.payment/70
+  - generic: حالة السداد
+  - generic: مدفوع

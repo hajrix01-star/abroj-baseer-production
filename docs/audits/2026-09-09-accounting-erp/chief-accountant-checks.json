@@ -1,0 +1,660 @@
+{
+  "template_account_mismatches": [],
+  "template_tax_mismatches": [],
+  "account_duplicate_codes": [],
+  "missing_account_ownership_or_code": [],
+  "unreconciled_receivable_payable": [],
+  "journal_account_issues": [],
+  "company_default_issues": [],
+  "tax_repartition_issues": [],
+  "ordinary_equity_accounts": [],
+  "tax_default_summary": [
+    {
+      "company": 1,
+      "field": "account_sale_tax_id",
+      "tax": {
+        "id": 5,
+        "company_id": 1,
+        "name": {
+          "en_US": "15%"
+        },
+        "type_tax_use": "sale",
+        "tax_scope": null,
+        "amount_type": "percent",
+        "amount": 15.0,
+        "price_include_override": null,
+        "tax_exigibility": "on_invoice",
+        "active": true,
+        "tax_group_id": 3,
+        "cash_basis_transition_account_id": null,
+        "country_id": 192,
+        "include_base_amount": false,
+        "is_base_affected": true,
+        "ubl_cii_tax_category_code": null,
+        "ubl_cii_tax_exemption_reason_code": null
+      },
+      "repartition": [
+        {
+          "id": 17,
+          "tax_id": 5,
+          "company_id": 1,
+          "document_type": "invoice",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 18,
+          "tax_id": 5,
+          "company_id": 1,
+          "document_type": "invoice",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 120
+        },
+        {
+          "id": 19,
+          "tax_id": 5,
+          "company_id": 1,
+          "document_type": "refund",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 20,
+          "tax_id": 5,
+          "company_id": 1,
+          "document_type": "refund",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 120
+        }
+      ]
+    },
+    {
+      "company": 1,
+      "field": "account_purchase_tax_id",
+      "tax": {
+        "id": 22,
+        "company_id": 1,
+        "name": {
+          "en_US": "15%"
+        },
+        "type_tax_use": "purchase",
+        "tax_scope": null,
+        "amount_type": "percent",
+        "amount": 15.0,
+        "price_include_override": null,
+        "tax_exigibility": "on_invoice",
+        "active": true,
+        "tax_group_id": 3,
+        "cash_basis_transition_account_id": null,
+        "country_id": 192,
+        "include_base_amount": false,
+        "is_base_affected": true,
+        "ubl_cii_tax_category_code": null,
+        "ubl_cii_tax_exemption_reason_code": null
+      },
+      "repartition": [
+        {
+          "id": 85,
+          "tax_id": 22,
+          "company_id": 1,
+          "document_type": "invoice",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 86,
+          "tax_id": 22,
+          "company_id": 1,
+          "document_type": "invoice",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 90
+        },
+        {
+          "id": 87,
+          "tax_id": 22,
+          "company_id": 1,
+          "document_type": "refund",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 88,
+          "tax_id": 22,
+          "company_id": 1,
+          "document_type": "refund",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 90
+        }
+      ]
+    },
+    {
+      "company": 2,
+      "field": "account_sale_tax_id",
+      "tax": {
+        "id": 44,
+        "company_id": 2,
+        "name": {
+          "en_US": "15%"
+        },
+        "type_tax_use": "sale",
+        "tax_scope": null,
+        "amount_type": "percent",
+        "amount": 15.0,
+        "price_include_override": null,
+        "tax_exigibility": "on_invoice",
+        "active": true,
+        "tax_group_id": 8,
+        "cash_basis_transition_account_id": null,
+        "country_id": 192,
+        "include_base_amount": false,
+        "is_base_affected": true,
+        "ubl_cii_tax_category_code": null,
+        "ubl_cii_tax_exemption_reason_code": null
+      },
+      "repartition": [
+        {
+          "id": 191,
+          "tax_id": 44,
+          "company_id": 2,
+          "document_type": "invoice",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 192,
+          "tax_id": 44,
+          "company_id": 2,
+          "document_type": "invoice",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 298
+        },
+        {
+          "id": 193,
+          "tax_id": 44,
+          "company_id": 2,
+          "document_type": "refund",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 194,
+          "tax_id": 44,
+          "company_id": 2,
+          "document_type": "refund",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 298
+        }
+      ]
+    },
+    {
+      "company": 2,
+      "field": "account_purchase_tax_id",
+      "tax": {
+        "id": 61,
+        "company_id": 2,
+        "name": {
+          "en_US": "15%"
+        },
+        "type_tax_use": "purchase",
+        "tax_scope": null,
+        "amount_type": "percent",
+        "amount": 15.0,
+        "price_include_override": null,
+        "tax_exigibility": "on_invoice",
+        "active": true,
+        "tax_group_id": 8,
+        "cash_basis_transition_account_id": null,
+        "country_id": 192,
+        "include_base_amount": false,
+        "is_base_affected": true,
+        "ubl_cii_tax_category_code": null,
+        "ubl_cii_tax_exemption_reason_code": null
+      },
+      "repartition": [
+        {
+          "id": 259,
+          "tax_id": 61,
+          "company_id": 2,
+          "document_type": "invoice",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 260,
+          "tax_id": 61,
+          "company_id": 2,
+          "document_type": "invoice",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 268
+        },
+        {
+          "id": 261,
+          "tax_id": 61,
+          "company_id": 2,
+          "document_type": "refund",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 262,
+          "tax_id": 61,
+          "company_id": 2,
+          "document_type": "refund",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 268
+        }
+      ]
+    },
+    {
+      "company": 3,
+      "field": "account_sale_tax_id",
+      "tax": {
+        "id": 83,
+        "company_id": 3,
+        "name": {
+          "en_US": "15%"
+        },
+        "type_tax_use": "sale",
+        "tax_scope": null,
+        "amount_type": "percent",
+        "amount": 15.0,
+        "price_include_override": null,
+        "tax_exigibility": "on_invoice",
+        "active": true,
+        "tax_group_id": 13,
+        "cash_basis_transition_account_id": null,
+        "country_id": 192,
+        "include_base_amount": false,
+        "is_base_affected": true,
+        "ubl_cii_tax_category_code": null,
+        "ubl_cii_tax_exemption_reason_code": null
+      },
+      "repartition": [
+        {
+          "id": 365,
+          "tax_id": 83,
+          "company_id": 3,
+          "document_type": "invoice",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 366,
+          "tax_id": 83,
+          "company_id": 3,
+          "document_type": "invoice",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 476
+        },
+        {
+          "id": 367,
+          "tax_id": 83,
+          "company_id": 3,
+          "document_type": "refund",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 368,
+          "tax_id": 83,
+          "company_id": 3,
+          "document_type": "refund",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 476
+        }
+      ]
+    },
+    {
+      "company": 3,
+      "field": "account_purchase_tax_id",
+      "tax": {
+        "id": 100,
+        "company_id": 3,
+        "name": {
+          "en_US": "15%"
+        },
+        "type_tax_use": "purchase",
+        "tax_scope": null,
+        "amount_type": "percent",
+        "amount": 15.0,
+        "price_include_override": null,
+        "tax_exigibility": "on_invoice",
+        "active": true,
+        "tax_group_id": 13,
+        "cash_basis_transition_account_id": null,
+        "country_id": 192,
+        "include_base_amount": false,
+        "is_base_affected": true,
+        "ubl_cii_tax_category_code": null,
+        "ubl_cii_tax_exemption_reason_code": null
+      },
+      "repartition": [
+        {
+          "id": 433,
+          "tax_id": 100,
+          "company_id": 3,
+          "document_type": "invoice",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 434,
+          "tax_id": 100,
+          "company_id": 3,
+          "document_type": "invoice",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 446
+        },
+        {
+          "id": 435,
+          "tax_id": 100,
+          "company_id": 3,
+          "document_type": "refund",
+          "repartition_type": "base",
+          "factor_percent": 100.0,
+          "account_id": null
+        },
+        {
+          "id": 436,
+          "tax_id": 100,
+          "company_id": 3,
+          "document_type": "refund",
+          "repartition_type": "tax",
+          "factor_percent": 100.0,
+          "account_id": 446
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "1": {
+      "accounts": 187,
+      "active_accounts": 187,
+      "journals": 15,
+      "taxes": 39,
+      "active_taxes": 17
+    },
+    "2": {
+      "accounts": 187,
+      "active_accounts": 187,
+      "journals": 15,
+      "taxes": 39,
+      "active_taxes": 17
+    },
+    "3": {
+      "accounts": 187,
+      "active_accounts": 187,
+      "journals": 15,
+      "taxes": 39,
+      "active_taxes": 17
+    }
+  },
+  "native_chart_accounts_checked": 507,
+  "native_taxes_checked": 117,
+  "payment_methods_without_explicit_account": [
+    {
+      "id": 3,
+      "name": "Manual Payment",
+      "journal_id": 13,
+      "company_id": 1,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 9,
+      "name": "الدفع اليدوي",
+      "journal_id": 39,
+      "company_id": 1,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 23,
+      "name": "Manual Payment",
+      "journal_id": 49,
+      "company_id": 1,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 24,
+      "name": "Manual Payment",
+      "journal_id": 49,
+      "company_id": 1,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 25,
+      "name": "Manual Payment",
+      "journal_id": 50,
+      "company_id": 1,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 26,
+      "name": "Manual Payment",
+      "journal_id": 50,
+      "company_id": 1,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 5,
+      "name": "Manual Payment",
+      "journal_id": 23,
+      "company_id": 2,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 11,
+      "name": "Manual Payment",
+      "journal_id": 41,
+      "company_id": 2,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 27,
+      "name": "Manual Payment",
+      "journal_id": 51,
+      "company_id": 2,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 28,
+      "name": "Manual Payment",
+      "journal_id": 51,
+      "company_id": 2,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 29,
+      "name": "Manual Payment",
+      "journal_id": 52,
+      "company_id": 2,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 30,
+      "name": "Manual Payment",
+      "journal_id": 52,
+      "company_id": 2,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 7,
+      "name": "Manual Payment",
+      "journal_id": 33,
+      "company_id": 3,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 13,
+      "name": "Manual Payment",
+      "journal_id": 43,
+      "company_id": 3,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 31,
+      "name": "Manual Payment",
+      "journal_id": 54,
+      "company_id": 3,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 32,
+      "name": "Manual Payment",
+      "journal_id": 54,
+      "company_id": 3,
+      "journal_type": "bank",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 33,
+      "name": "Manual Payment",
+      "journal_id": 55,
+      "company_id": 3,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "inbound"
+    },
+    {
+      "id": 34,
+      "name": "Manual Payment",
+      "journal_id": 55,
+      "company_id": 3,
+      "journal_type": "cash",
+      "payment_account_id": null,
+      "code": "manual",
+      "payment_type": "outbound"
+    }
+  ],
+  "direct_payroll_ready_outbound": [
+    {
+      "id": 4,
+      "name": "Manual Payment",
+      "journal_id": 13,
+      "company_id": 1,
+      "journal_type": "bank",
+      "payment_account_id": 221,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 10,
+      "name": "الدفع اليدوي",
+      "journal_id": 39,
+      "company_id": 1,
+      "journal_type": "cash",
+      "payment_account_id": 586,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 6,
+      "name": "Manual Payment",
+      "journal_id": 23,
+      "company_id": 2,
+      "journal_type": "bank",
+      "payment_account_id": 399,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 12,
+      "name": "Manual Payment",
+      "journal_id": 41,
+      "company_id": 2,
+      "journal_type": "cash",
+      "payment_account_id": 591,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 8,
+      "name": "Manual Payment",
+      "journal_id": 33,
+      "company_id": 3,
+      "journal_type": "bank",
+      "payment_account_id": 577,
+      "code": "manual",
+      "payment_type": "outbound"
+    },
+    {
+      "id": 14,
+      "name": "Manual Payment",
+      "journal_id": 43,
+      "company_id": 3,
+      "journal_type": "cash",
+      "payment_account_id": 594,
+      "code": "manual",
+      "payment_type": "outbound"
+    }
+  ]
+}

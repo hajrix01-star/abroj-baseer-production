@@ -1,0 +1,85 @@
+2026-09-09 21:04:11,667 271 WARNING ? odoo.tools.config: option addons_path, invalid addons directory '/mnt/extra-addons', skipped 
+2026-09-09 21:04:11,669 271 INFO ? odoo: Odoo version 19.0-20260817 
+2026-09-09 21:04:11,670 271 INFO ? odoo: Using configuration file at /etc/odoo/odoo.local.conf 
+2026-09-09 21:04:11,670 271 INFO ? odoo: addons paths: _NamespacePath(['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/19.0', '/mnt/baseer-addons', '/mnt/third-party-addons/erp_heritage_19', '/mnt/third-party-addons/odoomates_19', '/mnt/pp1-addons', '/usr/lib/python3/dist-packages/addons']) 
+2026-09-09 21:04:11,670 271 INFO ? odoo: database: odoo@db:default 
+2026-09-09 21:04:11,942 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: loading 1 modules... 
+2026-09-09 21:04:11,945 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-09 21:04:11,961 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: updating modules list 
+2026-09-09 21:04:11,963 271 INFO baseer_partner_priority_qa_20260909 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-09-09 21:04:12,538 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-09 21:04:12,545 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-09 21:04:12,547 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-09 21:04:12,582 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-09 21:04:12,591 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-09 21:04:12,622 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-09 21:04:12,632 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-09 21:04:12,635 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-09 21:04:12,667 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-09 21:04:12,681 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-09 21:04:12,715 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-09 21:04:12,779 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-09 21:04:12,821 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-09 21:04:12,827 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-09 21:04:12,830 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-09 21:04:13,115 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-09 21:04:14,652 271 INFO baseer_partner_priority_qa_20260909 odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Baseer Partner Favorites'] to user __system__ #1 via n/a 
+2026-09-09 21:04:14,652 271 INFO baseer_partner_priority_qa_20260909 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Baseer Partner Favorites'] to user __system__ #1 via n/a 
+2026-09-09 21:04:14,921 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-09 21:04:14,927 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-09 21:04:14,945 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-09 21:04:14,988 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-09 21:04:14,994 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-09 21:04:15,004 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-09 21:04:15,016 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-09 21:04:15,022 271 WARNING baseer_partner_priority_qa_20260909 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-09 21:04:16,424 271 INFO baseer_partner_priority_qa_20260909 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-09-09 21:04:16,451 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: loading 168 modules... 
+2026-09-09 21:04:17,993 271 WARNING baseer_partner_priority_qa_20260909 py.warnings: /usr/lib/python3/dist-packages/odoo/osv/__init__.py:4: DeprecationWarning: Since 19.0, odoo.osv is deprecated use odoo.fields.Domain
+  File "/usr/bin/odoo", line 6, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 133, in main
+    command().run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 127, in run
+    main(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 118, in main
+    rc = server.start(preload=config['db_name'], stop=stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1671, in start
+    rc = server.run(preload, stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 708, in run
+    rc = preload_registries(preload)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1585, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module, install_modules=config['init'], upgrade_modules=config['update'], reinit_modules=config['reinit'])
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 88, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/orm/registry.py", line 189, in new
+    load_modules(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 464, in load_modules
+    load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 178, in load_module_graph
+    load_openerp_module(package.name)
+  File "/usr/lib/python3/dist-packages/odoo/modules/module.py", line 506, in load_openerp_module
+    __import__(qualname)
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/__init__.py", line 1, in <module>
+    from . import models
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/models/__init__.py", line 1, in <module>
+    from . import trial_balance
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/models/trial_balance.py", line 33, in <module>
+    from odoo.osv import expression
+  File "/usr/lib/python3/dist-packages/odoo/osv/__init__.py", line 4, in <module>
+    warnings.warn("Since 19.0, odoo.osv is deprecated use odoo.fields.Domain", DeprecationWarning)
+ 
+2026-09-09 21:04:19,108 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: Loading module baseer_partner_priority (155/168) 
+2026-09-09 21:04:19,420 271 INFO baseer_partner_priority_qa_20260909 odoo.registry: module baseer_partner_priority: creating or updating database tables 
+2026-09-09 21:04:19,519 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: loading baseer_partner_priority/views/partner_views.xml 
+2026-09-09 21:04:19,625 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: loading baseer_partner_priority/views/purchase_batch_views.xml 
+2026-09-09 21:04:19,658 271 INFO baseer_partner_priority_qa_20260909 odoo.addons.base.models.ir_module: module baseer_partner_priority: loading translation file /mnt/pp1-addons/baseer_partner_priority/i18n/ar.po for language ar_001 
+2026-09-09 21:04:19,687 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: Module baseer_partner_priority loaded in 0.58s, 231 queries (+231 other) 
+2026-09-09 21:04:20,140 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: 168 modules loaded in 3.69s, 231 queries (+231 extra) 
+2026-09-09 21:04:20,639 271 INFO baseer_partner_priority_qa_20260909 odoo.registry: verifying fields for every extended model 
+2026-09-09 21:04:21,263 271 INFO baseer_partner_priority_qa_20260909 odoo.modules.loading: Modules loaded. 
+2026-09-09 21:04:21,280 271 INFO baseer_partner_priority_qa_20260909 odoo.registry: Registry changed, signaling through the database 
+2026-09-09 21:04:21,282 271 INFO baseer_partner_priority_qa_20260909 odoo.registry: Registry loaded in 9.364s 
+2026-09-09 21:04:21,282 271 INFO baseer_partner_priority_qa_20260909 odoo.service.server: Initiating shutdown 
+2026-09-09 21:04:21,282 271 INFO baseer_partner_priority_qa_20260909 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-09 21:04:21,283 271 INFO baseer_partner_priority_qa_20260909 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  

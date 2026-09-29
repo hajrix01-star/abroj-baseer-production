@@ -1,0 +1,19 @@
+# FA2 payroll — approved G2 delta
+
+2026-09-09. Owner: audit_payroll_accounting. Root approved this design in task messages after the independent G0–G3 approval in FA2-REMEDIATION.md. No FA1 evidence is edited. Ownership excludes security/security.xml.
+
+PAY-001: active company expense/direct-cost salary account, enforced on configuration and posting. PAY-002: payable residual continues to own outstanding debt; paid allocations come from native posted payments marked paid or matched, pending remains separate. Non-cash settlement is not payment. Payment statements expose state. Mixed write-offs count only the liquidity-funded share of a reconciliation.
+
+PAY-003: fixed30 full contractual month starts at 100% monthly wage and subtracts approved absence/30. Partial contract coverage uses covered calendar days/30 capped at1, then subtracts absence/30 with floor0. Calendar remains paid calendar-day fraction. Historical posted gross/components are not recalculated. PAY-005: approved half/hour leave uses Odoo duration, clipped at month/contract boundaries and capped per date to prevent overlapping absence double deductions.
+
+EOS v2: new requests use Gregorian anniversaries, inclusive last service day by default with visible explicit choice. Completed anniversaries determine entitlement thresholds; remainder is divided by the actual anniversary-year length. Issuing a bill requires reviewer confirmation that contract/regulations use Gregorian dates. This is an explicit supported policy, not certification for every Saudi employment contract. Historical approved V1 source snapshots/amounts stay immutable. An old draft must explicitly switch to v2 before recalculation or approval; no silent V1 issuance. No new Hijri library, automatic legal inference, or retroactive rewrite.
+
+PAY-006 native accounting correction:
+
+1. A manager with accounting rights opens one transient correction action on the payslip. Date/reason, wage or other-deduction delta create one posted linked native entry. Original accrual and payment/loan history remain intact. Display original plus adjustments and revised net/debt. Negative net delta is limited to outstanding unsettled debt; cash already received is not silently returned. A paid slip can receive an additional positive correction and a further native payment.
+2. Reversal of the latest payroll loan recovery posts receivable/payable correction, reopens the relevant installments, records reversal links on immutable recovery history, and adjusts effective net. Newer active recovery must be reversed before an older one. No history deletion.
+3. Reverse a latest direct advance repayment through linked native reversal; reverse the original advance only after all recoveries are reversed. Reversal does not imply a real external transfer; a date/reason reviewed accounting correction is explicit.
+
+Each step holds the existing employee lock and a wizard row lock, uses a Python-only internal token, prevents replay/duplicate source reversal, validates company/account/date/remaining snapshots, and rolls back wholly on failure. No extra financial ledger or parallel payroll bill. Native records own posted amounts. Historical origin changes are limited to additive correction/reversal linkage and derived presentation; no source amount/date/partner rewrite.
+
+Acceptance: independent six months; fixed30 February/31-day absence/partial contract; approved half-day and cross-boundary hours; expense type rejection; pending/noncash/mixed payment evidence; salary correction after partial/full payment; latest recovery reversal and reopen; repeated requests and concurrency; source/net/receivable/cash conservation; native Arabic/English PDFs; preservation fingerprints and independent review. Clone only: baseer_fix_payroll_20260909, after root readiness. Capacity target50 employees/run and2 concurrent managers is measured, not assumed.

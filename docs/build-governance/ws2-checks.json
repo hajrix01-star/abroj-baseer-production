@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "component_checks": {
+    "status": "passed",
+    "checks": [
+      {
+        "name": "24 end-hour choices and all60minutes",
+        "passed": true
+      },
+      {
+        "name": "rawHHMM sent, busy immediately",
+        "passed": true
+      },
+      {
+        "name": "overlap ignored before DOM disable and onchange response",
+        "passed": true
+      },
+      {
+        "name": "unlock after reply",
+        "passed": true
+      },
+      {
+        "name": "24 endpoint sends00minutes",
+        "passed": true
+      },
+      {
+        "name": "endpoint minute only00",
+        "passed": true
+      },
+      {
+        "name": "unlock after rejected onchange",
+        "passed": true
+      },
+      {
+        "name": "start excludes24",
+        "passed": true
+      },
+      {
+        "name": "literal western padded choices",
+        "passed": true
+      },
+      {
+        "name": "Tab stays within hour/minute field",
+        "passed": true
+      },
+      {
+        "name": "last control Tab keeps native nextfield navigation",
+        "passed": true
+      },
+      {
+        "name": "ShiftTab returns from minute to hour",
+        "passed": true
+      }
+    ],
+    "scope": "Actual component source with stubbed Owl/registry and deferred native record.update; complements actual UI tests, not full browser lifecycle simulation."
+  },
+  "unchanged_backend_and_acl": {
+    "custom_addons/baseer_work_schedule/models/schedule.py": true,
+    "custom_addons/baseer_work_schedule/models/time_math.py": true,
+    "custom_addons/baseer_work_schedule/models/__init__.py": true,
+    "custom_addons/baseer_work_schedule/security/ir.model.access.csv": true,
+    "custom_addons/baseer_work_schedule/security/rules.xml": true
+  },
+  "ui_checks": [
+    "Arabic desktop: start24hourchoices/end25hourchoices, all60minutes, western24h, no free-texttimeinput.",
+    "21:00–03:00 serverpreview06:00(+1), sixdays36:00weekly/6.00daily.",
+    "09:07–15:43 serverpreview06:36,39:36weekly/6.60daily; no rounding of minute selection.",
+    "End24 forces00minutes, disabledminute; switching to23 restoresminutechoices.",
+    "Keyboard ArrowUp changeshour and retainsfocus; finalTabfix movesfromhour to minute within samefield.",
+    "English desktoplabels and nativeSave template succeeded; QAcalendar388 shows21:00–03:00(+1),36:00weekly.",
+    "English mobile390x844: importedcalendar388 retains time, cardopenspicker, choosing03:15 andSave&Close produces06:15(+1),37:30weekly; parentcancelled.",
+    "Arabic mobile: employee3Payroll openswizard thenperiodform with translatedhour/minute;21–03 produces06:00(+1). Child andparentcancelled, noemployeeassignment.",
+    "Bothmobilelanguages: document390px/nohorizontaloverflow,selectheight44px; screenshotsinspected. Viewportreset anduserArabicrestored."
+  ],
+  "limits": [
+    "NativeHTMLselect appearance follows device; values remain literalASCII24h.",
+    "No new fullbackendregression/loadsuite: backend/ACL filesexactlyacceptedWS1 with107+21 priorchecks; narrowrealUI/serverpreview/saveverified.",
+    "Deferredcomponenttest stubsOwl/registry and record.update, not wholeOdoobrowser; actualkeyboard/selection testedseparately."
+  ],
+  "qa_mutation": "Only temporarytemplate388 WS2 UI time picker; no employee assigned; removed with nativeORM after tests."
+}

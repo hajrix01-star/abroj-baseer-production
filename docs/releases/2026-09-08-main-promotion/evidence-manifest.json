@@ -1,0 +1,169 @@
+{
+  "files": [
+    {
+      "path": "completed-backup.json",
+      "sha256": "a9ffeaa43cbbc570c0ce0b9fddbeaadbde341062970fc7191fe62cf9cb0ff8d4",
+      "bytes": 792
+    },
+    {
+      "path": "cutover-backup.json",
+      "sha256": "6a0f26d9a13a0f2faeed24baa74c56e20fe7f7b7d5c3679170af8d38e4b2f7e7",
+      "bytes": 784
+    },
+    {
+      "path": "cutover-source-check.json",
+      "sha256": "12fb1d8c85724dcf9b3ee01cab75dce06bb47b46367ed5562a733ec8fab1e460",
+      "bytes": 142
+    },
+    {
+      "path": "HANDOFF.md",
+      "sha256": "99ae5e9fdeeffba25827e465da92873bcfca6c63308a0d4ac90568b45e2b5b75",
+      "bytes": 6723
+    },
+    {
+      "path": "main-after-install.json",
+      "sha256": "2a7fafd3d7a0afaff17b02114ee52a4839dc74c04129c6923e9bf271ec1f8839",
+      "bytes": 30570
+    },
+    {
+      "path": "main-before.json",
+      "sha256": "eb9a710e390a488003e7e164a1c2943aa7c2fc8d35080a046ec1971d848e1d9b",
+      "bytes": 29849
+    },
+    {
+      "path": "main-cash-pdf.png",
+      "sha256": "13e5377a575876fa18dbc7e2594eefee64bb5493ff39e9ce92547c50d76d299f",
+      "bytes": 32282
+    },
+    {
+      "path": "main-cutover-before.json",
+      "sha256": "eb9a710e390a488003e7e164a1c2943aa7c2fc8d35080a046ec1971d848e1d9b",
+      "bytes": 29849
+    },
+    {
+      "path": "main-final.json",
+      "sha256": "2a7fafd3d7a0afaff17b02114ee52a4839dc74c04129c6923e9bf271ec1f8839",
+      "bytes": 30570
+    },
+    {
+      "path": "main-mobile.png",
+      "sha256": "f147a8f814e5ff58ab764324070a3b4907f8b1dfc55244a8eb28b712c2b7a868",
+      "bytes": 26047
+    },
+    {
+      "path": "main-purchase.png",
+      "sha256": "e38229424b80ae62b956dbf181f18f6f7436b7ed22b9f1e4e5e25c966f977494",
+      "bytes": 57272
+    },
+    {
+      "path": "main-report.png",
+      "sha256": "23d0612797839a7af1108b26af36677770caf0601133a9f310318e7bfd9ecf9d",
+      "bytes": 52301
+    },
+    {
+      "path": "main-summary.png",
+      "sha256": "d6697df7645b14e400cc1755f4aece59bc1e1d655cadf8289e59a210a5234f20",
+      "bytes": 47447
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "460bb6e44d3132ce8012bd4fd0f8612a4f3c828088cd37257a1ad513a98f17d8",
+      "bytes": 115356
+    },
+    {
+      "path": "post-install-gate.json",
+      "sha256": "75fa9b4265a3fcfb86c8857b529ea8e32b33885db8a8c13ded35ff8bf1a1b798",
+      "bytes": 136
+    },
+    {
+      "path": "promotion_main_baseer_cash_categories.pdf",
+      "sha256": "e8aca866bb998c54250326571c025cb2c1b95c66b13041fd0e1368f3e592f7e2",
+      "bytes": 20681
+    },
+    {
+      "path": "promotion_main_baseer_cash_categories.xlsx",
+      "sha256": "b313bdfca98eebdaaa1d30481ba0e228262115965bd9191ee2e4e201ace0d83c",
+      "bytes": 6628
+    },
+    {
+      "path": "promotion_main_cash_flow.pdf",
+      "sha256": "cda637133b9fba8df04f19246645e24052b752cc661597656be0c6de3e9eb6ac",
+      "bytes": 21443
+    },
+    {
+      "path": "promotion_main_cash_flow.xlsx",
+      "sha256": "a2a48ce541592d15d976ce08d3912a21b891949e9832c04e609446105d322060",
+      "bytes": 5772
+    },
+    {
+      "path": "promotion_main_checks.json",
+      "sha256": "0e52878b4b125395cd62a9755bdaa43695f842851ec93275d7c2f786375a6ffe",
+      "bytes": 4984
+    },
+    {
+      "path": "promotion_main_profit_and_loss.pdf",
+      "sha256": "91de851295b214f729ac2919a22788cc3ef4770ae3b83e465b85163bf37e9405",
+      "bytes": 20759
+    },
+    {
+      "path": "promotion_main_profit_and_loss.xlsx",
+      "sha256": "4e405d35ac36e3df5e3acb90b388f26294ee11c05eb07d19fc817350d50beca5",
+      "bytes": 5684
+    },
+    {
+      "path": "rehearsal-after.json",
+      "sha256": "ba95ae67628e609e3002e0eabd8faafc6b3ceea43e2a7de350741e30f7139a17",
+      "bytes": 30570
+    },
+    {
+      "path": "rehearsal-backup.json",
+      "sha256": "9416e8e31d1b644ec05445ce39ce534da5bdac56376c55d46825e826e6882529",
+      "bytes": 792
+    },
+    {
+      "path": "release_main_baseer_cash_categories.pdf",
+      "sha256": "2f8a8d92be563a0be1c500be570f219cec42fe2bff174ff4e2b7569e60f7b449",
+      "bytes": 31135
+    },
+    {
+      "path": "release_main_baseer_cash_categories.xlsx",
+      "sha256": "98847151c6ffcd6ab48861eb91a359e0930fac3212dc3906ca6a0ee86da64e26",
+      "bytes": 6629
+    },
+    {
+      "path": "release_main_cash_flow.pdf",
+      "sha256": "8961fbbd0ed27b4ff19f81852c2319e1a9868651623caec8be9cf2f88bcab20f",
+      "bytes": 21231
+    },
+    {
+      "path": "release_main_cash_flow.xlsx",
+      "sha256": "94e79aacaacbaee5251abfa6f88581032e97888a93959fe82733430065779e3a",
+      "bytes": 5773
+    },
+    {
+      "path": "release_main_checks.json",
+      "sha256": "93e660d5ec05e1a314efa3ec3db7deacfd72d7c2f0cd406fd920b85e9fde1176",
+      "bytes": 4421
+    },
+    {
+      "path": "release_main_profit_and_loss.pdf",
+      "sha256": "20541c82e824c51565d00c717aa1d1c1d53d68def82b83eb713cafb8cd9c3a11",
+      "bytes": 20435
+    },
+    {
+      "path": "release_main_profit_and_loss.xlsx",
+      "sha256": "e02737f7c22928754d1049b57f6d350429d36871280dc3ed0392cf9c4fe79293",
+      "bytes": 5685
+    },
+    {
+      "path": "source-audit.json",
+      "sha256": "5091c9f336b59355b6cff280a8bb64483b262a4be202502b2d3eb028533f3e72",
+      "bytes": 39
+    },
+    {
+      "path": "REVIEW.md",
+      "sha256": "7c04354a0cf75fdcb4f38b6f973f311be9b1cc5abf10ebb61cf1bd2a2bee2e49",
+      "bytes": 10037
+    }
+  ]
+}

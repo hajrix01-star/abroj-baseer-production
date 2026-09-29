@@ -1,0 +1,7 @@
+{
+  "protected_tables": 250,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "No stored business columns or calculations changed; one nonstored display field plus formatter/views/translations",
+  "candidate": "40dee029c01cf51fa01d233185b3b63805754ce3"
+}

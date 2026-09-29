@@ -1,0 +1,42 @@
+{
+  "res_partner": {
+    "same_original_columns": false,
+    "changed_fields": {
+      "2": [
+        "write_date"
+      ],
+      "3": [
+        "write_uid",
+        "write_date"
+      ]
+    },
+    "added_ids": []
+  },
+  "res_groups_users_rel": {
+    "added": [
+      {
+        "gid": 71,
+        "uid": 2
+      },
+      {
+        "gid": 71,
+        "uid": 1
+      }
+    ],
+    "removed": []
+  },
+  "main_exact": true,
+  "persistent_slips": 0,
+  "persistent_batches": 0,
+  "group_added_xmlid": "om_hr_payroll.group_hr_payroll_manager",
+  "partner_identity": [
+    {
+      "user_id": 1,
+      "partner_id": 2
+    },
+    {
+      "user_id": 2,
+      "partner_id": 3
+    }
+  ]
+}

@@ -1,0 +1,243 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "company_id": 6,
+  "config_id": 1,
+  "tag": "SD1-UI-20260909-YEARS-v1",
+  "summary_ids": [
+    3327,
+    3328,
+    3329,
+    3330,
+    3331,
+    3332,
+    3333,
+    3334,
+    3335,
+    3336,
+    3337,
+    3338,
+    3339,
+    3340,
+    3341,
+    3342,
+    3343,
+    3344,
+    3345,
+    3346,
+    3347,
+    3348,
+    3349,
+    3350
+  ],
+  "samples": [
+    {
+      "id": 3327,
+      "date": "2024-01-15",
+      "gross": "920.00",
+      "customers": 41
+    },
+    {
+      "id": 3328,
+      "date": "2024-02-15",
+      "gross": "1840.00",
+      "customers": 42
+    },
+    {
+      "id": 3329,
+      "date": "2024-03-15",
+      "gross": "2760.00",
+      "customers": 43
+    },
+    {
+      "id": 3330,
+      "date": "2024-04-15",
+      "gross": "3680.00",
+      "customers": 44
+    },
+    {
+      "id": 3331,
+      "date": "2024-05-15",
+      "gross": "2300.00",
+      "customers": 45
+    },
+    {
+      "id": 3332,
+      "date": "2024-06-15",
+      "gross": "4140.00",
+      "customers": 46
+    },
+    {
+      "id": 3333,
+      "date": "2024-07-15",
+      "gross": "4600.00",
+      "customers": 47
+    },
+    {
+      "id": 3334,
+      "date": "2024-08-15",
+      "gross": "3220.00",
+      "customers": 48
+    },
+    {
+      "id": 3335,
+      "date": "2024-09-15",
+      "gross": "5520.00",
+      "customers": 49
+    },
+    {
+      "id": 3336,
+      "date": "2024-10-15",
+      "gross": "5060.00",
+      "customers": 50
+    },
+    {
+      "id": 3337,
+      "date": "2024-11-15",
+      "gross": "5980.00",
+      "customers": 51
+    },
+    {
+      "id": 3338,
+      "date": "2024-12-15",
+      "gross": "6900.00",
+      "customers": 52
+    },
+    {
+      "id": 3339,
+      "date": "2025-01-15",
+      "gross": "1150.00",
+      "customers": 21
+    },
+    {
+      "id": 3340,
+      "date": "2025-02-15",
+      "gross": "2300.00",
+      "customers": 22
+    },
+    {
+      "id": 3341,
+      "date": "2025-03-15",
+      "gross": "3450.00",
+      "customers": 23
+    },
+    {
+      "id": 3342,
+      "date": "2025-04-15",
+      "gross": "4600.00",
+      "customers": 24
+    },
+    {
+      "id": 3343,
+      "date": "2025-05-15",
+      "gross": "2875.00",
+      "customers": 25
+    },
+    {
+      "id": 3344,
+      "date": "2025-06-15",
+      "gross": "5175.00",
+      "customers": 26
+    },
+    {
+      "id": 3345,
+      "date": "2025-07-15",
+      "gross": "5750.00",
+      "customers": 27
+    },
+    {
+      "id": 3346,
+      "date": "2025-08-15",
+      "gross": "4025.00",
+      "customers": 28
+    },
+    {
+      "id": 3347,
+      "date": "2025-09-15",
+      "gross": "6900.00",
+      "customers": 29
+    },
+    {
+      "id": 3348,
+      "date": "2025-10-15",
+      "gross": "6325.00",
+      "customers": 30
+    },
+    {
+      "id": 3349,
+      "date": "2025-11-15",
+      "gross": "7475.00",
+      "customers": 31
+    },
+    {
+      "id": 3350,
+      "date": "2025-12-15",
+      "gross": "8625.00",
+      "customers": 32
+    }
+  ],
+  "created": true,
+  "cleaned": true,
+  "scope": "QA-only synthetic approved reporting rows; no native accounting/POS posting",
+  "ui_preset": "last_year",
+  "ui_current_period": "2025-01-01..2025-12-31",
+  "ui_comparison_period": "2024-01-01..2024-12-31",
+  "cards": {
+    "sales": {
+      "value": "58650.00",
+      "display": "58,650.00",
+      "available": true,
+      "comparison": {
+        "direction": "up",
+        "display": "+25.00%",
+        "available": true,
+        "previous_display": "46,920.00"
+      }
+    },
+    "customers": {
+      "value": 318,
+      "display": "318",
+      "available": true,
+      "comparison": {
+        "direction": "down",
+        "display": "-43.01%",
+        "available": true,
+        "previous_display": "558"
+      }
+    },
+    "daily_sales": {
+      "value": "4887.50",
+      "display": "4,887.50",
+      "available": true,
+      "comparison": {
+        "direction": "up",
+        "display": "+25.00%",
+        "available": true,
+        "previous_display": "3,910.00"
+      }
+    },
+    "daily_customers": {
+      "value": "26.50",
+      "display": "26.50",
+      "available": true,
+      "comparison": {
+        "direction": "down",
+        "display": "-43.01%",
+        "available": true,
+        "previous_display": "46.50"
+      }
+    },
+    "average_bill": {
+      "value": "184.43",
+      "display": "184.43",
+      "available": true,
+      "comparison": {
+        "direction": "up",
+        "display": "+119.32%",
+        "available": true,
+        "previous_display": "84.09"
+      }
+    }
+  },
+  "cleanup": "Execute this file in the same QA Odoo shell with SD1_UI_MODE=\"cleanup\"; exact identity-checked IDs only",
+  "cleanup_rows_deleted": 24
+}

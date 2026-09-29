@@ -1,0 +1,846 @@
+{
+  "protected_tables": 167,
+  "changed_protected_tables": [],
+  "native_partner_names_preserved": true,
+  "source": "pre-upgrade QA backup",
+  "fixed_migration": true,
+  "temporary_database_removed": true,
+  "protected_signatures": [
+    {
+      "name": "account_account",
+      "rows": 993,
+      "hash": "cde286404fdabe67a4ae62349b2f634a"
+    },
+    {
+      "name": "account_account_account_merge_wizard_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_account_account_tag",
+      "rows": 26,
+      "hash": "749409f860294e531ffb496024a0fa6e"
+    },
+    {
+      "name": "account_account_res_company_rel",
+      "rows": 993,
+      "hash": "aa5acca69af2b65eee22305ac22c1d9e"
+    },
+    {
+      "name": "account_account_tag",
+      "rows": 61,
+      "hash": "85fbacaa74b3a255b41f218a35325f23"
+    },
+    {
+      "name": "account_account_tag_account_move_line_rel",
+      "rows": 47,
+      "hash": "d6d4573c45b35f291ea55150d6e68ded"
+    },
+    {
+      "name": "account_account_tag_account_tax_repartition_line_rel",
+      "rows": 580,
+      "hash": "91192f819b8a38ff11491d039d03dd23"
+    },
+    {
+      "name": "account_account_tag_product_template_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_account_tax_default_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_accrued_orders_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_analytic_account",
+      "rows": 7,
+      "hash": "e68a0fc157745562607edf045d20b431"
+    },
+    {
+      "name": "account_analytic_applicability",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_analytic_distribution_model",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_analytic_line",
+      "rows": 3,
+      "hash": "7ceaab2b30f748e88d37228a1ddf1817"
+    },
+    {
+      "name": "account_analytic_line_calendar_employee",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_analytic_line_stock_move_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_analytic_plan",
+      "rows": 1,
+      "hash": "e291ca40f11fa4f3323710cd8ac70f1b"
+    },
+    {
+      "name": "account_automatic_entry_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_automatic_entry_wizard_account_move_line_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_autopost_bills_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_bank_statement",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_bank_statement_ir_attachment_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_bank_statement_line",
+      "rows": 7,
+      "hash": "1c38c0ee96ebeee79238db17c174ffbc"
+    },
+    {
+      "name": "account_cash_rounding",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_debit_note",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_financial_year_op",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_fiscal_position",
+      "rows": 12,
+      "hash": "e1e36e50a3a9a17d817264fe4b532872"
+    },
+    {
+      "name": "account_fiscal_position_account",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_fiscal_position_account_tax_rel",
+      "rows": 224,
+      "hash": "282095a4342f0d611121b97babf86474"
+    },
+    {
+      "name": "account_fiscal_position_pos_config_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_fiscal_position_res_config_settings_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_fiscal_position_res_country_state_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_full_reconcile",
+      "rows": 38,
+      "hash": "772dd617f93f8247b0fcf0211a832745"
+    },
+    {
+      "name": "account_group",
+      "rows": 1,
+      "hash": "d70ee583a8e6ace92d9a7c74657adba5"
+    },
+    {
+      "name": "account_incoterms",
+      "rows": 11,
+      "hash": "2ca3f2f3409e29fd3002188deb3aa489"
+    },
+    {
+      "name": "account_invoice_transaction_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_journal",
+      "rows": 80,
+      "hash": "463ecbda558deb525eb7bcd7380c39ba"
+    },
+    {
+      "name": "account_journal_account_journal_group_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_journal_account_reconcile_model_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_journal_group",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_lock_exception",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_merge_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_merge_wizard_line",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move",
+      "rows": 104,
+      "hash": "67d0e7fc0e4ce04361a10488964d5051"
+    },
+    {
+      "name": "account_move__account_payment",
+      "rows": 33,
+      "hash": "c24e553ab60df59c4b3a3dfd0c27720f"
+    },
+    {
+      "name": "account_move_account_move_send_batch_wizard_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_account_resequence_wizard_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_debit_move",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_line",
+      "rows": 246,
+      "hash": "654c558ea32addab79004dd227d13751"
+    },
+    {
+      "name": "account_move_line_account_tax_rel",
+      "rows": 24,
+      "hash": "4a750e44cf47f1433d51e07e4738852d"
+    },
+    {
+      "name": "account_move_purchase_order_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_reversal",
+      "rows": 3,
+      "hash": "4f30fb82c7cead50b142756d9d46c2f4"
+    },
+    {
+      "name": "account_move_reversal_move",
+      "rows": 3,
+      "hash": "c2a01676d6ebad64ede589623723dc66"
+    },
+    {
+      "name": "account_move_reversal_new_move",
+      "rows": 3,
+      "hash": "da1c7c290192fb2c7d4bebde1dced46a"
+    },
+    {
+      "name": "account_move_send_batch_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_send_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_send_wizard_res_partner_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_move_validate_account_move_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_partial_reconcile",
+      "rows": 61,
+      "hash": "98ca395eca15c019af389e4f812864c6"
+    },
+    {
+      "name": "account_payment",
+      "rows": 38,
+      "hash": "329bcfae6632a09cbfd98d97c31ef30d"
+    },
+    {
+      "name": "account_payment_account_bank_statement_line_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_payment_account_payment_register_rel",
+      "rows": 9,
+      "hash": "587c5950ef83afbf99441cdf1107f673"
+    },
+    {
+      "name": "account_payment_baseer_payroll_settlement_line_rel",
+      "rows": 4,
+      "hash": "e28192e62baf9533512086534f21ec28"
+    },
+    {
+      "name": "account_payment_baseer_payroll_settlement_rel",
+      "rows": 4,
+      "hash": "f2f7b2ca0d7dcfd2d53c5534040464b7"
+    },
+    {
+      "name": "account_payment_method",
+      "rows": 2,
+      "hash": "33492993a5692696d3f0445c0ebea68f"
+    },
+    {
+      "name": "account_payment_method_line",
+      "rows": 44,
+      "hash": "d9d968314906e1eb2f74454d06aec707"
+    },
+    {
+      "name": "account_payment_register",
+      "rows": 31,
+      "hash": "e1b5867e1c5ca99c920c7740aee9aa55"
+    },
+    {
+      "name": "account_payment_register_move_line_rel",
+      "rows": 33,
+      "hash": "fb53499ff8c5c2ddc4e6d5a511919a1e"
+    },
+    {
+      "name": "account_payment_register_withholding_line",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_payment_term",
+      "rows": 10,
+      "hash": "0207546a5daf3bcd6171319c93b9402f"
+    },
+    {
+      "name": "account_payment_term_line",
+      "rows": 11,
+      "hash": "595ecb7ebc2368aff3649a568dbb200e"
+    },
+    {
+      "name": "account_payment_withholding_line",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_reconcile_model",
+      "rows": 12,
+      "hash": "94353aa61cc6840c6782b4869906a1a6"
+    },
+    {
+      "name": "account_reconcile_model_line",
+      "rows": 12,
+      "hash": "e3e1f1ceb0a3850a907aef407fa7a5dd"
+    },
+    {
+      "name": "account_reconcile_model_line_account_tax_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_reconcile_model_res_partner_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_report",
+      "rows": 5,
+      "hash": "d07b99d4632af7c2f85abb26cb77ad7b"
+    },
+    {
+      "name": "account_report_column",
+      "rows": 10,
+      "hash": "3e58fda171dd662f9d970e48c3c1cee2"
+    },
+    {
+      "name": "account_report_expression",
+      "rows": 72,
+      "hash": "6b6378ffdab60aaed2168ce35ba36ad0"
+    },
+    {
+      "name": "account_report_external_value",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_report_line",
+      "rows": 43,
+      "hash": "5772e6c8a4e7309111a761a08ed19edc"
+    },
+    {
+      "name": "account_report_section_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_resequence_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_secure_entries_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_setup_bank_manual_config",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_tax",
+      "rows": 199,
+      "hash": "d58f62be193dd59cd5b74af3d4c7cd4a"
+    },
+    {
+      "name": "account_tax_alternatives",
+      "rows": 7,
+      "hash": "78bdbf7bf3d3d53bf652b9c32c1410a7"
+    },
+    {
+      "name": "account_tax_filiation_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_tax_group",
+      "rows": 27,
+      "hash": "4ca20f6f43eb824fa32f7d9393d33e0f"
+    },
+    {
+      "name": "account_tax_pos_order_line_rel",
+      "rows": 8,
+      "hash": "9261b95513148ec4ee881550c66939d8"
+    },
+    {
+      "name": "account_tax_purchase_order_line_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "account_tax_repartition_line",
+      "rows": 886,
+      "hash": "947ca9261be3cb917b4182cd15b880df"
+    },
+    {
+      "name": "account_tax_sale_order_line_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "baseer_hr_eos",
+      "rows": 3,
+      "hash": "ca409aad0cc6c6a5a2de163209973d29"
+    },
+    {
+      "name": "baseer_hr_loan",
+      "rows": 2,
+      "hash": "cb955bb90cf871db40963004f0d88f7b"
+    },
+    {
+      "name": "baseer_hr_loan_allocation",
+      "rows": 7,
+      "hash": "73dec96ff0684d163111dcd721454076"
+    },
+    {
+      "name": "baseer_hr_loan_defer",
+      "rows": 1,
+      "hash": "b6025d4027bbbd3ca3da743a648d1f8d"
+    },
+    {
+      "name": "baseer_hr_loan_line",
+      "rows": 7,
+      "hash": "a639fc0b8c25021a5b211ca774ae83d6"
+    },
+    {
+      "name": "baseer_hr_loan_repay",
+      "rows": 1,
+      "hash": "0a90a636d80c6f7ba6925ecd90af8841"
+    },
+    {
+      "name": "baseer_hr_service",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "baseer_payroll_correction",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "baseer_payroll_create",
+      "rows": 23,
+      "hash": "f75688925c16d932ea463da2eaad35a6"
+    },
+    {
+      "name": "baseer_payroll_settlement",
+      "rows": 6,
+      "hash": "1ed1b61057aa7940bc576b6cc3681e73"
+    },
+    {
+      "name": "baseer_payroll_settlement_line",
+      "rows": 12,
+      "hash": "92e6fd902568d040162147140cad65a4"
+    },
+    {
+      "name": "baseer_pos_closure",
+      "rows": 1,
+      "hash": "902503fa87812aa91a59f0bd38e71689"
+    },
+    {
+      "name": "baseer_pos_closure_baseer_pos_daily_report_line_rel",
+      "rows": 4,
+      "hash": "eadb03473b75e0f7d3a0696a0676eec9"
+    },
+    {
+      "name": "baseer_pos_daily_report",
+      "rows": 4,
+      "hash": "7e66b4bd9a6f0c30e19dcf990607066a"
+    },
+    {
+      "name": "baseer_pos_daily_report_line",
+      "rows": 30,
+      "hash": "aa7b03605ccb36c26627bac14b4c47b2"
+    },
+    {
+      "name": "baseer_pos_daily_report_line_baseer_pos_summary_rel",
+      "rows": 14,
+      "hash": "812676af577ef1842559221a0aca7dfd"
+    },
+    {
+      "name": "baseer_pos_day_entry",
+      "rows": 40,
+      "hash": "91294f9be7be7f5b04b547cd36305aaf"
+    },
+    {
+      "name": "baseer_pos_day_entry_baseer_pos_summary_rel",
+      "rows": 15,
+      "hash": "5c2ace2aef2d211038f887989625bffb"
+    },
+    {
+      "name": "baseer_pos_day_entry_line",
+      "rows": 344,
+      "hash": "0a148b19ec0b6b452ca36dc7a26a2546"
+    },
+    {
+      "name": "baseer_pos_payment_category",
+      "rows": 3,
+      "hash": "877ae0f43bea5f2f0a13b8815806575d"
+    },
+    {
+      "name": "baseer_pos_summary",
+      "rows": 8,
+      "hash": "a1d930140d266b5716aa6cd574b90c5e"
+    },
+    {
+      "name": "baseer_pos_summary_allocation",
+      "rows": 38,
+      "hash": "ed6f09565b50c0303a77482112d8b6ef"
+    },
+    {
+      "name": "baseer_pos_summary_correction",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "baseer_pos_summary_ir_attachment_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "baseer_pos_summary_reversal_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "baseer_purchase_batch",
+      "rows": 11,
+      "hash": "672d344c97a8dbf37cae8b257282225e"
+    },
+    {
+      "name": "baseer_purchase_batch_line",
+      "rows": 9,
+      "hash": "11554dddfb637894de5ca88ca8eca0ed"
+    },
+    {
+      "name": "baseer_purchase_category_map",
+      "rows": 132,
+      "hash": "57438f8cc2e8baa419d2569a3545deed"
+    },
+    {
+      "name": "hr_payslip",
+      "rows": 12,
+      "hash": "28810b9e05076f92ccf62bb46c678692"
+    },
+    {
+      "name": "hr_payslip_employees",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "hr_payslip_input",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "hr_payslip_line",
+      "rows": 55,
+      "hash": "6275327b62f3560736903a873d4b9909"
+    },
+    {
+      "name": "hr_payslip_run",
+      "rows": 14,
+      "hash": "8adf21aef62a1b0ffb18cde601275197"
+    },
+    {
+      "name": "hr_payslip_worked_days",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_bill",
+      "rows": 13,
+      "hash": "0c2ec514e01ad68c352d88ef1ac02344"
+    },
+    {
+      "name": "pos_bill_pos_config_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_category",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_category_pos_config_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_category_product_template_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_category_res_config_settings_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_close_session_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_config",
+      "rows": 3,
+      "hash": "9e286927c2143ae6827c34f9a89ad4e9"
+    },
+    {
+      "name": "pos_config_pos_note_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_config_pos_payment_method_rel",
+      "rows": 15,
+      "hash": "884fecb66225e3f9f0bdb9c94cff4b7d"
+    },
+    {
+      "name": "pos_config_pos_preset_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_config_pos_self_order_custom_link_rel",
+      "rows": 3,
+      "hash": "3c3783ebf9b71ee932a34f36643835cb"
+    },
+    {
+      "name": "pos_config_printer_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_config_product_pricelist_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_config_res_lang_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_config_restaurant_floor_rel",
+      "rows": 1,
+      "hash": "338584d23059ad2a372b425a57a9f10c"
+    },
+    {
+      "name": "pos_config_trust_relation",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_confirmation_wizard",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_daily_sales_reports_wizard",
+      "rows": 1,
+      "hash": "75388bf827fc90d91c598300d012323e"
+    },
+    {
+      "name": "pos_detail_configs",
+      "rows": 2,
+      "hash": "d9278394db79c2b0ce10f96287794d8f"
+    },
+    {
+      "name": "pos_details_wizard",
+      "rows": 1,
+      "hash": "67f33cea3128051a7cb7539959143463"
+    },
+    {
+      "name": "pos_hr_advanced_employee_hr_employee",
+      "rows": 3,
+      "hash": "e2e716e0cf04b3125d236e1f6bdf9ddf"
+    },
+    {
+      "name": "pos_hr_basic_employee_hr_employee",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_hr_minimal_employee_hr_employee",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_make_invoice",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_make_payment",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_note",
+      "rows": 4,
+      "hash": "a7097dd40b361999f226c295e23123fd"
+    },
+    {
+      "name": "pos_order",
+      "rows": 8,
+      "hash": "bc551dd7700696e0ebf654e89b0c844b"
+    },
+    {
+      "name": "pos_order_line",
+      "rows": 8,
+      "hash": "e4b1cea9d6c842a9a8aaec73606ceb8d"
+    },
+    {
+      "name": "pos_order_line_product_template_attribute_value_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_pack_operation_lot",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_payment",
+      "rows": 12,
+      "hash": "65eb2ee8d9643f3908d97c5719edd70d"
+    },
+    {
+      "name": "pos_payment_method",
+      "rows": 7,
+      "hash": "d6282985ff38ca59818ed2a24934f223"
+    },
+    {
+      "name": "pos_payment_method_config_fast_validation_relation",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_preset",
+      "rows": 3,
+      "hash": "010cdaa06e311a9c3f0fdf6c25deb573"
+    },
+    {
+      "name": "pos_printer",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_product_optional_rel",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_self_order_background_rels",
+      "rows": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "pos_self_order_custom_link",
+      "rows": 3,
+      "hash": "fcdc607c28f2efbf85036912e89864f8"
+    },
+    {
+      "name": "pos_session",
+      "rows": 12,
+      "hash": "00bdfdb7e3627e9ded9e921485f44674"
+    }
+  ],
+  "rehearsal_scope": "database-only upgrade preservation; no filestore restored or UI on temporary DB"
+}

@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": "closure confirm versus summary create 2038-04-21",
+      "requests": [
+        {
+          "ok": true,
+          "value": true,
+          "attempts": 1,
+          "seconds": 0.011828362999949604
+        },
+        {
+          "ok": false,
+          "error": "This sales period is closed. Cancel the closure before entering sales.",
+          "attempts": 2,
+          "seconds": 1.1702344090444967
+        }
+      ]
+    },
+    {
+      "case": "closure confirm versus summary create 2038-04-22",
+      "requests": [
+        {
+          "ok": true,
+          "value": true,
+          "attempts": 1,
+          "seconds": 0.010645720001775771
+        },
+        {
+          "ok": false,
+          "error": "This sales period is closed. Cancel the closure before entering sales.",
+          "attempts": 2,
+          "seconds": 1.5381478229537606
+        }
+      ]
+    },
+    {
+      "case": "two overlapping closure confirmations",
+      "requests": [
+        {
+          "ok": false,
+          "error": "The closure overlaps another confirmed closure.",
+          "attempts": 2,
+          "seconds": 0.3827140540233813
+        },
+        {
+          "ok": true,
+          "value": true,
+          "attempts": 1,
+          "seconds": 0.009996303997468203
+        }
+      ]
+    }
+  ],
+  "cleanup": "All exact fixture summaries/closures removed; no native financial documents created."
+}

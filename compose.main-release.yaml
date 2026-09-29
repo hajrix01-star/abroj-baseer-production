@@ -1,0 +1,6 @@
+services:
+  odoo:
+    volumes:
+      - ./.local-backups/procurement-production-20260912/candidate-v1/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/custom_addons:/mnt/extra-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/third_party_addons:/mnt/third-party-addons:ro

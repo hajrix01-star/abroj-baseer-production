@@ -1,0 +1,17 @@
+{
+  "checks": [
+    "Arabic desktop unifiedfield Apply09:07-15:43 exact preview06:36/39:36; nativeSave template462 succeeded",
+    "Arabic narrow890px six customdaytags wrap without any cell overflow or From/To overlap",
+    "Userrequestedcompactpanel measured240x276 versus272x372, optionskeep44px touchheight",
+    "Cancel after staging returnsfocus and no mutation; Apply returnsfocus after native onchange",
+    "ArrowDown stageshour; Escape explicit handler testedmobile closesonlypicker and preserves15:43 focus",
+    "Arabic390px panel240x276 x133-right373 insideviewport390; documentwidth390 nooverflow;24hour forces only00minute",
+    "Mobile21:00-03:00 childSave&Close gives06:00(+1)/36:00parent preview; parentCancel keepsoriginalcalendar39:36",
+    "New and edit parentactions retain modal; no fullpageconversion",
+    "English390px Choose time dialog, Hour/Minute, Cancel/Apply translated andWesterndigits; nooverflow; cancelledchildandparent"
+  ],
+  "qa_calendar_fixture": 462,
+  "real_employee_assignments": 0,
+  "screenshots": "Inspected native inline captures; no filesystem screenshot artifact claimed",
+  "cleanup": "NativeQA template462 removed with linkedwizard after verifying noemployee/version assignments; UIcancelled; Arabic restored; viewportreset; QAoff"
+}

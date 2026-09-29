@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "employees": 50,
+  "generation_seconds": 1.099,
+  "generation_target_seconds": 15,
+  "generation_target_met": true,
+  "posting_seconds": 6.236,
+  "posted_moves": 50,
+  "expense": "100000.0",
+  "payable": "-100000.0",
+  "rolled_back": true
+}

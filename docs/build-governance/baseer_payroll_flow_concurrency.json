@@ -1,0 +1,154 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "exact_qa_database",
+      "passed": true
+    },
+    {
+      "name": "explicit_preview_run",
+      "passed": true
+    },
+    {
+      "name": "preview_company",
+      "passed": true
+    },
+    {
+      "name": "single_existing_run",
+      "passed": true
+    },
+    {
+      "name": "run_company_and_month",
+      "passed": true
+    },
+    {
+      "name": "approved_partial_preview",
+      "passed": true
+    },
+    {
+      "name": "two_preview_employees",
+      "passed": true
+    },
+    {
+      "name": "ui_initial_payment_500_each",
+      "passed": true
+    },
+    {
+      "name": "positive_remaining_each",
+      "passed": true
+    },
+    {
+      "name": "existing_direct_bank_configuration",
+      "passed": true
+    },
+    {
+      "name": "matching_prepared_snapshots",
+      "passed": true
+    },
+    {
+      "name": "both_return_same_run",
+      "passed": true
+    },
+    {
+      "name": "both_reuse_identical_native_payments",
+      "passed": true
+    },
+    {
+      "name": "exactly_two_new_native_payments",
+      "passed": true
+    },
+    {
+      "name": "one_batch_for_entire_remaining",
+      "passed": true
+    },
+    {
+      "name": "native_payments_posted_and_paid",
+      "passed": true
+    },
+    {
+      "name": "run_and_employees_fully_paid",
+      "passed": true
+    },
+    {
+      "name": "native_history_has_exact_final_payments",
+      "passed": true
+    },
+    {
+      "name": "source_wizard_completed",
+      "passed": true
+    },
+    {
+      "name": "stale_snapshot_rejected",
+      "passed": true
+    },
+    {
+      "name": "stale_wizard_did_not_generate_payments",
+      "passed": true
+    },
+    {
+      "name": "no_extra_payments_after_stale_attempt",
+      "passed": true
+    }
+  ],
+  "purpose": "Complete the October QA payroll exactly once",
+  "database": "baseer_reports_qa_20260907",
+  "run_id": 107,
+  "company_id": 10,
+  "wizard_id": 59,
+  "stale_wizard_id": 60,
+  "slip_ids": [
+    393,
+    394
+  ],
+  "employee_ids": [
+    31,
+    32
+  ],
+  "expected_remaining_by_slip": {
+    "393": "1900.00",
+    "394": "1500.00"
+  },
+  "expected_final_payment_total": "3400.00",
+  "before_company_payment_ids": [
+    272,
+    310,
+    311,
+    312,
+    313,
+    373,
+    374
+  ],
+  "workers": [
+    {
+      "worker": 1,
+      "res_model": "hr.payslip.run",
+      "run_id": 107,
+      "payment_ids": [
+        375,
+        376
+      ]
+    },
+    {
+      "worker": 2,
+      "res_model": "hr.payslip.run",
+      "run_id": 107,
+      "payment_ids": [
+        375,
+        376
+      ]
+    }
+  ],
+  "stale_error": "A salary balance changed after this payment screen was opened. Reopen payment to review the current balances.",
+  "payment_ids": [
+    375,
+    376
+  ],
+  "payment_move_ids": [
+    1259,
+    1260
+  ],
+  "final_state": "paid",
+  "final_remaining": "0.00",
+  "final_paid": "4400.00",
+  "non_sudo_user_id": 2
+}

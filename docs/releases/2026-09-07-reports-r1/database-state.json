@@ -1,0 +1,80 @@
+[
+  {
+    "database": "baseer_dev",
+    "companies": [
+      {
+        "id": 1,
+        "name": "ARZ"
+      },
+      {
+        "id": 2,
+        "name": "المعلم الشامي"
+      },
+      {
+        "id": 3,
+        "name": "دوحة المستهلك"
+      }
+    ],
+    "account_moves": 0,
+    "modules": [
+      {
+        "name": "baseer_core",
+        "state": "installed",
+        "version": "19.0.1.0.0"
+      }
+    ]
+  },
+  {
+    "database": "baseer_reports_qa_20260907",
+    "companies": [
+      {
+        "id": 1,
+        "name": "My Company"
+      },
+      {
+        "id": 7,
+        "name": "QA المعلم الشامي"
+      },
+      {
+        "id": 9,
+        "name": "QA الفئات النقدية"
+      },
+      {
+        "id": 6,
+        "name": "QA ARZ"
+      },
+      {
+        "id": 8,
+        "name": "QA دوحة المستهلك"
+      }
+    ],
+    "account_moves": 47,
+    "modules": [
+      {
+        "name": "baseer_cash_categories",
+        "state": "installed",
+        "version": "19.0.1.3.0"
+      },
+      {
+        "name": "baseer_core",
+        "state": "uninstalled",
+        "version": null
+      },
+      {
+        "name": "baseer_report_layout",
+        "state": "installed",
+        "version": "19.0.1.1.0"
+      },
+      {
+        "name": "eh_account_base",
+        "state": "installed",
+        "version": "19.0.1.8.0"
+      },
+      {
+        "name": "eh_account_dynamic_reports",
+        "state": "installed",
+        "version": "19.0.1.8.1"
+      }
+    ]
+  }
+]

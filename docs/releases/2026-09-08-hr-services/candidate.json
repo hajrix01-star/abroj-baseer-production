@@ -1,0 +1,21 @@
+{
+  "version": "HRS1 / 19.0.1.0.0",
+  "database": "baseer_reports_qa_20260907",
+  "zip_sha256": "16d1e1d9036ade36041d26fedbc8f9e4f6f682ef61be3412f20fc4d5ee8c065a",
+  "files": {
+    "custom_addons\\baseer_hr_services\\__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons\\baseer_hr_services\\__manifest__.py": "c1c4c2b9e89eac869ba6110c502725a3ba0c7f08ef5b6473df0c10268a1392c4",
+    "custom_addons\\baseer_hr_services\\data\\sequence.xml": "154a7bd7ef57a9daa5600b28e2b1ca2ac75d1dd63d29f7106b068b0f7b8ecc36",
+    "custom_addons\\baseer_hr_services\\i18n\\ar_001.po": "d0fbf3d8bed2d7662e1085eec19ef7c4117c14b2cbcc56587f5bfb5d8c397e60",
+    "custom_addons\\baseer_hr_services\\models\\__init__.py": "2cc11fa289844242ddbc37c0578ee94a9803e25ec76944943e7faee00bc2495a",
+    "custom_addons\\baseer_hr_services\\models\\bill.py": "9f7a6a77afdec18a23a9c7313510dbb8b7549036cea48c02738b8744f69d50b4",
+    "custom_addons\\baseer_hr_services\\models\\employee.py": "9713431e69da748990213a026d892c4bcf227ebc7c17135de3bf753fe7bd9db9",
+    "custom_addons\\baseer_hr_services\\models\\service.py": "71d44b3986611b6e4b0c7ca2823e8a2ec737835f05d4f669ac4170164a89ca01",
+    "custom_addons\\baseer_hr_services\\README.md": "f18eb638641b92b5980f9773f0225fd190c6a42ae3ccf0580112283e0220b4f1",
+    "custom_addons\\baseer_hr_services\\report\\service_report.xml": "e6fd6203228b2661a033558a16984becf34da252580ee82a1a6c73e556ac8a3e",
+    "custom_addons\\baseer_hr_services\\security\\ir.model.access.csv": "6d5b06b2c502441a285fc2841be279c503e2b7d874e428bce03d6cbefe465e54",
+    "custom_addons\\baseer_hr_services\\security\\security.xml": "ce6ab20e7555090ac9d2c66a9c20c1e460b9b413aa8efc3e4c5afcd7b49d287a",
+    "custom_addons\\baseer_hr_services\\views\\employee_views.xml": "e935ea692451f13d098e742d25e00fd49bc0efdf22a3ce7e84cd863e2b0b6b69",
+    "custom_addons\\baseer_hr_services\\views\\service_views.xml": "bceb5f3ee4c28a329887f6bff4f430bda9f960619b0e8b5dbbb9e76fed60b3b5"
+  }
+}

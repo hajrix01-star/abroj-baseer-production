@@ -1,0 +1,94 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "missing_configuration_direct",
+      "passed": true
+    },
+    {
+      "name": "missing_configuration_context_default",
+      "passed": true
+    },
+    {
+      "name": "missing_configuration_wizard",
+      "passed": true
+    },
+    {
+      "name": "no_run_inserted_on_failure",
+      "passed": true
+    },
+    {
+      "name": "stale_wizard_company",
+      "passed": true
+    },
+    {
+      "name": "wrong_company_direct",
+      "passed": true
+    },
+    {
+      "name": "arabic_configuration_message",
+      "passed": true
+    },
+    {
+      "name": "settings_defaults_active_company",
+      "passed": true
+    },
+    {
+      "name": "settings_reads_company_mapping",
+      "passed": true
+    },
+    {
+      "name": "settings_writes_same_company_field",
+      "passed": true
+    },
+    {
+      "name": "other_company_unchanged",
+      "passed": true
+    },
+    {
+      "name": "settings_returns_calendar",
+      "passed": true
+    },
+    {
+      "name": "pure_validation_hr.payroll.structure",
+      "passed": true
+    },
+    {
+      "name": "pure_validation_hr.salary.rule",
+      "passed": true
+    },
+    {
+      "name": "pure_validation_account.move",
+      "passed": true
+    },
+    {
+      "name": "configured_wizard_creation",
+      "passed": true
+    },
+    {
+      "name": "configured_employees_loaded",
+      "passed": true
+    },
+    {
+      "name": "wrong_journal_type",
+      "passed": true
+    },
+    {
+      "name": "wrong_payable_type",
+      "passed": true
+    },
+    {
+      "name": "wrong_receivable_type",
+      "passed": true
+    },
+    {
+      "name": "cross_company_journal",
+      "passed": true
+    },
+    {
+      "name": "nonreconcilable_payable",
+      "passed": true
+    }
+  ],
+  "rolled_back": true
+}

@@ -1,0 +1,38 @@
+{
+  "account_move": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_move_line": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_payment": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_partial_reconcile": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "res_company": {
+    "count": 3,
+    "hash": "3ac840f9cb64bada5274e02a2fa03e11"
+  },
+  "res_partner": {
+    "count": 8,
+    "hash": "aa4fee4fe9a3dc6e4c1f079cc1bb28ee"
+  },
+  "hr_employee": {
+    "count": 1,
+    "hash": "6b2c58404d9f31f61ed87dfdc76067b8"
+  },
+  "baseer_pos_summary": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "baseer_purchase_batch": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  }
+}

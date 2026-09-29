@@ -1,0 +1,64 @@
+{
+  "status": "completed",
+  "checks": [
+    {
+      "name": "dialog_slip_id",
+      "expected": "كشف الراتب",
+      "actual": "كشف الراتب",
+      "pass": true
+    },
+    {
+      "name": "dialog_kind",
+      "expected": "نوع التصحيح",
+      "actual": "نوع التصحيح",
+      "pass": true
+    },
+    {
+      "name": "dialog_date",
+      "expected": "التاريخ",
+      "actual": "التاريخ",
+      "pass": true
+    },
+    {
+      "name": "dialog_reason",
+      "expected": "السبب",
+      "actual": "السبب",
+      "pass": true
+    },
+    {
+      "name": "dialog_cancel",
+      "expected": "إلغاء",
+      "actual": "إلغاء",
+      "pass": true
+    },
+    {
+      "name": "existing_context_preserved_baseer.hr.eos",
+      "expected": "سبب انتهاء الخدمة",
+      "actual": "سبب انتهاء الخدمة",
+      "pass": true
+    },
+    {
+      "name": "existing_context_preserved_baseer.hr.loan.allocation",
+      "expected": "نوع السداد",
+      "actual": "نوع السداد",
+      "pass": true
+    },
+    {
+      "name": "scoped_native_PO_slip_id",
+      "pass": true
+    },
+    {
+      "name": "scoped_native_PO_kind",
+      "pass": true
+    },
+    {
+      "name": "scoped_native_PO_date",
+      "pass": true
+    },
+    {
+      "name": "scoped_native_PO_reason",
+      "pass": true
+    }
+  ],
+  "rolled_back": true
+}

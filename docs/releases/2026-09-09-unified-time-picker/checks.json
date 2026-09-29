@@ -1,0 +1,14 @@
+{
+  "passed": 8,
+  "checks": [
+    "Six work days fixture",
+    "09:07-15:43 server duration",
+    "21:00-03:00 server duration",
+    "21:00-24:00 server duration",
+    "Two shifts remain10:30 daily and63:00 weekly",
+    "Server rejects24 as start",
+    "All wizard entrypoints remain modal",
+    "Raw inputs remain native char fields"
+  ],
+  "fixtures": "rolled back"
+}

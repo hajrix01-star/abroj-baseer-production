@@ -1,0 +1,136 @@
+{
+  "database": "baseer_payroll_profile_race",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "ordinary_admin_has_required_roles",
+      "passed": true
+    },
+    {
+      "name": "fresh_disposable_fixture",
+      "passed": true
+    },
+    {
+      "name": "clone_accounting_fixture_available",
+      "passed": true
+    },
+    {
+      "name": "native_departure_reason_available",
+      "passed": true
+    },
+    {
+      "name": "native_departure_SAME REQUEST",
+      "passed": true
+    },
+    {
+      "name": "native_departure_COMPETING REQUESTS",
+      "passed": true
+    },
+    {
+      "name": "same_request_two_database_connections",
+      "passed": true
+    },
+    {
+      "name": "same_request_both_calls_succeed",
+      "passed": true
+    },
+    {
+      "name": "same_request_idempotent_bill",
+      "passed": true
+    },
+    {
+      "name": "competing_requests_two_database_connections",
+      "passed": true
+    },
+    {
+      "name": "competing_one_approval_one_business_rejection",
+      "passed": true
+    },
+    {
+      "name": "exactly_two_bills_for_three_requests",
+      "passed": true
+    },
+    {
+      "name": "exactly_two_new_accounting_moves",
+      "passed": true
+    },
+    {
+      "name": "exactly_two_approved_requests",
+      "passed": true
+    },
+    {
+      "name": "loser_has_no_bill",
+      "passed": true
+    },
+    {
+      "name": "bill_1288_posted_exact_native_award",
+      "passed": true
+    },
+    {
+      "name": "bill_1289_posted_exact_native_award",
+      "passed": true
+    }
+  ],
+  "races": {
+    "same_request": [
+      {
+        "request_id": 11,
+        "outcome": "approved",
+        "bill_id": 1288,
+        "attempts": 2,
+        "retries": [
+          {
+            "attempt": 1,
+            "sqlstate": "40001"
+          }
+        ],
+        "backend_pid": 207976,
+        "initial_snapshot": "82489:82489:"
+      },
+      {
+        "request_id": 11,
+        "outcome": "approved",
+        "bill_id": 1288,
+        "attempts": 1,
+        "retries": [],
+        "backend_pid": 207985,
+        "initial_snapshot": "82489:82489:"
+      }
+    ],
+    "competing_requests": [
+      {
+        "request_id": 12,
+        "outcome": "business_rejected",
+        "message": "An award has already been issued for this employee and service period.",
+        "attempts": 2,
+        "retries": [
+          {
+            "attempt": 1,
+            "sqlstate": "40001"
+          }
+        ],
+        "backend_pid": 207976,
+        "initial_snapshot": "82492:82492:"
+      },
+      {
+        "request_id": 13,
+        "outcome": "approved",
+        "bill_id": 1289,
+        "attempts": 1,
+        "retries": [],
+        "backend_pid": 207985,
+        "initial_snapshot": "82492:82492:"
+      }
+    ]
+  },
+  "fixture_request_ids": [
+    11,
+    12,
+    13
+  ],
+  "fixtures_committed": true,
+  "bill_ids": [
+    1289,
+    1288
+  ]
+}

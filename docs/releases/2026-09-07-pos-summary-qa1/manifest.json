@@ -1,0 +1,331 @@
+{
+  "candidate": "BASEER-POS-S1 QA1",
+  "date": "2026-09-07",
+  "scope": "QA only, no new module installation on main",
+  "identity": "Source SHA256 and verified ZIP; no release commit in current workspace",
+  "modules": {
+    "baseer_pos_summary": "19.0.1.0.0",
+    "baseer_report_layout": "19.0.1.1.1",
+    "baseer_purchase_batch": "19.0.1.2.2"
+  },
+  "required_pos_dependencies": [
+    "point_of_sale",
+    "baseer_cash_categories"
+  ],
+  "purchase_module": "Existing shared-date compatibility package, not required to install POS summaries",
+  "qa_database": "baseer_reports_qa_20260907",
+  "runtime_image_id": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "archive": {
+    "path": ".local-backups/releases/2026-09-07-pos-summary-qa1/baseer-pos-summary-qa1.zip",
+    "sha256": "c32eb83026528005734a7bc543ea7522c661b7930e05583248b682179d9f7d3a",
+    "verified_entries": 43
+  },
+  "purchase_baseline_changed_files": [
+    "custom_addons/baseer_purchase_batch/__manifest__.py",
+    "custom_addons/baseer_purchase_batch/static/src/js/latin_date_field.js"
+  ],
+  "files": [
+    {
+      "path": "custom_addons/baseer_pos_summary/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/__manifest__.py",
+      "bytes": 709,
+      "sha256": "f5b8e33067ccfd3c6821a80680f6e206a4541e25425cb5bdbb740c7f41360303"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/i18n/ar.po",
+      "bytes": 53293,
+      "sha256": "e8bb15fa6407a7c9b806ea375696e7bb89f99df4ffeee6ab93ccc61a70bba729"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/__init__.py",
+      "bytes": 105,
+      "sha256": "3e64dfe5b9a744ef270ca2bb0b7dc09f52f6693041c989c2f62ca11451394daa"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/cash_report.py",
+      "bytes": 11289,
+      "sha256": "b637f42011ec24b67beed56870d309afeefad73a53f68821754a47381d166595"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/common.py",
+      "bytes": 3678,
+      "sha256": "c0859f5f94db0f33a1ba17fa18f95efb90bd61a8fdf12ac3f7556e859336cb4d"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_configuration.py",
+      "bytes": 11035,
+      "sha256": "e35e769afbb1c2206c0765f395adce8f9e7abc1722bbea2604fdd980e45ac358"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_native.py",
+      "bytes": 9890,
+      "sha256": "8d7ed53c92d25686a3219390857803fa6a0572a4c6d5910a7e062b6e9c7ca63c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/summary.py",
+      "bytes": 25622,
+      "sha256": "93a4e82d255c221ed23791d4ab36be42bb5e65286ca566be5f4c72af9af9b443"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/ir.model.access.csv",
+      "bytes": 551,
+      "sha256": "5d2908a2ab67428301527af1714f0a1774f965a7881924ff79bf62bd14d53bff"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/security.xml",
+      "bytes": 937,
+      "sha256": "4e1ee417eb874336253dcf8a166a73ffd43b3c9bb316e7c09a65ca47b710bd08"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/scss/summary.scss",
+      "bytes": 1169,
+      "sha256": "acaec1379c94d963cd0403098558bda65f13d7f0b08e066c92e356beefe14284"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/allocation_views.xml",
+      "bytes": 3693,
+      "sha256": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/configuration_views.xml",
+      "bytes": 4408,
+      "sha256": "8b06ac6c6fcefa243628e1fd7e2ac71ad5558a796b4a988c2bbc0d262d21c2a2"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/summary_views.xml",
+      "bytes": 11176,
+      "sha256": "21b021e39d19e15796b28c679febf4ca1bf3d455a80fadef364c512be86ae1e5"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/__init__.py",
+      "bytes": 57,
+      "sha256": "c06b9ebcbdc951e33341c821997954811a8ad2fa663f1c9383abb08601e2847a"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/__manifest__.py",
+      "bytes": 601,
+      "sha256": "e6ed0d3e0ddfb9aa8ae1b7c71f868121220ff7939a579a61ca6f42cf78267ad3"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/README.md",
+      "bytes": 1533,
+      "sha256": "7bc5455ffe723dd1da567c3d679c3c341e1d3850385885fd78684dcaa3c4c24d"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/report/arabic_pdf_font.xml",
+      "bytes": 2642,
+      "sha256": "d77a6877798e1c09a44894a799bbbd42b8bb962ffa9117e9fdcea6c0e9359c91"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Bold.ttf",
+      "bytes": 247896,
+      "sha256": "b74f809dead12442ed56e02a12c3bcc02076c9ad4e32f17d0a9ca6fc1aafc89e"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Regular.ttf",
+      "bytes": 236708,
+      "sha256": "8e0f1046c736bf939d4939ee3ae0116acf61cbcd6592deae7656761627080981"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/LICENSE.txt",
+      "bytes": 4456,
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/SOURCE.md",
+      "bytes": 697,
+      "sha256": "8fb1c17142f3bbc5e7db937e6a3e7b92c8807c4a306c90ede204216092f91a74"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/js/latin_date_field.js",
+      "bytes": 1199,
+      "sha256": "815e79dedbda875caa488dd346afb6a554713b6d12e208d528955445e97341b1"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/report_layout.scss",
+      "bytes": 1996,
+      "sha256": "1fe93af3b7ba25e3b2d50a69b35953cb7ece656142e8db6a89617c8650a4ed18"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/report_layout.xml",
+      "bytes": 784,
+      "sha256": "151f624d23dba4fd509b585151d7dd9f806347be84e8655badf871dcb13a34d0"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__manifest__.py",
+      "bytes": 845,
+      "sha256": "0c9fd0b07c2b54262c7c6b0305405506fdac382fe6640b9859f257535ef7d5fc"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/data/sequence.xml",
+      "bytes": 388,
+      "sha256": "42ddb26d2ad842a0b4690809c413256e06f52e574710b0457ac347a4a6a486a0"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/i18n/ar_001.po",
+      "bytes": 46215,
+      "sha256": "d1eb6b8b17523ecb1143fbbda5cae9d93de002c39bb6aec53060b56c3b473de6"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/migrations/19.0.1.2.0/post-migration.py",
+      "bytes": 713,
+      "sha256": "bca03cbec6ce68d554968e7b7b5657577a0ec32cb5d5295beb7d3e165a8f2e7b"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/__init__.py",
+      "bytes": 55,
+      "sha256": "c1d7dd04824a48dd8c48d5308fe53b6e2397002932aeb414bbf5896eb5f47788"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/purchase_batch.py",
+      "bytes": 39737,
+      "sha256": "3484619d6403aa5db419d67c64f265d0c0cfe7b44d054bf7eb4c8ffb98a65554"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/res_partner.py",
+      "bytes": 2040,
+      "sha256": "cba62b6b12eb9d35ab5344be20fd7ed3cb373f308fef76bcd96d17f8b552a84d"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/README.md",
+      "bytes": 4586,
+      "sha256": "9d4db3bbca0bb95f6c593a29ca87b2bd77bc7105ec37b105477074660d62e227"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/report/purchase_batch_report.xml",
+      "bytes": 6321,
+      "sha256": "b1c11d3b00e6924ca8337f6f9fab93d293eb31fde0764cd016461ed5884f20d8"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/ir.model.access.csv",
+      "bytes": 622,
+      "sha256": "c42c7e37f2ba59be5e74532d50d56cd3e969808f3d6d51aaf1d1faefe030e476"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/security.xml",
+      "bytes": 974,
+      "sha256": "dce5ee3927d3c5d2c96dfdef13805af8c7bcf3d9e856c0928d7721aac8a4a08a"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/js/latin_date_field.js",
+      "bytes": 185,
+      "sha256": "fff7b862fdbf1646e3563e8024a3d3e9f98f2aca8f12fd529e963fc9f988e8b4"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+      "bytes": 3971,
+      "sha256": "a7789a8611ccb9659689e330786b0ce5204e2a3d8ac18910d32ac5d03cb48da3"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/category_mapping_views.xml",
+      "bytes": 2614,
+      "sha256": "86259719f9860d596ac253e82da472ed05c750b91ebef588e9d17223a77f2505"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/purchase_batch_views.xml",
+      "bytes": 16606,
+      "sha256": "f00cc86a6af2522be45f11818993b0abebb0e1636be89b390f34dfa8aba735b2"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/res_partner_views.xml",
+      "bytes": 829,
+      "sha256": "d093ab55ac767458ddb4cc19446d25dcfeb50e4116bc17cecd10bad747d9a545"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/pos_summary_acceptance.json",
+      "sha256": "cce5b76ddb8c91e1b002d2a3b5c638b01c809f873981ea228ac4e7417ade628c"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_backend_checks.json",
+      "sha256": "3061e1ca8f5b1f4d34c1b387af72ec1cb54b6bba18877d6a3d782c38f85b7a06"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_concurrency.json",
+      "sha256": "ea3111c1748ac02c4a93f1d120ff03505e0b203c35e4e3148073077619f1a50b"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_capacity.json",
+      "sha256": "234271ce5fae46fcf11149dd252ca4818a89fe60222bc4ecb445ec75b7c03044"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_journal_action.json",
+      "sha256": "56479d9a85b7e11b1cccb90bdfa57a3c3dd0d620c1f9c76cb40e8c9e97a042e3"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_native_install_preservation.json",
+      "sha256": "20a89e2f7383a146122d257fc50ddda63a0a69fa3b3f642ddbf17af036442d29"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_source_preservation.json",
+      "sha256": "29bf263159a4d182ab6fe51c8b0a481e16474cadc5a97b03795cd3694510d900"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_main_readonly.txt",
+      "sha256": "50e0c922633e3a6981f155345e15405fe1bdb4ee32812a32ba478441d93053b6"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_qa_final_state.txt",
+      "sha256": "e423159326bad115cbc05744da0a4d1a3c7ef7c3a0c349054e4f2681bfe86b8f"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_ui_evidence.json",
+      "sha256": "8be87270994fca6b1594bf5797622e3e5279964866301ca2d8c76f138bea2b94"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_ar_desktop_final.png",
+      "sha256": "bcf2db23c11ea9b156b8e0a8203ffbb78b7f2d8856da4f8cb126fa21e26b306c"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_ar_mobile.png",
+      "sha256": "dd8a983a781096dc2b84af5662561670e67618559e0280e411b7e8696333bc47"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_en_desktop.png",
+      "sha256": "efaf9c291754d358de9168cdb2cab44cafa7543ba92361e665446d68abec8a37"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_en_mobile.png",
+      "sha256": "e9f182d57f460f2c100e066df3eec8c4835c3957dd1f9b9cfd00d39526a6461c"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_mobile_entry.png",
+      "sha256": "1c07b6a6ba42ab8c9f3e19616f655d8ac8b6802607419fb2c3cf2815b2649777"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_purchase_compatibility.png",
+      "sha256": "b7065bd6646eed7c410a7a9bb41653da75ff144a27ec7847bdd83aef7de080e4"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_acceptance.py",
+      "sha256": "11058d634c2ae2471cff15f93666008456bc8c805e41fd67fed07a6f3bbfebad"
+    },
+    {
+      "path": "docs/build-governance/qa_pos_summary_backend.py",
+      "sha256": "9cb83dad77b636a5083643c1fd900d6106a045791100bc94eeb2bf13c5374b20"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_cash_checks.py",
+      "sha256": "42c13c33f08afa0f1ea2375e2f90705a3c4d2fdec8b287dfd0902b88446c3787"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_concurrency.py",
+      "sha256": "1b1cb212895d557e26f7949e069e49b96d9ba1b23578a9b586c9ec16dc607cf5"
+    },
+    {
+      "path": "docs/build-governance/pos_summary_capacity.py",
+      "sha256": "04e9b1210f6041349facf5c1d1d21aa5d4cd8e7f47bd70986c15639201bb6713"
+    }
+  ],
+  "preview_url": "http://127.0.0.1:18070/odoo/action-490/82"
+}

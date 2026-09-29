@@ -1,0 +1,17 @@
+{
+  "version": "CSS1 / 19.0.1.0.0",
+  "database": "baseer_reports_qa_20260907",
+  "zip_sha256": "6ffc993ac36fb070c59febcd7261e5f26e49eea478cdb5c53e7595f49227866b",
+  "files": {
+    "custom_addons\\baseer_service_seed\\__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons\\baseer_service_seed\\__manifest__.py": "4fe2cd0ade276fe0572565aca78f54aac1926f3f4d7b50e7e7dfdcbcbbbf8cde",
+    "custom_addons\\baseer_service_seed\\data\\categories.xml": "aced1f581474008b4232bc9e252403a1b3fe532000b47ee80e7316fa0ace7938",
+    "custom_addons\\baseer_service_seed\\data\\setup.xml": "e1ebd696dc402e19badaa5df2ec3fc43eb83de8d56ff270e3c51c9c8a75d4764",
+    "custom_addons\\baseer_service_seed\\i18n\\ar.po": "d5732f25f98787091bbe6c5498151885b89326237e6f4fedba19a9afa4181970",
+    "custom_addons\\baseer_service_seed\\models\\__init__.py": "71dda0eb908006fb4d96c4007aa1e62342134fade399f8dd2eacb8246552cbc6",
+    "custom_addons\\baseer_service_seed\\models\\catalog.py": "a61262d2fdc5d5378657b8c3f14c878823451a1d31ed2e1bc1e13270d8f2863d",
+    "custom_addons\\baseer_service_seed\\models\\company.py": "43ba0b12f17275e4920a0e85dab5d129d564def0200f0166530ff623b5228b58",
+    "custom_addons\\baseer_service_seed\\models\\purchase_batch.py": "38fb2a979fb2d5a0f59d0b18b3e2035ff4b28dc2dc6f134cef70a4d452b79d23",
+    "custom_addons\\baseer_service_seed\\README.md": "ce20f0de3778f85e75c5b7394e248042a4e5b4f0d8b2affa4eaefa56408013d5"
+  }
+}

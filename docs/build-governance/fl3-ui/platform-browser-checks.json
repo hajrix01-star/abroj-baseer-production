@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Arabic September outgoing remains -1,000.00 with updated labels",
+    "Arabic July incoming and net1,580.00; outgoing0;10 signed rows",
+    "Incoming card creates native filter with same1,580.00 and10 signed rows",
+    "English LTR Incoming/Outgoing/Net labels show same1,580.00/0/1,580.00",
+    "Arabic RTL480 native kanban shows1,580.00 and Incoming/Outgoing/Net labels without horizontal overflow"
+  ],
+  "kanban": true,
+  "kpi": "جميع العمليات\nالداخل والخارج\nفترة التقرير\nالمعلم الشامي\nSAR\nالداخل والخارج\n10 مستندات\nالداخل\n1,580.00\nالخارج\n0.00\nالصافي\n1,580.00",
+  "mobile_direction": "rtl",
+  "mobile_scroll_width": 480,
+  "mobile_width": 480
+}

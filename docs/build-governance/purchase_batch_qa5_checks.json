@@ -1,0 +1,17 @@
+{
+  "passed": 11,
+  "checks": [
+    "empty create rejected",
+    "failed empty create leaves no row",
+    "nonempty parent create accepted",
+    "last row removal through parent rejected",
+    "last row restored by transaction",
+    "replace all rows accepted after final-shape validation",
+    "active company guard retained",
+    "nonempty native approval still posts and pays",
+    "native totals retained",
+    "approved batch remains immutable",
+    "all QA5 fixtures rolled back"
+  ],
+  "rollback": true
+}

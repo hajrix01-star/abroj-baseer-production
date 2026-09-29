@@ -1,0 +1,154 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "shared_provider_active",
+      "passed": true
+    },
+    {
+      "name": "aliases_same_identity",
+      "passed": true
+    },
+    {
+      "name": "bilingual_name_available",
+      "passed": true
+    },
+    {
+      "name": "native_search_المديرية العامة للجوازات",
+      "passed": true
+    },
+    {
+      "name": "native_search_General Directorate of Passports",
+      "passed": true
+    },
+    {
+      "name": "ordinary_contact_name_unchanged",
+      "passed": true
+    },
+    {
+      "name": "bilingual_create_composes_native_name",
+      "passed": true
+    },
+    {
+      "name": "bilingual_edit_composes_name",
+      "passed": true
+    },
+    {
+      "name": "company_category_6",
+      "passed": true
+    },
+    {
+      "name": "company_payable_6",
+      "passed": true
+    },
+    {
+      "name": "company_category_10",
+      "passed": true
+    },
+    {
+      "name": "company_payable_10",
+      "passed": true
+    },
+    {
+      "name": "category_values_independent",
+      "passed": true
+    },
+    {
+      "name": "service_auto_shared_provider_6",
+      "passed": true
+    },
+    {
+      "name": "foreign_private_supplier_rejected",
+      "passed": true
+    },
+    {
+      "name": "native_bill_company_6",
+      "passed": true
+    },
+    {
+      "name": "native_bill_expense_mapping_6",
+      "passed": true
+    },
+    {
+      "name": "native_tax_total_6",
+      "passed": true
+    },
+    {
+      "name": "native_payable_company_6",
+      "passed": true
+    },
+    {
+      "name": "batch_shared_default_category_6",
+      "passed": true
+    },
+    {
+      "name": "batch_posted_correct_company_6",
+      "passed": true
+    },
+    {
+      "name": "batch_duplicate_reference_same_company_6",
+      "passed": true
+    },
+    {
+      "name": "service_auto_shared_provider_10",
+      "passed": true
+    },
+    {
+      "name": "native_bill_company_10",
+      "passed": true
+    },
+    {
+      "name": "native_bill_expense_mapping_10",
+      "passed": true
+    },
+    {
+      "name": "native_tax_total_10",
+      "passed": true
+    },
+    {
+      "name": "native_payable_company_10",
+      "passed": true
+    },
+    {
+      "name": "batch_shared_default_category_10",
+      "passed": true
+    },
+    {
+      "name": "batch_posted_correct_company_10",
+      "passed": true
+    },
+    {
+      "name": "batch_duplicate_reference_same_company_10",
+      "passed": true
+    },
+    {
+      "name": "hr_sees_shared_provider",
+      "passed": true
+    },
+    {
+      "name": "hr_hidden_other_company_services",
+      "passed": true
+    },
+    {
+      "name": "hr_cannot_read_supplier_accounting_invoice",
+      "passed": true
+    },
+    {
+      "name": "native_user_can_set_own_english",
+      "passed": true
+    },
+    {
+      "name": "native_user_can_set_own_arabic",
+      "passed": true
+    },
+    {
+      "name": "ordinary_user_cannot_change_other_language",
+      "passed": true
+    },
+    {
+      "name": "all_fixtures_rolled_back",
+      "passed": true
+    }
+  ],
+  "check_count": 37
+}

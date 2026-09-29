@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_procurement_user" model="res.groups">
+        <field name="name">Procurement requester</field>
+        <field name="privilege_id" eval="False"/>
+        <field name="implied_ids" eval="[(6, 0, [ref('base.group_user')])]"/>
+    </record>
+    <record id="group_procurement_cashier" model="res.groups">
+        <field name="name">Procurement cashier</field>
+        <field name="privilege_id" eval="False"/>
+        <field name="implied_ids" eval="[(4, ref('group_procurement_user'))]"/>
+    </record>
+    <record id="group_procurement_manager" model="res.groups">
+        <field name="name">Procurement manager</field>
+        <field name="privilege_id" eval="False"/>
+        <field name="implied_ids" eval="[(4, ref('group_procurement_user'))]"/>
+    </record>
+    <record id="group_procurement_accountant" model="res.groups">
+        <field name="name">Procurement accountant</field>
+        <field name="privilege_id" eval="False"/>
+        <field name="implied_ids" eval="[(6, 0, [ref('base.group_user')])]"/>
+    </record>
+
+    <record id="rule_procurement_request_company" model="ir.rule">
+        <field name="name">Procurement requests: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_line_company" model="ir.rule">
+        <field name="name">Procurement request lines: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_request_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_option_company" model="ir.rule">
+        <field name="name">Procurement options: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_purchase_option"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_price_company" model="ir.rule">
+        <field name="name">Procurement price history: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_price_history"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_product_favorite_owner_company" model="ir.rule">
+        <field name="name">Procurement favorites: current cashier and allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_product_favorite"/>
+        <field name="groups" eval="[(4, ref('group_procurement_cashier'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_custody_company" model="ir.rule">
+        <field name="name">Procurement custody: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_custody"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_custody_event_company" model="ir.rule">
+        <field name="name">Procurement custody events: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_custody_event"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_custody_settlement_company" model="ir.rule">
+        <field name="name">Procurement custody settlements: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_custody_settlement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_custody_monthly_company" model="ir.rule">
+        <field name="name">Procurement custody monthly statement: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_custody_monthly_statement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_custody_period_close_company" model="ir.rule">
+        <field name="name">Procurement custody period closes: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_custody_period_close"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_procurement_bill_allocation_company" model="ir.rule">
+        <field name="name">Procurement bill allocations: allowed companies</field>
+        <field name="model_id" ref="model_baseer_procurement_bill_allocation"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

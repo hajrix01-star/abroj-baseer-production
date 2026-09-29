@@ -1,0 +1,189 @@
+{
+  "company": {
+    "id": 9,
+    "name": "QA الفئات النقدية"
+  },
+  "checks": [
+    {
+      "check": "empty company has no cash movement",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "mixed VAT bill gross",
+      "actual": "445.00",
+      "expected": "445.00"
+    },
+    {
+      "check": "mixed bill half remains unpaid",
+      "actual": "222.50",
+      "expected": "222.50"
+    },
+    {
+      "check": "unpaid invoices do not affect cash",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "gross receipts",
+      "actual": "460.00",
+      "expected": "460.00"
+    },
+    {
+      "check": "gross payments",
+      "actual": "731.00",
+      "expected": "731.00"
+    },
+    {
+      "check": "gross net movement",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "net VAT receipts",
+      "actual": "400.00",
+      "expected": "400.00"
+    },
+    {
+      "check": "net VAT payments",
+      "actual": "677.00",
+      "expected": "677.00"
+    },
+    {
+      "check": "net VAT net movement",
+      "actual": "-277.00",
+      "expected": "-277.00"
+    },
+    {
+      "check": "opening cash balance",
+      "actual": "1000.00",
+      "expected": "1000.00"
+    },
+    {
+      "check": "closing cash balance",
+      "actual": "729.00",
+      "expected": "729.00"
+    },
+    {
+      "check": "excluded VAT bridge back to cash",
+      "actual": "6.00",
+      "expected": "6.00"
+    },
+    {
+      "check": "cash ledger reconciliation",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "category visible مشروبات",
+      "passed": true
+    },
+    {
+      "check": "category visible مشروبات غازية",
+      "passed": true
+    },
+    {
+      "check": "category visible مياه",
+      "passed": true
+    },
+    {
+      "check": "category visible مواد غذائية",
+      "passed": true
+    },
+    {
+      "check": "parent category owns subcategory",
+      "passed": true
+    },
+    {
+      "check": "paid expense shown separately: رواتب الموظفين",
+      "actual": "-200.00",
+      "expected": "-200.00"
+    },
+    {
+      "check": "paid expense shown separately: كهرباء ومرافق",
+      "actual": "-25.00",
+      "expected": "-25.00"
+    },
+    {
+      "check": "paid expense shown separately: اتصالات وإنترنت",
+      "actual": "-57.50",
+      "expected": "-57.50"
+    },
+    {
+      "check": "paid expense shown separately: إيجارات",
+      "actual": "-115.00",
+      "expected": "-115.00"
+    },
+    {
+      "check": "half-paid category allocation: مشروبات غازية",
+      "actual": "-115.00",
+      "expected": "-115.00"
+    },
+    {
+      "check": "half-paid category allocation: مياه",
+      "actual": "-57.50",
+      "expected": "-57.50"
+    },
+    {
+      "check": "half-paid category allocation: مواد غذائية",
+      "actual": "-50.00",
+      "expected": "-50.00"
+    },
+    {
+      "check": "outstanding receipt not yet cash",
+      "actual": "460.00",
+      "expected": "460.00"
+    },
+    {
+      "check": "bank settlement recognized once",
+      "actual": "575.00",
+      "expected": "575.00"
+    },
+    {
+      "check": "bank settlement traces invoice VAT",
+      "actual": "500.00",
+      "expected": "500.00"
+    },
+    {
+      "check": "cent allocation preserves payment",
+      "actual": "731.08",
+      "expected": "731.08"
+    },
+    {
+      "check": "cent allocation reconciles cash",
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "restricted user own company",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    },
+    {
+      "check": "other company access rejected",
+      "passed": true
+    },
+    {
+      "check": "showcase clean after edge-case rollback",
+      "actual": "-271.00",
+      "expected": "-271.00"
+    }
+  ],
+  "synthetic": true,
+  "tax_policy": "Native Saudi 15%; explicitly zero-tax synthetic food line",
+  "options": {
+    "date": {
+      "mode": "range",
+      "date_from": "2026-09-01",
+      "date_to": "2026-09-30"
+    },
+    "company_ids": [
+      9
+    ],
+    "posted_only": true,
+    "baseer_include_tax": true,
+    "show_zero": false,
+    "lazy_expand": true,
+    "unfold_all": true
+  }
+}

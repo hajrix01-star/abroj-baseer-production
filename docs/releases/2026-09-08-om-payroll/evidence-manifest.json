@@ -1,0 +1,127 @@
+[
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/backup.json",
+    "sha256": "ce83f3aa0414a14edfe3b28325ff96e4f988d98540a9dd61551f2a091a8cde57",
+    "bytes": 791
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/main-after.json",
+    "sha256": "352c0eabd8d3bbb142fa162b53e16fc24a87b418dcc272ca5cf4e46903a5bea0",
+    "bytes": 14176
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/main-before.json",
+    "sha256": "352c0eabd8d3bbb142fa162b53e16fc24a87b418dcc272ca5cf4e46903a5bea0",
+    "bytes": 14176
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/preservation.json",
+    "sha256": "b20db6031332de7f4350a6d0e8a5dfe46096cb1efa52b3a4e2e3dca6295ce924",
+    "bytes": 715
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/qa-after.json",
+    "sha256": "83ffb7af6e41d3e42f4e5e7f7a6e53e778c4c2507410baf7540831e58e085371",
+    "bytes": 9867
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/qa-before.json",
+    "sha256": "880ba205a8ff4e41e53166b41334e4bb094dcb8c4de71694c767bd46fe7512bd",
+    "bytes": 9693
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/qa-preflight.json",
+    "sha256": "880ba205a8ff4e41e53166b41334e4bb094dcb8c4de71694c767bd46fe7512bd",
+    "bytes": 9693
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/source.json",
+    "sha256": "cc5072338ea29f016bce8bc5aa2f3827cea6f63aa72748c6712e745afc80949b",
+    "bytes": 41210
+  },
+  {
+    "path": "docs/releases/2026-09-08-om-payroll/HANDOFF.md",
+    "sha256": "29c99e39f8b37aec1fecff01e00106ee721d00c8323025620c2db34ce773062a",
+    "bytes": 6064
+  },
+  {
+    "path": "docs/build-governance/om_payroll_ar_001.pdf",
+    "sha256": "7a141fee97274b165d3589cf30d110b53619406b63b0785f995f20b1282db425",
+    "bytes": 38653
+  },
+  {
+    "path": "docs/build-governance/om_payroll_batch.pdf",
+    "sha256": "d8fe527ad2c2595be35e0becc821381c962292ad465f36622d5b319cfcb3adf5",
+    "bytes": 32022
+  },
+  {
+    "path": "docs/build-governance/om_payroll_checks.json",
+    "sha256": "8f4b7101a3c3165a838ce5e23aac596f512d3cc1bff25889f98c00c3f8e1a9f7",
+    "bytes": 2090
+  },
+  {
+    "path": "docs/build-governance/om_payroll_checks.log",
+    "sha256": "b920c468006335c223526bccccd5b29ebc4510795bbbf5c0e591a97b83b55464",
+    "bytes": 14039
+  },
+  {
+    "path": "docs/build-governance/om_payroll_checks.py",
+    "sha256": "28e635c1260fb436e6e8400a5bff80a6ec986b29ec49ec401cb9be44f35f86ef",
+    "bytes": 6702
+  },
+  {
+    "path": "docs/build-governance/om_payroll_checks_attempt1.json",
+    "sha256": "9f3095dbf97dcc5abb218e99642e3586cc822289b093e9d0670033aa9524dedb",
+    "bytes": 3442
+  },
+  {
+    "path": "docs/build-governance/om_payroll_desktop.png",
+    "sha256": "9d2e223f3473e3969d463901b98ea521f2a6b694049abba7350ad131fb7f9b7c",
+    "bytes": 25504
+  },
+  {
+    "path": "docs/build-governance/om_payroll_en_US.pdf",
+    "sha256": "8e9cf5a8c38e8d7667ef59994f07958392c07c5aa856c5780435edc116dc4828",
+    "bytes": 24505
+  },
+  {
+    "path": "docs/build-governance/om_payroll_form_desktop.png",
+    "sha256": "b30256c6ea623ff96d1b9169ab31e88b95776a2d1333116bfed1fd7487c11aa4",
+    "bytes": 47871
+  },
+  {
+    "path": "docs/build-governance/om_payroll_form_mobile.png",
+    "sha256": "22dc97f1a14a9c51f04b5fd5f5c508a4706da339ba0707808f47aac687bcc27f",
+    "bytes": 27130
+  },
+  {
+    "path": "docs/build-governance/om_payroll_install.log",
+    "sha256": "cec15a9b73287959149afb266741a07d4b42fb33a94708ab05a18cac060ef4ee",
+    "bytes": 13236
+  },
+  {
+    "path": "docs/build-governance/om_payroll_ops.py",
+    "sha256": "dd8b6bd1bfaaa760d73a509609776606803c4d7533147bd2df868e7cc41dccfe",
+    "bytes": 7324
+  },
+  {
+    "path": "docs/build-governance/om_payroll_ui.txt",
+    "sha256": "a1de3cfbbd26fd7c4851ff6334bccdd5f6598b457781245373c3d709a2f6e844",
+    "bytes": 371
+  },
+  {
+    "path": "docs/build-governance/OM-PAYROLL.md",
+    "sha256": "1025d85ab5f7a221b87fe3a6f1b8246d256fa600e61cb42f2fd81f962d136280",
+    "bytes": 6868
+  },
+  {
+    "path": "docs/build-governance/OM-PAYROLL-REVIEW.md",
+    "sha256": "e00a54e000ca8d3e4c90463d2279dd587d1779498e9201d76afbfd5a2aa1f59c",
+    "bytes": 13034
+  },
+  {
+    "path": "compose.reports-qa.yaml",
+    "sha256": "cbcec000978e180751b7cf1bf149727b5b1509d2e5a7ac830fdd9fec175542ca",
+    "bytes": 903
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "main_unchanged": true,
+  "qa_financial_unchanged": {
+    "account_move": true,
+    "account_move_line": true,
+    "account_payment": true
+  },
+  "company_changes": [
+    {
+      "id": 10,
+      "changed_fields": [
+        "hr_presence_control_attendance",
+        "write_date",
+        "write_uid"
+      ]
+    }
+  ]
+}

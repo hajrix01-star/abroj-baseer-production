@@ -1,0 +1,19 @@
+{
+  "status": "restore_verified",
+  "database": "baseer_noorix_prc_product_source1_restore_smoke_20260913",
+  "source_snapshot_database": "baseer_noorix_data_migration_qa_20260912",
+  "database_dump_sha256": "7865d253346f251617a3e9eac6707cac5c0584e530b41ea2fe80421452d4e8d2",
+  "filestore_manifest_sha256": "082e313370376c1247d6126aa2828be25c554a51a83fe569ac96b1fcc40f37c3",
+  "filestore_files_restored": 537,
+  "database_attachments": 302,
+  "stored_sample_count": 36,
+  "readable_sample_count": 36,
+  "readable_sample_bytes": 34197154,
+  "odoo_reader": "tools/noorix_migration/verify_prewrite_restore_smoke.py",
+  "transaction": "read-only rollback",
+  "cleanup": {
+    "clone_database_dropped": true,
+    "clone_filestore_removed": true
+  }
+}
+

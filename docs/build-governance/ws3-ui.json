@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "environment": "QA localhost:18070",
+  "method": "Root actual browser, Arabic desktop wizard; canceled without business writes",
+  "observed": {
+    "period": "08:00–18:30",
+    "days": 6,
+    "daily_average": "10:30",
+    "weekly_total": "63:00",
+    "label": "متوسط الدوام اليومي — ساعات:دقائق"
+  },
+  "scope": "Display formatter change only; original bilingual/mobile components remain the accepted WS2 UI. Saved template/list and fractional-day consistency verified by targeted ORM tests."
+}

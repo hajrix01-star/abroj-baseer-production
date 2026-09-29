@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "database": "baseer_dev",
+  "native_action_id": 99,
+  "company": "ARZ",
+  "current_filter_visible": true,
+  "shift_template_rows": 1,
+  "edit_button_visible": true,
+  "existing_daily": "10:30",
+  "existing_weekly": "73:30",
+  "no_business_schedule_save": true,
+  "core_preview": "WS4 original Edit preview4directlinked employees,09/09/2026, cancelled",
+  "candidate": "2b555de2dc26349098dd1ab741d26e0eb260c334"
+}

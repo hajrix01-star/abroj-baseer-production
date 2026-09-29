@@ -1,0 +1,428 @@
+{
+  "database": "baseer_main_rehearsal_20260909",
+  "started_utc": "2026-09-09T00:35:15.496646+00:00",
+  "checks": [
+    {
+      "name": "PostgreSQL transaction is read only",
+      "passed": true
+    },
+    {
+      "name": "baseer_cash_categories installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.3.1"
+      }
+    },
+    {
+      "name": "baseer_category_display installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.0.0"
+      }
+    },
+    {
+      "name": "baseer_company_setup installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.0.0"
+      }
+    },
+    {
+      "name": "baseer_hr_services installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.1.0"
+      }
+    },
+    {
+      "name": "baseer_legion_compat installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.0.0"
+      }
+    },
+    {
+      "name": "baseer_payroll installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.5.0"
+      }
+    },
+    {
+      "name": "baseer_pos_summary installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.4.0"
+      }
+    },
+    {
+      "name": "baseer_purchase_batch installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.2.3"
+      }
+    },
+    {
+      "name": "baseer_report_layout installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.1.1"
+      }
+    },
+    {
+      "name": "baseer_service_seed installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.1.1"
+      }
+    },
+    {
+      "name": "baseer_web_navigation installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.1.0"
+      }
+    },
+    {
+      "name": "om_hr_payroll installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.1.1"
+      }
+    },
+    {
+      "name": "om_hr_payroll_account installed expected version",
+      "passed": true,
+      "evidence": {
+        "state": "installed",
+        "version": "19.0.0.0"
+      }
+    },
+    {
+      "name": "at least one eligible Saudi company",
+      "passed": true,
+      "evidence": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "requested MAIN company 3 is an eligible configured company",
+      "passed": true
+    },
+    {
+      "name": "company 1 payroll configuration",
+      "passed": true
+    },
+    {
+      "name": "company 1 EOS purchase journal",
+      "passed": true
+    },
+    {
+      "name": "company 1 EOS expense scope and type",
+      "passed": true
+    },
+    {
+      "name": "company 1 purchase mappings exist",
+      "passed": true,
+      "evidence": 26
+    },
+    {
+      "name": "company 1 all 15 HR services seeded",
+      "passed": true,
+      "evidence": {
+        "expected": 15,
+        "missing": []
+      }
+    },
+    {
+      "name": "company 1 HR service products and expense accounts scoped",
+      "passed": true,
+      "evidence": []
+    },
+    {
+      "name": "company 2 payroll configuration",
+      "passed": true
+    },
+    {
+      "name": "company 2 EOS purchase journal",
+      "passed": true
+    },
+    {
+      "name": "company 2 EOS expense scope and type",
+      "passed": true
+    },
+    {
+      "name": "company 2 purchase mappings exist",
+      "passed": true,
+      "evidence": 26
+    },
+    {
+      "name": "company 2 all 15 HR services seeded",
+      "passed": true,
+      "evidence": {
+        "expected": 15,
+        "missing": []
+      }
+    },
+    {
+      "name": "company 2 HR service products and expense accounts scoped",
+      "passed": true,
+      "evidence": []
+    },
+    {
+      "name": "company 3 payroll configuration",
+      "passed": true
+    },
+    {
+      "name": "company 3 EOS purchase journal",
+      "passed": true
+    },
+    {
+      "name": "company 3 EOS expense scope and type",
+      "passed": true
+    },
+    {
+      "name": "company 3 purchase mappings exist",
+      "passed": true,
+      "evidence": 26
+    },
+    {
+      "name": "company 3 all 15 HR services seeded",
+      "passed": true,
+      "evidence": {
+        "expected": 15,
+        "missing": []
+      }
+    },
+    {
+      "name": "company 3 HR service products and expense accounts scoped",
+      "passed": true,
+      "evidence": []
+    },
+    {
+      "name": "PB2 new employee inclusion default",
+      "passed": true
+    },
+    {
+      "name": "PB2 explicit authorized default False",
+      "passed": true
+    },
+    {
+      "name": "PB2 inclusion group remains payroll manager",
+      "passed": true
+    },
+    {
+      "name": "PB2 readiness fields and protected refresh flag",
+      "passed": true
+    },
+    {
+      "name": "PB2 report readiness hook loaded",
+      "passed": true
+    },
+    {
+      "name": "EOS v2 new-document policy and explicit confirmation",
+      "passed": true,
+      "evidence": {
+        "policy_version": "SA-EOS-V2 / Gregorian anniversaries / Baseer 2dp",
+        "service_end_inclusive": true
+      }
+    },
+    {
+      "name": "contribution report namespace",
+      "passed": true
+    },
+    {
+      "name": "shared water provider",
+      "passed": true
+    },
+    {
+      "name": "en_US language active",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.purchase.batch native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.hr.service native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.hr.loan native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.hr.eos native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US hr.payslip.run native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US run readiness field and warning",
+      "passed": true
+    },
+    {
+      "name": "en_US run explanatory warning translated",
+      "passed": true
+    },
+    {
+      "name": "en_US hr.employee native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US native open-ended contract explanation",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.pos.summary native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.pos.day.entry native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US baseer.payroll.correction native form compiles",
+      "passed": true
+    },
+    {
+      "name": "en_US compact readiness badge",
+      "passed": true,
+      "evidence": {
+        "ready": "Ready",
+        "pending": "Needs setup"
+      }
+    },
+    {
+      "name": "ar_001 language active",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.purchase.batch native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.hr.service native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.hr.loan native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.hr.eos native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 hr.payslip.run native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 run readiness field and warning",
+      "passed": true
+    },
+    {
+      "name": "ar_001 run explanatory warning translated",
+      "passed": true
+    },
+    {
+      "name": "ar_001 hr.employee native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 native open-ended contract explanation",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.pos.summary native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.pos.day.entry native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 baseer.payroll.correction native form compiles",
+      "passed": true
+    },
+    {
+      "name": "ar_001 compact readiness badge",
+      "passed": true,
+      "evidence": {
+        "ready": "جاهز",
+        "pending": "بيانات ناقصة"
+      }
+    },
+    {
+      "name": "all referenced filestore SHA1 and sizes match attachment metadata",
+      "passed": true,
+      "evidence": {
+        "filestore_rows": 642,
+        "unique_files_read": 522,
+        "database_payload_rows": 0,
+        "problems": []
+      }
+    }
+  ],
+  "companies": [
+    {
+      "id": 1,
+      "currency": "SAR",
+      "chart": "sa",
+      "payroll_journal_id": 40,
+      "eos_journal_id": 9,
+      "proration": "calendar",
+      "mapping_count": 26,
+      "salary_structure_present": false
+    },
+    {
+      "id": 2,
+      "currency": "SAR",
+      "chart": "sa",
+      "payroll_journal_id": 42,
+      "eos_journal_id": 19,
+      "proration": "calendar",
+      "mapping_count": 26,
+      "salary_structure_present": false
+    },
+    {
+      "id": 3,
+      "currency": "SAR",
+      "chart": "sa",
+      "payroll_journal_id": 44,
+      "eos_journal_id": 29,
+      "proration": "calendar",
+      "mapping_count": 26,
+      "salary_structure_present": false
+    }
+  ],
+  "read_only": true,
+  "source_candidate": "93d66e67ff507ed161349fe177fba23e29703ce5",
+  "installed_modules": 165,
+  "attachments": {
+    "filestore_rows": 642,
+    "unique_files_read": 522,
+    "database_payload_rows": 0,
+    "problems": []
+  },
+  "status": "passed",
+  "rolled_back": true,
+  "finished_utc": "2026-09-09T00:35:15.883935+00:00"
+}
+

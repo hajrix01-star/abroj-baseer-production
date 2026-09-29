@@ -1,0 +1,34 @@
+[
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\models\\cash_categories.py",
+    "Hash": "9415FD0289487B0A7AB1F4C8E52CB816B918FB12EAA0A706349F6FBCFD6AA9F0"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\static\\src\\cash_categories.js",
+    "Hash": "647B53A07198C8FDBBFA1C5C3E712EFA7023D19FA3B47A6D85F3EF0B996B406E"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\static\\src\\cash_categories.xml",
+    "Hash": "33B8357F792536B1E3ED8D4946931DCF9AF7DA677CA332DFCA0D84836819F068"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\static\\src\\cash_categories.scss",
+    "Hash": "28E3CE157EA5E8F6D56FB8EDCCDD781D125384F05C7826662AC2E1F257081A34"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\report\\report_note.xml",
+    "Hash": "4780920FB3B6AEF00982C3B39904D76A6B95C4ECDE6A4027A239C715A2528AB0"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\custom_addons\\baseer_cash_categories\\i18n\\ar_001.po",
+    "Hash": "E2902D16B301A04E71708F3B27D35FD602AFF7B6ABFEB337C66DD9E8134D1BFA"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\docs\\build-governance\\cash_categories_ar_001_gross.pdf",
+    "Hash": "6F3045356F5BB80019FFF429058641860076593133C2CBD02F198126369F9511"
+  },
+  {
+    "Path": "D:\\Codex\\Baseer-odoo\\docs\\build-governance\\cash_categories_ar_001_net.pdf",
+    "Hash": "E942AC6D0A3E4E08631CF92A581166B753272FD7E2843EB0599BAFE410D64E8D"
+  }
+]

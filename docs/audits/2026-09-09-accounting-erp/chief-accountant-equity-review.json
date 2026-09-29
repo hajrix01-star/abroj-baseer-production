@@ -1,0 +1,122 @@
+{
+  "ordinary_equity_count": 0,
+  "name_candidates": [
+    {
+      "id": 132,
+      "company_id": 1,
+      "code": "202002",
+      "name": {
+        "en_US": "Reservations",
+        "ar_001": "احتياطات و حجوزات"
+      },
+      "account_type": "liability_non_current",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 217,
+      "company_id": 1,
+      "code": "500010",
+      "name": {
+        "en_US": "Capital Gain",
+        "ar_001": "مكاسب رأس المال"
+      },
+      "account_type": "income",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 220,
+      "company_id": 1,
+      "code": "999999",
+      "name": {
+        "en_US": "Undistributed Profits/Losses",
+        "ar_001": "ارباح / خسائر غير موزعة"
+      },
+      "account_type": "equity_unaffected",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 310,
+      "company_id": 2,
+      "code": "202002",
+      "name": {
+        "en_US": "Reservations",
+        "ar_001": "احتياطات و حجوزات"
+      },
+      "account_type": "liability_non_current",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 395,
+      "company_id": 2,
+      "code": "500010",
+      "name": {
+        "en_US": "Capital Gain",
+        "ar_001": "مكاسب رأس المال"
+      },
+      "account_type": "income",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 398,
+      "company_id": 2,
+      "code": "999999",
+      "name": {
+        "en_US": "Undistributed Profits/Losses",
+        "ar_001": "ارباح / خسائر غير موزعة"
+      },
+      "account_type": "equity_unaffected",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 488,
+      "company_id": 3,
+      "code": "202002",
+      "name": {
+        "en_US": "Reservations",
+        "ar_001": "احتياطات و حجوزات"
+      },
+      "account_type": "liability_non_current",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 573,
+      "company_id": 3,
+      "code": "500010",
+      "name": {
+        "en_US": "Capital Gain",
+        "ar_001": "مكاسب رأس المال"
+      },
+      "account_type": "income",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    },
+    {
+      "id": 576,
+      "company_id": 3,
+      "code": "999999",
+      "name": {
+        "en_US": "Undistributed Profits/Losses",
+        "ar_001": "ارباح / خسائر غير موزعة"
+      },
+      "account_type": "equity_unaffected",
+      "active": true,
+      "reconcile": false,
+      "currency_id": null
+    }
+  ]
+}

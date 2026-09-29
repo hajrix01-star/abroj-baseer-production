@@ -1,0 +1,7 @@
+{
+  "protected_tables": 250,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "Additive calendar revision metadata and transient edit fields; existing business rows and old columns unchanged",
+  "candidate": "a6401283d15b09abb74b6ebb4ed560097de5242d"
+}

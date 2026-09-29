@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "scope": "QA reporting simulations, not native posting",
+  "rollback": true,
+  "passed": 14,
+  "checks": [
+    "Two methods sharing category become one category row",
+    "Category sums exact cents across methods and summaries",
+    "Cash category retains independent allocation",
+    "Category sum equals methods and covered sales",
+    "Categories sorted by authoritative id",
+    "Category identity and kind remain authoritative",
+    "Category amounts formatted on backend",
+    "Missing allocations never distributed into categories",
+    "Only missing allocations yields empty categories",
+    "Approved zero without allocations invents no category",
+    "Explicit zero allocation remains a genuine zero category",
+    "Mismatched summary produces no category amount",
+    "Empty period remains empty categories",
+    "Endpoint changes no reporting masterdata or ledger rows"
+  ],
+  "no_endpoint_writes": true,
+  "fixtures": {
+    "summaries": 6,
+    "allocations": 6
+  },
+  "remaining_fixture_rows": {
+    "baseer_pos_summary": 0,
+    "baseer_pos_summary_allocation": 0
+  },
+  "existing_rows_preserved": true,
+  "backend_sha256": "6da79d884ad6c10472ac380084629a6e40a68e57a967d00407251145c43e3f7a"
+}

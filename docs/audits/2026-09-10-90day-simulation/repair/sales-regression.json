@@ -1,0 +1,1853 @@
+{
+  "status": "PASS",
+  "database": "baseer_sim90_fix_20260911",
+  "read_only": true,
+  "checks": [
+    {
+      "label": "2026-01 actual cash in unchanged",
+      "expected": "375450.24",
+      "actual": "375450.24",
+      "passed": true
+    },
+    {
+      "label": "2026-01 actual cash out unchanged",
+      "expected": "-12535.00",
+      "actual": "-12535.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 positive evidenced sales collections",
+      "expected": "375808.50",
+      "actual": "375808.50",
+      "passed": true
+    },
+    {
+      "label": "2026-01 operational incoming unchanged",
+      "expected": "469031.49",
+      "actual": "469031.49",
+      "passed": true
+    },
+    {
+      "label": "2026-01 complete application coverage",
+      "expected": "",
+      "actual": "",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1089",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1095",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1156",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1161",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1215",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1220",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1270",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1276",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1330",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1335",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1388",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1393",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1444",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1450",
+      "expected": "550.00",
+      "actual": "550.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1504",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1509",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1601",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1606",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1660",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1666",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1721",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1726",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1777",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1782",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1838",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1843",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1893",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1898",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1952",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 1957",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2018",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2024",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2075",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2080",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2134",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2139",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2189",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2195",
+      "expected": "550.00",
+      "actual": "550.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2251",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2256",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2343",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2348",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2399",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2405",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2467",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2472",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2556",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2561",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2615",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2621",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2674",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2679",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2730",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2735",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2789",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2795",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2830",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2835",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2897",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2902",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2955",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 2961",
+      "expected": "550.00",
+      "actual": "550.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6618",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6636",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6649",
+      "expected": "25.00",
+      "actual": "25.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6702",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6720",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6735",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6786",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6803",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6815",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6866",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6883",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6897",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6945",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6962",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 6975",
+      "expected": "25.00",
+      "actual": "25.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 7027",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 7042",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 7057",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 native POS evidenced VAT line 7104",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 tax excluded sales receipts from input VAT15",
+      "expected": "326431.74",
+      "actual": "326431.74",
+      "passed": true
+    },
+    {
+      "label": "2026-01 tax excluded refunds/reversals from input VAT15",
+      "expected": "-10900.00",
+      "actual": "-10900.00",
+      "passed": true
+    },
+    {
+      "label": "2026-01 tax excluded rendered receipts use net fragments",
+      "expected": "1531351.74",
+      "actual": "1531351.74",
+      "passed": true
+    },
+    {
+      "label": "2026-02 actual cash in unchanged",
+      "expected": "388249.18",
+      "actual": "388249.18",
+      "passed": true
+    },
+    {
+      "label": "2026-02 actual cash out unchanged",
+      "expected": "-11385.00",
+      "actual": "-11385.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 positive evidenced sales collections",
+      "expected": "388838.00",
+      "actual": "388838.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 operational incoming unchanged",
+      "expected": "431517.93",
+      "actual": "431517.93",
+      "passed": true
+    },
+    {
+      "label": "2026-02 complete application coverage",
+      "expected": "",
+      "actual": "",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 1107",
+      "expected": "25.00",
+      "actual": "25.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 1669",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 2198",
+      "expected": "75.00",
+      "actual": "75.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 2798",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3012",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3017",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3071",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3076",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3126",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3132",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3186",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3191",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3244",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3249",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3308",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3314",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3370",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3375",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3459",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3464",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3518",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3524",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3577",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3582",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3633",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3638",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3694",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3699",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3757",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3762",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3816",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3821",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3874",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3880",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3933",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3938",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3992",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 3997",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4047",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4053",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4107",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4112",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4207",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4212",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4263",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4269",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4323",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4328",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4412",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4417",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4471",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4477",
+      "expected": "550.00",
+      "actual": "550.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4532",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4537",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4588",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4593",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4655",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4661",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4694",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 4699",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6639",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6664",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6723",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6750",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6805",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6829",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6885",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6910",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6964",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 6988",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7045",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7068",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7121",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7134",
+      "expected": "75.00",
+      "actual": "75.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7185",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7202",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7217",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7268",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7286",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7349",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7367",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7382",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7432",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7449",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7461",
+      "expected": "75.00",
+      "actual": "75.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7512",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7526",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 native POS evidenced VAT line 7541",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 tax excluded sales receipts from input VAT15",
+      "expected": "337531.18",
+      "actual": "337531.18",
+      "passed": true
+    },
+    {
+      "label": "2026-02 tax excluded refunds/reversals from input VAT15",
+      "expected": "-9900.00",
+      "actual": "-9900.00",
+      "passed": true
+    },
+    {
+      "label": "2026-02 tax excluded rendered receipts use net fragments",
+      "expected": "339691.18",
+      "actual": "339691.18",
+      "passed": true
+    },
+    {
+      "label": "2026-03 actual cash in unchanged",
+      "expected": "431108.52",
+      "actual": "431108.52",
+      "passed": true
+    },
+    {
+      "label": "2026-03 actual cash out unchanged",
+      "expected": "-11385.00",
+      "actual": "-11385.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 positive evidenced sales collections",
+      "expected": "431704.25",
+      "actual": "431704.25",
+      "passed": true
+    },
+    {
+      "label": "2026-03 operational incoming unchanged",
+      "expected": "484296.02",
+      "actual": "484296.02",
+      "passed": true
+    },
+    {
+      "label": "2026-03 complete application coverage",
+      "expected": "",
+      "actual": "",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 3317",
+      "expected": "25.00",
+      "actual": "25.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 3884",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4480",
+      "expected": "75.00",
+      "actual": "75.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4753",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4758",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4811",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4817",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4868",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4873",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4925",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4930",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4978",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4984",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 4995",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5048",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5053",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5106",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5111",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5162",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5168",
+      "expected": "550.00",
+      "actual": "550.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5220",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5225",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5307",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5312",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5366",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5372",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5425",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5430",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5489",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5494",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5548",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5553",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5601",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5606",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5660",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5665",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5718",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5724",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5775",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5780",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5832",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5837",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5893",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5899",
+      "expected": "550.00",
+      "actual": "550.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5953",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 5958",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6045",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6050",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6101",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6107",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6110",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6161",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6166",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6248",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6253",
+      "expected": "950.00",
+      "actual": "950.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6307",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6313",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6374",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6379",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6430",
+      "expected": "500.00",
+      "actual": "500.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6435",
+      "expected": "700.00",
+      "actual": "700.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6487",
+      "expected": "250.00",
+      "actual": "250.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6493",
+      "expected": "750.00",
+      "actual": "750.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6524",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6529",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6583",
+      "expected": "350.00",
+      "actual": "350.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 6588",
+      "expected": "450.00",
+      "actual": "450.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7123",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7148",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7204",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7231",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7289",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7311",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7370",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7396",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7451",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7474",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7528",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7551",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7576",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7585",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7591",
+      "expected": "25.00",
+      "actual": "25.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7623",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7633",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7640",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7673",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7682",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7688",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7720",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7730",
+      "expected": "150.00",
+      "actual": "150.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7737",
+      "expected": "100.00",
+      "actual": "100.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7767",
+      "expected": "300.00",
+      "actual": "300.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7777",
+      "expected": "200.00",
+      "actual": "200.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7784",
+      "expected": "25.00",
+      "actual": "25.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7817",
+      "expected": "400.00",
+      "actual": "400.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7825",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 native POS evidenced VAT line 7832",
+      "expected": "50.00",
+      "actual": "50.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 tax excluded sales receipts from input VAT15",
+      "expected": "374799.27",
+      "actual": "374799.27",
+      "passed": true
+    },
+    {
+      "label": "2026-03 tax excluded refunds/reversals from input VAT15",
+      "expected": "-9900.00",
+      "actual": "-9900.00",
+      "passed": true
+    },
+    {
+      "label": "2026-03 tax excluded rendered receipts use net fragments",
+      "expected": "374799.27",
+      "actual": "374799.27",
+      "passed": true
+    },
+    {
+      "label": "2026-09 actual cash in unchanged",
+      "expected": "0",
+      "actual": "0",
+      "passed": true
+    },
+    {
+      "label": "2026-09 actual cash out unchanged",
+      "expected": "0",
+      "actual": "0",
+      "passed": true
+    },
+    {
+      "label": "2026-09 positive evidenced sales collections",
+      "expected": "0",
+      "actual": "0",
+      "passed": true
+    },
+    {
+      "label": "2026-09 operational incoming unchanged",
+      "expected": "0",
+      "actual": "0",
+      "passed": true
+    },
+    {
+      "label": "2026-09 complete application coverage",
+      "expected": "",
+      "actual": "",
+      "passed": true
+    },
+    {
+      "label": "native equal sale/refund creates preserved zero payment",
+      "expected": "0",
+      "actual": "0.00",
+      "passed": true
+    },
+    {
+      "label": "zero payment keeps posted original receipt",
+      "expected": "posted",
+      "actual": "posted",
+      "passed": true
+    },
+    {
+      "label": "zero receipt retains both zero journal lines",
+      "expected": "True",
+      "actual": "True",
+      "passed": true
+    },
+    {
+      "label": "source beyond cutoff never becomes proven sales",
+      "expected": "True",
+      "actual": "True",
+      "passed": true
+    },
+    {
+      "label": "native evidence consumes report budget",
+      "expected": "True",
+      "actual": "True",
+      "passed": true
+    },
+    {
+      "label": "cashier financial report access remains denied",
+      "expected": "True",
+      "actual": "True",
+      "passed": true
+    }
+  ],
+  "monthly": {
+    "2026-01": {
+      "cash_in": "375450.24",
+      "cash_out": "-12535.00",
+      "sales_collections": "375808.50",
+      "operational_in": "469031.49",
+      "native_fragments": 81,
+      "warning": "",
+      "collection_event_differences": []
+    },
+    "2026-02": {
+      "cash_in": "388249.18",
+      "cash_out": "-11385.00",
+      "sales_collections": "388838.00",
+      "operational_in": "431517.93",
+      "native_fragments": 88,
+      "warning": "",
+      "collection_event_differences": []
+    },
+    "2026-03": {
+      "cash_in": "431108.52",
+      "cash_out": "-11385.00",
+      "sales_collections": "431704.25",
+      "operational_in": "484296.02",
+      "native_fragments": 97,
+      "warning": "",
+      "collection_event_differences": []
+    },
+    "2026-09": {
+      "cash_in": "0",
+      "cash_out": "0",
+      "sales_collections": "0",
+      "operational_in": "0",
+      "native_fragments": 0,
+      "warning": "",
+      "collection_event_differences": []
+    }
+  },
+  "oracle": "Persisted pre-repair scenario input events, not report output",
+  "failed": []
+}

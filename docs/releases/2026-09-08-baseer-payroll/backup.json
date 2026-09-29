@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".local-backups\\baseer-payroll-20260908\\preinstall\\compose.reports-qa.yaml",
+    "bytes": 903,
+    "sha256": "cbcec000978e180751b7cf1bf149727b5b1509d2e5a7ac830fdd9fec175542ca"
+  },
+  {
+    "path": ".local-backups\\baseer-payroll-20260908\\preinstall\\database.dump",
+    "bytes": 8145881,
+    "sha256": "74fba38b1aa73d85e3ba9987bd3950504d2f5bc368f248f23da6fc17a78f46e6"
+  },
+  {
+    "path": ".local-backups\\baseer-payroll-20260908\\preinstall\\filestore.tar.gz",
+    "bytes": 50287415,
+    "sha256": "8fde319041fb45a1a31a6ff5999cc878600c34132fa84b2f42c6b0578cdc2caa"
+  },
+  {
+    "path": ".local-backups\\baseer-payroll-20260908\\preinstall\\odoo.local.conf",
+    "bytes": 173,
+    "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "fresh_connection": true,
+  "source_links": 51,
+  "employees": 49,
+  "active": 34,
+  "archived": 15,
+  "including_administrator": 50,
+  "no_imported_salary_allowance_contract": true,
+  "pending_calendars_zero_hours": true,
+  "arz_arabic_ui_active_count": 14
+}

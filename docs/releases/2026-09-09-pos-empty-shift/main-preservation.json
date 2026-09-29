@@ -1,0 +1,7 @@
+{
+  "protected_tables": 250,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "Transient day_schedule becomes nullable; explicit sales-save guard. Existing business rows unchanged",
+  "candidate": "d7c1d675f2176c1e125ca50c5522f917ad51d153"
+}

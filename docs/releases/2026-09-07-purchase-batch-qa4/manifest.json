@@ -1,0 +1,204 @@
+{
+  "candidate": "BASEER-ODOO-PB1/v1 QA4",
+  "date": "2026-09-07",
+  "scope": "QA preview only; not installed on main",
+  "identity": "SHA256 source manifest and verified zip; workspace has no release commit",
+  "module": "baseer_purchase_batch",
+  "version": "19.0.1.2.0",
+  "dependencies": [
+    "account",
+    "baseer_report_layout",
+    "baseer_category_display"
+  ],
+  "qa_database": "baseer_reports_qa_20260907",
+  "runtime_image_id": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "installed_dependency_versions": {
+    "baseer_category_display": "19.0.1.0.0",
+    "account": "19.0.1.4",
+    "baseer_report_layout": "19.0.1.1.0"
+  },
+  "existing_report_files_verified": 229,
+  "baseline": "Reports R1 with previously accepted cash print 19.0.1.3.1 two-file patch",
+  "main_readonly_check": {
+    "moves": 0,
+    "move_lines": 0,
+    "purchase_batch_installed": 0,
+    "category_display_installed": 0
+  },
+  "archive": {
+    "path": ".local-backups/releases/2026-09-07-purchase-batch-qa4/baseer-purchase-batch-qa4.zip",
+    "sha256": "7b736d459b9dc919de31c4a0782a52645e668068255d2c14b0ca93400d186002",
+    "entries_verified": 23
+  },
+  "files": [
+    {
+      "path": "custom_addons/baseer_category_display/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/__manifest__.py",
+      "bytes": 279,
+      "sha256": "80ed4d449408157f892d6ba06c60f5231f91ec36f4b85423666c521d682972ac"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/models/__init__.py",
+      "bytes": 31,
+      "sha256": "2330ebc9ec58477a49dc086dbaa3518d4b78fc5ed1001fcf05f1055175a9b0d1"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/models/product_category.py",
+      "bytes": 424,
+      "sha256": "ea7857a6899c58aa3e8daacbcc6c0966a6ecf723229dbd18f02c2c5720745137"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/README.md",
+      "bytes": 650,
+      "sha256": "906c554d8c2846315bef3ab08067d028473bbe2ba94f26f62c5aa2fb1f4088ee"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/views/product_category_views.xml",
+      "bytes": 543,
+      "sha256": "c357d8726816d7c6bf2583bff6e2c643e8d05b55151d88a9357bf318a9c99996"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__init__.py",
+      "bytes": 21,
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__manifest__.py",
+      "bytes": 845,
+      "sha256": "73e6249dfc06aa6c168591c90aeaa60cbd612e1c0764349bc771069df0db6fd5"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/data/sequence.xml",
+      "bytes": 388,
+      "sha256": "42ddb26d2ad842a0b4690809c413256e06f52e574710b0457ac347a4a6a486a0"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/i18n/ar_001.po",
+      "bytes": 45854,
+      "sha256": "67e083492f0ce374b2d8c8457e54587f2da67a84826386d263aadf0ea251c5d5"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/migrations/19.0.1.2.0/post-migration.py",
+      "bytes": 713,
+      "sha256": "bca03cbec6ce68d554968e7b7b5657577a0ec32cb5d5295beb7d3e165a8f2e7b"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/__init__.py",
+      "bytes": 55,
+      "sha256": "c1d7dd04824a48dd8c48d5308fe53b6e2397002932aeb414bbf5896eb5f47788"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/purchase_batch.py",
+      "bytes": 39430,
+      "sha256": "b0a3273c2c45123ea15ebac0786f2f2df668fa7b6bcdcf5806e0c4efaec856c7"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/res_partner.py",
+      "bytes": 2040,
+      "sha256": "cba62b6b12eb9d35ab5344be20fd7ed3cb373f308fef76bcd96d17f8b552a84d"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/README.md",
+      "bytes": 4586,
+      "sha256": "9d4db3bbca0bb95f6c593a29ca87b2bd77bc7105ec37b105477074660d62e227"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/report/purchase_batch_report.xml",
+      "bytes": 6321,
+      "sha256": "b1c11d3b00e6924ca8337f6f9fab93d293eb31fde0764cd016461ed5884f20d8"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/ir.model.access.csv",
+      "bytes": 622,
+      "sha256": "c42c7e37f2ba59be5e74532d50d56cd3e969808f3d6d51aaf1d1faefe030e476"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/security.xml",
+      "bytes": 974,
+      "sha256": "dce5ee3927d3c5d2c96dfdef13805af8c7bcf3d9e856c0928d7721aac8a4a08a"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/js/latin_date_field.js",
+      "bytes": 1199,
+      "sha256": "815e79dedbda875caa488dd346afb6a554713b6d12e208d528955445e97341b1"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+      "bytes": 3323,
+      "sha256": "4da2b7eef933b59c56ace4faf86cea09ed6060a27c2455fcd248b35779695a14"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/category_mapping_views.xml",
+      "bytes": 2614,
+      "sha256": "86259719f9860d596ac253e82da472ed05c750b91ebef588e9d17223a77f2505"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/purchase_batch_views.xml",
+      "bytes": 16576,
+      "sha256": "46d1e27af92de9c542615ef26ab80eb4a6f3094016b328843282a6c214c344b8"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/res_partner_views.xml",
+      "bytes": 829,
+      "sha256": "d093ab55ac767458ddb4cc19446d25dcfeb50e4116bc17cecd10bad747d9a545"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/purchase_batch_qa4_checks.json",
+      "sha256": "7a6f751840941fce191330b840f2ba15b7f3e6ce45ce93d856557809490da7bf"
+    },
+    {
+      "path": "docs/build-governance/purchase_batch_qa4_regression_checks.json",
+      "sha256": "c5d14eb634e68e20723db895cac578dd0af44f968890a3d9a944c96876e8a408"
+    },
+    {
+      "path": "docs/build-governance/purchase_batch_qa4_ui_checks.json",
+      "sha256": "d983e4833fc0c12e8fb9375a84a9e43685dbc2f760850ae7ae6a280e10f3c30b"
+    },
+    {
+      "path": "docs/build-governance/qa4_table.png",
+      "sha256": "ccee53833b69ba971089522ae22c5bb331a8626c7d2893d07c0fd1374e4408be"
+    },
+    {
+      "path": "docs/build-governance/qa4_supplier.png",
+      "sha256": "3028a69dd06ab30b9700f811d81500c15d777df8f10a0fa257dd0cac64e864db"
+    },
+    {
+      "path": "docs/build-governance/qa4_row_form.png",
+      "sha256": "daea21f00ca9f67eaa65e19ecca29b77483c738e6e47ce5d05b1c60e92306734"
+    },
+    {
+      "path": "docs/build-governance/qa4_credit_validation.png",
+      "sha256": "1331986ac8b2e172bbbedcc26e80501456d6489a804bf54b16c6df0504ab971f"
+    },
+    {
+      "path": "docs/build-governance/qa4_financial_before.txt",
+      "sha256": "bc431059da08ed4f00822e630a1e8aba6e3ce4b33a48717675f126d430ce14fd"
+    },
+    {
+      "path": "docs/build-governance/qa4_financial_after.txt",
+      "sha256": "1737dbe68e8c1a45dab23444366ef0c2a6158a3b790fca040f64ae8f3d4aa654"
+    },
+    {
+      "path": "docs/build-governance/qa4_legacy_before.json",
+      "sha256": "3df498145bd441e9733a453eadcc7888001f2743592aa3045dddc88428d72d40"
+    },
+    {
+      "path": "docs/build-governance/qa4_main_readonly.txt",
+      "sha256": "cae28d58016d48407cd4ac79f3cdfdc6c370d84fbebd717a30eb0a879ccddf79"
+    },
+    {
+      "path": "docs/build-governance/qa4_upgrade.log",
+      "sha256": "59ad2ee69ec1d8c45287c784726dbe089b915e94ac4f723174b4e12bcf7c0e71"
+    },
+    {
+      "path": "docs/build-governance/qa4_final_upgrade.log",
+      "sha256": "b6984fd7ccd77ca11c7555e4e7a8f99043f296491e9c6663e35f4c7f249357c6"
+    }
+  ]
+}

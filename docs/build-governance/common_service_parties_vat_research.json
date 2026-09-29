@@ -1,0 +1,148 @@
+{
+  "researched_at": "2026-09-08",
+  "scope": "Seed preparation only; no Odoo database changes",
+  "verification_method": "Public official sources; no successful live ZATCA registration verification",
+  "unknown_vat_meaning": "Unknown does not mean unregistered, exempt, or zero rated",
+  "rows": [
+    {
+      "name": "الشركة السعودية للطاقة",
+      "vat": "300000361310003",
+      "verification_status": "officially_published",
+      "source": "https://www.se.com.sa/-/media/sec/Our-Partners/Join-Us/VAT.ashx",
+      "note": "رقم مجموعة ضريبية منشور باسم الشركة السعودية للكهرباء السابق؛ تؤيده وثيقة شرح الفاتورة الرسمية."
+    },
+    {
+      "name": "شركة المياه الوطنية",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": "https://www.nwc.com.sa/EN/BusinessSector/UserManualLibrary/Value%20Added%20Tax%20%28VAT%29.pdf",
+      "note": "المنشور الرسمي يشرح ضريبة القيمة المضافة ولا يذكر رقم الشركة."
+    },
+    {
+      "name": "شركة الاتصالات السعودية",
+      "vat": "300000157210003",
+      "verification_status": "officially_published",
+      "source": "https://www.stc.com.sa/en/content-page/zatca-invoice.html",
+      "note": "رقم البائع ظاهر بصفحة الفاتورة الرسمية؛ تؤيده شهادة المجموعة على موقع solutions."
+    },
+    {
+      "name": "شركة اتحاد اتصالات",
+      "vat": "300000699600003",
+      "verification_status": "officially_published",
+      "source": "https://www.mobily.com.sa/web/ar/business/contact-us",
+      "note": "الرقم منشور في بيانات الشركة الرسمية."
+    },
+    {
+      "name": "شركة الاتصالات المتنقلة السعودية",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "ظهر مرشح في فواتير رفعها مستخدمون؛ لم يثبت من مصدر رسمي. نموذج التحقق الرسمي لم ينتج نتيجة."
+    },
+    {
+      "name": "شركة اتحاد سلام للاتصالات",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": "https://salam.sa/ontc",
+      "note": "لا ينقل رقم سلام موبايل إلى هذا الكيان؛ السجل التجاري بالمصدر مختلف."
+    },
+    {
+      "name": "شركة اتحاد قو للاتصالات",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم موثق ضمن البحث."
+    },
+    {
+      "name": "وزارة البلديات والإسكان",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "وزارة التجارة",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "وزارة الخارجية",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "وزارة العدل",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "المديرية العامة للجوازات",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": null,
+      "note": "لم يتوفر رقم مملوك للجهة بمصدر موثق؛ التفاصيل في hr_services_government_vat_research.json."
+    },
+    {
+      "name": "منصة بلدي",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": "https://baha.gov.sa/ar/Eservices/Details/296",
+      "note": "المنصة تعرض فواتير جهات بلدية؛ لا يفترض رقم موحد باسم المنصة."
+    },
+    {
+      "name": "منصة مدد",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": "https://mudad.com.sa",
+      "note": "لم يتوفر رقم موثق؛ تعذر جلب الموقع."
+    },
+    {
+      "name": "مقيم",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": "https://muqeem.sa/assets/i18n/ar-ly.json",
+      "note": "085 رقم مفوتر شركة علم، وليس رقم تسجيل VAT. يتطلب مطابقة هوية البائع بالمستند."
+    },
+    {
+      "name": "منصة قوى",
+      "vat": null,
+      "verification_status": "not_publicly_verified",
+      "source": "https://www.qiwa.sa/ar/terms-and-conditions",
+      "note": "لم يتوفر رقم موثق؛ صفحة الشروط رفضت الوصول."
+    }
+  ]
+}

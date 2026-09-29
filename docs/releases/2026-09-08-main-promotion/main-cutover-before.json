@@ -1,0 +1,911 @@
+{
+  "account_move": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "columns": "id,sequence_number,message_main_attachment_id,journal_id,company_id,origin_payment_id,statement_line_id,tax_cash_basis_rec_id,tax_cash_basis_origin_move_id,auto_post_origin_id,secure_sequence_number,invoice_payment_term_id,partner_id,commercial_partner_id,partner_shipping_id,partner_bank_id,fiscal_position_id,preferred_payment_method_line_id,currency_id,reversed_entry_id,invoice_user_id,invoice_incoterm_id,invoice_cash_rounding_id,create_uid,write_uid,sequence_prefix,access_token,name,ref,state,move_type,auto_post,inalterable_hash,payment_reference,qr_code_method,payment_state,invoice_source_email,invoice_partner_display_name,invoice_origin,incoterm_location,date,auto_post_until,invoice_date,invoice_date_due,delivery_date,taxable_supply_date,sending_data,narration,invoice_currency_rate,amount_untaxed,amount_tax,amount_total,amount_residual,amount_untaxed_signed,amount_untaxed_in_currency_signed,amount_tax_signed,amount_total_signed,amount_total_in_currency_signed,amount_residual_signed,quick_edit_total_amount,always_tax_exigible,checked,posted_before,made_sequence_gap,is_manually_modified,is_move_sent,create_date,write_date,campaign_id,source_id,medium_id,team_id,reversed_pos_order_id,debit_origin_id,l10n_sa_reason,l10n_sa_confirmation_datetime,eh_sealed,eh_legacy_unverified_seal"
+  },
+  "account_move_line": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "columns": "id,move_id,journal_id,company_id,company_currency_id,sequence,account_id,currency_id,partner_id,reconcile_model_id,payment_id,statement_line_id,statement_id,group_tax_id,tax_line_id,tax_group_id,tax_repartition_line_id,full_reconcile_id,product_id,product_uom_id,create_uid,write_uid,move_name,parent_state,ref,name,matching_number,display_type,date,invoice_date,date_maturity,discount_date,analytic_distribution,extra_tax_data,debit,credit,balance,amount_currency,tax_base_amount,amount_residual,amount_residual_currency,quantity,price_unit,price_subtotal,price_total,discount,discount_amount_currency,discount_balance,is_storno,is_imported,reconciled,collapse_composition,collapse_prices,no_followup,create_date,write_date,deductible_amount,is_downpayment,cogs_origin_id,purchase_line_id,expense_id"
+  },
+  "account_payment": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "columns": "id,message_main_attachment_id,move_id,journal_id,company_id,partner_bank_id,paired_internal_transfer_payment_id,payment_method_line_id,payment_method_id,currency_id,partner_id,outstanding_account_id,destination_account_id,create_uid,write_uid,name,state,payment_type,partner_type,memo,payment_reference,date,amount,amount_company_currency_signed,is_reconciled,is_matched,is_sent,create_date,write_date,payment_transaction_id,payment_token_id,source_payment_id,pos_payment_method_id,force_outstanding_account_id,pos_session_id,pos_order_id,should_withhold_tax"
+  },
+  "account_account": {
+    "count": 534,
+    "hash": "0ccda06c539116605f329e96adcfde4d",
+    "columns": "id,currency_id,create_uid,write_uid,account_type,name,description,code_store,note,active,reconcile,non_trade,create_date,write_date,account_stock_variation_id,account_stock_expense_id"
+  },
+  "account_tax": {
+    "count": 117,
+    "hash": "e071efe3f4c97c1832b260e9b0dee757",
+    "columns": "id,company_id,sequence,tax_group_id,cash_basis_transition_account_id,country_id,create_uid,write_uid,type_tax_use,tax_scope,amount_type,price_include_override,tax_exigibility,name,description,invoice_label,invoice_legal_notes,amount,is_domestic,active,include_base_amount,is_base_affected,analytic,create_date,write_date,ubl_cii_tax_category_code,ubl_cii_tax_exemption_reason_code,withholding_sequence_id,is_withholding_tax_on_payment"
+  },
+  "account_journal": {
+    "count": 30,
+    "hash": "4cef89730c4d4361017728ff976ec950",
+    "columns": "id,alias_id,default_account_id,suspense_account_id,non_deductible_account_id,sequence,currency_id,company_id,invoice_template_pdf_report_id,profit_account_id,loss_account_id,bank_account_id,create_uid,write_uid,color,access_token,code,type,invoice_reference_type,invoice_reference_model,bank_statements_source,incoming_einvoice_notification_email,name,sequence_override_regex,active,is_self_billing,restrict_mode_hash_table,refund_sequence,payment_sequence,show_on_dashboard,create_date,write_date,debit_sequence"
+  },
+  "res_partner": {
+    "count": 8,
+    "hash": "95176abfcd81237a538ef96df8db02a3",
+    "columns": "id,company_id,create_date,name,parent_id,user_id,state_id,country_id,industry_id,color,commercial_partner_id,create_uid,write_uid,complete_name,ref,lang,tz,vat,company_registry,website,function,type,street,street2,zip,city,email,phone,commercial_company_name,company_name,properties,barcode,comment,partner_latitude,partner_longitude,active,employee,is_company,partner_share,write_date,message_bounce,email_normalized,signup_type,phone_sanitized,specific_property_product_pricelist,invoice_template_pdf_report_id,supplier_rank,customer_rank,autopost_bills,credit_limit,property_account_payable_id,property_account_receivable_id,property_account_position_id,property_payment_term_id,property_supplier_payment_term_id,trust,ignore_abnormal_invoice_date,ignore_abnormal_invoice_amount,invoice_sending_method,invoice_edi_format_store,property_outbound_payment_method_line_id,property_inbound_payment_method_line_id,global_location_number,peppol_endpoint,peppol_eas,sale_warn_msg,property_stock_customer,property_stock_supplier,picking_warn_msg,calendar_last_notif_ack,date_localization,buyer_id,property_purchase_currency_id,receipt_reminder_email,reminder_date_before_receipt,purchase_warn_msg,suggest_days,suggest_percent,suggest_based_on,group_rfq,group_on,website_id,is_published"
+  },
+  "res_company": {
+    "count": 3,
+    "hash": "3ac840f9cb64bada5274e02a2fa03e11",
+    "columns": "id,name,partner_id,currency_id,sequence,create_date,parent_path,parent_id,paperformat_id,external_report_layout_id,create_uid,write_uid,email,phone,font,primary_color,secondary_color,layout_background,report_header,report_footer,company_details,active,uses_default_logo,write_date,logo_web,resource_calendar_id,alias_domain_id,email_primary_color,email_secondary_color,iap_enrich_auto_done,snailmail_color,snailmail_cover,snailmail_duplex,fiscalyear_last_day,transfer_account_id,default_cash_difference_income_account_id,default_cash_difference_expense_account_id,account_journal_suspense_account_id,account_journal_early_pay_discount_gain_account_id,account_journal_early_pay_discount_loss_account_id,account_sale_tax_id,account_purchase_tax_id,account_purchase_receipt_fiscal_position_id,currency_exchange_journal_id,income_currency_exchange_account_id,expense_currency_exchange_account_id,incoterm_id,batch_payment_sequence_id,account_opening_move_id,account_default_pos_receivable_account_id,expense_accrual_account_id,revenue_accrual_account_id,automatic_entry_default_journal_id,domestic_fiscal_position_id,account_fiscal_country_id,tax_cash_basis_journal_id,account_cash_basis_base_account_id,account_discount_income_allocation_id,account_discount_expense_allocation_id,income_account_id,expense_account_id,price_difference_account_id,fiscalyear_last_month,chart_template,bank_account_code_prefix,cash_account_code_prefix,transfer_account_code_prefix,tax_calculation_rounding_method,terms_type,quick_edit_mode,account_price_include,fiscalyear_lock_date,tax_lock_date,sale_lock_date,purchase_lock_date,hard_lock_date,account_opening_date,invoice_terms,invoice_terms_html,expects_chart_of_accounts,anglo_saxon_accounting,qr_code,link_qr_code,display_invoice_amount_total_words,display_invoice_tax_company_currency,account_use_credit_limit,tax_exigibility,account_storno,restrictive_audit_trail,autopost_bills,quotation_validity_days,sale_discount_product_id,downpayment_account_id,sale_onboarding_payment_method,portal_confirmation_sign,portal_confirmation_pay,prepayment_percent,sale_order_template_id,nomenclature_id,internal_transit_location_id,stock_mail_confirmation_template_id,annual_inventory_day,annual_inventory_month,stock_confirmation_type,stock_move_email_validation,stock_text_confirmation,horizon_days,account_stock_journal_id,account_stock_valuation_id,account_production_wip_account_id,account_production_wip_overhead_account_id,inventory_period,inventory_valuation,cost_method,stock_sms_confirmation_template_id,has_received_warning_stock_sms,point_of_sale_update_stock_quantities,point_of_sale_ticket_portal_url_display_mode,point_of_sale_use_ticket_qr_code,point_of_sale_ticket_unique_code,security_lead,hr_presence_control_email_amount,contract_expiration_notice_period,work_permit_expiration_notice_period,hr_presence_control_ip_list,employee_properties_definition,hr_presence_control_login,hr_presence_control_email,hr_presence_control_ip,hr_presence_control_attendance,overtime_company_threshold,overtime_employee_threshold,attendance_kiosk_delay,attendance_kiosk_mode,attendance_barcode_source,attendance_kiosk_key,attendance_overtime_validation,hr_attendance_display_overtime,attendance_kiosk_use_pin,attendance_from_systray,auto_check_out,absence_management,attendance_device_tracking,auto_check_out_tolerance,po_lock,po_double_validation,po_double_validation_amount,days_to_purchase,expense_journal_id,social_twitter,social_facebook,social_github,social_linkedin,social_youtube,social_instagram,social_tiktok,social_discord,website_id,withholding_tax_base_account_id,l10n_gcc_dual_language_invoice,eh_gl_row_limit,eh_expand_page_size,eh_dashboard_lookback_days,eh_forecast_default_horizon,eh_forecast_default_history_months,eh_asset_default_useful_life_months,eh_lease_default_term_months,eh_collections_grace_days,eh_cash_fx_revaluation_journal_id,eh_ap_invoice_ref_regex,eh_ap_total_regex,eh_sepa_dd_default_instrument,eh_cf_interest_paid_section,eh_cf_interest_received_section,eh_cf_dividends_paid_section,eh_cf_dividends_received_section,eh_cf_tax_fallback,eh_approval_material_change_pct"
+  },
+  "product_template": {
+    "count": 8,
+    "hash": "ea74cdc73a54999cfe11ee4a270ef8d4",
+    "columns": "id,sequence,categ_id,uom_id,company_id,color,create_uid,write_uid,type,service_tracking,default_code,name,description,description_purchase,description_sale,product_properties,list_price,volume,weight,sale_ok,purchase_ok,active,can_image_1024_be_zoomed,has_configurable_attributes,is_favorite,create_date,write_date,property_account_income_id,property_account_expense_id,service_type,expense_policy,invoice_policy,sale_line_warn_msg,sale_delay,lot_sequence_id,tracking,responsible_id,property_stock_production,property_stock_inventory,description_picking,description_pickingout,description_pickingin,is_storable,property_price_difference_account_id,lot_valuated,pos_sequence,public_description,available_in_pos,to_weight,self_order_available,purchase_method,purchase_line_warn_msg,service_to_purchase,can_be_expensed,project_id,project_template_id,task_template_id"
+  },
+  "product_product": {
+    "count": 8,
+    "hash": "86fa0cbdb560aef0c64b7319cacb0855",
+    "columns": "id,product_tmpl_id,create_uid,write_uid,default_code,barcode,combination_indices,standard_price,volume,weight,active,can_image_variant_1024_be_zoomed,is_favorite,is_in_selected_section_of_order,write_date,create_date,lot_properties_definition"
+  },
+  "product_category": {
+    "count": 4,
+    "hash": "fe28074592f9fff00da198238d6370af",
+    "columns": "id,parent_id,create_uid,write_uid,name,complete_name,parent_path,product_properties_definition,create_date,write_date,property_account_income_categ_id,property_account_expense_categ_id,removal_strategy_id,packaging_reserve_method,property_valuation,property_cost_method,property_stock_journal,property_stock_valuation_account_id,property_price_difference_account_id"
+  },
+  "pos_config": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "columns": "id,picking_type_id,journal_id,invoice_journal_id,currency_id,order_seq_id,order_backend_seq_id,order_line_seq_id,device_seq_id,pricelist_id,company_id,group_pos_manager_id,group_pos_user_id,tip_product_id,default_fiscal_position_id,default_preset_id,rounding_method,warehouse_id,route_id,fallback_nomenclature_id,create_uid,write_uid,access_token,name,iface_tax_included,customer_display_bg_img_name,proxy_ip,uuid,picking_policy,epson_printer_ip,receipt_header,receipt_footer,is_order_printer,iface_cashdrawer,iface_electronic_scale,iface_print_via_proxy,iface_scan_via_proxy,iface_big_scrollbars,iface_group_by_categ,iface_print_auto,iface_print_skip_screen,restrict_price_control,is_margins_costs_accessible_to_every_user,set_maximum_difference,basic_receipt,active,iface_tipproduct,use_pricelist,use_presets,tax_regime_selection,limit_categories,module_pos_restaurant,module_pos_avatax,module_pos_discount,module_pos_appointment,is_posbox,is_header_or_footer,module_pos_hr,other_devices,cash_rounding,only_round_cash_method,manual_discount,ship_later,auto_validate_terminal_payment,show_product_images,show_category_images,module_pos_sms,is_closing_entry_by_product,order_edit_tracking,use_fast_payment,last_data_change,create_date,write_date,amount_authorized_diff,default_screen,iface_splitbill,iface_printbill,set_tip_after_payment,crm_team_id,down_payment_product_id,self_ordering_default_language_id,self_ordering_default_user_id,self_ordering_mode,self_ordering_service_mode,self_ordering_pay_after,self_ordering_image_brand_name,has_paper,self_order_online_payment_method_id,l10n_gcc_dual_language_receipt"
+  },
+  "pos_payment_method": {
+    "count": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "columns": "id,sequence,outstanding_account_id,receivable_account_id,journal_id,company_id,create_uid,write_uid,use_payment_terminal,payment_method_type,qr_code_method,name,is_cash_count,split_transactions,active,create_date,write_date,is_online_payment"
+  },
+  "users": [
+    {
+      "id": 1,
+      "login": "__system__",
+      "active": false,
+      "company_id": 1
+    },
+    {
+      "id": 2,
+      "login": "admin",
+      "active": true,
+      "company_id": 1
+    },
+    {
+      "id": 3,
+      "login": "public",
+      "active": false,
+      "company_id": 1
+    },
+    {
+      "id": 4,
+      "login": "portaltemplate",
+      "active": false,
+      "company_id": 1
+    }
+  ],
+  "user_groups": [
+    {
+      "gid": 4,
+      "uid": 1
+    },
+    {
+      "gid": 5,
+      "uid": 1
+    },
+    {
+      "gid": 8,
+      "uid": 1
+    },
+    {
+      "gid": 9,
+      "uid": 1
+    },
+    {
+      "gid": 13,
+      "uid": 1
+    },
+    {
+      "gid": 17,
+      "uid": 1
+    },
+    {
+      "gid": 21,
+      "uid": 1
+    },
+    {
+      "gid": 24,
+      "uid": 1
+    },
+    {
+      "gid": 30,
+      "uid": 1
+    },
+    {
+      "gid": 35,
+      "uid": 1
+    },
+    {
+      "gid": 42,
+      "uid": 1
+    },
+    {
+      "gid": 56,
+      "uid": 1
+    },
+    {
+      "gid": 59,
+      "uid": 1
+    },
+    {
+      "gid": 65,
+      "uid": 1
+    },
+    {
+      "gid": 67,
+      "uid": 1
+    },
+    {
+      "gid": 72,
+      "uid": 1
+    },
+    {
+      "gid": 74,
+      "uid": 1
+    },
+    {
+      "gid": 78,
+      "uid": 1
+    },
+    {
+      "gid": 85,
+      "uid": 1
+    },
+    {
+      "gid": 86,
+      "uid": 1
+    },
+    {
+      "gid": 4,
+      "uid": 2
+    },
+    {
+      "gid": 5,
+      "uid": 2
+    },
+    {
+      "gid": 21,
+      "uid": 2
+    },
+    {
+      "gid": 24,
+      "uid": 2
+    },
+    {
+      "gid": 30,
+      "uid": 2
+    },
+    {
+      "gid": 35,
+      "uid": 2
+    },
+    {
+      "gid": 42,
+      "uid": 2
+    },
+    {
+      "gid": 56,
+      "uid": 2
+    },
+    {
+      "gid": 59,
+      "uid": 2
+    },
+    {
+      "gid": 65,
+      "uid": 2
+    },
+    {
+      "gid": 67,
+      "uid": 2
+    },
+    {
+      "gid": 72,
+      "uid": 2
+    },
+    {
+      "gid": 74,
+      "uid": 2
+    },
+    {
+      "gid": 78,
+      "uid": 2
+    },
+    {
+      "gid": 85,
+      "uid": 2
+    },
+    {
+      "gid": 86,
+      "uid": 2
+    },
+    {
+      "gid": 87,
+      "uid": 2
+    },
+    {
+      "gid": 88,
+      "uid": 2
+    },
+    {
+      "gid": 89,
+      "uid": 2
+    },
+    {
+      "gid": 11,
+      "uid": 3
+    },
+    {
+      "gid": 10,
+      "uid": 4
+    }
+  ],
+  "user_companies": [
+    {
+      "cid": 1,
+      "user_id": 1
+    },
+    {
+      "cid": 2,
+      "user_id": 1
+    },
+    {
+      "cid": 3,
+      "user_id": 1
+    },
+    {
+      "cid": 1,
+      "user_id": 2
+    },
+    {
+      "cid": 2,
+      "user_id": 2
+    },
+    {
+      "cid": 3,
+      "user_id": 2
+    },
+    {
+      "cid": 1,
+      "user_id": 3
+    },
+    {
+      "cid": 1,
+      "user_id": 4
+    }
+  ],
+  "modules": [
+    {
+      "name": "account",
+      "latest_version": "19.0.1.4"
+    },
+    {
+      "name": "account_add_gln",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "account_debit_note",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "account_edi_ubl_cii",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "account_payment",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "analytic",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "api_doc",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_passkey",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "auth_passkey_portal",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_signup",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_totp",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_totp_mail",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_totp_portal",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "barcodes",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "barcodes_gs1_nomenclature",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "base",
+      "latest_version": "19.0.1.3"
+    },
+    {
+      "name": "base_geolocalize",
+      "latest_version": "19.0.2.1"
+    },
+    {
+      "name": "base_import",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "base_import_module",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "base_install_request",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "base_setup",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "baseer_cash_categories",
+      "latest_version": "19.0.1.3.1"
+    },
+    {
+      "name": "baseer_core",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "baseer_report_layout",
+      "latest_version": "19.0.1.1.0"
+    },
+    {
+      "name": "bus",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "calendar",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "calendar_sms",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "contacts",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "crm",
+      "latest_version": "19.0.1.9"
+    },
+    {
+      "name": "crm_iap_enrich",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "crm_iap_mine",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "crm_sms",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "digest",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "eh_account_base",
+      "latest_version": "19.0.1.8.0"
+    },
+    {
+      "name": "eh_account_dynamic_reports",
+      "latest_version": "19.0.1.8.1"
+    },
+    {
+      "name": "google_address_autocomplete",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "google_gmail",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "google_recaptcha",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "hr_attendance",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "hr_calendar",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_expense",
+      "latest_version": "19.0.2.1"
+    },
+    {
+      "name": "hr_holidays",
+      "latest_version": "19.0.1.6"
+    },
+    {
+      "name": "hr_holidays_attendance",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_holidays_homeworking",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_homeworking",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "hr_homeworking_calendar",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_maintenance",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_org_chart",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_skills",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "html_builder",
+      "latest_version": "19.0.0.1"
+    },
+    {
+      "name": "html_editor",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "http_routing",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "iap",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "iap_crm",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "iap_mail",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "iot_base",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_account_withholding_tax",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_account_withholding_tax_pos",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_gcc_invoice",
+      "latest_version": "19.0.1.0.1"
+    },
+    {
+      "name": "l10n_gcc_invoice_stock_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_gcc_pos",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_sa",
+      "latest_version": "19.0.2.2"
+    },
+    {
+      "name": "l10n_sa_pos",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_sa_withholding_tax",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "link_tracker",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "mail",
+      "latest_version": "19.0.1.19"
+    },
+    {
+      "name": "mail_bot",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "mail_bot_hr",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "maintenance",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "microsoft_outlook",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "onboarding",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "partner_autocomplete",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "payment",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "phone_validation",
+      "latest_version": "19.0.2.1"
+    },
+    {
+      "name": "point_of_sale",
+      "latest_version": "19.0.1.0.2"
+    },
+    {
+      "name": "portal",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "portal_rating",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_hr",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_hr_restaurant",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_online_payment",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_online_payment_self_order",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_restaurant",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_sale",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "pos_self_order",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_self_order_sale",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "privacy_lookup",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "product",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "project",
+      "latest_version": "19.0.1.4"
+    },
+    {
+      "name": "project_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_hr_expense",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_hr_skills",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_purchase",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_purchase_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_sale_expense",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_sms",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "project_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_stock_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "project_todo",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "purchase",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "purchase_edi_ubl_bis3",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "purchase_stock",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "rating",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "resource",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "resource_mail",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "rpc",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "sale_crm",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_edi_ubl",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_expense",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_management",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_pdf_quote_builder",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_project",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_project_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_project_stock_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_purchase",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_purchase_project",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_purchase_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_service",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_sms",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sales_team",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "sms",
+      "latest_version": "19.0.3.0"
+    },
+    {
+      "name": "snailmail",
+      "latest_version": "19.0.0.4"
+    },
+    {
+      "name": "snailmail_account",
+      "latest_version": "19.0.0.1"
+    },
+    {
+      "name": "social_media",
+      "latest_version": "19.0.0.1"
+    },
+    {
+      "name": "spreadsheet",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_hr_expense",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_pos_hr",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_pos_restaurant",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_sale",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_stock_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "stock",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "stock_account",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "stock_maintenance",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "stock_sms",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "uom",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "utm",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "web",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "web_hierarchy",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "web_tour",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "web_unsplash",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "website",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "website_crm",
+      "latest_version": "19.0.2.1"
+    },
+    {
+      "name": "website_crm_sms",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "website_links",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "website_mail",
+      "latest_version": "19.0.0.1"
+    },
+    {
+      "name": "website_payment",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "website_project",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "website_sms",
+      "latest_version": "19.0.1.0"
+    }
+  ],
+  "business": {
+    "pos_order": 0,
+    "pos_session": 0
+  }
+}

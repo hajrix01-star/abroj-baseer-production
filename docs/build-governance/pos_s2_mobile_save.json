@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "records": [
+    {
+      "id": 230,
+      "business_date": "2026-09-05",
+      "period_scope": "evening",
+      "customer_count": 24,
+      "amount_gross": 240.0
+    },
+    {
+      "id": 229,
+      "business_date": "2026-09-05",
+      "period_scope": "morning",
+      "customer_count": 12,
+      "amount_gross": 120.0
+    }
+  ],
+  "cleanup": "exact mobile fixture removed; desktop preview28 retained"
+}

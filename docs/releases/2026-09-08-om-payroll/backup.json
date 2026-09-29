@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".local-backups\\om-payroll-20260908\\preinstall\\compose.reports-qa.yaml",
+    "bytes": 866,
+    "sha256": "6110e948c0c84f9ada366596265d2828104effd907c64bc0d4712158fbd0cdfe"
+  },
+  {
+    "path": ".local-backups\\om-payroll-20260908\\preinstall\\database.dump",
+    "bytes": 7984260,
+    "sha256": "c37f909e6d2022a3286020ccde47e0d1f7993596e90efc6a1d90d9f2ae76a977"
+  },
+  {
+    "path": ".local-backups\\om-payroll-20260908\\preinstall\\filestore.tar.gz",
+    "bytes": 48360471,
+    "sha256": "3a4b8605b87818897439237de374a2689232ddce8c73f0d9e812f3324d913ae1"
+  },
+  {
+    "path": ".local-backups\\om-payroll-20260908\\preinstall\\odoo.local.conf",
+    "bytes": 173,
+    "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+  }
+]

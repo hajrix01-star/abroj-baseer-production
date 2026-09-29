@@ -1,0 +1,9 @@
+{
+  "url": "http://127.0.0.1:18069/odoo/action-794",
+  "company": "ARZ",
+  "language": "ar_001",
+  "observed": "Native MAIN browser, morning shift selected; five bilingual monetary inputs visible without overlap",
+  "methods": ["نقدي | Cash", "بنك | Bank", "هنقرستيشن | HungerStation", "كيتا | Keeta", "جاهز | Jahez"],
+  "persisted_sales": false,
+  "screenshot_visually_inspected": true
+}

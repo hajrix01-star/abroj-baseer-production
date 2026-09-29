@@ -1,0 +1,41 @@
+{
+  "comparison": "QA after upgrade versus preserved security clone original accounting records",
+  "changes": [
+    {
+      "id": 646,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": 647,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": 805,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "id": 811,
+      "changes": {
+        "is_manually_modified": [
+          false,
+          true
+        ]
+      }
+    }
+  ]
+}

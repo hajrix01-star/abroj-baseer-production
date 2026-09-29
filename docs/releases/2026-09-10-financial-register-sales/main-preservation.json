@@ -1,0 +1,9 @@
+{
+  "candidate": "f38e4c4934c377dac69cd563c2ed3ca30b61bf9e",
+  "protected_tables": 373,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "existing_user_memberships_exact": true,
+  "existing_user_presets_exact": true,
+  "existing_module_versions_exact": true
+}

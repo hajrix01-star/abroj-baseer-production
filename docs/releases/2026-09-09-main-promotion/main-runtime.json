@@ -1,0 +1,66 @@
+{
+  "image": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "image_id": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "mounts": [
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/custom_addons",
+      "Destination": "/mnt/baseer-addons",
+      "Mode": "rw",
+      "RW": true,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/third_party_addons",
+      "Destination": "/mnt/third-party-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\odoo",
+      "Destination": "/opt/baseer-odoo-source",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "volume",
+      "Name": "baseer_odoo_dev_odoo-data",
+      "Source": "/var/lib/docker/volumes/baseer_odoo_dev_odoo-data/_data",
+      "Destination": "/var/lib/odoo",
+      "Driver": "local",
+      "Mode": "rw",
+      "RW": true,
+      "Propagation": ""
+    },
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/custom_addons",
+      "Destination": "/mnt/extra-addons",
+      "Mode": "rw",
+      "RW": true,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/config/odoo.local.conf",
+      "Destination": "/etc/odoo/odoo.local.conf",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    }
+  ],
+  "command": [
+    "odoo",
+    "--config=/etc/odoo/odoo.local.conf",
+    "--addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19",
+    "--database=baseer_dev",
+    "--db-filter=^baseer_dev$",
+    "--no-database-list"
+  ],
+  "compose_files": "D:\\Codex\\Baseer-odoo\\compose.yaml",
+  "running": true
+}

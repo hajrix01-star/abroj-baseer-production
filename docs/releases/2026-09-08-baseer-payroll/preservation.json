@@ -1,0 +1,107 @@
+{
+  "account_move": {
+    "before_count": 76,
+    "original_rows_missing_or_changed": 0,
+    "after_count": 83
+  },
+  "account_move_line": {
+    "before_count": 180,
+    "original_rows_missing_or_changed": 0,
+    "after_count": 198
+  },
+  "account_payment": {
+    "before_count": 28,
+    "original_rows_missing_or_changed": 0,
+    "after_count": 29
+  },
+  "res_company": {
+    "before_count": 5,
+    "original_rows_missing_or_changed": 0,
+    "after_count": 6
+  },
+  "res_partner": {
+    "before_count": 22,
+    "original_rows_missing_or_changed": 6,
+    "after_count": 25,
+    "details": [
+      {
+        "id": 1,
+        "changed_fields": [
+          "property_stock_customer",
+          "property_stock_supplier",
+          "write_date"
+        ]
+      },
+      {
+        "id": 3,
+        "changed_fields": [
+          "write_date"
+        ]
+      },
+      {
+        "id": 18,
+        "changed_fields": [
+          "property_stock_customer",
+          "property_stock_supplier",
+          "write_date"
+        ]
+      },
+      {
+        "id": 20,
+        "changed_fields": [
+          "property_stock_customer",
+          "property_stock_supplier",
+          "write_date"
+        ]
+      },
+      {
+        "id": 22,
+        "changed_fields": [
+          "property_stock_customer",
+          "property_stock_supplier",
+          "write_date"
+        ]
+      },
+      {
+        "id": 25,
+        "changed_fields": [
+          "property_stock_customer",
+          "property_stock_supplier",
+          "write_date"
+        ]
+      }
+    ],
+    "original_company_stock_property_values_changed": 0
+  },
+  "res_users": {
+    "before_count": 7,
+    "original_rows_missing_or_changed": 2,
+    "after_count": 7,
+    "details": [
+      {
+        "id": 1,
+        "changed_fields": [
+          "write_date"
+        ]
+      },
+      {
+        "id": 2,
+        "changed_fields": [
+          "write_date",
+          "write_uid"
+        ]
+      }
+    ]
+  },
+  "res_groups_users_rel": {
+    "before_count": 38,
+    "original_rows_missing_or_changed": 0,
+    "after_count": 39
+  },
+  "res_company_users_rel": {
+    "before_count": 14,
+    "original_rows_missing_or_changed": 0,
+    "after_count": 16
+  },
+  "main_exact": true
+}

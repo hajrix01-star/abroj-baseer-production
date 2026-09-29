@@ -1,0 +1,57 @@
+{
+  "database": "baseer_fix_security_20260909",
+  "status": "completed",
+  "checks": [
+    {
+      "name": "nonadmin_native_report_action",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "report_handler_matches_action",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "full_report_contains_selected_line",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "full_report_total_239_70",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "html_contains_real_fixture_en_US",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "full_native_pdf_en_US",
+      "passed": true,
+      "evidence": {
+        "bytes": 22723
+      }
+    },
+    {
+      "name": "html_contains_real_fixture_ar_001",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "full_native_pdf_ar_001",
+      "passed": true,
+      "evidence": {
+        "bytes": 36898
+      }
+    },
+    {
+      "name": "report_fixtures_fully_rolled_back",
+      "passed": true,
+      "evidence": null
+    }
+  ],
+  "fixture_limit": "Synthetic approved-state formatter fixture uses the private in-process capability; it is not a payroll posting or accounting calculation test.",
+  "failed_checks": []
+}

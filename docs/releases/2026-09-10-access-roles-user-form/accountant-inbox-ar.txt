@@ -1,0 +1,113 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الإعدادات"
+    - menu:
+      - menuitem "الإعدادات العامة"
+      - button "المستخدمون والشركات":
+        - generic: المستخدمون والشركات
+      - button "الترجمات":
+        - generic: الترجمات
+      - button "تقني":
+        - generic: تقني
+    - menu:
+      - button "فتح أدوات المطور":
+        - img "فتح أدوات المطور": 
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن AR1 UI owner  baseer_ar1_roles_20260910":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: AR1 UI owner
+        - mark:
+          - generic: 
+          - text: baseer_ar1_roles_20260910
+- button "جديد"
+- list:
+  - link "المستخدمون":
+    - /url: /odoo/users
+- generic: AR2 Fixed Accountant
+- button "قائمة الإجراءات":
+  - generic: 
+- button " 16 المجموعات":
+  - generic: 
+  - generic: "16"
+  - generic: المجموعات
+- button " 419 صلاحيات الوصول":
+  - generic: 
+  - generic: "419"
+  - generic: صلاحيات الوصول
+- button " 102 قواعد السجلات":
+  - generic: 
+  - generic: "102"
+  - generic: قواعد السجلات
+- button " جهة اتصال":
+  - generic: 
+  - generic: جهة اتصال
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "إرسال دعوة عبر البريد الإلكتروني"
+  - button "إنشاء موظف"
+  - radiogroup "شريط الحالة":
+    - radio "تم التأكيد" [disabled]
+    - radio "تمت دعوته" [checked] [disabled]
+  - button "تحرير":
+    - generic: 
+  - button "مسح":
+    - generic: 
+  - img "ملف ثنائي"
+  - heading "AR2 Fixed Accountant" [level=1]:
+    - 'textbox "مثل: محمد محمود"': AR2 Fixed Accountant
+  - heading " ar2-fixed-accountant " [level=5]:
+    - generic "Login": 
+    - textbox "تسجيل الدخول": ar2-fixed-accountant
+    - generic "البريد الإلكتروني": 
+    - textbox "البريد الإلكتروني"
+  - heading "" [level=5]:
+    - generic "رقم الهاتف": 
+    - textbox "رقم الهاتف"
+  - text: الشريك ذو الصلة
+  - superscript: "?"
+  - link "AR2 Fixed Accountant":
+    - /url: /odoo/res.partner/396
+  - list:
+    - tab "صلاحيات الوصول"
+    - tab "التفضيلات" [active]
+    - tab "التقويم"
+    - tab "الأمن"
+  - text: اللغة
+  - superscript: "?"
+  - textbox "اللغة?": English (US)
+  - button "إضافة لغة": 
+  - text: توقيع البريد الإلكتروني
+  - superscript: "?"
+  - generic: AR2 Fixed Accountant
+  - text: إشعار
+  - superscript: "?"
+  - radiogroup "إشعار":
+    - radio "حسب البريد الإلكتروني"
+    - generic: حسب البريد الإلكتروني
+    - radio "في أودو" [checked]
+    - generic: في أودو
+  - text: حالة OdooBot
+  - superscript: "?"
+  - textbox "حالة OdooBot?"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

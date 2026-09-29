@@ -1,0 +1,196 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- list:
+  - link "الحركة النقدية حسب الفئات":
+    - /url: /odoo/action-322
+- generic: BILL/2026/09/0001
+- button "قائمة الإجراءات":
+  - generic: 
+- button " 1 الدفعات":
+  - generic: 
+  - generic: "1"
+  - generic: الدفعات
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "الدفع"
+  - button "إشعار دائن"
+  - button "إشعار مدين"
+  - button "إعادة التعيين كمسودة"
+  - radiogroup "شريط الحالة":
+    - radio "مُرحّل" [checked] [disabled]
+    - radio "مسودة" [disabled]
+  - generic: جزئي
+  - generic: فاتورة المورد
+  - heading "BILL/2026/09/0001" [level=1]:
+    - generic: BILL/2026/09/0001
+  - generic: المورد
+  - link "طرف تجريبي للفئات":
+    - /url: /odoo/res.partner/26
+  - generic: الرقم المرجعي للفاتورة
+  - textbox "الرقم المرجعي للفاتورة"
+  - generic: تاريخ الفاتورة
+  - generic: ٣ سبتمبر
+  - generic: تاريخ المحاسبة
+  - generic: ٣ سبتمبر
+  - text: الرقم المرجعي للدفع
+  - superscript: "?"
+  - textbox "الرقم المرجعي للدفع?":
+    - /placeholder: استخدم الرقم المرجعي للفاتورة
+  - text: البنك المستلم
+  - superscript: "?"
+  - combobox "البنك المستلم?"
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق": ٧ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "عناصر اليومية"
+    - tab "معلومات أخرى"
+  - table:
+    - rowgroup:
+      - row "بطاقة عنوان الحساب الكمية السعر الضرائب مبلغ ":
+        - columnheader
+        - columnheader "بطاقة عنوان":
+          - generic: بطاقة عنوان
+          - text: 
+        - columnheader "الحساب":
+          - generic: الحساب
+          - text: 
+        - columnheader "الكمية":
+          - generic: الكمية
+          - text: 
+        - columnheader "السعر":
+          - generic: السعر
+          - text: 
+        - columnheader "الضرائب":
+          - generic: الضرائب
+          - text: 
+        - columnheader "مبلغ":
+          - generic: مبلغ
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " ماء تجريبي 400003 مصروف الراتب الاساسي 1.00 100.00 15% 100.00 SR":
+        - cell "":
+          - generic: 
+        - cell "ماء تجريبي":
+          - generic: ماء تجريبي
+        - cell "400003 مصروف الراتب الاساسي":
+          - generic: 400003 مصروف الراتب الاساسي
+        - cell "1.00"
+        - cell "100.00"
+        - cell "15%":
+          - generic "15%":
+            - generic: 15%
+        - cell "100.00 SR"
+        - cell
+      - row " بيبسي تجريبي 400003 مصروف الراتب الاساسي 1.00 200.00 15% 200.00 SR":
+        - cell "":
+          - generic: 
+        - cell "بيبسي تجريبي":
+          - generic: بيبسي تجريبي
+        - cell "400003 مصروف الراتب الاساسي":
+          - generic: 400003 مصروف الراتب الاساسي
+        - cell "1.00"
+        - cell "200.00"
+        - cell "15%":
+          - generic "15%":
+            - generic: 15%
+        - cell "200.00 SR"
+        - cell
+      - row " مواد غذائية تجريبية صفرية الضريبة 400003 مصروف الراتب الاساسي 1.00 100.00 100.00 SR":
+        - cell "":
+          - generic: 
+        - cell "مواد غذائية تجريبية صفرية الضريبة":
+          - generic: مواد غذائية تجريبية صفرية الضريبة
+        - cell "400003 مصروف الراتب الاساسي":
+          - generic: 400003 مصروف الراتب الاساسي
+        - cell "1.00"
+        - cell "100.00"
+        - cell
+        - cell "100.00 SR"
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 400.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "400.00 SR"
+      - 'row "VAT Total Amount: 45.00 SR"':
+        - cell "VAT Total Amount:":
+          - generic: "VAT Total Amount:"
+        - cell "45.00 SR":
+          - generic: 45.00 SR
+      - 'row "الإجمالي: 445.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "445.00 SR"
+  - table:
+    - row "معلومات تم الدفع في ١٠/٠٩/٢٠٢٦ 222.50 SR":
+      - cell "معلومات":
+        - button "معلومات": 
+      - cell "تم الدفع في ١٠/٠٩/٢٠٢٦":
+        - generic: تم الدفع في ١٠/٠٩/٢٠٢٦
+      - cell "222.50 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 222.50 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - generic: 😶
+  - generic: المحادثة فارغة.

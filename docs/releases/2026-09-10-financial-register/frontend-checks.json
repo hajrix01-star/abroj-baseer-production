@@ -1,0 +1,27 @@
+{
+  "result": "PASS",
+  "assertions": 20,
+  "scope": "Isolated frontend component behavior with actual native KeepLast; mocked OWL hooks, services, SearchModel and Domain serialization. Browser evidence is separate.",
+  "checks": [
+    "native views retained",
+    "search and model reload hooks",
+    "correct endpoint",
+    "native domain passthrough",
+    "native context passthrough",
+    "loaded payload",
+    "card facet added",
+    "native filters retained",
+    "only owned facet replaced",
+    "selected key",
+    "repeat click toggles off",
+    "native filters retained after toggle",
+    "stale response ignored",
+    "loading clears stale data",
+    "latest failure clears data",
+    "changed snapshot discarded",
+    "changed snapshot refetched",
+    "server display preserved",
+    "count omits currency",
+    "destroyed component ignores response"
+  ]
+}

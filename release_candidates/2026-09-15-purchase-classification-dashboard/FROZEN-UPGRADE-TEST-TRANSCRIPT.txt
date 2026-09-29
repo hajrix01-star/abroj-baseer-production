@@ -1,0 +1,357 @@
+time="2026-09-15T18:30:01+03:00" level=warning msg="Found orphan containers (baseer_odoo_dev-pcl_candidate_test-1, baseer_odoo_dev-heat_calendar_demo-1, baseer_odoo_dev-integrated_release_candidate-1, baseer_odoo_dev-abroj_candidate_serve-1, baseer_odoo_dev-integrated_release_rehearsal-1, baseer_odoo_dev-noorix_main_rehearsal-1, baseer_odoo_dev-noorix_migration_qa-1, baseer_odoo_dev-abroj_preview-1, baseer_odoo_dev-procurement_qa-1, baseer_odoo_dev-ic1_qa-1, baseer_odoo_dev-roles_qa-1, baseer_odoo_dev-partner_priority_qa-1, baseer_odoo_dev-reports_qa-1) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container baseer_odoo_dev-pcl_release_candidate_v2_test-run-5c0803ac2340 Creating 
+ Container baseer_odoo_dev-pcl_release_candidate_v2_test-run-5c0803ac2340 Created 
+2026-09-15 15:30:01,922 1 WARNING ? odoo.tools.config: option addons_path, invalid addons directory '/mnt/extra-addons', skipped 
+2026-09-15 15:30:01,924 1 INFO ? odoo: Odoo version 19.0-20260817 
+2026-09-15 15:30:01,924 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.local.conf 
+2026-09-15 15:30:01,924 1 INFO ? odoo: addons paths: _NamespacePath(['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/19.0', '/mnt/baseer-addons', '/mnt/third-party-addons/erp_heritage_19', '/mnt/third-party-addons/odoomates_19', '/usr/lib/python3/dist-packages/addons']) 
+2026-09-15 15:30:01,924 1 INFO ? odoo: database: odoo@db:5432 
+2026-09-15 15:30:02,153 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on 128c916e480a:8069 
+2026-09-15 15:30:02,166 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.tests.common: Importing test framework 
+2026-09-15 15:30:02,194 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: loading 1 modules... 
+2026-09-15 15:30:02,197 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-09-15 15:30:02,217 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: updating modules list 
+2026-09-15 15:30:02,220 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-09-15 15:30:02,379 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'abroj_website', defaulting to '' 
+2026-09-15 15:30:02,385 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'abroj_website', defaulting to '' 
+2026-09-15 15:30:02,524 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_abroj_login', defaulting to '' 
+2026-09-15 15:30:02,530 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_abroj_login', defaulting to '' 
+2026-09-15 15:30:02,535 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_access_roles', defaulting to '' 
+2026-09-15 15:30:02,540 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_access_roles', defaulting to '' 
+2026-09-15 15:30:02,577 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-15 15:30:02,582 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-15 15:30:02,584 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-15 15:30:02,589 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-15 15:30:02,612 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-15 15:30:02,616 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-15 15:30:02,626 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-15 15:30:02,630 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-15 15:30:02,633 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-15 15:30:02,638 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-15 15:30:02,653 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-15 15:30:02,659 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-15 15:30:02,662 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_classification', defaulting to '' 
+2026-09-15 15:30:02,665 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_classification', defaulting to '' 
+2026-09-15 15:30:02,684 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-15 15:30:02,696 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-15 15:30:02,708 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-15 15:30:02,712 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-15 15:30:04,302 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Baseer Purchase Classification', 'Baseer Purchase and Expense Dashboard'] to user __system__ #1 via n/a 
+2026-09-15 15:30:04,302 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Baseer Purchase Classification', 'Baseer Purchase and Expense Dashboard'] to user __system__ #1 via n/a 
+2026-09-15 15:30:04,454 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'abroj_website', defaulting to '' 
+2026-09-15 15:30:04,596 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_abroj_login', defaulting to '' 
+2026-09-15 15:30:04,601 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_access_roles', defaulting to '' 
+2026-09-15 15:30:04,632 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_category_display', defaulting to '' 
+2026-09-15 15:30:04,645 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_company_setup', defaulting to '' 
+2026-09-15 15:30:04,660 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_hr_services', defaulting to '' 
+2026-09-15 15:30:04,669 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_partner_priority', defaulting to '' 
+2026-09-15 15:30:04,678 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_payroll', defaulting to '' 
+2026-09-15 15:30:04,698 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_batch', defaulting to '' 
+2026-09-15 15:30:04,705 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_purchase_classification', defaulting to '' 
+2026-09-15 15:30:04,714 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_sales_dashboard', defaulting to '' 
+2026-09-15 15:30:04,722 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.module: Missing `author` key in manifest for 'baseer_service_seed', defaulting to '' 
+2026-09-15 15:30:05,877 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-09-15 15:30:05,892 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:05,905 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: loading 113 modules... 
+2026-09-15 15:30:06,980 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 py.warnings: /usr/lib/python3/dist-packages/odoo/osv/__init__.py:4: DeprecationWarning: Since 19.0, odoo.osv is deprecated use odoo.fields.Domain
+  File "/usr/bin/odoo", line 6, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 133, in main
+    command().run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 127, in run
+    main(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 118, in main
+    rc = server.start(preload=config['db_name'], stop=stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1671, in start
+    rc = server.run(preload, stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 708, in run
+    rc = preload_registries(preload)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1585, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module, install_modules=config['init'], upgrade_modules=config['update'], reinit_modules=config['reinit'])
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 88, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/orm/registry.py", line 189, in new
+    load_modules(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 464, in load_modules
+    load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 178, in load_module_graph
+    load_openerp_module(package.name)
+  File "/usr/lib/python3/dist-packages/odoo/modules/module.py", line 506, in load_openerp_module
+    __import__(qualname)
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/__init__.py", line 1, in <module>
+    from . import models
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/models/__init__.py", line 1, in <module>
+    from . import trial_balance
+  File "/mnt/third-party-addons/erp_heritage_19/eh_account_dynamic_reports/models/trial_balance.py", line 33, in <module>
+    from odoo.osv import expression
+  File "/usr/lib/python3/dist-packages/odoo/osv/__init__.py", line 4, in <module>
+    warnings.warn("Since 19.0, odoo.osv is deprecated use odoo.fields.Domain", DeprecationWarning)
+ 
+2026-09-15 15:30:08,447 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: Loading module baseer_purchase_classification (108/113) 
+2026-09-15 15:30:08,729 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.registry: module baseer_purchase_classification: creating or updating database tables 
+2026-09-15 15:30:08,834 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: loading baseer_purchase_classification/security/ir.model.access.csv 
+2026-09-15 15:30:08,839 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:09,086 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: loading baseer_purchase_classification/security/security.xml 
+2026-09-15 15:30:09,092 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: loading baseer_purchase_classification/views/purchase_classification_views.xml 
+2026-09-15 15:30:09,160 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:09,174 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: module baseer_purchase_classification: no translation for language ar_001 
+2026-09-15 15:30:09,243 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: Module baseer_purchase_classification loaded in 0.80s, 300 queries (+300 other) 
+2026-09-15 15:30:09,709 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: Loading module baseer_purchase_expense_dashboard (113/113) 
+2026-09-15 15:30:09,814 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.registry: module baseer_purchase_expense_dashboard: creating or updating database tables 
+2026-09-15 15:30:09,872 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: loading baseer_purchase_expense_dashboard/data/dashboard.xml 
+2026-09-15 15:30:09,879 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:09,881 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: module baseer_purchase_expense_dashboard: loading translation file /mnt/baseer-addons/baseer_purchase_expense_dashboard/i18n/ar.po for language ar_001 
+2026-09-15 15:30:09,887 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_module: module baseer_purchase_expense_dashboard: loading translation file /mnt/baseer-addons/baseer_purchase_expense_dashboard/i18n/ar_001.po for language ar_001 
+2026-09-15 15:30:09,963 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_expense_dashboard.tests.test_dashboard: Starting PurchaseExpenseDashboardCase.test_ped_t01_payload_keeps_gross_cards_and_server_owned_gross_ratios ... 
+2026-09-15 15:30:10,109 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:10,409 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:10,488 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:10,507 1 WARNING baseer_pcl_frozen_candidate_v3_20260915 py.warnings: /mnt/baseer-addons/baseer_purchase_expense_dashboard/models/dashboard.py:108: DeprecationWarning: check_access_rule() is deprecated since 18.0; use check_access() instead.
+  File "/usr/bin/odoo", line 6, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 133, in main
+    command().run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 127, in run
+    main(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/server.py", line 118, in main
+    rc = server.start(preload=config['db_name'], stop=stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1671, in start
+    rc = server.run(preload, stop)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 708, in run
+    rc = preload_registries(preload)
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1585, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module, install_modules=config['init'], upgrade_modules=config['update'], reinit_modules=config['reinit'])
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 88, in locked
+    return func(inst, *args, **kwargs)
+  File "/usr/lib/python3/dist-packages/odoo/orm/registry.py", line 189, in new
+    load_modules(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 464, in load_modules
+    load_module_graph(
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 289, in load_module_graph
+    test_results = loader.run_suite(suite, global_report=report)
+  File "/usr/lib/python3/dist-packages/odoo/tests/loader.py", line 116, in run_suite
+    suite(results)
+  File "/usr/lib/python3.12/unittest/suite.py", line 84, in __call__
+    return self.run(*args, **kwds)
+  File "/usr/lib/python3/dist-packages/odoo/tests/suite.py", line 79, in run
+    test(result)
+  File "/usr/lib/python3.12/unittest/case.py", line 690, in __call__
+    return self.run(*args, **kwds)
+  File "/usr/lib/python3/dist-packages/odoo/tests/case.py", line 216, in run
+    self._callTestMethod(testMethod)
+  File "/usr/lib/python3/dist-packages/odoo/tests/case.py", line 184, in _callTestMethod
+    method()
+  File "/mnt/baseer-addons/baseer_purchase_expense_dashboard/tests/test_dashboard.py", line 71, in test_ped_t01_payload_keeps_gross_cards_and_server_owned_gross_ratios
+    payload = self._as_user(owner).get_baseer_supplier_bill_metrics({'native': {
+  File "/mnt/baseer-addons/baseer_purchase_expense_dashboard/models/dashboard.py", line 285, in get_baseer_supplier_bill_metrics
+    self._baseer_purchase_assert_access()
+  File "/mnt/baseer-addons/baseer_purchase_expense_dashboard/models/dashboard.py", line 108, in _baseer_purchase_assert_access
+    self.check_access_rule('read')
+ 
+2026-09-15 15:30:10,512 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_expense_dashboard.tests.test_dashboard: Starting PurchaseExpenseDashboardCase.test_ped_t02_ratio_handles_refunds_and_missing_sales_without_client_fallback ... 
+2026-09-15 15:30:10,533 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:10,621 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:10,808 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_expense_dashboard.tests.test_dashboard: Starting PurchaseExpenseDashboardCase.test_ped_t03_cashier_is_denied_and_company_scope_cannot_be_forged ... 
+2026-09-15 15:30:10,828 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:10,909 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,177 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,213 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_rule: Access Denied by record rules for operation: read on record ids: [22], uid: 20, model: spreadsheet.dashboard 
+2026-09-15 15:30:11,267 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,329 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_rule: Access Denied by record rules for operation: read on record ids: [22], uid: 21, model: spreadsheet.dashboard 
+2026-09-15 15:30:11,331 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,340 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_expense_dashboard.tests.test_dashboard: Starting PurchaseExpenseDashboardCase.test_ped_t04_accountant_gets_only_bounded_sales_aggregate_without_pos_group ... 
+2026-09-15 15:30:11,360 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,442 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,704 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,745 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_expense_dashboard.tests.test_dashboard: Starting PurchaseExpenseDashboardCase.test_ped_t05_period_is_bounded_before_any_source_read ... 
+2026-09-15 15:30:11,765 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:11,847 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:12,115 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:12,177 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_expense_dashboard.tests.test_dashboard: Starting PurchaseExpenseDashboardCase.test_ped_t06_snapshot_categories_group_by_parent_then_child ... 
+2026-09-15 15:30:12,196 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:12,278 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:12,529 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:13,619 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: filestore gc 9 checked, 5 removed 
+2026-09-15 15:30:13,619 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: Module baseer_purchase_expense_dashboard loaded in 3.91s (incl. 3.66s test), 50 queries (+5001 test, +50 other) 
+2026-09-15 15:30:13,619 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: 113 modules loaded in 7.71s, 350 queries (+5351 extra) 
+2026-09-15 15:30:13,995 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.registry: verifying fields for every extended model 
+2026-09-15 15:30:14,504 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.modules.loading: Modules loaded. 
+2026-09-15 15:30:14,518 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.registry: Registry changed, signaling through the database 
+2026-09-15 15:30:14,522 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.registry: Registry loaded in 12.368s 
+2026-09-15 15:30:14,522 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.service.server: Starting post tests 
+2026-09-15 15:30:14,604 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:14,822 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:14,904 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:14,941 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_classification.tests.test_purchase_classification: Starting PurchaseClassificationCase.test_explicit_product_rule_has_priority_over_supplier_rule ... 
+2026-09-15 15:30:15,663 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_classification.tests.test_purchase_classification: Starting PurchaseClassificationCase.test_manager_cannot_create_or_move_a_rule_to_an_unavailable_company ... 
+2026-09-15 15:30:15,684 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:15,769 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:16,066 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_classification.tests.test_purchase_classification: Starting PurchaseClassificationCase.test_refund_uses_a_separate_case_and_rule_configuration_is_manager_only ... 
+2026-09-15 15:30:16,106 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:16,330 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_classification.tests.test_purchase_classification: Starting PurchaseClassificationCase.test_supplier_rule_captures_immutable_purchase_snapshot_without_source_write ... 
+2026-09-15 15:30:16,369 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:16,496 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.baseer_purchase_classification.tests.test_purchase_classification: Starting PurchaseClassificationCase.test_unmapped_or_ambiguous_supplier_is_explicitly_unclassified ... 
+2026-09-15 15:30:16,528 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: _read_file reading /var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_attachment.py", line 151, in _file_read
+    with open(full_path, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/lib/odoo/filestore/baseer_pcl_frozen_candidate_v3_20260915/44/44d1661b24fa9f688091c8256535434b60aafba7'
+2026-09-15 15:30:16,648 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.addons.base.models.ir_attachment: filestore gc 2 checked, 2 removed 
+2026-09-15 15:30:16,648 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.service.server: 5 post-tests in 2.13s, 2098 queries 
+2026-09-15 15:30:16,649 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.tests.stats: baseer_purchase_classification: 7 tests 2.12s 2098 queries 
+2026-09-15 15:30:16,649 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.tests.stats: baseer_purchase_expense_dashboard: 8 tests 3.66s 5001 queries 
+2026-09-15 15:30:16,649 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.tests.result: 0 failed, 0 error(s) of 11 tests when loading database 'baseer_pcl_frozen_candidate_v3_20260915' 
+2026-09-15 15:30:16,649 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.service.server: Initiating shutdown 
+2026-09-15 15:30:16,649 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-15 15:30:16,694 1 INFO baseer_pcl_frozen_candidate_v3_20260915 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 2 connections  

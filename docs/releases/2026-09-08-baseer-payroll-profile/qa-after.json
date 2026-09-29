@@ -1,0 +1,472 @@
+{
+  "account_move": {
+    "count": 101,
+    "hash": "01a2dd207b3374cb87d06e20558c0126"
+  },
+  "account_move_line": {
+    "count": 238,
+    "hash": "f60d6c99532315b7f2139b8c2348178b"
+  },
+  "account_payment": {
+    "count": 37,
+    "hash": "a5c2aceed2c1809ff874da2137e1486a"
+  },
+  "res_company": {
+    "count": 6,
+    "hash": "a6aa2c430f9ba5f3887067f575a04bef"
+  },
+  "res_partner": {
+    "count": 25,
+    "hash": "ba99f73099ea3e3069bfa6473a79d37d"
+  },
+  "res_users": {
+    "count": 7,
+    "hash": "05dc8bfb3eae532ac3002d6b75b17466"
+  },
+  "res_groups_users_rel": {
+    "count": 39,
+    "hash": "6d0597436a3402d5b3064e2691a16eee"
+  },
+  "res_company_users_rel": {
+    "count": 16,
+    "hash": "3c212917387daa1a022a2a8a0b33a17c"
+  },
+  "modules": [
+    {
+      "name": "account",
+      "latest_version": "19.0.1.4"
+    },
+    {
+      "name": "account_add_gln",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "account_debit_note",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "account_edi_ubl_cii",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "account_payment",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "analytic",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "api_doc",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_passkey",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "auth_passkey_portal",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_signup",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_totp",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_totp_mail",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "auth_totp_portal",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "barcodes",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "barcodes_gs1_nomenclature",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "base",
+      "latest_version": "19.0.1.3"
+    },
+    {
+      "name": "baseer_cash_categories",
+      "latest_version": "19.0.1.3.1"
+    },
+    {
+      "name": "baseer_category_display",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "baseer_legion_compat",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "baseer_payroll",
+      "latest_version": "19.0.1.2.0"
+    },
+    {
+      "name": "baseer_pos_summary",
+      "latest_version": "19.0.1.3.1"
+    },
+    {
+      "name": "baseer_purchase_batch",
+      "latest_version": "19.0.1.2.2"
+    },
+    {
+      "name": "baseer_report_layout",
+      "latest_version": "19.0.1.1.1"
+    },
+    {
+      "name": "baseer_web_navigation",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "base_import",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "base_import_module",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "base_install_request",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "base_setup",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "bus",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "calendar",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "calendar_sms",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "digest",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "eh_account_base",
+      "latest_version": "19.0.1.8.0"
+    },
+    {
+      "name": "eh_account_dynamic_reports",
+      "latest_version": "19.0.1.8.1"
+    },
+    {
+      "name": "google_address_autocomplete",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "google_gmail",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "hr",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "hr_calendar",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_holidays",
+      "latest_version": "19.0.1.6"
+    },
+    {
+      "name": "hr_holidays_homeworking",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_homeworking",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "hr_homeworking_calendar",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_org_chart",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "hr_skills",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "html_editor",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "http_routing",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "iap",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "iap_mail",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "iot_base",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_account_withholding_tax",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_account_withholding_tax_pos",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_gcc_invoice",
+      "latest_version": "19.0.1.0.1"
+    },
+    {
+      "name": "l10n_gcc_invoice_stock_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_gcc_pos",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_sa",
+      "latest_version": "19.0.2.2"
+    },
+    {
+      "name": "l10n_sa_pos",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "l10n_sa_withholding_tax",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "legion_enterprise_theme",
+      "latest_version": "19.0.1.0.1"
+    },
+    {
+      "name": "mail",
+      "latest_version": "19.0.1.19"
+    },
+    {
+      "name": "mail_bot",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "mail_bot_hr",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "microsoft_outlook",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "om_hr_payroll",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "om_hr_payroll_account",
+      "latest_version": "19.0.0.0"
+    },
+    {
+      "name": "onboarding",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "partner_autocomplete",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "payment",
+      "latest_version": "19.0.2.0"
+    },
+    {
+      "name": "phone_validation",
+      "latest_version": "19.0.2.1"
+    },
+    {
+      "name": "point_of_sale",
+      "latest_version": "19.0.1.0.2"
+    },
+    {
+      "name": "portal",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_hr",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_online_payment",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "pos_sale",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "privacy_lookup",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "product",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "purchase",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "purchase_edi_ubl_bis3",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "purchase_stock",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "resource",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "resource_mail",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "rpc",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale",
+      "latest_version": "19.0.1.2"
+    },
+    {
+      "name": "sale_edi_ubl",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_management",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_pdf_quote_builder",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_purchase",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_purchase_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sale_sms",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sales_team",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "sale_stock",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "sms",
+      "latest_version": "19.0.3.0"
+    },
+    {
+      "name": "snailmail",
+      "latest_version": "19.0.0.4"
+    },
+    {
+      "name": "snailmail_account",
+      "latest_version": "19.0.0.1"
+    },
+    {
+      "name": "spreadsheet",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_pos_hr",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_sale",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "spreadsheet_dashboard_stock_account",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "stock",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "stock_account",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "stock_sms",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "uom",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "utm",
+      "latest_version": "19.0.1.1"
+    },
+    {
+      "name": "web",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "web_hierarchy",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "web_tour",
+      "latest_version": "19.0.1.0"
+    },
+    {
+      "name": "web_unsplash",
+      "latest_version": "19.0.1.1"
+    }
+  ]
+}

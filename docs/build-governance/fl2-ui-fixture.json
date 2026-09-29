@@ -1,0 +1,22 @@
+{
+  "database": "baseer_ar1_roles_20260910",
+  "company_id": 2,
+  "month": "2026-02",
+  "report_totals": {
+    "receipts": "8000.00",
+    "payments": "-5000.00",
+    "displayed_net_movement": "3000.00",
+    "excluded_tax_bridge": "0.00",
+    "actual_net_movement": "3000.00",
+    "opening_cash_balance": "0.00",
+    "closing_cash_balance": "3000.00",
+    "balance_check": "0.00",
+    "unverified_tax_gross": "13000.00"
+  },
+  "visible_cash_moves": [
+    455,
+    456
+  ],
+  "action_id": 825,
+  "note": "Intentional small QA-only demo; cancelled/draft/internal-transfer entries do not inflate cash cards."
+}

@@ -1,0 +1,187 @@
+{
+  "database": "baseer_release_rehearsal_20260907",
+  "checks": [
+    {
+      "check": "installed versions",
+      "passed": true,
+      "versions": {
+        "eh_account_base": "19.0.1.8.0",
+        "eh_account_dynamic_reports": "19.0.1.8.1",
+        "baseer_report_layout": "19.0.1.1.0",
+        "baseer_cash_categories": "19.0.1.3.0"
+      }
+    },
+    {
+      "check": "three independent SAR companies and admin access",
+      "passed": true
+    },
+    {
+      "check": "filestore attachment integrity",
+      "passed": true,
+      "verified": 17
+    },
+    {
+      "check": "report render",
+      "company": 2,
+      "code": "profit_and_loss",
+      "passed": true,
+      "totals": {
+        "income": 0.0,
+        "expenses": 0.0,
+        "net_profit": 0.0,
+        "amount": 0.0
+      }
+    },
+    {
+      "check": "report render",
+      "company": 2,
+      "code": "cash_flow",
+      "passed": true,
+      "totals": {
+        "operating": 0.0,
+        "investing": 0.0,
+        "financing": 0.0,
+        "net_change_in_cash": 0.0,
+        "opening_cash_balance": 0.0,
+        "closing_cash_balance": 0.0,
+        "balance_check": 0.0
+      }
+    },
+    {
+      "check": "report render",
+      "company": 2,
+      "code": "baseer_cash_categories",
+      "passed": true,
+      "totals": {
+        "receipts": 0.0,
+        "payments": 0.0,
+        "displayed_net_movement": 0.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": 0.0,
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0,
+        "sales_collections": 0.0
+      }
+    },
+    {
+      "check": "report render",
+      "company": 3,
+      "code": "profit_and_loss",
+      "passed": true,
+      "totals": {
+        "income": 0.0,
+        "expenses": 0.0,
+        "net_profit": 0.0,
+        "amount": 0.0
+      }
+    },
+    {
+      "check": "report render",
+      "company": 3,
+      "code": "cash_flow",
+      "passed": true,
+      "totals": {
+        "operating": 0.0,
+        "investing": 0.0,
+        "financing": 0.0,
+        "net_change_in_cash": 0.0,
+        "opening_cash_balance": 0.0,
+        "closing_cash_balance": 0.0,
+        "balance_check": 0.0
+      }
+    },
+    {
+      "check": "report render",
+      "company": 3,
+      "code": "baseer_cash_categories",
+      "passed": true,
+      "totals": {
+        "receipts": 0.0,
+        "payments": 0.0,
+        "displayed_net_movement": 0.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": 0.0,
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0,
+        "sales_collections": 0.0
+      }
+    },
+    {
+      "check": "report render",
+      "company": 1,
+      "code": "profit_and_loss",
+      "passed": true,
+      "totals": {
+        "income": 0.0,
+        "expenses": 0.0,
+        "net_profit": 0.0,
+        "amount": 0.0
+      }
+    },
+    {
+      "check": "native PDF and XLSX",
+      "code": "profit_and_loss",
+      "passed": true,
+      "pdf_bytes": 20369,
+      "xlsx_bytes": 5685
+    },
+    {
+      "check": "report render",
+      "company": 1,
+      "code": "cash_flow",
+      "passed": true,
+      "totals": {
+        "operating": 0.0,
+        "investing": 0.0,
+        "financing": 0.0,
+        "net_change_in_cash": 0.0,
+        "opening_cash_balance": 0.0,
+        "closing_cash_balance": 0.0,
+        "balance_check": 0.0
+      }
+    },
+    {
+      "check": "native PDF and XLSX",
+      "code": "cash_flow",
+      "passed": true,
+      "pdf_bytes": 21162,
+      "xlsx_bytes": 5772
+    },
+    {
+      "check": "report render",
+      "company": 1,
+      "code": "baseer_cash_categories",
+      "passed": true,
+      "totals": {
+        "receipts": 0.0,
+        "payments": 0.0,
+        "displayed_net_movement": 0.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": 0.0,
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0,
+        "sales_collections": 0.0
+      }
+    },
+    {
+      "check": "native PDF and XLSX",
+      "code": "baseer_cash_categories",
+      "passed": true,
+      "pdf_bytes": 31135,
+      "xlsx_bytes": 6627
+    },
+    {
+      "check": "no financial records changed",
+      "passed": true,
+      "moves": 0,
+      "lines": 0
+    }
+  ],
+  "cash_action_id": 783
+}

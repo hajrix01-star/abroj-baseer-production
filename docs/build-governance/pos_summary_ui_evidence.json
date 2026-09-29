@@ -1,0 +1,17 @@
+{
+  "qa_only": true,
+  "browser": "in-app browser, supported viewport capability, restored after testing",
+  "viewports": [
+    {"width":390,"height":844,"direction":"rtl","document_scroll_width":390,"payment_view":"native kanban cards"},
+    {"width":390,"height":844,"direction":"ltr","document_scroll_width":390,"payment_view":"native kanban cards"},
+    {"width":1280,"height":900,"direction":"rtl","document_scroll_width":1280,"amount_header_width":235.390625},
+    {"width":1280,"height":900,"direction":"ltr","payment_view":"native list"}
+  ],
+  "mobile_entry": {"reference":"QA-UI-MOBILE-20260908","id":113,"date":"2026-09-08","customers":10,"gross":115,"tax":15,"average":11.5,"saved_and_reopened":true,"removed_after_test":true},
+  "empty_save": {"rejected":true,"arabic_message":"أضف مبلغًا لطريقة دفع واحدة على الأقل قبل حفظ الملخص.","no_record_saved":true},
+  "native_links": ["summary82 opens native POS order15, three payments500/700/600", "summary82 opens native journal-entry list, four posted entries", "payment pivot600 opens allocation list and original summary/payment references", "summary pivot1800/customers60 without multiplying by three methods"],
+  "purchase_compatibility": "Existing draft24 dates06/09/2026 and05/09/2026, totals402.50/52.50 unchanged; shared date widget renders correctly.",
+  "whatsapp": "Encoded Web compose action validated without sending or opening an external conversation; live account delivery not tested.",
+  "language_after_test":"ar_001",
+  "screenshots": ["pos_summary_ar_desktop_final.png","pos_summary_ar_mobile.png","pos_summary_en_desktop.png","pos_summary_en_mobile.png","pos_summary_mobile_entry.png","pos_summary_purchase_compatibility.png"]
+}

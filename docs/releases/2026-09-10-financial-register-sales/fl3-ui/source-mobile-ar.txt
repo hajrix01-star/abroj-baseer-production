@@ -1,0 +1,96 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - button "":
+      - generic: 
+    - generic: POS-S/2026/000025
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- button:
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button " فتح واتساب":
+    - generic: 
+    - text: فتح واتساب
+  - button "":
+    - generic: 
+  - radiogroup "شريط الحالة":
+    - button "معتمد" [disabled]
+  - heading "POS-S/2026/000025" [level=1]:
+    - generic: POS-S/2026/000025
+  - generic: بيانات يوم المبيعات
+  - generic: الشركة
+  - generic: المعلم الشامي
+  - generic: تاريخ المبيعات
+  - generic: 28/07/2026
+  - generic: نظام دوام اليوم
+  - radiogroup "نظام دوام اليوم":
+    - radio "دوام كامل" [checked] [disabled]
+    - generic: دوام كامل
+    - radio "صباحي ومسائي" [disabled]
+    - generic: صباحي ومسائي
+    - radio "صباحي فقط" [disabled]
+    - generic: صباحي فقط
+    - radio "مسائي فقط" [disabled]
+    - generic: مسائي فقط
+  - generic: العملاء
+  - generic: عدد العملاء
+  - generic: "12"
+  - generic: تشغيل دون مبيعات
+  - checkbox "تشغيل دون مبيعات" [disabled]
+  - generic: المبيعات حسب طريقة الدفع
+  - generic: نقدي | Cash
+  - generic: "215.00"
+  - generic: بنك | Bank
+  - generic: "230.00"
+  - generic: هنقرستيشن | HungerStation
+  - generic: "345.00"
+  - generic: الإجمالي شامل الضريبة
+  - generic: 790.00 SR
+  - generic: العملاء
+  - generic: "12"
+  - generic: متوسط المبيعات للعميل
+  - generic: 65.83 SR
+  - generic: ملاحظات
+  - generic: مرفقات التقرير
+  - generic: المبيعات دون الضريبة
+  - generic: 686.96 SR
+  - generic: الضريبة
+  - generic: 103.04 SR
+  - generic: اعتمد بواسطة
+  - link "IC1 QA owner":
+    - /url: /odoo/res.users/12
+  - generic: تاريخ الاعتماد
+  - generic: 10/09/2026 08:37:56 م
+  - generic: سجل التصحيح
+  - generic: بديل عن
+  - link "POS-S/2026/000024":
+    - /url: /odoo/baseer.pos.summary/24
+  - generic: البديل
+  - generic: سبب التصحيح
+  - generic: صحّح بواسطة
+  - generic: تاريخ التصحيح
+  - generic: قيود العكس
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

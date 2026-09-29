@@ -1,0 +1,291 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "read_only_transaction": true,
+  "batch": {
+    "id": 55,
+    "name": "PB/2026/00039",
+    "state": "approved",
+    "company_id": [
+      6,
+      "QA ARZ"
+    ]
+  },
+  "batch_action": {
+    "type": "ir.actions.act_window",
+    "name": "Supplier bills",
+    "res_model": "account.move",
+    "view_mode": "form",
+    "domain": [
+      [
+        "id",
+        "in",
+        [
+          412
+        ]
+      ]
+    ],
+    "context": {
+      "allowed_company_ids": [
+        6
+      ],
+      "create": false
+    },
+    "res_id": 412,
+    "views": [
+      [
+        false,
+        "form"
+      ]
+    ]
+  },
+  "bills": [
+    {
+      "id": 412,
+      "name": "BILL/2026/09/0006",
+      "ref": "PB1 UI/001",
+      "move_type": "in_invoice",
+      "state": "posted",
+      "payment_state": "paid",
+      "company_id": 6,
+      "journal_id": 31,
+      "journal_name": "Purchases",
+      "date": "2026-09-07",
+      "invoice_date": "2026-09-07",
+      "total": 115.0,
+      "untaxed": 100.0,
+      "tax": 15.0,
+      "residual": 0.0,
+      "expense_lines": [
+        {
+          "id": 878,
+          "account_id": 524,
+          "account_name": "Basic Salary",
+          "account_type": "expense",
+          "balance": 100.0,
+          "product_id": 21,
+          "category_id": 27,
+          "category_name": "تجربة الإدخال الجماعي / مياه ومشروبات"
+        }
+      ],
+      "payment_ids": [
+        70
+      ],
+      "cash_lines": [
+        {
+          "id": 881,
+          "move_id": 413,
+          "account_id": 1172,
+          "date": "2026-09-07",
+          "balance": -115.0,
+          "parent_state": "posted"
+        }
+      ]
+    }
+  ],
+  "menus": [
+    {
+      "xmlid": "account.menu_finance",
+      "menu_id": 125,
+      "name_en": "Invoicing",
+      "name_ar": "الفوترة",
+      "parent_id": false,
+      "action_id": null
+    },
+    {
+      "xmlid": "account.menu_finance_payables",
+      "menu_id": 133,
+      "name_en": "Vendors",
+      "name_ar": "الموردين",
+      "parent_id": 125,
+      "action_id": null
+    },
+    {
+      "xmlid": "account.menu_action_move_in_invoice_type",
+      "menu_id": 134,
+      "name_en": "Bills",
+      "name_ar": "الفواتير",
+      "parent_id": 133,
+      "action_id": 253,
+      "id": 253,
+      "name": "Bills",
+      "res_model": "account.move",
+      "domain": "[('move_type', 'in', ['in_invoice', 'in_refund', 'in_receipt'])]",
+      "context": "{'search_default_in_invoice': 1, 'search_default_in_receipt': 1, 'default_move_type': 'in_invoice', 'display_account_trust': True}",
+      "path": "vendor-bills",
+      "view_mode": "list,kanban,form,activity",
+      "name_ar_action": "الفواتير"
+    },
+    {
+      "xmlid": "account.menu_action_move_out_invoice_type",
+      "menu_id": 128,
+      "name_en": "Invoices",
+      "name_ar": "فواتير العملاء",
+      "parent_id": 127,
+      "action_id": 250,
+      "id": 250,
+      "name": "Invoices",
+      "res_model": "account.move",
+      "domain": "[('move_type', 'in', ['out_invoice', 'out_refund', 'out_receipt'])]",
+      "context": "{'search_default_out_invoice': 1, 'search_default_out_receipt': 1, 'default_move_type': 'out_invoice'}",
+      "path": "customer-invoices",
+      "view_mode": "list,kanban,form,activity",
+      "name_ar_action": "فواتير العملاء"
+    }
+  ],
+  "company_visibility": {
+    "6": {
+      "company_name": "QA ARZ",
+      "visible_batch_bills_in_vendor_action": [
+        412
+      ],
+      "visible_batch_bills_in_customer_action": [],
+      "vendor_bill_count": 6
+    },
+    "9": {
+      "company_name": "QA الفئات النقدية",
+      "visible_batch_bills_in_vendor_action": [],
+      "visible_batch_bills_in_customer_action": [],
+      "vendor_bill_count": 5
+    }
+  },
+  "report_checks": {
+    "cash": {
+      "period": [
+        "2026-09-01",
+        "2026-09-30"
+      ],
+      "totals": {
+        "receipts": 400.0,
+        "payments": -825.0,
+        "displayed_net_movement": -425.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -425.0,
+        "opening_cash_balance": 1000.0,
+        "closing_cash_balance": 575.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      },
+      "category_rows_linking_batch_bills": [
+        {
+          "id": "payments",
+          "name": "Actual payments",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": -825.0
+            }
+          ],
+          "source_kind": "documents",
+          "batch_source_aml_ids": [
+            878
+          ],
+          "source_bill_ids": [
+            412
+          ]
+        },
+        {
+          "id": "payments/category-26",
+          "name": "تجربة الإدخال الجماعي",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": -575.0
+            }
+          ],
+          "source_kind": "documents",
+          "batch_source_aml_ids": [
+            878
+          ],
+          "source_bill_ids": [
+            412
+          ]
+        },
+        {
+          "id": "payments/category-26/category-27",
+          "name": "مياه ومشروبات",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": -575.0
+            }
+          ],
+          "source_kind": "documents",
+          "batch_source_aml_ids": [
+            878
+          ],
+          "source_bill_ids": [
+            412
+          ]
+        }
+      ]
+    },
+    "profit_and_loss": {
+      "totals": {
+        "income": 900.0,
+        "expenses": 700.0,
+        "net_profit": 200.0,
+        "amount": 200.0
+      },
+      "expense_accounts": [
+        524
+      ],
+      "matching_rows": [
+        {
+          "id": "account-524",
+          "name": "400003 Basic Salary",
+          "level": 1,
+          "parent_id": "section-expenses-header",
+          "columns": [
+            {
+              "expression_label": "amount",
+              "value": 700.0
+            }
+          ],
+          "unfoldable": false,
+          "meta": {
+            "account_id": 524,
+            "account_code": "400003",
+            "section_id": "expenses",
+            "higher_is_better": false
+          }
+        }
+      ]
+    }
+  },
+  "counts_unchanged": true,
+  "scope_note": "Native vendor/customer actions have different move_type domains. Browser filters were not inspected; no claim about saved favorites or current UI filters.",
+  "mapping_current_vs_historical": {
+    "current_mappings": [
+      {
+        "mapping_id": 2,
+        "company_id": 6,
+        "product_id": 21,
+        "product_name": "ملخص تجريبي — مياه ومشروبات",
+        "category_id": 27,
+        "current_expense_account_id": 522,
+        "current_expense_account_name": "Cost of Goods Sold in Trading",
+        "current_expense_account_type": "expense_direct_cost"
+      },
+      {
+        "mapping_id": 3,
+        "company_id": 6,
+        "product_id": 22,
+        "product_name": "ملخص تجريبي — اتصالات وإنترنت",
+        "category_id": 28,
+        "current_expense_account_id": 541,
+        "current_expense_account_name": "Telephone",
+        "current_expense_account_type": "expense"
+      }
+    ],
+    "bill412_historical_lines": [
+      {
+        "line_id": 878,
+        "product_id": 21,
+        "account_id": 524,
+        "account_name": "Basic Salary",
+        "balance": 100.0
+      }
+    ],
+    "explanation": "Current mapping is corrected. Posted bill412 retains its original historical expense account; it was not rewritten."
+  }
+}

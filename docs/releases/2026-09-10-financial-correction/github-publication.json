@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "repository": "https://github.com/hajrix01-star/Odoo-Baseer",
+  "branch": "main",
+  "commit": "7a2e0057640f63a43be6193e7e51b8fe8c027fdd",
+  "source_commit": "24bc64d2a778590e8e8e6577eb3866d18727bc24",
+  "remote_main_exact": true,
+  "checkout_clean": true,
+  "source_files": 1177,
+  "preserved_files": 1167,
+  "new_addon_files": 10,
+  "source_checksums_and_syntax": "PASS",
+  "source_only": true,
+  "ci_run": 34504859260,
+  "ci_conclusion": "success"
+}

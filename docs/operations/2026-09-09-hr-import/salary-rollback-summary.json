@@ -1,0 +1,67 @@
+{
+  "scope": "salary_and_jobs",
+  "mode": "rollback",
+  "employees_changed": 49,
+  "salaries": 40,
+  "jobs": 38,
+  "salary_basis_calendars": 8,
+  "job_definitions": 28,
+  "protected_tables": 153,
+  "idempotent_second_pass": true,
+  "administrator_unchanged": true,
+  "totals": {
+    "3": {
+      "current": {
+        "employees": 6,
+        "gross": "9000.05",
+        "basic": "5862.41",
+        "allowances": "0.00",
+        "overtime": "3137.64"
+      },
+      "archived": {
+        "employees": 0,
+        "gross": "0.00",
+        "basic": "0.00",
+        "allowances": "0.00",
+        "overtime": "0.00"
+      }
+    },
+    "2": {
+      "current": {
+        "employees": 15,
+        "gross": "49200.07",
+        "basic": "29324.52",
+        "allowances": "4499.95",
+        "overtime": "15375.60"
+      },
+      "archived": {
+        "employees": 1,
+        "gross": "2199.99",
+        "basic": "801.83",
+        "allowances": "300.00",
+        "overtime": "1098.16"
+      }
+    },
+    "1": {
+      "current": {
+        "employees": 6,
+        "gross": "18950.00",
+        "basic": "18165.60",
+        "allowances": "0.00",
+        "overtime": "784.40"
+      },
+      "archived": {
+        "employees": 12,
+        "gross": "31770.01",
+        "basic": "29897.88",
+        "allowances": "0.00",
+        "overtime": "1872.13"
+      }
+    }
+  },
+  "script_sha256": "bece25e83d71161f9bb30e3fec2836ccec42fc85d1e54090557d078bf59a971a",
+  "driver_sha256": "7334f2a25044ea03cdba4e54a983b05fb39da2906f172b51ff0ea35746ad7744",
+  "payload_sha256": "a7e2ee9a8323dde0a9e97730bb0c65d0ea65ef57d71b63fb628a86b9a9bebb64",
+  "pending_historical_conflicts": 2,
+  "pending_current_schedule_decisions": 7
+}

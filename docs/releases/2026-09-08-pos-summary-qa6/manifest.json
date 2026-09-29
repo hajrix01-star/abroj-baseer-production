@@ -1,0 +1,175 @@
+{
+  "reference": "POS-S6 native shift picker",
+  "module_version": "19.0.1.3.1",
+  "environment": "QA only",
+  "files": [
+    {
+      "path": "custom_addons/baseer_pos_summary/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/__manifest__.py",
+      "sha256": "6590365a506bd079498c9aa78758acffe9a061a2d9833a74244667900ced3e2b"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/i18n/ar.po",
+      "sha256": "05766d4e680141d169c7e74685bde4a768f351398094a4d7ea9687dd5e962527"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py",
+      "sha256": "5cb22eb451ebf1b1bcba4776b9a540bd2d95c5f7d8bde3fa5163a52702917afb"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/__init__.py",
+      "sha256": "a16fd92ebf9b9ffd904f656d0f75c9f1fe329d637fdda4b6f3699166d47ba49c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/cash_report.py",
+      "sha256": "b637f42011ec24b67beed56870d309afeefad73a53f68821754a47381d166595"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/common.py",
+      "sha256": "0817f9ce0884b0898e22f41da8cc958d2d84385cbf780c9292fce32a8bc5aa49"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/daily_report.py",
+      "sha256": "5697630a5b810712d37e6ce297194aa595e033e92d200d25aeca94b9395219ff"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/day_archive.py",
+      "sha256": "3ed0a4219ec4f384aa124ef7727b3eb77ff831c8a1a2521494657816b939359a"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/day_entry.py",
+      "sha256": "7a757b24c32bccfc5c0159b253c0a823b426f5ad4499cf8110794e212cd37387"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/operations.py",
+      "sha256": "7e91a169941ed2a5807dfb8eb389cf5408d87c384e158ca6830c291799a45ec8"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_configuration.py",
+      "sha256": "f4dee73f57987baa3cb91786357df8f2a5c4ec8b03a037bf28b324e4922c64d7"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_native.py",
+      "sha256": "8d7ed53c92d25686a3219390857803fa6a0572a4c6d5910a7e062b6e9c7ca63c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/summary.py",
+      "sha256": "b10986e77e7d71de99adde445093398bdebc2f276212b4d4ddfc12b31d316c75"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/ir.model.access.csv",
+      "sha256": "4d6060edef0c0942e3aac30b9bffc62c873c66e4c8dfb06e2a42278ec92b9bbe"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/security.xml",
+      "sha256": "352e0813fd4a92139151b3e83b10793f15ce394c113c51201cd464187a71a445"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/js/payment_amount_grid.js",
+      "sha256": "7e3eb3eadaf471af4e17ba2ef23ee109bc95733aa65df540cdc848a9a3846b06"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/scss/summary.scss",
+      "sha256": "d680c7efaf9f538a0de4b521d1212000867f143d3e0171aa453c56393c097932"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml",
+      "sha256": "cd04874fb61021f43a93a235c191c8a8b5313b1ba05f849e03c3ba73486a728c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/allocation_views.xml",
+      "sha256": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/configuration_views.xml",
+      "sha256": "4c10cbaefbd4d92305a408242fa85ad8a824fee82e915236e9b1af8a9f071153"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/daily_report_views.xml",
+      "sha256": "2e6402225938a912c85ecc6ffd917616e80ee2c35a2d2bcc9d57e43bb218a3c9"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/day_archive_views.xml",
+      "sha256": "6a6771947f1354d8ddba3919faaa150e25bb5660164466daefa06628bd6d7699"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/day_entry_views.xml",
+      "sha256": "324c33986ca56846d86c0c9458eb1f36bf47572e02de95b4dde6b7f858e15fdf"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/operations_views.xml",
+      "sha256": "4193caa66f0eee5e95ff36bd6b5de779ae09db718a8297d0b0169dbb382069c6"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/summary_views.xml",
+      "sha256": "7c74a736cc0ddd81f7da7617193470c6964201d00dfd0bcb2969d5456bc2707f"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/pos_s6_checks.json",
+      "sha256": "9f76e1aa8dac8ab70f6bee543585df6a34a2a067df065a13eca3d9158b0e9ad7"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_checks.log",
+      "sha256": "9910a2c009f259a3a5ac82d99e34a9cbe860d7f85dd0ee5628b1052744dd2701"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_checks.py",
+      "sha256": "96cb3a21268951bdc5aa34963e60d472077aa19fb5892a3f1f2ba1b6b4c24635"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_desktop.png",
+      "sha256": "8e948c2c826492a83bafd1995a6891bca3cf607f412aab37fdad7d35ecef8279"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_mobile.png",
+      "sha256": "988cfc3fc019405e1aecdd1a8c380a44ec9a366b85bf2d3dddf8ba256dad3c99"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_ui_save.json",
+      "sha256": "a07433d000dbe0f37f0a33f153be00a2bb2d4b6023e2d38a8eb61f3f34621a24"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_upgrade.log",
+      "sha256": "217b77ec2fae0d6393e0fa4872b1decd7bb7c7cfa736a3049e8444aa0ed5e738"
+    },
+    {
+      "path": "docs/build-governance/pos_s6_translate_final.log",
+      "sha256": "f83bbdf3027433625bc6b053596b94e5f2ba7d464f43246b746be290f1f67981"
+    }
+  ],
+  "unchanged_from_qa5": [
+    "custom_addons/baseer_pos_summary/__init__.py",
+    "custom_addons/baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py",
+    "custom_addons/baseer_pos_summary/models/__init__.py",
+    "custom_addons/baseer_pos_summary/models/cash_report.py",
+    "custom_addons/baseer_pos_summary/models/common.py",
+    "custom_addons/baseer_pos_summary/models/daily_report.py",
+    "custom_addons/baseer_pos_summary/models/day_archive.py",
+    "custom_addons/baseer_pos_summary/models/operations.py",
+    "custom_addons/baseer_pos_summary/models/pos_configuration.py",
+    "custom_addons/baseer_pos_summary/models/pos_native.py",
+    "custom_addons/baseer_pos_summary/models/summary.py",
+    "custom_addons/baseer_pos_summary/security/ir.model.access.csv",
+    "custom_addons/baseer_pos_summary/security/security.xml",
+    "custom_addons/baseer_pos_summary/static/src/js/payment_amount_grid.js",
+    "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml",
+    "custom_addons/baseer_pos_summary/views/allocation_views.xml",
+    "custom_addons/baseer_pos_summary/views/configuration_views.xml",
+    "custom_addons/baseer_pos_summary/views/daily_report_views.xml",
+    "custom_addons/baseer_pos_summary/views/day_archive_views.xml",
+    "custom_addons/baseer_pos_summary/views/operations_views.xml",
+    "custom_addons/baseer_pos_summary/views/summary_views.xml"
+  ],
+  "archive": ".local-backups/pos-summary-s6/baseer-pos-summary-qa6.zip",
+  "archive_sha256": "c37cd0ce61e4f9d21f65b626e8e7204a8965ce79f2c3c16f43dc1190457902e7",
+  "backup_sha256": "85aec92d01051f80d505e0a9a3e12758b5aaaa5d6dc0cc963e768fca73359c1f",
+  "pending_user_scope": [
+    "inclusive tax pricing new versus existing amounts",
+    "closed record meaning and deletion scope"
+  ]
+}

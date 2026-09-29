@@ -1,0 +1,54 @@
+name: baseer-odoo-prod
+
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - baseer_odoo_prod_postgres_data:/var/lib/postgresql/data
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 1g
+    pids_limit: 256
+    restart: unless-stopped
+
+  odoo:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./config/odoo.prod.conf:/etc/odoo/odoo.conf:ro
+      - ./release/current/custom_addons:/mnt/baseer-addons:ro
+      - ./release/current/third_party_addons:/mnt/third-party-addons:ro
+      - baseer_odoo_prod_filestore:/var/lib/odoo
+    ports:
+      - "127.0.0.1:18069:8069"
+    networks:
+      - frontend
+      - database
+    mem_limit: 3g
+    pids_limit: 512
+    restart: unless-stopped
+
+networks:
+  frontend:
+    name: baseer-odoo-prod_frontend
+  database:
+    name: baseer-odoo-prod_database
+    internal: true
+
+volumes:
+  baseer_odoo_prod_postgres_data:
+    name: baseer-odoo-prod_postgres_data
+  baseer_odoo_prod_filestore:
+    name: baseer-odoo-prod_filestore

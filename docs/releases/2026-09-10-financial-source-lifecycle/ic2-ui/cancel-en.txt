@@ -1,0 +1,211 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Discuss"
+    - menu:
+      - menuitem "Discuss"
+      - menuitem "Channels"
+      - button "Configuration":
+        - generic: Configuration
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- button "New"
+- generic: BILL/2026/09/0007 (IC2-UI-BATCH-1)
+- button "Actions menu":
+  - generic: 
+- button " 1 Payments":
+  - generic: 
+  - generic: "1"
+  - generic: Payments
+- button " Purchase Matching":
+  - generic: 
+  - generic: Purchase Matching
+- search:
+  - navigation "Pager":
+    - generic: "1"
+    - text: / 1
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- main:
+  - button "Credit Note"
+  - button "Debit Note"
+  - button "Correct operation"
+  - button "Cancel operation"
+  - radiogroup "Statusbar":
+    - radio "Posted" [checked] [disabled]
+    - radio "Draft" [disabled]
+  - generic: Paid
+  - generic: Vendor Bill
+  - heading "BILL/2026/09/0007" [level=1]:
+    - generic: BILL/2026/09/0007
+  - generic: Vendor
+  - link "IC1 QA supplier — correction preview":
+    - /url: /odoo/res.partner/188
+  - generic: Bill Reference
+  - textbox "Bill Reference": IC2-UI-BATCH-1
+  - generic: Bill Date
+  - generic: Sep 10
+  - generic: Accounting Date
+  - generic: Sep 10
+  - text: Payment Reference
+  - superscript: "?"
+  - textbox "Payment Reference?":
+    - /placeholder: Use Bill Reference
+  - text: Recipient Bank
+  - superscript: "?"
+  - combobox "Recipient Bank?"
+  - generic: Due Date
+  - button "Due Date": Sep 10
+  - generic: Currency
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "Invoice Lines"
+    - tab "Journal Items"
+    - tab "Other Info"
+  - table:
+    - rowgroup:
+      - row "Label Account Analytic Quantity Price Taxes Amount ":
+        - columnheader
+        - columnheader "Label":
+          - generic: Label
+          - text: 
+        - columnheader "Account":
+          - generic: Account
+          - text: 
+        - columnheader "Analytic":
+          - generic: Analytic
+          - text: 
+        - columnheader "Quantity":
+          - generic: Quantity
+          - text: 
+        - columnheader "Price":
+          - generic: Price
+          - text: 
+        - columnheader "Taxes":
+          - generic: Taxes
+          - text: 
+        - columnheader "Amount":
+          - generic: Amount
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " IC2 isolated UI purchase 400045 Subscriptions 1.00 500.00 500.00 SR":
+        - cell "":
+          - generic: 
+        - cell "IC2 isolated UI purchase":
+          - generic: IC2 isolated UI purchase
+        - cell "400045 Subscriptions":
+          - generic: 400045 Subscriptions
+        - cell
+        - cell "1.00"
+        - cell "500.00"
+        - cell
+        - cell "500.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: Terms and Conditions
+  - table:
+    - rowgroup:
+      - 'row "Untaxed Amount: 500.00 SR"':
+        - cell "Untaxed Amount:":
+          - generic: "Untaxed Amount:"
+        - cell "500.00 SR"
+      - 'row "Total: 500.00 SR"':
+        - cell "Total:":
+          - generic: "Total:"
+        - cell "500.00 SR"
+  - table:
+    - row "Info Paid on 09/10/2026 500.00 SR":
+      - cell "Info":
+        - button "Info": 
+      - cell "Paid on 09/10/2026":
+        - generic: Paid on 09/10/2026
+      - cell "500.00 SR"
+  - generic: "Amount Due:"
+  - generic: 0.00 SR
+  - button "Send message"
+  - button "Log note"
+  - button "Activity"
+  - button "Search Messages":
+    - img: 
+  - button "Attach files":
+    - generic: 
+  - button "1":
+    - img: 
+    - superscript: "1"
+  - separator
+  - generic: Today
+  - separator
+  - group "System notification":
+    - generic "Open card":
+    - generic "Open card":
+      - strong: IC1 QA owner
+    - generic "9/10/2026, 8:38:15 PM": 8:38 PM
+    - paragraph: Invoice paid
+    - list:
+      - text: غير مدفوع
+      - generic: 
+      - text: مدفوع
+      - generic: (Payment Status)
+  - group "System notification":
+    - generic "Open card":
+    - generic "Open card":
+      - strong: IC1 QA owner
+    - generic "9/10/2026, 8:38:15 PM": 8:38 PM
+    - paragraph: تم إنشاء فاتورة المورد
+- dialog:
+  - banner:
+    - heading "Cancel operation" [level=4]
+    - button "Close"
+  - main:
+    - main:
+      - generic: Invoice
+      - generic: BILL/2026/09/0007 (IC2-UI-BATCH-1)
+      - generic: Payment
+      - generic: PBNK1/2026/00003
+      - generic: Correct partner
+      - generic: IC1 QA supplier — correction preview
+      - generic: Correction reason
+      - textbox "Correction reason" [active]:
+        - /placeholder: What was entered incorrectly?
+      - generic: Cancel recorded payment
+      - generic: Recorded payment amount
+      - generic: "500.00"
+      - generic: Cash / bank journal
+      - generic: Bank
+      - generic: I confirm this payment was recorded in error; cancel its accounting effect too
+      - checkbox "I confirm this payment was recorded in error; cancel its accounting effect too"
+  - contentinfo:
+    - button "Confirm operation cancellation"
+    - button "Cancel"
+- paragraph: Press esc to exit full screen

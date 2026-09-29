@@ -1,0 +1,19 @@
+# BP-S1 — payroll settings and missing journal recovery
+
+G0: User reported SQL required journal failure, then requested all payroll configuration in Payroll Settings. Logs prove October creation on company 6 (QA ARZ) with NULL journal; only demo company 10 has payroll mappings. QA only; no automatic invented mapping or ledger edits. Acceptance: native Payroll Settings exposes existing company fields, early actionable Arabic/English validation, successful configured-company creation, unchanged original transactions.
+
+G1: Existing payroll capacity contract retained (100 employee tested case); settings reads six existing fields per active company, no loops/new financial calculations. No new capacity test required for configuration projection.
+
+G2: ARCHITECTURAL narrow impact at existing configuration boundary. res.company remains authority; transient res.config.settings related writable fields expose journal, four accounts and proration. Existing company view retained as the same backing fields. Refactor existing pure validation from structure builder and call before managed run INSERT. No schema on durable models, rules/ledger/math unchanged. Settings retains native admin permissions; company filters constrain choices; server existing validation rejects wrong-company/wrong-type mappings. Wizard passes its company to create to retain stale-company guard. No defaults inferred for real companies.
+
+G3: Direct path: inherit Odoo Mates native Settings app and Odoo related fields. No library, global UI patch, new module or vendor edit. Version 19.0.1.0.1. Rollback previous source/QA backup; preserve previous frozen release artifact and produce separate patch identity.
+
+G4: Native app/block/setting/group fields, RTL/LTR and mobile inherited from Odoo. Arabic labels/translations; visible selected company. Existing selector and settings Save. Missing-config message names company and directs Payroll > Settings.
+
+Validation: focused rollback tests for missing config via wizard/direct/default context, no inserted run on failure, configured company creation/employee loading, stale company rejection, company isolation related fields, invalid account/journal choices. UI desktop and narrow-screen inspection, successful settings save and creation in synthetic fixture only. Existing monthly arithmetic unchanged; run full regression only if new concern warrants. Independent reviewer approves scoped gates and final delta evidence.
+
+BP-S1-01: Independent G0-G4 GO received before app edits. Coherent QA DB/filestore/config plus source-before backup at .local-backups/baseer-payroll-settings-20260908; previous release ZIP untouched.
+
+BP-S1-02: Installed 19.0.1.0.1 on QA; native account selector has no legacy deprecated field. New code translation includes Odoo19 odoo-python marker. 22 focused checks passed and rolled back. Test initially assumed no overdue loans in January2027; corrected expectation to preserve existing fixture's outstanding850 deduction (no financial implementation change).
+
+BP-S1-03: Actual Arabic Settings Save succeeded for demo company10. Desktop850 and mobile390 screenshots inspected. Actual UI created run85 January2027 with two employees/gross5000/loan850/net4150; immediately deleted this draft through native UI. Existing January/February/March/September runs48/49/61/81 remain. No posting/payment during this delta. Native settings Save normalized company's unrelated nullable hr_presence_control_attendance from NULL to false (same disabled Boolean state); write metadata changed; payroll mappings unchanged. Original other companies unchanged. Existing83moves/198lines/29payments have exact before/after hashes, main snapshot exact. Evidence and frozen ZIP: docs/releases/2026-09-08-baseer-payroll-settings/candidate.json. No full six-month rerun because arithmetic/ledger unchanged and scoped checks pass.

@@ -1,0 +1,13 @@
+# Local services and credentials
+.env
+config/odoo.local.conf
+.venv/
+.local-backups/
+*.log
+
+# Odoo runtime files
+odoo-data/
+postgres-data/
+
+# Odoo is a separately cloned upstream repository.
+odoo/

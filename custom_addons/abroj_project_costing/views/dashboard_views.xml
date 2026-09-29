@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_abroj_dashboard" model="ir.actions.client">
+        <field name="name">لوحة التحكم</field>
+        <field name="tag">abroj_project_costing.dashboard</field>
+    </record>
+</odoo>

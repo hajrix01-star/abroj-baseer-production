@@ -1,0 +1,7 @@
+{
+  "protected_tables": 245,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "WS1 model fields and wizard/weekday tables; existing columns compared explicitly",
+  "candidate": "fd5dd15be755051edb0d695095aa02abc2fc18f0"
+}

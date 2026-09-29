@@ -1,0 +1,430 @@
+{
+  "checks": [
+    {
+      "name": "draft_1",
+      "passed": true
+    },
+    {
+      "name": "approved_1",
+      "passed": true
+    },
+    {
+      "name": "loan_month_1",
+      "passed": true
+    },
+    {
+      "name": "review_defaults_1",
+      "passed": true
+    },
+    {
+      "name": "partial_return_1",
+      "passed": true
+    },
+    {
+      "name": "native_paid_1",
+      "passed": true
+    },
+    {
+      "name": "replay_1",
+      "passed": true
+    },
+    {
+      "name": "stale_1",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_1",
+      "passed": true
+    },
+    {
+      "name": "history_no_double_count_1",
+      "passed": true
+    },
+    {
+      "name": "no_second_full_payment_1",
+      "passed": true
+    },
+    {
+      "name": "draft_2",
+      "passed": true
+    },
+    {
+      "name": "approved_2",
+      "passed": true
+    },
+    {
+      "name": "loan_month_2",
+      "passed": true
+    },
+    {
+      "name": "review_defaults_2",
+      "passed": true
+    },
+    {
+      "name": "partial_return_2",
+      "passed": true
+    },
+    {
+      "name": "native_paid_2",
+      "passed": true
+    },
+    {
+      "name": "replay_2",
+      "passed": true
+    },
+    {
+      "name": "stale_2",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_2",
+      "passed": true
+    },
+    {
+      "name": "history_no_double_count_2",
+      "passed": true
+    },
+    {
+      "name": "no_second_full_payment_2",
+      "passed": true
+    },
+    {
+      "name": "draft_3",
+      "passed": true
+    },
+    {
+      "name": "approved_3",
+      "passed": true
+    },
+    {
+      "name": "loan_month_3",
+      "passed": true
+    },
+    {
+      "name": "review_defaults_3",
+      "passed": true
+    },
+    {
+      "name": "partial_return_3",
+      "passed": true
+    },
+    {
+      "name": "native_paid_3",
+      "passed": true
+    },
+    {
+      "name": "replay_3",
+      "passed": true
+    },
+    {
+      "name": "stale_3",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_3",
+      "passed": true
+    },
+    {
+      "name": "history_no_double_count_3",
+      "passed": true
+    },
+    {
+      "name": "no_second_full_payment_3",
+      "passed": true
+    },
+    {
+      "name": "draft_4",
+      "passed": true
+    },
+    {
+      "name": "approved_4",
+      "passed": true
+    },
+    {
+      "name": "loan_month_4",
+      "passed": true
+    },
+    {
+      "name": "review_defaults_4",
+      "passed": true
+    },
+    {
+      "name": "partial_return_4",
+      "passed": true
+    },
+    {
+      "name": "native_paid_4",
+      "passed": true
+    },
+    {
+      "name": "replay_4",
+      "passed": true
+    },
+    {
+      "name": "stale_4",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_4",
+      "passed": true
+    },
+    {
+      "name": "history_no_double_count_4",
+      "passed": true
+    },
+    {
+      "name": "no_second_full_payment_4",
+      "passed": true
+    },
+    {
+      "name": "draft_5",
+      "passed": true
+    },
+    {
+      "name": "approved_5",
+      "passed": true
+    },
+    {
+      "name": "loan_month_5",
+      "passed": true
+    },
+    {
+      "name": "review_defaults_5",
+      "passed": true
+    },
+    {
+      "name": "partial_return_5",
+      "passed": true
+    },
+    {
+      "name": "native_paid_5",
+      "passed": true
+    },
+    {
+      "name": "replay_5",
+      "passed": true
+    },
+    {
+      "name": "stale_5",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_5",
+      "passed": true
+    },
+    {
+      "name": "history_no_double_count_5",
+      "passed": true
+    },
+    {
+      "name": "no_second_full_payment_5",
+      "passed": true
+    },
+    {
+      "name": "draft_6",
+      "passed": true
+    },
+    {
+      "name": "approved_6",
+      "passed": true
+    },
+    {
+      "name": "loan_month_6",
+      "passed": true
+    },
+    {
+      "name": "review_defaults_6",
+      "passed": true
+    },
+    {
+      "name": "partial_return_6",
+      "passed": true
+    },
+    {
+      "name": "native_paid_6",
+      "passed": true
+    },
+    {
+      "name": "replay_6",
+      "passed": true
+    },
+    {
+      "name": "stale_6",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_6",
+      "passed": true
+    },
+    {
+      "name": "history_no_double_count_6",
+      "passed": true
+    },
+    {
+      "name": "no_second_full_payment_6",
+      "passed": true
+    },
+    {
+      "name": "employee_history_six_months",
+      "passed": true
+    },
+    {
+      "name": "employee_history_navigation",
+      "passed": true
+    },
+    {
+      "name": "negative_amount",
+      "passed": true
+    },
+    {
+      "name": "overprecision",
+      "passed": true
+    },
+    {
+      "name": "overpayment",
+      "passed": true
+    },
+    {
+      "name": "all_zero",
+      "passed": true
+    },
+    {
+      "name": "foreign_company",
+      "passed": true
+    },
+    {
+      "name": "forged_results",
+      "passed": true
+    },
+    {
+      "name": "forged_state",
+      "passed": true
+    },
+    {
+      "name": "manual_child",
+      "passed": true
+    },
+    {
+      "name": "child_source_write",
+      "passed": true
+    },
+    {
+      "name": "parent_replace_rows",
+      "passed": true
+    },
+    {
+      "name": "foreign_child_update",
+      "passed": true
+    },
+    {
+      "name": "outstanding_configuration",
+      "passed": true
+    },
+    {
+      "name": "reconcilable_treasury_configuration",
+      "passed": true
+    },
+    {
+      "name": "reconcilable_treasury_no_payment",
+      "passed": true
+    },
+    {
+      "name": "locked_date",
+      "passed": true
+    },
+    {
+      "name": "atomic_second_employee_failure",
+      "passed": true
+    },
+    {
+      "name": "atomic_no_payment_left",
+      "passed": true
+    },
+    {
+      "name": "zero_employee_skipped",
+      "passed": true
+    },
+    {
+      "name": "completed_row_edit",
+      "passed": true
+    },
+    {
+      "name": "one_native_shared_payment",
+      "passed": true
+    },
+    {
+      "name": "shared_payment_allocation",
+      "passed": true
+    },
+    {
+      "name": "zero_net_no_payment",
+      "passed": true
+    },
+    {
+      "name": "basic_employee_financial_access",
+      "passed": true
+    },
+    {
+      "name": "basic_settlement_access",
+      "passed": true
+    }
+  ],
+  "months": [
+    {
+      "month": 1,
+      "gross": 5000.0,
+      "deduction": 25.0,
+      "loan": 200.0,
+      "paid": 4775.0,
+      "remaining": 0.0,
+      "stage": "paid"
+    },
+    {
+      "month": 2,
+      "gross": 5000.0,
+      "deduction": 50.0,
+      "loan": 0.0,
+      "paid": 4950.0,
+      "remaining": 0.0,
+      "stage": "paid"
+    },
+    {
+      "month": 3,
+      "gross": 5000.0,
+      "deduction": 25.0,
+      "loan": 250.0,
+      "paid": 4725.0,
+      "remaining": 0.0,
+      "stage": "paid"
+    },
+    {
+      "month": 4,
+      "gross": 5000.0,
+      "deduction": 50.0,
+      "loan": 200.0,
+      "paid": 4750.0,
+      "remaining": 0.0,
+      "stage": "paid"
+    },
+    {
+      "month": 5,
+      "gross": 5000.0,
+      "deduction": 25.0,
+      "loan": 200.0,
+      "paid": 4775.0,
+      "remaining": 0.0,
+      "stage": "paid"
+    },
+    {
+      "month": 6,
+      "gross": 5000.0,
+      "deduction": 50.0,
+      "loan": 200.0,
+      "paid": 4750.0,
+      "remaining": 0.0,
+      "stage": "paid"
+    }
+  ],
+  "status": "passed",
+  "rolled_back": true
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "align": "center",
+    "centerDeltaX": 0,
+    "centerDeltaY": 0,
+    "inputAlign": "center",
+    "name": "gross_amount",
+    "vertical": "middle"
+  },
+  {
+    "align": "center",
+    "centerDeltaX": 0,
+    "centerDeltaY": 0,
+    "inputAlign": "start",
+    "name": "vat_enabled",
+    "vertical": "middle"
+  },
+  {
+    "align": "center",
+    "centerDeltaX": 0,
+    "centerDeltaY": 0,
+    "inputAlign": "start",
+    "name": "is_credit",
+    "vertical": "middle"
+  }
+]

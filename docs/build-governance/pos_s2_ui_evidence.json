@@ -1,0 +1,11 @@
+{
+  "scope": "POS-S2 QA only; observed native browser interactions",
+  "desktop_combined_save": {"entry": 28, "summary_ids": [227,228], "amounts": [115,230], "customers": [10,20], "state": "draft", "partial_invalid_save_created_summaries": 0},
+  "mobile_combined_save": {"entry": 29, "summary_ids": [229,230], "amounts": [120,240], "customers": [12,24], "state": "draft", "test_records_cleaned": true},
+  "arabic_mobile_final": {"viewport_width":390,"document_width":390,"cards":2,"visible_save_buttons":1,"native_save_visible":false,"arabic_indic_digits":false},
+  "languages_checked": ["ar_001","en_US"],
+  "daily_report": {"approved_sales":1800,"customers":60,"complete_days":1,"closure_example_days":3,"missing_example_days":3,"closure_fixture_cleaned":true},
+  "shift_analysis": "Native morning/evening/all-day quick filters and monthly grouping checked",
+  "financial_fingerprints": "Before/after identical; see pos_s2_financial_before.txt and pos_s2_financial_after.txt",
+  "approval": "Separate explicit approval uses original native posting, verified by backend transaction and concurrency checks"
+}

@@ -1,0 +1,320 @@
+{
+  "checks": [
+    {
+      "name": "50 mixed load below15seconds",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "eligible + incomplete rows",
+      "expected": "40",
+      "actual": "40",
+      "pass": true
+    },
+    {
+      "name": "twenty pending",
+      "expected": "20",
+      "actual": "20",
+      "pass": true
+    },
+    {
+      "name": "future ended archived disabled excluded",
+      "expected": "set()",
+      "actual": "set()",
+      "pass": true
+    },
+    {
+      "name": "full February monthly salary",
+      "expected": "60000",
+      "actual": "60000.0",
+      "pass": true
+    },
+    {
+      "name": "full February net",
+      "expected": "60000",
+      "actual": "60000.0",
+      "pass": true
+    },
+    {
+      "name": "pending computed rules empty",
+      "expected": "0",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "name": "pending manual input retained",
+      "expected": "120",
+      "actual": "120.0",
+      "pass": true
+    },
+    {
+      "name": "pending run manual effective zero",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "mixed approval blocked",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "mixed atomic zero moves before exception",
+      "expected": "26",
+      "actual": "26",
+      "pass": true
+    },
+    {
+      "name": "mixed atomic all draft",
+      "expected": "{'draft'}",
+      "actual": "{'draft'}",
+      "pass": true
+    },
+    {
+      "name": "two refreshes reuse rows",
+      "expected": "[620, 619, 618, 617, 616, 615, 614, 613, 612, 611, 610, 609, 608, 607, 606, 605, 604, 603, 602, 601, 600, 599, 598, 597, 596, 595, 594, 593, 592, 591, 590, 589, 588, 587, 586, 585, 584, 583, 582, 581]",
+      "actual": "[620, 619, 618, 617, 616, 615, 614, 613, 612, 611, 610, 609, 608, 607, 606, 605, 604, 603, 602, 601, 600, 599, 598, 597, 596, 595, 594, 593, 592, 591, 590, 589, 588, 587, 586, 585, 584, 583, 582, 581]",
+      "pass": true
+    },
+    {
+      "name": "two refreshes pending totals stable",
+      "expected": "60000",
+      "actual": "60000.0",
+      "pass": true
+    },
+    {
+      "name": "protected baseer_needs_refresh",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "protected baseer_readiness",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "protected baseer_readiness_warning",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "RPC private invalidate",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "forged defaults",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "foreign company approval",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "Arabic missing start warning",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "Arabic pending label",
+      "expected": "بيانات ناقصة",
+      "actual": "بيانات ناقصة",
+      "pass": true
+    },
+    {
+      "name": "Arabic run banner",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "Arabic open ended hint",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "complete but stale mixed run",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "all forty now ready",
+      "expected": "0",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "name": "half February14days",
+      "expected": "14",
+      "actual": "14.0",
+      "pass": true
+    },
+    {
+      "name": "half February fixed30 salary",
+      "expected": "1400",
+      "actual": "1400.0",
+      "pass": true
+    },
+    {
+      "name": "saved manual deduction applied once",
+      "expected": "1280",
+      "actual": "1280.0",
+      "pass": true
+    },
+    {
+      "name": "saved defer preserved",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "mixed correct total gross",
+      "expected": "104000",
+      "actual": "104000.0",
+      "pass": true
+    },
+    {
+      "name": "mixed correct total net",
+      "expected": "103880",
+      "actual": "103880.0",
+      "pass": true
+    },
+    {
+      "name": "ready to changed ready flagged",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "ready to changed ready zero",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "other row unchanged",
+      "expected": "1280",
+      "actual": "1280.0",
+      "pass": true
+    },
+    {
+      "name": "stale positive salary direct done",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "new wage refreshed",
+      "expected": "3300",
+      "actual": "3300.0",
+      "pass": true
+    },
+    {
+      "name": "zero salary can retain allowance setup",
+      "expected": "300",
+      "actual": "300.0",
+      "pass": true
+    },
+    {
+      "name": "salary removed no residual",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "salary removed warning",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "salary restored cleanly",
+      "expected": "3300",
+      "actual": "3300.0",
+      "pass": true
+    },
+    {
+      "name": "loan after refresh",
+      "expected": "300",
+      "actual": "300.0",
+      "pass": true
+    },
+    {
+      "name": "loan repeat refresh same",
+      "expected": "300",
+      "actual": "300.0",
+      "pass": true
+    },
+    {
+      "name": "forty approved moves",
+      "expected": "40",
+      "actual": "40",
+      "pass": true
+    },
+    {
+      "name": "loan recovered once",
+      "expected": "300",
+      "actual": "300.0",
+      "pass": true
+    },
+    {
+      "name": "one loan allocation",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "posted historical snapshot unchanged",
+      "expected": "(3300.0, 3000.0, [9267, 9268, 9269, 9270, 9271], 1636)",
+      "actual": "(3300.0, 3000.0, [9267, 9268, 9269, 9270, 9271], 1636)",
+      "pass": true
+    },
+    {
+      "name": "future salary version not selected",
+      "expected": "600",
+      "actual": "600",
+      "pass": true
+    },
+    {
+      "name": "historical wage used",
+      "expected": "3000",
+      "actual": "3000.0",
+      "pass": true
+    },
+    {
+      "name": "archive existing manual row retained pending",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "archive existing row zero",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "archive existing row not approved",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    }
+  ],
+  "database": "baseer_pb2_test_20260909",
+  "load_seconds": 0.515,
+  "status": "passed"
+}
+

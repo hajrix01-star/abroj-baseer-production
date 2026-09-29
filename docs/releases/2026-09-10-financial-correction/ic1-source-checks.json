@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "database": "baseer_ic1_20260910",
+  "checks": [
+    "POS routes to existing source correction model",
+    "POS does not create generic wizard",
+    "POS accountant cannot gain source-manager rights",
+    "POS cashier central entry denied",
+    "POS direct generic source eligibility denied",
+    "payslip routes to existing source correction model",
+    "payslip does not create generic wizard",
+    "payslip accountant cannot gain source-manager rights",
+    "payslip cashier central entry denied",
+    "payslip direct generic source eligibility denied",
+    "loan routes to existing source correction model",
+    "loan does not create generic wizard",
+    "loan accountant cannot gain source-manager rights",
+    "loan cashier central entry denied",
+    "loan direct generic source eligibility denied",
+    "independent journal uses native reversal wizard",
+    "cashier native journal central entry denied",
+    "owner source current-company mismatch denied",
+    "routing leaves source entries posted and unchanged",
+    "routing creates no generic correction audit"
+  ],
+  "rollback": true,
+  "scope": "Native dispatcher and existing source action routing/access only; synthetic source linkage, no financial correction execution",
+  "commit_guard": true,
+  "modules_preserved": true,
+  "passed": 20
+}

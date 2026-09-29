@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "zip_sha256": "e30376d74e9d969289d966e6a853d01d06680ff5ee29451e29cbea4cae54a9c7",
+  "file_count": 50,
+  "source_zip_mounted_files_match": true,
+  "python_ast_xml_parse": true
+}

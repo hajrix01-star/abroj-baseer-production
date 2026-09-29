@@ -1,0 +1,20 @@
+{
+  "decision": "GO",
+  "reviewer": "hr_import_review",
+  "scope": "names_only",
+  "script_sha256": "69874545a922c19ff1c1f925d636394ba0c3daa2522b68ddbfee4288af233b3c",
+  "payload_sha256": "7c31b0e1b8d20b6e7a9f5a66828d1682bf0a3d5f94edd9cfe004554d7ed2d9e8",
+  "source_sha256": "a8eda338b31b9947ab69ff275c75f39cd7c5cb3d9922e46309564a8017e8ce13",
+  "driver_sha256": "20a8b22feeec08a44bd68b220be9947ba2364c2edee756f0f8150bfd0e1803af",
+  "backup_manifest": "D:\\Codex\\Baseer-odoo\\.local-backups\\environment-maintenance\\baseer_dev-20260909T144110076779Z\\manifest.json",
+  "backup_artifacts_verified": 9,
+  "notes": [
+    "Authorized names-only scope, current staff active and former staff archived; two explicit historical merges retain all 51 source XML IDs across 49 employees.",
+    "Source-company/name/status/employee-number mapping independently compared offline; salary, allowance, contract and actual shift migration excluded.",
+    "Native required calendar satisfied by three company-isolated pending flexible calendars, zero daily/weekly hours and no attendance/holiday lines; existing calendar rows unchanged and exact new-calendar allowlist asserted.",
+    "Real ORM rollback passed: 49 employees, 51 identities, 34 active / 15 archived, 152 protected tables or baseline calendar rows unchanged; Administrator preserved; second pass creates nothing.",
+    "Native salary_simulation context skips avatars/onboarding and unrelated leave-manager/work-entry/public-holiday timesheet hooks for bare new profiles; normal model validation retained.",
+    "Nine coherent-backup artifact hashes independently verified; 644 attachment references recorded verified. This backup has not undergone a fresh full database restore.",
+    "GO authorizes the exact reviewed names-only commit. Post-commit reconciliation and user-visible verification remain required; no production commit performed by reviewer."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "protected_tables": 367,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "80ab864153b9e337090d5a1286150e7a64ad6319",
+  "added_schema": "Browser printing frontend module installation only; no business seed, schema or transaction migration"
+}

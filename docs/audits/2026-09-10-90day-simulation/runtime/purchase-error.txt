@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/tmp/sim90/run_purchases.py", line 11, in <module>
+    result=scope['seed_purchases'](local,ctx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "seed_purchases.py", line 130, in seed_purchases
+  File "/usr/lib/python3/dist-packages/odoo/orm/decorators.py", line 369, in create
+    return method(self, vals_list)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/ic1-addons/baseer_financial_correction/models/lifecycle.py", line 84, in create
+    originals._baseer_guard_source_lifecycle()
+  File "/mnt/ic1-addons/baseer_financial_correction/models/lifecycle.py", line 56, in _baseer_guard_source_lifecycle
+    raise UserError(_('Use Correct operation or Cancel operation from the purchase row. Its invoice and payment must stay together.'))
+odoo.exceptions.UserError: Use Correct operation or Cancel operation from the purchase row. Its invoice and payment must stay together.

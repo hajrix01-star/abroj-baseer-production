@@ -1,0 +1,14 @@
+{
+  "protected_tables": 368,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "24bc64d2a778590e8e8e6577eb3866d18727bc24",
+  "existing_user_memberships_exact": true,
+  "existing_module_versions_exact": true,
+  "existing_user_presets_exact": true,
+  "no_automatic_role_assignments": true,
+  "initial_correction_audit_empty": true,
+  "new_correction_setting_default_exact": true,
+  "added_schema": "Correction models and default-true user permission; all prior column values preserved",
+  "recovery": "Parser-only failed init retried without update-only i18n-overwrite flag"
+}

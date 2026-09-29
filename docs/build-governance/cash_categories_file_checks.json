@@ -1,0 +1,114 @@
+[
+  {
+    "file": "cash_categories_ar_001_gross",
+    "pages": 2,
+    "fonts": [
+      {
+        "name": "/IBMPlexSansArabic-Bold",
+        "embedded": true
+      },
+      {
+        "name": "/IBMPlexSansArabic",
+        "embedded": true
+      },
+      {
+        "name": "/IBMPlexSansArabic",
+        "embedded": true
+      },
+      {
+        "name": "/IBMPlexSansArabic-Bold",
+        "embedded": true
+      }
+    ],
+    "xlsx_totals_match": true,
+    "pdf_amounts_present": true
+  },
+  {
+    "file": "cash_categories_ar_001_net",
+    "pages": 2,
+    "fonts": [
+      {
+        "name": "/IBMPlexSansArabic-Bold",
+        "embedded": true
+      },
+      {
+        "name": "/IBMPlexSansArabic",
+        "embedded": true
+      },
+      {
+        "name": "/IBMPlexSansArabic",
+        "embedded": true
+      },
+      {
+        "name": "/IBMPlexSansArabic-Bold",
+        "embedded": true
+      }
+    ],
+    "xlsx_totals_match": true,
+    "pdf_amounts_present": true
+  },
+  {
+    "file": "cash_categories_en_US_gross",
+    "pages": 2,
+    "fonts": [
+      {
+        "name": "/Lato-Bold",
+        "embedded": true
+      },
+      {
+        "name": "/Lato-Regular",
+        "embedded": true
+      },
+      {
+        "name": "/DejaVuSans",
+        "embedded": true
+      },
+      {
+        "name": "/DejaVuSans",
+        "embedded": true
+      },
+      {
+        "name": "/Lato-Regular",
+        "embedded": true
+      },
+      {
+        "name": "/Lato-Bold",
+        "embedded": true
+      }
+    ],
+    "xlsx_totals_match": true,
+    "pdf_amounts_present": true
+  },
+  {
+    "file": "cash_categories_en_US_net",
+    "pages": 2,
+    "fonts": [
+      {
+        "name": "/Lato-Bold",
+        "embedded": true
+      },
+      {
+        "name": "/Lato-Regular",
+        "embedded": true
+      },
+      {
+        "name": "/DejaVuSans",
+        "embedded": true
+      },
+      {
+        "name": "/DejaVuSans",
+        "embedded": true
+      },
+      {
+        "name": "/Lato-Regular",
+        "embedded": true
+      },
+      {
+        "name": "/Lato-Bold",
+        "embedded": true
+      }
+    ],
+    "xlsx_totals_match": true,
+    "pdf_amounts_present": true
+  }
+]

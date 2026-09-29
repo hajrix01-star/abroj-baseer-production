@@ -1,0 +1,141 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - generic: BILL/2026/09/0001 (IC1 QA UI 400 to 500)
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- button "جديد"
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- button:
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "الدفع"
+  - button "":
+    - generic: 
+  - radiogroup "شريط الحالة":
+    - button "مُرحّل" [disabled]
+  - generic: فاتورة المورد
+  - heading "BILL/2026/09/0001" [level=1]:
+    - generic: BILL/2026/09/0001
+  - generic: المورد
+  - link "IC1 QA supplier — correction preview":
+    - /url: /odoo/res.partner/188
+  - generic: الرقم المرجعي للفاتورة
+  - textbox "الرقم المرجعي للفاتورة": IC1 QA UI 400 to 500
+  - generic: تاريخ الفاتورة
+  - generic: ١٠ سبتمبر
+  - generic: تاريخ المحاسبة
+  - generic: ١٠ سبتمبر
+  - text: الرقم المرجعي للدفع
+  - superscript: "?"
+  - textbox "الرقم المرجعي للدفع?":
+    - /placeholder: استخدم الرقم المرجعي للفاتورة
+  - text: البنك المستلم
+  - superscript: "?"
+  - textbox "البنك المستلم?":
+    - /placeholder: ""
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق": ١٠ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "معلومات أخرى"
+  - 'link "ملف ثنائي 500.00 SR الكمية: 1.00 سعر الوحدة: 500.00"':
+    - img "ملف ثنائي"
+    - generic: 500.00 SR
+    - generic: "الكمية: 1.00"
+    - generic: "سعر الوحدة: 500.00"
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 500.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "500.00 SR"
+      - 'row "الإجمالي: 500.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "500.00 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 500.00 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - separator
+  - generic: اليوم
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA accountant
+    - generic "١٠‏/٩‏/٢٠٢٦، ٧:٢٣:٣٧ م": ٧:٢٣ م
+    - list:
+      - text: 400.00 SR
+      - generic: 
+      - text: 500.00 SR
+      - generic: (المبلغ دون الضريبة)
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA accountant
+    - generic "١٠‏/٩‏/٢٠٢٦، ٧:٢٣:٣٧ م": ٧:٢٣ م
+    - paragraph: "تم تصحيح العملية: IC1 QA تصحيح الإدخال إلى 500"
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA accountant
+    - generic "١٠‏/٩‏/٢٠٢٦، ٧:٢٣:٣٧ م": ٧:٢٣ م
+    - list:
+      - text: "-400.00 SR"
+      - generic: 
+      - text: "-500.00 SR"
+      - generic: (الرصيد)
+    - paragraph:
+      - text: تم تحديث عنصر اليومية
+      - link "#6":
+        - /url: "#"
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA accountant
+    - generic "١٠‏/٩‏/٢٠٢٦، ٧:٢٣:٣٧ م": ٧:٢٣ م
+    - list:
+      - text: 400.00 SR
+      - generic: 
+      - text: 500.00 SR
+      - generic: (الرصيد)
+    - paragraph:
+      - text: تم تحديث عنصر اليومية
+      - link "#5":
+        - /url: "#"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

@@ -1,0 +1,27 @@
+{
+  "clones": [
+    {
+      "database": "baseer_fix_core_20260909",
+      "removed": true
+    },
+    {
+      "database": "baseer_fix_payroll_20260909",
+      "removed": true
+    },
+    {
+      "database": "baseer_fix_sales_20260909",
+      "removed": true
+    },
+    {
+      "database": "baseer_fix_security_20260909",
+      "removed": true
+    },
+    {
+      "database": "baseer_fix_main_20260909",
+      "removed": true
+    }
+  ],
+  "filestores_removed": true,
+  "review_service_stopped": true,
+  "source_and_backup_archives_retained": true
+}

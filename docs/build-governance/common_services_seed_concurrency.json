@@ -1,0 +1,4624 @@
+{
+  "database": "baseer_service_seed_race",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "fresh_disposable_fixture",
+      "passed": true
+    },
+    {
+      "name": "native_company_initially_seeded",
+      "passed": true
+    },
+    {
+      "name": "fixture_name_and_sa_ownership",
+      "passed": true
+    },
+    {
+      "name": "fixture_no_financial_usage",
+      "passed": true
+    },
+    {
+      "name": "unused_private_seed_account_3170",
+      "passed": true
+    },
+    {
+      "name": "exact_private_cleanup_res.partner",
+      "passed": true
+    },
+    {
+      "name": "exact_private_cleanup_baseer.purchase.category.map",
+      "passed": true
+    },
+    {
+      "name": "exact_private_cleanup_product.product",
+      "passed": true
+    },
+    {
+      "name": "empty_service_seed_before_race",
+      "passed": true
+    },
+    {
+      "name": "two_independent_connections",
+      "passed": true
+    },
+    {
+      "name": "observed_real_mvcc_retry",
+      "passed": true
+    },
+    {
+      "name": "both_workers_same_canonical_records",
+      "passed": true
+    },
+    {
+      "name": "initial_localized_seed_under_15_seconds",
+      "passed": true
+    },
+    {
+      "name": "persisted_result_matches_workers",
+      "passed": true
+    },
+    {
+      "name": "exactly_20_private_providers",
+      "passed": true
+    },
+    {
+      "name": "exactly_26_products_and_mappings",
+      "passed": true
+    },
+    {
+      "name": "native_chart_accounts_preserved",
+      "passed": true
+    },
+    {
+      "name": "native_journals_preserved",
+      "passed": true
+    },
+    {
+      "name": "no_new_financial_documents",
+      "passed": true
+    },
+    {
+      "name": "all_identities_unique_and_noupdate",
+      "passed": true
+    },
+    {
+      "name": "full_replay_stable",
+      "passed": true
+    }
+  ],
+  "fixture_company_id": 47,
+  "fixtures_committed": true,
+  "workers": [
+    {
+      "backend_pid": 239030,
+      "initial_snapshot": "123259:123259:",
+      "attempts": 1,
+      "retries": [],
+      "snapshot": {
+        "chart": "sa",
+        "identities": {
+          "account_employee_company_47": [
+            "account.account",
+            3144,
+            true
+          ],
+          "account_insurance_company_47": [
+            "account.account",
+            3080,
+            true
+          ],
+          "account_internet_company_47": [
+            "account.account",
+            3094,
+            true
+          ],
+          "account_legal_company_47": [
+            "account.account",
+            3102,
+            true
+          ],
+          "account_licenses_company_47": [
+            "account.account",
+            3103,
+            true
+          ],
+          "account_permits_company_47": [
+            "account.account",
+            3171,
+            true
+          ],
+          "account_subscriptions_company_47": [
+            "account.account",
+            3116,
+            true
+          ],
+          "account_telecom_company_47": [
+            "account.account",
+            3091,
+            true
+          ],
+          "account_ticket_company_47": [
+            "account.account",
+            3077,
+            true
+          ],
+          "account_utilities_company_47": [
+            "account.account",
+            3089,
+            true
+          ],
+          "account_visa_company_47": [
+            "account.account",
+            3085,
+            true
+          ],
+          "mapping_attestation_company_47": [
+            "baseer.purchase.category.map",
+            215,
+            true
+          ],
+          "mapping_commercial_register_company_47": [
+            "baseer.purchase.category.map",
+            214,
+            true
+          ],
+          "mapping_electricity_company_47": [
+            "baseer.purchase.category.map",
+            206,
+            true
+          ],
+          "mapping_employee_transfer_company_47": [
+            "baseer.purchase.category.map",
+            195,
+            true
+          ],
+          "mapping_health_certificate_issue_company_47": [
+            "baseer.purchase.category.map",
+            198,
+            true
+          ],
+          "mapping_health_certificate_renewal_company_47": [
+            "baseer.purchase.category.map",
+            199,
+            true
+          ],
+          "mapping_insurance_issue_company_47": [
+            "baseer.purchase.category.map",
+            202,
+            true
+          ],
+          "mapping_insurance_renewal_company_47": [
+            "baseer.purchase.category.map",
+            203,
+            true
+          ],
+          "mapping_internet_company_47": [
+            "baseer.purchase.category.map",
+            209,
+            true
+          ],
+          "mapping_iqama_issue_company_47": [
+            "baseer.purchase.category.map",
+            191,
+            true
+          ],
+          "mapping_iqama_renewal_company_47": [
+            "baseer.purchase.category.map",
+            192,
+            true
+          ],
+          "mapping_legal_services_company_47": [
+            "baseer.purchase.category.map",
+            216,
+            true
+          ],
+          "mapping_medical_exam_company_47": [
+            "baseer.purchase.category.map",
+            200,
+            true
+          ],
+          "mapping_mudad_subscription_company_47": [
+            "baseer.purchase.category.map",
+            210,
+            true
+          ],
+          "mapping_municipal_license_company_47": [
+            "baseer.purchase.category.map",
+            213,
+            true
+          ],
+          "mapping_muqeem_subscription_company_47": [
+            "baseer.purchase.category.map",
+            211,
+            true
+          ],
+          "mapping_other_employee_company_47": [
+            "baseer.purchase.category.map",
+            205,
+            true
+          ],
+          "mapping_processing_company_47": [
+            "baseer.purchase.category.map",
+            204,
+            true
+          ],
+          "mapping_profession_change_company_47": [
+            "baseer.purchase.category.map",
+            196,
+            true
+          ],
+          "mapping_qiwa_subscription_company_47": [
+            "baseer.purchase.category.map",
+            212,
+            true
+          ],
+          "mapping_telecom_company_47": [
+            "baseer.purchase.category.map",
+            208,
+            true
+          ],
+          "mapping_ticket_company_47": [
+            "baseer.purchase.category.map",
+            201,
+            true
+          ],
+          "mapping_visa_company_47": [
+            "baseer.purchase.category.map",
+            197,
+            true
+          ],
+          "mapping_water_company_47": [
+            "baseer.purchase.category.map",
+            207,
+            true
+          ],
+          "mapping_work_permit_issue_company_47": [
+            "baseer.purchase.category.map",
+            193,
+            true
+          ],
+          "mapping_work_permit_renewal_company_47": [
+            "baseer.purchase.category.map",
+            194,
+            true
+          ],
+          "product_attestation_company_47": [
+            "product.product",
+            237,
+            true
+          ],
+          "product_commercial_register_company_47": [
+            "product.product",
+            236,
+            true
+          ],
+          "product_electricity_company_47": [
+            "product.product",
+            228,
+            true
+          ],
+          "product_employee_transfer_company_47": [
+            "product.product",
+            217,
+            true
+          ],
+          "product_health_certificate_issue_company_47": [
+            "product.product",
+            220,
+            true
+          ],
+          "product_health_certificate_renewal_company_47": [
+            "product.product",
+            221,
+            true
+          ],
+          "product_insurance_issue_company_47": [
+            "product.product",
+            224,
+            true
+          ],
+          "product_insurance_renewal_company_47": [
+            "product.product",
+            225,
+            true
+          ],
+          "product_internet_company_47": [
+            "product.product",
+            231,
+            true
+          ],
+          "product_iqama_issue_company_47": [
+            "product.product",
+            213,
+            true
+          ],
+          "product_iqama_renewal_company_47": [
+            "product.product",
+            214,
+            true
+          ],
+          "product_legal_services_company_47": [
+            "product.product",
+            238,
+            true
+          ],
+          "product_medical_exam_company_47": [
+            "product.product",
+            222,
+            true
+          ],
+          "product_mudad_subscription_company_47": [
+            "product.product",
+            232,
+            true
+          ],
+          "product_municipal_license_company_47": [
+            "product.product",
+            235,
+            true
+          ],
+          "product_muqeem_subscription_company_47": [
+            "product.product",
+            233,
+            true
+          ],
+          "product_other_employee_company_47": [
+            "product.product",
+            227,
+            true
+          ],
+          "product_processing_company_47": [
+            "product.product",
+            226,
+            true
+          ],
+          "product_profession_change_company_47": [
+            "product.product",
+            218,
+            true
+          ],
+          "product_qiwa_subscription_company_47": [
+            "product.product",
+            234,
+            true
+          ],
+          "product_telecom_company_47": [
+            "product.product",
+            230,
+            true
+          ],
+          "product_ticket_company_47": [
+            "product.product",
+            223,
+            true
+          ],
+          "product_visa_company_47": [
+            "product.product",
+            219,
+            true
+          ],
+          "product_water_company_47": [
+            "product.product",
+            229,
+            true
+          ],
+          "product_work_permit_issue_company_47": [
+            "product.product",
+            215,
+            true
+          ],
+          "product_work_permit_renewal_company_47": [
+            "product.product",
+            216,
+            true
+          ],
+          "provider_balady_company_47": [
+            "res.partner",
+            669,
+            true
+          ],
+          "provider_business_center_company_47": [
+            "res.partner",
+            662,
+            true
+          ],
+          "provider_commerce_company_47": [
+            "res.partner",
+            661,
+            true
+          ],
+          "provider_energy_company_47": [
+            "res.partner",
+            653,
+            true
+          ],
+          "provider_foreign_affairs_company_47": [
+            "res.partner",
+            664,
+            true
+          ],
+          "provider_go_company_47": [
+            "res.partner",
+            659,
+            true
+          ],
+          "provider_gosi_company_47": [
+            "res.partner",
+            667,
+            true
+          ],
+          "provider_hrsd_company_47": [
+            "res.partner",
+            663,
+            true
+          ],
+          "provider_justice_company_47": [
+            "res.partner",
+            665,
+            true
+          ],
+          "provider_mobily_company_47": [
+            "res.partner",
+            656,
+            true
+          ],
+          "provider_mudad_company_47": [
+            "res.partner",
+            670,
+            true
+          ],
+          "provider_municipalities_company_47": [
+            "res.partner",
+            660,
+            true
+          ],
+          "provider_muqeem_company_47": [
+            "res.partner",
+            671,
+            true
+          ],
+          "provider_passports_company_47": [
+            "res.partner",
+            666,
+            true
+          ],
+          "provider_qiwa_company_47": [
+            "res.partner",
+            672,
+            true
+          ],
+          "provider_salam_company_47": [
+            "res.partner",
+            658,
+            true
+          ],
+          "provider_stc_company_47": [
+            "res.partner",
+            655,
+            true
+          ],
+          "provider_water_company_47": [
+            "res.partner",
+            654,
+            true
+          ],
+          "provider_zain_company_47": [
+            "res.partner",
+            657,
+            true
+          ],
+          "provider_zatca_company_47": [
+            "res.partner",
+            668,
+            true
+          ]
+        },
+        "providers": [
+          669,
+          662,
+          661,
+          653,
+          664,
+          659,
+          667,
+          663,
+          665,
+          656,
+          670,
+          660,
+          671,
+          666,
+          672,
+          658,
+          655,
+          654,
+          657,
+          668
+        ],
+        "products": [
+          237,
+          236,
+          228,
+          217,
+          220,
+          221,
+          224,
+          225,
+          231,
+          213,
+          214,
+          238,
+          222,
+          232,
+          235,
+          233,
+          227,
+          226,
+          218,
+          234,
+          230,
+          223,
+          219,
+          229,
+          215,
+          216
+        ],
+        "mappings": [
+          215,
+          214,
+          206,
+          195,
+          198,
+          199,
+          202,
+          203,
+          209,
+          191,
+          192,
+          216,
+          200,
+          210,
+          213,
+          211,
+          205,
+          204,
+          196,
+          212,
+          208,
+          201,
+          197,
+          207,
+          193,
+          194
+        ],
+        "accounts": {
+          "2989": [
+            "100101",
+            "Right of use Asset (IFRS 16)",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "2990": [
+            "100102",
+            "Accumulated Depreciation on Right of use asset (IFRS 16)",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "2991": [
+            "100103",
+            "VAT Receivable",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2992": [
+            "100104",
+            "Withholding Receivable",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2993": [
+            "101005",
+            "Main Safe",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2994": [
+            "101006",
+            "Main Safe - Foreign Currency",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2995": [
+            "101060",
+            "VAT Paid to Customs",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2996": [
+            "102011",
+            "Accounts Receivable",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2997": [
+            "102012",
+            "Accounts Receivable (PoS)",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2998": [
+            "102013",
+            "Post Dated Cheques Received",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2999": [
+            "102014",
+            "Other Receivable",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3000": [
+            "102015",
+            "Other Debtors",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3001": [
+            "103016",
+            "Shipment Insurance",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3002": [
+            "103017",
+            "Shipment Documentation Charges",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3003": [
+            "103018",
+            "Shipment Other Charges",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3004": [
+            "103019",
+            "Handling Difference in Inventory",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3005": [
+            "103020",
+            "Items Delivered to Customs",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3006": [
+            "104020",
+            "Prepaid Expense",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3007": [
+            "104021",
+            "Prepaid Medical Insurance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3008": [
+            "104022",
+            "Prepaid Life Insurance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3009": [
+            "104023",
+            "Prepaid Office Rent",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3010": [
+            "104024",
+            "Prepaid Other Insurance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3011": [
+            "104025",
+            "Prepaid License Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3012": [
+            "104026",
+            "Prepaid Maintenance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3013": [
+            "104027",
+            "Prepaid Site Hosting Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3014": [
+            "104028",
+            "Prepaid Employees Housing",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3015": [
+            "104029",
+            "Prepaid Schooling Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3016": [
+            "104030",
+            "Prepaid Consultancy Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3017": [
+            "104031",
+            "Prepaid Legal Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3018": [
+            "104032",
+            "Prepaid Sponsorship Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3019": [
+            "104033",
+            "Prepaid Advertisement Expenses",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3020": [
+            "104034",
+            "Prepaid Bank Guarantee",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3021": [
+            "104035",
+            "Other Prepayments",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3022": [
+            "104036",
+            "Prepaid Finance charge for Loans",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3023": [
+            "104037",
+            "Deposit - Office Rent",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3024": [
+            "104038",
+            "Deposits - Customs",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3025": [
+            "104039",
+            "Deposit to Immigration (Visa)",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3026": [
+            "104040",
+            "Deposit Others",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3027": [
+            "104041",
+            "VAT Input",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3028": [
+            "104043",
+            "Recoverable VAT Input - Reverse Charge",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3029": [
+            "106001",
+            "Leasehold Improvement",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3030": [
+            "106002",
+            "Furniture and Equipment",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3031": [
+            "106003",
+            "Computer Hardware & Software",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3032": [
+            "106004",
+            "Motor Vehicles",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3033": [
+            "106005",
+            "Work In Progress",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3034": [
+            "106006",
+            "Amortisation on Leasehold Improvement",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3035": [
+            "106007",
+            "Accumulated Depreciation of Furniture & Office Equipment",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3036": [
+            "106008",
+            "Accumulated Depreciation of Computer Hardware & Software",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3037": [
+            "106009",
+            "Accumulated Depreciation of Motor Vehicles",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3038": [
+            "106010",
+            "Registration of Trademarks",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3039": [
+            "106011",
+            "Computer Card Renewal",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3040": [
+            "106012",
+            "Prepaid Employee Expenses",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3041": [
+            "131100",
+            "Inventory - Raw Materials",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3042": [
+            "201002",
+            "Payables",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3043": [
+            "201003",
+            "Credit Notes to Customers",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3044": [
+            "201004",
+            "Accrued - Salaries",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3045": [
+            "201005",
+            "Leave Tickets Provision",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3046": [
+            "201006",
+            "Leave Days Provision",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3047": [
+            "201007",
+            "Accrued - Commissions",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3048": [
+            "201008",
+            "Accrued Salaries Increment",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3049": [
+            "201009",
+            "Accrued - Staff Bonus",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3050": [
+            "201010",
+            "Accrued Other Personnel Cost",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3051": [
+            "201011",
+            "Accrued - Utilities",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3052": [
+            "201012",
+            "Accrued - Telephone",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3053": [
+            "201013",
+            "Accrued - Sponsorship",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3054": [
+            "201014",
+            "Accrued - Audit Fees",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3055": [
+            "201015",
+            "Accrued - Office Rent",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3056": [
+            "201016",
+            "Accrued Others",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3057": [
+            "201017",
+            "VAT Output",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3058": [
+            "201018",
+            "Deferred income",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3059": [
+            "201019",
+            "ZAKAT Provision",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3060": [
+            "201020",
+            "Withholding Tax Payable",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3061": [
+            "201022",
+            "GOSI Employee Payable",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3062": [
+            "201030",
+            "Base Tax Received",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3063": [
+            "201031",
+            "Visa & Master Credit Cards",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3064": [
+            "201032",
+            "Gateway Credit Cards",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3065": [
+            "201033",
+            "Manual Visa & Master Cards",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3066": [
+            "201034",
+            "PayPal Account",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3067": [
+            "201035",
+            "Outstanding Withholding",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3068": [
+            "202001",
+            "End of Service Provision",
+            "liability_non_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3069": [
+            "202002",
+            "Reservations",
+            "liability_non_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3070": [
+            "202003",
+            "VAT Payable",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3071": [
+            "202004",
+            "Withholding Tax Payable",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3072": [
+            "400001",
+            "Cost of Goods Sold in Trading",
+            "expense_direct_cost",
+            true,
+            [
+              47
+            ]
+          ],
+          "3073": [
+            "400002",
+            "Cost Of Goods Sold I/C Sales",
+            "expense_direct_cost",
+            true,
+            [
+              47
+            ]
+          ],
+          "3074": [
+            "400003",
+            "Basic Salary",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3075": [
+            "400004",
+            "Housing Allowance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3076": [
+            "400005",
+            "Transportation Allowance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3077": [
+            "400006",
+            "Leave Ticket",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3078": [
+            "400007",
+            "Leave Salary",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3079": [
+            "400008",
+            "End Of Service Indemnity",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3080": [
+            "400009",
+            "Medical Insurance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3081": [
+            "400010",
+            "Life Insurance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3082": [
+            "400011",
+            "Sales Commission",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3083": [
+            "400012",
+            "Staff Other Allowances",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3084": [
+            "400013",
+            "Uniform",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3085": [
+            "400014",
+            "Visa Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3086": [
+            "400015",
+            "Personnel Cost Others",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3087": [
+            "400016",
+            "Office Rent",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3088": [
+            "400017",
+            "Warehouse Rent",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3089": [
+            "400018",
+            "Water & Electricity",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3090": [
+            "400019",
+            "Other Utility Cahrges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3091": [
+            "400020",
+            "Telephone",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3092": [
+            "400021",
+            "Courrier",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3093": [
+            "400022",
+            "Website Hosting Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3094": [
+            "400023",
+            "Others - Communication",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3095": [
+            "400024",
+            "Air tickets",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3096": [
+            "400025",
+            "Hotel",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3097": [
+            "400026",
+            "Meals",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3098": [
+            "400027",
+            "Per Diem",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3099": [
+            "400028",
+            "Others",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3100": [
+            "400029",
+            "Audit Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3101": [
+            "400030",
+            "Sponsorship Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3102": [
+            "400031",
+            "Legal fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3103": [
+            "400032",
+            "Trade License Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3104": [
+            "400033",
+            "Others - Professional Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3105": [
+            "400034",
+            "Other - Advertising Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3106": [
+            "400035",
+            "Write Off Receivables & Payables",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3107": [
+            "400036",
+            "Write Off Inventory",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3108": [
+            "400037",
+            "Amortisation of Pre-operating Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3109": [
+            "400038",
+            "Cash Shortage",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3110": [
+            "400039",
+            "Others - Provision & Write-off",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3111": [
+            "400040",
+            "Insurance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3112": [
+            "400041",
+            "Training",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3113": [
+            "400042",
+            "Maintenance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3114": [
+            "400043",
+            "Security & Guard",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3115": [
+            "400044",
+            "Cleaning",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3116": [
+            "400045",
+            "Subscriptions",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3117": [
+            "400046",
+            "Gifts & Donations",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3118": [
+            "400047",
+            "Kitchen and Buffet Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3119": [
+            "400048",
+            "Vehicle Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3120": [
+            "400049",
+            "Convoyance Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3121": [
+            "400050",
+            "Others - Office Various Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3122": [
+            "400051",
+            "Other Bank Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3123": [
+            "400052",
+            "Loss On Fixed Assets Disposal",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3124": [
+            "400053",
+            "Loss on Difference on Exchange",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3125": [
+            "400054",
+            "Disposal of Business Branch",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3126": [
+            "400055",
+            "Income Tax",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3127": [
+            "400056",
+            "Previous Year Adjustments Account",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3128": [
+            "400057",
+            "Other Non Operating Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3129": [
+            "400058",
+            "Credit Card Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3130": [
+            "400059",
+            "Bank Finance & Loan Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3131": [
+            "400060",
+            "Air Miles Card Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3132": [
+            "400062",
+            "PayPal Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3133": [
+            "400063",
+            "Amortization on Leasehold Improvement",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3134": [
+            "400064",
+            "Depreciation Of Furniture & Office Equipment",
+            "expense_depreciation",
+            true,
+            [
+              47
+            ]
+          ],
+          "3135": [
+            "400065",
+            "Depreciation Of Computer Hard & Soft",
+            "expense_depreciation",
+            true,
+            [
+              47
+            ]
+          ],
+          "3136": [
+            "400066",
+            "Depreciation Of Motor Vehicles",
+            "expense_depreciation",
+            true,
+            [
+              47
+            ]
+          ],
+          "3137": [
+            "400067",
+            "Consultancy Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3138": [
+            "400068",
+            "Provision for Doubtful Debts",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3139": [
+            "400069",
+            "Closing Account",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3140": [
+            "400070",
+            "Depreciation on Right of use asset (IFRS 16)",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3141": [
+            "400072",
+            "ZAKAT Expense",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3142": [
+            "400073",
+            "Withholding Tax Expense",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3143": [
+            "400074",
+            "Salary Deductions",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3144": [
+            "400075",
+            "Other Employee Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3145": [
+            "500001",
+            "Sales Account",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3146": [
+            "500002",
+            "Sales of I/C",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3147": [
+            "500003",
+            "Management Consultancy Fees",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3148": [
+            "500004",
+            "Sales from Other Region",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3149": [
+            "500005",
+            "Advertising Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3150": [
+            "500006",
+            "Branding Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3151": [
+            "500007",
+            "Space Rental Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3152": [
+            "500008",
+            "Service Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3153": [
+            "500009",
+            "Interest Revenue",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3154": [
+            "500010",
+            "Capital Gain",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3155": [
+            "500011",
+            "Gain On Difference Of Exchange",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3156": [
+            "500013",
+            "Other Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3157": [
+            "999999",
+            "Undistributed Profits/Losses",
+            "equity_unaffected",
+            true,
+            [
+              47
+            ]
+          ],
+          "3158": [
+            "101001",
+            "Bank",
+            "asset_cash",
+            true,
+            [
+              47
+            ]
+          ],
+          "3159": [
+            "101002",
+            "Bank Suspense Account",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3160": [
+            "999998",
+            "Cash Discount Loss",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3161": [
+            "999997",
+            "Cash Discount Gain",
+            "income_other",
+            true,
+            [
+              47
+            ]
+          ],
+          "3162": [
+            "999001",
+            "Cash Difference Gain",
+            "income_other",
+            true,
+            [
+              47
+            ]
+          ],
+          "3163": [
+            "999002",
+            "Cash Difference Loss",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3164": [
+            "100001",
+            "Liquidity Transfer",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3165": [
+            "101003",
+            "Outstanding Receipts",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3166": [
+            "101004",
+            "Outstanding Payments",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3167": [
+            "201090",
+            "Salaries payable | رواتب مستحقة الدفع",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3168": [
+            "102090",
+            "Employee advances | سلف الموظفين",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3169": [
+            "105001",
+            "Cash | النقد",
+            "asset_cash",
+            true,
+            [
+              47
+            ]
+          ],
+          "3171": [
+            "400093",
+            "Employee residency and work permits | الإقامات وتصاريح العمل",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ]
+        },
+        "journals": [
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273
+        ],
+        "financial_moves": [
+          1260,
+          1259,
+          1258,
+          1257,
+          1256,
+          1255,
+          171,
+          170,
+          167,
+          166,
+          159,
+          173,
+          169,
+          165,
+          163,
+          161,
+          155,
+          157,
+          812,
+          809,
+          811,
+          1138,
+          1139,
+          1136,
+          1137,
+          810,
+          808,
+          1149,
+          1148,
+          1147,
+          1146,
+          1145,
+          1261,
+          648,
+          647,
+          646,
+          413,
+          585,
+          584,
+          645,
+          412,
+          330,
+          328,
+          326,
+          324,
+          329,
+          327,
+          325,
+          323,
+          818,
+          816,
+          817,
+          815,
+          151,
+          143,
+          135,
+          150,
+          142,
+          134,
+          164,
+          807,
+          805,
+          806,
+          174,
+          804,
+          158,
+          156,
+          154,
+          175,
+          168,
+          162,
+          160,
+          152,
+          144,
+          136,
+          149,
+          141,
+          133,
+          147,
+          139,
+          131,
+          146,
+          138,
+          130,
+          148,
+          140,
+          132,
+          153,
+          145,
+          137,
+          129,
+          172,
+          1135,
+          1134,
+          1062,
+          1061,
+          1060,
+          1025,
+          1024,
+          1023,
+          1022
+        ]
+      },
+      "seconds": 0.600797
+    },
+    {
+      "backend_pid": 239039,
+      "initial_snapshot": "123259:123259:",
+      "attempts": 2,
+      "retries": [
+        {
+          "attempt": 1,
+          "sqlstate": "40001"
+        }
+      ],
+      "snapshot": {
+        "chart": "sa",
+        "identities": {
+          "account_employee_company_47": [
+            "account.account",
+            3144,
+            true
+          ],
+          "account_insurance_company_47": [
+            "account.account",
+            3080,
+            true
+          ],
+          "account_internet_company_47": [
+            "account.account",
+            3094,
+            true
+          ],
+          "account_legal_company_47": [
+            "account.account",
+            3102,
+            true
+          ],
+          "account_licenses_company_47": [
+            "account.account",
+            3103,
+            true
+          ],
+          "account_permits_company_47": [
+            "account.account",
+            3171,
+            true
+          ],
+          "account_subscriptions_company_47": [
+            "account.account",
+            3116,
+            true
+          ],
+          "account_telecom_company_47": [
+            "account.account",
+            3091,
+            true
+          ],
+          "account_ticket_company_47": [
+            "account.account",
+            3077,
+            true
+          ],
+          "account_utilities_company_47": [
+            "account.account",
+            3089,
+            true
+          ],
+          "account_visa_company_47": [
+            "account.account",
+            3085,
+            true
+          ],
+          "mapping_attestation_company_47": [
+            "baseer.purchase.category.map",
+            215,
+            true
+          ],
+          "mapping_commercial_register_company_47": [
+            "baseer.purchase.category.map",
+            214,
+            true
+          ],
+          "mapping_electricity_company_47": [
+            "baseer.purchase.category.map",
+            206,
+            true
+          ],
+          "mapping_employee_transfer_company_47": [
+            "baseer.purchase.category.map",
+            195,
+            true
+          ],
+          "mapping_health_certificate_issue_company_47": [
+            "baseer.purchase.category.map",
+            198,
+            true
+          ],
+          "mapping_health_certificate_renewal_company_47": [
+            "baseer.purchase.category.map",
+            199,
+            true
+          ],
+          "mapping_insurance_issue_company_47": [
+            "baseer.purchase.category.map",
+            202,
+            true
+          ],
+          "mapping_insurance_renewal_company_47": [
+            "baseer.purchase.category.map",
+            203,
+            true
+          ],
+          "mapping_internet_company_47": [
+            "baseer.purchase.category.map",
+            209,
+            true
+          ],
+          "mapping_iqama_issue_company_47": [
+            "baseer.purchase.category.map",
+            191,
+            true
+          ],
+          "mapping_iqama_renewal_company_47": [
+            "baseer.purchase.category.map",
+            192,
+            true
+          ],
+          "mapping_legal_services_company_47": [
+            "baseer.purchase.category.map",
+            216,
+            true
+          ],
+          "mapping_medical_exam_company_47": [
+            "baseer.purchase.category.map",
+            200,
+            true
+          ],
+          "mapping_mudad_subscription_company_47": [
+            "baseer.purchase.category.map",
+            210,
+            true
+          ],
+          "mapping_municipal_license_company_47": [
+            "baseer.purchase.category.map",
+            213,
+            true
+          ],
+          "mapping_muqeem_subscription_company_47": [
+            "baseer.purchase.category.map",
+            211,
+            true
+          ],
+          "mapping_other_employee_company_47": [
+            "baseer.purchase.category.map",
+            205,
+            true
+          ],
+          "mapping_processing_company_47": [
+            "baseer.purchase.category.map",
+            204,
+            true
+          ],
+          "mapping_profession_change_company_47": [
+            "baseer.purchase.category.map",
+            196,
+            true
+          ],
+          "mapping_qiwa_subscription_company_47": [
+            "baseer.purchase.category.map",
+            212,
+            true
+          ],
+          "mapping_telecom_company_47": [
+            "baseer.purchase.category.map",
+            208,
+            true
+          ],
+          "mapping_ticket_company_47": [
+            "baseer.purchase.category.map",
+            201,
+            true
+          ],
+          "mapping_visa_company_47": [
+            "baseer.purchase.category.map",
+            197,
+            true
+          ],
+          "mapping_water_company_47": [
+            "baseer.purchase.category.map",
+            207,
+            true
+          ],
+          "mapping_work_permit_issue_company_47": [
+            "baseer.purchase.category.map",
+            193,
+            true
+          ],
+          "mapping_work_permit_renewal_company_47": [
+            "baseer.purchase.category.map",
+            194,
+            true
+          ],
+          "product_attestation_company_47": [
+            "product.product",
+            237,
+            true
+          ],
+          "product_commercial_register_company_47": [
+            "product.product",
+            236,
+            true
+          ],
+          "product_electricity_company_47": [
+            "product.product",
+            228,
+            true
+          ],
+          "product_employee_transfer_company_47": [
+            "product.product",
+            217,
+            true
+          ],
+          "product_health_certificate_issue_company_47": [
+            "product.product",
+            220,
+            true
+          ],
+          "product_health_certificate_renewal_company_47": [
+            "product.product",
+            221,
+            true
+          ],
+          "product_insurance_issue_company_47": [
+            "product.product",
+            224,
+            true
+          ],
+          "product_insurance_renewal_company_47": [
+            "product.product",
+            225,
+            true
+          ],
+          "product_internet_company_47": [
+            "product.product",
+            231,
+            true
+          ],
+          "product_iqama_issue_company_47": [
+            "product.product",
+            213,
+            true
+          ],
+          "product_iqama_renewal_company_47": [
+            "product.product",
+            214,
+            true
+          ],
+          "product_legal_services_company_47": [
+            "product.product",
+            238,
+            true
+          ],
+          "product_medical_exam_company_47": [
+            "product.product",
+            222,
+            true
+          ],
+          "product_mudad_subscription_company_47": [
+            "product.product",
+            232,
+            true
+          ],
+          "product_municipal_license_company_47": [
+            "product.product",
+            235,
+            true
+          ],
+          "product_muqeem_subscription_company_47": [
+            "product.product",
+            233,
+            true
+          ],
+          "product_other_employee_company_47": [
+            "product.product",
+            227,
+            true
+          ],
+          "product_processing_company_47": [
+            "product.product",
+            226,
+            true
+          ],
+          "product_profession_change_company_47": [
+            "product.product",
+            218,
+            true
+          ],
+          "product_qiwa_subscription_company_47": [
+            "product.product",
+            234,
+            true
+          ],
+          "product_telecom_company_47": [
+            "product.product",
+            230,
+            true
+          ],
+          "product_ticket_company_47": [
+            "product.product",
+            223,
+            true
+          ],
+          "product_visa_company_47": [
+            "product.product",
+            219,
+            true
+          ],
+          "product_water_company_47": [
+            "product.product",
+            229,
+            true
+          ],
+          "product_work_permit_issue_company_47": [
+            "product.product",
+            215,
+            true
+          ],
+          "product_work_permit_renewal_company_47": [
+            "product.product",
+            216,
+            true
+          ],
+          "provider_balady_company_47": [
+            "res.partner",
+            669,
+            true
+          ],
+          "provider_business_center_company_47": [
+            "res.partner",
+            662,
+            true
+          ],
+          "provider_commerce_company_47": [
+            "res.partner",
+            661,
+            true
+          ],
+          "provider_energy_company_47": [
+            "res.partner",
+            653,
+            true
+          ],
+          "provider_foreign_affairs_company_47": [
+            "res.partner",
+            664,
+            true
+          ],
+          "provider_go_company_47": [
+            "res.partner",
+            659,
+            true
+          ],
+          "provider_gosi_company_47": [
+            "res.partner",
+            667,
+            true
+          ],
+          "provider_hrsd_company_47": [
+            "res.partner",
+            663,
+            true
+          ],
+          "provider_justice_company_47": [
+            "res.partner",
+            665,
+            true
+          ],
+          "provider_mobily_company_47": [
+            "res.partner",
+            656,
+            true
+          ],
+          "provider_mudad_company_47": [
+            "res.partner",
+            670,
+            true
+          ],
+          "provider_municipalities_company_47": [
+            "res.partner",
+            660,
+            true
+          ],
+          "provider_muqeem_company_47": [
+            "res.partner",
+            671,
+            true
+          ],
+          "provider_passports_company_47": [
+            "res.partner",
+            666,
+            true
+          ],
+          "provider_qiwa_company_47": [
+            "res.partner",
+            672,
+            true
+          ],
+          "provider_salam_company_47": [
+            "res.partner",
+            658,
+            true
+          ],
+          "provider_stc_company_47": [
+            "res.partner",
+            655,
+            true
+          ],
+          "provider_water_company_47": [
+            "res.partner",
+            654,
+            true
+          ],
+          "provider_zain_company_47": [
+            "res.partner",
+            657,
+            true
+          ],
+          "provider_zatca_company_47": [
+            "res.partner",
+            668,
+            true
+          ]
+        },
+        "providers": [
+          669,
+          662,
+          661,
+          653,
+          664,
+          659,
+          667,
+          663,
+          665,
+          656,
+          670,
+          660,
+          671,
+          666,
+          672,
+          658,
+          655,
+          654,
+          657,
+          668
+        ],
+        "products": [
+          237,
+          236,
+          228,
+          217,
+          220,
+          221,
+          224,
+          225,
+          231,
+          213,
+          214,
+          238,
+          222,
+          232,
+          235,
+          233,
+          227,
+          226,
+          218,
+          234,
+          230,
+          223,
+          219,
+          229,
+          215,
+          216
+        ],
+        "mappings": [
+          215,
+          214,
+          206,
+          195,
+          198,
+          199,
+          202,
+          203,
+          209,
+          191,
+          192,
+          216,
+          200,
+          210,
+          213,
+          211,
+          205,
+          204,
+          196,
+          212,
+          208,
+          201,
+          197,
+          207,
+          193,
+          194
+        ],
+        "accounts": {
+          "2989": [
+            "100101",
+            "Right of use Asset (IFRS 16)",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "2990": [
+            "100102",
+            "Accumulated Depreciation on Right of use asset (IFRS 16)",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "2991": [
+            "100103",
+            "VAT Receivable",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2992": [
+            "100104",
+            "Withholding Receivable",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2993": [
+            "101005",
+            "Main Safe",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2994": [
+            "101006",
+            "Main Safe - Foreign Currency",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2995": [
+            "101060",
+            "VAT Paid to Customs",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2996": [
+            "102011",
+            "Accounts Receivable",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2997": [
+            "102012",
+            "Accounts Receivable (PoS)",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "2998": [
+            "102013",
+            "Post Dated Cheques Received",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "2999": [
+            "102014",
+            "Other Receivable",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3000": [
+            "102015",
+            "Other Debtors",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3001": [
+            "103016",
+            "Shipment Insurance",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3002": [
+            "103017",
+            "Shipment Documentation Charges",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3003": [
+            "103018",
+            "Shipment Other Charges",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3004": [
+            "103019",
+            "Handling Difference in Inventory",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3005": [
+            "103020",
+            "Items Delivered to Customs",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3006": [
+            "104020",
+            "Prepaid Expense",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3007": [
+            "104021",
+            "Prepaid Medical Insurance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3008": [
+            "104022",
+            "Prepaid Life Insurance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3009": [
+            "104023",
+            "Prepaid Office Rent",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3010": [
+            "104024",
+            "Prepaid Other Insurance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3011": [
+            "104025",
+            "Prepaid License Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3012": [
+            "104026",
+            "Prepaid Maintenance",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3013": [
+            "104027",
+            "Prepaid Site Hosting Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3014": [
+            "104028",
+            "Prepaid Employees Housing",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3015": [
+            "104029",
+            "Prepaid Schooling Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3016": [
+            "104030",
+            "Prepaid Consultancy Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3017": [
+            "104031",
+            "Prepaid Legal Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3018": [
+            "104032",
+            "Prepaid Sponsorship Fees",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3019": [
+            "104033",
+            "Prepaid Advertisement Expenses",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3020": [
+            "104034",
+            "Prepaid Bank Guarantee",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3021": [
+            "104035",
+            "Other Prepayments",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3022": [
+            "104036",
+            "Prepaid Finance charge for Loans",
+            "asset_prepayments",
+            true,
+            [
+              47
+            ]
+          ],
+          "3023": [
+            "104037",
+            "Deposit - Office Rent",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3024": [
+            "104038",
+            "Deposits - Customs",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3025": [
+            "104039",
+            "Deposit to Immigration (Visa)",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3026": [
+            "104040",
+            "Deposit Others",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3027": [
+            "104041",
+            "VAT Input",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3028": [
+            "104043",
+            "Recoverable VAT Input - Reverse Charge",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3029": [
+            "106001",
+            "Leasehold Improvement",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3030": [
+            "106002",
+            "Furniture and Equipment",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3031": [
+            "106003",
+            "Computer Hardware & Software",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3032": [
+            "106004",
+            "Motor Vehicles",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3033": [
+            "106005",
+            "Work In Progress",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3034": [
+            "106006",
+            "Amortisation on Leasehold Improvement",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3035": [
+            "106007",
+            "Accumulated Depreciation of Furniture & Office Equipment",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3036": [
+            "106008",
+            "Accumulated Depreciation of Computer Hardware & Software",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3037": [
+            "106009",
+            "Accumulated Depreciation of Motor Vehicles",
+            "asset_fixed",
+            true,
+            [
+              47
+            ]
+          ],
+          "3038": [
+            "106010",
+            "Registration of Trademarks",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3039": [
+            "106011",
+            "Computer Card Renewal",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3040": [
+            "106012",
+            "Prepaid Employee Expenses",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3041": [
+            "131100",
+            "Inventory - Raw Materials",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3042": [
+            "201002",
+            "Payables",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3043": [
+            "201003",
+            "Credit Notes to Customers",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3044": [
+            "201004",
+            "Accrued - Salaries",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3045": [
+            "201005",
+            "Leave Tickets Provision",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3046": [
+            "201006",
+            "Leave Days Provision",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3047": [
+            "201007",
+            "Accrued - Commissions",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3048": [
+            "201008",
+            "Accrued Salaries Increment",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3049": [
+            "201009",
+            "Accrued - Staff Bonus",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3050": [
+            "201010",
+            "Accrued Other Personnel Cost",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3051": [
+            "201011",
+            "Accrued - Utilities",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3052": [
+            "201012",
+            "Accrued - Telephone",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3053": [
+            "201013",
+            "Accrued - Sponsorship",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3054": [
+            "201014",
+            "Accrued - Audit Fees",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3055": [
+            "201015",
+            "Accrued - Office Rent",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3056": [
+            "201016",
+            "Accrued Others",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3057": [
+            "201017",
+            "VAT Output",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3058": [
+            "201018",
+            "Deferred income",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3059": [
+            "201019",
+            "ZAKAT Provision",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3060": [
+            "201020",
+            "Withholding Tax Payable",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3061": [
+            "201022",
+            "GOSI Employee Payable",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3062": [
+            "201030",
+            "Base Tax Received",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3063": [
+            "201031",
+            "Visa & Master Credit Cards",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3064": [
+            "201032",
+            "Gateway Credit Cards",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3065": [
+            "201033",
+            "Manual Visa & Master Cards",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3066": [
+            "201034",
+            "PayPal Account",
+            "liability_credit_card",
+            true,
+            [
+              47
+            ]
+          ],
+          "3067": [
+            "201035",
+            "Outstanding Withholding",
+            "liability_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3068": [
+            "202001",
+            "End of Service Provision",
+            "liability_non_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3069": [
+            "202002",
+            "Reservations",
+            "liability_non_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3070": [
+            "202003",
+            "VAT Payable",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3071": [
+            "202004",
+            "Withholding Tax Payable",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3072": [
+            "400001",
+            "Cost of Goods Sold in Trading",
+            "expense_direct_cost",
+            true,
+            [
+              47
+            ]
+          ],
+          "3073": [
+            "400002",
+            "Cost Of Goods Sold I/C Sales",
+            "expense_direct_cost",
+            true,
+            [
+              47
+            ]
+          ],
+          "3074": [
+            "400003",
+            "Basic Salary",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3075": [
+            "400004",
+            "Housing Allowance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3076": [
+            "400005",
+            "Transportation Allowance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3077": [
+            "400006",
+            "Leave Ticket",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3078": [
+            "400007",
+            "Leave Salary",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3079": [
+            "400008",
+            "End Of Service Indemnity",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3080": [
+            "400009",
+            "Medical Insurance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3081": [
+            "400010",
+            "Life Insurance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3082": [
+            "400011",
+            "Sales Commission",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3083": [
+            "400012",
+            "Staff Other Allowances",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3084": [
+            "400013",
+            "Uniform",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3085": [
+            "400014",
+            "Visa Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3086": [
+            "400015",
+            "Personnel Cost Others",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3087": [
+            "400016",
+            "Office Rent",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3088": [
+            "400017",
+            "Warehouse Rent",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3089": [
+            "400018",
+            "Water & Electricity",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3090": [
+            "400019",
+            "Other Utility Cahrges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3091": [
+            "400020",
+            "Telephone",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3092": [
+            "400021",
+            "Courrier",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3093": [
+            "400022",
+            "Website Hosting Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3094": [
+            "400023",
+            "Others - Communication",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3095": [
+            "400024",
+            "Air tickets",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3096": [
+            "400025",
+            "Hotel",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3097": [
+            "400026",
+            "Meals",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3098": [
+            "400027",
+            "Per Diem",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3099": [
+            "400028",
+            "Others",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3100": [
+            "400029",
+            "Audit Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3101": [
+            "400030",
+            "Sponsorship Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3102": [
+            "400031",
+            "Legal fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3103": [
+            "400032",
+            "Trade License Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3104": [
+            "400033",
+            "Others - Professional Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3105": [
+            "400034",
+            "Other - Advertising Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3106": [
+            "400035",
+            "Write Off Receivables & Payables",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3107": [
+            "400036",
+            "Write Off Inventory",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3108": [
+            "400037",
+            "Amortisation of Pre-operating Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3109": [
+            "400038",
+            "Cash Shortage",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3110": [
+            "400039",
+            "Others - Provision & Write-off",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3111": [
+            "400040",
+            "Insurance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3112": [
+            "400041",
+            "Training",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3113": [
+            "400042",
+            "Maintenance",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3114": [
+            "400043",
+            "Security & Guard",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3115": [
+            "400044",
+            "Cleaning",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3116": [
+            "400045",
+            "Subscriptions",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3117": [
+            "400046",
+            "Gifts & Donations",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3118": [
+            "400047",
+            "Kitchen and Buffet Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3119": [
+            "400048",
+            "Vehicle Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3120": [
+            "400049",
+            "Convoyance Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3121": [
+            "400050",
+            "Others - Office Various Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3122": [
+            "400051",
+            "Other Bank Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3123": [
+            "400052",
+            "Loss On Fixed Assets Disposal",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3124": [
+            "400053",
+            "Loss on Difference on Exchange",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3125": [
+            "400054",
+            "Disposal of Business Branch",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3126": [
+            "400055",
+            "Income Tax",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3127": [
+            "400056",
+            "Previous Year Adjustments Account",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3128": [
+            "400057",
+            "Other Non Operating Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3129": [
+            "400058",
+            "Credit Card Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3130": [
+            "400059",
+            "Bank Finance & Loan Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3131": [
+            "400060",
+            "Air Miles Card Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3132": [
+            "400062",
+            "PayPal Charges",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3133": [
+            "400063",
+            "Amortization on Leasehold Improvement",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3134": [
+            "400064",
+            "Depreciation Of Furniture & Office Equipment",
+            "expense_depreciation",
+            true,
+            [
+              47
+            ]
+          ],
+          "3135": [
+            "400065",
+            "Depreciation Of Computer Hard & Soft",
+            "expense_depreciation",
+            true,
+            [
+              47
+            ]
+          ],
+          "3136": [
+            "400066",
+            "Depreciation Of Motor Vehicles",
+            "expense_depreciation",
+            true,
+            [
+              47
+            ]
+          ],
+          "3137": [
+            "400067",
+            "Consultancy Fees",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3138": [
+            "400068",
+            "Provision for Doubtful Debts",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3139": [
+            "400069",
+            "Closing Account",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3140": [
+            "400070",
+            "Depreciation on Right of use asset (IFRS 16)",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3141": [
+            "400072",
+            "ZAKAT Expense",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3142": [
+            "400073",
+            "Withholding Tax Expense",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3143": [
+            "400074",
+            "Salary Deductions",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3144": [
+            "400075",
+            "Other Employee Expenses",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3145": [
+            "500001",
+            "Sales Account",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3146": [
+            "500002",
+            "Sales of I/C",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3147": [
+            "500003",
+            "Management Consultancy Fees",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3148": [
+            "500004",
+            "Sales from Other Region",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3149": [
+            "500005",
+            "Advertising Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3150": [
+            "500006",
+            "Branding Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3151": [
+            "500007",
+            "Space Rental Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3152": [
+            "500008",
+            "Service Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3153": [
+            "500009",
+            "Interest Revenue",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3154": [
+            "500010",
+            "Capital Gain",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3155": [
+            "500011",
+            "Gain On Difference Of Exchange",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3156": [
+            "500013",
+            "Other Income",
+            "income",
+            true,
+            [
+              47
+            ]
+          ],
+          "3157": [
+            "999999",
+            "Undistributed Profits/Losses",
+            "equity_unaffected",
+            true,
+            [
+              47
+            ]
+          ],
+          "3158": [
+            "101001",
+            "Bank",
+            "asset_cash",
+            true,
+            [
+              47
+            ]
+          ],
+          "3159": [
+            "101002",
+            "Bank Suspense Account",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3160": [
+            "999998",
+            "Cash Discount Loss",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3161": [
+            "999997",
+            "Cash Discount Gain",
+            "income_other",
+            true,
+            [
+              47
+            ]
+          ],
+          "3162": [
+            "999001",
+            "Cash Difference Gain",
+            "income_other",
+            true,
+            [
+              47
+            ]
+          ],
+          "3163": [
+            "999002",
+            "Cash Difference Loss",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ],
+          "3164": [
+            "100001",
+            "Liquidity Transfer",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3165": [
+            "101003",
+            "Outstanding Receipts",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3166": [
+            "101004",
+            "Outstanding Payments",
+            "asset_current",
+            true,
+            [
+              47
+            ]
+          ],
+          "3167": [
+            "201090",
+            "Salaries payable | رواتب مستحقة الدفع",
+            "liability_payable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3168": [
+            "102090",
+            "Employee advances | سلف الموظفين",
+            "asset_receivable",
+            true,
+            [
+              47
+            ]
+          ],
+          "3169": [
+            "105001",
+            "Cash | النقد",
+            "asset_cash",
+            true,
+            [
+              47
+            ]
+          ],
+          "3171": [
+            "400093",
+            "Employee residency and work permits | الإقامات وتصاريح العمل",
+            "expense",
+            true,
+            [
+              47
+            ]
+          ]
+        },
+        "journals": [
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273
+        ],
+        "financial_moves": [
+          1260,
+          1259,
+          1258,
+          1257,
+          1256,
+          1255,
+          171,
+          170,
+          167,
+          166,
+          159,
+          173,
+          169,
+          165,
+          163,
+          161,
+          155,
+          157,
+          812,
+          809,
+          811,
+          1138,
+          1139,
+          1136,
+          1137,
+          810,
+          808,
+          1149,
+          1148,
+          1147,
+          1146,
+          1145,
+          1261,
+          648,
+          647,
+          646,
+          413,
+          585,
+          584,
+          645,
+          412,
+          330,
+          328,
+          326,
+          324,
+          329,
+          327,
+          325,
+          323,
+          818,
+          816,
+          817,
+          815,
+          151,
+          143,
+          135,
+          150,
+          142,
+          134,
+          164,
+          807,
+          805,
+          806,
+          174,
+          804,
+          158,
+          156,
+          154,
+          175,
+          168,
+          162,
+          160,
+          152,
+          144,
+          136,
+          149,
+          141,
+          133,
+          147,
+          139,
+          131,
+          146,
+          138,
+          130,
+          148,
+          140,
+          132,
+          153,
+          145,
+          137,
+          129,
+          172,
+          1135,
+          1134,
+          1062,
+          1061,
+          1060,
+          1025,
+          1024,
+          1023,
+          1022
+        ]
+      },
+      "seconds": 0.740497
+    }
+  ],
+  "check_count": 21
+}

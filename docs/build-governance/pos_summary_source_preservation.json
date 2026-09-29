@@ -1,0 +1,10 @@
+{
+  "checked": 229,
+  "approved_shared_ui_changes": [
+    {
+      "path": "custom_addons/baseer_report_layout/__manifest__.py",
+      "sha256": "e6ed0d3e0ddfb9aa8ae1b7c71f868121220ff7939a579a61ca6f42cf78267ad3"
+    }
+  ],
+  "other_existing_report_sources_unchanged": true
+}

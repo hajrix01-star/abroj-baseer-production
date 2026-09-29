@@ -1,0 +1,152 @@
+<odoo>
+    <record id="view_baseer_purchase_reporting_rule_list" model="ir.ui.view">
+        <field name="name">baseer.purchase.reporting.rule.list</field>
+        <field name="model">baseer.purchase.reporting.rule</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Reporting Rules">
+                <field name="company_id"/>
+                <field name="target_kind"/>
+                <field name="supplier_category_map_id" optional="hide"/>
+                <field name="product_category_id" optional="hide"/>
+                <field name="reporting_category_map_id"/>
+                <field name="reporting_type"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_baseer_purchase_reporting_rule_form" model="ir.ui.view">
+        <field name="name">baseer.purchase.reporting.rule.form</field>
+        <field name="model">baseer.purchase.reporting.rule</field>
+        <field name="arch" type="xml">
+            <form string="Purchase Reporting Rule">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="target_kind"/>
+                            <field name="supplier_category_map_id" invisible="target_kind != 'supplier_category'" options="{'no_create': True}"/>
+                            <field name="product_category_id" invisible="target_kind != 'product_category'" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="reporting_category_map_id" options="{'no_create': True}"/>
+                            <field name="reporting_type"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_baseer_purchase_reporting_rule_search" model="ir.ui.view">
+        <field name="name">baseer.purchase.reporting.rule.search</field>
+        <field name="model">baseer.purchase.reporting.rule</field>
+        <field name="arch" type="xml">
+            <search string="Purchase Reporting Rules">
+                <field name="supplier_category_map_id"/>
+                <field name="product_category_id"/>
+                <field name="reporting_category_map_id"/>
+                <filter name="purchase" string="Purchases" domain="[('reporting_type', '=', 'purchase')]"/>
+                <filter name="expense" string="Expenses" domain="[('reporting_type', '=', 'expense')]"/>
+                <filter name="excluded" string="Excluded" domain="[('reporting_type', '=', 'excluded')]"/>
+                <group>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}"/>
+                    <filter name="group_type" string="Reporting Type" context="{'group_by': 'reporting_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_baseer_purchase_reporting_rule" model="ir.actions.act_window">
+        <field name="name">Purchase Reporting Rules</field>
+        <field name="res_model">baseer.purchase.reporting.rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_baseer_purchase_reporting_rule_search"/>
+    </record>
+
+    <record id="view_baseer_purchase_classification_case_list" model="ir.ui.view">
+        <field name="name">baseer.purchase.line.classification.case.list</field>
+        <field name="model">baseer.purchase.line.classification.case</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Classification Cases" create="0" edit="0" delete="0">
+                <field name="company_id"/>
+                <field name="source_line_id"/>
+                <field name="current_snapshot_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_baseer_purchase_classification_snapshot_list" model="ir.ui.view">
+        <field name="name">baseer.purchase.line.classification.list</field>
+        <field name="model">baseer.purchase.line.classification</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Classification Snapshots" create="0" edit="0" delete="0">
+                <field name="company_id"/>
+                <field name="source_line_id"/>
+                <field name="version"/>
+                <field name="decision_source"/>
+                <field name="reason" optional="hide"/>
+                <field name="created_by_id"/>
+                <field name="created_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_baseer_purchase_classification_leg_list" model="ir.ui.view">
+        <field name="name">baseer.purchase.line.classification.leg.list</field>
+        <field name="model">baseer.purchase.line.classification.leg</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Classification Allocations" create="0" edit="0" delete="0">
+                <field name="company_id"/>
+                <field name="reporting_parent_category_id" string="Parent Category" context="{'hierarchical_naming': True}"/>
+                <field name="reporting_category_id" string="Child Category" context="{'hierarchical_naming': True}"/>
+                <field name="reporting_type"/>
+                <field name="basis_points"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_baseer_purchase_classification_leg_search" model="ir.ui.view">
+        <field name="name">baseer.purchase.line.classification.leg.search</field>
+        <field name="model">baseer.purchase.line.classification.leg</field>
+        <field name="arch" type="xml">
+            <search string="Purchase Classification Allocations">
+                <field name="reporting_parent_category_id"/>
+                <field name="reporting_category_id"/>
+                <filter name="group_parent" string="Parent Category" context="{'group_by': 'reporting_parent_category_id'}"/>
+                <filter name="group_child" string="Child Category" context="{'group_by': 'reporting_category_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_baseer_purchase_classification_case" model="ir.actions.act_window">
+        <field name="name">Purchase Classification Cases</field>
+        <field name="res_model">baseer.purchase.line.classification.case</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="action_baseer_purchase_classification_snapshot" model="ir.actions.act_window">
+        <field name="name">Purchase Classification Snapshots</field>
+        <field name="res_model">baseer.purchase.line.classification</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_baseer_purchase_classification_leg" model="ir.actions.act_window">
+        <field name="name">Purchase Classification Allocations</field>
+        <field name="res_model">baseer.purchase.line.classification.leg</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_baseer_purchase_classification_leg_search"/>
+    </record>
+
+    <menuitem id="menu_baseer_purchase_reporting_root" name="Purchase Classification"
+              parent="account.menu_finance_configuration" sequence="62" groups="account.group_account_manager"/>
+    <menuitem id="menu_baseer_purchase_reporting_rule" name="Reporting Rules"
+              parent="menu_baseer_purchase_reporting_root" action="action_baseer_purchase_reporting_rule" sequence="10"/>
+    <menuitem id="menu_baseer_purchase_classification_case" name="Classification Cases"
+              parent="menu_baseer_purchase_reporting_root" action="action_baseer_purchase_classification_case" sequence="20"/>
+    <menuitem id="menu_baseer_purchase_classification_snapshot" name="Classification Snapshots"
+              parent="menu_baseer_purchase_reporting_root" action="action_baseer_purchase_classification_snapshot" sequence="30"/>
+    <menuitem id="menu_baseer_purchase_classification_leg" name="Parent and Child Categories"
+              parent="menu_baseer_purchase_reporting_root" action="action_baseer_purchase_classification_leg" sequence="40"/>
+</odoo>
+

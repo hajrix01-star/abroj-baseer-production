@@ -1,0 +1,49 @@
+{
+  "database": "baseer_audit_payroll_20260909",
+  "files": [
+    {
+      "file": "payroll-eos-final-ar_001.pdf",
+      "sha256": "b7009c8d1ff89dd608bf43bc46b852a0c1c688a49b7685feaef2cfa98856e3d2",
+      "pages": 1,
+      "size": "A4",
+      "visual_review": "All pages inspected; amounts and signatures visible"
+    },
+    {
+      "file": "payroll-eos-final-en_US.pdf",
+      "sha256": "1a2d53b85047d6a258b109e3ff290004d07d1649e6beb3e698cc7771d76fadc7",
+      "pages": 1,
+      "size": "A4",
+      "visual_review": "All pages inspected; amounts and signatures visible"
+    },
+    {
+      "file": "payroll-multiemployee-ar_001.pdf",
+      "sha256": "b3cfd003713fd70a4b6b331faaca28e90e9f51d4b193207ead14a6904148a46a",
+      "pages": 2,
+      "size": "A4",
+      "visual_review": "All pages inspected; amounts and signatures visible"
+    },
+    {
+      "file": "payroll-multiemployee-en_US.pdf",
+      "sha256": "e06e4a8df4c11789668000a77e48ba54fda96740c0c98c87b7f0e3a7d581b934",
+      "pages": 2,
+      "size": "A4",
+      "visual_review": "All pages inspected; amounts and signatures visible"
+    },
+    {
+      "file": "payroll-six-months-ar_001.pdf",
+      "sha256": "111ad71283ab47d01bb76ae40f3e5e5b2f6d174f55d3fd75ecbcf05bfec8ceee",
+      "pages": 6,
+      "size": "A4",
+      "visual_review": "All pages inspected; amounts and signatures visible"
+    },
+    {
+      "file": "payroll-six-months-en_US.pdf",
+      "sha256": "ec9ab61b70ae11685d65bdceffa8936ae75b8e249660e136922887d25b5581f9",
+      "pages": 6,
+      "size": "A4",
+      "visual_review": "All pages inspected; amounts and signatures visible"
+    }
+  ],
+  "pages_inspected": 18,
+  "renderer": "Odoo native QWeb PDF; Poppler 75 dpi visual inspection"
+}

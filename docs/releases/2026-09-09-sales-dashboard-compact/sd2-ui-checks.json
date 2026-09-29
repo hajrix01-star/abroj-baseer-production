@@ -1,0 +1,146 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "native record endpoint receives unmodified native date intent",
+      "passed": true
+    },
+    {
+      "name": "five cards preserve backend values formatting and comparison without arithmetic",
+      "passed": true
+    },
+    {
+      "name": "source action opens exact server domain",
+      "passed": true
+    },
+    {
+      "name": "native prop update clears stale payload immediately and loads next props",
+      "passed": true
+    },
+    {
+      "name": "reversed native filter replies cannot replace latest payload",
+      "passed": true
+    },
+    {
+      "name": "unchanged filter reference does not query again",
+      "passed": true
+    },
+    {
+      "name": "native all time sends explicit null without client date truncation",
+      "passed": true
+    },
+    {
+      "name": "open native range passes through and obsolete failure stays hidden",
+      "passed": true
+    },
+    {
+      "name": "capacity or validation failure remains an error rather than empty preview",
+      "passed": true
+    },
+    {
+      "name": "refresh retains native intent after a failure",
+      "passed": true
+    },
+    {
+      "name": "navigation ignores an in-flight reply",
+      "passed": true
+    },
+    {
+      "name": "chart coordinate adapter preserves null gaps and true zero values",
+      "passed": true
+    },
+    {
+      "name": "partial periods use a distinct marker and tooltips use backend display strings",
+      "passed": true
+    },
+    {
+      "name": "redrawing destroys prior chart objects",
+      "passed": true
+    },
+    {
+      "name": "empty periods draw no chart and do not turn gaps into zero",
+      "passed": true
+    },
+    {
+      "name": "comparison arrows are labels only and do not recalculate percentages",
+      "passed": true
+    },
+    {
+      "name": "mixed chart has bar and line series with separately named currency and count axes",
+      "passed": true
+    },
+    {
+      "name": "empty cards cannot expose sample or stale amounts and illustration never creates a chart",
+      "passed": true
+    },
+    {
+      "name": "approved true zero uses real chart rather than preview",
+      "passed": true
+    },
+    {
+      "name": "empty preview markup is decorative and independent of numeric payload",
+      "passed": true
+    },
+    {
+      "name": "shift chart preserves source categories nulls and approved zero",
+      "passed": true
+    },
+    {
+      "name": "shift metric switch uses server ratio without a request or arithmetic",
+      "passed": true
+    },
+    {
+      "name": "customer shift view uses count axis and exact server values",
+      "passed": true
+    },
+    {
+      "name": "shift source navigation uses server action only for a recorded category",
+      "passed": true
+    },
+    {
+      "name": "empty all-time date bounds and unavailable comparison never render null text",
+      "passed": true
+    },
+    {
+      "name": "payment chart uses recorded method identity and exact server allocation amounts",
+      "passed": true
+    },
+    {
+      "name": "payment navigation preserves exact server allocation action",
+      "passed": true
+    },
+    {
+      "name": "partial coverage retains verified amounts and unavailable server shares with visible warning",
+      "passed": true
+    },
+    {
+      "name": "missing allocation rows create neither fake methods nor a payment chart",
+      "passed": true
+    },
+    {
+      "name": "recorded zero allocation remains a real zero coordinate",
+      "passed": true
+    },
+    {
+      "name": "scoped native filter normalizes Arabic and Persian digits without translating month text",
+      "passed": true
+    },
+    {
+      "name": "native range dates retain ISO semantics while configuring display digits immutably",
+      "passed": true
+    },
+    {
+      "name": "format adapter replaces only its own native child without patching shared picker classes",
+      "passed": true
+    },
+    {
+      "name": "local native range template keys changed dates to discard retained locale editing text",
+      "passed": true
+    }
+  ],
+  "source": "custom_addons/baseer_sales_dashboard/static/src/sales_dashboard.js",
+  "source_sha256": "577dc666c29376e6cdf329879b7a28f9595ffe9328bd26b4d49c03dbbde2dfda",
+  "scope": "Production Owl component methods with stubbed services/hooks/canvas and deferred ORM. Verifies UI concurrency and faithful presentation, not business formulas or browser layout/lifecycle.",
+  "integration_sha256": "a38cc2958594e6993662a4128abe19c49a13f2068ae7de8a5dcf374c2cd5ca73",
+  "integration_xml_sha256": "51ffac91af9484ab3ad1e41d24b4c6d93dcfb1cc20804a1224c68e62e886191d"
+}

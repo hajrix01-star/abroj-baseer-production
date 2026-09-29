@@ -1,0 +1,54 @@
+{
+  "scope": "vendor characterization, not acceptance",
+  "checks": [
+    {
+      "name": "BLOCKER shipped approval fails missing net_wage",
+      "observed": true,
+      "detail": "'hr.payslip' object has no attribute 'net_wage'"
+    },
+    {
+      "name": "native salary first approval posts 1000",
+      "observed": true,
+      "detail": {
+        "move_id": 845
+      }
+    },
+    {
+      "name": "DEFECT repeated approval posts another 1000 and overwrites link",
+      "observed": true,
+      "detail": {
+        "first": 845,
+        "second": 846
+      }
+    },
+    {
+      "name": "DEFECT posted payslip source date remains writable",
+      "observed": true,
+      "detail": null
+    },
+    {
+      "name": "loan submit reaches submitted with mail hooks intercepted",
+      "observed": true,
+      "detail": null
+    },
+    {
+      "name": "DEFECT loan cancel retains paid flag",
+      "observed": true,
+      "detail": null
+    },
+    {
+      "name": "mail transport never executed",
+      "observed": true,
+      "detail": 2
+    }
+  ],
+  "mail_calls_suppressed": 2,
+  "downstream_test_only_shim": "temporary class net_wage=1000; first unmodified call failed",
+  "cancel_outcome": {
+    "state": "cancel",
+    "latest_move_exists": false,
+    "earlier_move_exists": true
+  },
+  "status": "characterization_complete",
+  "rolled_back": true
+}

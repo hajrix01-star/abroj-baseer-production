@@ -1,0 +1,437 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- heading "الحركة النقدية حسب الفئات" [level=2]
+- generic: SAR (SR)
+- generic: 
+- text: 2026-09-01إلى2026-09-30
+- group "Report appearance":
+  - button "فاتح" [pressed]:
+    - generic: 
+    - generic: فاتح
+  - button "غامق":
+    - generic: 
+    - generic: غامق
+- button " المزيد من عوامل التصفية":
+  - generic: 
+  - generic: المزيد من عوامل التصفية
+- button " تحديث":
+  - generic: 
+  - text: تحديث
+- button " طباعة ملف PDF":
+  - generic: 
+  - text: طباعة ملف PDF
+- button " تصدير إلى Excel":
+  - generic: 
+  - text: تصدير إلى Excel
+- checkbox "شامل الضريبة"
+- generic: شامل الضريبة
+- generic: وضع التاريخ
+- combobox "وضع التاريخ":
+  - option "المدى"
+  - option "هذا الشهر" [selected]
+  - option "هذا الربع"
+  - option "هذا العام"
+  - option "This fiscal quarter"
+  - option "This fiscal year"
+  - option "الشهر الماضي"
+  - option "الربع الماضي"
+  - option "العام الماضي"
+- group "Move report period":
+  - button "الفترة السابقة":
+    - generic: 
+  - button "Next period":
+    - generic: 
+- generic: التاريخ من
+- textbox "التاريخ من": 2026-09-01
+- generic: التاريخ إلى
+- textbox "التاريخ إلى": 2026-09-30
+- checkbox "القيود المرحّلة فقط" [checked] [disabled]
+- generic: القيود المرحّلة فقط
+- note: "نسخة تجريبية: تُوزّع الدفعات الجزئية بنسبة قيمة بنود الفاتورة. استبعاد الضريبة يغيّر الصافي الإداري؛ ويبيّن سطر تسوية الضريبة الحركة النقدية الفعلية."
+- generic: 
+- text: 35 الصفوف
+- generic: 
+- searchbox ""
+- button " طي الكل":
+  - generic: 
+  - text: طي الكل
+- button " إظهار الكل":
+  - generic: 
+  - text: إظهار الكل
+- table:
+  - rowgroup:
+    - row "الوصف المبلغ دون الضريبة المثبتة (SR)":
+      - columnheader "الوصف"
+      - columnheader "المبلغ دون الضريبة المثبتة (SR)":
+        - text: المبلغ دون الضريبة المثبتة
+        - generic: (SR)
+  - rowgroup:
+    - row "Collapse row المقبوضات الفعلية  400.00 SR ":
+      - cell "Collapse row المقبوضات الفعلية ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: المقبوضات الفعلية
+        - button "":
+          - generic: 
+      - cell "400.00 SR ":
+        - button "400.00 SR"
+        - button "":
+          - generic: 
+    - row "Collapse row البنك  200.00 SR ":
+      - cell "Collapse row البنك ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: البنك
+        - button "":
+          - generic: 
+      - cell "200.00 SR ":
+        - button "200.00 SR"
+        - button "":
+          - generic: 
+    - row "101001 البنك  200.00 SR ":
+      - cell "101001 البنك ":
+        - text: 101001 البنك
+        - button "":
+          - generic: 
+      - cell "200.00 SR ":
+        - button "200.00 SR"
+        - button "":
+          - generic: 
+    - row "Collapse row شبكة تجريبية  100.00 SR ":
+      - cell "Collapse row شبكة تجريبية ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: شبكة تجريبية
+        - button "":
+          - generic: 
+      - cell "100.00 SR ":
+        - button "100.00 SR"
+        - button "":
+          - generic: 
+    - row "101007 شبكة تجريبية  100.00 SR ":
+      - cell "101007 شبكة تجريبية ":
+        - text: 101007 شبكة تجريبية
+        - button "":
+          - generic: 
+      - cell "100.00 SR ":
+        - button "100.00 SR"
+        - button "":
+          - generic: 
+    - row "Collapse row كاش تجريبي  100.00 SR ":
+      - cell "Collapse row كاش تجريبي ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: كاش تجريبي
+        - button "":
+          - generic: 
+      - cell "100.00 SR ":
+        - button "100.00 SR"
+        - button "":
+          - generic: 
+    - row "105001 كاش تجريبي  100.00 SR ":
+      - cell "105001 كاش تجريبي ":
+        - text: 105001 كاش تجريبي
+        - button "":
+          - generic: 
+      - cell "100.00 SR ":
+        - button "100.00 SR"
+        - button "":
+          - generic: 
+    - row "Collapse row المدفوعات الفعلية  (677.00 SR) ":
+      - cell "Collapse row المدفوعات الفعلية ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: المدفوعات الفعلية
+        - button "":
+          - generic: 
+      - cell "(677.00 SR) ":
+        - button "(677.00 SR)"
+        - button "":
+          - generic: 
+    - row "400003 مصروف الراتب الاساسي  (50.00 SR) ":
+      - cell "400003 مصروف الراتب الاساسي ":
+        - text: 400003 مصروف الراتب الاساسي
+        - button "":
+          - generic: 
+      - cell "(50.00 SR) ":
+        - button "(50.00 SR)"
+        - button "":
+          - generic: 
+    - row "غير مصنف / يحتاج إلى توزيع  (40.00 SR) ":
+      - cell "غير مصنف / يحتاج إلى توزيع ":
+        - text: غير مصنف / يحتاج إلى توزيع
+        - button "":
+          - generic: 
+      - cell "(40.00 SR) ":
+        - button "(40.00 SR)"
+        - button "":
+          - generic: 
+    - row "Collapse row مبالغ مرتجعة للعملاء  (10.00 SR) ":
+      - cell "Collapse row مبالغ مرتجعة للعملاء ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: مبالغ مرتجعة للعملاء
+        - button "":
+          - generic: 
+      - cell "(10.00 SR) ":
+        - button "(10.00 SR)"
+        - button "":
+          - generic: 
+    - row "Collapse row مشروبات  (10.00 SR) ":
+      - cell "Collapse row مشروبات ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: مشروبات
+        - button "":
+          - generic: 
+      - cell "(10.00 SR) ":
+        - button "(10.00 SR)"
+        - button "":
+          - generic: 
+    - row "مياه  (10.00 SR) ":
+      - cell "مياه ":
+        - text: مياه
+        - button "":
+          - generic: 
+      - cell "(10.00 SR) ":
+        - button "(10.00 SR)"
+        - button "":
+          - generic: 
+    - row "Collapse row مشروبات  (150.00 SR) ":
+      - cell "Collapse row مشروبات ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: مشروبات
+        - button "":
+          - generic: 
+      - cell "(150.00 SR) ":
+        - button "(150.00 SR)"
+        - button "":
+          - generic: 
+    - row "مشروبات غازية  (100.00 SR) ":
+      - cell "مشروبات غازية ":
+        - text: مشروبات غازية
+        - button "":
+          - generic: 
+      - cell "(100.00 SR) ":
+        - button "(100.00 SR)"
+        - button "":
+          - generic: 
+    - row "مياه  (50.00 SR) ":
+      - cell "مياه ":
+        - text: مياه
+        - button "":
+          - generic: 
+      - cell "(50.00 SR) ":
+        - button "(50.00 SR)"
+        - button "":
+          - generic: 
+    - row "Collapse row مصاريف تشغيلية تجريبية  (377.00 SR) ":
+      - cell "Collapse row مصاريف تشغيلية تجريبية ":
+        - button "Collapse row" [expanded]:
+          - generic: 
+        - text: مصاريف تشغيلية تجريبية
+        - button "":
+          - generic: 
+      - cell "(377.00 SR) ":
+        - button "(377.00 SR)"
+        - button "":
+          - generic: 
+    - row "QA6001 إيجارات  (100.00 SR) ":
+      - cell "QA6001 إيجارات ":
+        - text: QA6001 إيجارات
+        - button "":
+          - generic: 
+      - cell "(100.00 SR) ":
+        - button "(100.00 SR)"
+        - button "":
+          - generic: 
+    - row "QA6002 كهرباء ومرافق  (25.00 SR) ":
+      - cell "QA6002 كهرباء ومرافق ":
+        - text: QA6002 كهرباء ومرافق
+        - button "":
+          - generic: 
+      - cell "(25.00 SR) ":
+        - button "(25.00 SR)"
+        - button "":
+          - generic: 
+    - row "QA6003 رسوم بنكية  (2.00 SR) ":
+      - cell "QA6003 رسوم بنكية ":
+        - text: QA6003 رسوم بنكية
+        - button "":
+          - generic: 
+      - cell "(2.00 SR) ":
+        - button "(2.00 SR)"
+        - button "":
+          - generic: 
+    - row "QA6004 رواتب الموظفين  (200.00 SR) ":
+      - cell "QA6004 رواتب الموظفين ":
+        - text: QA6004 رواتب الموظفين
+        - button "":
+          - generic: 
+      - cell "(200.00 SR) ":
+        - button "(200.00 SR)"
+        - button "":
+          - generic: 
+    - row "QA6005 اتصالات وإنترنت  (50.00 SR) ":
+      - cell "QA6005 اتصالات وإنترنت ":
+        - text: QA6005 اتصالات وإنترنت
+        - button "":
+          - generic: 
+      - cell "(50.00 SR) ":
+        - button "(50.00 SR)"
+        - button "":
+          - generic: 
+    - row "مواد غذائية  (50.00 SR) ":
+      - cell "مواد غذائية ":
+        - text: مواد غذائية
+        - button "":
+          - generic: 
+      - cell "(50.00 SR) ":
+        - button "(50.00 SR)"
+        - button "":
+          - generic: 
+    - row "إجمالي المقبوضات  400.00 SR ":
+      - cell "إجمالي المقبوضات ":
+        - text: إجمالي المقبوضات
+        - button "":
+          - generic: 
+      - cell "400.00 SR ":
+        - button "400.00 SR"
+        - button "":
+          - generic: 
+    - row "إجمالي المدفوعات  (677.00 SR) ":
+      - cell "إجمالي المدفوعات ":
+        - text: إجمالي المدفوعات
+        - button "":
+          - generic: 
+      - cell "(677.00 SR) ":
+        - button "(677.00 SR)"
+        - button "":
+          - generic: 
+    - row "صافي الحركة حسب خيار الضريبة  (277.00 SR) ":
+      - cell "صافي الحركة حسب خيار الضريبة ":
+        - text: صافي الحركة حسب خيار الضريبة
+        - button "":
+          - generic: 
+      - cell "(277.00 SR) ":
+        - button "(277.00 SR)"
+        - button "":
+          - generic: 
+    - row "تسوية الضريبة المستبعدة إلى النقد الفعلي  6.00 SR ":
+      - cell "تسوية الضريبة المستبعدة إلى النقد الفعلي ":
+        - text: تسوية الضريبة المستبعدة إلى النقد الفعلي
+        - button "":
+          - generic: 
+      - cell "6.00 SR ":
+        - button "6.00 SR"
+        - button "":
+          - generic: 
+    - row "صافي الحركة النقدية الفعلية  (271.00 SR) ":
+      - cell "صافي الحركة النقدية الفعلية ":
+        - text: صافي الحركة النقدية الفعلية
+        - button "":
+          - generic: 
+      - cell "(271.00 SR) ":
+        - button "(271.00 SR)"
+        - button "":
+          - generic: 
+    - row "الرصيد النقدي الافتتاحي  1,000.00 SR ":
+      - cell "الرصيد النقدي الافتتاحي ":
+        - text: الرصيد النقدي الافتتاحي
+        - button "":
+          - generic: 
+      - cell "1,000.00 SR ":
+        - button "1,000.00 SR"
+        - button "":
+          - generic: 
+    - row "الرصيد النقدي الختامي  729.00 SR ":
+      - cell "الرصيد النقدي الختامي ":
+        - text: الرصيد النقدي الختامي
+        - button "":
+          - generic: 
+      - cell "729.00 SR ":
+        - button "729.00 SR"
+        - button "":
+          - generic: 
+    - row "فرق المطابقة (يجب أن يساوي صفراً)  0.00 SR ":
+      - cell "فرق المطابقة (يجب أن يساوي صفراً) ":
+        - text: فرق المطابقة (يجب أن يساوي صفراً)
+        - button "":
+          - generic: 
+      - cell "0.00 SR ":
+        - button "0.00 SR"
+        - button "":
+          - generic: 
+    - 'row "توزيع تجريبي: تُوزّع الدفعات الجزئية بنسبة قيمة بنود الفاتو Show full cell text  "':
+      - 'cell "توزيع تجريبي: تُوزّع الدفعات الجزئية بنسبة قيمة بنود الفاتو Show full cell text "':
+        - 'generic "توزيع تجريبي: تُوزّع الدفعات الجزئية بنسبة قيمة بنود الفاتورة."':
+          - text: "توزيع تجريبي: تُوزّع الدفعات الجزئية بنسبة قيمة بنود الفاتو"
+          - button "Show full cell text": …
+        - button "":
+          - generic: 
+      - cell "":
+        - button "":
+          - generic: 
+    - row "تُستبعد الضريبة المثبتة بالفواتير فقط؛ وتبقى الحركة كاملة ع Show full cell text  ":
+      - cell "تُستبعد الضريبة المثبتة بالفواتير فقط؛ وتبقى الحركة كاملة ع Show full cell text ":
+        - generic "تُستبعد الضريبة المثبتة بالفواتير فقط؛ وتبقى الحركة كاملة عند عدم توفر تفصيل الضريبة.":
+          - text: تُستبعد الضريبة المثبتة بالفواتير فقط؛ وتبقى الحركة كاملة ع
+          - button "Show full cell text": …
+        - button "":
+          - generic: 
+      - cell "":
+        - button "":
+          - generic: 
+    - row "تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثق Show full cell text  ":
+      - cell "تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثق Show full cell text ":
+        - generic "تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثقة.":
+          - text: تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثق
+          - button "Show full cell text": …
+        - button "":
+          - generic: 
+      - cell "":
+        - button "":
+          - generic: 
+    - row "توجد حركة نقدية لم تُربط بفاتورة أو تسوية بعد.  ":
+      - cell "توجد حركة نقدية لم تُربط بفاتورة أو تسوية بعد. ":
+        - text: توجد حركة نقدية لم تُربط بفاتورة أو تسوية بعد.
+        - button "":
+          - generic: 
+      - cell "":
+        - button "":
+          - generic: 
+- text: صُنع بـ
+- generic: 🤍
+- text: من ملبورن بواسطة
+- strong: ERP Heritage

@@ -1,0 +1,7 @@
+{
+  "protected_tables": 250,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "Frontend time widget and styles only; no business schema or row changes",
+  "candidate": "96dd7960f30a0863772139423e037e127faf3c52"
+}

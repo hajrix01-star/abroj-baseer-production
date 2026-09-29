@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "kind": "edit",
+      "status": "committed",
+      "attempt": 1
+    },
+    {
+      "kind": "confirm",
+      "status": "committed",
+      "attempt": 2
+    }
+  ],
+  "database": "baseer_ic1_20260910",
+  "expected_amount": 215.0,
+  "replacement_amount": 215.0,
+  "request_matches_posting": true,
+  "qa_fixture_committed": true,
+  "main_untouched": true
+}

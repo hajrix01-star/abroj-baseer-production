@@ -1,0 +1,8 @@
+{
+  "removed_databases": [
+    "baseer_main_rehearsal_20260909",
+    "baseer_main_restore_20260909"
+  ],
+  "main_and_qa_retained": true,
+  "backups_retained": true
+}

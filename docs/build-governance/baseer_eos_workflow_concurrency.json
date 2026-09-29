@@ -1,0 +1,163 @@
+{
+  "database": "baseer_eos_workflow_race",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "ordinary_admin_has_required_roles",
+      "passed": true
+    },
+    {
+      "name": "fresh_disposable_fixture",
+      "passed": true
+    },
+    {
+      "name": "native_accounting_configuration",
+      "passed": true
+    },
+    {
+      "name": "native_employee_departure_recorded",
+      "passed": true
+    },
+    {
+      "name": "new_employee_has_no_award",
+      "passed": true
+    },
+    {
+      "name": "open_two_distinct_database_connections",
+      "passed": true
+    },
+    {
+      "name": "open_both_resolve_one_award",
+      "passed": true
+    },
+    {
+      "name": "entry_button_does_not_issue_bill",
+      "passed": true
+    },
+    {
+      "name": "exactly_one_calculated_departure_entry",
+      "passed": true
+    },
+    {
+      "name": "opening_creates_no_accounting_moves",
+      "passed": true
+    },
+    {
+      "name": "draft_employee_button_replay",
+      "passed": true
+    },
+    {
+      "name": "approve_two_distinct_database_connections",
+      "passed": true
+    },
+    {
+      "name": "approve_both_resolve_one_award",
+      "passed": true
+    },
+    {
+      "name": "wrapper_both_approved_same_bill",
+      "passed": true
+    },
+    {
+      "name": "native_bill_matches_reviewed_award",
+      "passed": true
+    },
+    {
+      "name": "wrapper_replay_returns_same_award",
+      "passed": true
+    },
+    {
+      "name": "original_approval_replay_returns_same_bill",
+      "passed": true
+    },
+    {
+      "name": "approved_employee_button_replay",
+      "passed": true
+    },
+    {
+      "name": "one_award_after_all_replays",
+      "passed": true
+    },
+    {
+      "name": "exactly_one_new_native_bill",
+      "passed": true
+    },
+    {
+      "name": "document_identity_captured",
+      "passed": true
+    }
+  ],
+  "races": {
+    "open": {
+      "workers": [
+        {
+          "award_id": 23,
+          "bill_id": false,
+          "state": "draft",
+          "attempts": 1,
+          "retries": [],
+          "backend_pid": 214135,
+          "initial_snapshot": "96127:96127:",
+          "action_seconds": 0.022174,
+          "elapsed_seconds": 0.034318
+        },
+        {
+          "award_id": 23,
+          "bill_id": false,
+          "state": "draft",
+          "attempts": 2,
+          "retries": [
+            {
+              "attempt": 1,
+              "sqlstate": "23505",
+              "constraint": "baseer_hr_eos_departure_entry_unique"
+            }
+          ],
+          "backend_pid": 214144,
+          "initial_snapshot": "96127:96127:",
+          "action_seconds": 0.004135,
+          "elapsed_seconds": 0.101313
+        }
+      ],
+      "elapsed_seconds": 0.102251
+    },
+    "approve": {
+      "workers": [
+        {
+          "award_id": 23,
+          "bill_id": 1308,
+          "state": "approved",
+          "attempts": 2,
+          "retries": [
+            {
+              "attempt": 1,
+              "sqlstate": "40001",
+              "constraint": ""
+            }
+          ],
+          "backend_pid": 214135,
+          "initial_snapshot": "96130:96130:",
+          "action_seconds": 0.002793,
+          "elapsed_seconds": 0.507645
+        },
+        {
+          "award_id": 23,
+          "bill_id": 1308,
+          "state": "approved",
+          "attempts": 1,
+          "retries": [],
+          "backend_pid": 214144,
+          "initial_snapshot": "96130:96130:",
+          "action_seconds": 0.445368,
+          "elapsed_seconds": 0.449642
+        }
+      ],
+      "elapsed_seconds": 0.508214
+    }
+  },
+  "employee_id": 290,
+  "fixtures_committed": true,
+  "award_id": 23,
+  "bill_id": 1308,
+  "award_amount": "18505.48"
+}

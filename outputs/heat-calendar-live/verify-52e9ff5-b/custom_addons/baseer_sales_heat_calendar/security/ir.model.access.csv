@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_baseer_official_occasion_user,Official occasion reader,model_baseer_official_occasion,point_of_sale.group_pos_user,1,0,0,0
+access_baseer_official_occasion_manager,Official occasion manager,model_baseer_official_occasion,baseer_sales_heat_calendar.group_heat_calendar_manager,1,1,1,1
+access_baseer_official_occasion_admin,Official occasion administrator,model_baseer_official_occasion,base.group_system,1,1,1,1
+access_baseer_heat_calendar_target_user,Heat calendar target reader,model_baseer_heat_calendar_target,point_of_sale.group_pos_user,1,0,0,0
+access_baseer_heat_calendar_target_manager,Heat calendar target manager,model_baseer_heat_calendar_target,baseer_sales_heat_calendar.group_heat_calendar_manager,1,1,1,1
+access_baseer_heat_calendar_target_admin,Heat calendar target administrator,model_baseer_heat_calendar_target,base.group_system,1,1,1,1

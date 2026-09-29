@@ -1,0 +1,18 @@
+{
+  "contacts": 10000,
+  "synthetic_recent_bills": 100000,
+  "readers_measured": 1,
+  "lookup_ms": [
+    54.82,
+    39.35,
+    39.32,
+    48.36,
+    43.12,
+    42.51
+  ],
+  "warm_median_ms": 42.51,
+  "limit": 8,
+  "favorite_before_limit": true,
+  "rolled_back": true,
+  "limits": "Synthetic query load only; no 20-user or financial posting capacity claim."
+}

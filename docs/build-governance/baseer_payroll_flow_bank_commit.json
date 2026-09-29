@@ -1,0 +1,38 @@
+{
+  "simulation_only": true,
+  "committed": true,
+  "clearing": [
+    {
+      "payment": 272,
+      "move": 1145,
+      "amount": 1000.0,
+      "state": "paid"
+    },
+    {
+      "payment": 310,
+      "move": 1146,
+      "amount": 2750.0,
+      "state": "paid"
+    },
+    {
+      "payment": 311,
+      "move": 1147,
+      "amount": 2000.0,
+      "state": "paid"
+    },
+    {
+      "payment": 312,
+      "move": 1148,
+      "amount": 2000.0,
+      "state": "paid"
+    },
+    {
+      "payment": 313,
+      "move": 1149,
+      "amount": 2000.0,
+      "state": "paid"
+    }
+  ],
+  "configured_method": 110,
+  "status": "passed"
+}

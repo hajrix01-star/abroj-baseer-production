@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "environment": "MAIN baseer_dev 18069",
+  "method": "Root actual in-app browser, new tab closed afterwards",
+  "checks": [
+    "Native employee1 Payroll button opens work schedule wizard.",
+    "Adding a period shows four native select controls with Arabic Hour (24-hour)/Minute labels.",
+    "Start hour 24 choices, end hour25 choices, each minute60 choices, ASCII values08:00/16:00 from unchanged server defaults.",
+    "Desktop1280px document has no horizontal overflow.",
+    "Canceled wizard without saving employee changes; original user tab untouched."
+  ],
+  "business_mutations": "None"
+}

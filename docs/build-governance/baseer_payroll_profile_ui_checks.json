@@ -1,0 +1,13 @@
+{
+  "native_estimate_id": 9,
+  "employee_id": 32,
+  "service_days": 250,
+  "award": 684.93,
+  "bill_created": false,
+  "employee_terminated": false,
+  "test_estimate_removed": true,
+  "desktop": true,
+  "mobile_width": 390,
+  "final_native_estimate_id": 10,
+  "test_estimates_removed": true
+}

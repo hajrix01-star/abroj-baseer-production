@@ -1,0 +1,643 @@
+{
+  "checks": [
+    {
+      "name": "salary_split_conserves_inclusive_total",
+      "passed": true,
+      "detail": [
+        "788.99",
+        "1011.01",
+        "200.00"
+      ]
+    },
+    {
+      "name": "loan_disbursement_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loan_disbursement_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "initial_employee_balances",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m1_auto_employees",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m1_balanced",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m1_approval_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m1_partial_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m1_salary_fully_paid",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m1_exact_expected",
+      "passed": true,
+      "detail": {
+        "month": 1,
+        "a_loan": 200.0,
+        "b_loan": 200.0,
+        "deduction": 50.0,
+        "a_balance": 1000.0,
+        "b_balance": 400.0,
+        "net": 4550.0
+      }
+    },
+    {
+      "name": "partial_repayment_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m2_auto_employees",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m2_balanced",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m2_approval_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m2_partial_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m2_salary_fully_paid",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m2_exact_expected",
+      "passed": true,
+      "detail": {
+        "month": 2,
+        "a_loan": 0.0,
+        "b_loan": 150.0,
+        "deduction": 0.0,
+        "a_balance": 850.0,
+        "b_balance": 200.0,
+        "net": 4850.0
+      }
+    },
+    {
+      "name": "m3_auto_employees",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m3_balanced",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m3_approval_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m3_partial_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m3_salary_fully_paid",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m3_exact_expected",
+      "passed": true,
+      "detail": {
+        "month": 3,
+        "a_loan": 250.0,
+        "b_loan": 0.0,
+        "deduction": 100.0,
+        "a_balance": 600.0,
+        "b_balance": 200.0,
+        "net": 4650.0
+      }
+    },
+    {
+      "name": "m4_auto_employees",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m4_balanced",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m4_approval_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m4_partial_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m4_salary_fully_paid",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m4_exact_expected",
+      "passed": true,
+      "detail": {
+        "month": 4,
+        "a_loan": 200.0,
+        "b_loan": 200.0,
+        "deduction": 0.0,
+        "a_balance": 400.0,
+        "b_balance": 0.0,
+        "net": 4600.0
+      }
+    },
+    {
+      "name": "m5_auto_employees",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m5_balanced",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m5_approval_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m5_partial_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m5_salary_fully_paid",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m5_exact_expected",
+      "passed": true,
+      "detail": {
+        "month": 5,
+        "a_loan": 200.0,
+        "b_loan": 0.0,
+        "deduction": 25.0,
+        "a_balance": 200.0,
+        "b_balance": 0.0,
+        "net": 4775.0
+      }
+    },
+    {
+      "name": "m6_auto_employees",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m6_balanced",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m6_approval_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m6_partial_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_payment_wizard_replay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m6_salary_fully_paid",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "m6_exact_expected",
+      "passed": true,
+      "detail": {
+        "month": 6,
+        "a_loan": 200.0,
+        "b_loan": 0.0,
+        "deduction": 0.0,
+        "a_balance": 0.0,
+        "b_balance": 0.0,
+        "net": 4800.0
+      }
+    },
+    {
+      "name": "loans_fully_recovered",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "immutable_deferral_history",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "all_recoveries_equal_principal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "posted_slip_edit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "posted_slip_delete",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "posted_slip_cancel",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "posted_line_edit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loan_history_edit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loan_reverse",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_reverse",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "double_month",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "salary_unreconcile",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loan_unreconcile",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forged_loan_balance",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "negative_deduction",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loan_overpayment",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "company_isolation_hr.payslip",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "company_isolation_hr.payslip.run",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "company_isolation_baseer.hr.loan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "company_isolation_baseer.hr.loan.allocation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "staff_cannot_read_loans",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "staff_cannot_read_salary",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "staff_cannot_approve",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fractional_cent_input",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "partial_contract_15_days",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "managed_input_create",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "draft_run_delete",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "context_forged_slip",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "context_forged_loan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "context_forged_payroll_line",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "context_forged_payroll_input",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "context_forged_salary_ledger_line",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "context_forged_loan_ledger_line",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "payroll_line_reparent",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "foreign_config_write_hr.payroll.structure",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "foreign_config_write_hr.salary.rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "foreign_config_write_hr.salary.rule.category",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "changed_account_mapping",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "default_loan_reconciliation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "default_salary_reconciliation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "unpaid_leave_return_15_days",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "full_month_unpaid_employee_excluded",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fixed_salary_rounding_no_overtime",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "capacity_100_employee_calculation",
+      "passed": true,
+      "detail": {
+        "seconds": 2.096,
+        "target_seconds": 30
+      }
+    },
+    {
+      "name": "bulk_signature_pdf_ar_001",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "bulk_signature_pdf_en_US",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "months": [
+    {
+      "month": 1,
+      "a_loan": 200.0,
+      "b_loan": 200.0,
+      "deduction": 50.0,
+      "a_balance": 1000.0,
+      "b_balance": 400.0,
+      "net": 4550.0
+    },
+    {
+      "month": 2,
+      "a_loan": 0.0,
+      "b_loan": 150.0,
+      "deduction": 0.0,
+      "a_balance": 850.0,
+      "b_balance": 200.0,
+      "net": 4850.0
+    },
+    {
+      "month": 3,
+      "a_loan": 250.0,
+      "b_loan": 0.0,
+      "deduction": 100.0,
+      "a_balance": 600.0,
+      "b_balance": 200.0,
+      "net": 4650.0
+    },
+    {
+      "month": 4,
+      "a_loan": 200.0,
+      "b_loan": 200.0,
+      "deduction": 0.0,
+      "a_balance": 400.0,
+      "b_balance": 0.0,
+      "net": 4600.0
+    },
+    {
+      "month": 5,
+      "a_loan": 200.0,
+      "b_loan": 0.0,
+      "deduction": 25.0,
+      "a_balance": 200.0,
+      "b_balance": 0.0,
+      "net": 4775.0
+    },
+    {
+      "month": 6,
+      "a_loan": 200.0,
+      "b_loan": 0.0,
+      "deduction": 0.0,
+      "a_balance": 0.0,
+      "b_balance": 0.0,
+      "net": 4800.0
+    }
+  ],
+  "capacity_seconds": 2.096,
+  "status": "passed",
+  "rolled_back": true
+}

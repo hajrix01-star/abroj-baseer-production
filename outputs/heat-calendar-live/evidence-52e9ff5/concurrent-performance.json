@@ -1,0 +1,1 @@
+{"concurrency": 20, "completed": 20, "company_ids": [54, 2, 3, 1], "wall_seconds": 1.0697, "calendar_p95_seconds": 0.3134, "rpc_p95_seconds": 0.3133}

@@ -1,0 +1,33 @@
+{
+  "passed": 28,
+  "checks": [
+    "A favorite true / B default false",
+    "B independent favorite",
+    "C independent default",
+    "Unfavorite affects only A",
+    "Company favorite domain",
+    "Exact posted bill window and exclusions",
+    "Favorite then usage then alphabet",
+    "Rank before LIMIT",
+    "Stable paginated continuation",
+    "name_search native matching",
+    "name_search ranked limit",
+    "B ranks and counts independently",
+    "Unrelated native order unchanged",
+    "Sales selector uses same favorites",
+    "Batch context works",
+    "Favorite metadata and formatted names",
+    "Names never decorated",
+    "Search More server pagination",
+    "Ranked partner isolation with A+B allowed",
+    "Cannot star other-company private contact",
+    "Cannot move and star to other company",
+    "Removing B star preserves A star",
+    "No bill read ACL fixture",
+    "No bill access fallback",
+    "Forged unauthorized current company rejected",
+    "Bill read rule limits ranking",
+    "Restricted company favorite write",
+    "Cancelled source reflected immediately"
+  ]
+}

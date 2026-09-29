@@ -1,0 +1,360 @@
+{
+  "database": "baseer_fix_core_20260909",
+  "status": "completed",
+  "checks": [
+    {
+      "name": "nonadmin_test_users_are_not_sudo",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "payroll_officer_is_not_manager",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "private_rpc_res.company._baseer_consolidate_shared_providers",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "private_rpc_baseer.pos.day.archive.init",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "private_rpc_eh.account.report.execution.start_execution",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "internal_cannot_configure_supplier_category",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_cannot_configure_supplier_category",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "pos_cannot_configure_supplier_category",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "invoice_cannot_configure_supplier_category",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "category_foreign_company_rejected",
+      "passed": true,
+      "evidence": {
+        "exception": "ValidationError"
+      }
+    },
+    {
+      "name": "shared_supplier_company_property_isolated",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "unauthorized_allowed_company_context",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "internal_cannot_read_hr_service",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "pos_cannot_read_hr_service",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "invoice_cannot_read_hr_service",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_cannot_approve_without_combined_rights",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_manager_cannot_approve_without_combined_rights",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_cannot_read_other_company_service",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_cannot_forge_state_with_boolean_context",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_limited_bill_projection_available",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "hr_cannot_read_projected_bill_contents",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_cannot_follow_bill_action",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_cannot_modify_approved_amount",
+      "passed": true,
+      "evidence": {
+        "exception": "UserError"
+      }
+    },
+    {
+      "name": "hr_protected_employee_baseer_salary_total",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_protected_employee_baseer_basic_salary",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_protected_employee_baseer_loan_balance",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_protected_employee_baseer_financial_slip_ids",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "vendor_contribution_report_action_resolves",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_cannot_read_unrelated_department_parent",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "officer_cannot_read_restricted_child_hr.payslip.line",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "officer_restricted_child_search_hidden_hr.payslip.line",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_cannot_read_restricted_child_hr.payslip.input",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "officer_restricted_child_search_hidden_hr.payslip.input",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_cannot_read_restricted_child_hr.payslip.worked_days",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "officer_restricted_child_search_hidden_hr.payslip.worked_days",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "manager_can_read_restricted_department_parent",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "manager_can_read_same_company_child_hr.payslip.line",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "manager_can_read_same_company_child_hr.payslip.input",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "manager_can_read_same_company_child_hr.payslip.worked_days",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_parent_scope_own_employee",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_own_employee_hr.payslip.line",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_own_employee_hr.payslip.input",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_own_employee_hr.payslip.worked_days",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_parent_scope_no_department",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_no_department_hr.payslip.line",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_no_department_hr.payslip.input",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_no_department_hr.payslip.worked_days",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_parent_scope_managed_department",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_managed_department_hr.payslip.line",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_managed_department_hr.payslip.input",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_child_scope_managed_department_hr.payslip.worked_days",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "correct_contribution_handler_registered",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "incorrect_contribution_handler_not_registered",
+      "passed": true,
+      "evidence": null
+    },
+    {
+      "name": "officer_cannot_write_salary_child",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "hr_without_payroll_cannot_read_salary_child",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "officer_cannot_read_version_wage",
+      "passed": true,
+      "evidence": {
+        "exception": "AccessError"
+      }
+    },
+    {
+      "name": "all_audit_database_writes_rolled_back",
+      "passed": true,
+      "evidence": null
+    }
+  ],
+  "observations": [
+    {
+      "name": "vendor_contribution_handler_registry",
+      "expected_model_registered": true,
+      "typo_model_registered": false
+    }
+  ],
+  "check_count": 57,
+  "failed_checks": []
+}

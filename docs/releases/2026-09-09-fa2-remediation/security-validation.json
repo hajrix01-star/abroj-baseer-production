@@ -1,0 +1,52 @@
+{
+  "owned_files": {
+    "custom_addons/baseer_payroll/security/security.xml": {
+      "fa1_sha256": "dbab980a7590975c5f5cf245649c40199e84ce457915b5c8f64dd847efe0195e",
+      "fa2_sha256": "fe19adf6c2be9c78162dc4e2cbc66560da3330bfeed874b6cfb31571f6598c33"
+    },
+    "custom_addons/baseer_service_seed/models/purchase_batch.py": {
+      "fa1_sha256": "38fb2a979fb2d5a0f59d0b18b3e2035ff4b28dc2dc6f134cef70a4d452b79d23",
+      "fa2_sha256": "7b43b7ab558d0aef18835b879131ec6ba9e3c2e76f31c0c692859d920b3f7408"
+    },
+    "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py": {
+      "fa1_sha256": "b80fc17ca0d698d2d7859f8610e648601f700f0d8b416bdba5aa8cc3ea413f45",
+      "fa2_sha256": "4c171ef4cb8d0861c4383d926205caddc549d124d38881979a53e07f88a4c3ab"
+    },
+    "third_party_addons/odoomates_19/om_hr_payroll/report/report_contribution_register.py": {
+      "fa1_sha256": "1b8515587d46d315dfae45a4922aa46c54837215d94aa95daf8a526fd4fb0e66",
+      "fa2_sha256": "414239251f12bda837445249ae4ba51274fc7b0e7801cd78173bad2f7260eee6"
+    }
+  },
+  "results": {
+    "security-result.json": {
+      "status": "completed",
+      "checks": 57,
+      "passed": 57,
+      "failed": []
+    },
+    "security-boundaries-result.json": {
+      "status": "completed",
+      "checks": 26,
+      "passed": 26,
+      "failed": []
+    },
+    "security-report-render-result.json": {
+      "status": "completed",
+      "checks": 9,
+      "passed": 9,
+      "failed": []
+    }
+  },
+  "pdfs": {
+    "security-contribution-en_US.pdf": {
+      "pages": 1,
+      "sha256": "3a6e33f140945e52c179bb2af541fcadbe5663dab741e7fb5bfd50d5c8dbc80e",
+      "amount_239_70_in_text": true
+    },
+    "security-contribution-ar_001.pdf": {
+      "pages": 1,
+      "sha256": "e20979b89a3a9a98b98738869a8060ac4b662a6e53c712cd7b9d41943518d900",
+      "amount_239_70_in_text": true
+    }
+  }
+}

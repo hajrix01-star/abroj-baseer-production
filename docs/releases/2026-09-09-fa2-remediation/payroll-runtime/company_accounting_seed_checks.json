@@ -1,0 +1,566 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "six_existing_independent_companies",
+      "passed": true
+    },
+    {
+      "name": "existing_6_seven_references",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_6_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_6_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_6_expense_types",
+      "passed": true
+    },
+    {
+      "name": "existing_6_journal_types",
+      "passed": true
+    },
+    {
+      "name": "existing_9_seven_references",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_9_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_9_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_9_expense_types",
+      "passed": true
+    },
+    {
+      "name": "existing_9_journal_types",
+      "passed": true
+    },
+    {
+      "name": "existing_7_seven_references",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_7_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_7_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_7_expense_types",
+      "passed": true
+    },
+    {
+      "name": "existing_7_journal_types",
+      "passed": true
+    },
+    {
+      "name": "existing_8_seven_references",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_8_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_8_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_8_expense_types",
+      "passed": true
+    },
+    {
+      "name": "existing_8_journal_types",
+      "passed": true
+    },
+    {
+      "name": "existing_10_seven_references",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_10_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_10_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_10_expense_types",
+      "passed": true
+    },
+    {
+      "name": "existing_10_journal_types",
+      "passed": true
+    },
+    {
+      "name": "existing_1_seven_references",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "existing_1_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_1_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "existing_1_expense_types",
+      "passed": true
+    },
+    {
+      "name": "existing_1_journal_types",
+      "passed": true
+    },
+    {
+      "name": "existing_repeat_preserves_configuration",
+      "passed": true
+    },
+    {
+      "name": "existing_seed_creates_no_financial_documents",
+      "passed": true
+    },
+    {
+      "name": "new_sa_seven_references",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "new_sa_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "new_sa_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "new_sa_expense_types",
+      "passed": true
+    },
+    {
+      "name": "new_sa_journal_types",
+      "passed": true
+    },
+    {
+      "name": "sa_chart_and_currency_native",
+      "passed": true
+    },
+    {
+      "name": "all_starter_journal_types",
+      "passed": true
+    },
+    {
+      "name": "new_sa_chart_has_accounts_and_tax",
+      "passed": true
+    },
+    {
+      "name": "new_bank_native_direct_payment_ready",
+      "passed": true
+    },
+    {
+      "name": "new_cash_native_direct_payment_ready",
+      "passed": true
+    },
+    {
+      "name": "automatic_seed_has_no_financial_documents",
+      "passed": true
+    },
+    {
+      "name": "new_sa_repeat_no_duplicate_accounts_journals",
+      "passed": true
+    },
+    {
+      "name": "loan_seeded_ledger_disburses_100",
+      "passed": true
+    },
+    {
+      "name": "salary_autoload_one_employee_1000",
+      "passed": true
+    },
+    {
+      "name": "salary_seeded_defaults_paid_1000",
+      "passed": true
+    },
+    {
+      "name": "eos_uses_seeded_expense_and_purchase_journal",
+      "passed": true
+    },
+    {
+      "name": "eos_native_seeded_payment_paid",
+      "passed": true
+    },
+    {
+      "name": "business_flow_never_changed_seeded_settings",
+      "passed": true
+    },
+    {
+      "name": "renamed_archived_configured_references_preserved",
+      "passed": true
+    },
+    {
+      "name": "account_code_collision_does_not_hijack",
+      "passed": true
+    },
+    {
+      "name": "explicit_configured_account_authoritative",
+      "passed": true
+    },
+    {
+      "name": "journal_code_collision_does_not_hijack",
+      "passed": true
+    },
+    {
+      "name": "remembered_journal_fixture_changed_type",
+      "passed": true
+    },
+    {
+      "name": "modified_remembered_payroll_type_requires_review",
+      "passed": true
+    },
+    {
+      "name": "archived_remembered_payroll_not_mapped",
+      "passed": true
+    },
+    {
+      "name": "unused_method_fixture_has_no_moves",
+      "passed": true
+    },
+    {
+      "name": "unused_explicit_payment_account_preserved",
+      "passed": true
+    },
+    {
+      "name": "used_method_fixture_has_posted_moves",
+      "passed": true
+    },
+    {
+      "name": "used_journal_empty_method_not_reconfigured",
+      "passed": true
+    },
+    {
+      "name": "empty_sa_usd_not_converted_or_loaded",
+      "passed": true
+    },
+    {
+      "name": "unknown_country_uninitialized_unchanged",
+      "passed": true
+    },
+    {
+      "name": "uninitialized_foreign_localization_deferred",
+      "passed": true
+    },
+    {
+      "name": "manual_no_chart_setup_not_overwritten",
+      "passed": true
+    },
+    {
+      "name": "inactive_shared_manual_account_blocks_chart_load",
+      "passed": true
+    },
+    {
+      "name": "taxes_only_manual_setup_blocks_chart_load",
+      "passed": true
+    },
+    {
+      "name": "branch_seed_skipped_native_setup_preserved",
+      "passed": true
+    },
+    {
+      "name": "branch_account_code_collision_preserved",
+      "passed": true
+    },
+    {
+      "name": "private_seed_context_pollution_cannot_replace_configuration",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_seven_references",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_salary_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_salary_payable_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_deduction_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_loan_account_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_payroll_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_eos_expense_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_baseer_eos_journal_id_owned",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_salary_payable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_advance_receivable_reconcilable",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_expense_types",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_journal_types",
+      "passed": true
+    },
+    {
+      "name": "polluted_creation_seed_has_explicit_owned_names",
+      "passed": true
+    },
+    {
+      "name": "private_rpc__baseer_prepare_accounting",
+      "passed": true
+    },
+    {
+      "name": "private_rpc__baseer_initialize_accounting",
+      "passed": true
+    },
+    {
+      "name": "private_rpc__baseer_default_account",
+      "passed": true
+    },
+    {
+      "name": "unauthorized_native_company_create",
+      "passed": true
+    }
+  ],
+  "timings_seconds": {
+    "repeat_six_existing": 0.649433,
+    "new_sa_create_and_precommit": 3.572212
+  },
+  "native_onboarding_note": "Native Saudi company onboarding can select SAR before the companion callback; existing uninitialized currency conflicts must be preserved.",
+  "fixture_ids": {
+    "company": 51,
+    "run": 219,
+    "loan": 40,
+    "award": 70,
+    "bill": 1632
+  },
+  "rolled_back": true
+}

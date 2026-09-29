@@ -1,0 +1,217 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - menuitem "العمليات المالية"
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+      - button "":
+        - generic: 
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- generic: العمليات المالية
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - search:
+    - button "بحث...":
+      - img: 
+    - listitem "بحث":
+      - button "الرقم أو المرجع ":
+        - text: الرقم أو المرجع
+        - generic: 
+      - generic "INV/2026/00001"
+      - button "إزالة": 
+    - searchbox "بحث..."
+  - button ""
+- search:
+  - navigation "جهاز المناداة":
+    - generic: 1-3
+    - text: / 3
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- navigation:
+  - button "القائمة View":
+    - generic: 
+  - button "كانبان View":
+    - generic: 
+- main:
+  - region "الملخص المالي":
+    - generic: الأرصدة الحالية · 2026-09-10
+    - button "تحديث الملخص المالي":
+      - generic: 
+    - generic: SAR
+    - heading "العملاء" [level=3]
+    - generic: 2 مستندات
+    - 'button "العملاء — صافي الفواتير: 90.05SAR"':
+      - generic: صافي الفواتير
+      - generic: "90.05"
+    - 'button "العملاء — المبلغ المسوّى: 15.00SAR"':
+      - generic: المبلغ المسوّى
+      - generic: "15.00"
+    - 'button "العملاء — المتبقي: 75.05SAR"':
+      - generic: المتبقي
+      - generic: "75.05"
+    - 'button "العملاء — مدفوع جزئيًا: 1"':
+      - generic: مدفوع جزئيًا
+      - generic: "1"
+    - 'button "العملاء — صافي المتأخر: 0.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "0.00"
+    - heading "الموردون" [level=3]
+    - generic: 0 مستندات
+    - 'button "الموردون — صافي الفواتير: 0.00SAR"':
+      - generic: صافي الفواتير
+      - generic: "0.00"
+    - 'button "الموردون — المبلغ المسوّى: 0.00SAR"':
+      - generic: المبلغ المسوّى
+      - generic: "0.00"
+    - 'button "الموردون — المتبقي: 0.00SAR"':
+      - generic: المتبقي
+      - generic: "0.00"
+    - 'button "الموردون — مدفوع جزئيًا: 0"':
+      - generic: مدفوع جزئيًا
+      - generic: "0"
+    - 'button "الموردون — صافي المتأخر: 0.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "0.00"
+  - table:
+    - rowgroup:
+      - row "التاريخ  رقم المستند  العملية الشريك  دفتر اليومية  الشركة  المبلغ  المسوّى المتبقي  حالة الدفع  ":
+        - columnheader:
+          - checkbox
+        - columnheader "التاريخ ":
+          - generic: التاريخ
+          - generic: 
+        - columnheader "رقم المستند ":
+          - generic: رقم المستند
+          - generic: 
+        - columnheader "العملية":
+          - generic: العملية
+          - text: 
+        - columnheader "الشريك ":
+          - generic: الشريك
+          - generic: 
+        - columnheader "دفتر اليومية ":
+          - generic: دفتر اليومية
+          - generic: 
+        - columnheader "الشركة ":
+          - generic: الشركة
+          - generic: 
+        - columnheader "المبلغ ":
+          - generic: المبلغ
+          - generic: 
+        - columnheader "المسوّى":
+          - generic: المسوّى
+          - text: 
+        - columnheader "المتبقي ":
+          - generic: المتبقي
+          - generic: 
+        - columnheader "حالة الدفع ":
+          - generic: حالة الدفع
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "10/09/2026 PBNK1/2026/00001 دفعة واردة FL1 synthetic partner البنك المعلم الشامي 25.05 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00001"
+        - cell "دفعة واردة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "25.05 SR":
+          - generic: 25.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 RINV/2026/00001 إشعار دائن للعميل FL1 synthetic partner المبيعات المعلم الشامي 10.05 SR 10.05 SR 0.00 SR مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "RINV/2026/00001"
+        - cell "إشعار دائن للعميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "مدفوع":
+          - generic: مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00001 فاتورة عميل FL1 synthetic partner المبيعات المعلم الشامي 100.10 SR 25.05 SR 75.05 SR مسدد جزئياً ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00001"
+        - cell "فاتورة عميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "100.10 SR":
+          - generic: 100.10 SR
+        - cell "25.05 SR":
+          - generic: 25.05 SR
+        - cell "75.05 SR":
+          - generic: 75.05 SR
+        - cell "مسدد جزئياً":
+          - generic: مسدد جزئياً
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

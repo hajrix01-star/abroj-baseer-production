@@ -1,0 +1,11 @@
+{
+  "release": "baseer-reports-r1",
+  "archive": "D:\\Codex\\Baseer-odoo\\.local-backups\\releases\\2026-09-07-reports-r1\\baseer-reports-r1.zip",
+  "sha256": "93962ea39c2d37ac67680b75c6f6585f5d3a0b120a96be74372bc27d1b42a0f9",
+  "bytes": 2063107,
+  "source_file_count": 229,
+  "archive_entries": 257,
+  "source_and_archive_verified": true,
+  "qa_cash_manifest_matches": true,
+  "main_deployed": false
+}

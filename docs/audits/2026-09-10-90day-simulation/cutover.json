@@ -1,0 +1,10 @@
+{
+  "active_database": "baseer_ic1_20260910",
+  "retained_database": "baseer_ic1_before_sim90_20260910",
+  "port": 18075,
+  "main_tables_unchanged": true,
+  "main_tables_checked": 206,
+  "source_code_changed": false,
+  "github_changed": false,
+  "comparison_note": "All 206 per-table rows and hashes identical. Initial false was unordered SQL json array; normalized by table name."
+}

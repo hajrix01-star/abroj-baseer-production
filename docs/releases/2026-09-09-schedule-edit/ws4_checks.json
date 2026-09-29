@@ -1,0 +1,281 @@
+{
+  "checks": [
+    {
+      "name": "private fixture is a native employee copy",
+      "passed": true
+    },
+    {
+      "name": "native historical leave approved with resource intervals",
+      "passed": true
+    },
+    {
+      "name": "edit action populates locked source and revision",
+      "passed": true
+    },
+    {
+      "name": "edit preserves visible source name",
+      "passed": true
+    },
+    {
+      "name": "edit preloads five weekdays",
+      "passed": true
+    },
+    {
+      "name": "affected scope contains exact active direct assignments",
+      "passed": true
+    },
+    {
+      "name": "same-name replacement is a distinct native template",
+      "passed": true
+    },
+    {
+      "name": "source retained active but hidden from templates",
+      "passed": true
+    },
+    {
+      "name": "replacement effective date recorded",
+      "passed": true
+    },
+    {
+      "name": "all direct employees receive native effective versions",
+      "passed": true
+    },
+    {
+      "name": "future revision does not change present assignments",
+      "passed": true
+    },
+    {
+      "name": "historical native employee versions unchanged",
+      "passed": true
+    },
+    {
+      "name": "source attendance rows byte-identical",
+      "passed": true
+    },
+    {
+      "name": "historical actual attendance byte-identical",
+      "passed": true
+    },
+    {
+      "name": "historical approved leave byte-identical",
+      "passed": true
+    },
+    {
+      "name": "historical resource leave byte-identical",
+      "passed": true
+    },
+    {
+      "name": "archived employee remains on source with one version",
+      "passed": true
+    },
+    {
+      "name": "same-name independent template remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "actual private employee copy remains independent",
+      "passed": true
+    },
+    {
+      "name": "only global holidays copied with original dates",
+      "passed": true
+    },
+    {
+      "name": "native historical payroll still consumes 40-hour week",
+      "passed": true
+    },
+    {
+      "name": "same wizard apply is idempotent",
+      "passed": true
+    },
+    {
+      "name": "second open template edit rejected",
+      "passed": true
+    },
+    {
+      "name": "superseded source cannot be edited again",
+      "passed": true
+    },
+    {
+      "name": "future replacement cannot be applied prematurely",
+      "passed": true
+    },
+    {
+      "name": "superseded source cannot gain assignments on effective date",
+      "passed": true
+    },
+    {
+      "name": "replacement cannot be edited before its effective date",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot write revision field baseer_superseded_by_id",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot create revision field baseer_superseded_by_id",
+      "passed": true
+    },
+    {
+      "name": "RPC context cannot default revision field baseer_superseded_by_id",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot write revision field baseer_effective_date",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot create revision field baseer_effective_date",
+      "passed": true
+    },
+    {
+      "name": "RPC context cannot default revision field baseer_effective_date",
+      "passed": true
+    },
+    {
+      "name": "source attendance mutation rejected",
+      "passed": true
+    },
+    {
+      "name": "referenced historical source cannot be deleted",
+      "passed": true
+    },
+    {
+      "name": "edit cannot tamper with source",
+      "passed": true
+    },
+    {
+      "name": "edit cannot tamper with employee",
+      "passed": true
+    },
+    {
+      "name": "edit cannot tamper with name",
+      "passed": true
+    },
+    {
+      "name": "forged stale revision rejected",
+      "passed": true
+    },
+    {
+      "name": "direct create cannot rename edited source",
+      "passed": true
+    },
+    {
+      "name": "past template effective date rejected",
+      "passed": true
+    },
+    {
+      "name": "existing future employee choice rejects full fanout",
+      "passed": true
+    },
+    {
+      "name": "future conflict creates no calendar or version",
+      "passed": true
+    },
+    {
+      "name": "one employee attendance conflict rejects entire edit",
+      "passed": true
+    },
+    {
+      "name": "attendance rejection leaves no partial fanout",
+      "passed": true
+    },
+    {
+      "name": "one employee leave conflict rejects entire edit",
+      "passed": true
+    },
+    {
+      "name": "leave rejection leaves no partial fanout",
+      "passed": true
+    },
+    {
+      "name": "inclusive salary split change midmonth rejected",
+      "passed": true
+    },
+    {
+      "name": "salary guard rolls back whole edit",
+      "passed": true
+    },
+    {
+      "name": "inclusive salary split change accepted first of month",
+      "passed": true
+    },
+    {
+      "name": "fixed payroll tomorrow edit preserves prior day",
+      "passed": true
+    },
+    {
+      "name": "HR manager fixture has no payroll manager role",
+      "passed": true
+    },
+    {
+      "name": "HR manager can fan out without payroll manager role",
+      "passed": true
+    },
+    {
+      "name": "ordinary user cannot open template edit",
+      "passed": true
+    },
+    {
+      "name": "ordinary user cannot forge direct edit wizard",
+      "passed": true
+    },
+    {
+      "name": "foreign company edit rejected server-side",
+      "passed": true
+    },
+    {
+      "name": "load preview lists all 50 employees",
+      "passed": true
+    },
+    {
+      "name": "50 employee atomic edit below ten seconds on QA",
+      "passed": true
+    },
+    {
+      "name": "all 50 receive exactly one dated revision",
+      "passed": true
+    },
+    {
+      "name": "201 inactive candidates exceed total membership cap",
+      "passed": true
+    },
+    {
+      "name": "candidate cap rejection has no partial fanout",
+      "passed": true
+    }
+  ],
+  "database": "baseer_reports_qa_20260907",
+  "rejection_messages": {
+    "second open template edit rejected": "This template was replaced or archived. Open the latest work schedule.",
+    "superseded source cannot be edited again": "This template was replaced or archived. Open the latest work schedule.",
+    "future replacement cannot be applied prematurely": "This work schedule is not yet effective. Choose its effective date or a later date.",
+    "superseded source cannot gain assignments on effective date": "This work schedule has been replaced. Choose the latest work schedule.",
+    "replacement cannot be edited before its effective date": "This work schedule is not yet effective. Choose its effective date or a later date.",
+    "RPC cannot write revision field baseer_superseded_by_id": "Schedule revision details are managed by Edit work schedule.",
+    "RPC cannot create revision field baseer_superseded_by_id": "Schedule revision details are managed by Edit work schedule.",
+    "RPC context cannot default revision field baseer_superseded_by_id": "Schedule revision details are managed by Edit work schedule.",
+    "RPC cannot write revision field baseer_effective_date": "Schedule revision details are managed by Edit work schedule.",
+    "RPC cannot create revision field baseer_effective_date": "Schedule revision details are managed by Edit work schedule.",
+    "RPC context cannot default revision field baseer_effective_date": "Schedule revision details are managed by Edit work schedule.",
+    "source attendance mutation rejected": "Use the simplified form to change working times.",
+    "referenced historical source cannot be deleted": "This schedule belongs to an employee history. Archive it instead of deleting it.",
+    "edit cannot tamper with source": "Keep the template and employee scope unchanged. Reopen Edit work schedule.",
+    "edit cannot tamper with employee": "Keep the template and employee scope unchanged. Reopen Edit work schedule.",
+    "edit cannot tamper with name": "Keep the template and employee scope unchanged. Reopen Edit work schedule.",
+    "forged stale revision rejected": "The template or linked employees changed while this form was open. Reopen Edit work schedule.",
+    "direct create cannot rename edited source": "Keep the template name and company unchanged when editing its working times.",
+    "past template effective date rejected": "Choose today or a future date to preserve past attendance and payroll.",
+    "existing future employee choice rejects full fanout": "WS4 future conflict 52cb0fcf: A future employee version already exists. Review that planned change before editing this template.",
+    "one employee attendance conflict rejects entire edit": "WS4 attendance conflicting employee 52cb0fcf: Attendance exists in the affected period. Choose a later effective date.",
+    "one employee leave conflict rejects entire edit": "WS4 leave conflicting employee 52cb0fcf: Time off exists in the affected period. Review it before changing the schedule.",
+    "inclusive salary split change midmonth rejected": "WS4 inclusive 52cb0fcf: These hours change the salary breakdown. Apply them from the first day of a month.",
+    "ordinary user cannot open template edit": "Only a Human Resources manager can set work schedules.",
+    "ordinary user cannot forge direct edit wizard": "Only a Human Resources manager can set work schedules.",
+    "foreign company edit rejected server-side": "Choose a work schedule from the selected company.",
+    "201 inactive candidates exceed total membership cap": "This template has more than 200 linked employees. Split the schedule change into smaller templates."
+  },
+  "load_50_apply_seconds": 0.7181,
+  "status": "passed",
+  "rolled_back": true
+}

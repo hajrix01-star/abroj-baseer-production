@@ -1,0 +1,13 @@
+{
+  "url": "http://127.0.0.1:18069/odoo/action-794",
+  "company": "ARZ",
+  "language": "ar_001",
+  "checks": [
+    "Fresh form Morning, Evening and Full day all unchecked",
+    "No sales card or totals before selection",
+    "Selecting Morning displays only Morning card and totals",
+    "Both requested explanatory strings absent after selecting a shift"
+  ],
+  "business_records_saved": false,
+  "cleanup": "Discarded unsaved form and closed only test tab"
+}

@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "database": "baseer_ar1_lifecycle_20260910",
+  "checks": [
+    "source snapshot has no installed role addon",
+    "clean isolated installation succeeds",
+    "reviewed payroll capability version installed",
+    "installation preserves original business rows and columns",
+    "installation preserves original explicit group and company memberships",
+    "installation assigns no existing user role",
+    "module update retains selected role users and memberships",
+    "update has no duplicate role marker groups",
+    "isolated uninstall succeeds",
+    "uninstall removes owned groups rules and views metadata",
+    "uninstall preserves fixture user identities",
+    "no pending module operation after uninstall"
+  ],
+  "source_files": {
+    "__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "__manifest__.py": "9d44366b0f6ebad486ab6d92b7f78e1be06dfdf490de2601e5f48001663a4ed2",
+    "data/setup.xml": "8570be73d3cc481f181d15a13e2915398932048fdc985bd81d3a9693b1cb2942",
+    "i18n/ar.po": "390fb3d6e9a7c032d0f62f2a692b715ba1b5a75d0012d42f26e198175e8326bf",
+    "models/__init__.py": "ab83fe6fc5fcf4c840f814756cfee9d36cc435110cd855175ae90eab4426e4e1",
+    "models/advance_entry.py": "9fe8cc37b76c0f1c47e5db4bc5be87f9ad7fb3212b51400e7c4aeec2d58f7b65",
+    "models/ir_ui_menu.py": "06be4b40d461562f143c27a9980f19c39586504bcfee81d9b931a52f742b760c",
+    "models/partner_privacy.py": "158c39635b6c7e545ceb6334035fa22547c56f40f79a16cf25f16a51621fb724",
+    "models/payroll_privacy.py": "a8942d809ef7eda2b4e9821b6cab9f964c89e35dd1822113cd5a0f644aaa1c37",
+    "models/purchase_batch.py": "ff39b50ad351c2a0dbf8d829db1c8e86889fee2908b30224097d6fc9258e32f4",
+    "models/res_users.py": "448b6f547d57af51f71d0239d76a85faa12ffe8ddeb9c91d2fcc158e72377053",
+    "models/role_seed.py": "47d0b44032bdf9d7b80828372e47834021343d53d304f2ebda9da6e8a87f9c7e",
+    "README.md": "81d32b09dce64d9ac3f4bf092e9902c92a46270e6c1cf0df35990b4774ab65e9",
+    "security/advance_entry.xml": "2754369be8b859fd8d61d7d623da9724bef607bf1c87a4be751bdeed2dca00df",
+    "security/cashier.xml": "96e19616288508248fe8f0e3e74f772faba365e7818d92b2369fa28636fddc11",
+    "security/denied_rules.xml": "f05e0f655daf1d1916fa9282316bae0041da81551e5dd8bbac1e281f3afa043f",
+    "security/groups.xml": "72318e56ebbba283d0a1ac164469c326d543665efd08e48e9051fc54163ffdf3",
+    "security/ir.model.access.csv": "ebf3af3a36dd379bb2160c78428d3c47474241a50bfa67d355c7acfbb2a4e475",
+    "views/advance_entry_views.xml": "77ff6449cd0a7c82e26a567836a3c351607643cef924694f67f09c6eb67020a3",
+    "views/purchase_batch_views.xml": "c49d63616a8b693b8c8e8830158a143d8e08bc9ddeafad2107f393175425dcfb",
+    "views/res_users_views.xml": "542ee8c61c234e9d803d750a0975b7f67a511af054e2431a86fe80e1c235b3f4"
+  },
+  "payroll_patch_files": {
+    "custom_addons/baseer_payroll/__manifest__.py": "59c6b2817bcb2bf7ff077b600678fdd8d51f52f77471bafae15965e629b38a08",
+    "custom_addons/baseer_payroll/models/common.py": "47c924a92fccf126e6261cbc47966595bd8f030b76f0fa9d8f359ac12b401e81"
+  },
+  "uninstall_role_user_groups": "[{\"login\":\"ar1-lifecycle-accountant\",\"gid\":null}, \n {\"login\":\"ar1-lifecycle-cashier\",\"gid\":null}, \n {\"login\":\"ar1-lifecycle-owner\",\"gid\":5}]",
+  "uninstall_note": "Preset-assigned users may lose app grants when owned marker groups are removed; clear roles and explicitly grant manual access before uninstalling on a real system."
+}

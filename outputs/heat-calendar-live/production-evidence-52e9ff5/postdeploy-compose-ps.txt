@@ -1,0 +1,2 @@
+NAME                      IMAGE                                                                          COMMAND                  SERVICE   CREATED         STATUS         PORTS
+baseer-odoo-prod-odoo-1   odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd   "/entrypoint.sh odoo…"   odoo      3 minutes ago   Up 3 minutes   8071/tcp, 127.0.0.1:18069->8069/tcp, 127.0.0.1:18072->8072/tcp

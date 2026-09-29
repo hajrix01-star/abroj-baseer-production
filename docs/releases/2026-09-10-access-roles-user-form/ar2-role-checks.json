@@ -1,0 +1,369 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "accountant/1-companies/minimal/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/minimal/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/form_defaults/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/form_defaults/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/native_user_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/native_user_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/native_admin_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant"
+      ]
+    },
+    {
+      "check": "accountant/1-companies/native_admin_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/minimal/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/minimal/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/form_defaults/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/form_defaults/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/native_user_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/native_user_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/native_admin_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "accountant/3-companies/native_admin_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_accountant",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/minimal/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/minimal/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/form_defaults/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/form_defaults/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/native_user_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/native_user_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/native_admin_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier"
+      ]
+    },
+    {
+      "check": "cashier/1-companies/native_admin_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/minimal/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/minimal/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/form_defaults/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/form_defaults/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/native_user_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/native_user_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/native_admin_role/email",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company"
+      ]
+    },
+    {
+      "check": "cashier/3-companies/native_admin_role/inbox",
+      "passed": true,
+      "explicit_groups": [
+        "baseer_access_roles.group_cashier",
+        "base.group_multi_company",
+        "mail.group_mail_notification_type_inbox"
+      ]
+    },
+    {
+      "check": "accountant/admin-notification-toggle",
+      "passed": true
+    },
+    {
+      "check": "accountant/self-notification-toggle",
+      "passed": true
+    },
+    {
+      "check": "accountant/self-direct-inbox-group-denied",
+      "passed": true
+    },
+    {
+      "check": "accountant/self-inbox-plus-admin-escalation-denied",
+      "passed": true
+    },
+    {
+      "check": "accountant/self-role-escalation-denied",
+      "passed": true
+    },
+    {
+      "check": "accountant/self-company-escalation-denied",
+      "passed": true
+    },
+    {
+      "check": "accountant/other-user-preference-denied",
+      "passed": true
+    },
+    {
+      "check": "accountant/role-reapply-preserves-notification-not-admin",
+      "passed": true
+    },
+    {
+      "check": "accountant/manual-clear-preserves-preference-removes-role",
+      "passed": true
+    },
+    {
+      "check": "accountant/onchange-preview/email",
+      "passed": true
+    },
+    {
+      "check": "accountant/onchange-preview/inbox",
+      "passed": true
+    },
+    {
+      "check": "cashier/admin-notification-toggle",
+      "passed": true
+    },
+    {
+      "check": "cashier/self-notification-toggle",
+      "passed": true
+    },
+    {
+      "check": "cashier/self-direct-inbox-group-denied",
+      "passed": true
+    },
+    {
+      "check": "cashier/self-inbox-plus-admin-escalation-denied",
+      "passed": true
+    },
+    {
+      "check": "cashier/self-role-escalation-denied",
+      "passed": true
+    },
+    {
+      "check": "cashier/self-company-escalation-denied",
+      "passed": true
+    },
+    {
+      "check": "cashier/other-user-preference-denied",
+      "passed": true
+    },
+    {
+      "check": "cashier/role-reapply-preserves-notification-not-admin",
+      "passed": true
+    },
+    {
+      "check": "cashier/manual-clear-preserves-preference-removes-role",
+      "passed": true
+    },
+    {
+      "check": "cashier/onchange-preview/email",
+      "passed": true
+    },
+    {
+      "check": "cashier/onchange-preview/inbox",
+      "passed": true
+    },
+    {
+      "check": "bulk-role-change-preserves-each-preference",
+      "passed": true
+    }
+  ],
+  "violations": [],
+  "rollback": true,
+  "default_keys": [
+    "active",
+    "company_id",
+    "company_ids",
+    "group_ids",
+    "lang",
+    "notification_type",
+    "outgoing_mail_server_type",
+    "tz"
+  ],
+  "default_group_xmlids": [
+    "base.group_user"
+  ],
+  "passed": 55
+}

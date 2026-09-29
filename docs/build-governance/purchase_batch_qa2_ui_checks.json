@@ -1,0 +1,21 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "candidate": "19.0.1.1.0 QA2",
+  "checks": [
+    "Native table order is supplier, invoice date, reference, type, category, gross, VAT15 switch, payment",
+    "Computed sheet container max-width changed1400 to1560px; inner sheet has no max-width; outer viewport850 and inner sheet816 observed, no wider physical viewport claim",
+    "Measured native columns at850: supplier199, date123, reference129, type95, category151, gross147, VAT85, payment155; intermediate native table retains horizontal scroll",
+    "After autosave=False widget fix, table switchOff immediately updates parent preview from350/52.50 to365/37.50 beforeSave, gross402.50 unchanged",
+    "Native manualSave persisted first row taxNULL/gross115/net115/tax0; SQL verified",
+    "Native mobile card opens row form; switchingOn immediately displays net100 andtax15 beforeSave",
+    "Mobile rowSave then parentmanualSave persists tax100/gross115/net100/tax15; reopened original three-row draft402.50,350,52.50",
+    "Mobile native cards observed601px, body width601 withno horizontaloverflow; cardcontents supplier,gross,labeleddate/reference,category,type,payment,VATstatus",
+    "Final computed mobile card styles:1px full border,16px padding,12px gap, rgb248/249/250 background; use actual Odoo --border-color/--body-bg/--border-radius tokens",
+    "Approvedexample55 remainsapproved; backend28VAT checks include immutableapprovedflag andhistoric5%preservation; mainmodule remainsuninstalled"
+  ],
+  "limitations": [
+    "LiveQA2 browser viewports available were850 and601, not a physicalphone390 or widescreen1560",
+    "VAT preview initial issue fixed using nativeboolean_toggle autosave=False; no frontend financial calculation added",
+    "No PDF renderer changes or new tax policy; configuredprincipal purchase15% used exactly"
+  ]
+}

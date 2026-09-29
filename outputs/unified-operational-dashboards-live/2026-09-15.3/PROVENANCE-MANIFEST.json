@@ -1,0 +1,33 @@
+{
+  "release": "unified-operational-dashboards-live-candidate-2026-09-15.3",
+  "status": "candidate-published-awaiting-fresh-hostinger-rehearsal",
+  "production_baseline": "863bd851dc107ba8911b417263f21b83270701f0",
+  "candidate_commit": "9e76fc966cf3bd6d1c299c851b3e5a84f2a807d3",
+  "candidate_tag": "unified-operational-dashboards-live-candidate-2026-09-15.3",
+  "github_repository": "https://github.com/hajrix01-star/abroj-baseer-production.git",
+  "github_branch": "codex/heat-calendar-targets-live-863",
+  "github_published": true,
+  "archive": {
+    "path": "baseer-unified-operational-dashboards-9e76fc9.tar.gz",
+    "sha256": "b47dcfd036cdfe1fc11e9623f64b2968bcf362d4055b9f61fae8a16e9e5e18d9"
+  },
+  "payload_content_sha256": "88eb653e5d02b1dceb84ad9d9d048a52ce07e84f69ad4a646109e49e9117f466",
+  "module_versions": {
+    "baseer_access_roles": "19.0.1.0.6",
+    "baseer_procurement_requests": "19.0.11.0.3",
+    "baseer_purchase_batch": "19.0.1.2.3",
+    "baseer_sales_heat_calendar": "19.0.1.0.8",
+    "baseer_sales_dashboard": "19.0.1.1.6",
+    "baseer_purchase_expense_dashboard": "19.0.1.0.1",
+    "baseer_basser_workspace": "19.0.1.0.3"
+  },
+  "verification": {
+    "focused_local_heat_calendar_suite": "16 Odoo tests, 0 failures, 0 errors on a fresh isolated database.",
+    "test_isolation": "Heat-calendar and cashier-role fixtures no longer use operating-year targets, the active default company, or a non-deterministic SAR company selection."
+  },
+  "required_before_live": [
+    "fresh isolated Hostinger rehearsal from the production DB and filestore",
+    "independent Alpha Delivery GO based on rehearsal evidence",
+    "fresh production recovery pair, protected snapshot comparison, and smoke checks"
+  ]
+}

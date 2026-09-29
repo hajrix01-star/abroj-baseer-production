@@ -1,0 +1,1103 @@
+{
+  "status": "PASS",
+  "candidate": "0e2a0853d858ffc8760d009a34cf17dda68dde45",
+  "candidate_sha256": "1824578524e00788c8e35f7f23af0567e8252f93ac2bc583017e6502ddc79bfd",
+  "database": "baseer_cash_repair_main_20260911",
+  "actor_user_id": 2,
+  "actor_role": false,
+  "su": false,
+  "read_only": true,
+  "rollback": true,
+  "checks": [
+    "baseer_cash_categories:live-source-and-version",
+    "baseer_pos_summary:live-source-and-version",
+    "baseer_financial_register:live-source-and-version",
+    "2:all:customer:total",
+    "2:all:customer:settled",
+    "2:all:customer:outstanding",
+    "2:all:customer:partial",
+    "2:all:supplier:total",
+    "2:all:supplier:settled",
+    "2:all:supplier:outstanding",
+    "2:all:supplier:partial",
+    "2:2026-09:cash-native-ledger",
+    "2:2026-09:inout:receipts",
+    "2:2026-09:inout:payments",
+    "2:2026-09:inout:net",
+    "3:all:customer:total",
+    "3:all:customer:settled",
+    "3:all:customer:outstanding",
+    "3:all:customer:partial",
+    "3:all:supplier:total",
+    "3:all:supplier:settled",
+    "3:all:supplier:outstanding",
+    "3:all:supplier:partial",
+    "3:2026-09:cash-native-ledger",
+    "3:2026-09:inout:receipts",
+    "3:2026-09:inout:payments",
+    "3:2026-09:inout:net",
+    "1:all:customer:total",
+    "1:all:customer:settled",
+    "1:all:customer:outstanding",
+    "1:all:customer:partial",
+    "1:all:supplier:total",
+    "1:all:supplier:settled",
+    "1:all:supplier:outstanding",
+    "1:all:supplier:partial",
+    "1:2026-09:cash-native-ledger",
+    "1:2026-09:inout:receipts",
+    "1:2026-09:inout:payments",
+    "1:2026-09:inout:net"
+  ],
+  "companies": [
+    {
+      "id": 2,
+      "currency": "SAR",
+      "sections": [
+        {
+          "key": "customer",
+          "label": "Sales",
+          "document_count_display": "0",
+          "cards": [
+            {
+              "key": "total",
+              "label": "Net sales",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ]
+              ],
+              "tooltip": "Posted invoices and native POS sales, net of credit notes and sales reversals."
+            },
+            {
+              "key": "settled",
+              "label": "Settled amount",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_has_settlement",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+            },
+            {
+              "key": "outstanding",
+              "label": "Outstanding",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_outstanding",
+                  "!=",
+                  0
+                ]
+              ],
+              "tooltip": "Current outstanding receivable or payable balance."
+            },
+            {
+              "key": "partial",
+              "label": "Partially settled operations",
+              "display": "0",
+              "is_count": true,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_payment_state",
+                  "=",
+                  "partial"
+                ]
+              ],
+              "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+            },
+            {
+              "key": "overdue",
+              "label": "Net overdue",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_is_overdue",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+            }
+          ]
+        },
+        {
+          "key": "supplier",
+          "label": "Suppliers",
+          "document_count_display": "0",
+          "cards": [
+            {
+              "key": "total",
+              "label": "Net invoices",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ]
+              ],
+              "tooltip": "Posted vendor bills and credit notes; journal entries and payments are excluded."
+            },
+            {
+              "key": "settled",
+              "label": "Settled amount",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_has_settlement",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+            },
+            {
+              "key": "outstanding",
+              "label": "Outstanding",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_outstanding",
+                  "!=",
+                  0
+                ]
+              ],
+              "tooltip": "Current outstanding receivable or payable balance."
+            },
+            {
+              "key": "partial",
+              "label": "Partially settled operations",
+              "display": "0",
+              "is_count": true,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_payment_state",
+                  "=",
+                  "partial"
+                ]
+              ],
+              "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+            },
+            {
+              "key": "overdue",
+              "label": "Net overdue",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_is_overdue",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "currency": "SAR",
+      "sections": [
+        {
+          "key": "customer",
+          "label": "Sales",
+          "document_count_display": "0",
+          "cards": [
+            {
+              "key": "total",
+              "label": "Net sales",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ]
+              ],
+              "tooltip": "Posted invoices and native POS sales, net of credit notes and sales reversals."
+            },
+            {
+              "key": "settled",
+              "label": "Settled amount",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_has_settlement",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+            },
+            {
+              "key": "outstanding",
+              "label": "Outstanding",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_outstanding",
+                  "!=",
+                  0
+                ]
+              ],
+              "tooltip": "Current outstanding receivable or payable balance."
+            },
+            {
+              "key": "partial",
+              "label": "Partially settled operations",
+              "display": "0",
+              "is_count": true,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_payment_state",
+                  "=",
+                  "partial"
+                ]
+              ],
+              "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+            },
+            {
+              "key": "overdue",
+              "label": "Net overdue",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_is_overdue",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+            }
+          ]
+        },
+        {
+          "key": "supplier",
+          "label": "Suppliers",
+          "document_count_display": "0",
+          "cards": [
+            {
+              "key": "total",
+              "label": "Net invoices",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ]
+              ],
+              "tooltip": "Posted vendor bills and credit notes; journal entries and payments are excluded."
+            },
+            {
+              "key": "settled",
+              "label": "Settled amount",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_has_settlement",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+            },
+            {
+              "key": "outstanding",
+              "label": "Outstanding",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_outstanding",
+                  "!=",
+                  0
+                ]
+              ],
+              "tooltip": "Current outstanding receivable or payable balance."
+            },
+            {
+              "key": "partial",
+              "label": "Partially settled operations",
+              "display": "0",
+              "is_count": true,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_payment_state",
+                  "=",
+                  "partial"
+                ]
+              ],
+              "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+            },
+            {
+              "key": "overdue",
+              "label": "Net overdue",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_is_overdue",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "currency": "SAR",
+      "sections": [
+        {
+          "key": "customer",
+          "label": "Sales",
+          "document_count_display": "0",
+          "cards": [
+            {
+              "key": "total",
+              "label": "Net sales",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ]
+              ],
+              "tooltip": "Posted invoices and native POS sales, net of credit notes and sales reversals."
+            },
+            {
+              "key": "settled",
+              "label": "Settled amount",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_has_settlement",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+            },
+            {
+              "key": "outstanding",
+              "label": "Outstanding",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_outstanding",
+                  "!=",
+                  0
+                ]
+              ],
+              "tooltip": "Current outstanding receivable or payable balance."
+            },
+            {
+              "key": "partial",
+              "label": "Partially settled operations",
+              "display": "0",
+              "is_count": true,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_payment_state",
+                  "=",
+                  "partial"
+                ]
+              ],
+              "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+            },
+            {
+              "key": "overdue",
+              "label": "Net overdue",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "customer"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_is_overdue",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+            }
+          ]
+        },
+        {
+          "key": "supplier",
+          "label": "Suppliers",
+          "document_count_display": "0",
+          "cards": [
+            {
+              "key": "total",
+              "label": "Net invoices",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ]
+              ],
+              "tooltip": "Posted vendor bills and credit notes; journal entries and payments are excluded."
+            },
+            {
+              "key": "settled",
+              "label": "Settled amount",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_has_settlement",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Current customer or supplier settlements, including credits and write-offs; not bank cash received."
+            },
+            {
+              "key": "outstanding",
+              "label": "Outstanding",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_outstanding",
+                  "!=",
+                  0
+                ]
+              ],
+              "tooltip": "Current outstanding receivable or payable balance."
+            },
+            {
+              "key": "partial",
+              "label": "Partially settled operations",
+              "display": "0",
+              "is_count": true,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_payment_state",
+                  "=",
+                  "partial"
+                ]
+              ],
+              "tooltip": "Partially settled invoices or POS accounting operations; a session may contain several orders."
+            },
+            {
+              "key": "overdue",
+              "label": "Net overdue",
+              "display": "0.00",
+              "is_count": false,
+              "domain": [
+                "&",
+                "&",
+                "&",
+                [
+                  "baseer_register_scope",
+                  "=",
+                  "supplier"
+                ],
+                [
+                  "baseer_register_contributor",
+                  "=",
+                  true
+                ],
+                [
+                  "company_currency_id",
+                  "=",
+                  151
+                ],
+                [
+                  "baseer_register_is_overdue",
+                  "=",
+                  true
+                ]
+              ],
+              "tooltip": "Open balances with a recorded due date before today; credits retain their sign."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "months": [
+    {
+      "company": 2,
+      "month": "2026-09",
+      "cash_totals": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "displayed_net_movement": "0.00",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "0.00",
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": "0.00",
+        "unverified_tax_gross": "0.00",
+        "sales_collections": "0.00"
+      },
+      "inout": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "net": "0.00"
+      }
+    },
+    {
+      "company": 3,
+      "month": "2026-09",
+      "cash_totals": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "displayed_net_movement": "0.00",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "0.00",
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": "0.00",
+        "unverified_tax_gross": "0.00",
+        "sales_collections": "0.00"
+      },
+      "inout": {
+        "receipts": "0.00",
+        "payments": "0.00",
+        "net": "0.00"
+      }
+    },
+    {
+      "company": 1,
+      "month": "2026-09",
+      "cash_totals": {
+        "receipts": "0.00",
+        "payments": "-1.00",
+        "displayed_net_movement": "-1.00",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "-1.00",
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": "0.00",
+        "unverified_tax_gross": "1.00",
+        "sales_collections": "0.00"
+      },
+      "inout": {
+        "receipts": "0.00",
+        "payments": "-1.00",
+        "net": "-1.00"
+      }
+    }
+  ]
+}

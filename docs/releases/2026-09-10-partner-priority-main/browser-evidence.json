@@ -1,0 +1,12 @@
+{
+  "main_url": "http://127.0.0.1:18069/odoo/vendors",
+  "supplier_list_stars": 21,
+  "company_id": 2,
+  "language": "ar",
+  "vendor_bill_picker_opened": true,
+  "suggestions": 8,
+  "search_more_visible": true,
+  "unsaved_form_discarded": true,
+  "main_favorites_changed": false,
+  "qa_toggle_and_isolation_evidence": "../2026-09-09-partner-priority/browser-evidence.md"
+}

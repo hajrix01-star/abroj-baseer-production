@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-09-07T16:15:32.5416308+03:00",
+  "odoo_version": "Odoo Server 19.0-20260817",
+  "services": [
+    {
+      "container": "baseer_odoo_dev-odoo-1",
+      "image_id": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+      "repo_digests": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd"
+    },
+    {
+      "container": "baseer_odoo_dev-reports_qa-1",
+      "image_id": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+      "repo_digests": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd"
+    },
+    {
+      "container": "baseer_odoo_dev-db-1",
+      "image_id": "sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+      "repo_digests": "postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94"
+    }
+  ]
+}

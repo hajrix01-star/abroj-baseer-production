@@ -1,0 +1,193 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الإعدادات"
+    - menu:
+      - menuitem "الإعدادات العامة"
+      - button "المستخدمون والشركات":
+        - generic: المستخدمون والشركات
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "الإعدادات":
+    - /url: /odoo/settings
+  - text: /
+  - link "المستخدمون":
+    - /url: /odoo/settings/13/users
+- generic: IC1 QA accountant
+- button "قائمة الإجراءات":
+  - generic: 
+- button " جهة اتصال":
+  - generic: 
+  - generic: جهة اتصال
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "2"
+    - text: / 6
+    - button "السابق":
+      - generic: 
+    - button "التالي":
+      - generic: 
+- main:
+  - button "إنشاء موظف"
+  - radiogroup "شريط الحالة":
+    - radio "تم التأكيد" [checked] [disabled]
+    - radio "تمت دعوته" [disabled]
+  - button "تحرير":
+    - generic: 
+  - button "مسح":
+    - generic: 
+  - img "ملف ثنائي"
+  - heading "IC1 QA accountant" [level=1]:
+    - 'textbox "مثل: محمد محمود"': IC1 QA accountant
+  - heading " ic1-ui-accountant " [level=5]:
+    - generic "Login": 
+    - textbox "تسجيل الدخول": ic1-ui-accountant
+    - generic "البريد الإلكتروني": 
+    - textbox "البريد الإلكتروني"
+  - heading "" [level=5]:
+    - generic "رقم الهاتف": 
+    - textbox "رقم الهاتف"
+  - list:
+    - tab "صلاحيات الوصول"
+    - tab "التفضيلات"
+    - tab "التقويم"
+    - tab "الأمن"
+  - generic: الأدوار
+  - generic: الدور
+  - radiogroup "الدور":
+    - radio "المستخدم" [checked] [disabled]
+    - generic: المستخدم
+    - radio "المدير" [disabled]
+    - generic: المدير
+  - generic: الشركات
+  - generic "المعلم الشامي":
+    - generic: المعلم الشامي
+    - link "حذف":
+      - /url: "#"
+      - generic: 
+  - combobox "الشركات"
+  - text: الشركة الافتراضية
+  - superscript: "?"
+  - combobox "الشركة الافتراضية?": المعلم الشامي
+  - generic: صلاحيات بصير
+  - text: الصلاحية الجاهزة
+  - superscript: "?"
+  - textbox "الصلاحية الجاهزة?":
+    - /placeholder: صلاحيات مخصصة
+    - text: المحاسب
+  - generic: السماح بتصحيح العمليات المالية
+  - checkbox "السماح بتصحيح العمليات المالية"
+  - generic: البيانات الرئيسية
+  - text: المنتجات
+  - superscript: "?"
+  - textbox "المنتجات?":
+    - /placeholder: ""
+    - text: View
+  - generic: تصدير
+  - textbox "تصدير":
+    - /placeholder: ""
+    - text: "No"
+  - generic: جهة الاتصال
+  - textbox "جهة الاتصال":
+    - /placeholder: ""
+    - text: "No"
+  - generic: المبيعات
+  - text: المبيعات
+  - superscript: "?"
+  - textbox "المبيعات?":
+    - /placeholder: "المستخدم: كافة المستندات"
+  - generic: نقطة البيع
+  - textbox "نقطة البيع":
+    - /placeholder: المستخدم
+  - generic: الموقع الإلكتروني
+  - generic: الموقع الإلكتروني
+  - textbox "الموقع الإلكتروني":
+    - /placeholder: ""
+    - text: "No"
+  - generic: الخدمات
+  - text: المشروع
+  - superscript: "?"
+  - textbox "المشروع?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: المحاسبة
+  - text: المحاسبة
+  - superscript: "?"
+  - textbox "المحاسبة?":
+    - /placeholder: الفوترة
+  - generic: البنك
+  - textbox "البنك":
+    - /placeholder: ""
+    - text: "No"
+  - generic: سلسلة توريد
+  - generic: الشراء
+  - textbox "الشراء":
+    - /placeholder: المدير
+  - text: الصيانة
+  - superscript: "?"
+  - textbox "الصيانة?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: المخزون
+  - textbox "المخزون":
+    - /placeholder: ""
+    - text: "No"
+  - generic: الإنتاجية
+  - generic: لوحة البيانات
+  - textbox "لوحة البيانات":
+    - /placeholder: ""
+    - text: "No"
+  - generic: التسويق
+  - generic: الردود الجاهزة
+  - textbox "الردود الجاهزة":
+    - /placeholder: ""
+    - text: "No"
+  - generic: الموارد البشرية
+  - text: الموظفون
+  - superscript: "?"
+  - textbox "الموظفون?":
+    - /placeholder: ""
+    - text: "No"
+  - text: الإجازات
+  - superscript: "?"
+  - textbox "الإجازات?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: النفقات
+  - textbox "النفقات":
+    - /placeholder: ""
+    - text: "No"
+  - text: الحضور
+  - superscript: "?"
+  - textbox "الحضور?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: غير ذلك
+  - text: حزمة المحاسبة من ERP Heritage
+  - superscript: "?"
+  - textbox "حزمة المحاسبة من ERP Heritage?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: Payroll
+  - textbox "Payroll":
+    - /placeholder: ""
+    - text: "No"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

@@ -1,0 +1,347 @@
+{
+  "database": "baseer_ic1_20260910",
+  "candidate_sha256": "1824578524e00788c8e35f7f23af0567e8252f93ac2bc583017e6502ddc79bfd",
+  "read_only": true,
+  "su": false,
+  "checks": [
+    {
+      "name": "baseer_cash_categories:actual-runtime-mount",
+      "actual": "/mnt/baseer-addons/baseer_cash_categories",
+      "expected": "/mnt/baseer-addons/baseer_cash_categories",
+      "passed": true
+    },
+    {
+      "name": "baseer_cash_categories:source-exact",
+      "actual": {
+        "custom_addons/baseer_cash_categories/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+        "custom_addons/baseer_cash_categories/__manifest__.py": "23c5ce18b3787532d09cf67a7bf6c4641a5804d36f9b0695d67e55f1a5ed1bf3",
+        "custom_addons/baseer_cash_categories/data/report.xml": "8e3e00e3e6ad5b0323813cc78c9f86190101846835091c6b1404f8aa67fac1bb",
+        "custom_addons/baseer_cash_categories/i18n/ar_001.po": "bde61ad3859632554ed900ead2f1cb1c8c896da789420c735792cd129a74938b",
+        "custom_addons/baseer_cash_categories/models/cash_categories.py": "31162986c34f66ac1d78005b2edbe10128068811fa53ba904c0cb15040b4abf4",
+        "custom_addons/baseer_cash_categories/models/cash_pdf.py": "53364c5c69afc7d819aac8d499c202fe11721dd9ff23e4a632492d73e85cf525",
+        "custom_addons/baseer_cash_categories/models/__init__.py": "e6e47f90052e68bff038844f79037cbd2151461e28765993620d1256649af756",
+        "custom_addons/baseer_cash_categories/report/report_note.xml": "a45ebab01ed40c3c9c71ace7b390bf927ebb62019f29cd901c22ea03fec60c9b",
+        "custom_addons/baseer_cash_categories/static/src/cash_categories.js": "4663cb6871b754f5246071f5f7481fb507e9d8189ea8eb86b04bc5092ba9816b",
+        "custom_addons/baseer_cash_categories/static/src/cash_categories.scss": "d0077013b59da03aab6ae59c6ae9def564fe6866aea221cccdfaeb8597a04202",
+        "custom_addons/baseer_cash_categories/static/src/cash_categories.xml": "3a678333524bae3bae3d732456361d00633c0b0d0356dd0b9be0dda941e4f490"
+      },
+      "expected": {
+        "custom_addons/baseer_cash_categories/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+        "custom_addons/baseer_cash_categories/__manifest__.py": "23c5ce18b3787532d09cf67a7bf6c4641a5804d36f9b0695d67e55f1a5ed1bf3",
+        "custom_addons/baseer_cash_categories/data/report.xml": "8e3e00e3e6ad5b0323813cc78c9f86190101846835091c6b1404f8aa67fac1bb",
+        "custom_addons/baseer_cash_categories/i18n/ar_001.po": "bde61ad3859632554ed900ead2f1cb1c8c896da789420c735792cd129a74938b",
+        "custom_addons/baseer_cash_categories/models/__init__.py": "e6e47f90052e68bff038844f79037cbd2151461e28765993620d1256649af756",
+        "custom_addons/baseer_cash_categories/models/cash_categories.py": "31162986c34f66ac1d78005b2edbe10128068811fa53ba904c0cb15040b4abf4",
+        "custom_addons/baseer_cash_categories/models/cash_pdf.py": "53364c5c69afc7d819aac8d499c202fe11721dd9ff23e4a632492d73e85cf525",
+        "custom_addons/baseer_cash_categories/report/report_note.xml": "a45ebab01ed40c3c9c71ace7b390bf927ebb62019f29cd901c22ea03fec60c9b",
+        "custom_addons/baseer_cash_categories/static/src/cash_categories.js": "4663cb6871b754f5246071f5f7481fb507e9d8189ea8eb86b04bc5092ba9816b",
+        "custom_addons/baseer_cash_categories/static/src/cash_categories.scss": "d0077013b59da03aab6ae59c6ae9def564fe6866aea221cccdfaeb8597a04202",
+        "custom_addons/baseer_cash_categories/static/src/cash_categories.xml": "3a678333524bae3bae3d732456361d00633c0b0d0356dd0b9be0dda941e4f490"
+      },
+      "passed": true
+    },
+    {
+      "name": "baseer_cash_categories:installed-version",
+      "actual": "19.0.1.3.2",
+      "expected": "19.0.1.3.2",
+      "passed": true
+    },
+    {
+      "name": "baseer_pos_summary:actual-runtime-mount",
+      "actual": "/mnt/baseer-addons/baseer_pos_summary",
+      "expected": "/mnt/baseer-addons/baseer_pos_summary",
+      "passed": true
+    },
+    {
+      "name": "baseer_pos_summary:source-exact",
+      "actual": {
+        "custom_addons/baseer_pos_summary/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+        "custom_addons/baseer_pos_summary/__manifest__.py": "de815aee5f594e3d6d6bd799c6fc6e044e7a6e70b629a75e4c8748a828cd987e",
+        "custom_addons/baseer_pos_summary/data/payment_seed.xml": "11f100548230bf1c82276ce6a01d738fd20124db5b688974a6755c0d678bdd96",
+        "custom_addons/baseer_pos_summary/i18n/ar.po": "b97949dff0686894c4957b871a422e3ae07a0a68b804eb921f144f02669e2c5d",
+        "custom_addons/baseer_pos_summary/models/accounting.py": "c090ec92a37ae10cb19a000e58dea0836423934d2f9b769fbd03d3c462f6d670",
+        "custom_addons/baseer_pos_summary/models/cash_report.py": "b78ba821299380c24a44ce76f58f280268d2a10913d778d92605791acfa1c568",
+        "custom_addons/baseer_pos_summary/models/common.py": "0817f9ce0884b0898e22f41da8cc958d2d84385cbf780c9292fce32a8bc5aa49",
+        "custom_addons/baseer_pos_summary/models/correction.py": "fde3429149b21c74c0c170ecf1984856c8dcf9bdc35a58ca16020873e615c080",
+        "custom_addons/baseer_pos_summary/models/daily_report.py": "a3a21935551449477e3e6861ce6f694fc9fef11f70f3426ecda7f947dbac6dcb",
+        "custom_addons/baseer_pos_summary/models/day_archive.py": "c6d652d52e16076c508aecd6e4e9a2e704b1b64465d39c8029f4a94f6a209ebf",
+        "custom_addons/baseer_pos_summary/models/day_entry.py": "b03b780f741b684a54d9ec7266df08a41b1f70d56fad912013e5c8cf066a242a",
+        "custom_addons/baseer_pos_summary/models/operations.py": "ac4d3eab0328c7a058a6d4af8ab41bb638b3d53fd39de827ab1f3d914f15bc72",
+        "custom_addons/baseer_pos_summary/models/payment_seed.py": "c8894f17bd0a837b2284f36454b899c51b47891477f1dbf46b8fe17f0ef517da",
+        "custom_addons/baseer_pos_summary/models/pos_configuration.py": "c06bacb5d18760d47b313411144c26a0db5a92a4746377483e8462a2bbcef090",
+        "custom_addons/baseer_pos_summary/models/pos_native.py": "6b4c682e892dcb74919d224deb228b23473c4a2ef295071ca6a85ffb267b12cd",
+        "custom_addons/baseer_pos_summary/models/summary.py": "b91c1b466f91e05e6359361e7c42cde15395d29817951b985c2ff3b7a4bd3a29",
+        "custom_addons/baseer_pos_summary/models/__init__.py": "49d1100fcce7792fc3d714125668fb7fd115b68fa18545e5cfc4e95806952276",
+        "custom_addons/baseer_pos_summary/security/ir.model.access.csv": "d611aad5188187d68a76865617705df4517c58d501fcef1afd5817c86a97119b",
+        "custom_addons/baseer_pos_summary/security/security.xml": "ab9b57e0dc7376f9514a9d1972850afe850f3f971e7e979326cfec25cfae39fb",
+        "custom_addons/baseer_pos_summary/views/allocation_views.xml": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c",
+        "custom_addons/baseer_pos_summary/views/configuration_views.xml": "4c10cbaefbd4d92305a408242fa85ad8a824fee82e915236e9b1af8a9f071153",
+        "custom_addons/baseer_pos_summary/views/correction_views.xml": "27bdee97e2958bf31f6463a3342ff45569107a03a6a976c7aaedfa3532bc3dbf",
+        "custom_addons/baseer_pos_summary/views/daily_report_views.xml": "2e6402225938a912c85ecc6ffd917616e80ee2c35a2d2bcc9d57e43bb218a3c9",
+        "custom_addons/baseer_pos_summary/views/day_archive_views.xml": "4f90537fe0fedfb581f27d14729211578ccc9e10a2d5d91e46695019441efc7b",
+        "custom_addons/baseer_pos_summary/views/day_entry_views.xml": "2c61332693084d54e6d3dd3c57feda7226a64b41dbfe7fa8468be08b43bd66c7",
+        "custom_addons/baseer_pos_summary/views/operations_views.xml": "4193caa66f0eee5e95ff36bd6b5de779ae09db718a8297d0b0169dbb382069c6",
+        "custom_addons/baseer_pos_summary/views/summary_views.xml": "7c74a736cc0ddd81f7da7617193470c6964201d00dfd0bcb2969d5456bc2707f",
+        "custom_addons/baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py": "5cb22eb451ebf1b1bcba4776b9a540bd2d95c5f7d8bde3fa5163a52702917afb",
+        "custom_addons/baseer_pos_summary/migrations/19.0.1.4.0/post-migrate.py": "132266749954c966b8b21b14ef6f4f52863854cedc26efd93087ad4fec2a2159",
+        "custom_addons/baseer_pos_summary/migrations/19.0.1.4.0/pre-migrate.py": "4c201bf7197001793ac3e378ce4a27cf8b7476b8cd8d81cc0516aa05d366459f",
+        "custom_addons/baseer_pos_summary/static/src/js/payment_amount_grid.js": "7e3eb3eadaf471af4e17ba2ef23ee109bc95733aa65df540cdc848a9a3846b06",
+        "custom_addons/baseer_pos_summary/static/src/scss/summary.scss": "d680c7efaf9f538a0de4b521d1212000867f143d3e0171aa453c56393c097932",
+        "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml": "7f34aed58888615fc422e57e545b402727e0b3eee56d84924453bf56a930acfb"
+      },
+      "expected": {
+        "custom_addons/baseer_pos_summary/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+        "custom_addons/baseer_pos_summary/__manifest__.py": "de815aee5f594e3d6d6bd799c6fc6e044e7a6e70b629a75e4c8748a828cd987e",
+        "custom_addons/baseer_pos_summary/data/payment_seed.xml": "11f100548230bf1c82276ce6a01d738fd20124db5b688974a6755c0d678bdd96",
+        "custom_addons/baseer_pos_summary/i18n/ar.po": "b97949dff0686894c4957b871a422e3ae07a0a68b804eb921f144f02669e2c5d",
+        "custom_addons/baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py": "5cb22eb451ebf1b1bcba4776b9a540bd2d95c5f7d8bde3fa5163a52702917afb",
+        "custom_addons/baseer_pos_summary/migrations/19.0.1.4.0/post-migrate.py": "132266749954c966b8b21b14ef6f4f52863854cedc26efd93087ad4fec2a2159",
+        "custom_addons/baseer_pos_summary/migrations/19.0.1.4.0/pre-migrate.py": "4c201bf7197001793ac3e378ce4a27cf8b7476b8cd8d81cc0516aa05d366459f",
+        "custom_addons/baseer_pos_summary/models/__init__.py": "49d1100fcce7792fc3d714125668fb7fd115b68fa18545e5cfc4e95806952276",
+        "custom_addons/baseer_pos_summary/models/accounting.py": "c090ec92a37ae10cb19a000e58dea0836423934d2f9b769fbd03d3c462f6d670",
+        "custom_addons/baseer_pos_summary/models/cash_report.py": "b78ba821299380c24a44ce76f58f280268d2a10913d778d92605791acfa1c568",
+        "custom_addons/baseer_pos_summary/models/common.py": "0817f9ce0884b0898e22f41da8cc958d2d84385cbf780c9292fce32a8bc5aa49",
+        "custom_addons/baseer_pos_summary/models/correction.py": "fde3429149b21c74c0c170ecf1984856c8dcf9bdc35a58ca16020873e615c080",
+        "custom_addons/baseer_pos_summary/models/daily_report.py": "a3a21935551449477e3e6861ce6f694fc9fef11f70f3426ecda7f947dbac6dcb",
+        "custom_addons/baseer_pos_summary/models/day_archive.py": "c6d652d52e16076c508aecd6e4e9a2e704b1b64465d39c8029f4a94f6a209ebf",
+        "custom_addons/baseer_pos_summary/models/day_entry.py": "b03b780f741b684a54d9ec7266df08a41b1f70d56fad912013e5c8cf066a242a",
+        "custom_addons/baseer_pos_summary/models/operations.py": "ac4d3eab0328c7a058a6d4af8ab41bb638b3d53fd39de827ab1f3d914f15bc72",
+        "custom_addons/baseer_pos_summary/models/payment_seed.py": "c8894f17bd0a837b2284f36454b899c51b47891477f1dbf46b8fe17f0ef517da",
+        "custom_addons/baseer_pos_summary/models/pos_configuration.py": "c06bacb5d18760d47b313411144c26a0db5a92a4746377483e8462a2bbcef090",
+        "custom_addons/baseer_pos_summary/models/pos_native.py": "6b4c682e892dcb74919d224deb228b23473c4a2ef295071ca6a85ffb267b12cd",
+        "custom_addons/baseer_pos_summary/models/summary.py": "b91c1b466f91e05e6359361e7c42cde15395d29817951b985c2ff3b7a4bd3a29",
+        "custom_addons/baseer_pos_summary/security/ir.model.access.csv": "d611aad5188187d68a76865617705df4517c58d501fcef1afd5817c86a97119b",
+        "custom_addons/baseer_pos_summary/security/security.xml": "ab9b57e0dc7376f9514a9d1972850afe850f3f971e7e979326cfec25cfae39fb",
+        "custom_addons/baseer_pos_summary/static/src/js/payment_amount_grid.js": "7e3eb3eadaf471af4e17ba2ef23ee109bc95733aa65df540cdc848a9a3846b06",
+        "custom_addons/baseer_pos_summary/static/src/scss/summary.scss": "d680c7efaf9f538a0de4b521d1212000867f143d3e0171aa453c56393c097932",
+        "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml": "7f34aed58888615fc422e57e545b402727e0b3eee56d84924453bf56a930acfb",
+        "custom_addons/baseer_pos_summary/views/allocation_views.xml": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c",
+        "custom_addons/baseer_pos_summary/views/configuration_views.xml": "4c10cbaefbd4d92305a408242fa85ad8a824fee82e915236e9b1af8a9f071153",
+        "custom_addons/baseer_pos_summary/views/correction_views.xml": "27bdee97e2958bf31f6463a3342ff45569107a03a6a976c7aaedfa3532bc3dbf",
+        "custom_addons/baseer_pos_summary/views/daily_report_views.xml": "2e6402225938a912c85ecc6ffd917616e80ee2c35a2d2bcc9d57e43bb218a3c9",
+        "custom_addons/baseer_pos_summary/views/day_archive_views.xml": "4f90537fe0fedfb581f27d14729211578ccc9e10a2d5d91e46695019441efc7b",
+        "custom_addons/baseer_pos_summary/views/day_entry_views.xml": "2c61332693084d54e6d3dd3c57feda7226a64b41dbfe7fa8468be08b43bd66c7",
+        "custom_addons/baseer_pos_summary/views/operations_views.xml": "4193caa66f0eee5e95ff36bd6b5de779ae09db718a8297d0b0169dbb382069c6",
+        "custom_addons/baseer_pos_summary/views/summary_views.xml": "7c74a736cc0ddd81f7da7617193470c6964201d00dfd0bcb2969d5456bc2707f"
+      },
+      "passed": true
+    },
+    {
+      "name": "baseer_pos_summary:installed-version",
+      "actual": "19.0.1.5.2",
+      "expected": "19.0.1.5.2",
+      "passed": true
+    },
+    {
+      "name": "baseer_financial_register:actual-runtime-mount",
+      "actual": "/mnt/baseer-addons/baseer_financial_register",
+      "expected": "/mnt/baseer-addons/baseer_financial_register",
+      "passed": true
+    },
+    {
+      "name": "baseer_financial_register:source-exact",
+      "actual": {
+        "custom_addons/baseer_financial_register/README.md": "2b2897d671cb5992881205641a23aee2a82c41bf6abc01940aea1c8cb51751d6",
+        "custom_addons/baseer_financial_register/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+        "custom_addons/baseer_financial_register/__manifest__.py": "34e5951c3b1504faa11433f2dd5abf2c54027d0d689397ae40e669ce4e4ac45b",
+        "custom_addons/baseer_financial_register/i18n/ar.po": "a153687fe88bca7b74708c71951775772b3926df53a51d083d1a61894abb08bc",
+        "custom_addons/baseer_financial_register/models/cash_register.py": "e5762b154c0bda5710354957af20c5fee3100f83a889f4d1fee014d3248b7ea8",
+        "custom_addons/baseer_financial_register/models/financial_register.py": "faf6c67bddb1d115fd880fe44c82acb30f756506c787efa1418a0ee0bb352f55",
+        "custom_addons/baseer_financial_register/models/platform.py": "b015154f2305a29fcc0b42bb969d689931125379498ac10ddd75c40566c00825",
+        "custom_addons/baseer_financial_register/models/projection.py": "b154003a0b1b0df52714d2fcb4f5d97527b118e90c865e8762315fb6681776a9",
+        "custom_addons/baseer_financial_register/models/__init__.py": "dea8c028fc07b34ff270add4518a110b5f6b590dbc6931bf1264e37dddebc27e",
+        "custom_addons/baseer_financial_register/views/financial_register_views.xml": "bf6f83393edca638bca71f2605e8710197a65bb664c794be0083fd636b49b1e0",
+        "custom_addons/baseer_financial_register/static/src/financial_register.js": "401b8c8b75d06af426c4c21f05bab0a5e01fdd0363af411848a22c11dc74d41f",
+        "custom_addons/baseer_financial_register/static/src/financial_register.scss": "1caa8b6df008796d080e7581f862fcd632e86d311eb1cd8a4ee678304c858ace",
+        "custom_addons/baseer_financial_register/static/src/financial_register.xml": "d73840e4c3bf144b704e340a494c6ebf089e518eafa099807eda2d9479b3f0f8"
+      },
+      "expected": {
+        "custom_addons/baseer_financial_register/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+        "custom_addons/baseer_financial_register/__manifest__.py": "34e5951c3b1504faa11433f2dd5abf2c54027d0d689397ae40e669ce4e4ac45b",
+        "custom_addons/baseer_financial_register/i18n/ar.po": "a153687fe88bca7b74708c71951775772b3926df53a51d083d1a61894abb08bc",
+        "custom_addons/baseer_financial_register/models/__init__.py": "dea8c028fc07b34ff270add4518a110b5f6b590dbc6931bf1264e37dddebc27e",
+        "custom_addons/baseer_financial_register/models/cash_register.py": "e5762b154c0bda5710354957af20c5fee3100f83a889f4d1fee014d3248b7ea8",
+        "custom_addons/baseer_financial_register/models/financial_register.py": "faf6c67bddb1d115fd880fe44c82acb30f756506c787efa1418a0ee0bb352f55",
+        "custom_addons/baseer_financial_register/models/platform.py": "b015154f2305a29fcc0b42bb969d689931125379498ac10ddd75c40566c00825",
+        "custom_addons/baseer_financial_register/models/projection.py": "b154003a0b1b0df52714d2fcb4f5d97527b118e90c865e8762315fb6681776a9",
+        "custom_addons/baseer_financial_register/README.md": "2b2897d671cb5992881205641a23aee2a82c41bf6abc01940aea1c8cb51751d6",
+        "custom_addons/baseer_financial_register/static/src/financial_register.js": "401b8c8b75d06af426c4c21f05bab0a5e01fdd0363af411848a22c11dc74d41f",
+        "custom_addons/baseer_financial_register/static/src/financial_register.scss": "1caa8b6df008796d080e7581f862fcd632e86d311eb1cd8a4ee678304c858ace",
+        "custom_addons/baseer_financial_register/static/src/financial_register.xml": "d73840e4c3bf144b704e340a494c6ebf089e518eafa099807eda2d9479b3f0f8",
+        "custom_addons/baseer_financial_register/views/financial_register_views.xml": "bf6f83393edca638bca71f2605e8710197a65bb664c794be0083fd636b49b1e0"
+      },
+      "passed": true
+    },
+    {
+      "name": "baseer_financial_register:installed-version",
+      "actual": "19.0.1.2.1",
+      "expected": "19.0.1.2.1",
+      "passed": true
+    },
+    {
+      "name": "2026-01:receipts",
+      "actual": "1580370.24",
+      "expected": "1580370.24",
+      "passed": true
+    },
+    {
+      "name": "2026-01:payments",
+      "actual": "-242942.27",
+      "expected": "-242942.27",
+      "passed": true
+    },
+    {
+      "name": "2026-01:sales_collections",
+      "actual": "375808.50",
+      "expected": "375808.50",
+      "passed": true
+    },
+    {
+      "name": "2026-01:balanced",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "2026-01:salary-category",
+      "actual": "-48275.01",
+      "expected": "-48275.01",
+      "passed": true
+    },
+    {
+      "name": "2026-02:receipts",
+      "actual": "390409.18",
+      "expected": "390409.18",
+      "passed": true
+    },
+    {
+      "name": "2026-02:payments",
+      "actual": "-358348.12",
+      "expected": "-358348.12",
+      "passed": true
+    },
+    {
+      "name": "2026-02:sales_collections",
+      "actual": "388838.00",
+      "expected": "388838.00",
+      "passed": true
+    },
+    {
+      "name": "2026-02:balanced",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "2026-02:salary-category",
+      "actual": "-88935.26",
+      "expected": "-88935.26",
+      "passed": true
+    },
+    {
+      "name": "2026-03:receipts",
+      "actual": "431108.52",
+      "expected": "431108.52",
+      "passed": true
+    },
+    {
+      "name": "2026-03:payments",
+      "actual": "-360254.17",
+      "expected": "-360254.17",
+      "passed": true
+    },
+    {
+      "name": "2026-03:sales_collections",
+      "actual": "431704.25",
+      "expected": "431704.25",
+      "passed": true
+    },
+    {
+      "name": "2026-03:balanced",
+      "actual": "0.00",
+      "expected": "0.00",
+      "passed": true
+    },
+    {
+      "name": "2026-03:salary-category",
+      "actual": "-89673.70",
+      "expected": "-89673.70",
+      "passed": true
+    },
+    {
+      "name": "empty-month:no-platform-warning",
+      "actual": "",
+      "expected": "",
+      "passed": true
+    },
+    {
+      "name": "posted-moves-preserved",
+      "actual": 4999,
+      "expected": 4999,
+      "passed": true
+    }
+  ],
+  "monthly": {
+    "2026-01": {
+      "totals": {
+        "receipts": "1580370.24",
+        "payments": "-242942.27",
+        "displayed_net_movement": "1337427.97",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "1337427.97",
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": "0.00",
+        "unverified_tax_gross": "1200358.26",
+        "sales_collections": "375808.50"
+      },
+      "salary": "-48275.01",
+      "diagnostics": [
+        "تحتسب ملخصات نقاط البيع المعتمدة التحصيل النقدي أو البنكي الذي تمت مطابقته؛ ولا تُعد أرصدة تسوية التطبيقات نقدًا.",
+        "تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثقة.",
+        "تُقرّب حصة الضريبة لكل تحصيل فعلي؛ وقد يختلف مجموع الحصص بمقدار هللة عن ضريبة المصدر الكاملة."
+      ]
+    },
+    "2026-02": {
+      "totals": {
+        "receipts": "390409.18",
+        "payments": "-358348.12",
+        "displayed_net_movement": "32061.06",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "32061.06",
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": "0.00",
+        "unverified_tax_gross": "588.82",
+        "sales_collections": "388838.00"
+      },
+      "salary": "-88935.26",
+      "diagnostics": [
+        "تحتسب ملخصات نقاط البيع المعتمدة التحصيل النقدي أو البنكي الذي تمت مطابقته؛ ولا تُعد أرصدة تسوية التطبيقات نقدًا.",
+        "تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثقة.",
+        "تُقرّب حصة الضريبة لكل تحصيل فعلي؛ وقد يختلف مجموع الحصص بمقدار هللة عن ضريبة المصدر الكاملة."
+      ]
+    },
+    "2026-03": {
+      "totals": {
+        "receipts": "431108.52",
+        "payments": "-360254.17",
+        "displayed_net_movement": "70854.35",
+        "excluded_tax_bridge": "0.00",
+        "actual_net_movement": "70854.35",
+        "opening_cash_balance": null,
+        "closing_cash_balance": null,
+        "balance_check": "0.00",
+        "unverified_tax_gross": "595.73",
+        "sales_collections": "431704.25"
+      },
+      "salary": "-89673.70",
+      "diagnostics": [
+        "تحتسب ملخصات نقاط البيع المعتمدة التحصيل النقدي أو البنكي الذي تمت مطابقته؛ ولا تُعد أرصدة تسوية التطبيقات نقدًا.",
+        "تظهر القيود المباشرة بكامل المبلغ دون افتراض ضريبة غير موثقة.",
+        "تُقرّب حصة الضريبة لكل تحصيل فعلي؛ وقد يختلف مجموع الحصص بمقدار هللة عن ضريبة المصدر الكاملة."
+      ]
+    }
+  },
+  "status": "PASS"
+}

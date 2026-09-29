@@ -1,0 +1,161 @@
+{
+  "status": "PASS",
+  "database": "baseer_reports_qa_20260907",
+  "tag": "SD1-UI-20260909-YEARS-v1",
+  "deleted_ids": [
+    3327,
+    3328,
+    3329,
+    3330,
+    3331,
+    3332,
+    3333,
+    3334,
+    3335,
+    3336,
+    3337,
+    3338,
+    3339,
+    3340,
+    3341,
+    3342,
+    3343,
+    3344,
+    3345,
+    3346,
+    3347,
+    3348,
+    3349,
+    3350
+  ],
+  "deleted_count": 24,
+  "remaining": 0,
+  "untouched_existing_rows": true,
+  "before": {
+    "baseer_pos_summary": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "fdede4ca6e25b602d30fe526791a739e"
+    },
+    "baseer_pos_closure": {
+      "rows": 1,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "c3ffaddc05603cb524e365d217c3bd10"
+    },
+    "account_move": {
+      "rows": 104,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "d11b97393642e40a75f413382016f9dd"
+    },
+    "account_move_line": {
+      "rows": 246,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "012ac8b7943cbd6c61edad560ada89e8"
+    },
+    "account_payment": {
+      "rows": 38,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "5b28fab089cdbce384a594026fba7a64"
+    },
+    "account_partial_reconcile": {
+      "rows": 61,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "803b2db4ef469946cd876f1493ac998f"
+    },
+    "account_full_reconcile": {
+      "rows": 38,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "34ffd3612d1bc21d72045a626b85aac3"
+    },
+    "pos_order": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "85068279f7f574e654cd6e31139ff2df"
+    },
+    "pos_order_line": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "b7bcda137b549b3cfaecd4d17ee22ca6"
+    },
+    "pos_payment": {
+      "rows": 12,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "6d4d31a303cea15b60f8cc45ae9e3b40"
+    },
+    "pos_session": {
+      "rows": 12,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "7244177ccab17a8637f9705cf4fd66eb"
+    },
+    "res_users": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "cb2c65509865224a5acb5c622e5f286b"
+    }
+  },
+  "after": {
+    "baseer_pos_summary": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "fdede4ca6e25b602d30fe526791a739e"
+    },
+    "baseer_pos_closure": {
+      "rows": 1,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "c3ffaddc05603cb524e365d217c3bd10"
+    },
+    "account_move": {
+      "rows": 104,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "d11b97393642e40a75f413382016f9dd"
+    },
+    "account_move_line": {
+      "rows": 246,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "012ac8b7943cbd6c61edad560ada89e8"
+    },
+    "account_payment": {
+      "rows": 38,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "5b28fab089cdbce384a594026fba7a64"
+    },
+    "account_partial_reconcile": {
+      "rows": 61,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "803b2db4ef469946cd876f1493ac998f"
+    },
+    "account_full_reconcile": {
+      "rows": 38,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "34ffd3612d1bc21d72045a626b85aac3"
+    },
+    "pos_order": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "85068279f7f574e654cd6e31139ff2df"
+    },
+    "pos_order_line": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "b7bcda137b549b3cfaecd4d17ee22ca6"
+    },
+    "pos_payment": {
+      "rows": 12,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "6d4d31a303cea15b60f8cc45ae9e3b40"
+    },
+    "pos_session": {
+      "rows": 12,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "7244177ccab17a8637f9705cf4fd66eb"
+    },
+    "res_users": {
+      "rows": 8,
+      "sha_scope": "PostgreSQL MD5 of full existing rows in id order",
+      "md5": "cb2c65509865224a5acb5c622e5f286b"
+    }
+  },
+  "qa_running": true,
+  "user_cleanup": "Not performed; res_users fingerprint unchanged",
+  "scope": "Exact approved reporting fixtures only; no native ledger/POS source mutation"
+}

@@ -1,0 +1,530 @@
+{
+  "companies": [
+    {
+      "id": 1,
+      "name": "My Company",
+      "chart_template": "generic_coa",
+      "currency": "USD"
+    },
+    {
+      "id": 6,
+      "name": "QA ARZ",
+      "chart_template": "sa",
+      "currency": "SAR"
+    },
+    {
+      "id": 7,
+      "name": "QA المعلم الشامي",
+      "chart_template": "sa",
+      "currency": "SAR"
+    },
+    {
+      "id": 8,
+      "name": "QA دوحة المستهلك",
+      "chart_template": "sa",
+      "currency": "SAR"
+    },
+    {
+      "id": 9,
+      "name": "QA الفئات النقدية",
+      "chart_template": "sa",
+      "currency": "SAR"
+    },
+    {
+      "id": 10,
+      "name": "تجربة الرواتب والسلف",
+      "chart_template": "sa",
+      "currency": "SAR"
+    }
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "name": {
+        "en_US": "مصاريف تشغيلية تجريبية"
+      },
+      "company_id": 9,
+      "code_prefix_start": "QA6",
+      "code_prefix_end": "QA6",
+      "parent_id": null
+    }
+  ],
+  "account_types": [
+    {
+      "company_id": 1,
+      "account_type": "asset_cash",
+      "count": 2
+    },
+    {
+      "company_id": 1,
+      "account_type": "asset_current",
+      "count": 11
+    },
+    {
+      "company_id": 1,
+      "account_type": "asset_fixed",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "asset_non_current",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "asset_prepayments",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "asset_receivable",
+      "count": 5
+    },
+    {
+      "company_id": 1,
+      "account_type": "equity",
+      "count": 2
+    },
+    {
+      "company_id": 1,
+      "account_type": "equity_unaffected",
+      "count": 2
+    },
+    {
+      "company_id": 1,
+      "account_type": "expense",
+      "count": 14
+    },
+    {
+      "company_id": 1,
+      "account_type": "expense_direct_cost",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "income",
+      "count": 4
+    },
+    {
+      "company_id": 1,
+      "account_type": "income_other",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "liability_credit_card",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "liability_current",
+      "count": 7
+    },
+    {
+      "company_id": 1,
+      "account_type": "liability_non_current",
+      "count": 1
+    },
+    {
+      "company_id": 1,
+      "account_type": "liability_payable",
+      "count": 3
+    },
+    {
+      "company_id": 6,
+      "account_type": "asset_cash",
+      "count": 10
+    },
+    {
+      "company_id": 6,
+      "account_type": "asset_current",
+      "count": 30
+    },
+    {
+      "company_id": 6,
+      "account_type": "asset_fixed",
+      "count": 9
+    },
+    {
+      "company_id": 6,
+      "account_type": "asset_prepayments",
+      "count": 17
+    },
+    {
+      "company_id": 6,
+      "account_type": "asset_receivable",
+      "count": 5
+    },
+    {
+      "company_id": 6,
+      "account_type": "equity",
+      "count": 1
+    },
+    {
+      "company_id": 6,
+      "account_type": "equity_unaffected",
+      "count": 1
+    },
+    {
+      "company_id": 6,
+      "account_type": "expense",
+      "count": 71
+    },
+    {
+      "company_id": 6,
+      "account_type": "expense_depreciation",
+      "count": 3
+    },
+    {
+      "company_id": 6,
+      "account_type": "expense_direct_cost",
+      "count": 2
+    },
+    {
+      "company_id": 6,
+      "account_type": "income",
+      "count": 12
+    },
+    {
+      "company_id": 6,
+      "account_type": "income_other",
+      "count": 2
+    },
+    {
+      "company_id": 6,
+      "account_type": "liability_credit_card",
+      "count": 4
+    },
+    {
+      "company_id": 6,
+      "account_type": "liability_current",
+      "count": 20
+    },
+    {
+      "company_id": 6,
+      "account_type": "liability_non_current",
+      "count": 2
+    },
+    {
+      "company_id": 6,
+      "account_type": "liability_payable",
+      "count": 5
+    },
+    {
+      "company_id": 7,
+      "account_type": "asset_cash",
+      "count": 2
+    },
+    {
+      "company_id": 7,
+      "account_type": "asset_current",
+      "count": 27
+    },
+    {
+      "company_id": 7,
+      "account_type": "asset_fixed",
+      "count": 9
+    },
+    {
+      "company_id": 7,
+      "account_type": "asset_prepayments",
+      "count": 17
+    },
+    {
+      "company_id": 7,
+      "account_type": "asset_receivable",
+      "count": 5
+    },
+    {
+      "company_id": 7,
+      "account_type": "equity",
+      "count": 1
+    },
+    {
+      "company_id": 7,
+      "account_type": "equity_unaffected",
+      "count": 1
+    },
+    {
+      "company_id": 7,
+      "account_type": "expense",
+      "count": 71
+    },
+    {
+      "company_id": 7,
+      "account_type": "expense_depreciation",
+      "count": 3
+    },
+    {
+      "company_id": 7,
+      "account_type": "expense_direct_cost",
+      "count": 2
+    },
+    {
+      "company_id": 7,
+      "account_type": "income",
+      "count": 12
+    },
+    {
+      "company_id": 7,
+      "account_type": "income_other",
+      "count": 2
+    },
+    {
+      "company_id": 7,
+      "account_type": "liability_credit_card",
+      "count": 4
+    },
+    {
+      "company_id": 7,
+      "account_type": "liability_current",
+      "count": 20
+    },
+    {
+      "company_id": 7,
+      "account_type": "liability_non_current",
+      "count": 2
+    },
+    {
+      "company_id": 7,
+      "account_type": "liability_payable",
+      "count": 5
+    },
+    {
+      "company_id": 8,
+      "account_type": "asset_cash",
+      "count": 2
+    },
+    {
+      "company_id": 8,
+      "account_type": "asset_current",
+      "count": 27
+    },
+    {
+      "company_id": 8,
+      "account_type": "asset_fixed",
+      "count": 9
+    },
+    {
+      "company_id": 8,
+      "account_type": "asset_prepayments",
+      "count": 17
+    },
+    {
+      "company_id": 8,
+      "account_type": "asset_receivable",
+      "count": 5
+    },
+    {
+      "company_id": 8,
+      "account_type": "equity",
+      "count": 1
+    },
+    {
+      "company_id": 8,
+      "account_type": "equity_unaffected",
+      "count": 1
+    },
+    {
+      "company_id": 8,
+      "account_type": "expense",
+      "count": 71
+    },
+    {
+      "company_id": 8,
+      "account_type": "expense_depreciation",
+      "count": 3
+    },
+    {
+      "company_id": 8,
+      "account_type": "expense_direct_cost",
+      "count": 2
+    },
+    {
+      "company_id": 8,
+      "account_type": "income",
+      "count": 12
+    },
+    {
+      "company_id": 8,
+      "account_type": "income_other",
+      "count": 2
+    },
+    {
+      "company_id": 8,
+      "account_type": "liability_credit_card",
+      "count": 4
+    },
+    {
+      "company_id": 8,
+      "account_type": "liability_current",
+      "count": 20
+    },
+    {
+      "company_id": 8,
+      "account_type": "liability_non_current",
+      "count": 2
+    },
+    {
+      "company_id": 8,
+      "account_type": "liability_payable",
+      "count": 5
+    },
+    {
+      "company_id": 9,
+      "account_type": "asset_cash",
+      "count": 3
+    },
+    {
+      "company_id": 9,
+      "account_type": "asset_current",
+      "count": 29
+    },
+    {
+      "company_id": 9,
+      "account_type": "asset_fixed",
+      "count": 9
+    },
+    {
+      "company_id": 9,
+      "account_type": "asset_prepayments",
+      "count": 17
+    },
+    {
+      "company_id": 9,
+      "account_type": "asset_receivable",
+      "count": 5
+    },
+    {
+      "company_id": 9,
+      "account_type": "equity",
+      "count": 1
+    },
+    {
+      "company_id": 9,
+      "account_type": "equity_unaffected",
+      "count": 1
+    },
+    {
+      "company_id": 9,
+      "account_type": "expense",
+      "count": 76
+    },
+    {
+      "company_id": 9,
+      "account_type": "expense_depreciation",
+      "count": 3
+    },
+    {
+      "company_id": 9,
+      "account_type": "expense_direct_cost",
+      "count": 2
+    },
+    {
+      "company_id": 9,
+      "account_type": "income",
+      "count": 12
+    },
+    {
+      "company_id": 9,
+      "account_type": "income_other",
+      "count": 2
+    },
+    {
+      "company_id": 9,
+      "account_type": "liability_credit_card",
+      "count": 4
+    },
+    {
+      "company_id": 9,
+      "account_type": "liability_current",
+      "count": 20
+    },
+    {
+      "company_id": 9,
+      "account_type": "liability_non_current",
+      "count": 2
+    },
+    {
+      "company_id": 9,
+      "account_type": "liability_payable",
+      "count": 5
+    },
+    {
+      "company_id": 10,
+      "account_type": "asset_cash",
+      "count": 3
+    },
+    {
+      "company_id": 10,
+      "account_type": "asset_current",
+      "count": 27
+    },
+    {
+      "company_id": 10,
+      "account_type": "asset_fixed",
+      "count": 9
+    },
+    {
+      "company_id": 10,
+      "account_type": "asset_prepayments",
+      "count": 17
+    },
+    {
+      "company_id": 10,
+      "account_type": "asset_receivable",
+      "count": 5
+    },
+    {
+      "company_id": 10,
+      "account_type": "equity_unaffected",
+      "count": 1
+    },
+    {
+      "company_id": 10,
+      "account_type": "expense",
+      "count": 73
+    },
+    {
+      "company_id": 10,
+      "account_type": "expense_depreciation",
+      "count": 3
+    },
+    {
+      "company_id": 10,
+      "account_type": "expense_direct_cost",
+      "count": 2
+    },
+    {
+      "company_id": 10,
+      "account_type": "income",
+      "count": 12
+    },
+    {
+      "company_id": 10,
+      "account_type": "income_other",
+      "count": 2
+    },
+    {
+      "company_id": 10,
+      "account_type": "liability_credit_card",
+      "count": 4
+    },
+    {
+      "company_id": 10,
+      "account_type": "liability_current",
+      "count": 20
+    },
+    {
+      "company_id": 10,
+      "account_type": "liability_non_current",
+      "count": 2
+    },
+    {
+      "company_id": 10,
+      "account_type": "liability_payable",
+      "count": 5
+    }
+  ],
+  "duplicate_codes_including_archived": []
+}

@@ -1,0 +1,106 @@
+{
+  "checks": [
+    {
+      "name": "employee_version_onchange",
+      "result": "observed",
+      "detail": null
+    },
+    {
+      "name": "calendar_worked_days",
+      "result": "observed",
+      "detail": [
+        {
+          "name": "Normal Working Days paid at 100%",
+          "sequence": 1,
+          "code": "WORK100",
+          "number_of_days": 22.0,
+          "number_of_hours": 176.0,
+          "version_id": 8
+        }
+      ]
+    },
+    {
+      "name": "compute_net_2000",
+      "result": true,
+      "detail": {
+        "seconds": 0.005
+      }
+    },
+    {
+      "name": "first_approval_balanced_posted",
+      "result": true,
+      "detail": null
+    },
+    {
+      "name": "payroll_batch_link",
+      "result": true,
+      "detail": null
+    },
+    {
+      "name": "pdf_en_US",
+      "result": "observed",
+      "detail": {
+        "bytes": 24505
+      }
+    },
+    {
+      "name": "pdf_ar_001",
+      "result": "observed",
+      "detail": {
+        "bytes": 38653
+      }
+    },
+    {
+      "name": "batch_pdf",
+      "result": "observed",
+      "detail": {
+        "bytes": 32022,
+        "slips": 2
+      }
+    },
+    {
+      "name": "repeat_approval",
+      "result": "observed",
+      "detail": {
+        "duplicate_posted": true
+      }
+    },
+    {
+      "name": "posted_source_edit",
+      "result": "observed",
+      "detail": {
+        "accepted": true
+      }
+    },
+    {
+      "name": "cancel_approved",
+      "result": "observed",
+      "detail": {
+        "state": "cancel",
+        "latest_exists": false,
+        "first_exists": true
+      }
+    },
+    {
+      "name": "company_isolation",
+      "result": "observed",
+      "detail": {
+        "foreign_slip_visible": true
+      }
+    },
+    {
+      "name": "payable_partner_posting",
+      "result": "observed",
+      "detail": true
+    },
+    {
+      "name": "payment_register_action_on_slip",
+      "result": false,
+      "detail": null
+    }
+  ],
+  "mail_intercepted": 0,
+  "scope": "QA vendor evaluation; not production acceptance",
+  "status": "characterization_complete",
+  "rolled_back": true
+}

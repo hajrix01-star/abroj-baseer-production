@@ -1,0 +1,17 @@
+# FL1 — Financial operations
+
+Frozen source: `0a6246b7215caddf9e7b14ffe799f84ee03f8cd3`, based on AR2 `6104fc8e6f1d24b3e842f2b43bd9f410840d7759`. New addon `baseer_financial_register` 19.0.1.0.0. All 1156 baseline files preserved; 10 new files, 1166 total. Published successfully on MAIN `baseer_dev`, http://127.0.0.1:18069. Pinned image and three frozen read-only source mounts verified; no pending module operations.
+
+MAIN preservation: all368 protected tables retain exact original rows/columns, existing group/company memberships and preset assignments unchanged, all prior module versions unchanged. Coherent pre/post backups verified with661 attachment references. Existing original records were neither replaced nor seeded. Browser reached the original login screen; authenticated AR/EN/mobile visual acceptance was performed on isolated QA, not claimed on MAIN. Sign in to original to open the new menu.
+
+GitHub source-only synchronized: `de47b3f1fdc36a628580290c2ac6b9a55796f82d`. All1166 accepted files pass source verification, 18custom modules, publication checkout clean. GitHub Actions34489905518 completed successfully. No private DB, filestore, operational evidence or credentials exported. This is code synchronization; external server deployment remains governed by the existing server runbook.
+
+Open Invoicing / الفوترة → Financial operations / العمليات المالية. Includes posted invoices, refunds, sales summaries, journal entries and payments permitted by the existing roles/company/privacy rules. Fixed source buttons open existing documents. No new posting behavior or transaction migration. Cashier cannot use this register; native POS rights are preserved.
+
+Customer/supplier invoice cards: net invoices, settled amount, outstanding amount, partial document count and net overdue installment amount. Currency groups are separate. Settled includes credits/write-offs and does not mean cash received. General entry debit turnover is not added to invoice cards; sales-summary collections therefore do not duplicate invoice totals. Balances are current, not historical as-of balances. Native search, grouping, paging, export and mobile kanban remain.
+
+Acceptance: 62 accounting/security checks on clean original clone `baseer_ar1_fl1_clean_20260910`, full rollback with hard commit guard and installed modules preserved; eight actual AR/EN/480px UI checks. Supplemental20 mocked frontend behavior assertions are separate from browser evidence. Native in-payment branch is tested with a compatibility hook; no claim that the present bank workflow normally yields this state. Bounded180invoice/360line single-reader response6.45–8.48ms; no100000row/20reader certification.
+
+The earlier test-only US company invoked native localization installation in QA18074; its rollback-failed run is excluded. Final integration evidence comes from a separate clean original clone. QA18074 synthetic data was used only for UI evidence and will never be copied into original. No original financial data is used as public demo data or sent to GitHub.
+
+Source archive and evidence: candidate.json, candidate-source.zip, FL1-REVIEW.md, PREDEPLOY-GO.md, fl1-accounting-checks.json, fl1-ui-checks.json and fl1-ui/*. Actual MAIN evidence is in main-preservation.json, runtime.json, main-backup.json and post-release-backup.json. Reuse fl1_release.py/fl1_github_sync.py and the current registry for subsequent changes; do not broadly copy the working tree or QA database.

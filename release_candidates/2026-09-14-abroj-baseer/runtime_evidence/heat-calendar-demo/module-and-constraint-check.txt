@@ -1,0 +1,4 @@
+dashboard=1
+module=installed
+occasion_constraint=1
+target_constraint=1

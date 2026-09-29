@@ -1,0 +1,11 @@
+{
+  "protected_tables": 368,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "0a6246b7215caddf9e7b14ffe799f84ee03f8cd3",
+  "existing_user_memberships_exact": true,
+  "existing_module_versions_exact": true,
+  "existing_user_presets_exact": true,
+  "no_automatic_role_assignments": true,
+  "added_schema": "Nonstored reporting fields and view/action metadata only; no user assignment or business transaction migration"
+}

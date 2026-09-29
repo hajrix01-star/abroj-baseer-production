@@ -1,0 +1,14 @@
+{
+  "environment": "QA only",
+  "menu": "One Sales summaries menu, action-490; New opens existing cards",
+  "old_saved_pair": {"date":"2026-09-04","sources":[227,228],"sales":345,"customers":30,"both_cards_reopened":true},
+  "new_one_step_save_and_whatsapp": {"entry":94,"date":"2026-09-03","sources":[287,288],"sales":345,"tax":45,"customers":30,"average":11.5,"state":"approved","surface":"390px mobile native overflow action","whatsapp_tab_opened":true,"send_clicked":false},
+  "day_off": {"entry":91,"closure":30,"from":"2026-09-01","to":"2026-09-02","reason":"maintenance","cards_hidden":true,"state":"confirmed","archive_amount_cells_blank":true,"negative_id_date_cell_open_verified":true},
+  "mobile_archive": {"width":390,"scroll_width":390,"dates_not_truncated":true},
+  "languages": ["ar_001 RTL","en_US LTR"],
+  "translation_entries":380,
+  "translation_missing":0,
+  "language_restored":"ar_001",
+  "baseline_financial_rows":"Unchanged hashes; new QA demonstration documents listed in pos_s3_financial_audit.json",
+  "limitations":"Opening WhatsApp is not sending; user chooses recipient and sends manually. Temporary forms may expire; archive reconstructs from durable summaries/closures. Historical individual draft edits remain in Shift details."
+}

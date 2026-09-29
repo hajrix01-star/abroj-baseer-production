@@ -1,0 +1,714 @@
+{
+  "status": "passed",
+  "commit": false,
+  "result": {
+    "deleted": 100,
+    "providers": 20,
+    "lineage": [
+      {
+        "source_id": 606,
+        "canonical_id": 695,
+        "company_id": 10,
+        "alias": "provider_balady_company_10",
+        "key": "balady"
+      },
+      {
+        "source_id": 526,
+        "canonical_id": 695,
+        "company_id": 6,
+        "alias": "provider_balady_company_6",
+        "key": "balady"
+      },
+      {
+        "source_id": 546,
+        "canonical_id": 695,
+        "company_id": 7,
+        "alias": "provider_balady_company_7",
+        "key": "balady"
+      },
+      {
+        "source_id": 566,
+        "canonical_id": 695,
+        "company_id": 8,
+        "alias": "provider_balady_company_8",
+        "key": "balady"
+      },
+      {
+        "source_id": 586,
+        "canonical_id": 695,
+        "company_id": 9,
+        "alias": "provider_balady_company_9",
+        "key": "balady"
+      },
+      {
+        "source_id": 599,
+        "canonical_id": 696,
+        "company_id": 10,
+        "alias": "provider_business_center_company_10",
+        "key": "business_center"
+      },
+      {
+        "source_id": 519,
+        "canonical_id": 696,
+        "company_id": 6,
+        "alias": "provider_business_center_company_6",
+        "key": "business_center"
+      },
+      {
+        "source_id": 539,
+        "canonical_id": 696,
+        "company_id": 7,
+        "alias": "provider_business_center_company_7",
+        "key": "business_center"
+      },
+      {
+        "source_id": 559,
+        "canonical_id": 696,
+        "company_id": 8,
+        "alias": "provider_business_center_company_8",
+        "key": "business_center"
+      },
+      {
+        "source_id": 579,
+        "canonical_id": 696,
+        "company_id": 9,
+        "alias": "provider_business_center_company_9",
+        "key": "business_center"
+      },
+      {
+        "source_id": 598,
+        "canonical_id": 697,
+        "company_id": 10,
+        "alias": "provider_commerce_company_10",
+        "key": "commerce"
+      },
+      {
+        "source_id": 518,
+        "canonical_id": 697,
+        "company_id": 6,
+        "alias": "provider_commerce_company_6",
+        "key": "commerce"
+      },
+      {
+        "source_id": 538,
+        "canonical_id": 697,
+        "company_id": 7,
+        "alias": "provider_commerce_company_7",
+        "key": "commerce"
+      },
+      {
+        "source_id": 558,
+        "canonical_id": 697,
+        "company_id": 8,
+        "alias": "provider_commerce_company_8",
+        "key": "commerce"
+      },
+      {
+        "source_id": 578,
+        "canonical_id": 697,
+        "company_id": 9,
+        "alias": "provider_commerce_company_9",
+        "key": "commerce"
+      },
+      {
+        "source_id": 590,
+        "canonical_id": 698,
+        "company_id": 10,
+        "alias": "provider_energy_company_10",
+        "key": "energy"
+      },
+      {
+        "source_id": 510,
+        "canonical_id": 698,
+        "company_id": 6,
+        "alias": "provider_energy_company_6",
+        "key": "energy"
+      },
+      {
+        "source_id": 530,
+        "canonical_id": 698,
+        "company_id": 7,
+        "alias": "provider_energy_company_7",
+        "key": "energy"
+      },
+      {
+        "source_id": 550,
+        "canonical_id": 698,
+        "company_id": 8,
+        "alias": "provider_energy_company_8",
+        "key": "energy"
+      },
+      {
+        "source_id": 570,
+        "canonical_id": 698,
+        "company_id": 9,
+        "alias": "provider_energy_company_9",
+        "key": "energy"
+      },
+      {
+        "source_id": 601,
+        "canonical_id": 699,
+        "company_id": 10,
+        "alias": "provider_foreign_affairs_company_10",
+        "key": "foreign_affairs"
+      },
+      {
+        "source_id": 521,
+        "canonical_id": 699,
+        "company_id": 6,
+        "alias": "provider_foreign_affairs_company_6",
+        "key": "foreign_affairs"
+      },
+      {
+        "source_id": 541,
+        "canonical_id": 699,
+        "company_id": 7,
+        "alias": "provider_foreign_affairs_company_7",
+        "key": "foreign_affairs"
+      },
+      {
+        "source_id": 561,
+        "canonical_id": 699,
+        "company_id": 8,
+        "alias": "provider_foreign_affairs_company_8",
+        "key": "foreign_affairs"
+      },
+      {
+        "source_id": 581,
+        "canonical_id": 699,
+        "company_id": 9,
+        "alias": "provider_foreign_affairs_company_9",
+        "key": "foreign_affairs"
+      },
+      {
+        "source_id": 596,
+        "canonical_id": 700,
+        "company_id": 10,
+        "alias": "provider_go_company_10",
+        "key": "go"
+      },
+      {
+        "source_id": 516,
+        "canonical_id": 700,
+        "company_id": 6,
+        "alias": "provider_go_company_6",
+        "key": "go"
+      },
+      {
+        "source_id": 536,
+        "canonical_id": 700,
+        "company_id": 7,
+        "alias": "provider_go_company_7",
+        "key": "go"
+      },
+      {
+        "source_id": 556,
+        "canonical_id": 700,
+        "company_id": 8,
+        "alias": "provider_go_company_8",
+        "key": "go"
+      },
+      {
+        "source_id": 576,
+        "canonical_id": 700,
+        "company_id": 9,
+        "alias": "provider_go_company_9",
+        "key": "go"
+      },
+      {
+        "source_id": 604,
+        "canonical_id": 701,
+        "company_id": 10,
+        "alias": "provider_gosi_company_10",
+        "key": "gosi"
+      },
+      {
+        "source_id": 524,
+        "canonical_id": 701,
+        "company_id": 6,
+        "alias": "provider_gosi_company_6",
+        "key": "gosi"
+      },
+      {
+        "source_id": 544,
+        "canonical_id": 701,
+        "company_id": 7,
+        "alias": "provider_gosi_company_7",
+        "key": "gosi"
+      },
+      {
+        "source_id": 564,
+        "canonical_id": 701,
+        "company_id": 8,
+        "alias": "provider_gosi_company_8",
+        "key": "gosi"
+      },
+      {
+        "source_id": 584,
+        "canonical_id": 701,
+        "company_id": 9,
+        "alias": "provider_gosi_company_9",
+        "key": "gosi"
+      },
+      {
+        "source_id": 600,
+        "canonical_id": 702,
+        "company_id": 10,
+        "alias": "provider_hrsd_company_10",
+        "key": "hrsd"
+      },
+      {
+        "source_id": 520,
+        "canonical_id": 702,
+        "company_id": 6,
+        "alias": "provider_hrsd_company_6",
+        "key": "hrsd"
+      },
+      {
+        "source_id": 540,
+        "canonical_id": 702,
+        "company_id": 7,
+        "alias": "provider_hrsd_company_7",
+        "key": "hrsd"
+      },
+      {
+        "source_id": 560,
+        "canonical_id": 702,
+        "company_id": 8,
+        "alias": "provider_hrsd_company_8",
+        "key": "hrsd"
+      },
+      {
+        "source_id": 580,
+        "canonical_id": 702,
+        "company_id": 9,
+        "alias": "provider_hrsd_company_9",
+        "key": "hrsd"
+      },
+      {
+        "source_id": 602,
+        "canonical_id": 703,
+        "company_id": 10,
+        "alias": "provider_justice_company_10",
+        "key": "justice"
+      },
+      {
+        "source_id": 522,
+        "canonical_id": 703,
+        "company_id": 6,
+        "alias": "provider_justice_company_6",
+        "key": "justice"
+      },
+      {
+        "source_id": 542,
+        "canonical_id": 703,
+        "company_id": 7,
+        "alias": "provider_justice_company_7",
+        "key": "justice"
+      },
+      {
+        "source_id": 562,
+        "canonical_id": 703,
+        "company_id": 8,
+        "alias": "provider_justice_company_8",
+        "key": "justice"
+      },
+      {
+        "source_id": 582,
+        "canonical_id": 703,
+        "company_id": 9,
+        "alias": "provider_justice_company_9",
+        "key": "justice"
+      },
+      {
+        "source_id": 593,
+        "canonical_id": 704,
+        "company_id": 10,
+        "alias": "provider_mobily_company_10",
+        "key": "mobily"
+      },
+      {
+        "source_id": 513,
+        "canonical_id": 704,
+        "company_id": 6,
+        "alias": "provider_mobily_company_6",
+        "key": "mobily"
+      },
+      {
+        "source_id": 533,
+        "canonical_id": 704,
+        "company_id": 7,
+        "alias": "provider_mobily_company_7",
+        "key": "mobily"
+      },
+      {
+        "source_id": 553,
+        "canonical_id": 704,
+        "company_id": 8,
+        "alias": "provider_mobily_company_8",
+        "key": "mobily"
+      },
+      {
+        "source_id": 573,
+        "canonical_id": 704,
+        "company_id": 9,
+        "alias": "provider_mobily_company_9",
+        "key": "mobily"
+      },
+      {
+        "source_id": 607,
+        "canonical_id": 705,
+        "company_id": 10,
+        "alias": "provider_mudad_company_10",
+        "key": "mudad"
+      },
+      {
+        "source_id": 527,
+        "canonical_id": 705,
+        "company_id": 6,
+        "alias": "provider_mudad_company_6",
+        "key": "mudad"
+      },
+      {
+        "source_id": 547,
+        "canonical_id": 705,
+        "company_id": 7,
+        "alias": "provider_mudad_company_7",
+        "key": "mudad"
+      },
+      {
+        "source_id": 567,
+        "canonical_id": 705,
+        "company_id": 8,
+        "alias": "provider_mudad_company_8",
+        "key": "mudad"
+      },
+      {
+        "source_id": 587,
+        "canonical_id": 705,
+        "company_id": 9,
+        "alias": "provider_mudad_company_9",
+        "key": "mudad"
+      },
+      {
+        "source_id": 597,
+        "canonical_id": 706,
+        "company_id": 10,
+        "alias": "provider_municipalities_company_10",
+        "key": "municipalities"
+      },
+      {
+        "source_id": 517,
+        "canonical_id": 706,
+        "company_id": 6,
+        "alias": "provider_municipalities_company_6",
+        "key": "municipalities"
+      },
+      {
+        "source_id": 537,
+        "canonical_id": 706,
+        "company_id": 7,
+        "alias": "provider_municipalities_company_7",
+        "key": "municipalities"
+      },
+      {
+        "source_id": 557,
+        "canonical_id": 706,
+        "company_id": 8,
+        "alias": "provider_municipalities_company_8",
+        "key": "municipalities"
+      },
+      {
+        "source_id": 577,
+        "canonical_id": 706,
+        "company_id": 9,
+        "alias": "provider_municipalities_company_9",
+        "key": "municipalities"
+      },
+      {
+        "source_id": 608,
+        "canonical_id": 707,
+        "company_id": 10,
+        "alias": "provider_muqeem_company_10",
+        "key": "muqeem"
+      },
+      {
+        "source_id": 528,
+        "canonical_id": 707,
+        "company_id": 6,
+        "alias": "provider_muqeem_company_6",
+        "key": "muqeem"
+      },
+      {
+        "source_id": 548,
+        "canonical_id": 707,
+        "company_id": 7,
+        "alias": "provider_muqeem_company_7",
+        "key": "muqeem"
+      },
+      {
+        "source_id": 568,
+        "canonical_id": 707,
+        "company_id": 8,
+        "alias": "provider_muqeem_company_8",
+        "key": "muqeem"
+      },
+      {
+        "source_id": 588,
+        "canonical_id": 707,
+        "company_id": 9,
+        "alias": "provider_muqeem_company_9",
+        "key": "muqeem"
+      },
+      {
+        "source_id": 603,
+        "canonical_id": 708,
+        "company_id": 10,
+        "alias": "provider_passports_company_10",
+        "key": "passports"
+      },
+      {
+        "source_id": 523,
+        "canonical_id": 708,
+        "company_id": 6,
+        "alias": "provider_passports_company_6",
+        "key": "passports"
+      },
+      {
+        "source_id": 543,
+        "canonical_id": 708,
+        "company_id": 7,
+        "alias": "provider_passports_company_7",
+        "key": "passports"
+      },
+      {
+        "source_id": 563,
+        "canonical_id": 708,
+        "company_id": 8,
+        "alias": "provider_passports_company_8",
+        "key": "passports"
+      },
+      {
+        "source_id": 583,
+        "canonical_id": 708,
+        "company_id": 9,
+        "alias": "provider_passports_company_9",
+        "key": "passports"
+      },
+      {
+        "source_id": 609,
+        "canonical_id": 709,
+        "company_id": 10,
+        "alias": "provider_qiwa_company_10",
+        "key": "qiwa"
+      },
+      {
+        "source_id": 529,
+        "canonical_id": 709,
+        "company_id": 6,
+        "alias": "provider_qiwa_company_6",
+        "key": "qiwa"
+      },
+      {
+        "source_id": 549,
+        "canonical_id": 709,
+        "company_id": 7,
+        "alias": "provider_qiwa_company_7",
+        "key": "qiwa"
+      },
+      {
+        "source_id": 569,
+        "canonical_id": 709,
+        "company_id": 8,
+        "alias": "provider_qiwa_company_8",
+        "key": "qiwa"
+      },
+      {
+        "source_id": 589,
+        "canonical_id": 709,
+        "company_id": 9,
+        "alias": "provider_qiwa_company_9",
+        "key": "qiwa"
+      },
+      {
+        "source_id": 595,
+        "canonical_id": 710,
+        "company_id": 10,
+        "alias": "provider_salam_company_10",
+        "key": "salam"
+      },
+      {
+        "source_id": 515,
+        "canonical_id": 710,
+        "company_id": 6,
+        "alias": "provider_salam_company_6",
+        "key": "salam"
+      },
+      {
+        "source_id": 535,
+        "canonical_id": 710,
+        "company_id": 7,
+        "alias": "provider_salam_company_7",
+        "key": "salam"
+      },
+      {
+        "source_id": 555,
+        "canonical_id": 710,
+        "company_id": 8,
+        "alias": "provider_salam_company_8",
+        "key": "salam"
+      },
+      {
+        "source_id": 575,
+        "canonical_id": 710,
+        "company_id": 9,
+        "alias": "provider_salam_company_9",
+        "key": "salam"
+      },
+      {
+        "source_id": 592,
+        "canonical_id": 711,
+        "company_id": 10,
+        "alias": "provider_stc_company_10",
+        "key": "stc"
+      },
+      {
+        "source_id": 512,
+        "canonical_id": 711,
+        "company_id": 6,
+        "alias": "provider_stc_company_6",
+        "key": "stc"
+      },
+      {
+        "source_id": 532,
+        "canonical_id": 711,
+        "company_id": 7,
+        "alias": "provider_stc_company_7",
+        "key": "stc"
+      },
+      {
+        "source_id": 552,
+        "canonical_id": 711,
+        "company_id": 8,
+        "alias": "provider_stc_company_8",
+        "key": "stc"
+      },
+      {
+        "source_id": 572,
+        "canonical_id": 711,
+        "company_id": 9,
+        "alias": "provider_stc_company_9",
+        "key": "stc"
+      },
+      {
+        "source_id": 591,
+        "canonical_id": 712,
+        "company_id": 10,
+        "alias": "provider_water_company_10",
+        "key": "water"
+      },
+      {
+        "source_id": 511,
+        "canonical_id": 712,
+        "company_id": 6,
+        "alias": "provider_water_company_6",
+        "key": "water"
+      },
+      {
+        "source_id": 531,
+        "canonical_id": 712,
+        "company_id": 7,
+        "alias": "provider_water_company_7",
+        "key": "water"
+      },
+      {
+        "source_id": 551,
+        "canonical_id": 712,
+        "company_id": 8,
+        "alias": "provider_water_company_8",
+        "key": "water"
+      },
+      {
+        "source_id": 571,
+        "canonical_id": 712,
+        "company_id": 9,
+        "alias": "provider_water_company_9",
+        "key": "water"
+      },
+      {
+        "source_id": 594,
+        "canonical_id": 713,
+        "company_id": 10,
+        "alias": "provider_zain_company_10",
+        "key": "zain"
+      },
+      {
+        "source_id": 514,
+        "canonical_id": 713,
+        "company_id": 6,
+        "alias": "provider_zain_company_6",
+        "key": "zain"
+      },
+      {
+        "source_id": 534,
+        "canonical_id": 713,
+        "company_id": 7,
+        "alias": "provider_zain_company_7",
+        "key": "zain"
+      },
+      {
+        "source_id": 554,
+        "canonical_id": 713,
+        "company_id": 8,
+        "alias": "provider_zain_company_8",
+        "key": "zain"
+      },
+      {
+        "source_id": 574,
+        "canonical_id": 713,
+        "company_id": 9,
+        "alias": "provider_zain_company_9",
+        "key": "zain"
+      },
+      {
+        "source_id": 605,
+        "canonical_id": 714,
+        "company_id": 10,
+        "alias": "provider_zatca_company_10",
+        "key": "zatca"
+      },
+      {
+        "source_id": 525,
+        "canonical_id": 714,
+        "company_id": 6,
+        "alias": "provider_zatca_company_6",
+        "key": "zatca"
+      },
+      {
+        "source_id": 545,
+        "canonical_id": 714,
+        "company_id": 7,
+        "alias": "provider_zatca_company_7",
+        "key": "zatca"
+      },
+      {
+        "source_id": 565,
+        "canonical_id": 714,
+        "company_id": 8,
+        "alias": "provider_zatca_company_8",
+        "key": "zatca"
+      },
+      {
+        "source_id": 585,
+        "canonical_id": 714,
+        "company_id": 9,
+        "alias": "provider_zatca_company_9",
+        "key": "zatca"
+      }
+    ]
+  },
+  "explicit_properties_verified": true,
+  "no_dangling_xmlids": true,
+  "idempotent": true,
+  "seconds": 1.402
+}

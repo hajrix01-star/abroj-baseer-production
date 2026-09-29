@@ -1,0 +1,179 @@
+{
+  "checks": [
+    {
+      "name": "existing_companies_seeded",
+      "passed": true
+    },
+    {
+      "name": "6_84_native_totals",
+      "passed": true
+    },
+    {
+      "name": "6_84_full_days",
+      "passed": true
+    },
+    {
+      "name": "6_84_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "6_60_native_totals",
+      "passed": true
+    },
+    {
+      "name": "6_60_full_days",
+      "passed": true
+    },
+    {
+      "name": "6_60_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "6_friday_off",
+      "passed": true
+    },
+    {
+      "name": "17_84_native_totals",
+      "passed": true
+    },
+    {
+      "name": "17_84_full_days",
+      "passed": true
+    },
+    {
+      "name": "17_84_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "17_60_native_totals",
+      "passed": true
+    },
+    {
+      "name": "17_60_full_days",
+      "passed": true
+    },
+    {
+      "name": "17_60_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "17_friday_off",
+      "passed": true
+    },
+    {
+      "name": "18_84_native_totals",
+      "passed": true
+    },
+    {
+      "name": "18_84_full_days",
+      "passed": true
+    },
+    {
+      "name": "18_84_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "18_60_native_totals",
+      "passed": true
+    },
+    {
+      "name": "18_60_full_days",
+      "passed": true
+    },
+    {
+      "name": "18_60_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "18_friday_off",
+      "passed": true
+    },
+    {
+      "name": "company_pairs_distinct",
+      "passed": true
+    },
+    {
+      "name": "native_default_unchanged",
+      "passed": true
+    },
+    {
+      "name": "repeat_no_duplicates",
+      "passed": true
+    },
+    {
+      "name": "custom_and_archive_preserved",
+      "passed": true
+    },
+    {
+      "name": "module_init_repeat_preserves_custom",
+      "passed": true
+    },
+    {
+      "name": "19_84_native_totals",
+      "passed": true
+    },
+    {
+      "name": "19_84_full_days",
+      "passed": true
+    },
+    {
+      "name": "19_84_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "19_60_native_totals",
+      "passed": true
+    },
+    {
+      "name": "19_60_full_days",
+      "passed": true
+    },
+    {
+      "name": "19_60_duration_mode",
+      "passed": true
+    },
+    {
+      "name": "19_friday_off",
+      "passed": true
+    },
+    {
+      "name": "explicit_company_default_preserved",
+      "passed": true
+    },
+    {
+      "name": "context_not_leaked",
+      "passed": true
+    },
+    {
+      "name": "native_calendar_read_access_preserved",
+      "passed": true
+    },
+    {
+      "name": "own_company_calendar_visible",
+      "passed": true
+    },
+    {
+      "name": "native_company_create_permission",
+      "passed": true
+    },
+    {
+      "name": "foreign_seed_reference_rejected",
+      "passed": true
+    },
+    {
+      "name": "native_explicit_company_checker_rejects_mismatch",
+      "passed": true
+    },
+    {
+      "name": "payroll_consumes_12_native_hours",
+      "passed": true
+    },
+    {
+      "name": "payroll_consumes_10_native_hours",
+      "passed": true
+    }
+  ],
+  "two_company_create_seconds": 0.633,
+  "passed": true,
+  "rolled_back": true
+}

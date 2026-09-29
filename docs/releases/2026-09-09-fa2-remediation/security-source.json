@@ -1,0 +1,15 @@
+{
+  "database": "baseer_fix_security_20260909",
+  "overlay": [
+    "custom_addons/baseer_payroll/security/security.xml",
+    "custom_addons/baseer_service_seed/models/purchase_batch.py",
+    "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py",
+    "third_party_addons/odoomates_19/om_hr_payroll/report/report_contribution_register.py"
+  ],
+  "sha256": {
+    "custom_addons/baseer_payroll/security/security.xml": "fe19adf6c2be9c78162dc4e2cbc66560da3330bfeed874b6cfb31571f6598c33",
+    "custom_addons/baseer_service_seed/models/purchase_batch.py": "7b43b7ab558d0aef18835b879131ec6ba9e3c2e76f31c0c692859d920b3f7408",
+    "third_party_addons/odoomates_19/om_hr_payroll/wizard/hr_payroll_contribution_register_report.py": "4c171ef4cb8d0861c4383d926205caddc549d124d38881979a53e07f88a4c3ab",
+    "third_party_addons/odoomates_19/om_hr_payroll/report/report_contribution_register.py": "414239251f12bda837445249ae4ba51274fc7b0e7801cd78173bad2f7260eee6"
+  }
+}

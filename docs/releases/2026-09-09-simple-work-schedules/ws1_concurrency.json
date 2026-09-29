@@ -1,0 +1,118 @@
+{
+  "checks": [
+    {
+      "name": "previous exact failed-run fixture cleaned up",
+      "passed": true
+    },
+    {
+      "name": "two open forms share initial revision",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 1",
+      "passed": true
+    },
+    {
+      "name": "competing schedule waits on actual PostgreSQL advisory lock",
+      "passed": true
+    },
+    {
+      "name": "competing schedule cannot finish while schedule transaction owns lock",
+      "passed": true
+    },
+    {
+      "name": "competing_schedule finishes after lock release",
+      "passed": true
+    },
+    {
+      "name": "second saved form rejects stale expected revision",
+      "passed": true
+    },
+    {
+      "name": "only one future version committed",
+      "passed": true
+    },
+    {
+      "name": "one generated calendar committed",
+      "passed": true
+    },
+    {
+      "name": "rejected form remains unapplied",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 2",
+      "passed": true
+    },
+    {
+      "name": "native_attendance waits on actual PostgreSQL advisory lock",
+      "passed": true
+    },
+    {
+      "name": "native_attendance cannot finish while schedule transaction owns lock",
+      "passed": true
+    },
+    {
+      "name": "native_attendance finishes after lock release",
+      "passed": true
+    },
+    {
+      "name": "native_attendance succeeds after schedule rollback",
+      "passed": true
+    },
+    {
+      "name": "worker connection opened 3",
+      "passed": true
+    },
+    {
+      "name": "native_leave waits on actual PostgreSQL advisory lock",
+      "passed": true
+    },
+    {
+      "name": "native_leave cannot finish while schedule transaction owns lock",
+      "passed": true
+    },
+    {
+      "name": "native_leave finishes after lock release",
+      "passed": true
+    },
+    {
+      "name": "native_leave succeeds after schedule rollback",
+      "passed": true
+    },
+    {
+      "name": "all committed QA fixture records cleaned up",
+      "passed": true
+    }
+  ],
+  "fixture_tag": "WS1-CONCURRENCY-3d0d74289e",
+  "database": "baseer_reports_qa_20260907",
+  "previous_fixture_cleaned_up": true,
+  "fixture_committed": true,
+  "competing_schedule": {
+    "attempts": [
+      {
+        "type": "SerializationFailure",
+        "message": "could not serialize access due to concurrent update\n"
+      }
+    ],
+    "pid": 11710,
+    "result": "rejected",
+    "message": "The employee schedule changed while this form was open. Reopen Set working times.",
+    "elapsed_seconds": 0.0764
+  },
+  "native_attendance": {
+    "attempts": [],
+    "pid": 11712,
+    "result": "succeeded",
+    "elapsed_seconds": 0.0712
+  },
+  "native_leave": {
+    "attempts": [],
+    "pid": 11712,
+    "result": "succeeded",
+    "elapsed_seconds": 0.1323
+  },
+  "status": "passed",
+  "cleaned_up": true
+}

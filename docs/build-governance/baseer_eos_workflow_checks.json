@@ -1,0 +1,224 @@
+{
+  "checks": [
+    {
+      "name": "departure_required",
+      "passed": true
+    },
+    {
+      "name": "active_button_hidden",
+      "passed": true
+    },
+    {
+      "name": "native_departure_archived",
+      "passed": true
+    },
+    {
+      "name": "auto_calculated_without_posting",
+      "passed": true
+    },
+    {
+      "name": "button_replay_reuses",
+      "passed": true
+    },
+    {
+      "name": "reopen_preserves_review",
+      "passed": true
+    },
+    {
+      "name": "unpaid_statement",
+      "passed": true
+    },
+    {
+      "name": "snapshot_forgery",
+      "passed": true
+    },
+    {
+      "name": "departure_flag_forgery",
+      "passed": true
+    },
+    {
+      "name": "default_snapshot_forgery",
+      "passed": true
+    },
+    {
+      "name": "default_departure_flag_forgery",
+      "passed": true
+    },
+    {
+      "name": "eos_statement_ar_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "approve_returns_same_workspace",
+      "passed": true
+    },
+    {
+      "name": "identity_captured_once",
+      "passed": true
+    },
+    {
+      "name": "reprint_identity_stable",
+      "passed": true
+    },
+    {
+      "name": "approved_reopen_same_bill",
+      "passed": true
+    },
+    {
+      "name": "payment_native_wizard",
+      "passed": true
+    },
+    {
+      "name": "partial_allocated_amount",
+      "passed": true
+    },
+    {
+      "name": "eos_partial_ar_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "group_payment_allocations_not_full_payment",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_final_receipt",
+      "passed": true
+    },
+    {
+      "name": "reprint_no_new_invoice",
+      "passed": true
+    },
+    {
+      "name": "eos_final_ar_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "eos_final_en_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "report_data_cannot_override",
+      "passed": true
+    },
+    {
+      "name": "direct_report_requires_role",
+      "passed": true
+    },
+    {
+      "name": "employee_action_requires_role",
+      "passed": true
+    },
+    {
+      "name": "other_active_company",
+      "passed": true
+    },
+    {
+      "name": "reversal_suppresses_final",
+      "passed": true
+    },
+    {
+      "name": "reversed_bill_no_second_payment",
+      "passed": true
+    },
+    {
+      "name": "reversed_button_reuses_original",
+      "passed": true
+    },
+    {
+      "name": "eos_reversed_ar_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "native_resignation_mapping",
+      "passed": true
+    },
+    {
+      "name": "unknown_reason_explicit_review",
+      "passed": true
+    },
+    {
+      "name": "unknown_not_auto_approved",
+      "passed": true
+    },
+    {
+      "name": "manual_draft_reused_unchanged",
+      "passed": true
+    },
+    {
+      "name": "pending_is_not_receipt",
+      "passed": true
+    },
+    {
+      "name": "noncash_reconciliation_not_received",
+      "passed": true
+    },
+    {
+      "name": "payment_writeoff_cannot_be_final_receipt",
+      "passed": true
+    },
+    {
+      "name": "eos_long_ar_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "eos_long_en_one_A4_page",
+      "passed": true
+    },
+    {
+      "name": "zero_statement_not_receipt",
+      "passed": true
+    },
+    {
+      "name": "stale_draft_cannot_print",
+      "passed": true
+    }
+  ],
+  "pdfs": {
+    "eos_statement_ar": {
+      "pages": 1,
+      "seconds": 2.35,
+      "bytes": 30454
+    },
+    "eos_partial_ar": {
+      "pages": 1,
+      "seconds": 2.17,
+      "bytes": 31591
+    },
+    "eos_final_ar": {
+      "pages": 1,
+      "seconds": 2.15,
+      "bytes": 31936
+    },
+    "eos_final_en": {
+      "pages": 1,
+      "seconds": 2.19,
+      "bytes": 28526
+    },
+    "eos_reversed_ar": {
+      "pages": 1,
+      "seconds": 2.18,
+      "bytes": 31478
+    },
+    "eos_long_ar": {
+      "pages": 1,
+      "seconds": 2.16,
+      "bytes": 34302
+    },
+    "eos_long_en": {
+      "pages": 1,
+      "seconds": 2.15,
+      "bytes": 31868
+    }
+  },
+  "pending_evidence": {
+    "payment_states": [
+      "paid"
+    ],
+    "bill_state": "paid",
+    "residual": 0.0,
+    "workflow": "processing",
+    "paid": "0.00"
+  },
+  "passed": true,
+  "rolled_back": true
+}

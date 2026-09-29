@@ -1,0 +1,57 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "المناقشة"
+    - menu:
+      - menuitem "المناقشة"
+      - menuitem "القنوات"
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل":
+        - img "الرسائل": 
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المُستخدِم في إجازة ومتصل بالإنترنت":
+        - img "المستخدم"
+        - img "المُستخدِم في إجازة ومتصل بالإنترنت": 
+        - text: 
+- generic: 
+- textbox "البحث في المحادثات" [disabled]
+- button "اجتماع جديد":
+- button " الرسائل المميزة":
+  - generic: 
+  - generic: الرسائل المميزة
+- button " القنوات":
+  - generic: 
+  - generic: القنوات
+- button "صورة المناقشة Administrators":
+  - generic "Administrators":
+    - img "صورة المناقشة"
+    - generic: Administrators
+  - text: 
+- button "صورة المناقشة general":
+  - generic "general":
+    - img "صورة المناقشة"
+    - generic: general
+  - text: 
+- button " الرسائل المباشرة":
+  - generic: 
+  - generic: الرسائل المباشرة
+- button "صورة المناقشة المستخدم هو Bot OdooBot":
+  - generic "OdooBot":
+    - img "صورة المناقشة"
+    - img "المستخدم هو Bot": 
+    - generic: OdooBot
+  - text: 
+- heading "لم يتم تحديد محادثة." [level=4]:
+  - generic: لم يتم تحديد محادثة.
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

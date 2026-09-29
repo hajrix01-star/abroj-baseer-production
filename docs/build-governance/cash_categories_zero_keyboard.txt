@@ -1,0 +1,285 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- list:
+  - link "الحركة النقدية حسب الفئات":
+    - /url: /odoo/action-322
+- generic: بنود القيود النقدية للتحقق من المطابقة
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - search:
+    - button "بحث...":
+      - img: 
+    - searchbox "بحث..." [active]
+  - button ""
+- search:
+  - navigation "جهاز المناداة":
+    - generic: 1-13
+    - text: / 13
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - text: 
+  - text: 
+  - list:
+    - button
+    - text: الكل
+    - button "":
+      - generic: 
+    - text: "1"
+  - table:
+    - rowgroup:
+      - row "التاريخ  قيد اليومية  الحساب  الشريك  بطاقة عنوان  المدين  الدائن  مطابقة  ":
+        - columnheader:
+          - checkbox
+        - columnheader "التاريخ ":
+          - generic: التاريخ
+          - generic: 
+        - columnheader "قيد اليومية ":
+          - generic: قيد اليومية
+          - generic: 
+        - columnheader "الحساب ":
+          - generic: الحساب
+          - generic: 
+        - columnheader "الشريك ":
+          - generic: الشريك
+          - generic: 
+        - columnheader "بطاقة عنوان ":
+          - generic: بطاقة عنوان
+          - generic: 
+        - columnheader "المدين ":
+          - generic: المدين
+          - generic: 
+        - columnheader "الدائن ":
+          - generic: الدائن
+          - generic: 
+        - columnheader "مطابقة ":
+          - generic: مطابقة
+          - generic: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "١٠ سبتمبر TA/2026/09/0004 101001 البنك طرف تجريبي للفئات QA synthetic cash categories 30.00 SR 0.00 SR":
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "TA/2026/09/0004":
+          - link "TA/2026/09/0004":
+            - /url: "#"
+        - cell "101001 البنك"
+        - cell "طرف تجريبي للفئات"
+        - cell "QA synthetic cash categories"
+        - cell "30.00 SR"
+        - cell "0.00 SR"
+        - cell
+        - cell
+      - row "١٠ سبتمبر TA/2026/09/0004 105001 كاش تجريبي طرف تجريبي للفئات QA synthetic cash categories 0.00 SR 32.00 SR":
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "TA/2026/09/0004":
+          - link "TA/2026/09/0004":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - cell "QA synthetic cash categories"
+        - cell "0.00 SR"
+        - cell "32.00 SR"
+        - cell
+        - cell
+      - row "١٠ سبتمبر TA/2026/09/0003 105001 كاش تجريبي طرف تجريبي للفئات QA synthetic cash categories 0.00 SR 40.00 SR":
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "TA/2026/09/0003":
+          - link "TA/2026/09/0003":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - cell "QA synthetic cash categories"
+        - cell "0.00 SR"
+        - cell "40.00 SR"
+        - cell
+        - cell
+      - row "١٠ سبتمبر TA/2026/09/0002 105001 كاش تجريبي طرف تجريبي للفئات QA synthetic cash categories 0.00 SR 200.00 SR":
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "TA/2026/09/0002":
+          - link "TA/2026/09/0002":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - cell "QA synthetic cash categories"
+        - cell "0.00 SR"
+        - cell "200.00 SR"
+        - cell
+        - cell
+      - row "١٠ سبتمبر TA/2026/09/0001 105001 كاش تجريبي طرف تجريبي للفئات QA synthetic cash categories 0.00 SR 25.00 SR":
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "TA/2026/09/0001":
+          - link "TA/2026/09/0001":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - cell "QA synthetic cash categories"
+        - cell "0.00 SR"
+        - cell "25.00 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAD/2026/00001 101007 شبكة تجريبية طرف تجريبي للفئات Manual Payment: INV/2026/00003 115.00 SR 0.00 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAD/2026/00001":
+          - link "PQAD/2026/00001":
+            - /url: "#"
+        - cell "101007 شبكة تجريبية"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: INV/2026/00003"'
+        - cell "115.00 SR"
+        - cell "0.00 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAC/2026/00006 105001 كاش تجريبي طرف تجريبي للفئات Manual Payment: BILL/2026/08/0001 0.00 SR 57.50 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAC/2026/00006":
+          - link "PQAC/2026/00006":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: BILL/2026/08/0001"'
+        - cell "0.00 SR"
+        - cell "57.50 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAC/2026/00005 105001 كاش تجريبي طرف تجريبي للفئات Manual Payment: BILL/2026/09/0003 0.00 SR 57.50 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAC/2026/00005":
+          - link "PQAC/2026/00005":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: BILL/2026/09/0003"'
+        - cell "0.00 SR"
+        - cell "57.50 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAC/2026/00004 105001 كاش تجريبي طرف تجريبي للفئات Manual Payment: RINV/2026/00001 0.00 SR 11.50 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAC/2026/00004":
+          - link "PQAC/2026/00004":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: RINV/2026/00001"'
+        - cell "0.00 SR"
+        - cell "11.50 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAC/2026/00003 105001 كاش تجريبي طرف تجريبي للفئات Manual Payment: BILL/2026/09/0002 0.00 SR 115.00 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAC/2026/00003":
+          - link "PQAC/2026/00003":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: BILL/2026/09/0002"'
+        - cell "0.00 SR"
+        - cell "115.00 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAC/2026/00002 105001 كاش تجريبي طرف تجريبي للفئات Manual Payment: BILL/2026/09/0001 0.00 SR 222.50 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAC/2026/00002":
+          - link "PQAC/2026/00002":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: BILL/2026/09/0001"'
+        - cell "0.00 SR"
+        - cell "222.50 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PQAC/2026/00001 105001 كاش تجريبي طرف تجريبي للفئات Manual Payment: INV/2026/00001 115.00 SR 0.00 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PQAC/2026/00001":
+          - link "PQAC/2026/00001":
+            - /url: "#"
+        - cell "105001 كاش تجريبي"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: INV/2026/00001"'
+        - cell "115.00 SR"
+        - cell "0.00 SR"
+        - cell
+        - cell
+      - 'row "١٠ سبتمبر PBNK1/2026/00001 101001 البنك طرف تجريبي للفئات Manual Payment: INV/2026/00002 230.00 SR 0.00 SR"':
+        - cell:
+          - checkbox
+        - cell "١٠ سبتمبر"
+        - cell "PBNK1/2026/00001":
+          - link "PBNK1/2026/00001":
+            - /url: "#"
+        - cell "101001 البنك"
+        - cell "طرف تجريبي للفئات"
+        - 'cell "Manual Payment: INV/2026/00002"'
+        - cell "230.00 SR"
+        - cell "0.00 SR"
+        - cell
+        - cell
+    - rowgroup:
+      - row "490.00 SR 761.00 SR":
+        - cell
+        - cell "490.00 SR":
+          - generic: 490.00 SR
+        - cell "761.00 SR":
+          - generic: 761.00 SR
+        - cell
+- generic: Back to "الحركة النقدية حسب الفئات"

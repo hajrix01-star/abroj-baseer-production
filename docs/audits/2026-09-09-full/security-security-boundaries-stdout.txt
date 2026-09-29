@@ -1,0 +1,3 @@
+{"database": "baseer_audit_security_20260909", "status": "completed", "check_count": 24, "failed_checks": ["invoice_operator_can_create_with_service_default", "invoice_operator_supplier_default_category_create_works", "invoice_operator_onchange_category_map_id_works", "invoice_operator_onchange_partner_id_works"]}
+
+STDERR:

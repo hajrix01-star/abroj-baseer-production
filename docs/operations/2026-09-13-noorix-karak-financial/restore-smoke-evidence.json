@@ -1,0 +1,49 @@
+{
+  "schema": "baseer-restore-smoke-evidence/v1",
+  "executed_at_utc": "2026-09-13T04:41:33.7632623Z",
+  "source_checkpoint": "20260913-karak-financial-prewrite-qa-1",
+  "source_database_dump_sha256": "dbc137e8afe689e5aeb13e9840fcc813fc81dd6c923b2b0fde3c6d0a74f47d39",
+  "source_filestore_sha256": "4d294b6b937176783abd100b36d66e8260e8a6fb10142f8688168f6eac13b84a",
+  "temporary_database": "baseer_noorix_karak_restore_proof_20260913",
+  "restored_database_bytes": 127024151,
+  "dump_toc_lines": 17589,
+  "restored_columns": [
+    "companies",
+    "partners",
+    "product_templates",
+    "account_moves",
+    "payments",
+    "stock_moves",
+    "stock_pickings",
+    "pos_orders",
+    "pos_sessions"
+  ],
+  "restored_values": [
+    4,
+    352,
+    583,
+    2548,
+    1229,
+    0,
+    0,
+    669,
+    670
+  ],
+  "expected_values": [
+    4,
+    352,
+    583,
+    2548,
+    1229,
+    0,
+    0,
+    669,
+    670
+  ],
+  "counts_match": true,
+  "filestore_archive_entries": 1022,
+  "filestore_first_entry": "baseer_noorix_data_migration_qa_20260912/",
+  "filestore_last_entry": "baseer_noorix_data_migration_qa_20260912/df/dfe02e002525e5fc99c0efd22ac5025010a46b66",
+  "result": "RESTORE_OK",
+  "cleanup": "temporary database and copied dump removed after verification"
+}

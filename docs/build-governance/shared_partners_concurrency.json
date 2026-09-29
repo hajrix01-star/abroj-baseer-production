@@ -1,0 +1,92 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "initial_global_identity_absent",
+      "passed": true
+    },
+    {
+      "name": "initial_fixture_contact_absent",
+      "passed": true
+    },
+    {
+      "name": "different_company_contexts",
+      "passed": true
+    },
+    {
+      "name": "independent_connections",
+      "passed": true
+    },
+    {
+      "name": "same_shared_provider_from_both_calls",
+      "passed": true
+    },
+    {
+      "name": "actual_serialization_retry_observed",
+      "passed": true
+    },
+    {
+      "name": "exactly_one_global_xmlid",
+      "passed": true
+    },
+    {
+      "name": "exactly_one_shared_contact",
+      "passed": true
+    },
+    {
+      "name": "canonical_has_no_parent",
+      "passed": true
+    },
+    {
+      "name": "canonical_bilingual_fields",
+      "passed": true
+    },
+    {
+      "name": "canonical_bilingual_name",
+      "passed": true
+    },
+    {
+      "name": "canonical_supplier_and_no_assumed_vat",
+      "passed": true
+    },
+    {
+      "name": "provider_visible_from_second_company",
+      "passed": true
+    },
+    {
+      "name": "idempotent_repeat_company_6",
+      "passed": true
+    },
+    {
+      "name": "idempotent_repeat_company_10",
+      "passed": true
+    },
+    {
+      "name": "no_financial_history_changed",
+      "passed": true
+    }
+  ],
+  "fixture_key": "sp1_race",
+  "workers": [
+    {
+      "company_id": 6,
+      "pid": 251466,
+      "partner_id": 741,
+      "shared": true,
+      "retries": [
+        "40001"
+      ],
+      "seconds": 0.0934
+    },
+    {
+      "company_id": 10,
+      "pid": 251467,
+      "partner_id": 741,
+      "shared": true,
+      "retries": [],
+      "seconds": 0.0842
+    }
+  ],
+  "check_count": 16,
+  "cleanup_required": "Drop disposable database baseer_shared_partners_race after collecting evidence."
+}

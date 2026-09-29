@@ -1,0 +1,11 @@
+{
+  "protected_tables": 368,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "e84fcfb96800fe8a655a3e40fb6db3d215085238",
+  "existing_user_memberships_exact": true,
+  "existing_module_versions_exact": true,
+  "existing_user_presets_exact": true,
+  "no_automatic_role_assignments": true,
+  "added_schema": "Nonstored cash reporting fields and inherited view metadata only; no business schema or data migration"
+}

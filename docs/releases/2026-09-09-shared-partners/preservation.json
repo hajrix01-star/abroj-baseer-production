@@ -1,0 +1,21 @@
+{
+  "original_financial_rows_unchanged": true,
+  "no_unapproved_changes": true,
+  "main_unchanged": true,
+  "deleted_seed_sources": 100,
+  "authorized_current_user_preference_metadata": {
+    "3": {
+      "fields": [
+        "write_date"
+      ],
+      "reason": "Native current-user language menu acceptance test; original language restored",
+      "before": {
+        "write_date": "2026-09-08T21:04:12.461875"
+      },
+      "after": {
+        "write_date": "2026-09-08T21:29:36.289968"
+      }
+    }
+  },
+  "issues": []
+}

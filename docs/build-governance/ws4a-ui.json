@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "database": "baseer_reports_qa_20260907",
+  "native_action_id": 95,
+  "main_equivalent_action_id": 99,
+  "checks": [
+    {
+      "name": "Actual Arabic native list default Current schedules filter present",
+      "passed": true
+    },
+    {
+      "name": "Default displays one WS4A replacement row with11:00/day55:00/week",
+      "passed": true
+    },
+    {
+      "name": "Removing Current schedules filter displays exactlytwo revisions",
+      "passed": true
+    },
+    {
+      "name": "Direct previouscalendar460 opens unchanged10:30/day52:30/week with latestlink",
+      "passed": true
+    },
+    {
+      "name": "Native company/shared-calendar domain retained exactly",
+      "passed": true
+    },
+    {
+      "name": "Native action context only adds named default filter",
+      "passed": true
+    },
+    {
+      "name": "Backend SHA identical to acceptedWS4",
+      "passed": true
+    }
+  ],
+  "metadata": {
+    "domain": "['|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)]",
+    "context": "{'search_default_baseer_current_schedules': 1}"
+  },
+  "source_sha256": {
+    "custom_addons/baseer_work_schedule/__manifest__.py": "112b1da02dcadd10790fae37d1d02743cf7247b6474dd37b678041b47a7ea290",
+    "custom_addons/baseer_work_schedule/views/schedule_views.xml": "0dd2dcb79bb68faa4c601e5c567dfb6ddb6a5713e35482dbb8c8efaa3cfedaa2",
+    "custom_addons/baseer_work_schedule/i18n/ar.po": "9b1497a355f382f54ac7a3f91e6b1738abe1f09fb5cec37381627031ccac8e27"
+  }
+}

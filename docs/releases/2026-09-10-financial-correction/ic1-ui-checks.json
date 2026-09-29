@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "database": "baseer_ic1_20260910",
+  "observations": {
+    "Arabic native invoice action and correction dialog": "dialog-ar.txt",
+    "English labels and editable fields": "dialog-en.txt",
+    "Native mobile invoice-line cards at480px": "dialog-480-ar.txt",
+    "Mobile nested line edit with labeled inputs": "line-480-ar.txt",
+    "Mobile400 to500 confirmation keeps posted unpaid invoice and visible audit reason": "corrected-480-ar.txt",
+    "Financial-register pencil entry": "register-en.txt",
+    "Register dialog explicitly editable after fresh page load": "register-dialog-en.txt",
+    "Owner sees Arabic per-accountant correction checkbox": "permission-settings-ar.txt",
+    "Owner saves disabled checkbox on QA accountant": "permission-saved-ar.txt",
+    "Disabled accountant invoice retains native actions without shared correction button": "permission-disabled-en.txt"
+  },
+  "mobile_geometry": {
+    "viewport": 480,
+    "document_scroll_width": 480,
+    "dialog_scroll_widths": [
+      480,
+      480
+    ]
+  },
+  "cashier_execution": "Denied by63-case backend suite and20-case source-route suite; user explicitly reaffirmed prohibition",
+  "limitations": [
+    "Existing native direct draft/edit permissions are unchanged; this is the shared correction workflow.",
+    "Source-owned POS/payroll/loan actions retain their own role checks; no generic journal rewrite.",
+    "Full browser refresh required after upgrade to discard cached readonly view."
+  ],
+  "evidence_files": {
+    "corrected-480-ar.png": "f7689eb2f24355a47fabbb1be8bd3cc676d32f41e8640c92fd866d2782d820bf",
+    "corrected-480-ar.txt": "d6e4e9ab455142dc8a124f5fb2ed318837ec5ae82d59d1e498794b48c541daed",
+    "dialog-480-ar.png": "12203d90e31502565e361607d18b013b88c5aa79b0bffc2a2d8973de984e8424",
+    "dialog-480-ar.txt": "ffd946fba145ddd8944addbe231f6b570f6d1d686648d35cee98d19e42f3a8e7",
+    "dialog-ar.png": "26938688d9447c9a5ee7c68f7eaf49b873d353bae0d75f7dac75da1a08a1d611",
+    "dialog-ar.txt": "35b3e658cf24cf9285910fb4a081b35916b63a5ebbc1de776dd5a1d1e4c71389",
+    "dialog-en.png": "16a53fafa2beb944ecce67e5bc9b9398c103c91c9a293f64a0a522e36b989b57",
+    "dialog-en.txt": "fa8a9140cb53e1bb5074764c8a8d81fd31c06c5c4e4ac3a70a9049f15899c4e0",
+    "line-480-ar.png": "e780404b98a08ce563f045ec1a9d204e796f0359a21434518ceb8be4c8b97811",
+    "line-480-ar.txt": "f26ccec3459850d0db16d31c2908d1e1b0f2577328c0c68510577f6293d19792",
+    "permission-disabled-en.png": "aa2c58ea59b56879758ab446af3a2ae6a69b119d228043becb4462878f21df31",
+    "permission-disabled-en.txt": "873d4c838bc3c40bdc01a3145e863e0beb3e4ee5a9fb96772f3f57b8e067baa2",
+    "permission-saved-ar.txt": "3c5fae7ce9512604c110544f0340e2ad917857b847b7304aaf063667a29bfae2",
+    "permission-settings-ar.png": "9a83e7a76cddfa3a85fb23c80274b44df091f8351e5ef7691d4da59d86f3b989",
+    "permission-settings-ar.txt": "be4fe41349b5458154ebec790bb221a82ecc1ef4bde82426aeb24f2e711acae7",
+    "register-dialog-en.png": "30c8468b1b711293e5b0b5b931e4f263c69ed62c97ba69b6a02261dd54b156bf",
+    "register-dialog-en.txt": "3517a3c9187c09d8cca40f754fe60bc195935cb3d9973791f93a096f7d221905",
+    "register-en.txt": "cbc4e56f936a6aee56da18e9eabe539e356a24b5f01fe3e586afa1297b7a6c8c"
+  },
+  "source_sha256": {
+    "__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "__manifest__.py": "297b3d1aa4002b98ba41669d65eef2519d05fe7b3025c5d715d112d7593feb0c",
+    "i18n/ar_001.po": "592fe97aa232eefe533263de21df2c12c57dedb9605e90440e8c2fa133014720",
+    "models/__init__.py": "82f4d958e2d7157453fba75dfaea0f8fec311cb9c3f558b9c0b72cc55c82a34e",
+    "models/batch_adapter.py": "f68f6dd70fffb8e411193d476cf6d22e1379a93429e57f0f04a44318c777f4c2",
+    "models/correction.py": "a1003bed71b9a234b78ba02e9ba77ce875fbbf68e30944b6684928b78b6033b8",
+    "models/dispatcher.py": "03ff732b250ad647f87b66b3cd771dfcf8135e7b536503878b850ab0398b84d9",
+    "security/correction_rules.xml": "90942afa0554a51dac2406ce1ddbed13bf753411819e6e2131a43edd43573bee",
+    "security/ir.model.access.csv": "ccf819259be7d000fd8b18d96358b1bf0447a761b36b96b0e426f5d63796d706",
+    "views/correction_views.xml": "752392da53760ec7f18a21dd67f09c889133edea92944310eefcb467d3263afc"
+  },
+  "backend_validation": "63PASS rollback and commitguard;20source routes PASS;two-confirm and line-edit concurrent sessions PASS"
+}

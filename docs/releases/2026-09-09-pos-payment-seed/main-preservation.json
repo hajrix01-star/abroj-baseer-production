@@ -1,0 +1,20 @@
+{
+  "protected_tables": 126,
+  "financial_and_hr_rows_exact": true,
+  "company_partner_metadata_only": [
+    {
+      "id": 6,
+      "key": "write_date",
+      "before": "2026-09-09T12:10:32.544536",
+      "after": "2026-09-09T17:25:47.968951"
+    },
+    {
+      "id": 7,
+      "key": "write_date",
+      "before": "2026-09-09T12:10:32.544536",
+      "after": "2026-09-09T17:25:47.968951"
+    }
+  ],
+  "existing_account_journal_payment_method_rows_exact": true,
+  "candidate": "8aff2c48f66df5925cf9dd98e9e7f11b55741f50"
+}

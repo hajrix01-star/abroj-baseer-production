@@ -1,0 +1,102 @@
+[
+  {
+    "path": "docs/build-governance/baseer_payroll_ar_001.pdf",
+    "bytes": 54137,
+    "sha256": "6f25558b61be5a4b2c57f177c8cafabebf0987e1ffa84ad2ff6be11f3663333d"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_ar_preview.png",
+    "bytes": 46164,
+    "sha256": "1e3c0409d9258880ac7c5dd22e685eb231080d897eb38a3dca7176018f9868a9"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_checks.json",
+    "bytes": 12454,
+    "sha256": "e84a6302acfe86f73b98b9d59fb7daf8724584d98647cf960038b387e36cabd7"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_checks.py",
+    "bytes": 16681,
+    "sha256": "0e4149fefb5fc286b65d473480c4cbdabcd533d3a79d76d85a694716a1b608a9"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_concurrency.json",
+    "bytes": 742,
+    "sha256": "159a36cecc4a922374c3dff1b2bcba854dfd0490e5d0b758ba914c4bb76912b0"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_concurrent_payment.py",
+    "bytes": 2340,
+    "sha256": "8ec5240d86ebd86600f343464b92a19fb0d7afe22e31e7dd1a6ce9622f390da8"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_desktop.png",
+    "bytes": 52290,
+    "sha256": "ca1f7baa7fd6ed6065d7cdcda89311bf148203379c160e9f8798ef434ccce93a"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_draft.png",
+    "bytes": 56358,
+    "sha256": "47bef64674fd3d540cad6a90adc56a2caa32e906b76262a0d1204e8367ca6ad9"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_employee.png",
+    "bytes": 60484,
+    "sha256": "0015e801c5a8ed9ef9211b9614b0a37b0387f210cea7673576adc77af2163690"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_en_US.pdf",
+    "bytes": 39000,
+    "sha256": "29eeeab7bd938f0c570d565dcca6f995dff0fa08fab735556d2e6d7ae22797fe"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_evidence_index.py",
+    "bytes": 540,
+    "sha256": "1e936135fab080dfd6e9e127e01e39ba935d9609f40144491d8b633f60502a34"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_focused.json",
+    "bytes": 447,
+    "sha256": "983fd98de09b9f9c3b0f3790f537f5fa215961ab197e74718b664d7f5398c62c"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_focused.py",
+    "bytes": 2249,
+    "sha256": "5bf912b27a9b2f97c18d9144ec88a9afa54d813aa781207423f34b6e7ad6ad90"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_inspect.py",
+    "bytes": 308,
+    "sha256": "f91c163038624c1e56b1fb96da4e46f9963460090eececb7630c052d0fa1dc8c"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_loan_history.png",
+    "bytes": 63058,
+    "sha256": "5fb0ff9e9e7e44f42bb2e69396d8038e75aa903f438d50113df5028361ef3122"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_loans.png",
+    "bytes": 29976,
+    "sha256": "0cd54fda02728466c41603a78aec3ae9b65a8302c265a1f377de8f2d6e46c44c"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_mobile.png",
+    "bytes": 28499,
+    "sha256": "615c76888e58101cad59f7306cdf8759e5adc90eb026dcf607081a4b55215b3c"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_ops.py",
+    "bytes": 2380,
+    "sha256": "dadc2dbf7874b41395cad2b5aae5995183ecc6cfc39bc3e20f61802282d964ba"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_preview.py",
+    "bytes": 4833,
+    "sha256": "7e5eaccbbafa04f5896e038735b4ac0cab2732a4e502d4ada49aa0263eabe7d8"
+  },
+  {
+    "path": "docs/build-governance/baseer_payroll_release.py",
+    "bytes": 4709,
+    "sha256": "33cbb8e8577994fd916dabd08b3ee354590f21d97e354f41f0f300831dad3fe8"
+  }
+]

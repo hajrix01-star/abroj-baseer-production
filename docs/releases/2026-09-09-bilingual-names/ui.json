@@ -1,0 +1,34 @@
+{
+  "environment": "QA with original filestore",
+  "company_desktop_arabic": "Native form two clearly labelled fields; composed title readonly",
+  "company_mobile_arabic": {
+    "viewport": 390,
+    "field_width": 343,
+    "field_x": 31,
+    "field_y": [
+      251,
+      315
+    ]
+  },
+  "supplier_mobile_arabic": {
+    "record": 715,
+    "viewport": 390,
+    "field_width": 343,
+    "field_x": 31,
+    "field_y": [
+      294,
+      358
+    ],
+    "visible_values": [
+      "منصة بلدي",
+      "Balady"
+    ],
+    "title": "منصة بلدي | Balady"
+  },
+  "form_architecture_languages": [
+    "ar_001",
+    "en_US"
+  ],
+  "writes": "No company/supplier saved by browser; temporary admin language switch only",
+  "supplier_desktop_english": "Rendered English Arabic Name / English Name labels, both values present; composed title readonly"
+}

@@ -1,0 +1,207 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - button "":
+      - generic: 
+    - generic: الداخل والخارج
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- button "":
+  - generic: 
+- button "":
+  - generic: 
+- main:
+  - region "الملخص المالي":
+    - group "عرض العمليات":
+      - button "جميع العمليات"
+      - button "الداخل والخارج" [disabled] [pressed]
+    - generic: فترة التقرير
+    - textbox "فترة التقرير": 2026-07
+    - generic: المعلم الشامي
+    - button "تحديث الملخص المالي":
+      - generic: 
+    - generic: SAR
+    - heading "الداخل والخارج" [level=3]
+    - generic: 10 مستندات
+    - 'button "الداخل والخارج — الداخل: 1,580.00SAR"':
+      - generic: الداخل
+      - generic: 1,580.00
+    - 'button "الداخل والخارج — الخارج: 0.00SAR"':
+      - generic: الخارج
+      - generic: "0.00"
+    - 'button "الداخل والخارج — الصافي: 1,580.00SAR"':
+      - generic: الصافي
+      - generic: 1,580.00
+  - link "PSCSH/2026/00004 28/07/2026 ملخص المبيعات المعلم الشامي الداخل 215.00 SR الخارج 0.00 SR الصافي 215.00 SR  ":
+    - generic: PSCSH/2026/00004
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 215.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 215.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00005 28/07/2026 ملخص المبيعات المعلم الشامي الداخل 230.00 SR الخارج 0.00 SR الصافي 230.00 SR  ":
+    - generic: PPSBNK/2026/00005
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 230.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0004 28/07/2026 ملخص المبيعات المعلم الشامي الداخل 345.00 SR الخارج 0.00 SR الصافي 345.00 SR  ":
+    - generic: POSS/2026/07/0004
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 345.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "POSS/2026/07/0003 28/07/2026 عكس: ملخص المبيعات المعلم الشامي الداخل -345.00 SR الخارج 0.00 SR الصافي -345.00 SR  "':
+    - generic: POSS/2026/07/0003
+    - generic: 28/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: "-345.00 SR"
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: "-345.00 SR"
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0002 28/07/2026 ملخص المبيعات المعلم الشامي الداخل 345.00 SR الخارج 0.00 SR الصافي 345.00 SR  ":
+    - generic: POSS/2026/07/0002
+    - generic: 28/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 345.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PSCSH/2026/00006 27/07/2026 ملخص المبيعات المعلم الشامي الداخل 215.00 SR الخارج 0.00 SR الصافي 215.00 SR  ":
+    - generic: PSCSH/2026/00006
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 215.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 215.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "PPSBNK/2026/00007 27/07/2026 ملخص المبيعات المعلم الشامي الداخل 230.00 SR الخارج 0.00 SR الصافي 230.00 SR  ":
+    - generic: PPSBNK/2026/00007
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 230.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 230.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0006 27/07/2026 ملخص المبيعات المعلم الشامي الداخل 345.00 SR الخارج 0.00 SR الصافي 345.00 SR  ":
+    - generic: POSS/2026/07/0006
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 345.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - 'link "POSS/2026/07/0005 27/07/2026 عكس: ملخص المبيعات المعلم الشامي الداخل -345.00 SR الخارج 0.00 SR الصافي -345.00 SR  "':
+    - generic: POSS/2026/07/0005
+    - generic: 27/07/2026
+    - generic: "عكس: ملخص المبيعات"
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: "-345.00 SR"
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: "-345.00 SR"
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+  - link "POSS/2026/07/0001 27/07/2026 ملخص المبيعات المعلم الشامي الداخل 345.00 SR الخارج 0.00 SR الصافي 345.00 SR  ":
+    - generic: POSS/2026/07/0001
+    - generic: 27/07/2026
+    - generic: ملخص المبيعات
+    - generic: المعلم الشامي
+    - generic: الداخل
+    - generic: 345.00 SR
+    - generic: الخارج
+    - generic: 0.00 SR
+    - generic: الصافي
+    - generic: 345.00 SR
+    - button "":
+      - generic: 
+    - button "":
+      - generic: 
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

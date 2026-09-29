@@ -1,0 +1,169 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "" [disabled]:
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- list:
+  - link "دفعات إدخال المشتريات":
+    - /url: /odoo/action-784
+  - text: /
+  - link "PB/2026/00011":
+    - /url: /odoo/action-784/13
+- generic: BILL/2026/09/0001 (AR1-UI-SAVED)
+- button "قائمة الإجراءات":
+  - generic: 
+- button " مطابقة المشتريات":
+  - generic: 
+  - generic: مطابقة المشتريات
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "الدفع"
+  - button "إشعار دائن"
+  - button "إشعار مدين"
+  - button "إعادة التعيين كمسودة"
+  - radiogroup "شريط الحالة":
+    - radio "مُرحّل" [checked] [disabled]
+    - radio "مسودة" [disabled]
+  - generic: فاتورة المورد
+  - heading "BILL/2026/09/0001" [level=1]:
+    - generic: BILL/2026/09/0001
+  - generic: المورد
+  - link "AR1 UI Supplier":
+    - /url: /odoo/res.partner/191
+  - generic: الرقم المرجعي للفاتورة
+  - textbox "الرقم المرجعي للفاتورة": AR1-UI-SAVED
+  - generic: تاريخ الفاتورة
+  - generic: ١٠ سبتمبر
+  - generic: تاريخ المحاسبة
+  - generic: ١٠ سبتمبر
+  - text: الرقم المرجعي للدفع
+  - superscript: "?"
+  - textbox "الرقم المرجعي للدفع?":
+    - /placeholder: استخدم الرقم المرجعي للفاتورة
+  - text: البنك المستلم
+  - superscript: "?"
+  - combobox "البنك المستلم?"
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق": ١٠ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "معلومات أخرى"
+  - table:
+    - rowgroup:
+      - row "بطاقة عنوان تحليلي الكمية السعر الضرائب مبلغ ":
+        - columnheader
+        - columnheader "بطاقة عنوان":
+          - generic: بطاقة عنوان
+          - text: 
+        - columnheader "تحليلي":
+          - generic: تحليلي
+          - text: 
+        - columnheader "الكمية":
+          - generic: الكمية
+          - text: 
+        - columnheader "السعر":
+          - generic: السعر
+          - text: 
+        - columnheader "الضرائب":
+          - generic: الضرائب
+          - text: 
+        - columnheader "مبلغ":
+          - generic: مبلغ
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " اشتراكات المنصات / اشتراك مقيم 1.00 100.00 15% 100.00 SR":
+        - cell "":
+          - generic: 
+        - cell "اشتراكات المنصات / اشتراك مقيم":
+          - generic: اشتراكات المنصات / اشتراك مقيم
+        - cell
+        - cell "1.00"
+        - cell "100.00"
+        - cell "15%":
+          - generic "15%":
+            - generic: 15%
+        - cell "100.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 100.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "100.00 SR"
+      - 'row "VAT Total Amount: 15.00 SR"':
+        - cell "VAT Total Amount:":
+          - generic: "VAT Total Amount:"
+        - cell "15.00 SR":
+          - generic: 15.00 SR
+      - 'row "الإجمالي: 115.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "115.00 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 115.00 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "1":
+    - img: 
+    - superscript: "1"
+  - separator
+  - generic: اليوم
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: AR1 UI accountant
+    - generic "١٠‏/٩‏/٢٠٢٦، ٣:٤٤:٠٦ م": ٣:٤٤ م
+    - paragraph: تم إنشاء فاتورة المورد
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

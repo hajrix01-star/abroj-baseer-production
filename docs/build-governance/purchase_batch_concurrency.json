@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "case": "same persisted batch double click",
+      "requests": [
+        {
+          "id": 25,
+          "approved": true,
+          "seconds": 0.9174749149824493
+        },
+        {
+          "id": 25,
+          "approved": true,
+          "seconds": 0.7100017379852943
+        }
+      ]
+    },
+    {
+      "case": "two batches same normalized supplier reference",
+      "requests": [
+        {
+          "id": 26,
+          "approved": false,
+          "error": "A draft or posted supplier document already uses this reference in this company.",
+          "seconds": 1.6884512619581074
+        },
+        {
+          "id": 27,
+          "approved": true,
+          "seconds": 0.2682473949971609
+        }
+      ]
+    },
+    {
+      "case": "two different bills in same company",
+      "requests": [
+        {
+          "id": 28,
+          "approved": true,
+          "seconds": 0.27647170901764184
+        },
+        {
+          "id": 29,
+          "approved": true,
+          "seconds": 1.9009207100025378
+        }
+      ]
+    }
+  ]
+}

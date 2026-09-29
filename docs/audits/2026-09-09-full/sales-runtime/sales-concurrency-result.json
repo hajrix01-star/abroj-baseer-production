@@ -1,0 +1,118 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "case": "two concurrent approvals one summary",
+      "requests": [
+        {
+          "ok": true,
+          "attempts": 1,
+          "value": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  378
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 378,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "seconds": 0.6736030990141444
+        },
+        {
+          "ok": true,
+          "attempts": 2,
+          "value": {
+            "type": "ir.actions.act_window",
+            "name": "External Sales Summary",
+            "res_model": "baseer.pos.summary",
+            "view_mode": "form",
+            "domain": [
+              [
+                "id",
+                "in",
+                [
+                  378
+                ]
+              ]
+            ],
+            "context": {
+              "allowed_company_ids": [
+                6
+              ],
+              "create": false
+            },
+            "res_id": 378,
+            "views": [
+              [
+                false,
+                "form"
+              ]
+            ]
+          },
+          "seconds": 2.3394605619832873
+        }
+      ]
+    },
+    {
+      "case": "all day versus morning creation",
+      "requests": [
+        {
+          "ok": true,
+          "attempts": 1,
+          "value": 380,
+          "seconds": 0.034075450035743415
+        },
+        {
+          "ok": false,
+          "attempts": 2,
+          "error": "All summaries on the same date must use the same day schedule."
+        }
+      ]
+    },
+    {
+      "case": "closure confirm versus sales creation",
+      "requests": [
+        {
+          "ok": true,
+          "attempts": 1,
+          "value": true,
+          "seconds": 0.011658748029731214
+        },
+        {
+          "ok": false,
+          "attempts": 2,
+          "error": "This sales period is closed. Cancel the closure before entering sales."
+        }
+      ]
+    }
+  ],
+  "retained_audit_clone_fixture": {
+    "summary_id": 378,
+    "order_id": 103,
+    "session_id": 110,
+    "move_ids": [
+      1495,
+      1496
+    ]
+  },
+  "product_fixture_original_type": "consu"
+}

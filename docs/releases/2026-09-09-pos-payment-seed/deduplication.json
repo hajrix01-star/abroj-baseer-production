@@ -1,0 +1,37 @@
+{
+  "deleted_methods": [
+    {
+      "id": 1,
+      "name": "نقدي"
+    },
+    {
+      "id": 2,
+      "name": "بطاقة"
+    },
+    {
+      "id": 3,
+      "name": "حساب العميل"
+    }
+  ],
+  "deleted_categories": [
+    {
+      "id": 1,
+      "name": "تطبيقات"
+    },
+    {
+      "id": 2,
+      "name": "نقد"
+    },
+    {
+      "id": 3,
+      "name": "بطاقة"
+    }
+  ],
+  "deleted_experimental_draft_entries": [
+    7,
+    8
+  ],
+  "financial_and_hr_unchanged": true,
+  "remaining_ARZ_methods": 5,
+  "user_authorization": "Delete them; experimental, not needed"
+}

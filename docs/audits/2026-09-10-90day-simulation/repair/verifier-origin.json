@@ -1,0 +1,9 @@
+{
+  "source": "../verify_simulation.py",
+  "source_sha256": "68a97c9b336de06a4f3b6d5720c4c2b18b3ccd48aeae0510e7fd33fc719f228d",
+  "copy_delta": [
+    "Database guard permits the exact repair clone instead of retired staging database.",
+    "Native overdue oracle uses actor-local current date, matching the documented current-user calendar contract; prior UTC mismatch retained in verification-coupling.json."
+  ],
+  "current_copy_sha256": "2e2d67836c974452b8b84e2f23205561ef88f51b0fb72626e598944fa76ea4e3"
+}

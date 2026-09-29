@@ -1,0 +1,48 @@
+{
+  "comparison": "Current read-only main versus rehearsal, original columns and rows only. No sensitive values emitted.",
+  "differences": [
+    {
+      "table": "res_company",
+      "id": 1,
+      "changed_columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 2,
+      "changed_columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 3,
+      "changed_columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_partner",
+      "id": 2,
+      "changed_columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_partner",
+      "id": 3,
+      "changed_columns": [
+        "write_date",
+        "write_uid"
+      ]
+    },
+    {
+      "table": "hr_employee",
+      "id": 1,
+      "changed_columns": [
+        "write_date"
+      ]
+    }
+  ]
+}

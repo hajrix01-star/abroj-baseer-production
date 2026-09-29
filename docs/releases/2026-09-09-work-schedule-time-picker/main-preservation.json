@@ -1,0 +1,7 @@
+{
+  "protected_tables": 250,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "added_schema": "No model or business schema changes in WS2; UI assets/views/translations only",
+  "candidate": "c89de592ace16758ad67c4b69efd3a309cf6c950"
+}

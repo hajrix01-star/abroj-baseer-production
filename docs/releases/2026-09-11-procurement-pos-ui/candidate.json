@@ -1,0 +1,40 @@
+{
+  "candidate": "PRC-UI1",
+  "module": "baseer_procurement_requests",
+  "version": "19.0.4.0.0",
+  "environment": "baseer_procurement_qa_20260911",
+  "date": "2026-09-11",
+  "git_commit": null,
+  "git_note": "Workspace has no tracked HEAD; this frozen SHA-256 source manifest is the candidate identity.",
+  "runtime_image": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "scope": "custom_addons/baseer_procurement_requests only; Odoo and point_of_sale core are immutable image content and are not modified.",
+  "source_sha256": {
+    "custom_addons/baseer_procurement_requests/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons/baseer_procurement_requests/__manifest__.py": "a3a0692a7196ed8863e1c9a0423154a029b6e36e1f1c08fcb37c26de6d81035a",
+    "custom_addons/baseer_procurement_requests/data/sequence.xml": "a9a189add1df0788d8613fa119ea6f7ca39842d59cc15c6989887f22e852a819",
+    "custom_addons/baseer_procurement_requests/i18n/ar_001.po": "c90443d918689ad820793eb0d6b34a6008dd096538162e951b5ce661c9e99cf8",
+    "custom_addons/baseer_procurement_requests/models/__init__.py": "d3bc6d11859800c9d57276a734923dc2d68741595a2164d216fd26d4c2ea1ab3",
+    "custom_addons/baseer_procurement_requests/models/custody.py": "edddc5aaaea88a242aae77a0996535462f53a33d96b62e27cd2e92919edf70f1",
+    "custom_addons/baseer_procurement_requests/models/procurement.py": "874aed5aa114b48401355cba1a5267c1983038f86fabb2fb5c96b353308ad024",
+    "custom_addons/baseer_procurement_requests/security/ir.model.access.csv": "1e622e7933c99beb02b2fca840a810310091bb5ee4e61af2a591604955970204",
+    "custom_addons/baseer_procurement_requests/security/security.xml": "2782c817cb9e8fd2625892ffc9df5e238d1716155e71b040498fa07d373fb669",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.js": "7088b0e34ab36354bbf360646832c57b39085a1f166fc724a6ef15afa78e2618",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.scss": "e92d8b5c1ef3f6bfdfeb4dc22255894698d97254845706ac8d07a3cab021d5f4",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.xml": "edbec4d9631edbbc1a0258344eaee83a8f756e8ef6a274dd34e22124ffe5e87d",
+    "custom_addons/baseer_procurement_requests/tests/__init__.py": "588b91f0446b4a1dd4501b85fb7b8f5101b1e3d83dfd7e3fad5afba63900fc13",
+    "custom_addons/baseer_procurement_requests/tests/test_procurement_flow.py": "f5acdacac4b73c7910af8cb088895eea0a9f9d591855614db5160f1801745547",
+    "custom_addons/baseer_procurement_requests/tools/export_legacy_catalog.sql": "0aa8b28f0899fffabf726efb05c5973546af6be6314fc00859da0c77e493c855",
+    "custom_addons/baseer_procurement_requests/tools/import_legacy_catalog.py": "b97d2e229592e9b8704f656b702cdbc671dc40d98304d69ad136e233f0d8a1f2",
+    "custom_addons/baseer_procurement_requests/views/procurement_custody_views.xml": "18b9de79908a9a3acb4371666fead85dbe10d2b027b1fe84a41a2e7c23bdf11b",
+    "custom_addons/baseer_procurement_requests/views/procurement_menus.xml": "15020a20d96fd1a1f42865ba5af4006bede447ae9d0a41359bd78088aa5f7631",
+    "custom_addons/baseer_procurement_requests/views/procurement_option_views.xml": "a88991c82998db307fba2f84d24c7d13abc72961a9b6ab26ca4000832e25c34b",
+    "custom_addons/baseer_procurement_requests/views/procurement_request_views.xml": "67df9b0934d5e35c8c2a1c6242e8738607482a6cb072ec48de5755d95e8808ef"
+  },
+  "verification": {
+    "odoo_tests": "10 cases, 0 failures, 0 errors",
+    "concurrent_idempotency": "2 simultaneous submissions, same returned ID, 1 durable row, cleanup passed",
+    "parallel_reads": 10,
+    "p95_ms": {"catalogue_page": 104.59, "catalogue_search": 38.76, "server_quote": 20.88},
+    "browser": "Arabic and English; desktop 1280; mobile 390 and 360; no overflow, CSS fallback, page errors, or console errors"
+  }
+}

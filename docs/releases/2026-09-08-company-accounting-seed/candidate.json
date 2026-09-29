@@ -1,0 +1,14 @@
+{
+  "version": "19.0.1.0.0",
+  "target": "baseer_reports_qa_20260907",
+  "zip_sha256": "14716ad9b693118569b5493c0469ed13604a1212e7f9dcddd8d8f21f808efc99",
+  "files": {
+    "custom_addons\\baseer_company_setup\\__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons\\baseer_company_setup\\__manifest__.py": "3c5a63e744f9c105abbda11494cf76d69319716fcca6c6fa6f12d8aee1b2a070",
+    "custom_addons\\baseer_company_setup\\data\\setup.xml": "c45786bb0699e894f2d988b9633ccd81c9107872e188e795be4d328b1032f368",
+    "custom_addons\\baseer_company_setup\\i18n\\ar.po": "98fef9933e9130000fd8ad245a612fc24919c779a34a8e4f52ca576785ba2bd5",
+    "custom_addons\\baseer_company_setup\\models\\__init__.py": "00681d9d19252278aa9bf4d875be53c0157eb1d100491f2baa1e3c85afe00955",
+    "custom_addons\\baseer_company_setup\\models\\company.py": "5e75319478c40a03805a5a6bc82b01582c0cf64c022e8de9856cd86dd567a796",
+    "custom_addons\\baseer_company_setup\\README.md": "16f4ab10c6e24cbb81bf60abd9e6bfc47e2ce09fcfc0701c7887d785d0026d50"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "reference": "HCT-BATCH-2026-09-14",
+  "state": "candidate-only",
+  "module": "baseer_sales_heat_calendar",
+  "version": "19.0.1.0.8",
+  "candidate_tag": "heat-calendar-targets-candidate-2026-09-14.8",
+  "source_commit": "19237ce44b22efcd942b9ee677678989ceb32a97",
+  "replaces_candidate": "9828a303da2ac5a4cb83f45518caddfd85b96a11",
+  "supersedes_rejected_candidate": "fadc47bfd2a0dc2bcd71e4ee34b86df409258b15",
+  "parent_commit": "4cd12588a2b447cb14f924f09c913b4fb7b24f43",
+  "source_tree": "c5902f027a222b44b0e72e471380380f27a58cdd",
+  "remote": "https://github.com/hajrix01-star/abroj-baseer-production.git",
+  "verified_environment": {
+    "kind": "isolated local Odoo demo",
+    "database": "baseer_heat_calendar_demo_20260914",
+    "health": "HTTP 200 after module update and service restart",
+    "focused_tests": {
+      "odoo_test_executions": 18,
+      "test_methods": 16,
+      "failures": 0,
+      "errors": 0,
+      "evidence": "evidence/focused-tests-c073acd.log"
+    }
+  },
+  "deployment": {
+    "production_updated": false,
+    "required_before_production": [
+      "independent Alpha Delivery GO",
+      "fresh production backup",
+      "isolated production-source rehearsal",
+      "explicit production publication step"
+    ],
+    "rollback_commit": "4cd12588a2b447cb14f924f09c913b4fb7b24f43"
+  },
+  "source_git_blob_ids": {
+    "RELEASE-RECEIPT.md": "d7536405c94d75544319f09d5d65570dd8fd89a6",
+    "custom_addons/baseer_sales_heat_calendar/__manifest__.py": "9e4489530379e76d75dd2ade1bac96991f712918",
+    "custom_addons/baseer_sales_heat_calendar/i18n/ar.po": "1f472a9d1666589743b46ebe7fe2c4c8f0093d52",
+    "custom_addons/baseer_sales_heat_calendar/i18n/ar_001.po": "c907ba00da9e27429dfbc2206d2a021cf31dfe8d",
+    "custom_addons/baseer_sales_heat_calendar/models/__init__.py": "27e86bc47c9594e8269278ccda9f348b4685fdd9",
+    "custom_addons/baseer_sales_heat_calendar/models/target.py": "58214eaaff05579c8d780a3b7cfca3f2a8b2c9b1",
+    "custom_addons/baseer_sales_heat_calendar/models/target_batch.py": "8d2e7e79a0e50b3b53aa18e52636fe88f1ab6076",
+    "custom_addons/baseer_sales_heat_calendar/static/src/heat_calendar.js": "a9fb7b82137892b69789badedf6c97c9ca7a9bf5",
+    "custom_addons/baseer_sales_heat_calendar/static/src/heat_calendar.scss": "f5d1359bba519d0a18568b882467ab4dac6a2ee4",
+    "custom_addons/baseer_sales_heat_calendar/static/src/heat_calendar.xml": "234fc3e5afb9a55b1d59d3007b9abc2c313f7547",
+    "custom_addons/baseer_sales_heat_calendar/tests/test_heat_calendar.py": "05de56904a39b2d15f7b92826c8cde87fab8bb16"
+  }
+}

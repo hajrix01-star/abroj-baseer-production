@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "database": "baseer_ar1_roles_20260910",
+  "checks": [
+    "Native new accountant form saves with inbox preference",
+    "All three selected companies retained after reload",
+    "Accountant preset and permitted application selections retained",
+    "Native administrator radio disabled while preset applies",
+    "In Odoo preference retained after reload"
+  ],
+  "source_files": {
+    "__manifest__.py": "6b2a0f49d1e6b08ed3d143ed368d29acfd47530f5145cfd61879f2b36c28d695",
+    "models/res_users.py": "1797a83521d5faac9b8c68ddf2c691654f676244ed2f28343af1fa19f52c8641",
+    "views/res_users_views.xml": "1514396e5df4a65ebd17fee1355035decd7a926b6da636eefac40f308dff0f8e"
+  },
+  "evidence_files": {
+    "accountant-inbox-ar.png": "ea6f719b7cf8c75fc8c095d2d5b829739468892324de3a1c0c670295203ffc91",
+    "accountant-inbox-ar.txt": "1490fff8dd0452db5d1c05b58a71bb2726fb5ad2bcf5ec048fd66fca01f7d9db",
+    "accountant-saved-ar.txt": "280cb37514f56d90547547631c8176afa5000eabc6f04e110a97fe0ee5a28c91"
+  }
+}

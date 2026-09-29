@@ -1,0 +1,3 @@
+EXTERNAL_CLIENT_HTTP=200
+EXTERNAL_CLIENT_TLS_VERIFY=0
+TARGET=https://baseer.abroj.sa/web/login

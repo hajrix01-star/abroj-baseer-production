@@ -1,0 +1,19 @@
+{
+  "candidate": "PRC-CATALOG-QUICK1-v9",
+  "snapshot_database_sha256": "8c8dd75d01cdb09e8de95f72e3e5564733a456d975203d1a6976cbd45ef4e080",
+  "temporary_database": "baseer_prc_catalog_quick1_restore_smoke_20260913",
+  "temporary_database_removed": true,
+  "restored_module_version": "19.0.9.0.0",
+  "restored_counts": {
+    "product_product": 556,
+    "product_value": 833,
+    "stock_move": 0,
+    "stock_quant": 0,
+    "account_move": 2
+  },
+  "stored_attachment_paths": 665,
+  "missing_attachment_paths": 0,
+  "filestore_files": 537,
+  "filestore_bytes": 35559279,
+  "result": "passed"
+}

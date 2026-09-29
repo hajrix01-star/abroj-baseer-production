@@ -1,0 +1,294 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "current_company_default",
+      "passed": true
+    },
+    {
+      "name": "correct_seed_mapping",
+      "passed": true
+    },
+    {
+      "name": "draft_has_no_bill",
+      "passed": true
+    },
+    {
+      "name": "initial_default_suggests_passports",
+      "passed": true
+    },
+    {
+      "name": "create_missing_provider_suggested",
+      "passed": true
+    },
+    {
+      "name": "manual_provider_survives_unrelated_edit",
+      "passed": true
+    },
+    {
+      "name": "changed_type_updates_suggested_provider",
+      "passed": true
+    },
+    {
+      "name": "unmapped_service_accepts_manual_provider",
+      "passed": true
+    },
+    {
+      "name": "explicit_empty_provider_not_silently_replaced",
+      "passed": true
+    },
+    {
+      "name": "onchange_health_certificate_balady",
+      "passed": true
+    },
+    {
+      "name": "onchange_unmapped_clears_stale_provider",
+      "passed": true
+    },
+    {
+      "name": "suggested_provider_respects_company",
+      "passed": true
+    },
+    {
+      "name": "inactive_provider_not_suggested",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_iqama_issue",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_iqama_renewal",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_work_permit_issue",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_work_permit_renewal",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_employee_transfer",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_profession_change",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_visa",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_health_certificate_issue",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_health_certificate_renewal",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_medical_exam",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_ticket",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_insurance_issue",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_insurance_renewal",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_processing",
+      "passed": true
+    },
+    {
+      "name": "catalog_expense_mapping_other_employee",
+      "passed": true
+    },
+    {
+      "name": "zero_amount_rejected",
+      "passed": true
+    },
+    {
+      "name": "negative_amount_rejected",
+      "passed": true
+    },
+    {
+      "name": "three_decimal_amount_rejected",
+      "passed": true
+    },
+    {
+      "name": "expiry_before_issue_rejected",
+      "passed": true
+    },
+    {
+      "name": "foreign_provider_rejected",
+      "passed": true
+    },
+    {
+      "name": "foreign_company_create_rejected",
+      "passed": true
+    },
+    {
+      "name": "state_cannot_be_forged",
+      "passed": true
+    },
+    {
+      "name": "bill_cannot_be_forged",
+      "passed": true
+    },
+    {
+      "name": "visa_subtype_required",
+      "passed": true
+    },
+    {
+      "name": "native_posted_supplier_bill",
+      "passed": true
+    },
+    {
+      "name": "one_line_correct_expense_product",
+      "passed": true
+    },
+    {
+      "name": "gross_and_tax_no_vat",
+      "passed": true
+    },
+    {
+      "name": "source_employee_in_bill_description",
+      "passed": true
+    },
+    {
+      "name": "invoice_date_preserved",
+      "passed": true
+    },
+    {
+      "name": "honest_unpaid_status",
+      "passed": true
+    },
+    {
+      "name": "repeat_approve_one_bill",
+      "passed": true
+    },
+    {
+      "name": "approved_amount_locked",
+      "passed": true
+    },
+    {
+      "name": "approved_employee_locked",
+      "passed": true
+    },
+    {
+      "name": "approved_source_cannot_unlink",
+      "passed": true
+    },
+    {
+      "name": "approved_source_cannot_reset",
+      "passed": true
+    },
+    {
+      "name": "posted_service_cannot_cancel_directly",
+      "passed": true
+    },
+    {
+      "name": "bill_line_amount_protected",
+      "passed": true
+    },
+    {
+      "name": "bill_source_protected",
+      "passed": true
+    },
+    {
+      "name": "bill_cannot_delete",
+      "passed": true
+    },
+    {
+      "name": "bill_cannot_reset_draft",
+      "passed": true
+    },
+    {
+      "name": "forged_context_cannot_edit_bill",
+      "passed": true
+    },
+    {
+      "name": "partial_payment_native_state",
+      "passed": true
+    },
+    {
+      "name": "fully_paid_native_state",
+      "passed": true
+    },
+    {
+      "name": "native_payment_history_two_methods",
+      "passed": true
+    },
+    {
+      "name": "taxed_native_totals",
+      "passed": true
+    },
+    {
+      "name": "visa_single_bill_with_detail",
+      "passed": true
+    },
+    {
+      "name": "archived_employee_supported",
+      "passed": true
+    },
+    {
+      "name": "unbilled_draft_cancellation",
+      "passed": true
+    },
+    {
+      "name": "unbilled_canceled_deletion",
+      "passed": true
+    },
+    {
+      "name": "hr_reads_own_service_summary",
+      "passed": true
+    },
+    {
+      "name": "hr_cannot_approve",
+      "passed": true
+    },
+    {
+      "name": "hr_cannot_open_bill",
+      "passed": true
+    },
+    {
+      "name": "hr_cannot_pay",
+      "passed": true
+    },
+    {
+      "name": "hr_company_rule_hides_other",
+      "passed": true
+    },
+    {
+      "name": "hr_direct_read_other_denied",
+      "passed": true
+    },
+    {
+      "name": "employee_services_navigation",
+      "passed": true
+    },
+    {
+      "name": "service_print_action",
+      "passed": true
+    },
+    {
+      "name": "financial_and_employee_history_preserved",
+      "passed": true
+    }
+  ],
+  "timings": {
+    "approve_seconds": 0.457113
+  },
+  "rolled_back": true,
+  "check_count": 71
+}

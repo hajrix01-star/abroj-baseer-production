@@ -1,0 +1,16 @@
+{
+  "id": "automation",
+  "kind": "heartbeat",
+  "name": "نسخة يومية لأودو الأصلية",
+  "status": "ACTIVE",
+  "rrule": "FREQ=DAILY;BYHOUR=3;BYMINUTE=0;BYSECOND=0",
+  "target_thread_id": "01a07ac6-575b-71b0-8a24-9aec85ccec67",
+  "created_at": 1788954491001,
+  "timezone": "Asia/Riyadh",
+  "availability_required": [
+    "Windows host",
+    "Docker",
+    "Codex"
+  ],
+  "first_scheduled_run_verified": false
+}

@@ -1,0 +1,11 @@
+{
+  "protected_tables": 368,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "6104fc8e6f1d24b3e842f2b43bd9f410840d7759",
+  "existing_user_memberships_exact": true,
+  "existing_module_versions_exact": true,
+  "existing_user_presets_exact": true,
+  "no_automatic_role_assignments": true,
+  "added_schema": "Role user-form update only; no new schema, user assignments or business transaction migration"
+}

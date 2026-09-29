@@ -1,0 +1,28 @@
+services:
+  noorix_migration_qa:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_noorix_data_migration_qa_20260912
+      - --db-filter=^baseer_noorix_data_migration_qa_20260912$
+      - --no-database-list
+    ports:
+      - "127.0.0.1:18082:8069"
+    volumes:
+      - noorix-migration-odoo-data:/var/lib/odoo
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./.local-backups/procurement-product-source1-20260913/candidate-v16/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/procurement-production-20260912/candidate-v1/third_party_addons:/mnt/third-party-addons:ro
+      - ./.local-backups/noorix-migration:/mnt/noorix-payload:ro
+
+volumes:
+  noorix-migration-odoo-data:

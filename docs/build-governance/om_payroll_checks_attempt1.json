@@ -1,0 +1,97 @@
+{
+  "checks": [
+    {
+      "name": "employee_version_onchange",
+      "result": "observed",
+      "detail": null
+    },
+    {
+      "name": "calendar_worked_days",
+      "result": "observed",
+      "detail": [
+        {
+          "name": "Normal Working Days paid at 100%",
+          "sequence": 1,
+          "code": "WORK100",
+          "number_of_days": 22.0,
+          "number_of_hours": 176.0,
+          "version_id": 7
+        }
+      ]
+    },
+    {
+      "name": "compute_net_2000",
+      "result": true,
+      "detail": {
+        "seconds": 0.005
+      }
+    },
+    {
+      "name": "first_approval_balanced_posted",
+      "result": true,
+      "detail": null
+    },
+    {
+      "name": "payroll_batch_link",
+      "result": true,
+      "detail": null
+    },
+    {
+      "name": "pdf_en_US",
+      "result": "observed",
+      "detail": {
+        "bytes": 24505
+      }
+    },
+    {
+      "name": "pdf_ar_001",
+      "result": "observed",
+      "detail": {
+        "bytes": 38653
+      }
+    },
+    {
+      "name": "batch_pdf",
+      "result": "observed",
+      "detail": {
+        "bytes": 32022,
+        "slips": 2
+      }
+    },
+    {
+      "name": "repeat_approval",
+      "result": "observed",
+      "detail": {
+        "duplicate_posted": true
+      }
+    },
+    {
+      "name": "posted_source_edit",
+      "result": "observed",
+      "detail": {
+        "accepted": true
+      }
+    },
+    {
+      "name": "cancel_approved",
+      "result": "observed",
+      "detail": {
+        "state": "cancel",
+        "latest_exists": false,
+        "first_exists": true
+      }
+    },
+    {
+      "name": "company_isolation",
+      "result": "observed",
+      "detail": {
+        "foreign_slip_visible": true
+      }
+    }
+  ],
+  "mail_intercepted": 0,
+  "scope": "QA vendor evaluation; not production acceptance",
+  "status": "fixture_failed",
+  "error": "Traceback (most recent call last):\n  File \"om_payroll_checks.py\", line 81, in <module>\n  File \"/mnt/third-party-addons/erp_heritage_19/eh_account_base/models/account_account.py\", line 59, in write\n    res = super().write(vals)\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/account/models/account_account.py\", line 1079, in write\n    res = super(AccountAccount, self.with_context(defer_account_code_checks=True, prefetch_fields=not any(field in vals for field in ['code', 'account_type']))).write(vals)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py\", line 385, in write\n    return super().write(vals)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 4491, in write\n    real_recs._validate_fields(vals, inverse_fields)\n  File \"/usr/lib/python3/dist-packages/odoo/orm/models.py\", line 1268, in _validate_fields\n    check(records)\n  File \"/usr/lib/python3/dist-packages/odoo/addons/account/models/account_account.py\", line 332, in _check_account_is_bank_journal_bank_account\n    raise ValidationError(_(\"You cannot change the type of an account set as Bank Account on a journal to Receivable or Payable.\"))\nodoo.exceptions.ValidationError: You cannot change the type of an account set as Bank Account on a journal to Receivable or Payable.\n",
+  "rolled_back": true
+}

@@ -1,0 +1,100 @@
+
+                // Simplified color-contrast function to replicate bootstrap in report preview.
+                @function preview-color-contrast($background) {
+                    @if (lightness($background) > 50) {
+                        @return black;
+                    } @else {
+                        @return white;
+                    }
+                }
+
+                .o_company_2_layout {
+                    font-family: Lato;
+
+                    h2 {
+                        color: #212529;
+                    }
+
+                    #informations strong {
+                        color: #212529;
+                    }
+
+                    .o_total strong {
+                        color: #212529;
+                    }
+
+                    .o_company_tagline {
+                        color: #212529
+                    }
+            }
+                // Simplified color-contrast function to replicate bootstrap in report preview.
+                @function preview-color-contrast($background) {
+                    @if (lightness($background) > 50) {
+                        @return black;
+                    } @else {
+                        @return white;
+                    }
+                }
+
+                .o_company_3_layout {
+                    font-family: Lato;
+
+                    h2 {
+                        color: #212529;
+                    }
+
+                    #informations strong {
+                        color: #212529;
+                    }
+
+                    .o_total strong {
+                        color: #212529;
+                    }
+
+                    .o_company_tagline {
+                        color: #212529
+                    }
+            }
+                // Simplified color-contrast function to replicate bootstrap in report preview.
+                @function preview-color-contrast($background) {
+                    @if (lightness($background) > 50) {
+                        @return black;
+                    } @else {
+                        @return white;
+                    }
+                }
+
+                .o_company_1_layout {
+                    font-family: Tajawal;
+
+                    h2 {
+                        color: #5e4766;
+                    }
+
+                    #informations strong {
+                        color: #010101;
+                    }
+
+                    .o_total strong {
+                        color: #5e4766;
+                    }
+
+                    .o_company_tagline {
+                        color: #5e4766
+                    }
+                &.o_report_layout_bubble {
+                    #informations {
+                        border-color: #010101;
+                        background-color: mix(white, #010101, 92%);
+                    }
+
+                    thead th, #total .o_total td {
+                        background-color: #5e4766;
+                        color: preview-color-contrast(#5e4766);
+
+                        strong {
+                            color: preview-color-contrast(#5e4766);
+                        }
+                    }
+                }
+            }

@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "scope": "Previously executed Arabic desktop/480px native browser evidence; no new browser checks run during freeze",
+  "evidence_files": {
+    "cash-480-ar.png": "3e5b4c1953a4e42c0c71f520c5bac7d6d4f96ac0dee98e2f93f2c581843d0362",
+    "cash-480-ar.txt": "d8c2212e0002150d4895b06419d754bb42b4623c39104b80dc3f31590d3e803d",
+    "cash-february-ar.png": "f4e660a2733eacbc0d66ecbfd2a7047edd72a35d562f4bdded0af362886049fd",
+    "cash-february-ar.txt": "569f90f98fe654d40c906cf5dde774a787880ee1fa4db219ba12a71d45de137f",
+    "cash-payments-filter-ar.txt": "f1656140a79ee2c56c3e93ea43121d729b2f7c321807a54998a21e365e4f0428",
+    "return-all-ar.txt": "b61b90fa6e92a1100533d58fa68cc5e18b517217a275475098af78559e766046",
+    "source-entry.txt": "bf03e58eae653d91fec336075866a5345c567903d3f365edbf0e049f6b0ad2a9",
+    "frontend-checks.mjs": "fe83674b8f23dd554a2c487bec64bda0b30529ee3a7ae0c5395c8de20f1d65e4",
+    "frontend-checks.json": "ab74a87f2cc93e0d20d9ebcc77339249c8cafef6832f8b64ae774e89113d5410",
+    "source-hashes.json": "22c99d9bb2a5151adb296bdd4405cb052a0139567b859504a22c6d01dabc2c54",
+    "PREVIEW.md": "c9070292564f5a0955fda4a463b87486abea60dcec5d3ea08031620d934654c7"
+  }
+}

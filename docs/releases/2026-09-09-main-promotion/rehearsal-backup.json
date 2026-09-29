@@ -1,0 +1,16 @@
+{
+  "database": "baseer_dev",
+  "coherent": true,
+  "files": {
+    "database.dump": {
+      "size": 9568920,
+      "sha256": "541bad29163b00eae4839240d31f8f73d0db0e5eeb42e53608cee191a5f625c9"
+    },
+    "filestore.tar.gz": {
+      "size": 6144213,
+      "sha256": "ff3eff4ad59ac5b443b775b0d3c0b63199d0f8e2c604eb803a753719ebd72746"
+    }
+  },
+  "private_directory": "D:\\Codex\\Baseer-odoo\\.local-backups\\main-promotion-20260909\\rehearsal",
+  "previous_source": "D:\\Codex\\Baseer-odoo\\.local-backups\\main-promotion-20260909\\previous-source"
+}

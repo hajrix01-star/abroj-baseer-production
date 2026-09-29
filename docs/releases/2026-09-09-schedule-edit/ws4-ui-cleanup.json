@@ -1,0 +1,8 @@
+{
+  "employees": 0,
+  "calendars": 0,
+  "versions": 0,
+  "wizards": 0,
+  "status": "passed",
+  "qa_http_stopped": true
+}

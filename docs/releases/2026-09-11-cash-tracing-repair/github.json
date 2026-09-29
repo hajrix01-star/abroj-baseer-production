@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "commit": "7a79650118965b63bb2509271a25d92a4ad61a62",
+  "source_commit": "0e2a0853d858ffc8760d009a34cf17dda68dde45",
+  "remote_main_exact": true,
+  "clean_checkout": true,
+  "source_files_verified": 1183,
+  "source_inventory_exact": true,
+  "ci": {
+    "conclusion": "success",
+    "databaseId": 34534151549,
+    "headSha": "7a79650118965b63bb2509271a25d92a4ad61a62",
+    "jobs": [
+      {
+        "completedAt": "2026-09-10T21:48:29Z",
+        "conclusion": "success",
+        "databaseId": 103061714560,
+        "name": "verify",
+        "startedAt": "2026-09-10T21:48:22Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-09-10T21:48:24Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-09-10T21:48:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-10T21:48:26Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+            "number": 2,
+            "startedAt": "2026-09-10T21:48:24Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-10T21:48:26Z",
+            "conclusion": "success",
+            "name": "Verify checksums and syntax",
+            "number": 3,
+            "startedAt": "2026-09-10T21:48:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-10T21:48:26Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+            "number": 6,
+            "startedAt": "2026-09-10T21:48:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-10T21:48:26Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 7,
+            "startedAt": "2026-09-10T21:48:26Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/hajrix01-star/Odoo-Baseer/actions/runs/34534151549/job/103061714560"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/hajrix01-star/Odoo-Baseer/actions/runs/34534151549"
+  }
+}

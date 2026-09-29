@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "database": "baseer_dev",
+  "module": "19.0.1.0.0",
+  "languages": {
+    "ar_001": true,
+    "en_US": true
+  },
+  "source_entries": 5,
+  "audit_empty": true,
+  "main_business_mutations": false,
+  "permission_setting_active": true,
+  "default_enabled_preserved": true
+}

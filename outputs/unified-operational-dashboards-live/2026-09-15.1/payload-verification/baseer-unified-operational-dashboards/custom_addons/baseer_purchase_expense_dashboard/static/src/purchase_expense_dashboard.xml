@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_purchase_expense_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="40">
+        <xpath expr="//DashboardSearchBar" position="attributes">
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
+        </xpath>
+        <xpath expr="//DashboardSearchBar" position="after">
+            <div t-if="isBaseerPurchasesDashboard" class="o_sp_date_filter_button d-flex ms-auto">
+                <BaseerDashboardDateFilter value="baseerDate.value || undefined" update.bind="updateBaseerDate"/>
+            </div>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="attributes">
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="attributes">
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard</attribute>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="before">
+            <BaseerPurchaseExpenseDashboard t-if="isBaseerPurchasesDashboard" dashboardId="dashboard.data.id" dateFilter="baseerDate.value || undefined" t-key="dashboard.data.id"/>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="attributes">
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="attributes">
+            <attribute name="t-else"/>
+            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_purchase_expense_dashboard.PurchaseExpenseDashboard">
+        <section class="o_baseer_purchase_dashboard" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <header class="o_baseer_purchase_header">
+                <div>
+                    <h1 t-esc="labels.title"/>
+                    <p class="text-muted mb-0" t-esc="labels.subtitle"/>
+                    <p t-if="state.payload" class="text-muted mb-0 o_baseer_purchase_period"><span t-esc="state.payload.company.name"/> <span class="o_baseer_purchase_numeric" t-esc="period"/></p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-light" t-on-click="() => this.load()" t-att-disabled="state.loading"><i class="fa fa-refresh me-1"/> <span t-esc="labels.refresh"/></button>
+                    <button t-if="state.payload" type="button" class="btn btn-primary" t-on-click="openSources"><i class="fa fa-list me-1"/> <span t-esc="labels.source"/></button>
+                </div>
+            </header>
+            <div t-if="state.loading and !state.payload" class="o_baseer_purchase_state"><i class="fa fa-circle-o-notch fa-spin text-muted me-2"/><span t-esc="labels.loading"/></div>
+            <div t-elif="state.error" class="alert alert-danger"><span t-esc="state.error"/> <button type="button" class="btn btn-outline-danger btn-sm ms-2" t-on-click="() => this.load()" t-esc="labels.retry"/></div>
+            <t t-elif="state.payload">
+                <div class="o_baseer_purchase_cards">
+                    <article><span t-esc="labels.count"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.count.display"/></article>
+                    <article><span t-esc="labels.total"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.total.display"/><small t-esc="state.payload.company.currency"/></article>
+                    <article><span t-esc="labels.residual"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.residual.display"/><small t-esc="state.payload.company.currency"/></article>
+                    <article><span t-esc="labels.paid"/><strong class="o_baseer_purchase_numeric" t-esc="state.payload.cards.paid.display"/><small t-esc="state.payload.company.currency"/></article>
+                </div>
+                <p t-if="state.payload.foreign_currency_count" class="alert alert-warning"><strong class="o_baseer_purchase_numeric" t-esc="state.payload.foreign_currency_count"/> <span t-esc="labels.currencyNotice"/></p>
+                <p t-if="!hasData" class="alert alert-secondary" t-esc="labels.empty"/>
+                <div t-else="" class="o_baseer_purchase_panels">
+                    <article class="o_baseer_purchase_panel">
+                        <h2 t-esc="labels.timeline"/>
+                        <div class="o_baseer_purchase_chart" role="img" t-att-aria-label="labels.timeline">
+                            <div t-foreach="state.payload.timeline" t-as="row" t-key="row.key" class="o_baseer_purchase_chart_item">
+                                <span class="o_baseer_purchase_bar" t-att-style="'height:' + barHeight(row)"/>
+                                <strong class="o_baseer_purchase_numeric" t-esc="row.total.display"/>
+                                <small class="o_baseer_purchase_numeric" t-esc="row.label"/>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="o_baseer_purchase_panel">
+                        <h2 t-esc="labels.vendors"/>
+                        <table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.vendors"/><th scope="col" class="text-end" t-esc="labels.amount"/></tr></thead><tbody>
+                            <tr t-foreach="state.payload.vendors" t-as="vendor" t-key="vendor.id"><th scope="row" t-esc="vendor.name"/><td class="text-end o_baseer_purchase_numeric"><span t-esc="vendor.total.display"/> <small t-esc="state.payload.company.currency"/></td></tr>
+                        </tbody></table>
+                    </article>
+                </div>
+            </t>
+        </section>
+    </t>
+</templates>

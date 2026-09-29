@@ -1,0 +1,20 @@
+{
+  "status": "completed",
+  "checks": [
+    {
+      "policy": "SA-EOS-V1 / Baseer 2dp",
+      "native_form_compiled": true,
+      "inclusive_hidden": true,
+      "upgrade_button_hidden": false,
+      "pass": true
+    },
+    {
+      "policy": "SA-EOS-V2 / Gregorian anniversaries / Baseer 2dp",
+      "native_form_compiled": true,
+      "inclusive_hidden": false,
+      "upgrade_button_hidden": true,
+      "pass": true
+    }
+  ],
+  "rolled_back": true
+}

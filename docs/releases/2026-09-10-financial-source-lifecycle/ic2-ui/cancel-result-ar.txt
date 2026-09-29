@@ -1,0 +1,190 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - generic: BILL/2026/09/0006 (IC2-UI-BATCH-0)
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- button "جديد"
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- button:
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "إلغاء العملية"
+  - radiogroup "شريط الحالة":
+    - button "تم الإلغاء" [disabled]
+  - generic: فاتورة المورد
+  - heading "BILL/2026/09/0006" [level=1]:
+    - generic: BILL/2026/09/0006
+  - generic: المورد
+  - link "IC1 QA supplier — correction preview":
+    - /url: /odoo/res.partner/188
+  - generic: الرقم المرجعي للفاتورة
+  - textbox "الرقم المرجعي للفاتورة": IC2-UI-BATCH-0
+  - generic: تاريخ الفاتورة
+  - generic: ١٠ سبتمبر
+  - generic: تاريخ المحاسبة
+  - generic: ١٠ سبتمبر
+  - text: الرقم المرجعي للدفع
+  - superscript: "?"
+  - textbox "الرقم المرجعي للدفع?":
+    - /placeholder: استخدم الرقم المرجعي للفاتورة
+  - text: البنك المستلم
+  - superscript: "?"
+  - textbox "البنك المستلم?":
+    - /placeholder: ""
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق": ١٠ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "عناصر اليومية"
+    - tab "معلومات أخرى"
+  - table:
+    - rowgroup:
+      - row "بطاقة عنوان الحساب تحليلي الكمية السعر الضرائب مبلغ ":
+        - columnheader
+        - columnheader "بطاقة عنوان":
+          - generic: بطاقة عنوان
+          - text: 
+        - columnheader "الحساب":
+          - generic: الحساب
+          - text: 
+        - columnheader "تحليلي":
+          - generic: تحليلي
+          - text: 
+        - columnheader "الكمية":
+          - generic: الكمية
+          - text: 
+        - columnheader "السعر":
+          - generic: السعر
+          - text: 
+        - columnheader "الضرائب":
+          - generic: الضرائب
+          - text: 
+        - columnheader "مبلغ":
+          - generic: مبلغ
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " IC2 isolated UI purchase 400045 مصروف الاشتراكات 1.00 500.00 500.00 SR":
+        - cell "":
+          - generic: 
+        - cell "IC2 isolated UI purchase":
+          - generic: IC2 isolated UI purchase
+        - cell "400045 مصروف الاشتراكات":
+          - generic: 400045 مصروف الاشتراكات
+        - cell
+        - cell "1.00"
+        - cell "500.00"
+        - cell
+        - cell "500.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 500.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "500.00 SR"
+      - 'row "الإجمالي: 500.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "500.00 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 500.00 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "1":
+    - img: 
+    - superscript: "1"
+  - separator
+  - generic: اليوم
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٤٠:٢٤ م": ٨:٤٠ م
+    - list:
+      - text: نعم
+      - generic: 
+      - text: لا
+      - generic: (تمت مراجعته)
+      - text: مُرحّل
+      - generic: 
+      - text: تم الإلغاء
+      - generic: (الحالة)
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٤٠:٢٤ م": ٨:٤٠ م
+    - paragraph: "تم إلغاء العملية: اختبار إلغاء إدخال خاطئ مع دفعته على النسخة التجريبية"
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٤٠:٢٣ م": ٨:٤٠ م
+    - list:
+      - text: مدفوع
+      - generic: 
+      - text: غير مدفوع
+      - generic: (حالة الدفع)
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٣٨:١٥ م": ٨:٣٨ م
+    - paragraph: تم سداد قيمة الفاتورة
+    - list:
+      - text: غير مدفوع
+      - generic: 
+      - text: مدفوع
+      - generic: (حالة الدفع)
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٣٨:١٤ م": ٨:٣٨ م
+    - paragraph: تم إنشاء فاتورة المورد
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

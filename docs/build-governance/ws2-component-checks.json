@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "24 end-hour choices and all60minutes",
+      "passed": true
+    },
+    {
+      "name": "rawHHMM sent, busy immediately",
+      "passed": true
+    },
+    {
+      "name": "overlap ignored before DOM disable and onchange response",
+      "passed": true
+    },
+    {
+      "name": "unlock after reply",
+      "passed": true
+    },
+    {
+      "name": "24 endpoint sends00minutes",
+      "passed": true
+    },
+    {
+      "name": "endpoint minute only00",
+      "passed": true
+    },
+    {
+      "name": "unlock after rejected onchange",
+      "passed": true
+    },
+    {
+      "name": "start excludes24",
+      "passed": true
+    },
+    {
+      "name": "literal western padded choices",
+      "passed": true
+    },
+    {
+      "name": "Tab stays within hour/minute field",
+      "passed": true
+    },
+    {
+      "name": "last control Tab keeps native nextfield navigation",
+      "passed": true
+    },
+    {
+      "name": "ShiftTab returns from minute to hour",
+      "passed": true
+    }
+  ],
+  "scope": "Actual component source with stubbed Owl/registry and deferred native record.update; complements actual UI tests, not full browser lifecycle simulation."
+}

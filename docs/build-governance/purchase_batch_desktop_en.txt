@@ -1,0 +1,161 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Invoicing"
+    - menu:
+      - menuitem "Dashboard"
+      - button "Customers":
+        - generic: Customers
+      - button "Vendors":
+        - generic: Vendors
+      - button "Accounting":
+        - generic: Accounting
+      - button "Review":
+        - generic: Review
+      - button "Reporting":
+        - generic: Reporting
+      - button "Configuration":
+        - generic: Configuration
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- button "New"
+- list:
+  - link "Purchase Batches":
+    - /url: /odoo/action-323
+- generic: PB/2026/00016
+- button "Actions menu":
+  - generic: 
+- search:
+  - navigation "Pager":
+    - generic: "1"
+    - text: / 1
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- main:
+  - button "Save and approve"
+  - button "Print Summary"
+  - radiogroup "Statusbar":
+    - radio "Approved" [disabled]
+    - radio "Draft" [checked] [disabled]
+  - heading "PB/2026/00016" [level=1]:
+    - generic: PB/2026/00016
+  - generic: Company
+  - combobox "Company": QA ARZ
+  - text: Entry Date
+  - superscript: "?"
+  - button "Entry Date?": 09/07/2026
+  - generic: Currency
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - generic: Save keeps a draft. Save and approve creates the vendor bills and records the selected payments. The entry date is administrative; each row uses its invoice date.
+  - table:
+    - rowgroup:
+      - row "Invoice Date  Supplier  Invoice Ref.  Type  Category  Amount incl. VAT  Tax  Payment Method  ":
+        - columnheader
+        - columnheader "Invoice Date ":
+          - generic: Invoice Date
+          - generic: 
+        - columnheader "Supplier ":
+          - generic: Supplier
+          - generic: 
+        - columnheader "Invoice Ref. ":
+          - generic: Invoice Ref.
+          - generic: 
+        - columnheader "Type ":
+          - generic: Type
+          - generic: 
+        - columnheader "Category ":
+          - generic: Category
+          - generic: 
+        - columnheader "Amount incl. VAT ":
+          - generic: Amount incl. VAT
+          - generic: 
+        - columnheader "Tax ":
+          - generic: Tax
+          - generic: 
+        - columnheader "Payment Method ":
+          - generic: Payment Method
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " 09/06/2026 مورد تجريبي — مواد استهلاكية PB1 Preview/001 Purchase تجربة الإدخال الجماعي / مياه ومشروبات 115.00 SR 15% الدفع اليدوي (كاش تجريبي — الإدخال الجماعي) Open in form view Delete row":
+        - cell "":
+          - generic: 
+        - cell "09/06/2026":
+          - generic: 09/06/2026
+        - cell "مورد تجريبي — مواد استهلاكية"
+        - cell "PB1 Preview/001"
+        - cell "Purchase"
+        - cell "تجربة الإدخال الجماعي / مياه ومشروبات"
+        - cell "115.00 SR"
+        - cell "15%"
+        - cell "الدفع اليدوي (كاش تجريبي — الإدخال الجماعي)"
+        - cell "Open in form view":
+          - button "Open in form view": View
+        - cell "Delete row":
+          - button "Delete row": 
+      - row " 09/05/2026 مورد تجريبي — اتصالات PB1 Preview/002 Expense تجربة الإدخال الجماعي / اتصالات وإنترنت 230.00 SR 15% الدفع اليدوي (بنك تجريبي — الإدخال الجماعي) Open in form view Delete row":
+        - cell "":
+          - generic: 
+        - cell "09/05/2026":
+          - generic: 09/05/2026
+        - cell "مورد تجريبي — اتصالات"
+        - cell "PB1 Preview/002"
+        - cell "Expense"
+        - cell "تجربة الإدخال الجماعي / اتصالات وإنترنت"
+        - cell "230.00 SR"
+        - cell "15%"
+        - cell "الدفع اليدوي (بنك تجريبي — الإدخال الجماعي)"
+        - cell "Open in form view":
+          - button "Open in form view": View
+        - cell "Delete row":
+          - button "Delete row": 
+      - row " 09/06/2026 مورد تجريبي — مواد استهلاكية PB1 Preview/003 Purchase تجربة الإدخال الجماعي / مياه ومشروبات 57.50 SR 15% Open in form view Delete row":
+        - cell "":
+          - generic: 
+        - cell "09/06/2026":
+          - generic: 09/06/2026
+        - cell "مورد تجريبي — مواد استهلاكية"
+        - cell "PB1 Preview/003"
+        - cell "Purchase"
+        - cell "تجربة الإدخال الجماعي / مياه ومشروبات"
+        - cell "57.50 SR"
+        - cell "15%"
+        - cell
+        - cell "Open in form view":
+          - button "Open in form view": View
+        - cell "Delete row":
+          - button "Delete row": 
+      - row "Add a line":
+        - cell
+        - cell "Add a line":
+          - button "Add a line"
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+        - cell
+  - paragraph: Leave the payment method empty for credit. Paid invoices use the invoice date as their payment date.
+  - generic: "Net:"
+  - generic: 350.00 SR
+  - generic: "Tax Amount:"
+  - generic: 52.50 SR
+  - generic: "Amount incl. VAT:"
+  - generic: 402.50 SR

@@ -1,0 +1,426 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الإعدادات"
+    - menu:
+      - menuitem "الإعدادات العامة"
+      - button "المستخدمون والشركات":
+        - generic: المستخدمون والشركات
+      - button "الترجمات":
+        - generic: الترجمات
+      - button "تقني":
+        - generic: تقني
+    - menu:
+      - button "فتح أدوات المطور":
+        - img "فتح أدوات المطور": 
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن AR1 UI owner  baseer_ar1_roles_20260910":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: AR1 UI owner
+        - mark:
+          - generic: 
+          - text: baseer_ar1_roles_20260910
+- button "جديد"
+- list:
+  - link "المستخدمون":
+    - /url: /odoo/users
+- generic: AR2 Fixed Accountant
+- button "قائمة الإجراءات":
+  - generic: 
+- button " 16 المجموعات":
+  - generic: 
+  - generic: "16"
+  - generic: المجموعات
+- button " 419 صلاحيات الوصول":
+  - generic: 
+  - generic: "419"
+  - generic: صلاحيات الوصول
+- button " 102 قواعد السجلات":
+  - generic: 
+  - generic: "102"
+  - generic: قواعد السجلات
+- button " جهة اتصال":
+  - generic: 
+  - generic: جهة اتصال
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "إرسال دعوة عبر البريد الإلكتروني"
+  - button "إنشاء موظف"
+  - radiogroup "شريط الحالة":
+    - radio "تم التأكيد" [disabled]
+    - radio "تمت دعوته" [checked] [disabled]
+  - button "تحرير":
+    - generic: 
+  - button "مسح":
+    - generic: 
+  - img "ملف ثنائي"
+  - heading "AR2 Fixed Accountant" [level=1]:
+    - 'textbox "مثل: محمد محمود"': AR2 Fixed Accountant
+  - heading " ar2-fixed-accountant " [level=5]:
+    - generic "Login": 
+    - textbox "تسجيل الدخول": ar2-fixed-accountant
+    - generic "البريد الإلكتروني": 
+    - textbox "البريد الإلكتروني"
+  - heading "" [level=5]:
+    - generic "رقم الهاتف": 
+    - textbox "رقم الهاتف"
+  - text: الشريك ذو الصلة
+  - superscript: "?"
+  - link "AR2 Fixed Accountant":
+    - /url: /odoo/res.partner/396
+  - list:
+    - tab "صلاحيات الوصول"
+    - tab "التفضيلات"
+    - tab "التقويم"
+    - tab "الأمن"
+  - generic: الأدوار
+  - text: الدور
+  - superscript: "?"
+  - radiogroup "الدور":
+    - radio "المستخدم" [checked] [disabled]
+    - generic: المستخدم
+    - radio "المدير" [disabled]
+    - generic: المدير
+  - text: الشركات
+  - superscript: "?"
+  - generic "المعلم الشامي":
+    - generic: المعلم الشامي
+    - link "حذف":
+      - /url: "#"
+      - generic: 
+  - generic "دوحة المستهلك":
+    - generic: دوحة المستهلك
+    - link "حذف":
+      - /url: "#"
+      - generic: 
+  - generic "ARZ":
+    - generic: ARZ
+    - link "حذف":
+      - /url: "#"
+      - generic: 
+  - combobox "الشركات?"
+  - text: الشركة الافتراضية
+  - superscript: "?"
+  - combobox "الشركة الافتراضية?": المعلم الشامي
+  - generic: صلاحيات بصير
+  - text: الصلاحية الجاهزة
+  - superscript: "?"
+  - textbox "الصلاحية الجاهزة?":
+    - /placeholder: صلاحيات مخصصة
+    - text: المحاسب
+  - generic: البيانات الرئيسية
+  - text: المنتجات
+  - superscript: "?"
+  - textbox "المنتجات?":
+    - /placeholder: ""
+    - text: View
+  - text: تصدير
+  - superscript: "?"
+  - textbox "تصدير?":
+    - /placeholder: ""
+    - text: "No"
+  - text: جهة الاتصال
+  - superscript: "?"
+  - textbox "جهة الاتصال?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: المبيعات
+  - text: المبيعات
+  - superscript: "?"
+  - textbox "المبيعات?":
+    - /placeholder: "المستخدم: كافة المستندات"
+  - button ""
+  - text: نقطة البيع
+  - superscript: "?"
+  - textbox "نقطة البيع?":
+    - /placeholder: المستخدم
+  - button ""
+  - generic: الموقع الإلكتروني
+  - text: الموقع الإلكتروني
+  - superscript: "?"
+  - textbox "الموقع الإلكتروني?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: الخدمات
+  - text: المشروع
+  - superscript: "?"
+  - textbox "المشروع?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: المحاسبة
+  - text: المحاسبة
+  - superscript: "?"
+  - textbox "المحاسبة?":
+    - /placeholder: الفوترة
+  - button ""
+  - text: البنك
+  - superscript: "?"
+  - textbox "البنك?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: سلسلة توريد
+  - text: الشراء
+  - superscript: "?"
+  - textbox "الشراء?":
+    - /placeholder: المدير
+  - button ""
+  - text: الصيانة
+  - superscript: "?"
+  - textbox "الصيانة?":
+    - /placeholder: ""
+    - text: "No"
+  - text: المخزون
+  - superscript: "?"
+  - textbox "المخزون?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: الإنتاجية
+  - text: لوحة البيانات
+  - superscript: "?"
+  - textbox "لوحة البيانات?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: التسويق
+  - text: الردود الجاهزة
+  - superscript: "?"
+  - textbox "الردود الجاهزة?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: الموارد البشرية
+  - text: الموظفون
+  - superscript: "?"
+  - textbox "الموظفون?":
+    - /placeholder: ""
+    - text: "No"
+  - text: الإجازات
+  - superscript: "?"
+  - textbox "الإجازات?":
+    - /placeholder: ""
+    - text: "No"
+  - text: النفقات
+  - superscript: "?"
+  - textbox "النفقات?":
+    - /placeholder: ""
+    - text: "No"
+  - text: الحضور
+  - superscript: "?"
+  - textbox "الحضور?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: غير ذلك
+  - text: حزمة المحاسبة من ERP Heritage
+  - superscript: "?"
+  - textbox "حزمة المحاسبة من ERP Heritage?":
+    - /placeholder: ""
+    - text: "No"
+  - text: Payroll
+  - superscript: "?"
+  - textbox "Payroll?":
+    - /placeholder: ""
+    - text: "No"
+  - generic: صلاحيات إضافية
+  - text: Bypass HTML Field Sanitize
+  - superscript: "?"
+  - checkbox "Bypass HTML Field Sanitize?"
+  - text: Technical Documentation
+  - superscript: "?"
+  - checkbox "Technical Documentation?"
+  - text: إدارة الحزم
+  - superscript: "?"
+  - checkbox "إدارة الحزم?"
+  - text: إدارة مالكي مخزون مختلفين
+  - superscript: "?"
+  - checkbox "إدارة مالكي مخزون مختلفين?"
+  - text: إدارة مستودعات متعددة
+  - superscript: "?"
+  - checkbox "إدارة مستودعات متعددة?"
+  - text: إدارة وحدات قياس متعددة
+  - superscript: "?"
+  - checkbox "إدارة وحدات قياس متعددة?"
+  - text: إظهار الخصائص المحاسبية - للقراءة فقط
+  - superscript: "?"
+  - checkbox "إظهار الخصائص المحاسبية - للقراءة فقط?"
+  - text: إظهار قائمة الإيرادات المتكررة
+  - superscript: "?"
+  - checkbox "إظهار قائمة الإيرادات المتكررة?"
+  - text: استخدام المراحل في المشروع
+  - superscript: "?"
+  - checkbox "استخدام المراحل في المشروع?"
+  - text: استخدام تبعيات المهام
+  - superscript: "?"
+  - checkbox "استخدام تبعيات المهام?"
+  - text: استخدم مؤشرات التقدم
+  - superscript: "?"
+  - checkbox "استخدم مؤشرات التقدم?"
+  - text: الأساسي
+  - superscript: "?"
+  - checkbox "الأساسي?"
+  - text: الخصم الجزئي للمشتريات
+  - superscript: "?"
+  - checkbox "الخصم الجزئي للمشتريات?"
+  - text: السماح بإدارة التقريب في المعاملات المالية
+  - superscript: "?"
+  - checkbox "السماح بإدارة التقريب في المعاملات المالية?"
+  - text: الكاشير
+  - superscript: "?"
+  - checkbox "الكاشير?"
+  - text: المحاسب
+  - superscript: "?"
+  - checkbox "المحاسب?" [checked]
+  - button ""
+  - text: "المسؤول: إدارة الحضور"
+  - superscript: "?"
+  - 'checkbox "المسؤول: إدارة الحضور?"'
+  - text: المنصب / المدير
+  - superscript: "?"
+  - checkbox "المنصب / المدير?"
+  - text: المنصب / عام
+  - superscript: "?"
+  - checkbox "المنصب / عام?"
+  - text: تعدد المؤسسات
+  - superscript: "?"
+  - checkbox "تعدد المؤسسات?" [checked]
+  - button ""
+  - text: خصم على البنود
+  - superscript: "?"
+  - checkbox "خصم على البنود?"
+  - text: صلاحيات الوصول الافتراضية للمستخدمين الجدد
+  - superscript: "?"
+  - checkbox "صلاحيات الوصول الافتراضية للمستخدمين الجدد?"
+  - text: عرض الأرقام التسلسلية وأرقام الدفعات في إيصالات التوصيل
+  - superscript: "?"
+  - checkbox "عرض الأرقام التسلسلية وأرقام الدفعات في إيصالات التوصيل?"
+  - text: عرض كافة الخصائص المحاسبية
+  - superscript: "?"
+  - checkbox "عرض كافة الخصائص المحاسبية?"
+  - text: فواتير شكلية
+  - superscript: "?"
+  - checkbox "فواتير شكلية?"
+  - text: قوائم الأسعار الأساسية
+  - superscript: "?"
+  - checkbox "قوائم الأسعار الأساسية?"
+  - button ""
+  - text: محرر قالب البريد
+  - superscript: "?"
+  - checkbox "محرر قالب البريد?"
+  - text: مواقع إلكترونية متعددة
+  - superscript: "?"
+  - checkbox "مواقع إلكترونية متعددة?"
+  - text: يمكن تعيين تحذير على منتج أو عميل معين (المبيعات)
+  - superscript: "?"
+  - checkbox "يمكن تعيين تحذير على منتج أو عميل معين (المبيعات)?"
+  - text: Public access to arbitrary exposed model
+  - superscript: "?"
+  - checkbox "Public access to arbitrary exposed model?"
+  - text: إدارة أرقام الدفعات/الأرقام التسلسلية
+  - superscript: "?"
+  - checkbox "إدارة أرقام الدفعات/الأرقام التسلسلية?"
+  - text: إدارة شد وجذب تدفقات المخزون
+  - superscript: "?"
+  - checkbox "إدارة شد وجذب تدفقات المخزون?"
+  - text: إدارة متغيرات المنتج
+  - superscript: "?"
+  - checkbox "إدارة متغيرات المنتج?"
+  - text: إدارة مواقع مخزون متعددة
+  - superscript: "?"
+  - checkbox "إدارة مواقع مخزون متعددة?"
+  - text: إرسال بريد إلكتروني تلقائي للتذكير لتأكيد التوصيل
+  - superscript: "?"
+  - checkbox "إرسال بريد إلكتروني تلقائي للتذكير لتأكيد التوصيل?"
+  - button ""
+  - text: إظهار خصائص عدم قابلية التغيير
+  - superscript: "?"
+  - checkbox "إظهار خصائص عدم قابلية التغيير?"
+  - text: إظهار قائمة العملاء المهتمين
+  - superscript: "?"
+  - checkbox "إظهار قائمة العملاء المهتمين?"
+  - text: استخدام المهام المتكررة
+  - superscript: "?"
+  - checkbox "استخدام المهام المتكررة?"
+  - text: استخدام تقرير الاستلام
+  - superscript: "?"
+  - checkbox "استخدام تقرير الاستلام?"
+  - text: اطلب أن يكون هناك توقيع في أوامر توصيلك
+  - superscript: "?"
+  - checkbox "اطلب أن يكون هناك توقيع في أوامر توصيلك?"
+  - text: الخصائص التقنية
+  - superscript: "?"
+  - checkbox "الخصائص التقنية?"
+  - button ""
+  - text: الدور / المستخدم
+  - superscript: "?"
+  - checkbox "الدور / المستخدم?"
+  - button ""
+  - text: القائمة المعدة مسبقاً
+  - superscript: "?"
+  - checkbox "القائمة المعدة مسبقاً?"
+  - text: المالك / المدير العام
+  - superscript: "?"
+  - checkbox "المالك / المدير العام?"
+  - text: المحاسبة التحليلية
+  - superscript: "?"
+  - checkbox "المحاسبة التحليلية?"
+  - button ""
+  - text: "المستخدم: يمكنه قراءة سجلات حضوره"
+  - superscript: "?"
+  - 'checkbox "المستخدم: يمكنه قراءة سجلات حضوره?"'
+  - button ""
+  - text: المنصب / بوابة
+  - superscript: "?"
+  - checkbox "المنصب / بوابة?"
+  - text: تعدد العملات
+  - superscript: "?"
+  - checkbox "تعدد العملات?"
+  - button ""
+  - text: تلقي الإشعارات في أودو
+  - superscript: "?"
+  - checkbox "تلقي الإشعارات في أودو?" [checked]
+  - button ""
+  - text: صلاحيات الوصول
+  - superscript: "?"
+  - checkbox "صلاحيات الوصول?"
+  - text: طباعة باركودات GS1 لأرقام المجموعات والأرقام التسلسلية
+  - superscript: "?"
+  - checkbox "طباعة باركودات GS1 لأرقام المجموعات والأرقام التسلسلية?"
+  - text: عرض الأرقام التسلسلية وأرقام الدفعات في الفواتير
+  - superscript: "?"
+  - checkbox "عرض الأرقام التسلسلية وأرقام الدفعات في الفواتير?"
+  - text: عنوان التوصيل
+  - superscript: "?"
+  - checkbox "عنوان التوصيل?"
+  - text: قفل المبيعات المؤكدة
+  - superscript: "?"
+  - checkbox "قفل المبيعات المؤكدة?"
+  - text: قوالب عرض السعر
+  - superscript: "?"
+  - checkbox "قوالب عرض السعر?"
+  - text: مسؤول الإجازات
+  - superscript: "?"
+  - checkbox "مسؤول الإجازات?"
+  - text: يمكن تعيين تحذير على منتج أو عميل معين (الشراء)
+  - superscript: "?"
+  - checkbox "يمكن تعيين تحذير على منتج أو عميل معين (الشراء)?"
+  - text: يمكن ضبط تحذير لشريك (المخزون)
+  - superscript: "?"
+  - checkbox "يمكن ضبط تحذير لشريك (المخزون)?"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

@@ -1,0 +1,31 @@
+{
+  "passed": 25,
+  "checks": [
+    "default short label QA3 food / Water",
+    "explicit native full path QA3 food / Water",
+    "context cache isolation QA3 food / Water",
+    "full path search distinguishes duplicate leaves QA3 food / Water",
+    "hierarchy and parent path retained QA3 food / Water",
+    "default short label QA3 supplies / Water",
+    "explicit native full path QA3 supplies / Water",
+    "context cache isolation QA3 supplies / Water",
+    "full path search distinguishes duplicate leaves QA3 supplies / Water",
+    "hierarchy and parent path retained QA3 supplies / Water",
+    "mapping leaf and explicit parent QA3 food / Water",
+    "mapping explicit hierarchy context QA3 food / Water",
+    "mapping full path search selects correct identity QA3 food / Water",
+    "mapping leaf and explicit parent QA3 supplies / Water",
+    "mapping explicit hierarchy context QA3 supplies / Water",
+    "mapping full path search selects correct identity QA3 supplies / Water",
+    "rename invalidates category and mapping labels",
+    "parent rename preserves short label and rebuilds path",
+    "existing entry shows only leaf 131",
+    "existing entry shows only leaf 132",
+    "existing entry shows only leaf 133",
+    "explicit empty description preserves full audit path",
+    "existing report monetary values unchanged",
+    "print categories use short labels",
+    "native Arabic PDF rendered"
+  ],
+  "fixtures_rolled_back": true
+}

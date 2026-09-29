@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "read_only": true,
+  "month": "2026-09",
+  "companies": [
+    {
+      "company_id": 2,
+      "visible_rows": 0,
+      "cash_report_parity": true,
+      "native_views_ar_en": true,
+      "all_mode_restored": true
+    },
+    {
+      "company_id": 3,
+      "visible_rows": 0,
+      "cash_report_parity": true,
+      "native_views_ar_en": true,
+      "all_mode_restored": true
+    },
+    {
+      "company_id": 1,
+      "visible_rows": 1,
+      "cash_report_parity": true,
+      "native_views_ar_en": true,
+      "all_mode_restored": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "release": "unified-operational-dashboards-live-candidate-2026-09-15.4",
+  "status": "candidate-published-awaiting-fresh-hostinger-rehearsal",
+  "production_baseline": "863bd851dc107ba8911b417263f21b83270701f0",
+  "candidate_commit": "2d6125e2add3d4e1b06a5cf3370a3a35346925d9",
+  "candidate_tag": "unified-operational-dashboards-live-candidate-2026-09-15.4",
+  "github_repository": "https://github.com/hajrix01-star/abroj-baseer-production.git",
+  "github_branch": "codex/heat-calendar-targets-live-863",
+  "github_published": true,
+  "archive": {
+    "path": "baseer-unified-operational-dashboards-2d6125e.tar.gz",
+    "sha256": "2de320c8fd9b6ab820a1b42895d32aa0568a976c9d6673780886d605f488c206"
+  },
+  "payload_content_sha256": "6b9e749e8d7a4658adf1c7c620526fc3422a75b3c53989ecab56eeead2b8ccf1",
+  "verification": {
+    "full_local_suite": "86 Odoo tests, 0 failures, 0 errors after the final isolated-fixture adjustment.",
+    "category_review": "Sales category cards, highest/lowest values, and Odoo-coloured doughnut chart remain sourced only from approved sales-summary allocations.",
+    "test_isolation": "No release test now relies on operating-year targets, default-company currency, or a preconfigured purchase journal."
+  },
+  "required_before_live": [
+    "fresh isolated Hostinger rehearsal from the production DB and filestore",
+    "independent Alpha Delivery GO based on rehearsal evidence",
+    "fresh production recovery pair, protected snapshot comparison, and smoke checks"
+  ]
+}

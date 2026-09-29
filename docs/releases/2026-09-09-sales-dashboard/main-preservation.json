@@ -1,0 +1,7 @@
+{
+  "protected_tables": 367,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "2d2ff102d11a53fc2fca1b8c1707fc81c77537ab",
+  "added_schema": "New dashboard marker and published dashboard metadata; no business seed or migration"
+}

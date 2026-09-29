@@ -1,0 +1,19 @@
+{
+  "database": "baseer_sim90_20260910",
+  "company_id": 2,
+  "other_company_id": 3,
+  "user_id": 5,
+  "roles": {
+    "accountant": 6,
+    "cashier": 7
+  },
+  "start_date": "2026-01-01",
+  "end_date": "2026-03-31",
+  "prefix": "SIM90",
+  "cash_journal_id": 20,
+  "bank_journal_id": 15,
+  "isolation_move_ids": [
+    5043,
+    5044
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "630minutes =>10:30",
+      "passed": true
+    },
+    {
+      "name": "396minutes =>06:36",
+      "passed": true
+    },
+    {
+      "name": "fraction minute rounds down",
+      "passed": true
+    },
+    {
+      "name": "half minute rounds up",
+      "passed": true
+    },
+    {
+      "name": "minute carry to hour",
+      "passed": true
+    },
+    {
+      "name": "user example wizard average/weekly",
+      "passed": true
+    },
+    {
+      "name": "saved overnight template same average",
+      "passed": true
+    },
+    {
+      "name": "native numeric hours unchanged",
+      "passed": true
+    },
+    {
+      "name": "variable days 33 agree across wizard and calendar",
+      "passed": true
+    },
+    {
+      "name": "native payroll average 33 remains10.51",
+      "passed": true
+    },
+    {
+      "name": "variable days 34 agree across wizard and calendar",
+      "passed": true
+    },
+    {
+      "name": "native payroll average 34 remains10.51",
+      "passed": true
+    },
+    {
+      "name": "invalid empty schedule keeps dash",
+      "passed": true
+    },
+    {
+      "name": "all own views useHHMMlabel",
+      "passed": true
+    },
+    {
+      "name": "saved displays use nonstored formatter",
+      "passed": true
+    },
+    {
+      "name": "display field nonstored",
+      "passed": true
+    }
+  ],
+  "rolled_back": true
+}

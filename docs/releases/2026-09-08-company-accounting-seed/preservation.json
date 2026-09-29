@@ -1,0 +1,256 @@
+{
+  "main_unchanged": true,
+  "qa_preserved": true,
+  "issues": [],
+  "changes": {
+    "res_company": {
+      "1": {
+        "write_date": [
+          "2026-09-07T17:58:16.507125",
+          "2026-09-08T17:12:53.242377"
+        ],
+        "baseer_salary_expense_id": [
+          null,
+          1448
+        ],
+        "baseer_salary_payable_id": [
+          null,
+          1449
+        ],
+        "baseer_deduction_account_id": [
+          null,
+          1450
+        ],
+        "baseer_loan_account_id": [
+          null,
+          1451
+        ],
+        "baseer_payroll_journal_id": [
+          null,
+          147
+        ],
+        "baseer_eos_expense_id": [
+          null,
+          1452
+        ],
+        "baseer_eos_journal_id": [
+          null,
+          2
+        ]
+      },
+      "6": {
+        "write_uid": [
+          2,
+          1
+        ],
+        "write_date": [
+          "2026-09-08T11:32:02.902936",
+          "2026-09-08T17:12:53.242377"
+        ],
+        "baseer_salary_expense_id": [
+          null,
+          524
+        ],
+        "baseer_salary_payable_id": [
+          null,
+          1454
+        ],
+        "baseer_deduction_account_id": [
+          null,
+          593
+        ],
+        "baseer_loan_account_id": [
+          null,
+          1455
+        ],
+        "baseer_payroll_journal_id": [
+          null,
+          148
+        ],
+        "baseer_eos_expense_id": [
+          null,
+          529
+        ],
+        "baseer_eos_journal_id": [
+          null,
+          31
+        ]
+      },
+      "7": {
+        "write_date": [
+          "2026-09-07T17:58:16.507125",
+          "2026-09-08T17:12:53.242377"
+        ],
+        "baseer_salary_expense_id": [
+          null,
+          704
+        ],
+        "baseer_salary_payable_id": [
+          null,
+          1456
+        ],
+        "baseer_deduction_account_id": [
+          null,
+          773
+        ],
+        "baseer_loan_account_id": [
+          null,
+          1457
+        ],
+        "baseer_payroll_journal_id": [
+          null,
+          149
+        ],
+        "baseer_eos_expense_id": [
+          null,
+          709
+        ],
+        "baseer_eos_journal_id": [
+          null,
+          41
+        ]
+      },
+      "8": {
+        "write_date": [
+          "2026-09-07T17:58:16.507125",
+          "2026-09-08T17:12:53.242377"
+        ],
+        "baseer_salary_expense_id": [
+          null,
+          884
+        ],
+        "baseer_salary_payable_id": [
+          null,
+          1458
+        ],
+        "baseer_deduction_account_id": [
+          null,
+          953
+        ],
+        "baseer_loan_account_id": [
+          null,
+          1459
+        ],
+        "baseer_payroll_journal_id": [
+          null,
+          150
+        ],
+        "baseer_eos_expense_id": [
+          null,
+          889
+        ],
+        "baseer_eos_journal_id": [
+          null,
+          51
+        ]
+      },
+      "9": {
+        "write_date": [
+          "2026-09-07T17:58:16.507125",
+          "2026-09-08T17:12:53.242377"
+        ],
+        "baseer_salary_expense_id": [
+          null,
+          1064
+        ],
+        "baseer_salary_payable_id": [
+          null,
+          1460
+        ],
+        "baseer_deduction_account_id": [
+          null,
+          1133
+        ],
+        "baseer_loan_account_id": [
+          null,
+          1461
+        ],
+        "baseer_payroll_journal_id": [
+          null,
+          151
+        ],
+        "baseer_eos_expense_id": [
+          null,
+          1069
+        ],
+        "baseer_eos_journal_id": [
+          null,
+          61
+        ]
+      },
+      "10": {
+        "write_uid": [
+          2,
+          1
+        ],
+        "write_date": [
+          "2026-09-08T13:47:31.494413",
+          "2026-09-08T17:12:53.242377"
+        ],
+        "baseer_eos_expense_id": [
+          null,
+          1336
+        ],
+        "baseer_eos_journal_id": [
+          null,
+          128
+        ]
+      }
+    },
+    "account_payment_method_line": {
+      "2": {
+        "payment_account_id": [
+          null,
+          47
+        ],
+        "write_date": [
+          "2026-09-07T08:47:37.040388",
+          "2026-09-08T17:12:53.242377"
+        ]
+      }
+    }
+  },
+  "added_ids": {
+    "account_move": [],
+    "account_move_line": [],
+    "account_payment": [],
+    "hr_employee": [],
+    "hr_version": [],
+    "baseer_hr_eos": [],
+    "hr_payslip": [],
+    "hr_payslip_run": [],
+    "baseer_hr_loan": [],
+    "res_company": [],
+    "account_account": [
+      1448,
+      1449,
+      1450,
+      1451,
+      1452,
+      1453,
+      1454,
+      1455,
+      1456,
+      1457,
+      1458,
+      1459,
+      1460,
+      1461
+    ],
+    "account_journal": [
+      146,
+      147,
+      148,
+      149,
+      150,
+      151
+    ],
+    "account_payment_method_line": [
+      123,
+      124
+    ],
+    "account_tax": [],
+    "resource_calendar": [],
+    "resource_calendar_attendance": []
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "independent_connections",
+      "passed": true
+    },
+    {
+      "name": "one_bill_from_both_approvals",
+      "passed": true
+    },
+    {
+      "name": "actual_mvcc_retry_observed",
+      "passed": true
+    },
+    {
+      "name": "one_persisted_native_bill",
+      "passed": true
+    },
+    {
+      "name": "posted_correct_amount",
+      "passed": true
+    },
+    {
+      "name": "no_automatic_payment",
+      "passed": true
+    }
+  ],
+  "workers": [
+    {
+      "pid": 245783,
+      "bill": 1385,
+      "retries": [],
+      "seconds": 0.6437
+    },
+    {
+      "pid": 245784,
+      "bill": 1385,
+      "retries": [
+        "40001"
+      ],
+      "seconds": 0.6128
+    }
+  ],
+  "check_count": 6
+}

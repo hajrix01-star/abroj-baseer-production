@@ -1,0 +1,189 @@
+{
+  "version": "19.0.1.2.0",
+  "target": "QA only",
+  "archive": "baseer_payroll-19.0.1.2.0.zip",
+  "archive_sha256": "e8138fa1dab9812e81829baae8d542793df72166e5aaddbaf6675f2e077f0519",
+  "files": [
+    {
+      "path": "custom_addons/baseer_payroll/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/__manifest__.py",
+      "sha256": "67bdfb9d0b265d9de774d35a2f35feef40575d3b8ce1d8b2ba12797e8905756a"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/i18n/ar.po",
+      "sha256": "3461f74545bda0f93c276e8163ece3f21baefe92cca5f5011d7b7a344807d863"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/__init__.py",
+      "sha256": "3d76f1dba48b8236be2a7ce07007a84e195eaf9a07279702dc807f0a54a8de4f"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/common.py",
+      "sha256": "13413fc8c1bb415f99946579a72796b5d132c91781717c5009532191ef7c16a8"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/end_service.py",
+      "sha256": "c13320d3111a95ae80753257b2435e6655dd0c600ce521a0be7c2e470cb8638b"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/financial_record.py",
+      "sha256": "c7e4ad4993d30f8fbe09093757d50fc811d61dbe1728e4c9d47a5af11cc95a11"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/guards.py",
+      "sha256": "2b1a0c3be2a21f82531ae244c096d12cbb213a0f4b9a6ddd8d9b3d3447c33378"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/loan.py",
+      "sha256": "5805130ad18a54722ac9f3c38027960e1a2f06bd93093ed59e2c24fdfe7fddbc"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/payroll.py",
+      "sha256": "e5f78ad3fc201aae269a7e80e18783ac11145faf866b3310a9a3f84501b08a7e"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/settings.py",
+      "sha256": "165fa5a5df6fce0e86470ceb070bcbfccece17ae01a4c3f8316c412728facb8b"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/settlement.py",
+      "sha256": "3b6b6ac7748a682a13b83f72ecbb51233710449b04091560cd8784f88989d11b"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/report/payment_receipt.xml",
+      "sha256": "59e34b1429e7b8bc02716c1e1c665a74292fd26b5cb290ccfeb8b78754e9aefb"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/report/payslip_report.xml",
+      "sha256": "e9caab2fd9c9a7e844888485546d044a945d054d4647e1477b45ae5e2f0fa93f"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/security/end_service_security.xml",
+      "sha256": "774af294a1d920589c8c4ccf2e98ea9ee57f99123ea97293515d771784f40ba5"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/security/ir.model.access.csv",
+      "sha256": "1ad506b249f644a987242d9ed2c0c72391959cdaa0df1d5e9acbb60432f5a36f"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/security/security.xml",
+      "sha256": "dbab980a7590975c5f5cf245649c40199e84ce457915b5c8f64dd847efe0195e"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/static/src/payroll.scss",
+      "sha256": "d9171f84d50892034491dee7a93402c98a88750cf5a814f5eca25e9486559ceb"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/static/src/payroll_month_field.js",
+      "sha256": "2c6b355df7049aa2b9444bc05750c6d2d28c5b5c7609833accfaeed189efd3cb"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/static/src/payroll_month_field.xml",
+      "sha256": "a3fd32a1129ce6a14920134d5c8c9381694f8a77cd96b62c489c8f30ca6b7e1c"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/end_service_views.xml",
+      "sha256": "a1660d3765c3d84d2d9320b945b61f7dd0a48901feaeda27d45de8e4afc2f431"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/loan_views.xml",
+      "sha256": "8f809200b9c78f19c5c0992a68fb1d6f17c57f95d559b2d1c1b6c09f8cc1d264"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/payroll_views.xml",
+      "sha256": "273d92cb15dce45ee8c2314aee597f286526cf40bce3a6d2bc5d5d49365acf41"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/settings_views.xml",
+      "sha256": "1d98bcecb91e55c948fe1f75276ec0bdc202137d16e58d34c4e874109449d0bd"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/settlement_views.xml",
+      "sha256": "70a73f6f8fac7223892256fad57cedf1b42803eebe74759a3775eb264395c2df"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/baseer_payroll_profile_checks.json",
+      "sha256": "01344f6dd555fa174eff3c0ec51b8a53450b34f41235c05ca952d33d51d2aec1"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_eos_checks.json",
+      "sha256": "c2cd41d30eaf0a12365b8aae804e027e5ae31321ca532957774d87bd05609a20"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_eos_concurrency.json",
+      "sha256": "47c5c9abf7a2110043743bffcd70381639e5af9338793ac5ad3c7fc36f84205e"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_profile_ui_checks.json",
+      "sha256": "18a71060c809f57e8ca652dfed24196e86ad28adcb7a12414a5c3647aa7c1405"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_profile_desktop.png",
+      "sha256": "c81b536aeae27c197962152eadd0c2da421f981619b64d53c28317f08b9fa083"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_profile_mobile.png",
+      "sha256": "616e43d71a7b81de0ceb6a29aacbd9412824875758057c07fffdee57ec92acf1"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_eos_desktop.png",
+      "sha256": "6a2ca335b33a08b0a2461b8c60601c7a5c042dc832769c9ddcf51134acc82c40"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_eos_mobile.png",
+      "sha256": "d0d9dc9806b700c779e1903a0c2bc85ed88a3c82e2a440214acc6328f23e314f"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_profile_upgrade.log",
+      "sha256": "118e61d805883dd43b300db9bfcd0c5118ff1d14edd89ed574cb904874790270"
+    },
+    {
+      "path": "docs/build-governance/BASEER-PAYROLL-PROFILE.md",
+      "sha256": "3c2f4c8ffb386dbe00b9f56b16147b397580ab100f33cb836d7ad937b20fcf5b"
+    },
+    {
+      "path": "docs/releases/2026-09-08-baseer-payroll-profile/preservation.json",
+      "sha256": "d19c62ffe42d2ba38e518afb9340ed0845e4efdb1434300ef4eec3248f5e0496"
+    },
+    {
+      "path": "docs/releases/2026-09-08-baseer-payroll-profile/HANDOFF.md",
+      "sha256": "53d9238e3a33a767835ef4785189c597e8cd5fbf7591c078bdf9d17286b944bf"
+    }
+  ],
+  "backup": [
+    {
+      "path": ".local-backups\\baseer-payroll-profile-20260908\\preinstall\\compose.reports-qa.yaml",
+      "bytes": 903,
+      "sha256": "cbcec000978e180751b7cf1bf149727b5b1509d2e5a7ac830fdd9fec175542ca"
+    },
+    {
+      "path": ".local-backups\\baseer-payroll-profile-20260908\\preinstall\\database.dump",
+      "bytes": 8293505,
+      "sha256": "ae918bcb4bbc20e3a7871778c06514168879423f96e66cbf6cf08079cec797c6"
+    },
+    {
+      "path": ".local-backups\\baseer-payroll-profile-20260908\\preinstall\\filestore.tar.gz",
+      "bytes": 52333237,
+      "sha256": "d58ae159671a44eb7ec8ea060686cfe14c796705d0a9b742584074f1bb5925b5"
+    },
+    {
+      "path": ".local-backups\\baseer-payroll-profile-20260908\\preinstall\\odoo.local.conf",
+      "bytes": 173,
+      "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+    }
+  ],
+  "predecessor_archive_sha256": "d4c8fdd9d5984e7940414a94d7b00addc6d2cb8421ea41d57db7c73129c58b42",
+  "upstream_files_unchanged": 210,
+  "checks": {
+    "baseer_payroll_profile_checks": 45,
+    "baseer_payroll_eos_checks": 46,
+    "baseer_payroll_eos_concurrency": 17
+  },
+  "main_exact": true,
+  "git_commit": null
+}

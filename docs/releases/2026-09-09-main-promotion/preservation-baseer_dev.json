@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "reviewed_original_changes": [
+    {
+      "table": "res_partner",
+      "id": 2,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_partner",
+      "id": 3,
+      "columns": [
+        "write_uid",
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 1,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 2,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "res_company",
+      "id": 3,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "hr_employee",
+      "id": 1,
+      "columns": [
+        "write_date"
+      ]
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 4,
+      "columns": [
+        "payment_account_id",
+        "write_date"
+      ],
+      "classification": "CAS-002: empty unused manual outbound method uses existing journal liquidity account"
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 6,
+      "columns": [
+        "payment_account_id",
+        "write_date"
+      ],
+      "classification": "CAS-002: empty unused manual outbound method uses existing journal liquidity account"
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 8,
+      "columns": [
+        "payment_account_id",
+        "write_date"
+      ],
+      "classification": "CAS-002: empty unused manual outbound method uses existing journal liquidity account"
+    },
+    {
+      "table": "account_payment_method_line",
+      "id": 10,
+      "columns": [
+        "payment_account_id",
+        "write_uid",
+        "write_date"
+      ],
+      "classification": "CAS-002: empty unused manual outbound method uses existing journal liquidity account"
+    }
+  ],
+  "no_new_business_transactions": true
+}

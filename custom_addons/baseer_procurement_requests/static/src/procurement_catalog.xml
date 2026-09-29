@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_procurement_requests.ProcurementCatalog">
+        <main class="o_prc_pos_shell">
+            <header class="o_prc_pos_topbar">
+                <div class="o_prc_pos_identity">
+                    <span class="o_prc_pos_mark" aria-hidden="true"><i class="fa fa-shopping-basket"/></span>
+                    <div>
+                        <h1><t t-if="state.existingRequest">Receipt confirmation cart</t><t t-else="">New procurement request</t></h1>
+                        <p><t t-if="state.existingRequest"><t t-esc="state.existingRequest.name"/> <span aria-hidden="true">·</span> <t>Update the quantities in the cart, then confirm receipt.</t></t><t t-else="">Choose raw materials, review the cart, then send it manually through WhatsApp.</t></p>
+                    </div>
+                </div>
+                <div class="o_prc_pos_steps" aria-label="Request workflow">
+                    <span class="is_active"><b>1</b> Request</span>
+                    <span><b>2</b> Manager receipt</span>
+                    <span><b>3</b> Cashier confirmation</span>
+                </div>
+            </header>
+
+            <nav class="o_prc_workspace_tabs" aria-label="Procurement workspace">
+                <button type="button" t-att-class="{'is_active': state.workspaceTab === 'new'}" t-on-click="() => state.workspaceTab = 'new'"><i class="fa fa-plus-circle"/> New request</button>
+                <button type="button" t-att-class="{'is_active': state.workspaceTab === 'recent'}" t-on-click="() => { state.workspaceTab = 'recent'; this.loadRecentRequests(); }"><i class="fa fa-history"/> Previous requests</button>
+            </nav>
+
+            <section t-if="state.workspaceTab === 'recent'" class="o_prc_recent_requests">
+                <div class="o_prc_recent_heading"><div><span class="o_prc_eyebrow">Cashier follow-up</span><h2>Previous requests</h2></div><button type="button" class="btn btn-light" t-on-click="loadRecentRequests" t-att-disabled="state.recentLoading"><i class="fa fa-refresh"/> Refresh</button></div>
+                <div class="o_prc_recent_filters">
+                    <label class="o_prc_search">
+                        <i class="fa fa-search" aria-hidden="true"/>
+                        <span class="visually-hidden">Search previous requests</span>
+                        <input type="search" t-att-value="state.recentSearch" t-on-input="onRecentSearchInput" t-on-keydown="onRecentSearchKeydown" placeholder="Search by request, representative, material, size, or unit" autocomplete="off"/>
+                        <span t-if="state.recentLoading" class="o_prc_inline_loader" role="status" aria-label="Loading"/>
+                    </label>
+                    <label class="o_prc_recent_state_filter">
+                        <span class="visually-hidden">Filter by status</span>
+                        <select t-att-value="state.recentState" t-on-change="onRecentStateChange" aria-label="Filter by status">
+                            <option value="all">All statuses</option>
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent to purchaser</option>
+                            <option value="received">Waiting for cashier confirmation</option>
+                            <option value="purchased">Completed</option>
+                            <option value="cancel">Cancelled</option>
+                        </select>
+                    </label>
+                </div>
+                <div t-if="state.recentLoading" class="o_prc_state_panel"><span class="o_prc_inline_loader"/><p>Loading previous requests…</p></div>
+                <div t-elif="state.recentError and !state.recentRequests.length" class="o_prc_state_panel"><h2>Could not load previous requests</h2><button type="button" class="btn btn-primary" t-on-click="loadRecentRequests">Try again</button></div>
+                <div t-elif="!state.recentRequests.length" class="o_prc_state_panel"><h2>No previous requests</h2><p>Saved requests and requests sent to a representative will appear here.</p></div>
+                <div t-else="">
+                    <div class="o_prc_recent_grid">
+                        <button t-foreach="state.recentRequests" t-as="request" t-key="request.id" type="button" class="o_prc_recent_card" t-on-click="() => this.openRecentRequest(request)">
+                            <span class="o_prc_recent_state" t-esc="recentStateLabel(request)"/><strong t-esc="request.name"/><small><t t-esc="request.line_count"/> <t>items</t> <span aria-hidden="true">·</span> <t t-esc="request.request_date"/></small><b t-esc="recentMoneyText(request)"/>
+                        </button>
+                    </div>
+                    <p t-if="state.recentError" class="o_prc_recent_inline_error">Could not load more requests. Try again.</p>
+                    <div t-if="state.recentHasMore" class="o_prc_load_more">
+                        <button type="button" class="btn btn-light" t-on-click="() => this.loadRecentRequests(false)" t-att-disabled="state.recentLoadingMore">
+                            <span t-if="state.recentLoadingMore" class="o_prc_button_spinner" aria-hidden="true"/>
+                            <span t-else=""><i class="fa fa-chevron-down" aria-hidden="true"/> Load more requests</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <div t-if="state.workspaceTab === 'new'" class="o_prc_pos_body">
+                <section class="o_prc_product_pane" t-att-class="{'is_mobile_hidden': state.mobilePane !== 'products'}" aria-label="Raw-material catalogue">
+                    <div class="o_prc_catalog_toolbar">
+                        <label class="o_prc_search">
+                            <i class="fa fa-search" aria-hidden="true"/>
+                            <span class="visually-hidden">Search raw materials</span>
+                            <input type="search" t-att-value="state.search" t-on-input="onSearchInput" t-on-keydown="onSearchKeydown" placeholder="Search raw materials, sizes, or units" autocomplete="off"/>
+                            <span t-if="state.loadingOptions" class="o_prc_inline_loader" role="status" aria-label="Loading"/>
+                        </label>
+                        <button t-if="state.canCurateCatalog and !state.existingRequest" t-ref="quickProductButton" type="button" class="btn o_prc_quick_product_button" t-on-click="openQuickProduct" aria-label="Add product">
+                            <i class="fa fa-plus" aria-hidden="true"/><span>Add product</span>
+                        </button>
+                        <div class="o_prc_result_hint"><t t-esc="state.options.length"/> materials shown</div>
+                    </div>
+
+                    <nav class="o_prc_categories" aria-label="Material categories">
+                        <button type="button" class="o_prc_category" t-att-class="{'is_active': !state.selectedCategoryId}" t-att-aria-pressed="!state.selectedCategoryId" t-on-click="() => this.selectCategory(false)">
+                            <i class="fa fa-th-large" aria-hidden="true"/><span>All</span>
+                        </button>
+                        <button t-foreach="state.categories" t-as="category" t-key="category.id" type="button" class="o_prc_category" t-att-class="{'is_active': state.selectedCategoryId === category.id}" t-att-aria-pressed="state.selectedCategoryId === category.id" t-on-click="() => this.selectCategory(category.id)">
+                            <span t-esc="category.name"/><small t-esc="category.count"/>
+                        </button>
+                    </nav>
+
+                    <div class="o_prc_product_scroll">
+                        <section t-if="state.canCurateCatalog and !state.existingRequest and !state.search and !state.selectedCategoryId and (state.highlights.length or state.highlightsLoading)" class="o_prc_highlights" aria-label="Favorites and most ordered">
+                            <header>
+                                <div><i class="fa fa-star" aria-hidden="true"/><strong>Favorites and most ordered</strong></div>
+                                <small>Quick access</small>
+                            </header>
+                            <div t-if="state.highlightsLoading and !state.highlights.length" class="o_prc_highlight_track" aria-hidden="true">
+                                <div t-foreach="[1,2,3,4]" t-as="placeholder" t-key="placeholder" class="o_prc_highlight_skeleton"/>
+                            </div>
+                            <div t-else="" class="o_prc_highlight_track">
+                                <div t-foreach="state.highlights" t-as="product" t-key="product.product_id" class="o_prc_highlight_tile">
+                                    <button type="button" class="o_prc_highlight_card" t-on-click="() => this.selectProduct(product)" t-att-aria-label="productAriaLabel(product)">
+                                        <span class="o_prc_highlight_visual">
+                                            <span t-esc="productInitial(product)" aria-hidden="true"/>
+                                            <img t-if="product.image_url" t-att-src="product.image_url" t-att-alt="product.product_name" loading="lazy" t-on-error="onImageError"/>
+                                        </span>
+                                        <span><strong t-esc="product.product_name"/><small t-if="product.usage_count"><t t-esc="product.usage_count"/> confirmed purchases</small><small t-else="">Favorite</small></span>
+                                    </button>
+                                    <button type="button" class="o_prc_favorite_button" t-att-class="{'is_favorite': product.is_favorite, 'is_saving': product.favoriteSaving}" t-att-aria-pressed="product.is_favorite ? 'true' : 'false'" t-att-aria-label="product.is_favorite ? 'Remove from favorites' : 'Add to favorites'" t-att-disabled="product.favoriteSaving" t-on-click.stop="() => this.setFavorite(product)">
+                                        <i t-att-class="product.is_favorite ? 'fa fa-star' : 'fa fa-star-o'" aria-hidden="true"/>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div t-if="state.loadingOptions" class="o_prc_product_grid" aria-hidden="true">
+                            <div t-foreach="[1,2,3,4,5,6,7,8]" t-as="placeholder" t-key="placeholder" class="o_prc_product_card o_prc_skeleton_card"><span/><b/><small/></div>
+                        </div>
+
+                        <div t-elif="state.catalogueError" class="o_prc_state_panel" role="alert">
+                            <span class="o_prc_state_icon"><i class="fa fa-exclamation-triangle"/></span>
+                            <h2>Catalogue could not be loaded</h2>
+                            <p>Check the connection and try again.</p>
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.loadCatalogue(true)">Try again</button>
+                        </div>
+
+                        <div t-elif="!state.options.length" class="o_prc_state_panel">
+                            <span class="o_prc_state_icon"><i class="fa fa-search"/></span>
+                            <h2>No matching materials</h2>
+                            <p>Change the search text or choose another category.</p>
+                        </div>
+
+                        <div t-else="" class="o_prc_product_grid">
+                            <div t-foreach="state.options" t-as="product" t-key="product.product_id" class="o_prc_product_tile">
+                                <button type="button" class="o_prc_product_card" t-on-click="() => this.selectProduct(product)" t-att-aria-label="productAriaLabel(product)">
+                                    <span class="o_prc_product_visual">
+                                        <span class="o_prc_product_fallback" t-esc="productInitial(product)" aria-hidden="true"/>
+                                        <img t-if="product.image_url" t-att-src="product.image_url" t-att-alt="product.product_name" loading="lazy" t-on-error="onImageError"/>
+                                        <span t-if="cartQuantity(product.product_id)" class="o_prc_product_qty" aria-label="Quantity in cart" t-esc="cartQuantity(product.product_id)"/>
+                                    </span>
+                                    <span class="o_prc_product_content">
+                                        <strong t-esc="product.product_name"/>
+                                        <span t-if="product.options.length === 1" class="o_prc_product_meta"><t t-esc="product.option_name"/><t t-if="product.packaging_note and product.packaging_note !== product.option_name"> · <t t-esc="product.packaging_note"/></t></span>
+                                        <span t-else="" class="o_prc_product_meta">Choose size · <t t-esc="product.options.length"/> options</span>
+                                        <span t-if="product.options.length === 1" class="o_prc_product_price"><t t-esc="product.last_price_text"/> <small t-esc="product.currency_symbol"/></span>
+                                    </span>
+                                    <span class="o_prc_add_hint"><i t-att-class="product.options.length > 1 ? 'fa fa-sliders' : 'fa fa-plus'" aria-hidden="true"/></span>
+                                </button>
+                                <button t-if="state.canCurateCatalog and !state.existingRequest" type="button" class="o_prc_favorite_button" t-att-class="{'is_favorite': product.is_favorite, 'is_saving': product.favoriteSaving}" t-att-aria-pressed="product.is_favorite ? 'true' : 'false'" t-att-aria-label="product.is_favorite ? 'Remove from favorites' : 'Add to favorites'" t-att-disabled="product.favoriteSaving" t-on-click.stop="() => this.setFavorite(product)">
+                                    <i t-att-class="product.is_favorite ? 'fa fa-star' : 'fa fa-star-o'" aria-hidden="true"/>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div t-if="state.selectedProduct" class="o_prc_option_overlay" role="dialog" aria-modal="true" aria-label="Choose size">
+                            <button type="button" class="o_prc_option_backdrop" t-on-click="closeProductOptions" aria-label="Close size selection"/>
+                            <section class="o_prc_option_sheet">
+                                <header><div><span>Choose a size or package</span><strong t-esc="state.selectedProduct.product_name"/></div><button type="button" t-on-click="closeProductOptions" aria-label="Close"><i class="fa fa-times"/></button></header>
+                                <button t-foreach="state.selectedProduct.options" t-as="option" t-key="option.id" type="button" class="o_prc_option_choice" t-on-click="() => this.selectProductOption(option)">
+                                    <span><strong t-esc="option.option_name"/><small t-if="option.packaging_note and option.packaging_note !== option.option_name" t-esc="option.packaging_note"/></span>
+                                    <b><t t-esc="option.last_price_text"/> <small t-esc="option.currency_symbol"/></b>
+                                </button>
+                            </section>
+                        </div>
+
+                        <div t-if="state.hasMore and !state.loadingOptions" class="o_prc_load_more">
+                            <button type="button" class="btn btn-light" t-on-click="() => this.loadCatalogue(false)" t-att-disabled="state.loadingMore">
+                                <span t-if="state.loadingMore" class="o_prc_button_spinner" aria-hidden="true"/>
+                                <span t-else=""><i class="fa fa-chevron-down" aria-hidden="true"/> Load more materials</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div t-if="state.quickProductOpen" class="o_prc_quick_overlay" role="dialog" aria-modal="true" aria-labelledby="o_prc_quick_product_title">
+                        <button type="button" class="o_prc_option_backdrop" t-on-click="closeQuickProduct" tabindex="-1" aria-hidden="true"/>
+                        <form t-ref="quickProductDialog" class="o_prc_quick_dialog" t-on-submit.prevent="createQuickProduct">
+                            <header>
+                                <div><span class="o_prc_eyebrow">Quick product</span><h2 id="o_prc_quick_product_title">Add a purchase product</h2></div>
+                                <button type="button" class="o_prc_icon_button" t-on-click="closeQuickProduct" t-att-disabled="state.quickProductSaving" aria-label="Close"><i class="fa fa-times"/></button>
+                            </header>
+                            <p>Enter only the name and purchase price. The product will not be tracked in inventory.</p>
+                            <label><span>Product name <b>*</b></span><input t-ref="quickProductName" type="text" maxlength="120" required="required" autocomplete="off" t-att-value="state.quickProductName" t-on-input="onQuickProductName"/></label>
+                            <label><span>Purchase price <b>*</b></span><div class="o_prc_quick_price" dir="ltr"><input type="number" min="0.01" step="0.01" inputmode="decimal" required="required" t-att-value="state.quickProductPrice" t-on-input="onQuickProductPrice"/><small t-esc="state.options[0]?.currency_symbol || ''"/></div></label>
+                            <p t-if="state.quickProductError" class="o_prc_quick_error" role="alert" t-esc="state.quickProductError"/>
+                            <footer><button type="button" class="btn btn-light" t-on-click="closeQuickProduct" t-att-disabled="state.quickProductSaving">Cancel</button><button type="submit" class="btn btn-primary" t-att-disabled="state.quickProductSaving"><span t-if="state.quickProductSaving" class="o_prc_button_spinner" aria-hidden="true"/><span t-else=""><i class="fa fa-plus" aria-hidden="true"/> Add product</span></button></footer>
+                        </form>
+                    </div>
+                </section>
+
+                <aside class="o_prc_cart_pane" t-att-class="{'is_mobile_hidden': state.mobilePane !== 'cart'}" aria-label="Procurement request cart">
+                    <header class="o_prc_cart_header">
+                        <div>
+                            <span class="o_prc_eyebrow">Current request</span>
+                            <h2>Request cart <span class="o_prc_count" t-esc="state.cart.length"/></h2>
+                        </div>
+                        <button t-if="state.mobilePane === 'cart'" type="button" class="o_prc_icon_button o_prc_mobile_only" t-on-click="() => state.mobilePane = 'products'" aria-label="Back to materials"><i class="fa fa-times"/></button>
+                    </header>
+
+                    <div class="o_prc_request_fields">
+                        <label t-if="!state.existingRequest">
+                            <span>Purchase representative <b>*</b></span>
+                            <select t-att-value="state.representativePartnerId || ''" t-on-change="onRepresentativeChange" aria-label="Purchase representative">
+                                <option value="">Choose a representative</option>
+                                <option t-foreach="state.representatives" t-as="representative" t-key="representative.id" t-att-value="representative.id" t-esc="representative.name"/>
+                            </select>
+                        </label>
+                        <label t-else="">
+                            <span>Purchase representative</span>
+                            <select disabled="disabled" aria-label="Request purchase representative">
+                                <option t-if="state.existingRequest.representative_name" t-esc="state.existingRequest.representative_name"/>
+                                <option t-else="">Legacy request linked to a purchasing employee</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="o_prc_cart_lines">
+                        <div t-if="!state.cart.length" class="o_prc_empty_cart">
+                            <span><i class="fa fa-shopping-basket" aria-hidden="true"/></span>
+                            <h3>Your cart is empty</h3>
+                            <p>Tap a raw material to add it to this request.</p>
+                            <button type="button" class="btn btn-light o_prc_mobile_only" t-on-click="() => state.mobilePane = 'products'">Browse materials</button>
+                        </div>
+
+                        <article t-foreach="state.cart" t-as="line" t-key="line.option_id" t-att-class="{'o_prc_cart_line': true, 'is_not_received': isNotReceived(line)}">
+                            <div class="o_prc_line_visual"><span t-esc="(line.name || '?').slice(0, 1)"/><img t-if="line.image_url" t-att-src="line.image_url" t-att-alt="line.name" loading="lazy" t-on-error="onImageError"/></div>
+                            <div class="o_prc_line_content">
+                                <div class="o_prc_line_heading"><div><strong t-esc="line.name"/><small><t t-esc="line.unit"/><t t-if="line.packaging and line.packaging !== line.unit"> · <t t-esc="line.packaging"/></t></small></div><button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'"/></button></div>
+                                <div class="o_prc_line_controls">
+                                    <div class="o_prc_stepper" role="group" aria-label="Quantity">
+                                        <button type="button" t-on-click="() => this.stepQuantity(line, -1)" aria-label="Decrease quantity"><i class="fa fa-minus"/></button>
+                                        <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.quantity" t-on-input="(event) => this.setQuantity(line, event.target.value)" aria-label="Quantity"/>
+                                        <button type="button" t-on-click="() => this.stepQuantity(line, 1)" aria-label="Increase quantity"><i class="fa fa-plus"/></button>
+                                    </div>
+                                    <div class="o_prc_line_amount">
+                                        <label t-if="state.existingRequest" t-att-class="{'o_prc_actual_price': true, 'is_invalid': requiresActualPrice(line)}">
+                                            <span class="visually-hidden">Actual unit price</span>
+                                            <span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/>
+                                            <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-on-input="(event) => this.setActualPrice(line, event.target.value)" aria-label="Actual unit price"/>
+                                        </label>
+                                        <small t-if="requiresActualPrice(line)" class="o_prc_actual_price_hint">Enter the price</small>
+                                        <small t-elif="quoteLine(line)"><t t-esc="quoteLine(line).unit_price_text"/> <t t-esc="state.quote.currency_symbol"/> / <t t-esc="line.unit"/></small>
+                                        <strong t-if="quoteLine(line)" t-esc="moneyText(quoteLine(line).line_total_text)"/>
+                                        <span t-else="" class="o_prc_quote_placeholder">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+
+                    <footer class="o_prc_cart_footer">
+                        <div class="o_prc_total_row">
+                            <div><span><t t-if="state.existingRequest">Actual total</t><t t-else="">Estimated total</t></span><small t-if="state.existingRequest">Updated using receipt prices</small><small t-else="">Based on the latest recorded prices</small></div>
+                            <strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/>
+                            <span t-else="" class="o_prc_total_loading">Calculating…</span>
+                        </div>
+                        <p t-if="state.existingRequest and unpricedReceivedLines.length" class="o_prc_cart_warning">Enter the actual price for <t t-esc="unpricedReceivedLines[0].name"/> to enable confirmation.</p>
+                        <p t-elif="state.quoteError" class="o_prc_cart_warning">The total could not be calculated. Check the quantities and prices.</p>
+                        <div class="o_prc_cart_actions">
+                            <button t-if="!state.existingRequest" type="button" class="btn btn-light" t-on-click="() => this.saveDraft(false)" t-att-disabled="!canSave"><i class="fa fa-save" aria-hidden="true"/> Save request</button>
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.saveDraft(!state.existingRequest)" t-att-disabled="!canSave"><i t-att-class="state.existingRequest ? 'fa fa-check' : 'fa fa-whatsapp'" aria-hidden="true"/> <t t-if="state.existingRequest">Confirm receipt</t><t t-else="">Save and open WhatsApp</t></button>
+                        </div>
+                    </footer>
+                </aside>
+            </div>
+
+            <nav class="o_prc_mobile_nav" aria-label="Request screen">
+                <button type="button" t-att-class="{'is_active': state.mobilePane === 'products'}" t-on-click="() => state.mobilePane = 'products'"><i class="fa fa-th-large"/><span>Materials</span></button>
+                <button type="button" t-att-class="{'is_active': state.mobilePane === 'cart'}" t-on-click="() => state.mobilePane = 'cart'"><i class="fa fa-shopping-basket"/><span><span>Cart</span> (<t t-esc="state.cart.length"/>)</span><strong t-if="state.cart.length" t-esc="moneyText(state.quote.total_text)"/></button>
+            </nav>
+        </main>
+    </t>
+
+    <t t-name="baseer_procurement_requests.ProcurementActualCatalog">
+        <main class="o_prc_actual_pos">
+            <header class="o_prc_actual_header">
+                <div><span class="o_prc_eyebrow">Cashier confirmation</span><h1>Confirm actual purchase</h1><p><t t-esc="state.request.name"/> · <t t-esc="state.request.warehouse_id[1]"/></p></div>
+                <div class="o_prc_actual_total"><span>Actual purchase total</span><strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/><small>This updates quantities and the latest price only.</small></div>
+            </header>
+            <section class="o_prc_actual_notice"><i class="fa fa-info-circle"/><span>This confirmation creates a quantity-only stock receipt. It does not create accounting inventory value.</span></section>
+            <section class="o_prc_actual_lines">
+                <article t-foreach="state.lines" t-as="line" t-key="line.id">
+                    <div class="o_prc_actual_name"><strong t-esc="line.option.product_id[1]"/><span class="o_prc_actual_variant"><i class="fa fa-cube" aria-hidden="true"/> <t t-esc="optionLabel(line.option)"/></span><small>Requested: <t t-esc="line.requested_qty"/> · Manager received: <t t-esc="line.manager_received_qty"/></small><small t-if="state.mode !== 'manager_receipt'">Latest price: <t t-esc="line.option.last_price"/></small></div>
+                    <label t-if="state.mode === 'manager_receipt'"><span>Received quantity</span><input type="number" min="0" t-att-max="line.requested_qty" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.manager_received_qty" t-on-input="(event) => this.setManagerReceipt(line, event.target.value)"/></label>
+                    <label t-else=""><span>Actual quantity</span><input type="number" min="0" t-att-max="line.manager_received_qty" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_qty" t-on-input="(event) => this.setActual(line, 'actual_qty', event.target.value)"/></label>
+                    <label t-if="state.mode !== 'manager_receipt'"><span>Actual unit price</span><input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-on-input="(event) => this.setActual(line, 'actual_price', event.target.value)"/></label>
+                    <strong class="o_prc_actual_line_total" t-if="state.mode !== 'manager_receipt' and quoteLine(line)" t-esc="moneyText(quoteLine(line).line_total_text)"/>
+                </article>
+            </section>
+            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm manager receipt</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
+        </main>
+    </t>
+</templates>

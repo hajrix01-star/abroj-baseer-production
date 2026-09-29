@@ -1,0 +1,246 @@
+{
+  "checks": [
+    {
+      "check": "QA ARZ: empty P&L",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA ARZ: empty cash",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA ARZ: unpaid invoice accrual",
+      "actual": 1000.0,
+      "expected": 1000
+    },
+    {
+      "check": "QA ARZ: unpaid invoice no cash",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA ARZ: partial invoice residual",
+      "actual": 600.0,
+      "expected": 600
+    },
+    {
+      "check": "QA ARZ: collection not repeated income",
+      "actual": 1000.0,
+      "expected": 1000
+    },
+    {
+      "check": "QA ARZ: partial collection",
+      "actual": 400.0,
+      "expected": 400
+    },
+    {
+      "check": "QA ARZ: unpaid expense included",
+      "actual": 800.0,
+      "expected": 800
+    },
+    {
+      "check": "QA ARZ: internal transfer net zero",
+      "actual": 250.0,
+      "expected": 250
+    },
+    {
+      "check": "QA ARZ: refund reduces income",
+      "actual": 700.0,
+      "expected": 700
+    },
+    {
+      "check": "QA ARZ: actual net cash",
+      "actual": 150.0,
+      "expected": 150
+    },
+    {
+      "check": "QA ARZ: opening cash",
+      "actual": 1000.0,
+      "expected": 1000
+    },
+    {
+      "check": "QA ARZ: closing cash",
+      "actual": 1150.0,
+      "expected": 1150
+    },
+    {
+      "check": "QA ARZ: cash reconciles",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA المعلم الشامي: empty P&L",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA المعلم الشامي: empty cash",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA المعلم الشامي: unpaid invoice accrual",
+      "actual": 2000.0,
+      "expected": 2000
+    },
+    {
+      "check": "QA المعلم الشامي: unpaid invoice no cash",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA المعلم الشامي: partial invoice residual",
+      "actual": 1200.0,
+      "expected": 1200
+    },
+    {
+      "check": "QA المعلم الشامي: collection not repeated income",
+      "actual": 2000.0,
+      "expected": 2000
+    },
+    {
+      "check": "QA المعلم الشامي: partial collection",
+      "actual": 800.0,
+      "expected": 800
+    },
+    {
+      "check": "QA المعلم الشامي: unpaid expense included",
+      "actual": 1600.0,
+      "expected": 1600
+    },
+    {
+      "check": "QA المعلم الشامي: internal transfer net zero",
+      "actual": 500.0,
+      "expected": 500
+    },
+    {
+      "check": "QA المعلم الشامي: refund reduces income",
+      "actual": 1400.0,
+      "expected": 1400
+    },
+    {
+      "check": "QA المعلم الشامي: actual net cash",
+      "actual": 300.0,
+      "expected": 300
+    },
+    {
+      "check": "QA المعلم الشامي: opening cash",
+      "actual": 2000.0,
+      "expected": 2000
+    },
+    {
+      "check": "QA المعلم الشامي: closing cash",
+      "actual": 2300.0,
+      "expected": 2300
+    },
+    {
+      "check": "QA المعلم الشامي: cash reconciles",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA دوحة المستهلك: empty P&L",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA دوحة المستهلك: empty cash",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA دوحة المستهلك: unpaid invoice accrual",
+      "actual": 3000.0,
+      "expected": 3000
+    },
+    {
+      "check": "QA دوحة المستهلك: unpaid invoice no cash",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "QA دوحة المستهلك: partial invoice residual",
+      "actual": 1800.0,
+      "expected": 1800
+    },
+    {
+      "check": "QA دوحة المستهلك: collection not repeated income",
+      "actual": 3000.0,
+      "expected": 3000
+    },
+    {
+      "check": "QA دوحة المستهلك: partial collection",
+      "actual": 1200.0,
+      "expected": 1200
+    },
+    {
+      "check": "QA دوحة المستهلك: unpaid expense included",
+      "actual": 2400.0,
+      "expected": 2400
+    },
+    {
+      "check": "QA دوحة المستهلك: internal transfer net zero",
+      "actual": 750.0,
+      "expected": 750
+    },
+    {
+      "check": "QA دوحة المستهلك: refund reduces income",
+      "actual": 2100.0,
+      "expected": 2100
+    },
+    {
+      "check": "QA دوحة المستهلك: actual net cash",
+      "actual": 450.0,
+      "expected": 450
+    },
+    {
+      "check": "QA دوحة المستهلك: opening cash",
+      "actual": 3000.0,
+      "expected": 3000
+    },
+    {
+      "check": "QA دوحة المستهلك: closing cash",
+      "actual": 3450.0,
+      "expected": 3450
+    },
+    {
+      "check": "QA دوحة المستهلك: cash reconciles",
+      "actual": 0.0,
+      "expected": 0
+    },
+    {
+      "check": "restricted own company profit_and_loss",
+      "actual": 700.0,
+      "expected": 700
+    },
+    {
+      "check": "restricted cross-company rejected profit_and_loss",
+      "passed": true
+    },
+    {
+      "check": "restricted own company cash_flow",
+      "actual": 150.0,
+      "expected": 150
+    },
+    {
+      "check": "restricted cross-company rejected cash_flow",
+      "passed": true
+    }
+  ],
+  "companies": [
+    {
+      "id": 6,
+      "name": "QA ARZ"
+    },
+    {
+      "id": 7,
+      "name": "QA المعلم الشامي"
+    },
+    {
+      "id": 8,
+      "name": "QA دوحة المستهلك"
+    }
+  ]
+}

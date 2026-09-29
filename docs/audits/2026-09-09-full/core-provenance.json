@@ -1,0 +1,44 @@
+{
+  "source_file_count": 1082,
+  "parsers": {
+    "python": 264,
+    "xml": 135
+  },
+  "parse_errors": [],
+  "mounted_differences": [],
+  "recorded_vendor_baselines": [
+    {
+      "baseline": "docs/releases/2026-09-08-om-payroll/source.json",
+      "files": 210,
+      "changed": []
+    },
+    {
+      "baseline": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json",
+      "files": 131,
+      "changed": []
+    }
+  ],
+  "native_critical_source_runtime_comparison": {
+    "orm/models.py": {
+      "same_normalized_line_endings": false
+    },
+    "orm/environments.py": {
+      "same_normalized_line_endings": true
+    },
+    "service/model.py": {
+      "same_normalized_line_endings": true
+    },
+    "addons/account/models/account_move.py": {
+      "same_normalized_line_endings": false
+    },
+    "addons/account/models/account_payment.py": {
+      "same_normalized_line_endings": false
+    },
+    "addons/account/wizard/account_payment_register.py": {
+      "same_normalized_line_endings": true
+    },
+    "addons/web/static/src/webclient/actions/action_service.js": {
+      "same_normalized_line_endings": true
+    }
+  }
+}

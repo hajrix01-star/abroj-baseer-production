@@ -1,0 +1,2087 @@
+{
+  "source_directory": "D:\\Codex\\Baseer-odoo\\.local-backups\\main-promotion-20260909\\previous-source",
+  "files": [
+    {
+      "path": "custom_addons/baseer_core/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "reference": "unchanged installed foundation"
+    },
+    {
+      "path": "custom_addons/baseer_core/__manifest__.py",
+      "sha256": "5d324c68f36dd7fafeb98ebb89c5699d8cccf1048aa9a94a0597218436d95e56",
+      "reference": "unchanged installed foundation"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/__manifest__.py",
+      "sha256": "8cd25f75e0878071faf42196f2de863b9e54501c3ef4f37d18680ce6673bb56b",
+      "reference": "docs/build-governance/CASH-PRINT-CLEAN-REVIEW.md"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/data/report.xml",
+      "sha256": "8e3e00e3e6ad5b0323813cc78c9f86190101846835091c6b1404f8aa67fac1bb",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/i18n/ar_001.po",
+      "sha256": "bde61ad3859632554ed900ead2f1cb1c8c896da789420c735792cd129a74938b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/models/__init__.py",
+      "sha256": "e6e47f90052e68bff038844f79037cbd2151461e28765993620d1256649af756",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/models/cash_categories.py",
+      "sha256": "54cab5ca4d32f9308e835f7e957eec7d6fc4cb33aa6fad5aab5cbfc5d3ca9da3",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/models/cash_pdf.py",
+      "sha256": "53364c5c69afc7d819aac8d499c202fe11721dd9ff23e4a632492d73e85cf525",
+      "reference": "docs/build-governance/CASH-PRINT-CLEAN-REVIEW.md"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/report/report_note.xml",
+      "sha256": "a45ebab01ed40c3c9c71ace7b390bf927ebb62019f29cd901c22ea03fec60c9b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/static/src/cash_categories.js",
+      "sha256": "4663cb6871b754f5246071f5f7481fb507e9d8189ea8eb86b04bc5092ba9816b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/static/src/cash_categories.scss",
+      "sha256": "d0077013b59da03aab6ae59c6ae9def564fe6866aea221cccdfaeb8597a04202",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_cash_categories/static/src/cash_categories.xml",
+      "sha256": "3a678333524bae3bae3d732456361d00633c0b0d0356dd0b9be0dda941e4f490",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/__init__.py",
+      "sha256": "c06b9ebcbdc951e33341c821997954811a8ad2fa663f1c9383abb08601e2847a",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/__manifest__.py",
+      "sha256": "e6ed0d3e0ddfb9aa8ae1b7c71f868121220ff7939a579a61ca6f42cf78267ad3",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/README.md",
+      "sha256": "7bc5455ffe723dd1da567c3d679c3c341e1d3850385885fd78684dcaa3c4c24d",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/report/arabic_pdf_font.xml",
+      "sha256": "d77a6877798e1c09a44894a799bbbd42b8bb962ffa9117e9fdcea6c0e9359c91",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Bold.ttf",
+      "sha256": "b74f809dead12442ed56e02a12c3bcc02076c9ad4e32f17d0a9ca6fc1aafc89e",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Regular.ttf",
+      "sha256": "8e0f1046c736bf939d4939ee3ae0116acf61cbcd6592deae7656761627080981",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/LICENSE.txt",
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/fonts/SOURCE.md",
+      "sha256": "8fb1c17142f3bbc5e7db937e6a3e7b92c8807c4a306c90ede204216092f91a74",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/js/latin_date_field.js",
+      "sha256": "815e79dedbda875caa488dd346afb6a554713b6d12e208d528955445e97341b1",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/report_layout.scss",
+      "sha256": "1fe93af3b7ba25e3b2d50a69b35953cb7ece656142e8db6a89617c8650a4ed18",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_report_layout/static/src/report_layout.xml",
+      "sha256": "151f624d23dba4fd509b585151d7dd9f806347be84e8655badf871dcb13a34d0",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/__manifest__.py",
+      "sha256": "0c9fd0b07c2b54262c7c6b0305405506fdac382fe6640b9859f257535ef7d5fc",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/data/sequence.xml",
+      "sha256": "42ddb26d2ad842a0b4690809c413256e06f52e574710b0457ac347a4a6a486a0",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/i18n/ar_001.po",
+      "sha256": "d1eb6b8b17523ecb1143fbbda5cae9d93de002c39bb6aec53060b56c3b473de6",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/migrations/19.0.1.2.0/post-migration.py",
+      "sha256": "bca03cbec6ce68d554968e7b7b5657577a0ec32cb5d5295beb7d3e165a8f2e7b",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/__init__.py",
+      "sha256": "c1d7dd04824a48dd8c48d5308fe53b6e2397002932aeb414bbf5896eb5f47788",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/purchase_batch.py",
+      "sha256": "3484619d6403aa5db419d67c64f265d0c0cfe7b44d054bf7eb4c8ffb98a65554",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/models/res_partner.py",
+      "sha256": "cba62b6b12eb9d35ab5344be20fd7ed3cb373f308fef76bcd96d17f8b552a84d",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/README.md",
+      "sha256": "9d4db3bbca0bb95f6c593a29ca87b2bd77bc7105ec37b105477074660d62e227",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/report/purchase_batch_report.xml",
+      "sha256": "b1c11d3b00e6924ca8337f6f9fab93d293eb31fde0764cd016461ed5884f20d8",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/ir.model.access.csv",
+      "sha256": "c42c7e37f2ba59be5e74532d50d56cd3e969808f3d6d51aaf1d1faefe030e476",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/security/security.xml",
+      "sha256": "dce5ee3927d3c5d2c96dfdef13805af8c7bcf3d9e856c0928d7721aac8a4a08a",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/js/latin_date_field.js",
+      "sha256": "fff7b862fdbf1646e3563e8024a3d3e9f98f2aca8f12fd529e963fc9f988e8b4",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+      "sha256": "a7789a8611ccb9659689e330786b0ce5204e2a3d8ac18910d32ac5d03cb48da3",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/category_mapping_views.xml",
+      "sha256": "86259719f9860d596ac253e82da472ed05c750b91ebef588e9d17223a77f2505",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/purchase_batch_views.xml",
+      "sha256": "f00cc86a6af2522be45f11818993b0abebb0e1636be89b390f34dfa8aba735b2",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_purchase_batch/views/res_partner_views.xml",
+      "sha256": "d093ab55ac767458ddb4cc19446d25dcfeb50e4116bc17cecd10bad747d9a545",
+      "reference": "docs/releases/2026-09-07-pos-summary-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "reference": "docs/releases/2026-09-07-purchase-batch-qa5/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/__manifest__.py",
+      "sha256": "80ed4d449408157f892d6ba06c60f5231f91ec36f4b85423666c521d682972ac",
+      "reference": "docs/releases/2026-09-07-purchase-batch-qa5/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/models/__init__.py",
+      "sha256": "2330ebc9ec58477a49dc086dbaa3518d4b78fc5ed1001fcf05f1055175a9b0d1",
+      "reference": "docs/releases/2026-09-07-purchase-batch-qa5/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/models/product_category.py",
+      "sha256": "ea7857a6899c58aa3e8daacbcc6c0966a6ecf723229dbd18f02c2c5720745137",
+      "reference": "docs/releases/2026-09-07-purchase-batch-qa5/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/README.md",
+      "sha256": "906c554d8c2846315bef3ab08067d028473bbe2ba94f26f62c5aa2fb1f4088ee",
+      "reference": "docs/releases/2026-09-07-purchase-batch-qa5/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_category_display/views/product_category_views.xml",
+      "sha256": "c357d8726816d7c6bf2583bff6e2c643e8d05b55151d88a9357bf318a9c99996",
+      "reference": "docs/releases/2026-09-07-purchase-batch-qa5/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/__manifest__.py",
+      "sha256": "6590365a506bd079498c9aa78758acffe9a061a2d9833a74244667900ced3e2b",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/i18n/ar.po",
+      "sha256": "05766d4e680141d169c7e74685bde4a768f351398094a4d7ea9687dd5e962527",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py",
+      "sha256": "5cb22eb451ebf1b1bcba4776b9a540bd2d95c5f7d8bde3fa5163a52702917afb",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/__init__.py",
+      "sha256": "a16fd92ebf9b9ffd904f656d0f75c9f1fe329d637fdda4b6f3699166d47ba49c",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/cash_report.py",
+      "sha256": "b637f42011ec24b67beed56870d309afeefad73a53f68821754a47381d166595",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/common.py",
+      "sha256": "0817f9ce0884b0898e22f41da8cc958d2d84385cbf780c9292fce32a8bc5aa49",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/daily_report.py",
+      "sha256": "5697630a5b810712d37e6ce297194aa595e033e92d200d25aeca94b9395219ff",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/day_archive.py",
+      "sha256": "3ed0a4219ec4f384aa124ef7727b3eb77ff831c8a1a2521494657816b939359a",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/day_entry.py",
+      "sha256": "7a757b24c32bccfc5c0159b253c0a823b426f5ad4499cf8110794e212cd37387",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/operations.py",
+      "sha256": "7e91a169941ed2a5807dfb8eb389cf5408d87c384e158ca6830c291799a45ec8",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_configuration.py",
+      "sha256": "f4dee73f57987baa3cb91786357df8f2a5c4ec8b03a037bf28b324e4922c64d7",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_native.py",
+      "sha256": "8d7ed53c92d25686a3219390857803fa6a0572a4c6d5910a7e062b6e9c7ca63c",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/summary.py",
+      "sha256": "b10986e77e7d71de99adde445093398bdebc2f276212b4d4ddfc12b31d316c75",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/ir.model.access.csv",
+      "sha256": "4d6060edef0c0942e3aac30b9bffc62c873c66e4c8dfb06e2a42278ec92b9bbe",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/security.xml",
+      "sha256": "352e0813fd4a92139151b3e83b10793f15ce394c113c51201cd464187a71a445",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/js/payment_amount_grid.js",
+      "sha256": "7e3eb3eadaf471af4e17ba2ef23ee109bc95733aa65df540cdc848a9a3846b06",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/scss/summary.scss",
+      "sha256": "d680c7efaf9f538a0de4b521d1212000867f143d3e0171aa453c56393c097932",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml",
+      "sha256": "cd04874fb61021f43a93a235c191c8a8b5313b1ba05f849e03c3ba73486a728c",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/allocation_views.xml",
+      "sha256": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/configuration_views.xml",
+      "sha256": "4c10cbaefbd4d92305a408242fa85ad8a824fee82e915236e9b1af8a9f071153",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/daily_report_views.xml",
+      "sha256": "2e6402225938a912c85ecc6ffd917616e80ee2c35a2d2bcc9d57e43bb218a3c9",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/day_archive_views.xml",
+      "sha256": "6a6771947f1354d8ddba3919faaa150e25bb5660164466daefa06628bd6d7699",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/day_entry_views.xml",
+      "sha256": "324c33986ca56846d86c0c9458eb1f36bf47572e02de95b4dde6b7f858e15fdf",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/operations_views.xml",
+      "sha256": "4193caa66f0eee5e95ff36bd6b5de779ae09db718a8297d0b0169dbb382069c6",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/summary_views.xml",
+      "sha256": "7c74a736cc0ddd81f7da7617193470c6964201d00dfd0bcb2969d5456bc2707f",
+      "reference": "docs/releases/2026-09-08-pos-summary-qa6/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "reference": "docs/build-governance/nav1_manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/__manifest__.py",
+      "sha256": "5dfdc5af5cd2386a8751c2151061d372265d91487f0fe8fbfc89fce528006c7b",
+      "reference": "docs/build-governance/nav1_manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/static/src/apps_menu.scss",
+      "sha256": "3296b03772dacbd9bc94be40dc7b51c5094cff2979b6559de0b4ad10d63c639d",
+      "reference": "docs/build-governance/nav1_manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_web_navigation/static/src/apps_menu.xml",
+      "sha256": "20738ad0b195e1f3b8728c791420ea7c5162ad451adf399051f16a9135277561",
+      "reference": "docs/build-governance/nav1_manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_legion_compat/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_legion_compat/__manifest__.py",
+      "sha256": "db5efe33e9075878047daa33ef9241e9655eeffcd3865e56720c3f84c5e563a9",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "custom_addons/baseer_legion_compat/static/src/navbar.scss",
+      "sha256": "e1add8c78bf281669f2b771cf9f7f20c2dbf262bbc5c889b28958be24dfca9ef",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/__init__.py",
+      "sha256": "33d2ee72e989be872a10d35692e0b6976cc014e4372b59d1f72404baef81b83d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/__manifest__.py",
+      "sha256": "3787b17c365fb7cddcf052368c9132624a37fabd930e372690c36c6dc717c9c4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/data/menus.xml",
+      "sha256": "b8797724ffe9a93299dee2f29936ca6d0530c8cf5731dabb5e519a596e9ebdd7",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/data/paperformat.xml",
+      "sha256": "acc801cfb45a9035c43cfa773c6eb080510469ae3e1ddc3d2d8163060f9c5e58",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/demo/base_demo.xml",
+      "sha256": "a60229ff15997d8b8d56b94c5f83857fdef50bf64de7bb7d19e2241e40fa8613",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/hooks.py",
+      "sha256": "c7faa5fcc9c1d8202a492e03ca6639fc30b78c2e8a5a0a9da2229f1da0d9a248",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ar.po",
+      "sha256": "4085cf92c412686cf25f5bcb87041b975767369aefc66ead5d77eb589719e6ff",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/de.po",
+      "sha256": "45ed15bada2ca05713f4774660ee85aa415c46d2c418b631813ef71bec673fb7",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/eh_account_base.pot",
+      "sha256": "89657d822ce4232ed95cc71a48c80566cf87fa92638d7e7acdef7c8a7e5abce6",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/es.po",
+      "sha256": "140b43dfe73bf2f0c430245342fb64e7fbf07dd20c23745ec1be1442a00dd6e0",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/fr.po",
+      "sha256": "de6868e6723d6890ff30e360d86fa942d6fe1de4f4722a68a93b554e442e182d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/hi.po",
+      "sha256": "59825db027fac0a3fb0c93f9b8ef87eda8e8f5d575cb805e25c9bc6d3fd1d699",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/id.po",
+      "sha256": "c370ead0c923732f698bc7627eac6cd98d2047fbba6d0cdfaf359eecc6f8441a",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/it.po",
+      "sha256": "33d0ec2d6ab7251bddf9a358ef23a0846f80ff5ec5ff2747b0c3b5a2bbf9fac2",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ja.po",
+      "sha256": "82b663f71dd1789d17932c0255910eead9d2593de259f314f84c18fe79afd48e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ko.po",
+      "sha256": "85556ef2961379a3ee695192c17c72c5375f1dae7099d0199fdeebfd25e7465a",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/nl.po",
+      "sha256": "2e8caa61055cdcb15130c3fabe6cfe0c3e33a130014278a663cf212b8d77970e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/pl.po",
+      "sha256": "ba2abf3788ea2c88f274af60c745838d11ff81ef74c23cbcb0eba24f2c70d94b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/pt_BR.po",
+      "sha256": "9d55dd89f384ea070be224bb9f5fa8872e4cc0f992fe53450258653730dd0c74",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/ru.po",
+      "sha256": "e1da49c6e7204db1d35eae855bb9e2a3df5cae3175d7a5b55490178733ecb302",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/sv.po",
+      "sha256": "d5e057c0b59fd955868d331baf3d4bf3a122c1f262fd6992782b8c3961d42499",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/th.po",
+      "sha256": "e1161c38771a7629e2a1f5ad63e0e4c830a3309f8a9cdb59f4187bcb0cef2c08",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/tr.po",
+      "sha256": "3029c9a4ed7c038a2fdccc022f8e61ba275b54a865645b51c1fa009a03283bb3",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/vi.po",
+      "sha256": "de44cc20abd1ace1eedde162e919a0a4a67adeb4939bc1c7c57a2a13afce976f",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/zh_CN.po",
+      "sha256": "224811a628ab33bb0dfb75ef421ab7a200e503fb6f7f34891b1184170fa3e719",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/i18n/zh_TW.po",
+      "sha256": "d46ca7580237b8b8661e5616d2bcc5f318e40f6bc9d989a23c4ceb29dfa41c5a",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.0.1/post-migration.py",
+      "sha256": "057812148c3bae5d921515223267ae445a60af7ba787a4f0611e4b953c4f87c4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.16/post-migration.py",
+      "sha256": "f34f03c6f57786ba5a10e10587cd2e68beb645604a04aedeca5430f594e8e4e3",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.20/post-migration.py",
+      "sha256": "a2574bdd68db73e431c697f0e78bc8053659e2414f73ca77578d94b8db0da8f2",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.4/post-migration.py",
+      "sha256": "20ddf4ef4920f4bfe295fe1aaf53236d88a050ea3ff536b2213dfe754c7b8786",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.5/post-migration.py",
+      "sha256": "3ab080ad1f66968e5b16f267bdc7eb014f383ee0d11a0a3522a520ea5f34353b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.6/post-migration.py",
+      "sha256": "4b5921dd519047dfe56a81210aad6b30bd42e63fe47d3fa2fed95338587b8964",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/migrations/19.0.1.7.8/post-migration.py",
+      "sha256": "ac23298c6aed978ba8a0d10c541b923befb94f922e7a63f1f63ba39fc4ce5d51",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/__init__.py",
+      "sha256": "43b2af1440dd11bf973f9479f850570ddb969d8025a99851564b884f898c0af8",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/account_account.py",
+      "sha256": "b2da18f8d3e47fc146ce0086a9321665b9d43aa6ae48263ea6ad12c62c508672",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/account_move.py",
+      "sha256": "5aa69b1b9284b0ba86245d874f6a4be5204da4c661dec4050cc6b9ec90dfa45d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/audit_mixins.py",
+      "sha256": "2eb5140232d55b44ba177cb092b7608199942d5b53d2b90d63e6cd4fd06e8576",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/base.py",
+      "sha256": "f9bd33acae5a9bb4d4b54a467d1eeda19631569bed03ae5531ad1742220d7075",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/dynamic_report.py",
+      "sha256": "8ac2de28828b0cdc3b82e97c419b94e1ccbe88472063173d9ec363a5cdd03b37",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/legacy_seal_reversal.py",
+      "sha256": "5b5705a518b53cd9862e40e52cf9c50369c13935dcb2b2e0b9ddfd603fa30c9d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/list_statistics.py",
+      "sha256": "05d08e162c2c3e16d9b784db2a91e4aafffc728c0e83974e8bcab24f0c488448",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_annotation.py",
+      "sha256": "b482ca033003ffa7723b99e5731b1bcb7dcbca7c1f20422c707ab08a56eccf04",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_execution.py",
+      "sha256": "0b8bcc1f768903e8574654eb585f0d35f0bc4c5a300c13cfe263f5a29155e562",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_fold_state.py",
+      "sha256": "6f31320e977d4df05867a7bf3839da5afbf7472586dd7cc06ff16601ce7d99ee",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_handler_base.py",
+      "sha256": "03cba779c7a8e521e4d9182f1d22144fef1fe6a592881730eb4dd2d0cbde63a0",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_handler_sectioned.py",
+      "sha256": "6037adc4e8ef49eca2acac6e235e39e5ed7b8fb98f4d47d7585a0c569667a010",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_input_invalidation.py",
+      "sha256": "0fe24fc859e24f59e6a13843ee9cd28dfb1081a484727b23be2c897ee12cc435",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/report_wizard.py",
+      "sha256": "1e9d3b570f55312ee013cc266a3723e45ae115d4f17c7136c4dbe801ac8fb90a",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_company.py",
+      "sha256": "c3f8c164bb895468926135f905720d758c8448131c6c7a4d18095fd1ad77063f",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_config_settings.py",
+      "sha256": "ece5aac50f73d59725d7939335333fb64ad20593a886efacc6831a28e85c3633",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_currency_rate.py",
+      "sha256": "1c97ad2a6be1f1b05c06ad35bc64621ec740235f651223c6a875d9c43430843b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/res_partner.py",
+      "sha256": "246dc5033ece1ebb1be6e36c3122594363e4512e9e9b8ef2d2451365152281cd",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/saved_view.py",
+      "sha256": "6fa9f89751957e560d41212e91db693c29580cf19802ad37e09cbb46f067f9bc",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/models/workflow_mixins.py",
+      "sha256": "1e7f1659d185914804d8851d01d625beb8b4f1509878bd18638b23f1b565d491",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/report/account_move_report.xml",
+      "sha256": "8ec46476904aeaeff5ce9337d29b5ad47310f9e278799537f89b60c703619afb",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/report/eh_report_base.xml",
+      "sha256": "a1c4a7bc79c15642e12f1ce5308e11db7a1974bb2b5ddfdc35cdea5522190bbb",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/security/eh_isolation_rules.xml",
+      "sha256": "438e16603928684908a1bedd164489d050931481a199e8cb8f2164c58848f1df",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/security/eh_security.xml",
+      "sha256": "7bc07e67fdbcee46ce655728c84d8016f35de98194d82ec9f66f73a86170d3e0",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/security/ir.model.access.csv",
+      "sha256": "7b0e1276807bc4b22e6524f136b3dd88d4ed4f326f2a76b126dd3d9699319690",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/banner.gif",
+      "sha256": "59e3577a82665b963a9fbb3a084c36c9a9a83fc041f660963191824c487eb758",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/banner.png",
+      "sha256": "c82d3e21c850602f5ba83de864cda20d796d802b96b91a3a34f9a68092c2c5d5",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/icon.png",
+      "sha256": "d29623a9f2296571d3e1fd5a8f6c99fecc5b42eb535775e9c17a36565374f61c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/icon.svg",
+      "sha256": "3b48b5b21237406b745711f327bfa7d18acac4b6e94b2be6d592ec6d107d658c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/icon@2x.png",
+      "sha256": "a97eeb4b4c897840cf6abb7714344537e49865e73eed3d6c22960f15dc039fe7",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/description/index.html",
+      "sha256": "a6738dd58e715d1fe00a2b2fec148ce41abcc11ba28bbb5829b016fe10f2f72c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/scss/eh_tokens.scss",
+      "sha256": "e00eba1fc00c27733c3e5fafe848eb6abdbd744f655aff8c5cdc62e3fb2865c2",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.js",
+      "sha256": "5029e887b74dfdbe0aa900a8c0375b12c734c73261a3e3bbd126bd49eb65fd63",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.scss",
+      "sha256": "527b79c80874ca06b5557fa966b59fc16906c4608acab4ad3ff79edc8d72209c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/static/src/views/fields/list_statistics/list_statistics.xml",
+      "sha256": "7adc8e2accb4ebb1fe3bf6fd2d85dae4b37ec04b1b6f598f57026ecfe713eede",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/__init__.py",
+      "sha256": "e92048164c185e6c7615b6efca269634551e93d27b6c42fc0cdd080f1e58514d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/common.py",
+      "sha256": "7daaacded3c04269414ab55738c26159f1761dd2d8d6a9b2da516db38c99b4d5",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/golden_common.py",
+      "sha256": "e291d4a6d3a7f20b83c895005c17009cc21ff7f7c66dfc88c8c207c4e06c4064",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/pairwise.py",
+      "sha256": "4ef506e070ddbe8dd959dcf76d9c6144d001db7b91e587a6298340071084be6d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_account_move_report.py",
+      "sha256": "ff0936d84cf3f659d28f56a4d4e53dd926e95ad39b295e01bbb13a4c1a0d492c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_base_metadata.py",
+      "sha256": "5200b261dd539e761e9e751585456c2ca37ddf59a52ce2c87aa80d4324eff713",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_cache_invalidation.py",
+      "sha256": "4a3f4cd7f819d0857a722d70e34264be841d56bc1df96bf281f8e7364ebdf600",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_dynamic_report.py",
+      "sha256": "a96833950e96074194448680dc0cda6a215f0b7bd36e976375296dc3f6bf92a6",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_golden_common.py",
+      "sha256": "d98afdcf90517c35a16df919698c947ed11704ea9c680ac4d4de98d01a69cdae",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_list_statistics.py",
+      "sha256": "39f70e8105fb38a202f7c4f23a7e2b1252da1929621cb0d752673ba21ada5d70",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_move_seal.py",
+      "sha256": "9ee7942aed1cab0cbb9aa2033c7781645713ba1ce58d762fac7c8cb8d54e090d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_net_guard.py",
+      "sha256": "525064b7941110c714287f8b1a0f8c4a3fe16fee20a4d28463c180634df9cfdc",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_payload_codec.py",
+      "sha256": "85032d8aa9b1119df253fd778eebef34cc509ae2f49fc6f98ad6458b2b41f2d1",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_perf_sql_builder.py",
+      "sha256": "10dff4adac5ba17b9ea958b54c2a04913f77f040c22b0d37ed6f01cf8c7717a1",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_posted_line_edit_invalidation.py",
+      "sha256": "9d4210ee57ed5ec6f59e1101a9e801b206231f05ab2fbf35fbddc66dd27be075",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_privilege_groups.py",
+      "sha256": "70f2b9d13dc9e40340614cd2475ecd9ef6511cde8510d7db0bf095414fcb32da",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_report_execution.py",
+      "sha256": "cfd4fc55de07165a7cb319335d3ad9b0fa73c1b2b7b8b0026491396f3689aa2f",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_report_fold_state.py",
+      "sha256": "b9cdf701c9776a395290c63a1462eeeca19f77544589190480c9768c4d7f3cc2",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_report_wizard.py",
+      "sha256": "a2631d7cca85411949e7719346db34debc43b44b523e38c6ad48a7b64bc2c00c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_saved_view_annotation_security.py",
+      "sha256": "66e35dd2379931d0ede551010010f3d03c9139e83d1e711b7b975d56261ef264",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_sql_builder_integration.py",
+      "sha256": "e6b460a7ae84a31059572387ee7ff104983ee3e401333594873b314387144c91",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_sql_builder_unit.py",
+      "sha256": "0dd1bb9810a979ef4a618d7f0928f08232ed001ee5ad63d5c411a8a9ee4d540c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_workflow_mixins.py",
+      "sha256": "e53475d2e9b389e038aff638c15eba498d4a7b32bd89fa07efce82569598874e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tests/test_xlsx_writer.py",
+      "sha256": "fbd999b16822aa36371d3fc766cb7b90bb8f5dd10382b44686468c31f47d6332",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/__init__.py",
+      "sha256": "5be13fc6cb677e25cb2e8ad3d9b68264dcf0514bd0522519bd7ff05c11408038",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/currency_table.py",
+      "sha256": "97ce09449b3049d33abf40cf17114a6f1d217520c99c1a9ed44fff8b377ee72d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/eh_sql_compat.py",
+      "sha256": "073c9c573a3151c2489ac4378baa30123f0dd7317256448f5c5f139e67659ad1",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/net_guard.py",
+      "sha256": "9486440da6a8b4bf3eb76e9b474996605f8e6ef2378f009bf92b3ae89fc15056",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/orm_compat.py",
+      "sha256": "ed8aa0f8cf21e79c34d12933ffbc7802c61500ecbf2d8cd7064e8c2c3bcf5970",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/payload_codec.py",
+      "sha256": "9feb798923b457082024aba51ba8e684bd15964311b5bb212fb80aa61ff2f3e7",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/sql_builder.py",
+      "sha256": "ccb129c0f066db9a8191388e0a3b345e1d822e8f273d4c9112d07072ed4d86e1",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/tools/xlsx_writer.py",
+      "sha256": "232f9156a09bc673273984d27c72827cb0dc41c9e4daf484dd70ec6879fcb708",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/dynamic_report_views.xml",
+      "sha256": "7b9f73b9675e9f02fe97f001947415a3ddd8fd40c99374fe2f0c2b14f678cf61",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/legacy_seal_reversal_views.xml",
+      "sha256": "1b8278382ef5bf66bf5c9e9be3e4133fc67d458fa5f0e105c4b3708dee900005",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/report_execution_views.xml",
+      "sha256": "fe6407ae0ff7e62906adf7100cae6a89c6e57fbe4bbf01742247ccba353e5652",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/report_wizard_views.xml",
+      "sha256": "5370ebf5a479f40c49f3552ccfaf9044c27aabfe7ba4369c5f9a92712920e880",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/res_config_settings_views.xml",
+      "sha256": "ab3cf745966ac8482b3fc104bbe1b4d9aeccaa8fd4915adad461973cb08ecdd2",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/res_partner_statistics_legacy_views.xml",
+      "sha256": "04999695b7f2d479c4d40555a9215377f74af371429ee0822d67cadee4c7ffd4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_base/views/res_partner_statistics_views.xml",
+      "sha256": "64cfc491d92dab87bd1861b7757a3c8d1d2f232501962f5cca8293f071eeb2d5",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/__init__.py",
+      "sha256": "8020faa00dbdeb860d6f4456eb17ce1422f2d8b97a6ea9997e2bc5b2cb039389",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/__manifest__.py",
+      "sha256": "b7b04285072a10a0030000afcd355ebf723342c1339fd8181a0777e3abe3eed4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/account_tags.xml",
+      "sha256": "b9e131e528a0592f37da647cc6d804af5c17f87d5a213796b27273369d3b0a97",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/menus.xml",
+      "sha256": "6d1533e2a6ac8cd8ea26a3dbbe2ce77471c13dec16fbbdbcf8b74c96bdce0286",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/paperformat.xml",
+      "sha256": "d0d2787543046fd13a35f60512ef7ac69e3cd15b8d574c474f0cc548f28a18be",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/report_pdf.xml",
+      "sha256": "ed13a232102c5c5415b7b969c7872946dc223015128efcb72f9233733fc9a342",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/data/reports.xml",
+      "sha256": "9348e826acfa5ca95661160154da5c15e06efd9e99b8e96ef23d7dce9bc70859",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ar.po",
+      "sha256": "7e8095fe72ad6d38dd2a09d1dcb139417e9d3a16e0da63aaece714c583ee2ced",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/de.po",
+      "sha256": "ddf3d9d8180106786057223f9a1514a19483442aca76db67528f074cc2149131",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/eh_account_dynamic_reports.pot",
+      "sha256": "429e7443a074d0b1f8e3e53255479a2e1d675e4b8b6e8c92fc6acf7b3aa4b967",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/es.po",
+      "sha256": "5a33f78e89f4d06f19003ffeb530df13350f41d1d52681970cef39d58944bf56",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/fr.po",
+      "sha256": "cae1499999e460721ac8806bd9939f8b9691d41405a0fd0c3c8e64fb29ca4103",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/hi.po",
+      "sha256": "bd6ddc308c4e39b81be44d8b2be305962b7d67377ab2d3d2c4ac3d5529e09171",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/id.po",
+      "sha256": "21469c31d702593d716b1bdf3d68ac3259af162e72b774d44e684c7a11672494",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/it.po",
+      "sha256": "9275b9cf1fb5e50dce88cd778a8a0fa19b694054d26ff0f4fb344eeb763b9453",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ja.po",
+      "sha256": "30849eee0a0f6f848cc31325a999632984025b050e23b0b2ba9046e788e14aa4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ko.po",
+      "sha256": "53d1c06df0cc233b9bce247d0971bdc5c3691a40ea5237892f29d0b98286e2a6",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/nl.po",
+      "sha256": "9b04704e1d197c616bb0be693a3d18c2137aaee2c7466eb7f80f923612d0c47e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/pl.po",
+      "sha256": "cd8e8e9f7aea38fc756a41a1f2824a90143bb8d51b2f1ae6784e9a2b339954b3",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/pt_BR.po",
+      "sha256": "1b865728b66f2c848ce7afca6ce0ffb5952cae251ca562c2514d2bbda21478aa",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/ru.po",
+      "sha256": "e4b9c98755aa91fe017009c87e8aa3bbebc3c9c39648771450c9750da65abc18",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/sv.po",
+      "sha256": "0503b79aed0a195b4771b89dc0d6300d7ab538a90b505f20ec77228ef383d214",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/th.po",
+      "sha256": "69557c4f8be49852a3454a1360d11330636266ea91d642e49f429fe4b82c9053",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/tr.po",
+      "sha256": "4f0f84dc5205151f7cfef7645fb4b14fe94ae6f828e5747d4cca2d1ed8c388d2",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/vi.po",
+      "sha256": "46bd17d334525ebe4ba4a29572a224d10d835163a32283187eab5e59af5fcf3d",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/zh_CN.po",
+      "sha256": "f3c787287a550b9570ec80db020e500312e1741d8ff2dd60d5c0641a6864ab32",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/i18n/zh_TW.po",
+      "sha256": "267701dc8fb8936588d5b0588c94e5e33c0107ffed716b5fd73577314b4f18f4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/migrations/19.0.1.7.0/post-migration.py",
+      "sha256": "70b91a1494333a8081815291f99bccdc2219dcb615e398053040ab086d72c312",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/__init__.py",
+      "sha256": "c204912caf8d095e5daf6e2f7f273f3dbefb72a6c85b1aa70b8de7144ab4a6bd",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/aged_base.py",
+      "sha256": "132a23be4a9572e193b0a51932b5eb5fecc82bd3c35c1060cc82ec8f3d979300",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/aged_payable.py",
+      "sha256": "30f2201386c3a4c0bfa575043689b95372ec4f342114cc9c297e2ceb7d2311c8",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/aged_receivable.py",
+      "sha256": "611e671dafaac4ab04d0df9151d0104401484afef38fe6dc9ff6c0a6aab332ed",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/analytic_balance.py",
+      "sha256": "2d8e2a96eb33808838c61a06f7720a8d5d948557fd5a3642aee4a2ede5b3e685",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/balance_sheet.py",
+      "sha256": "9f371563f0aaaa747becba373e9a22a3df0c35fe599a8509f4dc00f6a7477f2c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/bank_reconciliation_proof.py",
+      "sha256": "0fded5a80eabc4bf137e947b36fb9599817a4b2f5f4164161b62f89222afdf11",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/cash_flow.py",
+      "sha256": "e09a100ffdd6a5cfa342069f444ccf4c17cc5cd9c90d72f61daa779a6b81ced9",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/customer_statement.py",
+      "sha256": "827ac6c9a1d2b73d69e3fd0d4a888028cea13c65a07e40244c0fdb9283416929",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/deferred_schedule.py",
+      "sha256": "4a81c304d60120b4eedb5dd9bf903ebaa7cb1c97a8af67a22d0211aa9e4cc70f",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/executive_summary.py",
+      "sha256": "92f6f80a466900f35f91e383b322d48ce54bfa0109c0a1eaa995125a8864ce86",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/general_ledger.py",
+      "sha256": "7718aeabfd4eb9354770379127f6eb5d291cbe63bc2d447b9daf321bbc18bea0",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/noncash_transaction.py",
+      "sha256": "34db77676a91f6221c1375d2e73d0ddbc336174db1b3af2604e405a9962a1796",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/partner_ledger.py",
+      "sha256": "05d66eeb6e3a25a10058beed5e579d10326ae4232a01d2251139140fc433e82e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/partner_statement_action.py",
+      "sha256": "c5cdd02bed9ea05ab04a6e750bb88789897426175aa9983d26c39cd3f4e38941",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/profit_and_loss.py",
+      "sha256": "8207d0b95c406bd78fded1acff08f29d2c5646bc074c53409c69dc0fb18a5681",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/report_dynamic_pdf.py",
+      "sha256": "302d1035c2405f5952e0e188af2131ba6138b9073b3302a26e356e540235cced",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/sectioned_cash_basis.py",
+      "sha256": "c994c6ecf089c47d1a3082a7d569353ac586c8c2a9ecf25ebdc5769ccd960b2c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/models/trial_balance.py",
+      "sha256": "63f72afa76e3696a80d55347494b9277111c10e4d87cac19e1dd0a15979f0ae4",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/report/__init__.py",
+      "sha256": "3c32bab3b4e9ffab3dd45da782a3eb234588d55f55ff7e4e99cb13d8dc335b1e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/report/report_dynamic_pdf_template.xml",
+      "sha256": "53cdb5950cf14bff8ae1c3bcd39dce3941d3b20612e79ac23395b3cb3114e38e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/security/eh_isolation_rules.xml",
+      "sha256": "f8cba64a80f27bae4ba361d704b3f89fcb6df470087adb3c84362b2728cfbaaf",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/security/ir.model.access.csv",
+      "sha256": "24274dc7c3e7a307aa3081e3b13076839ae2faf2a39769cd80d2281a2ec0ea38",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/_screenshots_block.html",
+      "sha256": "87cecdcbaaac7255fe02e4a39cbeafd2875a75b349217cb4515b5c05e7c029b9",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/banner.gif",
+      "sha256": "eec7f42e491a19e50c5b7a65b1a885fa4e88b4986a5544a6dc971524d466867e",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/banner.png",
+      "sha256": "529b36422bf222414383817aa143d38821f8bf8fa03e71c4f80a6c2b5f4818c8",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/icon.png",
+      "sha256": "2531bf2453097cbee9770bde1be87e0f7d122fb0be5e792cb10aba351a5e4eb7",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/icon.svg",
+      "sha256": "feb65da6479744a54cf36f11b56a28b24507f76c170b22b07529757c67c72c1c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/icon@2x.png",
+      "sha256": "8aa6688d75381675c1ac36ddec213741d28d81a5a52d47190c3b2597e29f665f",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/description/index.html",
+      "sha256": "119d53dc9ff13c43167b050b8480b145776ecaca63021250eb3cdc7194832a82",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/cell_ellipsis.js",
+      "sha256": "0371b13432a3029db9c3910172ebd1bcdc54603b84a6d77974d340824fb63f33",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/cell_ellipsis.xml",
+      "sha256": "36e4f7908f16883e9589a3bc574fc8774127e0ea10c510d4862af4f845afbbfc",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.js",
+      "sha256": "ea2d501a82f7363a4e6424170ac8fc9c9d0128a60c77b31a7b99fd219e70feff",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.scss",
+      "sha256": "569d286953cbb1b181dab50cbdc3c97b0093a4cded82cceb2135c63429c76cf7",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/dynamic_report.xml",
+      "sha256": "d6a59133e381ed34d9e7b604080958266d1efe79d991ec5c4b99fca1502d59ee",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_format.js",
+      "sha256": "b58d2c58af146b8c804ef1722d3c554a9b7a8f971ee40a0d5e745bd1a02283c6",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_table_logic.js",
+      "sha256": "475924c8d48ea1b9b0c8ea416ba76b4b759972a4cf015527c8c68de6dd8b7b75",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/src/components/dynamic_report/report_theme.js",
+      "sha256": "973a710ebaa6653339be3789c168cba8c90a1c1cd42f493adbca66d432996209",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/tests/report_capabilities.test.js",
+      "sha256": "74182bf85119c141b82e67ec27b69a18a605d93b10ba40e803895544d9736a00",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/tests/report_table_logic.test.js",
+      "sha256": "c4446be886fe21fbdcd546f0046397d832415b9c214dd150f2cfc53e399de5e6",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/static/tests/report_theme.test.js",
+      "sha256": "ad57ce978bf274e1c490317b68d95b4fdb7dac5256bd5011abbfcbdf17a2ebac",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/__init__.py",
+      "sha256": "bd6a4debb1ca5d360631dfe22d90ef8818c95d7d4a5dc3adf2a51bfaf20fb187",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_payable.py",
+      "sha256": "0b72b2fa831361873f25e3f2373a3ec9970127e25c7fd6dd55e45c6930b775e8",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_receivable.py",
+      "sha256": "05432a297e04bbd7d193ff4afed1d42932db2a7aa4bb8d1ee0ba1160af0567ca",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_aged_unfold.py",
+      "sha256": "1dcba6128a52aeb113fbab1a585c4931abded79491a61e4dce6edaea63f0cf81",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_analytic_balance.py",
+      "sha256": "1465a3c05fba24199f4dd9faf886ea35a6db1e6f8183db26da4b6d7108c60dd3",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_annotations.py",
+      "sha256": "a0da3b19dca34c61580e76dfb0b39439013fb82143db6374e652987fcb4a57da",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_balance_sheet.py",
+      "sha256": "c2d5435fe189819df1fe1581f1a2bce3a8904620c8c8b0066f6ce46b09583fac",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_bank_reconciliation_proof.py",
+      "sha256": "9bb5cc6f527a0aeffcdb10264603162507e3188410b40b8f4640fe590d8adc63",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_cash_flow.py",
+      "sha256": "d20640f955152d4af34a6adb54552fb89e2be904f587ef71b0f8db999d1f4a19",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_customer_statement.py",
+      "sha256": "09d6c9545ad4ab6f9bc15f23fd672378970032e79bb23d0272d3b2c33dfadf96",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_deferred_schedule.py",
+      "sha256": "473676093717e25724c5245c77a3ff2b4aaf4c834bb0e22a0b55a789de667bff",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_executive_summary.py",
+      "sha256": "9024a327e093b302364b4d9d428b0c05d0cfa5ecd444540fd115bc1b864a8e17",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_expense_other.py",
+      "sha256": "336ada3c63efa0a48f6060e84e71b2c9580331630385d0b2a1448ee2de927e0f",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_fold_consistency.py",
+      "sha256": "ea3eec3707c7c35f491b3ba0c772f5e5f9616ef25230d1daeef3e907ca89f606",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_general_ledger.py",
+      "sha256": "69c22cadbaa32313c78f2e0aa7729e779060a1756c1123ea10d5604b3ff00530",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_golden_cash_flow_ias7.py",
+      "sha256": "094409f9dabf1e91239e36b90460408a81ddf228a6b3b67fd11011b824778d97",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_hierarchical_groups.py",
+      "sha256": "f8b148b3a71acc060ecb7132052727e554463aeaa09474f50ed2b8b588bd6cb8",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_historical_residual_dates.py",
+      "sha256": "d3bff6bba7cd78a84108f0b1f4d3a0f3844212d661318834b320cc8c2e9692b1",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_ias7_auto_tag_security.py",
+      "sha256": "33ce1fc3935c3954b46804c4c92c90b6ca9087ed33bf6900210ec5f77e99a150",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_lazy_expand_engine.py",
+      "sha256": "ab4cf6436288922a3904bd5e71a63ccfccc9274bc21a1e558daf60076ab91c03",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_multicurrency_render.py",
+      "sha256": "cc93c7e78cad5683b27fa3fafd553b54c2182f87b00af14acc0504083ae9f029",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_partner_ledger.py",
+      "sha256": "f759fad58d9137289f1ab82d8103685df2c1d858f2bb82352b831c3757786e71",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_partner_ledger_lazy.py",
+      "sha256": "c1ed32c75fb65aafb8e5026323846ca59f2ac67d82b6bfffb9197e95273d5e62",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_pdf_export.py",
+      "sha256": "0ac687cec1f592153843945ad60c0e097c3ffdec210ab0c7d897d29779bffafd",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_perf_render.py",
+      "sha256": "bd4bcbc0e3f1d3855b600abde1f9c088a507f663198641de3a9e7068c4d8cc7c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_profit_and_loss.py",
+      "sha256": "ac1ef71d79cf2606186880e99eff6e4b3f142bffef89c57b6231139bd0b63714",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_trial_balance.py",
+      "sha256": "8b25af49aef7effef579f4188a1f9fd036426278eba314769f3ca9233470487b",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_trial_balance_hierarchy.py",
+      "sha256": "dbdbf73824688c04ed2fd5562aaaf326edb5c5be63a19645e12afd65641da90c",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/tests/test_xlsx_export.py",
+      "sha256": "b470092b4d7bca4c88c41ef944af2386f8d542b39b9aaeb2dc00dd392b0c1048",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/views/noncash_transaction_views.xml",
+      "sha256": "d49a2d388280cd0736d85c68d795d5027f474853001165f95c27e0c0772cbcd3",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/eh_account_dynamic_reports/views/res_partner_views.xml",
+      "sha256": "c92b75f342a0a99e21133b877b48dd3865cbe8bd2c3cdd1a199ea400140757e1",
+      "reference": "docs/releases/2026-09-07-reports-r1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/.gitignore",
+      "sha256": "4a04d7ef4ea03c4988e5ae6a96f2923dddf91088d1b9d4f5805afd43dce836a2",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/__init__.py",
+      "sha256": "e45434b3fdab3dad95a63fdd3a1a7abac5d70073d3f57f8c0555592cfd94a2aa",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/__manifest__.py",
+      "sha256": "b14ddf7f2f9804964f09729aaea0a7f76a0a20f06d64ef54d8c82b80f151bbd0",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/18.png",
+      "sha256": "ac26b0a153efaa99a19c90f7e3c28a9b66869cf4aea8382281ba690c23aa0962",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/18.svg",
+      "sha256": "49a6734acdc94514f4dfaadc591c07c7b29e2029f8fe988d5b40170d073b858b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 2-100.jpg",
+      "sha256": "6ce90f2a550c9c7bd5badb82b6d2cc99d1f8646440b80b1cda1925aa04bc4256",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 2.png",
+      "sha256": "c2a48c7d5600452fce234a33dcd072377aed2998a70d425ff5cedf90c5f48fcb",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 20.png",
+      "sha256": "81c732a9a8c104c5852d257434608656c532ca247122cc46fb24b10ec77fe19c",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 21.svg",
+      "sha256": "8a1463d4b9290fe2b6924a7fc7bab02cba851655d1015c548570297cc4b651d3",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 22.svg",
+      "sha256": "cc7a26ab74a004fcc6e362e2adbbf31d49fe79685ad5f25ae8b499a726cd353a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 23.svg",
+      "sha256": "43cdbc9a8f1e9fb765c1055e277fc1a244e5db0f970f82efc0e384d600e6cbfc",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 3.png",
+      "sha256": "6654e0047c69be7ae362c8739d91856fe1e62dcb4663036237cc449f64f4a3cf",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 4.png",
+      "sha256": "9dde0c63b76a8856f627f072f634640fee42056d403a63690fc62a07dd054f0f",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 5.png",
+      "sha256": "540c0a1cfa34bec8e450228c935c295ad61c762dbffeb79221d76f139fb70e4a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 6.png",
+      "sha256": "7cb8eb3611ba914298e6918ada15ed5b71e98210938e30801b87213d004380f7",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset 7-100.jpg",
+      "sha256": "112999980ded19f178aab9bbd6e114357ebf2cd0f988bee2ec18912b91821e4e",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Asset0.png",
+      "sha256": "f7eb8626dd37d2671f488bc58db14972f6c28407e64936e7d2ac6da5540126e9",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/banner.gif",
+      "sha256": "eaf423d4343c7cc1d02b107053b38b47771b6c3efd31a39016d5336199028554",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/consulting.png",
+      "sha256": "fb49d3db8dd66c3036dd45c7341a2d83b20e02048eef8418de26558b781caa79",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/countries.png",
+      "sha256": "665168dcafcaac5c7f777fd97c4ce0c4b7a26e5ed824d85166d1c4b059669c24",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/custom apps.png",
+      "sha256": "664a93bf35f160f17f385b665667c114aa4bcb7972f959f8ba003b7db128fa9b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/enterprise implementation.png",
+      "sha256": "605bb8ac0eb9d16d00d174f675b8f0c032776afc9ba0a321cb7164e920efc29e",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/ept_odoo_partner.png",
+      "sha256": "93d58b54d86f13b30def15a35e70a9355d8c0a0707ffb90810904a17eab33fe8",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_support_desk.svg",
+      "sha256": "84e1ff968a7c4a568e7f199a24912b61dd0dc1471975d13b80c038955dc059ad",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_support_policy.svg",
+      "sha256": "d94b8a45ae1bc4b150e29bb32a8ee8049c7a73ec9fa18d31481acee2a2dfa755",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_user_guide.svg",
+      "sha256": "7ba945c88466231cadf63efd9ece98201cc97b52d168b21cfa873484768571cb",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/etpl_video_tutorial.svg",
+      "sha256": "c72105be3d19d0edce32acb7b148ca938808031e2369e15e7a1e61f1c2b2e071",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/FAQ.png",
+      "sha256": "7eec4d7f2799a1447ea019fdac41a5ed1de1adf2f2b54314fab3f99ede64a1d6",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/faq.svg",
+      "sha256": "c3dff49fac72eb9825683f0121e66d5fa76d3d0cbdf24361881ded4579c5d77c",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Features.png",
+      "sha256": "c418e9916fa2d6e6700ba5e8f3056ab4bbee725a6a3e1126d6473857fc81fca4",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Happy Customer.png",
+      "sha256": "f85b6d1ee1f57fe965e211347e7e878458851a4a8f23dc863dccbc8929adab7a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/horizontal_line.svg",
+      "sha256": "c0708917f0d0a20bf10ecd150cfd65c4c90b7a6585480e075588f6bb4f4ebaee",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/hosting.png",
+      "sha256": "8fbb26245e5dac73fc5ae345f98f9b37cc5b650add60f448eab079351a21bb00",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/how to use.png",
+      "sha256": "7ca75e8c79e2bee4c10f27e8001121e5d71778628931cb91f48567c597180066",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/icon.png",
+      "sha256": "5795d4261691312cefd55776dfeee9da9fce5611651b87cf58866cf3b531a773",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/18.png",
+      "sha256": "d8318dfaf007f07de2190e9aec695ff50443ab5a8b95ea539a1e24ff6dc0e7f7",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/arsalan.png",
+      "sha256": "7255d3ab3dc7d2d0e70d6d3166340517982c59c3a3fa390adfb2c6713325f3a2",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Asset.png",
+      "sha256": "f7eb8626dd37d2671f488bc58db14972f6c28407e64936e7d2ac6da5540126e9",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/banners odoo store (1).png",
+      "sha256": "24a6956428fc39b34e663448f9cff0725aaf69842aec43b89f4b157b0686f893",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/byte legions.png",
+      "sha256": "9bfb73e57f17d6e9158a3ed4a4b8238000655332be290345d292021cd33392e5",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/byte logo.png",
+      "sha256": "719f02a8829a3ce212f051b4fd3e74746c1f74a5029607ba921a14f09201ad01",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/consulting.png",
+      "sha256": "2c3c8cbcb7b0dc06422bc63d8b5e1562d98cf9162a4e6d2d921e5a67cfc10a23",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/countries.png",
+      "sha256": "caae33055deb130dd8bd997f134315ad0458b7e093fbf3e1c7bb0614c233d712",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/custom apps.png",
+      "sha256": "3a74c2a073d07131669d6401c52d79dd2410842fd86171021418c41105819a6d",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Demo-Video-banner.png",
+      "sha256": "ba94f2e7a929cc2298372a24f4903d30c7e9abdb88c4866f4516201d4b903a41",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/email-qr-code.png",
+      "sha256": "c7618a1ff3dc6dc1ad698cd30ae64733cdd4b27acb9d980a6d993b1f49a9eff1",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/enterprise implementation.png",
+      "sha256": "605bb8ac0eb9d16d00d174f675b8f0c032776afc9ba0a321cb7164e920efc29e",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/hamza.png",
+      "sha256": "5b265d2660d62fe0ca3f2502978e30fe3b32aa8ae02e47d47acc8147130e7285",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Happy Customer.png",
+      "sha256": "adb3a309d36d4297dead919633de1df22124763836e231599d8a0270873db73e",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/hosting.png",
+      "sha256": "d3edbd997892b182e866e3fa0db76fe0d30abab89f0c0d4b403a7838407cb2c6",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/icon_test.png",
+      "sha256": "75e4497bbf4d6c123808ff933ab49add58dd0b9e7a4759f740697a96f8070f77",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/implementation.png",
+      "sha256": "7c506861c59669bdfff421c826b7d366d2951dd53164570ce1f4c48eff0484d6",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/industries.png",
+      "sha256": "3be6bd2cf80125540019675eefbdebc937d49f3bb9b72b10b99e88d317a59f1a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/integration.png",
+      "sha256": "2f33cf4b8ef3101f77104d0eb42682815b744f124d86b2872af2ab5e7766e62d",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/kamran.png",
+      "sha256": "f0ca07727720c8f827420a57be425a9f2a8d4f177955b5033bc95ecc3fafdf2b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/lisencing.png",
+      "sha256": "b4b5c1202db31faad09d4aa35198c88ce3f03dd5fd2f3c8c16871342b044b9ec",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/logo 1.png",
+      "sha256": "274b5b2d7c8c413627f1c7ebadeedd689e0ad7fcd6261cfa9b44172962fd357a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/logo 2.png",
+      "sha256": "44b7bdbf11b8a440e72d717266ec62edc9276fb377e56fad75894799348970c0",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Logo 3.png",
+      "sha256": "719f02a8829a3ce212f051b4fd3e74746c1f74a5029607ba921a14f09201ad01",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/marletplace.png",
+      "sha256": "4db9ba07cb7302f739d6f51234b99c8f5ba5cee31fbd6e73c7b9c65e2960ede1",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/migration.png",
+      "sha256": "409405bf241a84f25cd3ca820c35febd12199b1a989ea6a1cbc8a114bb167857",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/muneeb.png",
+      "sha256": "46600bc5955d303f64a988d225bb2c24edfd29b5739ee93d8f5578b8a6dd3398",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/odoo customization.png",
+      "sha256": "5f5a0230477a4b207ebcd39bb25b9d2056f1b49f37707e630adf95ec937e65d5",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/odoo-banner-review.png",
+      "sha256": "56fb1eb3d21fae2014f58ed6da32ab6a80c826644902e81d4fb876267d0f4bf1",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_mail.jpg",
+      "sha256": "80889c2bdec54d8317b49313b8e276cbb0c05d0a3faf1414eb7d288b271cbc63",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_wp (1).jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/QR_Coce_wp.jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/read-user-icon.png",
+      "sha256": "70104dc0e774f253a45c2b8859e370f3a1550e9d4e99a2f7131d99cf189fd231",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/rubab.png",
+      "sha256": "6d56f25b6c33e7c28e1ec8e0fbedeb5097ef041ae7136587aa0a676a00a72e7d",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/screenshot.png",
+      "sha256": "81df954c8a9f34ff16f855744ef259831fdf85cc05e85f532d4e457f3b9392f0",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/slider-img-1.png",
+      "sha256": "2dbdbcd6568649fe98da4863a34f5404f299e5dc398868c2a34cf40d7a941e62",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/slider-img-2.png",
+      "sha256": "4fd0656032a96c017df5e0c08e3460d35db912c7b5b454124fd20c4350559e6d",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/support-policy-icon.png",
+      "sha256": "887848f01048dd999ab783ef2069aa41b067a759e459b3053f8741e6a7fc9739",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/support.png",
+      "sha256": "c659f428ff3c426972209e995b4afcb8e71470d362c659aa0861beb3b13f7e96",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Talented healers.png",
+      "sha256": "7a844f7bbee202319d35e34b3af4aa9eb16336e0077932ee609b5b1ba8172d27",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/user-support-icon.png",
+      "sha256": "3e70595d32cd509ad8b7ee1a4bbc82f495f2be244ff39a671db26162c0222d3b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/video-play-btn.png",
+      "sha256": "49de4fab08090d078ed05ca64b5db4662039d59af80c8d2eec152a6ece61aa1e",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Wasif.png",
+      "sha256": "4e948ffce62a42c3e57149f2b4587f7c2bf34c904bd642c10f70082ba60aded0",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/whatsapp-qr-code.png",
+      "sha256": "05ba8ae1d191aaeac38dd6e3fd238f25bc37b2c5eb01bb0a30519d357a4fdf07",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/why Integration.png",
+      "sha256": "fd7e4634719be4c2b978b37c802249d7b464b94f55f0924b906227631f9547ab",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/why_integration.png",
+      "sha256": "dc1e2bbea9ca76430006e767ca7c16f1762d65dac06f7f42b16cf0ad7aca8a3b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Year of Experience.png",
+      "sha256": "5a4dd161059555a7af920101f68cded4b20f6151424fa00b74b524fbc5081bac",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/Year of ExperienceCustomer.png",
+      "sha256": "42d60e57b9d2a4520c29444de2098d99443c4be1892a487db0586a22e7eec59c",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/youtube-icon.png",
+      "sha256": "9672090b45e2be441f1fea9170c176034a346af6741dcd054565f1aeb438d33c",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/images/zoom-qr-code.png",
+      "sha256": "95b20426a9b67a8ba850f186523b8433ceff81ce49ffe8e1fcd2f874447332ac",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/implementation.png",
+      "sha256": "d7dcfdf8cef15a8aff7c36f6f3ba891155e40e6b70e6de2f85121fb520480fc5",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/index.html",
+      "sha256": "5194a08050cd8da02c3feb51eb4aaa383a047d748aa88c5cc1caefa18f481d1d",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/industries.png",
+      "sha256": "15ae9769001411287c393e9197b65e1313a09c766548883bbb947f8fc7cf1cd8",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/industries.svg",
+      "sha256": "811d35b657d87ba65afd79dba779e0d21ed313001ca51f8db7b293acf715f3b6",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/integration.png",
+      "sha256": "45a9cb912278727cc3cee377c9529ec127a70ff539b74b495e1678f201d8e79a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/key_feature.svg",
+      "sha256": "34e96ffc0ff8b30087f7adc31a2b014e32a2dba69c9f1826b62bd88fa16028ec",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/lisencing.png",
+      "sha256": "b4b5c1202db31faad09d4aa35198c88ce3f03dd5fd2f3c8c16871342b044b9ec",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/logo 1.png",
+      "sha256": "a1c5dc53c3d8df06c67669b351343bb15dad5f4164c24f002b58fb778550ebb8",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/logo 2.png",
+      "sha256": "2e9035fea188cc6ee2b15e9fe57c11bae38a97dcba20ebf151d3149eb7e7dc44",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Logo 3.png",
+      "sha256": "1c47eec3e7bc8177d7f941e0cc828f3021addcaa8f7b8bf3cc536d982b9d5bff",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/logo_main.svg",
+      "sha256": "946ef8ab716e36d862eaf9216b40a0a06f5ecc06dd0115391d3b2528a175a991",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/marletplace.png",
+      "sha256": "b77bf291982b48183ffcfa92c67998d1a9846c3eb9ea16a3d4e7927a1db19430",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/migration.png",
+      "sha256": "c1142c896d766f15921c9b7a323064d2740841924823e4e63782501910e10b8f",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/odoo customization.png",
+      "sha256": "7aeb108cbbcf085b8ae208bb4b845864058475bbeabbc95da9627faedb00ec4b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/odoo customization.svg",
+      "sha256": "6fab6b994d7df46a8186a685113d12f6e00c75980805f8c03f9429072f3f9334",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/overview.png",
+      "sha256": "0ddf3e5ddb80749147e98ce0a74fa6077b1289fe0f5f801f18fa087a493b374c",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/overview.svg",
+      "sha256": "8015ea191ae832cf3505b1d53662e44f85e2c19027ee6500f3e6935ec7326193",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/QR_Coce_mail.jpg",
+      "sha256": "80889c2bdec54d8317b49313b8e276cbb0c05d0a3faf1414eb7d288b271cbc63",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/QR_Coce_wp.jpg",
+      "sha256": "af4c574d621dba9076f13147baad13d54033edb051cea2f597d3357ffd1c62ff",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/README.rst",
+      "sha256": "49cb9629cf530a8b88165b6267a53174b95e548dfc4a17e05de35fdeea381d5b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Redirect.png",
+      "sha256": "9fecf2db1eebe51e9788c956dba03e2258533f95de0ea66170f003ab00db998c",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Releases.png",
+      "sha256": "72112877aaf41a9676a17bfbd7b9ed1e8ff220e107a82bd95b09acb8fb1e38da",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Releases.svg",
+      "sha256": "945909a251861a49b8c9e457487d9cb56628e6a7dd597b90ec306ddd031a7538",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/screen_shot.svg",
+      "sha256": "1d4f44464baff369fe8bf819b6ab308a59335184ee8a152d2890aeb8a0a6f12b",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/support .svg",
+      "sha256": "d1456404a7f6b9ab7add9be6c41e55aec680b1882b0909bbdf9cec339c4f3c78",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/support.png",
+      "sha256": "d26ac263458d683e73728dc01db5aa3e9da8c881d49e4368b270804c4fe3db5d",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Talented healers.png",
+      "sha256": "e7c184c41ab9a8d2b9a6285c13a2e691559db15f64f62ef9ed308fa013cdb408",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Talented healers.svg",
+      "sha256": "4d4208d93f20916160b5cfc854e166e7cbbaab6582733fa55e47d561b7fb8ffb",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_0.png",
+      "sha256": "27986f0b35f8886a07b394de510f7e62c12635f43de354685c772b6aea961811",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_1.png",
+      "sha256": "99f7e681c8e7b6efc22b0e7345bedb442933c3e477bb8afb101caa88ee7f6a80",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_2.png",
+      "sha256": "bee6e2d648178127a98ec042ec57853c777f5147229f3fc78b612e7bfe9f7278",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_3.png",
+      "sha256": "91be685e0fbe629af101b1cb9d3bd17057f2ae2d5f861755fcf83fe9127f1395",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_4.png",
+      "sha256": "06f657aa577d196081cc33e9ba531d8886b4bfcbbc00e63f7ebcbd6d0899a14f",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/updated_screenshots/snap_5.png",
+      "sha256": "a4e8a3db434068665330f85ef5fb37471bfb590e655cd2adef0b8cf912a8b97a",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/vertical_line.svg",
+      "sha256": "28abdd0e8ef7acd97538b1816685c23bb391b97b51550e4290c23c7395c11424",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Vertical_Line_1.svg",
+      "sha256": "e6201829e5fa28ef585f0c63a750b00b6077ccaf3e3891c44dfd77b979372908",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/video_tutorial_link.svg",
+      "sha256": "3ca0e46d99f5b1080592b850dbdda1b431024a4278eafc37c37ad7dfecc2f758",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/WhatsApp.svg",
+      "sha256": "8d3c94c9d347acc047d0b0eeec359ebd5033fa35c889824f2d288704b9856849",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Year of Experience.png",
+      "sha256": "5a4dd161059555a7af920101f68cded4b20f6151424fa00b74b524fbc5081bac",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/description/Year of Experience.svg",
+      "sha256": "a87c0f65ac4b4c4922fe38ca26714418b4f080662f54c7e39f5766352b04b4f0",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/src/scss/fields_extra_custom.scss",
+      "sha256": "df56c2d1e24f251c752fa57f5e0a53bc313515d5be27ba3ac45d8d696cabc729",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/src/scss/primary_variables_custom.scss",
+      "sha256": "2d85ba856aefb7ea36173692d41717ec12721d382d31c76fc2d98fdb25d4a87e",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    },
+    {
+      "path": "third_party_addons/erp_heritage_19/legion_enterprise_theme/static/src/scss/secondary_variables.scss",
+      "sha256": "813262201bf4909b8d29bf1d18d672bc1e40e9ff689125fc67b573a6cf8a2430",
+      "reference": "docs/releases/2026-09-08-legion-theme-qa1/manifest.json"
+    }
+  ],
+  "installed_versions_match": true,
+  "image": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd"
+}

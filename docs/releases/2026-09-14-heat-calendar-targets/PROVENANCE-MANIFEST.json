@@ -1,0 +1,25 @@
+{
+  "reference": "HCT-BATCH-2026-09-14",
+  "candidate_tag": "heat-calendar-targets-candidate-2026-09-14.8",
+  "commit": "19237ce44b22efcd942b9ee677678989ceb32a97",
+  "tree": "c5902f027a222b44b0e72e471380380f27a58cdd",
+  "archive": "baseer-heat-calendar-targets-19237ce.tar.gz",
+  "archive_sha256": "ad52bd619399001af7259df452cd0bfc5ca6ad6c94f0982058847e29494967de",
+  "archive_content_verification": {
+    "method": "Extract archive and compare each selected file with the tagged Git blob using git hash-object; do not compare Windows working-tree SHA-256 values.",
+    "git_blob_matches": 11,
+    "working_tree_eol_is_not_source_identity": true
+  },
+  "isolated_verification": {
+    "module_upgrade_log": "evidence/module-upgrade-c073acd.log",
+    "focused_test_log": "evidence/focused-tests-c073acd.log",
+    "odoo_test_executions": 18,
+    "test_methods": 16,
+    "failed": 0,
+    "errors": 0,
+    "health": "HTTP 200 after restart"
+  },
+  "published_to_github": false,
+  "production_rehearsal_completed": false,
+  "production_deployment_completed": false
+}

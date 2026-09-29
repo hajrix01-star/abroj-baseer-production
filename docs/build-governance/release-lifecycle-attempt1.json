@@ -1,0 +1,242 @@
+{
+  "database": "baseer_release_rehearsal_20260907",
+  "status": "failed",
+  "failure": {
+    "type": "UserError",
+    "message": "This move is configured to be auto-posted on 09/15/2026"
+  },
+  "checks": [
+    {
+      "check": "Clone starts without this synthetic fixture",
+      "passed": true
+    },
+    {
+      "check": "All three source companies exist",
+      "passed": true,
+      "companies": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "check": "Source administrator already has the three companies",
+      "passed": true
+    },
+    {
+      "check": "Installed dependency grants source administrator report access",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: native liability_payable account exists",
+      "passed": true
+    },
+    {
+      "check": "1: native asset_receivable account exists",
+      "passed": true
+    },
+    {
+      "check": "1: native expense account exists",
+      "passed": true
+    },
+    {
+      "check": "1: native Saudi purchase tax",
+      "passed": true,
+      "actual": "15.00",
+      "expected": "15.00"
+    },
+    {
+      "check": "1: native journal created its cash account",
+      "passed": true
+    },
+    {
+      "check": "1: posting invalidates report input version",
+      "passed": true,
+      "before": 26,
+      "after": 27
+    },
+    {
+      "check": "1: supplier invoice: posted",
+      "passed": true,
+      "move_id": 1
+    },
+    {
+      "check": "1: supplier invoice: balanced journal entry 1",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: supplier invoice includes VAT",
+      "passed": true,
+      "actual": "115.00",
+      "expected": "115.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: posted unpaid bill does not change cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: posted unpaid bill accrues expense excluding VAT",
+      "passed": true,
+      "actual": "-100.00",
+      "expected": "-100.00"
+    },
+    {
+      "check": "1: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "1: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "1: payment: posted",
+      "passed": true,
+      "move_id": 2
+    },
+    {
+      "check": "1: payment: balanced journal entry 2",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: partial payment leaves native residual",
+      "passed": true,
+      "actual": "69.00",
+      "expected": "69.00"
+    },
+    {
+      "check": "1: native partial reconciliation exists",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: partial gross cash",
+      "passed": true,
+      "actual": "-46.00",
+      "expected": "-46.00"
+    },
+    {
+      "check": "1: partial net cash",
+      "passed": true,
+      "actual": "-40.00",
+      "expected": "-40.00"
+    },
+    {
+      "check": "1: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "1: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "1: payment: posted",
+      "passed": true,
+      "move_id": 3
+    },
+    {
+      "check": "1: payment: balanced journal entry 3",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: final payment clears native residual",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: payable lines fully reconciled",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: full gross payment counted once",
+      "passed": true,
+      "actual": "-115.00",
+      "expected": "-115.00"
+    },
+    {
+      "check": "1: full net payment",
+      "passed": true,
+      "actual": "-100.00",
+      "expected": "-100.00"
+    },
+    {
+      "check": "1: native reversal creates draft supplier credit",
+      "passed": true
+    },
+    {
+      "check": "All synthetic business/configuration/user records rolled back",
+      "passed": true,
+      "before": {
+        "res.company": 3,
+        "res.users": 1,
+        "res.partner": 5,
+        "account.account": 534,
+        "account.journal": 30,
+        "account.move": 0,
+        "account.move.line": 0,
+        "account.payment": 0,
+        "account.partial.reconcile": 0,
+        "product.category": 4,
+        "product.template": 8
+      },
+      "after": {
+        "res.company": 3,
+        "res.users": 1,
+        "res.partner": 5,
+        "account.account": 534,
+        "account.journal": 30,
+        "account.move": 0,
+        "account.move.line": 0,
+        "account.payment": 0,
+        "account.partial.reconcile": 0,
+        "product.category": 4,
+        "product.template": 8
+      }
+    },
+    {
+      "check": "No synthetic ledger documents survive the rehearsal",
+      "passed": true
+    },
+    {
+      "check": "No synthetic restricted user survives the rehearsal",
+      "passed": true
+    }
+  ],
+  "companies": [],
+  "rollback_verified": true,
+  "elapsed_seconds": 1.457,
+  "main_database_accessed_by_this_script": false,
+  "main_fingerprint_verified_here": false,
+  "scope_note": "Only the named rehearsal clone is used. Parent release checks main separately. Native report execution audits may persist in this disposable clone."
+}

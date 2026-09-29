@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "scope": "QA reporting simulations, not native posting",
+  "rollback": true,
+  "passed": 9,
+  "checks": [
+    "Two platform methods plus a second platform category yield 600 / 4447 = 13.49%",
+    "Morning and evening are included once in denominator",
+    "Complete positive sales without applications are actual zero percent",
+    "Changing date range recomputes ratio of sums",
+    "Incomplete payment coverage hides percentage",
+    "Zero denominator hides percentage",
+    "Mismatched allocations hide percentage",
+    "Empty range hides percentage",
+    "Endpoint preserves source masterdata and ledger rows"
+  ],
+  "no_endpoint_writes": true,
+  "fixtures": {
+    "summaries": 6,
+    "allocations": 7,
+    "categories": 1,
+    "methods": 1
+  },
+  "remaining_fixture_rows": {
+    "baseer_pos_summary": 0,
+    "baseer_pos_summary_allocation": 0,
+    "baseer_pos_payment_category": 0,
+    "pos_payment_method": 0
+  },
+  "existing_rows_preserved": true,
+  "backend_sha256": "d31cec2d9abd250cbf477de7c31ceb3a56f25f47a07ba9dc43aee9e27bea0bc6"
+}

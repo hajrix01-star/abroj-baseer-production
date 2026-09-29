@@ -1,0 +1,705 @@
+[
+  {
+    "table": "account_account",
+    "id": 608,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "البنك - ملخص المبيعات | Bank - sales summaries"
+        },
+        "after": {
+          "en_US": "البنك - ملخص المبيعات | Bank - sales summaries",
+          "ar_001": "البنك - ملخص المبيعات | Bank - sales summaries"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 609,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash"
+        },
+        "after": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash",
+          "ar_001": "صندوق ملخص المبيعات | Sales summary cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 610,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات هنقرستيشن | HungerStation receivable"
+        },
+        "after": {
+          "en_US": "مستحقات هنقرستيشن | HungerStation receivable",
+          "ar_001": "مستحقات هنقرستيشن | HungerStation receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 611,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات كيتا | Keeta receivable"
+        },
+        "after": {
+          "en_US": "مستحقات كيتا | Keeta receivable",
+          "ar_001": "مستحقات كيتا | Keeta receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 612,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات جاهز | Jahez receivable"
+        },
+        "after": {
+          "en_US": "مستحقات جاهز | Jahez receivable",
+          "ar_001": "مستحقات جاهز | Jahez receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 613,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "البنك - ملخص المبيعات | Bank - sales summaries"
+        },
+        "after": {
+          "en_US": "البنك - ملخص المبيعات | Bank - sales summaries",
+          "ar_001": "البنك - ملخص المبيعات | Bank - sales summaries"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 614,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash"
+        },
+        "after": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash",
+          "ar_001": "صندوق ملخص المبيعات | Sales summary cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 615,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات هنقرستيشن | HungerStation receivable"
+        },
+        "after": {
+          "en_US": "مستحقات هنقرستيشن | HungerStation receivable",
+          "ar_001": "مستحقات هنقرستيشن | HungerStation receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 616,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات كيتا | Keeta receivable"
+        },
+        "after": {
+          "en_US": "مستحقات كيتا | Keeta receivable",
+          "ar_001": "مستحقات كيتا | Keeta receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 617,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات جاهز | Jahez receivable"
+        },
+        "after": {
+          "en_US": "مستحقات جاهز | Jahez receivable",
+          "ar_001": "مستحقات جاهز | Jahez receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 618,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "البنك - ملخص المبيعات | Bank - sales summaries"
+        },
+        "after": {
+          "en_US": "البنك - ملخص المبيعات | Bank - sales summaries",
+          "ar_001": "البنك - ملخص المبيعات | Bank - sales summaries"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 619,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash"
+        },
+        "after": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash",
+          "ar_001": "صندوق ملخص المبيعات | Sales summary cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 620,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات هنقرستيشن | HungerStation receivable"
+        },
+        "after": {
+          "en_US": "مستحقات هنقرستيشن | HungerStation receivable",
+          "ar_001": "مستحقات هنقرستيشن | HungerStation receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 621,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات كيتا | Keeta receivable"
+        },
+        "after": {
+          "en_US": "مستحقات كيتا | Keeta receivable",
+          "ar_001": "مستحقات كيتا | Keeta receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_account",
+    "id": 622,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "مستحقات جاهز | Jahez receivable"
+        },
+        "after": {
+          "en_US": "مستحقات جاهز | Jahez receivable",
+          "ar_001": "مستحقات جاهز | Jahez receivable"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_journal",
+    "id": 49,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "تحصيلات ملخص المبيعات | Sales summary receipts"
+        },
+        "after": {
+          "en_US": "تحصيلات ملخص المبيعات | Sales summary receipts",
+          "ar_001": "تحصيلات ملخص المبيعات | Sales summary receipts"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_journal",
+    "id": 50,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash"
+        },
+        "after": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash",
+          "ar_001": "صندوق ملخص المبيعات | Sales summary cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_journal",
+    "id": 51,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "تحصيلات ملخص المبيعات | Sales summary receipts"
+        },
+        "after": {
+          "en_US": "تحصيلات ملخص المبيعات | Sales summary receipts",
+          "ar_001": "تحصيلات ملخص المبيعات | Sales summary receipts"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_journal",
+    "id": 52,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash"
+        },
+        "after": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash",
+          "ar_001": "صندوق ملخص المبيعات | Sales summary cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_journal",
+    "id": 54,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "تحصيلات ملخص المبيعات | Sales summary receipts"
+        },
+        "after": {
+          "en_US": "تحصيلات ملخص المبيعات | Sales summary receipts",
+          "ar_001": "تحصيلات ملخص المبيعات | Sales summary receipts"
+        }
+      }
+    }
+  },
+  {
+    "table": "account_journal",
+    "id": 55,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash"
+        },
+        "after": {
+          "en_US": "صندوق ملخص المبيعات | Sales summary cash",
+          "ar_001": "صندوق ملخص المبيعات | Sales summary cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 10,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "نقدي | Cash"
+        },
+        "after": {
+          "en_US": "نقدي | Cash",
+          "ar_001": "نقدي | Cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 11,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "بنك | Bank"
+        },
+        "after": {
+          "en_US": "بنك | Bank",
+          "ar_001": "بنك | Bank"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 12,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "تطبيقات | Applications"
+        },
+        "after": {
+          "en_US": "تطبيقات | Applications",
+          "ar_001": "تطبيقات | Applications"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 13,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "نقدي | Cash"
+        },
+        "after": {
+          "en_US": "نقدي | Cash",
+          "ar_001": "نقدي | Cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 14,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "بنك | Bank"
+        },
+        "after": {
+          "en_US": "بنك | Bank",
+          "ar_001": "بنك | Bank"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 15,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "تطبيقات | Applications"
+        },
+        "after": {
+          "en_US": "تطبيقات | Applications",
+          "ar_001": "تطبيقات | Applications"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 16,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "نقدي | Cash"
+        },
+        "after": {
+          "en_US": "نقدي | Cash",
+          "ar_001": "نقدي | Cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 17,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "بنك | Bank"
+        },
+        "after": {
+          "en_US": "بنك | Bank",
+          "ar_001": "بنك | Bank"
+        }
+      }
+    }
+  },
+  {
+    "table": "baseer_pos_payment_category",
+    "id": 18,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "تطبيقات | Applications"
+        },
+        "after": {
+          "en_US": "تطبيقات | Applications",
+          "ar_001": "تطبيقات | Applications"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 14,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "نقدي | Cash"
+        },
+        "after": {
+          "en_US": "نقدي | Cash",
+          "ar_001": "نقدي | Cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 15,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "بنك | Bank"
+        },
+        "after": {
+          "en_US": "بنك | Bank",
+          "ar_001": "بنك | Bank"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 16,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "هنقرستيشن | HungerStation"
+        },
+        "after": {
+          "en_US": "هنقرستيشن | HungerStation",
+          "ar_001": "هنقرستيشن | HungerStation"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 17,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "كيتا | Keeta"
+        },
+        "after": {
+          "en_US": "كيتا | Keeta",
+          "ar_001": "كيتا | Keeta"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 18,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "جاهز | Jahez"
+        },
+        "after": {
+          "en_US": "جاهز | Jahez",
+          "ar_001": "جاهز | Jahez"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 19,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "نقدي | Cash"
+        },
+        "after": {
+          "en_US": "نقدي | Cash",
+          "ar_001": "نقدي | Cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 20,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "بنك | Bank"
+        },
+        "after": {
+          "en_US": "بنك | Bank",
+          "ar_001": "بنك | Bank"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 21,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "هنقرستيشن | HungerStation"
+        },
+        "after": {
+          "en_US": "هنقرستيشن | HungerStation",
+          "ar_001": "هنقرستيشن | HungerStation"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 22,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "كيتا | Keeta"
+        },
+        "after": {
+          "en_US": "كيتا | Keeta",
+          "ar_001": "كيتا | Keeta"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 23,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "جاهز | Jahez"
+        },
+        "after": {
+          "en_US": "جاهز | Jahez",
+          "ar_001": "جاهز | Jahez"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 24,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "نقدي | Cash"
+        },
+        "after": {
+          "en_US": "نقدي | Cash",
+          "ar_001": "نقدي | Cash"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 25,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "بنك | Bank"
+        },
+        "after": {
+          "en_US": "بنك | Bank",
+          "ar_001": "بنك | Bank"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 26,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "هنقرستيشن | HungerStation"
+        },
+        "after": {
+          "en_US": "هنقرستيشن | HungerStation",
+          "ar_001": "هنقرستيشن | HungerStation"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 27,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "كيتا | Keeta"
+        },
+        "after": {
+          "en_US": "كيتا | Keeta",
+          "ar_001": "كيتا | Keeta"
+        }
+      }
+    }
+  },
+  {
+    "table": "pos_payment_method",
+    "id": 28,
+    "changes": {
+      "name": {
+        "before": {
+          "en_US": "جاهز | Jahez"
+        },
+        "after": {
+          "en_US": "جاهز | Jahez",
+          "ar_001": "جاهز | Jahez"
+        }
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 183,
+    "changes": {
+      "write_uid": {
+        "before": 11,
+        "after": 1
+      },
+      "write_date": {
+        "before": "2026-09-10T13:45:36.815377",
+        "after": "2026-09-10T17:50:24.6832"
+      }
+    }
+  },
+  {
+    "table": "res_partner",
+    "id": 181,
+    "changes": {
+      "write_uid": {
+        "before": 2,
+        "after": 1
+      },
+      "write_date": {
+        "before": "2026-09-10T13:43:37.690282",
+        "after": "2026-09-10T17:50:24.6832"
+      }
+    }
+  }
+]

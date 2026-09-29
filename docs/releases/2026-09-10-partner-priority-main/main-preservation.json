@@ -1,0 +1,7 @@
+{
+  "protected_tables": 367,
+  "existing_columns_exact": true,
+  "existing_rows_exact": true,
+  "candidate": "a8d533d67ee4ca3e4a7ce06fc44bc5e459fc192c",
+  "added_schema": "Added company-dependent res_partner.baseer_is_favorite JSONB; no business seed or transaction migration"
+}

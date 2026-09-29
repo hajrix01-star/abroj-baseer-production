@@ -1,0 +1,138 @@
+- banner:
+  - navigation:
+    - button "" [expanded] [active]:
+      - generic: 
+    - menuitem "نقطة البيع"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - menuitem "ملخصات المبيعات"
+      - menuitem "الإجازات والإغلاقات"
+      - button "الطلبات":
+        - generic: الطلبات
+      - button "المنتجات":
+        - generic: المنتجات
+      - menuitem "دفعات مشترياتي"
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "" [disabled]:
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- button "جديد"
+- list:
+  - link "دفعات إدخال المشتريات":
+    - /url: /odoo/action-784?displayName=%D8%AF%D9%81%D8%B9%D8%A7%D8%AA%20%D8%A5%D8%AF%D8%AE%D8%A7%D9%84%20%D8%A7%D9%84%D9%85%D8%B4%D8%AA%D8%B1%D9%8A%D8%A7%D8%AA&view_type=list
+- generic: PB/2026/00011
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "طباعة الملخص"
+  - radiogroup "شريط الحالة":
+    - radio "معتمدة" [disabled]
+    - radio "مسودة" [checked] [disabled]
+  - heading "PB/2026/00011" [level=1]:
+    - generic: PB/2026/00011
+  - generic: الشركة
+  - link "المعلم الشامي":
+    - /url: /odoo/res.company/2
+  - text: تاريخ الإدخال
+  - superscript: "?"
+  - button "تاريخ الإدخال?": 10/09/2026
+  - table:
+    - rowgroup:
+      - row "المورد  تاريخ الفاتورة  مرجع الفاتورة  النوع  الفئة  الإجمالي شامل الضريبة  ضريبة 15% آجل  طريقة الدفع  ":
+        - columnheader
+        - columnheader "المورد ":
+          - generic: المورد
+          - generic: 
+        - columnheader "تاريخ الفاتورة ":
+          - generic: تاريخ الفاتورة
+          - generic: 
+        - columnheader "مرجع الفاتورة ":
+          - generic: مرجع الفاتورة
+          - generic: 
+        - columnheader "النوع ":
+          - generic: النوع
+          - generic: 
+        - columnheader "الفئة ":
+          - generic: الفئة
+          - generic: 
+        - columnheader "الإجمالي شامل الضريبة ":
+          - generic: الإجمالي شامل الضريبة
+          - generic: 
+        - columnheader "ضريبة 15%":
+          - generic: ضريبة 15%
+          - text: 
+        - columnheader "آجل ":
+          - generic: آجل
+          - generic: 
+        - columnheader "طريقة الدفع ":
+          - generic: طريقة الدفع
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " AR1 UI Supplier 10/09/2026 AR1-UI-SAVED مصروف اشتراك مقيم 115.00 فتح في نافذة عرض الاستمارة حذف صف":
+        - cell "":
+          - generic: 
+        - cell "AR1 UI Supplier"
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "AR1-UI-SAVED"
+        - cell "مصروف"
+        - cell "اشتراك مقيم"
+        - cell "115.00"
+        - cell:
+          - checkbox [checked]
+        - cell:
+          - checkbox [checked]
+        - cell
+        - cell "فتح في نافذة عرض الاستمارة":
+          - button "فتح في نافذة عرض الاستمارة": أداة العرض
+        - cell "حذف صف":
+          - button "حذف صف": 
+      - row "إضافة فاتورة":
+        - cell
+        - cell "إضافة فاتورة":
+          - button "إضافة فاتورة"
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+        - cell
+  - paragraph: فعّل «آجل» للدفع لاحقًا، أو اختر النقد أو البنك. تاريخ الدفع هو تاريخ الفاتورة.
+  - generic: "الصافي قبل الضريبة:"
+  - generic: 100.00 SR
+  - generic: "قيمة الضريبة:"
+  - generic: 15.00 SR
+  - generic: "الإجمالي شامل الضريبة:"
+  - generic: 115.00 SR
+- menu:
+  - menuitem "نقطة البيع":
+    - generic: نقطة البيع
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

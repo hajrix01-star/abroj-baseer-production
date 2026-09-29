@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".local-backups\\pb2-20260909\\preinstall\\compose.reports-qa.yaml",
+    "bytes": 970,
+    "sha256": "866cea0477961420f0b37a86dde4c6382b7198ea9692a75fbfa64173f731323f"
+  },
+  {
+    "path": ".local-backups\\pb2-20260909\\preinstall\\database.dump",
+    "bytes": 9995230,
+    "sha256": "914bb4ba99976ed32cf5813c16020461eef3a5447ad7fcd5712e824a82f387ac"
+  },
+  {
+    "path": ".local-backups\\pb2-20260909\\preinstall\\filestore.tar.gz",
+    "bytes": 67383893,
+    "sha256": "021ac887304e6d4dab1485f0edc582722f1421d799421d6e4a2ff6721373940e"
+  },
+  {
+    "path": ".local-backups\\pb2-20260909\\preinstall\\odoo.local.conf",
+    "bytes": 173,
+    "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+  }
+]

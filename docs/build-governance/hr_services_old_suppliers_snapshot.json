@@ -1,0 +1,3058 @@
+{
+  "database": "baseer_erp_test",
+  "review_date": "2026-09-08",
+  "scope": "ARZ, Doha, Shami only; names and categories; read-only",
+  "rows": [
+    {
+      "company": "ARZ",
+      "id": "da069358-2caa-4112-aa98-a04882e097a3",
+      "name": "MVC",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "de3f769d-60b7-431a-b69c-535c418e4e11",
+      "name": "NO TAX",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "dd488e3d-ea07-4af0-8630-a7b354ea874c",
+      "name": "أسطورة الاواني التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "علب وأكواب",
+      "category_code": "P3-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "bcb84735-24f0-4c3a-9749-ffdc72f21950",
+      "name": "اسوادي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بن وقهوة",
+      "category_code": "PUR-COFFEE"
+    },
+    {
+      "company": "ARZ",
+      "id": "0854a3db-884a-4b9a-9e28-b4e088473079",
+      "name": "اسواق المزرعه",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مياه",
+      "category_code": "P2-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "ecc0a043-491c-49c1-9c19-06f6bb5d2fd9",
+      "name": "الحسين توب اب للتوفير",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "أكياس",
+      "category_code": "P3-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "cd7c95b6-b22d-4192-a017-58b947208a82",
+      "name": "الدانوب",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية",
+      "category_code": "PUR-001"
+    },
+    {
+      "company": "ARZ",
+      "id": "d8798f93-b262-4b78-a135-72119cd68789",
+      "name": "الناغي اخوان",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "غازيات",
+      "category_code": "P2-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "87fc69a9-ec31-45d4-9abb-712c415ef0bb",
+      "name": "بابا خباز",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "2bc3313e-9b6c-4635-ab65-1b090b6a37ec",
+      "name": "باجة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "f0ddd68e-6757-4848-9e5b-d11dc7ab0e30",
+      "name": "بران",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "8de75138-29b1-423a-a1a4-f72c22dd9b84",
+      "name": "بيت عنبر",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "6dcab6f2-c02b-4614-99e8-e06a75110bad",
+      "name": "تموينات الاقصى الفضي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بضاعة تموينية",
+      "category_code": "P1-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "10495adf-e5d3-4608-96cc-1e2eaf20f531",
+      "name": "تموينات ماسة المستقبل",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "74594964-622a-496b-beb1-1faef30f5153",
+      "name": "خضار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خضار وفواكه",
+      "category_code": "P1-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "39a15e97-2096-415f-9360-a713a69164b1",
+      "name": "خطوط الافكار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بن وقهوة",
+      "category_code": "PUR-COFFEE"
+    },
+    {
+      "company": "ARZ",
+      "id": "1012fd86-c827-470c-9a20-ee0f37c23a57",
+      "name": "خيرات المزرعة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خضار وفواكه",
+      "category_code": "P1-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "a9099396-617b-4782-ad31-bae3d88331b0",
+      "name": "رامز",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية",
+      "category_code": "PUR-001"
+    },
+    {
+      "company": "ARZ",
+      "id": "8b5c7b6f-8e93-406c-a7e1-2e32dd56f8b7",
+      "name": "رياحين دمشق",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "0df4c478-3b2e-4b0b-a649-3df3b96e858d",
+      "name": "شر كه واحه القيصر",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "فحم",
+      "category_code": "P4-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "12241c3f-ca85-4383-9288-903a56b17eea",
+      "name": "شركة  الجميع للمرطبات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "غازيات",
+      "category_code": "P2-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "a831a554-2a5f-4fcd-89e3-b95148e7dcc1",
+      "name": "شركة احمد بن عفيف التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "eeec635f-6a8c-4a0c-9113-55d29405406c",
+      "name": "شركة الامازون العربية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "تعبئة وتغليف",
+      "category_code": "PUR-003"
+    },
+    {
+      "company": "ARZ",
+      "id": "c2ec367b-8014-46b8-bdf0-8e6f9aefced6",
+      "name": "شركة الركن المتميز للحوم الطازجة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "لحوم",
+      "category_code": "P1-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "33a7c6f7-bfbf-4ce2-b664-ed52c5f92bd2",
+      "name": "شركة السماكة التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "64d3f2b5-6db8-40b8-96f3-0f88b5951d3d",
+      "name": "شركة الصبايا مول",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خامات",
+      "category_code": "P1-5"
+    },
+    {
+      "company": "ARZ",
+      "id": "18a09df2-90b7-4fa2-8e98-77406d7185fa",
+      "name": "شركة العنود العربية التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية",
+      "category_code": "PUR-001"
+    },
+    {
+      "company": "ARZ",
+      "id": "ded8cd3f-bdd2-43b9-9589-e1b5998c1d08",
+      "name": "شركة القمحة الذهبية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "29dbc095-a6fc-4cc5-961e-594a75151365",
+      "name": "شركة امازون السعودية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "تعبئة وتغليف",
+      "category_code": "PUR-003"
+    },
+    {
+      "company": "ARZ",
+      "id": "834e8873-b91c-449c-9984-b263d647dedf",
+      "name": "شركة بندة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "f5857849-5acb-4b44-97db-3bdaef0a69d9",
+      "name": "شركة بيرين",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مياه",
+      "category_code": "P2-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "7e9a4413-85d7-48c4-b7b8-b0c63c673b4f",
+      "name": "شركة تعبئة المياة الصحية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مياه",
+      "category_code": "P2-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "936f65da-27b1-41ed-a22a-e69e8741f7a8",
+      "name": "شركة ركن على هواك التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مستلزمات شيشة",
+      "category_code": "PUR-SHISHA-SUPPLIES"
+    },
+    {
+      "company": "ARZ",
+      "id": "4154ebc7-10da-4dc2-9e4a-97a278e1cd34",
+      "name": "شركة زيت الشرق الاوسط التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "abf0d1da-7675-4e4a-98ec-80e60767ec24",
+      "name": "شركة ظلال التوفير",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خامات",
+      "category_code": "P1-5"
+    },
+    {
+      "company": "ARZ",
+      "id": "8c2694ae-3c99-4c1c-a8fb-cf77057a7218",
+      "name": "شركة عالم الحوكر التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "معسل",
+      "category_code": "PUR-SHISHA-TOBACCO"
+    },
+    {
+      "company": "ARZ",
+      "id": "40e8e1a6-1acc-4974-923a-eae663a05aa5",
+      "name": "شركة عنوان الكيف التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "معسل",
+      "category_code": "PUR-SHISHA-TOBACCO"
+    },
+    {
+      "company": "ARZ",
+      "id": "5fc6d47b-e968-4f37-8900-c9919e23b9a5",
+      "name": "شركة قصر الحوكر",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "معسل",
+      "category_code": "PUR-SHISHA-TOBACCO"
+    },
+    {
+      "company": "ARZ",
+      "id": "8e7eba6e-5027-4644-a8d1-429a3b70a478",
+      "name": "شركة منا للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "af6a59e3-97e0-42ad-88d6-4d23a650d931",
+      "name": "شركة ميد",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "55be3ccd-3ddc-4145-ae1e-581bd12526cc",
+      "name": "شركة نهلة الوادي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "ARZ",
+      "id": "b39f327a-20b1-4f3b-8c29-34b269aadcef",
+      "name": "شركه احمد العامري التجاريه",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "تعبئة وتغليف",
+      "category_code": "PUR-003"
+    },
+    {
+      "company": "ARZ",
+      "id": "244be6b6-d7a4-473b-bee6-2bb563da562f",
+      "name": "شركه اسطوره الاواني التجاريه",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية",
+      "category_code": "PUR-001"
+    },
+    {
+      "company": "ARZ",
+      "id": "4025d3f9-94de-4ac1-8856-ed820ca9e3b9",
+      "name": "شركه بسمه الشريك للتجاره",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "2f4852f1-a534-4045-b6bd-594d1002158c",
+      "name": "لذائذ الثمار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خضار وفواكه",
+      "category_code": "P1-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "73c20931-e0c6-478a-b725-aa473c906200",
+      "name": "مؤسسة احمد الزهراني",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "f144cac1-e0d5-430b-bff7-b59ec57e3cf6",
+      "name": "مؤسسة حسن بن عبدالله الناصر",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "غاز طبخ",
+      "category_code": "P4-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "450f51e9-2840-4c77-979c-3ccb84a9a518",
+      "name": "مؤسسة دفا المتخصصة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "فحم",
+      "category_code": "P4-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "6b39adc0-1bf2-4ce9-9720-dd73de23e984",
+      "name": "مؤسسة سحاب التوزيع الغذائي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مشروبات",
+      "category_code": "PUR-002"
+    },
+    {
+      "company": "ARZ",
+      "id": "031e04ab-daf4-4b69-81bd-d6e6db9a3c1d",
+      "name": "مؤسسة شبكة البناء",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "0705c494-8279-4791-8de0-d62de19b2a7e",
+      "name": "متجر البيت الجميل للتجاره",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "علب وأكواب",
+      "category_code": "P3-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "d61dbf8c-b105-44cc-9234-2de734910ac7",
+      "name": "موسسه بوابه الالوان (سليكون)",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "1adac021-0bb1-4e9f-8507-4afc7ab07e7f",
+      "name": "موسسه روز المزاج التجاريه",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "فحم",
+      "category_code": "P4-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "846efd6e-0b14-4ba9-bf71-a7388f467a58",
+      "name": "موسسه عربه الاندلس للخضار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خضار وفواكه",
+      "category_code": "P1-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "69fb7aa3-0831-4b62-bb21-cadce06ad269",
+      "name": "موسسه قمة الضباب",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مستلزمات تشغيل مطبخ",
+      "category_code": "PUR-004"
+    },
+    {
+      "company": "ARZ",
+      "id": "5d41d2dc-1fb5-447e-a164-3b31974ed1ca",
+      "name": "نحن واحد",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية",
+      "category_code": "PUR-001"
+    },
+    {
+      "company": "ARZ",
+      "id": "aed1a67c-9438-4def-a9a8-885babc9b1b1",
+      "name": "نكهة المشروب",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مشروبات",
+      "category_code": "PUR-002"
+    },
+    {
+      "company": "ARZ",
+      "id": "23996b7c-9df4-4723-a579-c41cfcc28c7a",
+      "name": "GOSI",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "التأمينات الاجتماعية",
+      "category_code": "E2-10"
+    },
+    {
+      "company": "ARZ",
+      "id": "4f8b563d-89a6-44a4-bc61-51f492371ac7",
+      "name": "أبشر أعمال",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم منصات حكومية",
+      "category_code": "E2-8"
+    },
+    {
+      "company": "ARZ",
+      "id": "9f42468c-5c5d-4a96-8759-75c0ab749ab7",
+      "name": "أجير",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم منصات حكومية",
+      "category_code": "E2-8"
+    },
+    {
+      "company": "ARZ",
+      "id": "c95b5b0b-138f-4cc8-9525-440b6ab68ff0",
+      "name": "اتحاد الغرف السعودية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "ضرائب ورسوم أخرى",
+      "category_code": "E2-7"
+    },
+    {
+      "company": "ARZ",
+      "id": "9edc0c74-9402-44e4-9901-f9566271d376",
+      "name": "اطياف سيناء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "8302a45e-3cd2-4c05-b62e-5e99a456bda4",
+      "name": "اقامات",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "22920b9c-301f-4715-8652-7217b1c3af56",
+      "name": "ال شبلان",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "b7e78d9a-0a6f-4895-9ffd-38c6d45f79d1",
+      "name": "الاتصالات السعودية (STC)",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "اتصالات وإنترنت",
+      "category_code": "E3-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "dcdc1a7c-61cf-49da-860d-2c3fed975b5d",
+      "name": "الدفاع المدني",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "دفاع مدني",
+      "category_code": "E2-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "438b72c9-34be-4bfa-8a59-705cf807f8e8",
+      "name": "الرمز السري للمفاتيح",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "49c6c02b-a6f1-40bd-bfea-4bf02ef69f50",
+      "name": "الرواتب",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "e0fd366b-636a-45cb-87d4-d481affedcc9",
+      "name": "الشركة السعودية للاتصالات المتنقلة (زين)",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "اتصالات وإنترنت",
+      "category_code": "E3-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "0f7b0409-921b-4056-9a3e-0b143b7b5069",
+      "name": "الشركة السعودية للكهرباء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "كهرباء",
+      "category_code": "E3-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "ab9469a8-53fa-425c-a828-16d44148296d",
+      "name": "الشركة السعودية للكهرباء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "كهرباء",
+      "category_code": "E3-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "0ea9a4b1-863d-4c70-a658-e2f89433a43b",
+      "name": "المؤسسة العامة للتأمينات الاجتماعية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "التأمينات الاجتماعية",
+      "category_code": "E2-10"
+    },
+    {
+      "company": "ARZ",
+      "id": "e27bf451-2660-452f-94cb-06e16e91f48a",
+      "name": "المديرية العامة للجوازات",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "82509d45-6c2c-4b79-8551-9cf0e4ec518b",
+      "name": "المركز السعودي للأعمال",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رخصة تجارية",
+      "category_code": "E2-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "4a4d3d14-1900-4121-bdf3-fcfaf256f94e",
+      "name": "المركز السعودي للأعمال الاقتصادية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "16fd0125-e05d-4eeb-8fd5-7a59d7ef8f9c",
+      "name": "اوبر",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "00b05dc4-3371-4a4f-a870-c81d7240472c",
+      "name": "اوفر تايم",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رواتب وأجور",
+      "category_code": "E4-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "978e6c14-7d2b-4471-842a-283a024def9d",
+      "name": "بابا خباز",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "efa58d45-819f-43f0-b04f-d93b6e635fbd",
+      "name": "بلدي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رخصة بلدية",
+      "category_code": "E2-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "eb9dcd6b-c55e-4090-ab29-c7ab14435910",
+      "name": "بنزين",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "b3acdce0-0703-41bc-b71f-ac7a29d3fd06",
+      "name": "تاكسي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "d19b2f02-9872-401f-a27b-370ffcad0697",
+      "name": "تصليح ماكينه اسبرسو",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "8227299f-908c-417a-9c67-a6072de46cb2",
+      "name": "تقييمات قوقل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "تسويق وهدايا",
+      "category_code": "EXP-006"
+    },
+    {
+      "company": "ARZ",
+      "id": "75efdc9d-23fb-46a1-9e78-2697598f569d",
+      "name": "تموينات المواد اليوميه للمواد الغذائيه",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "3d1e8e55-4776-4473-8e4d-610b0c65a139",
+      "name": "جرمان شيب صقر",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "fcc8b4c2-c56d-4519-ae54-7a2483afa0a3",
+      "name": "خدمات تسويقية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم إدارة حساب",
+      "category_code": "E7-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "c675989a-7fb1-4b5a-a9c1-b0883933cf8c",
+      "name": "خضار",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "0ea4fe6e-6a7f-4fa1-906e-6e1a91ff4d98",
+      "name": "دوحه المستهلك",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "db857c09-74d4-4a37-a355-5be832d9839a",
+      "name": "رسوم التبغ",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "ضرائب ورسوم أخرى",
+      "category_code": "E2-7"
+    },
+    {
+      "company": "ARZ",
+      "id": "77a0d91a-4f87-48d1-9ac5-df28ff61624e",
+      "name": "رسوم التبغ",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة وتشغيل",
+      "category_code": "EXP-005"
+    },
+    {
+      "company": "ARZ",
+      "id": "277bd88d-9f38-4583-8dd7-9d8a3ac99c46",
+      "name": "سبل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "4a029209-9e33-4245-bc00-a7108deb3d39",
+      "name": "سحم الدوحه للتجاره",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "072a91a5-740c-4927-90b5-5b92452ef1ec",
+      "name": "شر كه واحه القيصر",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "a31de66b-2795-48a5-8744-090da5ac5da6",
+      "name": "شركة اتحاد اتصالات (موبايلي)",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "اتصالات وإنترنت",
+      "category_code": "E3-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "12f8a9b1-78cb-45af-aa92-b856d06fbc52",
+      "name": "شركة الاتصالات السعودية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "اتصالات وإنترنت",
+      "category_code": "E3-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "70b6f4d3-16bf-45b0-85e1-b5897abb1871",
+      "name": "شركة الركن المتميز للحوم الطازجة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "9e45e673-b2ff-4165-922e-c29ee0d71dc4",
+      "name": "شركة السماكة التجارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "5387dddf-fd26-4032-a4bb-f61c5aed6639",
+      "name": "شركة العنود العربية التجارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "0facc74f-c4d3-49b1-b177-0bbe7cf9d566",
+      "name": "شركة القمحة الذهبية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "45f82c89-f9a3-43d1-b377-3c2d4a568175",
+      "name": "شركة المياه الوطنية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "مياه وصرف",
+      "category_code": "E3-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "ba5f2b61-3ec6-4fab-b449-8636d71d7865",
+      "name": "شركة بندة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "d76f3a44-ee4f-4d75-8641-0af44e8b45e8",
+      "name": "شركة تأميني لوساطة التأمين اإللكتروني",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "65112a79-c4ab-4475-b382-d1bff42ea14b",
+      "name": "شركة رؤية العقارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "ea8d183a-c7f9-43ab-a311-dca1b5233df3",
+      "name": "شركة ركن على هواك التجارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "0fca5be9-b941-4b05-80ac-6e8f54f57920",
+      "name": "شركة عالم الحوكر التجارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "dfa9f10d-5571-4e2b-9c59-b5c4576107c8",
+      "name": "شركة عالم ساكو",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أجهزة وإلكترونيات",
+      "category_code": "E8-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "02842a7d-e892-4fe7-8a26-a80c580f14c7",
+      "name": "شركة منطقة صلب التجارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة وتشغيل",
+      "category_code": "EXP-005"
+    },
+    {
+      "company": "ARZ",
+      "id": "2268e74a-e121-46d5-b58a-18f5f9e7543b",
+      "name": "شركة وطن للأعمال",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة وتشغيل",
+      "category_code": "EXP-005"
+    },
+    {
+      "company": "ARZ",
+      "id": "b7e1a28e-9bcd-467b-b3a7-6787789137d3",
+      "name": "شركه عذوبه الشروق التجاريه",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "d8ad56fd-d79e-4f09-985e-18b9bcc2c39e",
+      "name": "شركه محمد المنهالي للتجاره",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "cc8bf017-7917-478a-a26e-9c1367e2f855",
+      "name": "صالح وعبدالعزيز",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "f76c92e9-fc49-41b5-9047-ceb756d8344c",
+      "name": "صح للديكوؤ",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "8ef80dd1-f8f1-4eca-84dd-474872bf61fb",
+      "name": "صرف راتب مؤقت",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رواتب وأجور",
+      "category_code": "E4-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "b0ca4bdc-4182-471a-87eb-bc7b8c59a51e",
+      "name": "صيانة بدون ضريبة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة آلات",
+      "category_code": "E5-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "bc99ad45-dab7-4a3b-a7fc-70c5c446a5da",
+      "name": "صيانه المصعد",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "58da948b-56c1-4abc-8135-0dcbbde44df2",
+      "name": "ضيافة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "609ad652-4bcf-40e3-837d-b8d987f4bdb5",
+      "name": "قوى",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم منصات حكومية",
+      "category_code": "E2-8"
+    },
+    {
+      "company": "ARZ",
+      "id": "9ab92be5-35c8-4a46-b904-0c5bef2b49e2",
+      "name": "لحم",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "c1273a9f-3b5a-48ea-ae5a-2fc4bdda9c1e",
+      "name": "لولو  هايبر",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أجهزة وإلكترونيات",
+      "category_code": "E8-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "7add09ca-576b-45ce-a291-7c350ef7df7e",
+      "name": "مؤسسة اللمسات الاخيرة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أثاث",
+      "category_code": "E8-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "c36aa762-87f8-47bb-8d67-0b51b39461ff",
+      "name": "مؤسسة حسن بن عبدالله الناصر",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "0ba6ff4a-ef12-4f4f-a784-5181a3f18e92",
+      "name": "مؤسسة محمد سويد لتقنية المعلوميات",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أجهزة وإلكترونيات",
+      "category_code": "E8-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "33282b3e-3947-488f-845d-a1d110588458",
+      "name": "مؤسسة نجمة سريعة لمواد البناء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة وتشغيل",
+      "category_code": "EXP-005"
+    },
+    {
+      "company": "ARZ",
+      "id": "9a39666f-fade-4ec1-b1c4-3cf295a00155",
+      "name": "مؤسسه امل بن عبدالله الاحمري التجاريه",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "6cd43016-da4c-4fcf-8064-9f87373ebb43",
+      "name": "مدد",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رواتب وأجور",
+      "category_code": "E4-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "75d24b8f-6361-4831-9539-dc0b27c7cc40",
+      "name": "مزايا",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "fe4e9321-3295-4fec-be2f-3212cf0b5575",
+      "name": "مساند",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم منصات حكومية",
+      "category_code": "E2-8"
+    },
+    {
+      "company": "ARZ",
+      "id": "ead9eb1d-f3b8-4025-ad62-9f2c0ee6b25f",
+      "name": "مستشفي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "bc39742d-b06f-4976-8cba-2c8d2edcbb99",
+      "name": "مطبعة ارت زون للطباعة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "تسويق وهدايا",
+      "category_code": "EXP-006"
+    },
+    {
+      "company": "ARZ",
+      "id": "b30d1974-563a-42c2-a817-d2ee3a400446",
+      "name": "مقيم",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "33ca4076-c3f0-4076-ad2f-60f6383367a2",
+      "name": "منصة بلدي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "eb4b028a-a439-4a37-8c54-4441c12721d8",
+      "name": "منصة مدد",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "ac59ced7-250b-495c-a720-ad4afd38cee8",
+      "name": "منصة مقيم",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "7e4fe28a-e85c-4c2d-876b-9974dc75d58f",
+      "name": "موسسه الالماسيه الازياء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "7d8700f6-d1cd-4137-bc91-842f5326ab54",
+      "name": "موسسه العزل المتميز",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "5314a0ba-dac7-425b-95d6-361484b3fdd0",
+      "name": "موسسه دروع الكواكب التجاريه",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "d28a067f-9b87-4966-a9c3-d9880069f79d",
+      "name": "موسسه روز المزاج التجاريه",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "56fea287-c553-40a4-8434-5d2c7d16a306",
+      "name": "موسسه عايض بن مناحي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "23296538-98c4-4cf4-9fbd-5ecb19d87acc",
+      "name": "موسسه عربه الاندلس للخضار",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "a226e7ac-2d78-4cf2-822a-f50a799839c3",
+      "name": "نديم لتركيب الدش",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "1efa8086-4087-4ceb-b2df-4ba8f246acf7",
+      "name": "نستو",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أجهزة وإلكترونيات",
+      "category_code": "E8-3"
+    },
+    {
+      "company": "ARZ",
+      "id": "5d4887c9-35a8-4407-93f0-dbeead08e9c7",
+      "name": "نكهة المشروب",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "f245ecad-6aec-4fa7-a6a5-7f50c7d5e0ad",
+      "name": "هنجر ستيشن",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "4585c36e-3ac6-4808-940c-78336bf87e46",
+      "name": "هيئة الزكاة والدخل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "ضرائب ورسوم أخرى",
+      "category_code": "E2-7"
+    },
+    {
+      "company": "ARZ",
+      "id": "89322716-afe6-47ef-a05c-073e8198da8e",
+      "name": "هيئة الزكاة والدخل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "e0a3a80e-5f21-4ec4-8c8e-96ffbb91bc60",
+      "name": "هيئة الزكاة والضريبة والجمارك",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "ضرائب ورسوم أخرى",
+      "category_code": "E2-7"
+    },
+    {
+      "company": "ARZ",
+      "id": "ed696278-c67d-4a25-af2b-c74e504776fb",
+      "name": "وزارة البلديات والإسكان",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رخصة بلدية",
+      "category_code": "E2-2"
+    },
+    {
+      "company": "ARZ",
+      "id": "5065b04f-557a-41b9-925f-e88b211e2d88",
+      "name": "وزارة البلدية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "ARZ",
+      "id": "540fad94-d744-4b4c-9eb6-96b67611f073",
+      "name": "وزارة التجارة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رخصة تجارية",
+      "category_code": "E2-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "6ecc2a99-4e48-4e09-93ea-663f636192ca",
+      "name": "وزارة الخارجية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "زيارات",
+      "category_code": "E2-5"
+    },
+    {
+      "company": "ARZ",
+      "id": "0ba4b0ad-60a0-48c9-b5a5-ef479f779323",
+      "name": "وزارة العدل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إيجارات",
+      "category_code": "E3-1"
+    },
+    {
+      "company": "ARZ",
+      "id": "10265a18-6b71-4bf4-b568-13a21f2b5c27",
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "ARZ",
+      "id": "36e8b92c-6a12-4ee4-a620-cd2a49086b3f",
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم منصات حكومية",
+      "category_code": "E2-8"
+    },
+    {
+      "company": "ARZ",
+      "id": "22df68ad-73d5-4d03-b227-6b2f48883488",
+      "name": "ياسر مطلق العتيبي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "6a94ac35-f76c-4af4-97df-ab2a05601601",
+      "name": "NO NAME",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "936f1314-7aaf-4586-aa66-d30de0011571",
+      "name": "الاتصالات السعودية (STC)",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "c3824442-0404-485a-851e-89db740918bd",
+      "name": "البركان",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "93d81735-c278-427c-9686-6cf26ced3e14",
+      "name": "الشركة السعودية لتحويل الورق",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d3efface-89f5-4ea0-894f-f1f296bdeeea",
+      "name": "الوعل",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "01a5683d-ffe8-4f98-a2e6-b4bee8f16b03",
+      "name": "تموينات لؤلؤة الدوحة للمواد الغذائية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "531c1f7f-4a9e-41d5-a766-6288151a5663",
+      "name": "تموينات ماسة المستقبل للمواد الغذائية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "25fb8b4f-8f25-4afa-8ffd-289c7ba09d86",
+      "name": "سبعة ابواب",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "30d8e985-b6f5-4c19-b0e5-6ff4fed34ceb",
+      "name": "شر كة شو لاف للبلاستيك",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "dcdc96e4-dae7-46f0-9d81-91a2a49709c6",
+      "name": "شركة اتحاد الجودة للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "19eb2401-0791-41c3-b816-20746838b5d9",
+      "name": "شركة ادوات التنظيف للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "1fb5da83-d89b-40e9-8ed5-86a3f8288c63",
+      "name": "شركة ارزاق المدينة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "ee77d357-0176-44d4-a119-108da6ee77ae",
+      "name": "شركة اسطورة الاواني التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "328c9f8a-279d-46b4-aeb9-758b49c0f7c4",
+      "name": "شركة اضواء قادة السوق للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "7d663749-442d-43f9-a654-cee8fa81bd30",
+      "name": "شركة الاطار المتفوق التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "7c36965f-93e0-4b60-9903-1807142a6a2c",
+      "name": "شركة البيت السعودي الاماراتي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "2a3931c3-b0d8-4c9b-9720-94e1c01f91b5",
+      "name": "شركة البيت العملي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4fba377c-7af7-4a29-b9c5-1f9c623a8d09",
+      "name": "شركة البيت النظيف للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "3e2137d1-a349-44b3-81f6-a36636cddc9c",
+      "name": "شركة التعاون الخليجي للمحروقات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "0eaa304d-b6db-4f91-8d2a-4fbf96b34971",
+      "name": "شركة التموين العربي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "80a194a4-31d0-46e1-a53f-ccce26a6924a",
+      "name": "شركة الجميع للمرطبات المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "5e99f158-dde6-4d33-8b13-4dbd5834fc0f",
+      "name": "شركة الدريس",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d44779d9-ad7b-4719-9284-8d371f6c8a88",
+      "name": "شركة الربيع العربية للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "315b71c9-ae45-4732-9156-c8d67ab2d903",
+      "name": "شركة السحابة الزرقاء للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "70018730-9d1b-43a3-a095-08c554ce223c",
+      "name": "شركة الصفا للأواني المنزلية المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "3deb0210-93e0-4501-bb10-6396f61c5d62",
+      "name": "شركة العالقي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "c4178fbc-e253-47a0-9061-8b662cfe4da5",
+      "name": "شركة العمار للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "012b024a-d3d0-47c0-b6d4-d097a68b00e8",
+      "name": "شركة العنود العربية التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4433d482-0111-49a7-bc9a-82db21698c9e",
+      "name": "شركة الكيماويات الحديثة للصناعة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "33639f63-67eb-467d-a9ae-13acffb456fe",
+      "name": "شركة المراعي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "de88ae08-0b42-4fca-a168-8de51a5a1094",
+      "name": "شركة المنصة الراقية التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "6f082d27-2728-479a-ad4e-45fb91aab3c1",
+      "name": "شركة النهدي الطبية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "adb1acf4-9362-4652-982d-b21e67f45378",
+      "name": "شركة الهاجري لتجارة الاغذية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "c90c5732-bd38-45c7-9bac-85469398731a",
+      "name": "شركة الورق الصحي المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "96136f3c-1869-44d5-a581-b5d4e03b90ec",
+      "name": "شركة الوفاق للمنتجات الورقية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "828141cf-a0a3-4731-a963-47e9da94232d",
+      "name": "شركة الين المتحدة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "20d5be52-c421-4f10-a00a-fc2e1f8fb7f3",
+      "name": "شركة باشوت المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "be0d15ed-d27a-4469-97e7-1ebf0bfb4088",
+      "name": "شركة بست دريم التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "0b343a95-13fc-4b49-9cbc-132e5c0f2459",
+      "name": "شركة بسمة الشريك للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "f31c16ce-a916-4a6a-8753-2007e3e42201",
+      "name": "شركة بن زومة للتجارة الدولية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "cb9a74f6-4d77-4d5b-a311-3051087bab9d",
+      "name": "شركة بندة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "257c0a90-5643-4275-9bb0-3643192df6ef",
+      "name": "شركة بوابة الفين التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "2d80c173-6700-4e2e-83a9-6814258d72bd",
+      "name": "شركة تاون بور للأستثمار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "603b8cbb-a647-462e-9f47-0914546eea63",
+      "name": "شركة تطوير محطات الوقود للمحروقات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d9589d5d-4bf4-4f74-8623-c7605bb5e977",
+      "name": "شركة حروف الابداع للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "cc81c67c-450d-4fb8-abe7-c34e362245d4",
+      "name": "شركة حياة مثالية للتعبئة والتغليف",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4b12f4ff-d4b1-47c0-aa99-4397fd58311c",
+      "name": "شركة خالد محمد الدوسري للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "41e036bb-0783-4466-84ac-8c262d2d4ecb",
+      "name": "شركة ديار صفوى للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4f50347e-8ffd-4d55-8c4b-1eba50bd6592",
+      "name": "شركة رسام الريحان",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "da81fe17-768e-4b8f-aee3-925a90c81ddb",
+      "name": "شركة زيت الشرق الاوسط التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4d321257-cd8f-46d8-9770-f9cdb1dba878",
+      "name": "شركة سدو للصناعات الورقية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4e0cd5f9-9df5-4acf-b90c-11dc5ce5501b",
+      "name": "شركة سيف القمة الزراعية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4b39a9fb-628c-4d0f-a1c9-f4a88091a3bc",
+      "name": "شركة عالم الاسعار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "a749d874-169e-4a5c-8b91-6da88a40e721",
+      "name": "شركة عالم الرعد للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "2aed150e-8b94-4f8c-a7d5-715990a10cdd",
+      "name": "شركة عبدالعزيز محمد الماضي وشريكة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "1846664c-2027-45a6-be14-319f50688918",
+      "name": "شركة عبدالمحسن راشد الشجاجير",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "71af0def-b576-4733-a498-12b7c5162f02",
+      "name": "شركة عجوة الخليج التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "e00744be-f69f-4ba0-b119-68c83f42df18",
+      "name": "شركة عيون نجران التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "aba49c28-3dd2-4c53-afe3-21257624bbbd",
+      "name": "شركة فن النظافة الصناعية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "bda10505-1a32-496c-aba5-43450b038696",
+      "name": "شركة كنز نجم للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d09e2e5c-df57-432f-8804-617d4e6fd8c8",
+      "name": "شركة كنوز الحويجة للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "8ca52422-d3d3-43e5-bf6c-55e333aeab9b",
+      "name": "شركة لمسات الشرقية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "91de5c69-91b0-4566-b02d-5e8833436cfa",
+      "name": "شركة لوجاي للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "500e7512-cabc-4305-8145-714926651b50",
+      "name": "شركة مجموعة ناف",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "7470c8aa-b487-4437-b123-bea71cfd467a",
+      "name": "شركة مركب النمو للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "700afb12-8770-4075-a09f-768e785d4289",
+      "name": "شركة مزايا الاولى ماي ستور",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "b1b94a55-48f1-436a-9f94-2382ecbdb8e1",
+      "name": "شركة مسارات الفنار للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "f8ecffe9-73e5-4dc5-acaf-2e679e4b0510",
+      "name": "شركة مصنع المروج للمنظفات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "089ee71b-6577-4ee1-9761-d821463ada9b",
+      "name": "شركة مصنع بلاستيك شمس",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "72ad9d82-cbac-4264-8d2c-57d56c62bf6d",
+      "name": "شركة مصنع عبق الجزيرة للمنظفات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "eabef86d-ee70-4bf5-9f4a-6dfe5efdc528",
+      "name": "شركة موبكو التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "640a2b7a-6c71-472a-9f0a-65beedb53cbd",
+      "name": "شركة ناصر عبدالعزيز الحميضي للأواني المنزلية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d3946d09-1ddc-42aa-a690-b373c7493c9c",
+      "name": "شركة نانا التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "202d71a1-5ae4-453b-af91-036251abac82",
+      "name": "شركة نتاج المزرعة التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "8a450e77-7cba-4ff2-ac6b-7ba85ade7a45",
+      "name": "شركة نهار الخير للتسويق",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "178412ec-fd81-44c1-b7c5-718ff280a262",
+      "name": "شركة نهلة الوادي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "2bc2820b-180c-452f-aca9-6de86f5c00be",
+      "name": "شركة وادي حلفا للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "6e340f4e-0ebf-4d40-ae16-865a721f99bf",
+      "name": "شركة ورق الاتحاد للصناعات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d3b0719d-e76d-4d4c-9627-94e004904283",
+      "name": "صحن النظافة للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "8862855b-9f2b-495f-a811-89ca676c98a4",
+      "name": "صعود العقارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "ceb369b7-991a-45f6-988d-ca5f4c6f6993",
+      "name": "صيدلية الدواء",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "b3f26a74-9ac1-464e-aab1-f522b231ac2e",
+      "name": "فصول بلادي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "5a8a4a05-711e-43b6-baf0-f8158e7cb9a5",
+      "name": "قرطاسية قلم ابن سينا التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "a72ee594-c0c0-41b2-94dc-e3a660c746eb",
+      "name": "مؤسسة احمد الزهراني",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "8be24b05-8819-4283-ba43-4c7bba8e92a8",
+      "name": "مؤسسة اركان المناديل",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "7fbc4cde-61f5-4d08-864c-7bc3d92435ba",
+      "name": "مؤسسة اساس الشرقية التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "34d853b1-e27f-4737-a0d0-8b692c092e6f",
+      "name": "مؤسسة اطمح حلول للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "d2635c8b-71e6-411d-8a5c-2b57c6c36e59",
+      "name": "مؤسسة الحل المثيل",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "8a6e103a-df26-4fd6-86f8-1ac175f3d1ff",
+      "name": "مؤسسة الخطوط السبعة التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "0917ef74-4e92-409b-8d29-19b801a67829",
+      "name": "مؤسسة بسطة التوفير التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "fda0207e-801c-4331-bb5d-3f1209428878",
+      "name": "مؤسسة بقالة المنيح",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "2dced460-eba9-46e9-93be-efea6fdcee48",
+      "name": "مؤسسة دوحة المستهلك",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "93e336b8-427a-47c4-8e88-5d3bcf7a875e",
+      "name": "مؤسسة رضى النغموش التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "586293db-72e6-409d-9316-0972de70994a",
+      "name": "مؤسسة رمضان عبدالمعطي الفار للمواد الغذائية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "ed08a69a-acba-4624-9a49-caa98cbe3ce4",
+      "name": "مؤسسة صدى الوراق",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "9e631358-3619-4e18-ba60-59d2615e1448",
+      "name": "مؤسسة عابد العديني التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "583c5676-31af-42e3-83a2-fff2000812f3",
+      "name": "مؤسسة عالم ساكا",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "a3f99d80-d132-4c63-812d-98efec3fab84",
+      "name": "مؤسسة عبدالرحمن صالح الغيث التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "f6f27938-420b-441e-88d5-f99038a6e872",
+      "name": "مؤسسة عبدالعزيز ابراهيم التميمي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "25a54451-fae1-428c-b67d-aa7a71df659c",
+      "name": "مؤسسة عبدالعزيز ابراهيم العوفي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "480e6d61-fb47-4133-9259-c89faa547cb5",
+      "name": "مؤسسة عبدالقادر محمد محمد جيلاني التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "4f1e87a5-cbd1-4973-8ad5-b6e1e8d6b80c",
+      "name": "مؤسسة عبدالله احمد العوبثاني",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "50975f1a-eea4-4e0c-b348-4644b16d6ed5",
+      "name": "مؤسسة عرش الاواني التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "7d9a6fb9-4309-497b-b508-50cda00f7f37",
+      "name": "مؤسسة عضوان الأحمري التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "a0562ca5-5bea-4969-babd-98b69a439d08",
+      "name": "مؤسسة عمر سعد العنزي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "6313c554-dfbd-4c9a-ad98-f821ab01e4a6",
+      "name": "مؤسسة قمة الضباب للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "c4f0eaa5-0666-4185-a265-c536e3e56675",
+      "name": "مؤسسة قور الدولية التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "5e7a45e0-30cb-413a-8506-6b5b59b22cb9",
+      "name": "مؤسسة لمسات منزلية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "3fd214ef-faa4-4c3b-88f8-a2851d39d27a",
+      "name": "مؤسسة لمعان النجوم التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "fe0e434b-6a11-47e2-8c31-1227e19be825",
+      "name": "مؤسسة مرزوق سعد الحربي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "cf248c1c-9b9a-4cc7-91e5-6d7bdcfcb8f7",
+      "name": "مؤسسة منار الدمام التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "9541b424-63c7-4eb5-adae-f2af1e051115",
+      "name": "مؤسسة يزن خالد البوشي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "839d85e0-2090-4a8c-bac6-d27bcd680d28",
+      "name": "مركز احمد الراجحي",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "3a8711fe-401b-4c5a-a202-0b05bb0ea692",
+      "name": "مركز الحلول اللامعة لصيانة السيارات",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "20ff990a-b831-46d5-8fe5-ee16acf8c55c",
+      "name": "مزايا الاولى للوقود",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "f531e83f-3c55-4357-9bdc-c7335e5f830e",
+      "name": "مصنع اكياس البلاستيك الحديث",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "1fee063a-66c4-407d-9e3a-9628ad3d652a",
+      "name": "مصنع حمدان دوس العامري للمناديل وشركاه",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "9ba3e67c-ec26-4632-9c9d-97ac766b1701",
+      "name": "مصنع شركة قبة الدمام البلاستك المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "c20fc34a-2db7-495e-a025-e46f9b9cb113",
+      "name": "مصنع مزايا السروات للصناعة للبلاسيتك",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "6eca0c4d-3e2f-4dc0-afc9-167b50bcee9c",
+      "name": "مصنع مسك الخليج لصناعة الورق",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "aeb5c7a4-52be-409f-8af4-814ac87a5f03",
+      "name": "نابكو الوطنية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "92259732-df17-4fe5-b3fa-104165838663",
+      "name": "GOSI",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "التأمينات الاجتماعية",
+      "category_code": "E2-10"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "414dd6d3-308f-4b58-a815-450bd2a83f1d",
+      "name": "الشركة السعودية للكهرباء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "كهرباء",
+      "category_code": "E3-2"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "7f7437a2-904b-4c69-bc66-bc340e1465e2",
+      "name": "اوفر تايم",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رواتب وأجور",
+      "category_code": "E4-1"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "42814f14-233c-435a-96bc-8c1febedd99c",
+      "name": "جهة غير مسماة في نوركس — دوحة المستهلك",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "دوحة المستهلك",
+      "id": "81a6332e-dfcf-4ee2-8999-149fd3c6a01c",
+      "name": "هيئة الزكاة والدخل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "ضرائب ورسوم أخرى",
+      "category_code": "E2-7"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "3bfc72c6-4a29-4b02-b999-473c97473bac",
+      "name": "NO NAME",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "e460468c-12b6-4444-bbb9-374084bf890b",
+      "name": "تموينات لؤلؤة الدوحة للمواد الغذائية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "06540743-5985-4e10-a07c-d9ca8b1d483a",
+      "name": "تموينات ماسة المستقبل للمواد الغذائية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "cbf9c0c0-c4d5-4855-85e0-aabf256d4b30",
+      "name": "خروف",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "لحوم",
+      "category_code": "P1-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "ff20ddb1-35a7-4d78-879d-8fab7b417cc6",
+      "name": "خضار",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خضار وفواكه",
+      "category_code": "P1-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "44e53b16-721b-4896-8e18-7d218a1a67b6",
+      "name": "شحم",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خامات",
+      "category_code": "P1-5"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "3017aa10-b0a1-43e0-b659-13ab7c0a4e23",
+      "name": "شركة الجميع للمرطبات المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "غازيات",
+      "category_code": "P2-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "ef6100e2-b52c-487d-8eba-21cff63dd796",
+      "name": "شركة العالقي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خامات",
+      "category_code": "P1-5"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "2b7cd80b-ccd6-45a4-93c2-d45f381094de",
+      "name": "شركة العنود العربية التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "8ca49086-ff6a-44ae-82b7-9ca9a0658a19",
+      "name": "شركة باشوت المحدودة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "abee0a72-758f-474d-9cc4-1432b62f8abe",
+      "name": "شركة بسمة الشريك للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "2efd5606-1476-44ca-8329-342e6f88d252",
+      "name": "شركة بندة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "cac980a9-59c4-4118-9d64-5a8dfd286d26",
+      "name": "شركة جملة المستهلك التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "0f3d63d3-5b30-42b0-ae17-4b6f3209ad4d",
+      "name": "شركة ديار صفوى للتجارة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "دجاج",
+      "category_code": "P1-2"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "8775ea57-9ef1-45fa-945f-07e4d1f66f63",
+      "name": "شركة زيت الشرق الاوسط التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "c518c91e-4d4a-411b-84e3-c9eff1aec79d",
+      "name": "شركة صالح و عبدالعزيز محمد الغيث",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "d0c18391-71c1-4c03-b384-6f4886a5ffee",
+      "name": "شركة نهار الخير للتسويق",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "d443896a-2376-4404-8678-4221c643e2e4",
+      "name": "غاز",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "غاز طبخ",
+      "category_code": "P4-2"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "ba402121-f770-4e0b-87f0-1af9871e2623",
+      "name": "فحم",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "فحم",
+      "category_code": "P4-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "50dd4505-6c00-42ef-9449-7de970d897e5",
+      "name": "مؤسسة الشيف للحوم الطازجة",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "لحوم",
+      "category_code": "P1-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "c39b6d4e-53e1-40d0-9a7c-3454ee915dae",
+      "name": "مؤسسة دوحة المستهلك",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "بلاستيكات",
+      "category_code": "P3-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "70f6b6aa-787c-41d0-b3fc-b1851b89aad6",
+      "name": "مؤسسة رمضان عبدالمعطي الفار للمواد الغذائية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "9a61650f-396a-4556-a37c-6fc7ae9ef7e5",
+      "name": "مؤسسة فصول بلادي التجارية",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "دجاج",
+      "category_code": "P1-2"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "33548db5-27c6-45c7-ad38-10e430e12a9c",
+      "name": "مكبوس اكسريس",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "مواد غذائية أخرى",
+      "category_code": "P1-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "bed757e0-6784-41c0-b097-27af4497432d",
+      "name": "مياه",
+      "type": "PURCHASE",
+      "status": "ACTIVE",
+      "category": "خامات",
+      "category_code": "P1-5"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "1c88734d-5de6-4ee8-89b1-c073714e4c28",
+      "name": "FIX CAR",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "e7d168d1-544a-4de4-b6fd-407bbf55e65c",
+      "name": "GOSI",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "التأمينات الاجتماعية",
+      "category_code": "E2-10"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "075803bd-daaa-4b87-af1e-a0c7ec678382",
+      "name": "OVER TIME",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رواتب وأجور",
+      "category_code": "E4-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "59da0882-4cb5-452a-b36e-b9cf7e60a336",
+      "name": "ادنوك",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "1359ad22-401d-40c5-bd1a-2e1bad990370",
+      "name": "اعلانات قوقل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "dcf463ab-f147-4b87-8ce6-f4f2440acf23",
+      "name": "الاتصالات السعودية (STC)",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "اتصالات وإنترنت",
+      "category_code": "E3-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "5f905f10-f744-40b2-a050-f4813a80b360",
+      "name": "التركي بترول",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "e8862aaa-88e3-41cc-9357-1a2683d9d2ca",
+      "name": "الشركة السعودية للكهرباء",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "كهرباء",
+      "category_code": "E3-2"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "5a432ba8-e785-448d-bcfe-d24a0da6ff60",
+      "name": "الكهلان",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إيجارات",
+      "category_code": "E3-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "fd02a01b-ddb3-4c40-8d9b-a1891981a43e",
+      "name": "المديرية العامة للجوازات",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إقامات وجوازات",
+      "category_code": "E2-4"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "d202d806-d847-4a54-a089-1f189030eea5",
+      "name": "بنك الراجحي قرض",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "d2be0898-1ace-43cb-bdb0-7d8242581a67",
+      "name": "جرير",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أجهزة وإلكترونيات",
+      "category_code": "E8-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "e090f306-458b-496d-8889-492d510bfb1a",
+      "name": "راتب",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رواتب وأجور",
+      "category_code": "E4-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "1162ae92-9c1e-4f6e-b96f-2bdaa1722cd0",
+      "name": "رسوم تطبيق هنجر ستيشن",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم تطبيقات",
+      "category_code": "E6-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "4102c69c-cc50-46fd-b1c2-5e5cc4833360",
+      "name": "شركة السيارة الذهبية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "b0a6e53b-91c0-4c8e-87cc-ea01a4318c68",
+      "name": "شركة بوابة الفين التجارية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "أجهزة وإلكترونيات",
+      "category_code": "E8-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "b0e82331-ae4b-4156-9aeb-fdba1e39ccd7",
+      "name": "شركة تطوير محطات الوقود للمحروقات",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "1b2cc0fb-7d82-449c-8bbc-77ad45f0eb5b",
+      "name": "شركة حياة مثالية للتعبئة والتغليف",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "3d0add36-2e2b-4b2f-aa39-110d4688f9d8",
+      "name": "شركة مجموعة ناف",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "ea704ff0-aa6a-48c2-8b1f-ab0cc6ddc637",
+      "name": "شقة السوريين",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إيجارات",
+      "category_code": "E3-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "a7eea80e-0bc7-4954-b121-d175cd3f1081",
+      "name": "صيانة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "c584c832-797c-464a-baea-7232f3bbe2b8",
+      "name": "عمارة الكرك",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "إيجارات",
+      "category_code": "E3-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "029a3efa-eeef-43c9-9357-997c4a55b194",
+      "name": "مؤسسة أساس الشرقية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "قطع غيار",
+      "category_code": "E5-2"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "22b0a073-d971-476b-8847-a7821f147a9c",
+      "name": "مؤسسة صدى الوراق",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "معدات مكتبية",
+      "category_code": "E8-2"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "5d9de868-7b04-4d35-b2e4-43a91e5e010e",
+      "name": "مؤسسة عمر سعد العنزي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة محل",
+      "category_code": "E5-4"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "0a5e01d8-07a1-45ac-9a48-c811c3e9aefc",
+      "name": "مركز احمد الراجحي",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "صيانة آلات",
+      "category_code": "E5-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "c98e3668-9a28-4df0-bcdd-9571cea9644f",
+      "name": "مزايا الاولى للوقود",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "وقود ومواصلات",
+      "category_code": "E5-3"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "03c1ec7e-3f20-4e76-b012-cdf867c7e30f",
+      "name": "منصة قوى",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رسوم منصات حكومية",
+      "category_code": "E2-8"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "3f75b820-dce6-4595-9b6f-0b235417085f",
+      "name": "موقع TRIP تذاكر",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "تذاكر سفر الموظفين",
+      "category_code": "E4-TRAVEL"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "e7c3ea5f-229f-4b6f-b659-3397a0f2cf82",
+      "name": "هيئة الزكاة والدخل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "ضرائب ورسوم أخرى",
+      "category_code": "E2-7"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "54292799-66c9-45ea-8992-39455480f854",
+      "name": "وزارة البلديات والإسكان",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "شهادات صحية وتصاريح موظفين",
+      "category_code": "E2-9"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "4a59976f-9862-4cea-8650-16fac393f933",
+      "name": "وزارة التجارة",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "رخصة تجارية",
+      "category_code": "E2-1"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "f7c598af-b90e-4557-9499-59621e2a07cf",
+      "name": "وزارة العدل",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": "غرامات",
+      "category_code": "E2-6"
+    },
+    {
+      "company": "مشويات المعلم الشامي",
+      "id": "d9fbf68a-b57f-497f-85dc-5a8d6ab2e079",
+      "name": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "type": "EXPENSE",
+      "status": "ACTIVE",
+      "category": null,
+      "category_code": null
+    }
+  ]
+}

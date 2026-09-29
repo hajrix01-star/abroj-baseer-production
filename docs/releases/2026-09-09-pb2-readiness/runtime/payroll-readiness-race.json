@@ -1,0 +1,118 @@
+{
+  "checks": [
+    {
+      "name": "HR edit succeeds consistently",
+      "expected": "success",
+      "actual": "success",
+      "pass": true
+    },
+    {
+      "name": "no exhausted transaction",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "HR first approval blocked",
+      "expected": "blocked",
+      "actual": "blocked",
+      "pass": true
+    },
+    {
+      "name": "HR first zero draft salary",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "HR first zero accounting",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "two refresh calls finish",
+      "expected": "2",
+      "actual": "2",
+      "pass": true
+    },
+    {
+      "name": "two refresh serialized retry",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "two refresh no duplicate employees",
+      "expected": "2",
+      "actual": "2",
+      "pass": true
+    },
+    {
+      "name": "pending employee contributes zero after race",
+      "expected": "3000",
+      "actual": "3000.0",
+      "pass": true
+    },
+    {
+      "name": "no draft journals after refresh",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    }
+  ],
+  "races": [
+    {
+      "name": "HR start removal versus approval",
+      "results": [
+        {
+          "outcome": "success",
+          "attempts": 1,
+          "retries": []
+        },
+        {
+          "outcome": "blocked",
+          "attempts": 3,
+          "retries": [
+            "DeadlockDetected",
+            "SerializationFailure"
+          ],
+          "message": "PB2 concurrency 2050-01-01: Enter the employee contract start date, then refresh employees. No salary or deductions have been calculated."
+        }
+      ]
+    },
+    {
+      "name": "two refresh requests same run",
+      "results": [
+        {
+          "outcome": "success",
+          "attempts": 2,
+          "retries": [
+            "SerializationFailure"
+          ]
+        },
+        {
+          "outcome": "success",
+          "attempts": 1,
+          "retries": []
+        }
+      ]
+    }
+  ],
+  "database": "baseer_pb2_test_20260909",
+  "fixtures": {
+    "employee_ids": [
+      584,
+      585
+    ],
+    "run_ids": [
+      181,
+      182
+    ],
+    "users": {
+      "HR": 150,
+      "Payroll": 151
+    }
+  },
+  "status": "passed"
+}

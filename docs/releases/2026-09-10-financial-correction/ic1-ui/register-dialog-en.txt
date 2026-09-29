@@ -1,0 +1,279 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Invoicing"
+    - menu:
+      - button "Customers":
+        - generic: Customers
+      - button "Vendors":
+        - generic: Vendors
+      - menuitem "Financial operations"
+      - button "Reporting":
+        - generic: Reporting
+      - menuitem "Employee Advances"
+    - menu:
+      - button "Messages 2":
+        - img "Messages": 
+        - generic: "2"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي" [disabled]:
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- generic: Financial operations
+- search:
+  - search:
+    - button "Search...":
+      - img: 
+    - searchbox "Search..."
+  - button ""
+- search:
+  - navigation "Pager":
+    - generic: 1-4
+    - text: / 4
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- navigation:
+  - button "List View":
+    - generic: 
+  - button "Kanban View":
+    - generic: 
+- main:
+  - region "Financial summary":
+    - group "Operation view":
+      - button "All operations" [disabled] [pressed]
+      - button "Cash movements"
+    - generic: Current balances · 2026-09-10
+    - button "Refresh financial summary":
+      - generic: 
+    - generic: SAR
+    - heading "Customers" [level=3]
+    - generic: 0 documents
+    - 'button "Customers — Net invoices: 0.00SAR"':
+      - generic: Net invoices
+      - generic: "0.00"
+    - 'button "Customers — Settled amount: 0.00SAR"':
+      - generic: Settled amount
+      - generic: "0.00"
+    - 'button "Customers — Outstanding: 0.00SAR"':
+      - generic: Outstanding
+      - generic: "0.00"
+    - 'button "Customers — Partially paid: 0"':
+      - generic: Partially paid
+      - generic: "0"
+    - 'button "Customers — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+    - heading "Suppliers" [level=3]
+    - generic: 4 documents
+    - 'button "Suppliers — Net invoices: 2,000.00SAR"':
+      - generic: Net invoices
+      - generic: 2,000.00
+    - 'button "Suppliers — Settled amount: 0.00SAR"':
+      - generic: Settled amount
+      - generic: "0.00"
+    - 'button "Suppliers — Outstanding: 2,000.00SAR"':
+      - generic: Outstanding
+      - generic: 2,000.00
+    - 'button "Suppliers — Partially paid: 0"':
+      - generic: Partially paid
+      - generic: "0"
+    - 'button "Suppliers — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+  - table:
+    - rowgroup:
+      - row "Date  Number  Operation Partner  Journal  Amount  Settled Outstanding  Payment Status  ":
+        - columnheader:
+          - checkbox
+        - columnheader "Date ":
+          - generic: Date
+          - generic: 
+        - columnheader "Number ":
+          - generic: Number
+          - generic: 
+        - columnheader "Operation":
+          - generic: Operation
+          - text: 
+        - columnheader "Partner ":
+          - generic: Partner
+          - generic: 
+        - columnheader "Journal ":
+          - generic: Journal
+          - generic: 
+        - columnheader "Amount ":
+          - generic: Amount
+          - generic: 
+        - columnheader "Settled":
+          - generic: Settled
+          - text: 
+        - columnheader "Outstanding ":
+          - generic: Outstanding
+          - generic: 
+        - columnheader "Payment Status ":
+          - generic: Payment Status
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "09/10/2026 BILL/2026/09/0004 Vendor bill IC1 QA supplier — correction preview Purchases 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0004"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0003 Vendor bill IC1 QA supplier — correction preview Purchases 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0003"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0002 Vendor bill IC1 QA supplier — correction preview Purchases 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0002"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0001 Vendor bill IC1 QA supplier — correction preview Purchases 500.00 SR 0.00 SR 500.00 SR Not Paid  ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0001"
+        - cell "Vendor bill"
+        - cell "IC1 QA supplier — correction preview"
+        - cell "Purchases"
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "500.00 SR":
+          - generic: 500.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell " ":
+          - button "":
+            - generic: 
+          - button "":
+            - generic: 
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- dialog:
+  - banner:
+    - heading "Correct operation" [level=4]
+    - button "Close"
+  - main:
+    - main:
+      - generic: Invoice
+      - generic: BILL/2026/09/0001 (IC1 QA UI 400 to 500)
+      - generic: Correct partner
+      - combobox "Correct partner" [active]: IC1 QA supplier — correction preview
+      - generic: Correction reason
+      - textbox "Correction reason":
+        - /placeholder: What was entered incorrectly?
+      - table:
+        - rowgroup:
+          - row "Description  Quantity  Unit price  Taxes ":
+            - columnheader "Description ":
+              - generic: Description
+              - generic: 
+            - columnheader "Quantity ":
+              - generic: Quantity
+              - generic: 
+            - columnheader "Unit price ":
+              - generic: Unit price
+              - generic: 
+            - columnheader "Taxes":
+              - generic: Taxes
+              - text: 
+            - columnheader "":
+              - button "":
+                - generic: 
+        - rowgroup:
+          - row "IC1 QA entered amount 1.0 500.0":
+            - cell "IC1 QA entered amount"
+            - cell "1.0"
+            - cell "500.0"
+            - cell
+            - cell
+          - row:
+            - cell
+          - row:
+            - cell
+          - row:
+            - cell
+        - rowgroup:
+          - row:
+            - cell
+            - cell
+  - contentinfo:
+    - button "Confirm correction"
+    - button "Cancel"
+- paragraph: Press esc to exit full screen

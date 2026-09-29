@@ -1,0 +1,5 @@
+account_move|8558
+baseer_pos_summary|669
+calendar_event|2
+hr_payslip|0
+resource_calendar|29

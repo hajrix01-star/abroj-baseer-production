@@ -1,0 +1,631 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - menuitem "العمليات المالية"
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+      - button "":
+        - generic: 
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- list:
+  - link "العمليات المالية":
+    - /url: /odoo/account.move
+  - text: /
+  - link "الحركات النقدية":
+    - /url: /odoo/account.move/account.move
+- generic: العمليات المالية
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - search:
+    - button "بحث...":
+      - img: 
+    - searchbox "بحث..." [active]
+  - button ""
+- search:
+  - navigation "جهاز المناداة":
+    - generic: 1-23
+    - text: / 23
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- navigation:
+  - button "القائمة View":
+    - generic: 
+  - button "كانبان View":
+    - generic: 
+- main:
+  - region "الملخص المالي":
+    - group "عرض العمليات":
+      - button "جميع العمليات" [disabled] [pressed]
+      - button "الحركات النقدية"
+    - generic: الأرصدة الحالية · 2026-09-10
+    - button "تحديث الملخص المالي":
+      - generic: 
+    - generic: SAR
+    - heading "العملاء" [level=3]
+    - generic: 8 مستندات
+    - 'button "العملاء — صافي الفواتير: 258.72SAR"':
+      - generic: صافي الفواتير
+      - generic: "258.72"
+    - 'button "العملاء — المبلغ المسوّى: 86.42SAR"':
+      - generic: المبلغ المسوّى
+      - generic: "86.42"
+    - 'button "العملاء — المتبقي: 172.30SAR"':
+      - generic: المتبقي
+      - generic: "172.30"
+    - 'button "العملاء — مدفوع جزئيًا: 2"':
+      - generic: مدفوع جزئيًا
+      - generic: "2"
+    - 'button "العملاء — صافي المتأخر: 30.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "30.00"
+    - heading "الموردون" [level=3]
+    - generic: 5 مستندات
+    - 'button "الموردون — صافي الفواتير: 1,291.05SAR"':
+      - generic: صافي الفواتير
+      - generic: 1,291.05
+    - 'button "الموردون — المبلغ المسوّى: 60.05SAR"':
+      - generic: المبلغ المسوّى
+      - generic: "60.05"
+    - 'button "الموردون — المتبقي: 1,231.00SAR"':
+      - generic: المتبقي
+      - generic: 1,231.00
+    - 'button "الموردون — مدفوع جزئيًا: 1"':
+      - generic: مدفوع جزئيًا
+      - generic: "1"
+    - 'button "الموردون — صافي المتأخر: 0.00SAR"':
+      - generic: صافي المتأخر
+      - generic: "0.00"
+  - table:
+    - rowgroup:
+      - row "التاريخ  رقم المستند  العملية الشريك  دفتر اليومية  الشركة  المبلغ  المسوّى المتبقي  حالة الدفع  ":
+        - columnheader:
+          - checkbox
+        - columnheader "التاريخ ":
+          - generic: التاريخ
+          - generic: 
+        - columnheader "رقم المستند ":
+          - generic: رقم المستند
+          - generic: 
+        - columnheader "العملية":
+          - generic: العملية
+          - text: 
+        - columnheader "الشريك ":
+          - generic: الشريك
+          - generic: 
+        - columnheader "دفتر اليومية ":
+          - generic: دفتر اليومية
+          - generic: 
+        - columnheader "الشركة ":
+          - generic: الشركة
+          - generic: 
+        - columnheader "المبلغ ":
+          - generic: المبلغ
+          - generic: 
+        - columnheader "المسوّى":
+          - generic: المسوّى
+          - text: 
+        - columnheader "المتبقي ":
+          - generic: المتبقي
+          - generic: 
+        - columnheader "حالة الدفع ":
+          - generic: حالة الدفع
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "10/09/2026 RINV/2026/00002 إشعار دائن للعميل FL1 synthetic partner المبيعات المعلم الشامي 44.44 SR 44.44 SR 0.00 SR مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "RINV/2026/00002"
+        - cell "إشعار دائن للعميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "مدفوع":
+          - generic: مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00006 فاتورة عميل FL1 synthetic partner المبيعات المعلم الشامي 44.44 SR 44.44 SR 0.00 SR معكوس ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00006"
+        - cell "فاتورة عميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "معكوس":
+          - generic: معكوس
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 PBNK1/2026/00006 دفعة واردة FL1 synthetic partner البنك المعلم الشامي $ 12.34 ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00006"
+        - cell "دفعة واردة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "$ 12.34":
+          - generic: $ 12.34
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00005 فاتورة عميل FL1 synthetic partner المبيعات المعلم الشامي $ 12.34 $ 12.34 $ 0.00 مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00005"
+        - cell "فاتورة عميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "$ 12.34":
+          - generic: $ 12.34
+        - cell "$ 12.34":
+          - generic: $ 12.34
+        - cell "$ 0.00":
+          - generic: $ 0.00
+        - cell "مدفوع":
+          - generic: مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 PBNK1/2026/00005 دفعة واردة FL1 synthetic partner البنك المعلم الشامي 15.15 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00005"
+        - cell "دفعة واردة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "15.15 SR":
+          - generic: 15.15 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00004 فاتورة عميل FL1 synthetic partner المبيعات المعلم الشامي 15.15 SR 15.15 SR 0.00 SR بانتظار التسوية ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00004"
+        - cell "فاتورة عميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "15.15 SR":
+          - generic: 15.15 SR
+        - cell "15.15 SR":
+          - generic: 15.15 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "بانتظار التسوية":
+          - generic: بانتظار التسوية
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 BILL/2026/09/0004 فاتورة مورد FL1 private contact المشتريات المعلم الشامي 987.65 SR 0.00 SR 987.65 SR غير مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "BILL/2026/09/0004"
+        - cell "فاتورة مورد"
+        - cell "FL1 private contact"
+        - cell "المشتريات"
+        - cell "المعلم الشامي"
+        - cell "987.65 SR":
+          - generic: 987.65 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "987.65 SR":
+          - generic: 987.65 SR
+        - cell "غير مدفوع":
+          - generic: غير مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 PBNK1/2026/00004 دفعة واردة FL1 synthetic partner البنك المعلم الشامي 10.00 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00004"
+        - cell "دفعة واردة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "10.00 SR":
+          - generic: 10.00 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00003 فاتورة عميل FL1 synthetic partner المبيعات المعلم الشامي 100.00 SR 10.00 SR 90.00 SR مسدد جزئياً ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00003"
+        - cell "فاتورة عميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "100.00 SR":
+          - generic: 100.00 SR
+        - cell "10.00 SR":
+          - generic: 10.00 SR
+        - cell "90.00 SR":
+          - generic: 90.00 SR
+        - cell "مسدد جزئياً":
+          - generic: مسدد جزئياً
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 PBNK1/2026/00003 دفعة صادرة FL1 synthetic partner البنك المعلم الشامي 10.05 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00003"
+        - cell "دفعة صادرة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 PBNK1/2026/00002 دفعة صادرة FL1 synthetic partner البنك المعلم الشامي 60.05 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00002"
+        - cell "دفعة صادرة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "60.05 SR":
+          - generic: 60.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 PBNK1/2026/00001 دفعة واردة FL1 synthetic partner البنك المعلم الشامي 25.05 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "PBNK1/2026/00001"
+        - cell "دفعة واردة"
+        - cell "FL1 synthetic partner"
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "25.05 SR":
+          - generic: 25.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 BILL/2026/09/0003 إيصال مشتريات FL1 synthetic partner المشتريات المعلم الشامي 8.25 SR 0.00 SR 8.25 SR غير مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "BILL/2026/09/0003"
+        - cell "إيصال مشتريات"
+        - cell "FL1 synthetic partner"
+        - cell "المشتريات"
+        - cell "المعلم الشامي"
+        - cell "8.25 SR":
+          - generic: 8.25 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "8.25 SR":
+          - generic: 8.25 SR
+        - cell "غير مدفوع":
+          - generic: غير مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00002 إيصال مبيعات FL1 synthetic partner المبيعات المعلم الشامي 7.25 SR 0.00 SR 7.25 SR غير مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00002"
+        - cell "إيصال مبيعات"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "7.25 SR":
+          - generic: 7.25 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "7.25 SR":
+          - generic: 7.25 SR
+        - cell "غير مدفوع":
+          - generic: غير مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 RBILL/2026/09/0001 إشعار دائن من المورد FL1 synthetic partner المشتريات المعلم الشامي 20.05 SR 0.00 SR 20.05 SR غير مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "RBILL/2026/09/0001"
+        - cell "إشعار دائن من المورد"
+        - cell "FL1 synthetic partner"
+        - cell "المشتريات"
+        - cell "المعلم الشامي"
+        - cell "20.05 SR":
+          - generic: 20.05 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "20.05 SR":
+          - generic: 20.05 SR
+        - cell "غير مدفوع":
+          - generic: غير مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 RINV/2026/00001 إشعار دائن للعميل FL1 synthetic partner المبيعات المعلم الشامي 10.05 SR 10.05 SR 0.00 SR مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "RINV/2026/00001"
+        - cell "إشعار دائن للعميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "مدفوع":
+          - generic: مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 BILL/2026/09/0002 فاتورة مورد FL1 synthetic partner المشتريات المعلم الشامي 200.20 SR 60.05 SR 140.15 SR مسدد جزئياً ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "BILL/2026/09/0002"
+        - cell "فاتورة مورد"
+        - cell "FL1 synthetic partner"
+        - cell "المشتريات"
+        - cell "المعلم الشامي"
+        - cell "200.20 SR":
+          - generic: 200.20 SR
+        - cell "60.05 SR":
+          - generic: 60.05 SR
+        - cell "140.15 SR":
+          - generic: 140.15 SR
+        - cell "مسدد جزئياً":
+          - generic: مسدد جزئياً
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 INV/2026/00001 فاتورة عميل FL1 synthetic partner المبيعات المعلم الشامي 100.10 SR 25.05 SR 75.05 SR مسدد جزئياً ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "INV/2026/00001"
+        - cell "فاتورة عميل"
+        - cell "FL1 synthetic partner"
+        - cell "المبيعات"
+        - cell "المعلم الشامي"
+        - cell "100.10 SR":
+          - generic: 100.10 SR
+        - cell "25.05 SR":
+          - generic: 25.05 SR
+        - cell "75.05 SR":
+          - generic: 75.05 SR
+        - cell "مسدد جزئياً":
+          - generic: مسدد جزئياً
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 CSH1/2026/00001 سلفة موظف Cash | النقد المعلم الشامي 100.01 SR ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "CSH1/2026/00001"
+        - cell "سلفة موظف"
+        - cell
+        - cell "Cash | النقد"
+        - cell "المعلم الشامي"
+        - cell "100.01 SR":
+          - generic: 100.01 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/09/2026 BILL/2026/09/0001 فاتورة مورد AR1 UI Supplier المشتريات المعلم الشامي 115.00 SR 0.00 SR 115.00 SR غير مدفوع ":
+        - cell:
+          - checkbox
+        - cell "10/09/2026":
+          - generic: 10/09/2026
+        - cell "BILL/2026/09/0001"
+        - cell "فاتورة مورد"
+        - cell "AR1 UI Supplier"
+        - cell "المشتريات"
+        - cell "المعلم الشامي"
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell "غير مدفوع":
+          - generic: غير مدفوع
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/02/2026 BNK1/2026/00003 قيد يومية البنك المعلم الشامي 1,200.00 SR ":
+        - cell:
+          - checkbox
+        - cell "10/02/2026":
+          - generic: 10/02/2026
+        - cell "BNK1/2026/00003"
+        - cell "قيد يومية"
+        - cell
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "1,200.00 SR":
+          - generic: 1,200.00 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/02/2026 BNK1/2026/00002 قيد يومية البنك المعلم الشامي 5,000.00 SR ":
+        - cell:
+          - checkbox
+        - cell "10/02/2026":
+          - generic: 10/02/2026
+        - cell "BNK1/2026/00002"
+        - cell "قيد يومية"
+        - cell
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "5,000.00 SR":
+          - generic: 5,000.00 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "10/02/2026 BNK1/2026/00001 قيد يومية البنك المعلم الشامي 8,000.00 SR ":
+        - cell:
+          - checkbox
+        - cell "10/02/2026":
+          - generic: 10/02/2026
+        - cell "BNK1/2026/00001"
+        - cell "قيد يومية"
+        - cell
+        - cell "البنك"
+        - cell "المعلم الشامي"
+        - cell "8,000.00 SR":
+          - generic: 8,000.00 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

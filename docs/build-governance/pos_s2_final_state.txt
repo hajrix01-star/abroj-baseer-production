@@ -1,0 +1,5 @@
+baseer_pos_summary|installed|19.0.1.1.0
+82|approved|all|all|60|1800.00
+227|draft|morning|split|10|115.00
+228|draft|evening|split|20|230.00
+0

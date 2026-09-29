@@ -1,0 +1,12 @@
+{
+  "environment": "QA localhost:18070",
+  "checks": [
+    "New form in company10 has three unchecked shift boxes and no sales cards or metrics",
+    "Selecting Morning displays Morning card and no removed messages even without configured payment methods",
+    "New QA ARZ form has no selected shift",
+    "Clicking Save with no selected shift shows Arabic validation اختر الشفت قبل حفظ المبيعات.",
+    "Selecting Evening after validation displays only Evening card with configured payment fields and neither removed text"
+  ],
+  "saved_business_transactions": false,
+  "cleanup": "QA transient157 created by rejected form save removed using native creator context; no summaries or closures linked"
+}

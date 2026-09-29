@@ -1,0 +1,1679 @@
+{
+  "company_id": 9,
+  "checks": [
+    {
+      "check": "gross report amount unchanged",
+      "passed": true,
+      "actual": "-271.0",
+      "expected": "-271"
+    },
+    {
+      "check": "tax-excluded report amount unchanged",
+      "passed": true,
+      "actual": "-277.0",
+      "expected": "-277"
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 3,
+      "operation_count": 3,
+      "value": 460.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts/journal-65",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 230.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts/journal-65/cash-account-1148",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 230.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts/journal-70",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 115.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts/journal-70/cash-account-1166",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 115.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts/journal-69",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 115.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: receipts/journal-69/cash-account-1165",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 115.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 9,
+      "operation_count": 9,
+      "value": -731.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/ledger-1064",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -57.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/customer-refunds",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -11.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/customer-refunds/category-4",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -11.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/customer-refunds/category-4/category-6",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -11.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/unclassified",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -40.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/category-4",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -172.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/category-4/category-5",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -115.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/category-4/category-6",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -57.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/group-1",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 5,
+      "operation_count": 5,
+      "value": -399.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/group-1/ledger-1158",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -115.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/group-1/ledger-1162",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -57.5
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/group-1/ledger-1160",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -2.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/group-1/ledger-1161",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -200.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/group-1/ledger-1159",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -25.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: payments/category-7",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -50.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-receipts",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 3,
+      "operation_count": 3,
+      "value": 460.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-payments",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 9,
+      "operation_count": 9,
+      "value": -731.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-displayed_net_movement",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 12,
+      "operation_count": 12,
+      "value": -271.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-actual_net_movement",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 13,
+      "operation_count": 12,
+      "value": -271.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-opening_cash_balance",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 1000.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-closing_cash_balance",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 14,
+      "operation_count": 13,
+      "value": 729.0
+    },
+    {
+      "check": "gross amount opens a safe native source action: baseer-total-balance_check",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 13,
+      "operation_count": 12,
+      "value": 0.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 3,
+      "operation_count": 3,
+      "value": 400.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts/journal-65",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 200.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts/journal-65/cash-account-1148",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 200.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts/journal-70",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 100.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts/journal-70/cash-account-1166",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 100.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts/journal-69",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 100.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: receipts/journal-69/cash-account-1165",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 100.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 9,
+      "operation_count": 9,
+      "value": -677.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/ledger-1064",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -50.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/customer-refunds",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -10.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/customer-refunds/category-4",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -10.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/customer-refunds/category-4/category-6",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -10.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/unclassified",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -40.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/category-4",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -150.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/category-4/category-5",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -100.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/category-4/category-6",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -50.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/group-1",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 5,
+      "operation_count": 5,
+      "value": -377.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/group-1/ledger-1158",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -100.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/group-1/ledger-1162",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -50.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/group-1/ledger-1160",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -2.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/group-1/ledger-1161",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -200.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/group-1/ledger-1159",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -25.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: payments/category-7",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": -50.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-receipts",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 3,
+      "operation_count": 3,
+      "value": 400.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-payments",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 9,
+      "operation_count": 9,
+      "value": -677.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-displayed_net_movement",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 12,
+      "operation_count": 12,
+      "value": -277.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-excluded_tax_bridge",
+      "passed": true,
+      "model": "account.move",
+      "source_count": 8,
+      "operation_count": 8,
+      "value": 6.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-actual_net_movement",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 13,
+      "operation_count": 12,
+      "value": -271.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-opening_cash_balance",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 1,
+      "operation_count": 1,
+      "value": 1000.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-closing_cash_balance",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 14,
+      "operation_count": 13,
+      "value": 729.0
+    },
+    {
+      "check": "tax-excluded amount opens a safe native source action: baseer-total-balance_check",
+      "passed": true,
+      "model": "account.move.line",
+      "source_count": 13,
+      "operation_count": 12,
+      "value": 0.0
+    },
+    {
+      "check": "mixed partial-payment original invoice located",
+      "passed": true
+    },
+    {
+      "check": "category opens exact mixed-bill original: مياه",
+      "passed": true
+    },
+    {
+      "check": "tax toggle preserves category original documents: مياه",
+      "passed": true
+    },
+    {
+      "check": "category opens exact mixed-bill original: مشروبات غازية",
+      "passed": true
+    },
+    {
+      "check": "tax toggle preserves category original documents: مشروبات غازية",
+      "passed": true
+    },
+    {
+      "check": "category opens exact mixed-bill original: مواد غذائية",
+      "passed": true
+    },
+    {
+      "check": "tax toggle preserves category original documents: مواد غذائية",
+      "passed": true
+    },
+    {
+      "check": "parent category original sources equal union of children",
+      "passed": true
+    },
+    {
+      "check": "one original opens native form directly",
+      "passed": true
+    },
+    {
+      "check": "multiple originals open native list",
+      "passed": true
+    },
+    {
+      "check": "opening_cash_balance opens exact cash ledger operations",
+      "passed": true
+    },
+    {
+      "check": "opening_cash_balance contains exact posted cash lines and cutoff",
+      "passed": true
+    },
+    {
+      "check": "closing_cash_balance opens exact cash ledger operations",
+      "passed": true
+    },
+    {
+      "check": "closing_cash_balance contains exact posted cash lines and cutoff",
+      "passed": true
+    },
+    {
+      "check": "receipt channel opens exact cash source lines: بنك تجريبي",
+      "passed": true
+    },
+    {
+      "check": "receipt channel opens exact cash source lines: شبكة تجريبية",
+      "passed": true
+    },
+    {
+      "check": "receipt channel opens exact cash source lines: كاش تجريبي",
+      "passed": true
+    },
+    {
+      "check": "VAT bridge opens only settled tax-bearing source invoices",
+      "passed": true
+    },
+    {
+      "check": "VAT bridge excludes salary/electricity/direct entries",
+      "passed": true
+    },
+    {
+      "check": "receipts total uses its exact cash source scope",
+      "passed": true
+    },
+    {
+      "check": "payments total uses its exact cash source scope",
+      "passed": true
+    },
+    {
+      "check": "displayed_net_movement total uses its exact cash source scope",
+      "passed": true
+    },
+    {
+      "check": "actual_net_movement total uses its exact cash source scope",
+      "passed": true
+    },
+    {
+      "check": "balance_check total uses its exact cash source scope",
+      "passed": true
+    },
+    {
+      "check": "unclassified advance opens exact original entry",
+      "passed": true
+    },
+    {
+      "check": "zero reconciliation amount remains actionable",
+      "passed": true
+    },
+    {
+      "check": "invalid/tampered source row rejected",
+      "row_id": "payments/category-999999999",
+      "passed": true
+    },
+    {
+      "check": "invalid/tampered source row rejected",
+      "row_id": "../../account.move/1",
+      "passed": true
+    },
+    {
+      "check": "invalid/tampered source row rejected",
+      "row_id": "",
+      "passed": true
+    },
+    {
+      "check": "invalid/tampered source row rejected",
+      "row_id": null,
+      "passed": true
+    },
+    {
+      "check": "caller-supplied source IDs/domain cannot redirect action",
+      "passed": true
+    },
+    {
+      "check": "missing report role source access denied",
+      "passed": true
+    },
+    {
+      "check": "unauthorized company source access denied",
+      "passed": true
+    },
+    {
+      "check": "drilldown does not alter financial result",
+      "passed": true,
+      "actual": "-271.0",
+      "expected": "-271"
+    }
+  ],
+  "action_evidence": [
+    {
+      "mode": "gross",
+      "line_id": "receipts",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159
+      ],
+      "value": 460.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "receipts/journal-65",
+      "model": "account.move.line",
+      "source_ids": [
+        317
+      ],
+      "operation_ids": [
+        157
+      ],
+      "value": 230.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "receipts/journal-65/cash-account-1148",
+      "model": "account.move.line",
+      "source_ids": [
+        317
+      ],
+      "operation_ids": [
+        157
+      ],
+      "value": 230.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "receipts/journal-70",
+      "model": "account.move.line",
+      "source_ids": [
+        322
+      ],
+      "operation_ids": [
+        159
+      ],
+      "value": 115.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "receipts/journal-70/cash-account-1166",
+      "model": "account.move.line",
+      "source_ids": [
+        322
+      ],
+      "operation_ids": [
+        159
+      ],
+      "value": 115.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "receipts/journal-69",
+      "model": "account.move.line",
+      "source_ids": [
+        312
+      ],
+      "operation_ids": [
+        155
+      ],
+      "value": 115.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "receipts/journal-69/cash-account-1165",
+      "model": "account.move.line",
+      "source_ids": [
+        312
+      ],
+      "operation_ids": [
+        155
+      ],
+      "value": 115.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments",
+      "model": "account.move",
+      "source_ids": [
+        160,
+        162,
+        164,
+        166,
+        167,
+        168,
+        170,
+        171,
+        172
+      ],
+      "operation_ids": [
+        160,
+        162,
+        164,
+        166,
+        167,
+        168,
+        170,
+        171,
+        172
+      ],
+      "value": -731.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/ledger-1064",
+      "model": "account.move",
+      "source_ids": [
+        172
+      ],
+      "operation_ids": [
+        172
+      ],
+      "value": -57.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/customer-refunds",
+      "model": "account.move",
+      "source_ids": [
+        164
+      ],
+      "operation_ids": [
+        164
+      ],
+      "value": -11.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/customer-refunds/category-4",
+      "model": "account.move",
+      "source_ids": [
+        164
+      ],
+      "operation_ids": [
+        164
+      ],
+      "value": -11.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/customer-refunds/category-4/category-6",
+      "model": "account.move",
+      "source_ids": [
+        164
+      ],
+      "operation_ids": [
+        164
+      ],
+      "value": -11.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/unclassified",
+      "model": "account.move",
+      "source_ids": [
+        170
+      ],
+      "operation_ids": [
+        170
+      ],
+      "value": -40.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/category-4",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -172.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/category-4/category-5",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -115.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/category-4/category-6",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -57.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/group-1",
+      "model": "account.move",
+      "source_ids": [
+        162,
+        166,
+        167,
+        168,
+        171
+      ],
+      "operation_ids": [
+        162,
+        166,
+        167,
+        168,
+        171
+      ],
+      "value": -399.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/group-1/ledger-1158",
+      "model": "account.move",
+      "source_ids": [
+        162
+      ],
+      "operation_ids": [
+        162
+      ],
+      "value": -115.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/group-1/ledger-1162",
+      "model": "account.move",
+      "source_ids": [
+        168
+      ],
+      "operation_ids": [
+        168
+      ],
+      "value": -57.5
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/group-1/ledger-1160",
+      "model": "account.move",
+      "source_ids": [
+        171
+      ],
+      "operation_ids": [
+        171
+      ],
+      "value": -2.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/group-1/ledger-1161",
+      "model": "account.move",
+      "source_ids": [
+        167
+      ],
+      "operation_ids": [
+        167
+      ],
+      "value": -200.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/group-1/ledger-1159",
+      "model": "account.move",
+      "source_ids": [
+        166
+      ],
+      "operation_ids": [
+        166
+      ],
+      "value": -25.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "payments/category-7",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -50.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-receipts",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159
+      ],
+      "value": 460.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-payments",
+      "model": "account.move.line",
+      "source_ids": [
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        354,
+        358
+      ],
+      "operation_ids": [
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": -731.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-displayed_net_movement",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        354,
+        358
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": -271.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-actual_net_movement",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        352,
+        354,
+        358
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": -271.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-opening_cash_balance",
+      "model": "account.move.line",
+      "source_ids": [
+        307
+      ],
+      "operation_ids": [
+        153
+      ],
+      "value": 1000.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-closing_cash_balance",
+      "model": "account.move.line",
+      "source_ids": [
+        307,
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        352,
+        354,
+        358
+      ],
+      "operation_ids": [
+        153,
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": 729.0
+    },
+    {
+      "mode": "gross",
+      "line_id": "baseer-total-balance_check",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        352,
+        354,
+        358
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": 0.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159
+      ],
+      "value": 400.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts/journal-65",
+      "model": "account.move.line",
+      "source_ids": [
+        317
+      ],
+      "operation_ids": [
+        157
+      ],
+      "value": 200.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts/journal-65/cash-account-1148",
+      "model": "account.move.line",
+      "source_ids": [
+        317
+      ],
+      "operation_ids": [
+        157
+      ],
+      "value": 200.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts/journal-70",
+      "model": "account.move.line",
+      "source_ids": [
+        322
+      ],
+      "operation_ids": [
+        159
+      ],
+      "value": 100.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts/journal-70/cash-account-1166",
+      "model": "account.move.line",
+      "source_ids": [
+        322
+      ],
+      "operation_ids": [
+        159
+      ],
+      "value": 100.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts/journal-69",
+      "model": "account.move.line",
+      "source_ids": [
+        312
+      ],
+      "operation_ids": [
+        155
+      ],
+      "value": 100.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "receipts/journal-69/cash-account-1165",
+      "model": "account.move.line",
+      "source_ids": [
+        312
+      ],
+      "operation_ids": [
+        155
+      ],
+      "value": 100.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments",
+      "model": "account.move",
+      "source_ids": [
+        160,
+        162,
+        164,
+        166,
+        167,
+        168,
+        170,
+        171,
+        172
+      ],
+      "operation_ids": [
+        160,
+        162,
+        164,
+        166,
+        167,
+        168,
+        170,
+        171,
+        172
+      ],
+      "value": -677.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/ledger-1064",
+      "model": "account.move",
+      "source_ids": [
+        172
+      ],
+      "operation_ids": [
+        172
+      ],
+      "value": -50.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/customer-refunds",
+      "model": "account.move",
+      "source_ids": [
+        164
+      ],
+      "operation_ids": [
+        164
+      ],
+      "value": -10.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/customer-refunds/category-4",
+      "model": "account.move",
+      "source_ids": [
+        164
+      ],
+      "operation_ids": [
+        164
+      ],
+      "value": -10.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/customer-refunds/category-4/category-6",
+      "model": "account.move",
+      "source_ids": [
+        164
+      ],
+      "operation_ids": [
+        164
+      ],
+      "value": -10.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/unclassified",
+      "model": "account.move",
+      "source_ids": [
+        170
+      ],
+      "operation_ids": [
+        170
+      ],
+      "value": -40.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/category-4",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -150.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/category-4/category-5",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -100.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/category-4/category-6",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -50.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/group-1",
+      "model": "account.move",
+      "source_ids": [
+        162,
+        166,
+        167,
+        168,
+        171
+      ],
+      "operation_ids": [
+        162,
+        166,
+        167,
+        168,
+        171
+      ],
+      "value": -377.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/group-1/ledger-1158",
+      "model": "account.move",
+      "source_ids": [
+        162
+      ],
+      "operation_ids": [
+        162
+      ],
+      "value": -100.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/group-1/ledger-1162",
+      "model": "account.move",
+      "source_ids": [
+        168
+      ],
+      "operation_ids": [
+        168
+      ],
+      "value": -50.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/group-1/ledger-1160",
+      "model": "account.move",
+      "source_ids": [
+        171
+      ],
+      "operation_ids": [
+        171
+      ],
+      "value": -2.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/group-1/ledger-1161",
+      "model": "account.move",
+      "source_ids": [
+        167
+      ],
+      "operation_ids": [
+        167
+      ],
+      "value": -200.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/group-1/ledger-1159",
+      "model": "account.move",
+      "source_ids": [
+        166
+      ],
+      "operation_ids": [
+        166
+      ],
+      "value": -25.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "payments/category-7",
+      "model": "account.move",
+      "source_ids": [
+        160
+      ],
+      "operation_ids": [
+        160
+      ],
+      "value": -50.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-receipts",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159
+      ],
+      "value": 400.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-payments",
+      "model": "account.move.line",
+      "source_ids": [
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        354,
+        358
+      ],
+      "operation_ids": [
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": -677.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-displayed_net_movement",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        354,
+        358
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": -277.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-excluded_tax_bridge",
+      "model": "account.move",
+      "source_ids": [
+        154,
+        156,
+        158,
+        160,
+        162,
+        164,
+        168,
+        172
+      ],
+      "operation_ids": [
+        154,
+        156,
+        158,
+        160,
+        162,
+        164,
+        168,
+        172
+      ],
+      "value": 6.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-actual_net_movement",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        352,
+        354,
+        358
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": -271.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-opening_cash_balance",
+      "model": "account.move.line",
+      "source_ids": [
+        307
+      ],
+      "operation_ids": [
+        153
+      ],
+      "value": 1000.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-closing_cash_balance",
+      "model": "account.move.line",
+      "source_ids": [
+        307,
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        352,
+        354,
+        358
+      ],
+      "operation_ids": [
+        153,
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": 729.0
+    },
+    {
+      "mode": "tax-excluded",
+      "line_id": "baseer-total-balance_check",
+      "model": "account.move.line",
+      "source_ids": [
+        312,
+        317,
+        322,
+        329,
+        334,
+        339,
+        342,
+        344,
+        348,
+        351,
+        352,
+        354,
+        358
+      ],
+      "operation_ids": [
+        155,
+        157,
+        159,
+        161,
+        163,
+        165,
+        166,
+        167,
+        169,
+        170,
+        171,
+        173
+      ],
+      "value": 0.0
+    }
+  ],
+  "synthetic_ledger_company_config_changes": false,
+  "audit_retention_note": "Vendor durable failure audit may remain in QA through independent transactions."
+}

@@ -1,0 +1,138 @@
+# Translation of Baseer Purchase and Expense Dashboard.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 19.0\n"
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Supplier bills and expenses"
+msgstr "فواتير الموردين والمصروفات"
+
+#. module: baseer_purchase_expense_dashboard
+#: model:spreadsheet.dashboard,name:baseer_purchase_expense_dashboard.dashboard_supplier_bills
+msgid "Supplier bills and expenses"
+msgstr "فواتير الموردين والمصروفات"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Posted supplier bills and refunds in the active company"
+msgstr "فواتير الموردين والمردودات المرحلة في الشركة النشطة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Documents"
+msgstr "المستندات"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Net purchases and expenses"
+msgstr "صافي المشتريات والمصروفات"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Unpaid balance"
+msgstr "الرصيد غير المسدد"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Paid"
+msgstr "المدفوع"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Monthly movement"
+msgstr "الحركة الشهرية"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Top suppliers"
+msgstr "أكبر الموردين"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Amount"
+msgstr "المبلغ"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Refresh"
+msgstr "تحديث"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "View source bills"
+msgstr "عرض الفواتير الأصلية"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Loading supplier bills…"
+msgstr "جارٍ تحميل فواتير الموردين…"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "Try again"
+msgstr "إعادة المحاولة"
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "No posted supplier bills or refunds in this period."
+msgstr "لا توجد فواتير موردين أو مردودات مرحلة في هذه الفترة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-javascript
+#: code:addons/baseer_purchase_expense_dashboard/static/src/purchase_expense_dashboard.js:0
+msgid "supplier bills in a foreign currency are excluded because this view does not mix currencies."
+msgstr "فاتورة موردين بعملة أجنبية أو أكثر مستبعدة لأن هذه اللوحة لا تخلط العملات."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-python
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "Choose a valid dashboard date filter."
+msgstr "اختر مرشح تاريخ صالحًا للوحة البيانات."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-python
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "Choose a date range of at most 366 days."
+msgstr "اختر نطاق تاريخ لا يتجاوز 366 يومًا."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-python
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "This supplier-bills dashboard is not available."
+msgstr "لوحة فواتير الموردين غير متاحة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-python
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "This dashboard is not available for the active company."
+msgstr "هذه اللوحة غير متاحة للشركة النشطة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-python
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "Accounting access is required to view supplier bills and expenses."
+msgstr "تتطلب مشاهدة فواتير الموردين والمصروفات صلاحية المحاسبة."
+
+#. module: baseer_purchase_expense_dashboard
+#. odoo-python
+#: code:addons/baseer_purchase_expense_dashboard/models/dashboard.py:0
+msgid "Choose valid dashboard filters."
+msgstr "اختر مرشحات صالحة للوحة البيانات."

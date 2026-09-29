@@ -1,0 +1,17 @@
+# PP1 — Company supplier favorites and recent usage
+
+Implemented and installed in isolated QA: http://pp1.localhost:18071/odoo/vendors . MAIN and shared report QA remain unchanged. Candidate9424da9a50ecda8d0462dc44ce2e7f0ab4012427, baseer_partner_priority19.0.1.0.0,9new addon files on SD4 baseline1108f2a8fc0edee2f61d728135feee02590a8f46. Exact file identities in candidate.json. Frozen source `.local-backups/partner-priority-20260909/candidate`; QA mounts this addon read-only.
+
+Each company has its own shared favorites. Native supplier list/cards/forms allow adding/removing a star. Purchase/sale partner selections and purchase batch rows rank favorites first, then actual posted vendor-bill frequency within the active company's last90calendar days (today plus89preceding dates), then name/id. Draft, cancelled, refund, older and future invoices excluded; batch-created native bills count once. Same supplier-priority policy in sales selectors; no new customer usage metric. Count uses exact invoice partner_id. Names, printed documents and financial records unchanged.
+
+The native server query applies record rules and bill read ACL, groups in PostgreSQL before LIMIT/OFFSET, and uses native context-aware JSONB for company favorites. No bill read access means favorites then alphabetical fallback. Partner write rights still control star changes. No new service/library, persisted counter, queue, cron or financial computation in JS.
+
+Validation:28targeted rollback-only integration checks;6independent negative checks; actual AR desktop supplier list/company switch/batch autocomplete/Search More;390px native supplier controls/contact card, English labels. See browser-evidence.md for precise limits. Read-query benchmark10,000contacts/100,000synthetic bills warm median42.51ms with current database planner statistics, one reader only; not a concurrency/posting-capacity certification. All original business rows/columns across277tables compare identically in MAIN and clone (QA-only synthetic new records excluded), preservation.json.
+
+Operational command: `docker compose -f compose.yaml -f .local-backups/partner-priority-20260909/compose.qa.yaml up -d --no-deps partner_priority_qa`. The clone has cron/outbound mail disabled and separate database/filestore. QA-only synthetic user/contact data are retained to make the feature reviewable; no credentials in this report.
+
+Production preparation: add this frozen module to the then-current accepted frozen source (preserve concurrently developed print module if it has been promoted); take the established coherent database/filestore/config backup, rehearse installation and preservation, install only baseer_partner_priority, verify runtime identity and actual supplier picker. No production deployment performed under this handoff. Rollback follows the established full coherent backup/source boundary; do not uninstall other modules or copy live QA business data.
+
+Independent acceptance: FINAL-REVIEW.md. Architecture/contract: ../../build-governance/PARTNER-PRIORITY.md. No external publishing or MAIN release implied by QA acceptance.
+
+Deployment update2026-09-10: user authorized MAIN and PP1 is now installed there on the current BP1 composite. Historical QA-only statements above describe that earlier stage. See ../2026-09-10-partner-priority-main/HANDOFF.md for current source identity, backups, preservation and runtime evidence.

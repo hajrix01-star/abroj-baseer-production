@@ -1,0 +1,82 @@
+{
+  "database": "baseer_audit_core_20260909",
+  "modules": [
+    "baseer_cash_categories",
+    "baseer_category_display",
+    "baseer_company_setup",
+    "baseer_hr_services",
+    "baseer_legion_compat",
+    "baseer_payroll",
+    "baseer_pos_summary",
+    "baseer_purchase_batch",
+    "baseer_report_layout",
+    "baseer_service_seed",
+    "baseer_web_navigation"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 19.42,
+  "changed_tables": [],
+  "financial_rows_unchanged": true,
+  "module_states": [
+    {
+      "name": "baseer_cash_categories",
+      "state": "installed",
+      "latest_version": "19.0.1.3.1"
+    },
+    {
+      "name": "baseer_category_display",
+      "state": "installed",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "baseer_company_setup",
+      "state": "installed",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "baseer_core",
+      "state": "uninstalled",
+      "latest_version": null
+    },
+    {
+      "name": "baseer_hr_services",
+      "state": "installed",
+      "latest_version": "19.0.1.1.0"
+    },
+    {
+      "name": "baseer_legion_compat",
+      "state": "installed",
+      "latest_version": "19.0.1.0.0"
+    },
+    {
+      "name": "baseer_payroll",
+      "state": "installed",
+      "latest_version": "19.0.1.3.0"
+    },
+    {
+      "name": "baseer_pos_summary",
+      "state": "installed",
+      "latest_version": "19.0.1.3.1"
+    },
+    {
+      "name": "baseer_purchase_batch",
+      "state": "installed",
+      "latest_version": "19.0.1.2.3"
+    },
+    {
+      "name": "baseer_report_layout",
+      "state": "installed",
+      "latest_version": "19.0.1.1.1"
+    },
+    {
+      "name": "baseer_service_seed",
+      "state": "installed",
+      "latest_version": "19.0.1.1.0"
+    },
+    {
+      "name": "baseer_web_navigation",
+      "state": "installed",
+      "latest_version": "19.0.1.1.0"
+    }
+  ]
+}

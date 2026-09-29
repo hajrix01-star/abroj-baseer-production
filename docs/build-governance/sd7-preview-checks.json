@@ -1,0 +1,11 @@
+{
+  "status": "pass",
+  "source_sha256": "1f086b1291760ee511477d49b5c1d7bc0ed4872876413b76ba3b1da47240fb2b",
+  "checks": [
+    "empty payload displays numeric examples",
+    "example rendering leaves payload unchanged",
+    "recorded but unavailable values remain unavailable",
+    "actual zero remains zero",
+    "real server-formatted values are preserved"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "database": "baseer_ic1_20260910",
+  "results": [
+    {
+      "wizard": 87,
+      "status": "committed",
+      "attempts": 1
+    },
+    {
+      "wizard": 88,
+      "status": "stale_rejected",
+      "attempts": 2
+    }
+  ],
+  "audit_count": 1,
+  "final_total": 500.0,
+  "balanced": true,
+  "move_id": 150,
+  "qa_fixture_committed": true,
+  "main_untouched": true,
+  "line_edit_race": {
+    "results": [
+      "completed_edit_rejected",
+      "confirmed"
+    ],
+    "line_preserved": true,
+    "final_total": 500.0
+  }
+}

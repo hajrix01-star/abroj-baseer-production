@@ -1,0 +1,9 @@
+<odoo noupdate="1">
+    <record id="category_site_prep" model="abroj.cost.category"><field name="name">الأعمال التمهيدية</field><field name="company_id" ref="base.main_company"/><field name="sequence">10</field></record>
+    <record id="category_building" model="abroj.cost.category"><field name="name">البناء</field><field name="company_id" ref="base.main_company"/><field name="sequence">20</field></record>
+    <record id="category_finishes" model="abroj.cost.category"><field name="name">التشطيبات</field><field name="company_id" ref="base.main_company"/><field name="sequence">30</field></record>
+    <record id="category_electrical" model="abroj.cost.category"><field name="name">الكهرباء</field><field name="company_id" ref="base.main_company"/><field name="sequence">40</field></record>
+    <record id="category_plumbing" model="abroj.cost.category"><field name="name">السباكة</field><field name="company_id" ref="base.main_company"/><field name="sequence">50</field></record>
+    <record id="category_paint" model="abroj.cost.category"><field name="name">الدهان</field><field name="company_id" ref="base.main_company"/><field name="sequence">60</field></record>
+    <record id="category_ac" model="abroj.cost.category"><field name="name">التكييف</field><field name="company_id" ref="base.main_company"/><field name="sequence">70</field></record>
+</odoo>

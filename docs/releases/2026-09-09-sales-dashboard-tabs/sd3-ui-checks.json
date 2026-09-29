@@ -1,0 +1,53 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "both cards default to Chart with accessible translated tab labels",
+      "passed": true
+    },
+    {
+      "name": "default panels create one timeline and the two real source charts",
+      "passed": true
+    },
+    {
+      "name": "Details destroys old instances and excludes hidden shift canvas even if a ref remains",
+      "passed": true
+    },
+    {
+      "name": "both Details panels retain only timeline without ORM requests or payload mutation",
+      "passed": true
+    },
+    {
+      "name": "returning to Chart recreates current selected metric from existing server values",
+      "passed": true
+    },
+    {
+      "name": "tab keyboard End Home and arrows select and focus a local tab",
+      "passed": true
+    },
+    {
+      "name": "unknown tab values and unrelated keys leave state and normal navigation unchanged",
+      "passed": true
+    },
+    {
+      "name": "category footer preserves authoritative identity formatting and no client totals",
+      "passed": true
+    },
+    {
+      "name": "native date changes preserve local tabs while stale replies cannot revive old data",
+      "passed": true
+    },
+    {
+      "name": "template replaces chart with details and retains warnings while removing permanent prose and method category",
+      "passed": true
+    },
+    {
+      "name": "empty report keeps Chart defaults and creates no decorative data instances",
+      "passed": true
+    }
+  ],
+  "source": "custom_addons/baseer_sales_dashboard/static/src/sales_dashboard.js",
+  "source_sha256": "10c72441007bd68cc212d3a3979fff96a0439e41f7564a952ede3a9cc1d3b4b4",
+  "scope": "SD3 affected UI behavior only: tab/chart lifecycle, keyboard navigation, native filter races and server category formatting. Stubbed Owl/services/canvas; browser layout and actual DOM mounting remain separate QA.",
+  "xml_sha256": "68a683d1f71b0eb64cff0f5d9be044abf778f77cb8a949bae85513683dcb0294"
+}

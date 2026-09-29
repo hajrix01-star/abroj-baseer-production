@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "baseer_payroll_enabled": null
+  },
+  {
+    "id": 2,
+    "baseer_payroll_enabled": null
+  },
+  {
+    "id": 3,
+    "baseer_payroll_enabled": true
+  },
+  {
+    "id": 4,
+    "baseer_payroll_enabled": null
+  },
+  {
+    "id": 5,
+    "baseer_payroll_enabled": null
+  },
+  {
+    "id": 6,
+    "baseer_payroll_enabled": null
+  },
+  {
+    "id": 31,
+    "baseer_payroll_enabled": true
+  },
+  {
+    "id": 32,
+    "baseer_payroll_enabled": true
+  }
+]

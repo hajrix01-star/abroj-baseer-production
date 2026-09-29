@@ -1,0 +1,17 @@
+{
+  "image": "odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "native_source_archive": "D:\\Codex\\Baseer-odoo\\.local-backups\\fa2-20260909\\odoo-runtime-source.tar.gz",
+  "archive_sha256": "8bc031fb96227fbfb796caf997cacee0e4b751865788045ece72b55cae88a5f0",
+  "archive_bytes": 326730442,
+  "critical_file_sha256": {
+    "orm/models.py": "d23b174fe080fc2fee76254d686216f6fbce2c3c561b5447177efa408a97d5ad",
+    "orm/environments.py": "ff987a65389ac6c9648bad8bad86d8a9b1f8444ffd6c3598ffda53b8b0612bc5",
+    "service/model.py": "471ca95b195196a59c20f04d21cc44fe46d489ea07725f960e8c44e4bfc71724",
+    "addons/account/models/account_move.py": "52f720207d17ece223889538092ae55f6ca04f04b8b1bda263d27370f9a44044",
+    "addons/account/models/account_payment.py": "33e177b7b0626db598fcf38c8a74648a953b70d7b8d45970d5d4c899ef160560",
+    "addons/account/wizard/account_payment_register.py": "39e094d82756b88074b016e0325098f0286642c089c46e10674bd75ac81fd597",
+    "addons/web/static/src/webclient/actions/action_service.js": "007b5b53b542fe0316977bcc9c24c85617cf0ee9fcd2b4a59dc894582cfc7e22"
+  },
+  "matches_running_container": true,
+  "authority": "Pinned image and archived source; the differently-versioned local odoo Git checkout is not this release engine."
+}

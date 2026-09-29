@@ -1,0 +1,20 @@
+# BN1 — Company and supplier bilingual identity
+
+2026-09-09. User approved two optional language fields, Arabic | English automatic native name, and search by either name. Build lead owns implementation; names_architecture independently reviewed pinned native company/partner create/write/copy/search and approved G0–G3. Impact ARCHITECTURAL (shared identity projection), scoped to baseer_service_seed. Approved registry: MP3 / SP1, 93d66e67ff507ed161349fe177fba23e29703ce5.
+
+## Gates before application edits
+
+- G0 approved: company/supplier form -> existing partner bilingual fields -> native partner.name -> stored company.name / partner.complete_name -> existing search/report consumers. Partner IDs, property accounts, moves, payments and company access remain authoritative and unchanged. No translation is invented. Native bank account holder-name synchronization remains native behavior.
+- G1 approved: assume <=10000 contacts, <=20 companies, <=10 concurrent editors. Paged native search, single-record identity edits, no new query service or UI dependency. Measure bounded searches on QA; no production load certificate.
+- G2 approved: reuse two existing partner columns, project nonstored company related fields. Batch company component writes to partner once to avoid intermediate uniqueness collisions. Preserve native name edits for ordinary contacts; explicit bilingual inputs compose in backend. Clearing the final populated component is rejected. Conservatively backfill only company/supplier records with both fields empty, preserving exact native name; no automatic English translations. Search stays native because composed name is indexed/searchable by existing complete_name implementation. Upgrade is idempotent and must preserve financial rows.
+- G3 approved: pinned Odoo19 ORM, inherited XML views, existing Arabic catalog, native fields/groups. No libraries, core or vendor edits. Verify create/write/onchange, copy, partial edits, clearing, company linked-partner cases, native search, company ACL, native forms Arabic/English desktop/mobile. Backup QA before upgrade; freeze accepted source for MAIN and take coherent backup before transfer under prior user authorization.
+- G4: existing Odoo field/group/title components only. Before: supplier language fields hidden for new contacts, company has one name. After: two visible fields for companies/suppliers and native composed title. Form groups wrap natively on mobile. No animation, custom JS, new CSS or design library needed; emil-design-eng applied only for clear labels, hierarchy, focus and avoiding duplicate editable sources.
+
+## Execution log
+
+- Read existing service seed models/views/catalog and MP3 registry; confirmed field ownership, existing native search and frozen MAIN boundary.
+- Independent architecture reviewer identified company related inverse intermediate-name uniqueness risk; accepted batch adapter instead.
+- Implementation/tests/results to be appended; independent delivery review required before MAIN promotion.
+- G5–G6: 35 rollback tests passed; 50 bounded native searches measured 0.03 seconds on QA (small local dataset, not a scale certificate). Native field groups verified on desktop and mobile390, Arabic and English. No supplier/company was saved through browser tests; QA user language switched temporarily and restored.
+- G7: initial QA migration redundantly wrote unchanged native names, triggering native invoice audit metadata updates. Fixed by suppressing unchanged name writes; full pre-upgrade QA database rehearsal then proved 167 financial/operational tables exact and all existing partner names unchanged. No corresponding effect reached MAIN.
+- G8: independent PREDEPLOY-GO for frozen commit7c52ea751f6568eaec048e51f1011d5a5a109e15,1091files7module-onlychanges. Deployed to MAIN after coherent backup,168protectedtablesexact/nativepartnernamespreserved. MAINread-onlyform/search/syncchecks passed,HTTP200; QA stopped and temporaryDBsremoved. Dailybackupsourcemapping updated and successfully executed for BN1. See release HANDOFF, runtime-final and independent REVIEW.

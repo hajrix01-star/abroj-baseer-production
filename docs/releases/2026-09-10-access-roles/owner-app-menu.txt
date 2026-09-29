@@ -1,0 +1,143 @@
+- banner:
+  - navigation:
+    - button "" [expanded] [active]:
+      - generic: 
+    - menuitem "المناقشة"
+    - menu:
+      - menuitem "المناقشة"
+      - menuitem "القنوات"
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "":
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- generic: 
+- textbox "البحث في المحادثات" [disabled]
+- button "اجتماع جديد":
+- button " الرسائل المميزة":
+  - generic: 
+  - generic: الرسائل المميزة
+- button " القنوات":
+  - generic: 
+  - generic: القنوات
+- button "صورة المناقشة Administrators":
+  - generic "Administrators":
+    - img "صورة المناقشة"
+    - generic: Administrators
+  - text: 
+- button "صورة المناقشة general ":
+  - generic "general":
+    - img "صورة المناقشة"
+    - generic: general
+  - generic "توجد رسائل غير مقروءة في المحادثة":
+    - generic: 
+  - text: 
+- button " الرسائل المباشرة":
+  - generic: 
+  - generic: الرسائل المباشرة
+- button "صورة المناقشة المستخدم هو Bot OdooBot 1":
+  - generic "OdooBot":
+    - img "صورة المناقشة"
+    - img "المستخدم هو Bot": 
+    - generic: OdooBot
+  - generic: "1"
+  - text: 
+- img "صورة المناقشة"
+- img "المستخدم هو Bot": 
+- textbox "OdooBot":
+  - /placeholder: ""
+- button "إعدادات الإشعارات":
+  - generic: 
+- button "دعوة الأفراد":
+  - generic: 
+- button "البحث عن الرسائل":
+  - generic: 
+- button "المرفقات":
+  - generic: 
+- button "الرسائل المثبتة":
+  - generic: 
+- generic: رسالة جديدة واحدة
+- text: التعيين كمقروء
+- generic: 
+- img "صورة المناقشة"
+- heading "OdooBot" [level=1]
+- paragraph: هذه بداية محادثتك المباشرة مع OdooBot
+- separator
+- generic: اليوم
+- separator
+- group "الرسالة":
+  - generic "فتح البطاقة":
+  - generic "فتح البطاقة":
+    - strong: OdooBot
+  - generic "١٠‏/٩‏/٢٠٢٦، ٣:٤٨:٤٣ م": ٣:٤٨ م
+  - paragraph:
+    - text: مرحبًا،
+    - text: يساعد تطبيق الدردشة في أودو الموظفين على التعاون بكفاءة. أنا هنا لمساعدتك على استكشاف خصائصه.
+    - text: جرب أن ترسل وجهاً باسماً لي :)
+- text: 
+- img "صورة المستخدم الرمزية"
+- button "المزيد من الإجراءات":
+  - generic: 
+- textbox "الرسالة OdooBot…"
+- button "إضافة صور متحركة GIF":
+  - generic: 
+- button "إضافة رموز تعبيرية":
+  - generic: 
+- button "إرسال" [disabled]:
+  - generic: 
+- menu:
+  - menuitem "المناقشة":
+    - generic: المناقشة
+  - menuitem "التقويم":
+    - generic: التقويم
+  - menuitem "المهام المراد تنفيذها":
+    - generic: المهام المراد تنفيذها
+  - menuitem "جهات الاتصال":
+    - generic: جهات الاتصال
+  - menuitem "إدارة علاقات العملاء":
+    - generic: إدارة علاقات العملاء
+  - menuitem "المبيعات":
+    - generic: المبيعات
+  - menuitem "لوحات البيانات":
+    - generic: لوحات البيانات
+  - menuitem "نقطة البيع":
+    - generic: نقطة البيع
+  - menuitem "الفوترة":
+    - generic: الفوترة
+  - menuitem "المشروع":
+    - generic: المشروع
+  - menuitem "الموقع الإلكتروني":
+    - generic: الموقع الإلكتروني
+  - menuitem "الشراء":
+    - generic: الشراء
+  - menuitem "المخزون":
+    - generic: المخزون
+  - menuitem "الصيانة":
+    - generic: الصيانة
+  - menuitem "الموظفون":
+    - generic: الموظفون
+  - menuitem "المرتبات":
+    - generic: المرتبات
+  - menuitem "الحضور":
+    - generic: الحضور
+  - menuitem "الإجازات":
+    - generic: الإجازات
+  - menuitem "النفقات":
+    - generic: النفقات
+  - menuitem "التطبيقات":
+    - generic: التطبيقات
+  - menuitem "الإعدادات":
+    - generic: الإعدادات
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

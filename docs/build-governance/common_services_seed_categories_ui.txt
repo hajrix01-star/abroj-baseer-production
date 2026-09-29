@@ -1,0 +1,286 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "الفوترة"
+    - menu:
+      - menuitem "لوحة البيانات"
+      - button "العملاء":
+        - generic: العملاء
+      - button "الموردين":
+        - generic: الموردين
+      - button "المحاسبة":
+        - generic: المحاسبة
+      - button "مراجعة":
+        - generic: مراجعة
+      - button "إعداد التقارير":
+        - generic: إعداد التقارير
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "تجربة الرواتب والسلف":
+        - text: 
+        - generic: تجربة الرواتب والسلف
+      - generic: 
+      - button "المستخدم المستخدم غير متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم غير متصل الآن": 
+        - text: 
+- button "جديد"
+- generic: ربط فئات المشتريات
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - search:
+    - button "بحث...":
+      - img: 
+    - searchbox "بحث..." [active]
+  - button ""
+- search:
+  - navigation "جهاز المناداة":
+    - generic: 1-26
+    - text: / 26
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - table:
+    - rowgroup:
+      - row "الشركة  الفئة  الفئة الأم  منتج الخدمة  ":
+        - columnheader:
+          - checkbox
+        - columnheader "الشركة ":
+          - generic: الشركة
+          - generic: 
+        - columnheader "الفئة ":
+          - generic: الفئة
+          - generic: 
+        - columnheader "الفئة الأم ":
+          - generic: الفئة الأم
+          - generic: 
+        - columnheader "منتج الخدمة ":
+          - generic: منتج الخدمة
+          - generic: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "تجربة الرواتب والسلف اشتراك مقيم اشتراكات المنصات [BASEER-SVC-MUQEEM_SUBSCRIPTION] اشتراك مقيم":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "اشتراك مقيم"
+        - cell "اشتراكات المنصات"
+        - cell "[BASEER-SVC-MUQEEM_SUBSCRIPTION] اشتراك مقيم"
+        - cell
+      - row "تجربة الرواتب والسلف اشتراك منصة قوى اشتراكات المنصات [BASEER-SVC-QIWA_SUBSCRIPTION] اشتراك منصة قوى":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "اشتراك منصة قوى"
+        - cell "اشتراكات المنصات"
+        - cell "[BASEER-SVC-QIWA_SUBSCRIPTION] اشتراك منصة قوى"
+        - cell
+      - row "تجربة الرواتب والسلف اشتراك منصة مدد اشتراكات المنصات [BASEER-SVC-MUDAD_SUBSCRIPTION] اشتراك منصة مدد":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "اشتراك منصة مدد"
+        - cell "اشتراكات المنصات"
+        - cell "[BASEER-SVC-MUDAD_SUBSCRIPTION] اشتراك منصة مدد"
+        - cell
+      - row "تجربة الرواتب والسلف الإنترنت الاتصالات والإنترنت [BASEER-SVC-INTERNET] الإنترنت":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "الإنترنت"
+        - cell "الاتصالات والإنترنت"
+        - cell "[BASEER-SVC-INTERNET] الإنترنت"
+        - cell
+      - row "تجربة الرواتب والسلف الاتصالات الاتصالات والإنترنت [BASEER-SVC-TELECOM] الاتصالات":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "الاتصالات"
+        - cell "الاتصالات والإنترنت"
+        - cell "[BASEER-SVC-TELECOM] الاتصالات"
+        - cell
+      - row "تجربة الرواتب والسلف التصديقات الرسوم الحكومية [BASEER-SVC-ATTESTATION] التصديقات":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "التصديقات"
+        - cell "الرسوم الحكومية"
+        - cell "[BASEER-SVC-ATTESTATION] التصديقات"
+        - cell
+      - row "تجربة الرواتب والسلف الخدمات العدلية الرسوم الحكومية [BASEER-SVC-LEGAL_SERVICES] الخدمات العدلية":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "الخدمات العدلية"
+        - cell "الرسوم الحكومية"
+        - cell "[BASEER-SVC-LEGAL_SERVICES] الخدمات العدلية"
+        - cell
+      - row "تجربة الرواتب والسلف الرخص البلدية الرسوم الحكومية [BASEER-SVC-MUNICIPAL_LICENSE] الرخص البلدية":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "الرخص البلدية"
+        - cell "الرسوم الحكومية"
+        - cell "[BASEER-SVC-MUNICIPAL_LICENSE] الرخص البلدية"
+        - cell
+      - row "تجربة الرواتب والسلف السجل التجاري الرسوم الحكومية [BASEER-SVC-COMMERCIAL_REGISTER] السجل التجاري":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "السجل التجاري"
+        - cell "الرسوم الحكومية"
+        - cell "[BASEER-SVC-COMMERCIAL_REGISTER] السجل التجاري"
+        - cell
+      - row "تجربة الرواتب والسلف الكهرباء المرافق [BASEER-SVC-ELECTRICITY] الكهرباء":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "الكهرباء"
+        - cell "المرافق"
+        - cell "[BASEER-SVC-ELECTRICITY] الكهرباء"
+        - cell
+      - row "تجربة الرواتب والسلف المياه والصرف الصحي المرافق [BASEER-SVC-WATER] المياه والصرف الصحي":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "المياه والصرف الصحي"
+        - cell "المرافق"
+        - cell "[BASEER-SVC-WATER] المياه والصرف الصحي"
+        - cell
+      - row "تجربة الرواتب والسلف إصدار إقامة خدمات الموظفين / الإقامات وتصاريح العمل [BASEER-SVC-IQAMA_ISSUE] إصدار إقامة":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "إصدار إقامة"
+        - cell "خدمات الموظفين / الإقامات وتصاريح العمل"
+        - cell "[BASEER-SVC-IQAMA_ISSUE] إصدار إقامة"
+        - cell
+      - row "تجربة الرواتب والسلف إصدار رخصة عمل خدمات الموظفين / الإقامات وتصاريح العمل [BASEER-SVC-WORK_PERMIT_ISSUE] إصدار رخصة عمل":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "إصدار رخصة عمل"
+        - cell "خدمات الموظفين / الإقامات وتصاريح العمل"
+        - cell "[BASEER-SVC-WORK_PERMIT_ISSUE] إصدار رخصة عمل"
+        - cell
+      - row "تجربة الرواتب والسلف تجديد إقامة خدمات الموظفين / الإقامات وتصاريح العمل [BASEER-SVC-IQAMA_RENEWAL] تجديد إقامة":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تجديد إقامة"
+        - cell "خدمات الموظفين / الإقامات وتصاريح العمل"
+        - cell "[BASEER-SVC-IQAMA_RENEWAL] تجديد إقامة"
+        - cell
+      - row "تجربة الرواتب والسلف تجديد رخصة عمل خدمات الموظفين / الإقامات وتصاريح العمل [BASEER-SVC-WORK_PERMIT_RENEWAL] تجديد رخصة عمل":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تجديد رخصة عمل"
+        - cell "خدمات الموظفين / الإقامات وتصاريح العمل"
+        - cell "[BASEER-SVC-WORK_PERMIT_RENEWAL] تجديد رخصة عمل"
+        - cell
+      - row "تجربة الرواتب والسلف تعديل المهنة خدمات الموظفين / الإقامات وتصاريح العمل [BASEER-SVC-PROFESSION_CHANGE] تعديل المهنة":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تعديل المهنة"
+        - cell "خدمات الموظفين / الإقامات وتصاريح العمل"
+        - cell "[BASEER-SVC-PROFESSION_CHANGE] تعديل المهنة"
+        - cell
+      - row "تجربة الرواتب والسلف نقل خدمات الموظف خدمات الموظفين / الإقامات وتصاريح العمل [BASEER-SVC-EMPLOYEE_TRANSFER] نقل خدمات الموظف":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "نقل خدمات الموظف"
+        - cell "خدمات الموظفين / الإقامات وتصاريح العمل"
+        - cell "[BASEER-SVC-EMPLOYEE_TRANSFER] نقل خدمات الموظف"
+        - cell
+      - row "تجربة الرواتب والسلف إصدار تأمين طبي خدمات الموظفين / التأمين الطبي [BASEER-SVC-INSURANCE_ISSUE] إصدار تأمين طبي":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "إصدار تأمين طبي"
+        - cell "خدمات الموظفين / التأمين الطبي"
+        - cell "[BASEER-SVC-INSURANCE_ISSUE] إصدار تأمين طبي"
+        - cell
+      - row "تجربة الرواتب والسلف تجديد تأمين طبي خدمات الموظفين / التأمين الطبي [BASEER-SVC-INSURANCE_RENEWAL] تجديد تأمين طبي":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تجديد تأمين طبي"
+        - cell "خدمات الموظفين / التأمين الطبي"
+        - cell "[BASEER-SVC-INSURANCE_RENEWAL] تجديد تأمين طبي"
+        - cell
+      - row "تجربة الرواتب والسلف تذكرة سفر خدمات الموظفين / التذاكر [BASEER-SVC-TICKET] تذكرة سفر":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تذكرة سفر"
+        - cell "خدمات الموظفين / التذاكر"
+        - cell "[BASEER-SVC-TICKET] تذكرة سفر"
+        - cell
+      - row "تجربة الرواتب والسلف إصدار شهادة صحية خدمات الموظفين / الشهادات والفحوص [BASEER-SVC-HEALTH_CERTIFICATE_ISSUE] إصدار شهادة صحية":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "إصدار شهادة صحية"
+        - cell "خدمات الموظفين / الشهادات والفحوص"
+        - cell "[BASEER-SVC-HEALTH_CERTIFICATE_ISSUE] إصدار شهادة صحية"
+        - cell
+      - row "تجربة الرواتب والسلف تجديد شهادة صحية خدمات الموظفين / الشهادات والفحوص [BASEER-SVC-HEALTH_CERTIFICATE_RENEWAL] تجديد شهادة صحية":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تجديد شهادة صحية"
+        - cell "خدمات الموظفين / الشهادات والفحوص"
+        - cell "[BASEER-SVC-HEALTH_CERTIFICATE_RENEWAL] تجديد شهادة صحية"
+        - cell
+      - row "تجربة الرواتب والسلف فحص طبي خدمات الموظفين / الشهادات والفحوص [BASEER-SVC-MEDICAL_EXAM] فحص طبي":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "فحص طبي"
+        - cell "خدمات الموظفين / الشهادات والفحوص"
+        - cell "[BASEER-SVC-MEDICAL_EXAM] فحص طبي"
+        - cell
+      - row "تجربة الرواتب والسلف تأشيرات خدمات الموظفين [BASEER-SVC-VISA] تأشيرات":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "تأشيرات"
+        - cell "خدمات الموظفين"
+        - cell "[BASEER-SVC-VISA] تأشيرات"
+        - cell
+      - row "تجربة الرواتب والسلف خدمات تعقيب خدمات الموظفين / خدمات مساندة [BASEER-SVC-PROCESSING] خدمات تعقيب":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "خدمات تعقيب"
+        - cell "خدمات الموظفين / خدمات مساندة"
+        - cell "[BASEER-SVC-PROCESSING] خدمات تعقيب"
+        - cell
+      - row "تجربة الرواتب والسلف خدمة أخرى خدمات الموظفين / خدمات مساندة [BASEER-SVC-OTHER_EMPLOYEE] خدمة أخرى":
+        - cell:
+          - checkbox
+        - cell "تجربة الرواتب والسلف"
+        - cell "خدمة أخرى"
+        - cell "خدمات الموظفين / خدمات مساندة"
+        - cell "[BASEER-SVC-OTHER_EMPLOYEE] خدمة أخرى"
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- generic: اشتراك مقيم

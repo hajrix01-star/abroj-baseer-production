@@ -1,0 +1,563 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Invoicing"
+    - menu:
+      - menuitem "Dashboard"
+      - button "Customers":
+        - generic: Customers
+      - button "Vendors":
+        - generic: Vendors
+      - button "Accounting":
+        - generic: Accounting
+      - menuitem "Financial operations"
+      - button "Review":
+        - generic: Review
+      - button "Reporting":
+        - generic: Reporting
+      - button "":
+        - generic: 
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- generic: Financial operations
+- button "Actions menu":
+  - generic: 
+- search:
+  - search:
+    - button "Search...":
+      - img: 
+    - searchbox "Search..." [active]
+  - button ""
+- search:
+  - navigation "Pager":
+    - generic: 1-20
+    - text: / 20
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- navigation:
+  - button "القائمة View":
+    - generic: 
+  - button "كانبان View":
+    - generic: 
+- main:
+  - region "Financial summary":
+    - generic: Current balances · 2026-09-10
+    - button "Refresh financial summary":
+      - generic: 
+    - generic: SAR
+    - heading "Customers" [level=3]
+    - generic: 8 documents
+    - 'button "Customers — Net invoices: 258.72SAR"':
+      - generic: Net invoices
+      - generic: "258.72"
+    - 'button "Customers — Settled amount: 86.42SAR"':
+      - generic: Settled amount
+      - generic: "86.42"
+    - 'button "Customers — Outstanding: 172.30SAR"':
+      - generic: Outstanding
+      - generic: "172.30"
+    - 'button "Customers — Partially paid: 2"':
+      - generic: Partially paid
+      - generic: "2"
+    - 'button "Customers — Net overdue: 30.00SAR"':
+      - generic: Net overdue
+      - generic: "30.00"
+    - heading "Suppliers" [level=3]
+    - generic: 5 documents
+    - 'button "Suppliers — Net invoices: 1,291.05SAR"':
+      - generic: Net invoices
+      - generic: 1,291.05
+    - 'button "Suppliers — Settled amount: 60.05SAR"':
+      - generic: Settled amount
+      - generic: "60.05"
+    - 'button "Suppliers — Outstanding: 1,231.00SAR"':
+      - generic: Outstanding
+      - generic: 1,231.00
+    - 'button "Suppliers — Partially paid: 1"':
+      - generic: Partially paid
+      - generic: "1"
+    - 'button "Suppliers — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+  - table:
+    - rowgroup:
+      - row "Date  Number  Operation Partner  Journal  Company  Amount  Settled Outstanding  Payment Status  ":
+        - columnheader:
+          - checkbox
+        - columnheader "Date ":
+          - generic: Date
+          - generic: 
+        - columnheader "Number ":
+          - generic: Number
+          - generic: 
+        - columnheader "Operation":
+          - generic: Operation
+          - text: 
+        - columnheader "Partner ":
+          - generic: Partner
+          - generic: 
+        - columnheader "Journal ":
+          - generic: Journal
+          - generic: 
+        - columnheader "Company ":
+          - generic: Company
+          - generic: 
+        - columnheader "Amount ":
+          - generic: Amount
+          - generic: 
+        - columnheader "Settled":
+          - generic: Settled
+          - text: 
+        - columnheader "Outstanding ":
+          - generic: Outstanding
+          - generic: 
+        - columnheader "Payment Status ":
+          - generic: Payment Status
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "09/10/2026 RINV/2026/00002 Customer credit note FL1 synthetic partner Sales المعلم الشامي 44.44 SR 44.44 SR 0.00 SR Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "RINV/2026/00002"
+        - cell "Customer credit note"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 INV/2026/00006 Customer invoice FL1 synthetic partner Sales المعلم الشامي 44.44 SR 44.44 SR 0.00 SR Reversed ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "INV/2026/00006"
+        - cell "Customer invoice"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "44.44 SR":
+          - generic: 44.44 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Reversed":
+          - generic: Reversed
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00006 Incoming payment FL1 synthetic partner Bank المعلم الشامي $ 12.34 ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00006"
+        - cell "Incoming payment"
+        - cell "FL1 synthetic partner"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "$ 12.34":
+          - generic: $ 12.34
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 INV/2026/00005 Customer invoice FL1 synthetic partner Sales المعلم الشامي $ 12.34 $ 12.34 $ 0.00 Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "INV/2026/00005"
+        - cell "Customer invoice"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "$ 12.34":
+          - generic: $ 12.34
+        - cell "$ 12.34":
+          - generic: $ 12.34
+        - cell "$ 0.00":
+          - generic: $ 0.00
+        - cell "Paid":
+          - generic: Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00005 Incoming payment FL1 synthetic partner Bank المعلم الشامي 15.15 SR ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00005"
+        - cell "Incoming payment"
+        - cell "FL1 synthetic partner"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "15.15 SR":
+          - generic: 15.15 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 INV/2026/00004 Customer invoice FL1 synthetic partner Sales المعلم الشامي 15.15 SR 15.15 SR 0.00 SR In Payment ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "INV/2026/00004"
+        - cell "Customer invoice"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "15.15 SR":
+          - generic: 15.15 SR
+        - cell "15.15 SR":
+          - generic: 15.15 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "In Payment":
+          - generic: In Payment
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0004 Vendor bill FL1 private contact Purchases المعلم الشامي 987.65 SR 0.00 SR 987.65 SR Not Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0004"
+        - cell "Vendor bill"
+        - cell "FL1 private contact"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "987.65 SR":
+          - generic: 987.65 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "987.65 SR":
+          - generic: 987.65 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00004 Incoming payment FL1 synthetic partner Bank المعلم الشامي 10.00 SR ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00004"
+        - cell "Incoming payment"
+        - cell "FL1 synthetic partner"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "10.00 SR":
+          - generic: 10.00 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 INV/2026/00003 Customer invoice FL1 synthetic partner Sales المعلم الشامي 100.00 SR 10.00 SR 90.00 SR Partially Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "INV/2026/00003"
+        - cell "Customer invoice"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "100.00 SR":
+          - generic: 100.00 SR
+        - cell "10.00 SR":
+          - generic: 10.00 SR
+        - cell "90.00 SR":
+          - generic: 90.00 SR
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00003 Outgoing payment FL1 synthetic partner Bank المعلم الشامي 10.05 SR ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00003"
+        - cell "Outgoing payment"
+        - cell "FL1 synthetic partner"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00002 Outgoing payment FL1 synthetic partner Bank المعلم الشامي 60.05 SR ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00002"
+        - cell "Outgoing payment"
+        - cell "FL1 synthetic partner"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "60.05 SR":
+          - generic: 60.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 PBNK1/2026/00001 Incoming payment FL1 synthetic partner Bank المعلم الشامي 25.05 SR ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "PBNK1/2026/00001"
+        - cell "Incoming payment"
+        - cell "FL1 synthetic partner"
+        - cell "Bank"
+        - cell "المعلم الشامي"
+        - cell "25.05 SR":
+          - generic: 25.05 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0003 Purchase receipt FL1 synthetic partner Purchases المعلم الشامي 8.25 SR 0.00 SR 8.25 SR Not Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0003"
+        - cell "Purchase receipt"
+        - cell "FL1 synthetic partner"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "8.25 SR":
+          - generic: 8.25 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "8.25 SR":
+          - generic: 8.25 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 INV/2026/00002 Sales receipt FL1 synthetic partner Sales المعلم الشامي 7.25 SR 0.00 SR 7.25 SR Not Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "INV/2026/00002"
+        - cell "Sales receipt"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "7.25 SR":
+          - generic: 7.25 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "7.25 SR":
+          - generic: 7.25 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 RBILL/2026/09/0001 Vendor credit note FL1 synthetic partner Purchases المعلم الشامي 20.05 SR 0.00 SR 20.05 SR Not Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "RBILL/2026/09/0001"
+        - cell "Vendor credit note"
+        - cell "FL1 synthetic partner"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "20.05 SR":
+          - generic: 20.05 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "20.05 SR":
+          - generic: 20.05 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 RINV/2026/00001 Customer credit note FL1 synthetic partner Sales المعلم الشامي 10.05 SR 10.05 SR 0.00 SR Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "RINV/2026/00001"
+        - cell "Customer credit note"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell "10.05 SR":
+          - generic: 10.05 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "Paid":
+          - generic: Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0002 Vendor bill FL1 synthetic partner Purchases المعلم الشامي 200.20 SR 60.05 SR 140.15 SR Partially Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0002"
+        - cell "Vendor bill"
+        - cell "FL1 synthetic partner"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "200.20 SR":
+          - generic: 200.20 SR
+        - cell "60.05 SR":
+          - generic: 60.05 SR
+        - cell "140.15 SR":
+          - generic: 140.15 SR
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 INV/2026/00001 Customer invoice FL1 synthetic partner Sales المعلم الشامي 100.10 SR 25.05 SR 75.05 SR Partially Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "INV/2026/00001"
+        - cell "Customer invoice"
+        - cell "FL1 synthetic partner"
+        - cell "Sales"
+        - cell "المعلم الشامي"
+        - cell "100.10 SR":
+          - generic: 100.10 SR
+        - cell "25.05 SR":
+          - generic: 25.05 SR
+        - cell "75.05 SR":
+          - generic: 75.05 SR
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 CSH1/2026/00001 Employee advance Cash | النقد المعلم الشامي 100.01 SR ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "CSH1/2026/00001"
+        - cell "Employee advance"
+        - cell
+        - cell "Cash | النقد"
+        - cell "المعلم الشامي"
+        - cell "100.01 SR":
+          - generic: 100.01 SR
+        - cell
+        - cell
+        - cell
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+      - row "09/10/2026 BILL/2026/09/0001 Vendor bill AR1 UI Supplier Purchases المعلم الشامي 115.00 SR 0.00 SR 115.00 SR Not Paid ":
+        - cell:
+          - checkbox
+        - cell "09/10/2026":
+          - generic: 09/10/2026
+        - cell "BILL/2026/09/0001"
+        - cell "Vendor bill"
+        - cell "AR1 UI Supplier"
+        - cell "Purchases"
+        - cell "المعلم الشامي"
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell "0.00 SR":
+          - generic: 0.00 SR
+        - cell "115.00 SR":
+          - generic: 115.00 SR
+        - cell "Not Paid":
+          - generic: Not Paid
+        - cell "":
+          - button "":
+            - generic: 
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- paragraph: Press esc to exit full screen

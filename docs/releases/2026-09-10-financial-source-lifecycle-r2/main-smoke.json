@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "database": "baseer_dev",
+  "modules": {
+    "baseer_financial_correction": "19.0.1.1.0",
+    "baseer_pos_summary": "19.0.1.5.1"
+  },
+  "languages": [
+    "ar_001",
+    "en_US"
+  ],
+  "native_mobile_view": true,
+  "shared_permission_setting": true,
+  "no_automatic_cancellations": true,
+  "main_business_mutations": false
+}

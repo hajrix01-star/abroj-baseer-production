@@ -1,0 +1,12 @@
+{
+  "source": "baseer_reports_qa_20260907",
+  "databases": [
+    "baseer_audit_core_20260909",
+    "baseer_audit_payroll_20260909",
+    "baseer_audit_sales_20260909",
+    "baseer_audit_security_20260909"
+  ],
+  "snapshot": "/tmp/full-audit-20260909.dump",
+  "status": "ready",
+  "no_http_no_cron": true
+}

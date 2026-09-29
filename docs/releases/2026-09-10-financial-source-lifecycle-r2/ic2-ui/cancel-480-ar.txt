@@ -1,0 +1,195 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - generic: BILL/2026/09/0006 (IC2-UI-BATCH-0)
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- button "جديد"
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- button:
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "إشعار دائن"
+  - button "":
+    - generic: 
+  - radiogroup "شريط الحالة":
+    - button "مُرحّل" [disabled]
+  - generic: مدفوع
+  - generic: فاتورة المورد
+  - heading "BILL/2026/09/0006" [level=1]:
+    - generic: BILL/2026/09/0006
+  - generic: المورد
+  - link "IC1 QA supplier — correction preview":
+    - /url: /odoo/res.partner/188
+  - generic: الرقم المرجعي للفاتورة
+  - textbox "الرقم المرجعي للفاتورة": IC2-UI-BATCH-0
+  - generic: تاريخ الفاتورة
+  - generic: ١٠ سبتمبر
+  - generic: تاريخ المحاسبة
+  - generic: ١٠ سبتمبر
+  - text: الرقم المرجعي للدفع
+  - superscript: "?"
+  - textbox "الرقم المرجعي للدفع?":
+    - /placeholder: استخدم الرقم المرجعي للفاتورة
+  - text: البنك المستلم
+  - superscript: "?"
+  - combobox "البنك المستلم?"
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق": ١٠ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "عناصر اليومية"
+    - tab "معلومات أخرى"
+  - table:
+    - rowgroup:
+      - row "بطاقة عنوان الحساب تحليلي الكمية السعر الضرائب مبلغ ":
+        - columnheader
+        - columnheader "بطاقة عنوان":
+          - generic: بطاقة عنوان
+          - text: 
+        - columnheader "الحساب":
+          - generic: الحساب
+          - text: 
+        - columnheader "تحليلي":
+          - generic: تحليلي
+          - text: 
+        - columnheader "الكمية":
+          - generic: الكمية
+          - text: 
+        - columnheader "السعر":
+          - generic: السعر
+          - text: 
+        - columnheader "الضرائب":
+          - generic: الضرائب
+          - text: 
+        - columnheader "مبلغ":
+          - generic: مبلغ
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " IC2 isolated UI purchase 400045 مصروف الاشتراكات 1.00 500.00 500.00 SR":
+        - cell "":
+          - generic: 
+        - cell "IC2 isolated UI purchase":
+          - generic: IC2 isolated UI purchase
+        - cell "400045 مصروف الاشتراكات":
+          - generic: 400045 مصروف الاشتراكات
+        - cell
+        - cell "1.00"
+        - cell "500.00"
+        - cell
+        - cell "500.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 500.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "500.00 SR"
+      - 'row "الإجمالي: 500.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "500.00 SR"
+  - table:
+    - row "معلومات تم الدفع في ١٠/٠٩/٢٠٢٦ 500.00 SR":
+      - cell "معلومات":
+        - button "معلومات": 
+      - cell "تم الدفع في ١٠/٠٩/٢٠٢٦":
+        - generic: تم الدفع في ١٠/٠٩/٢٠٢٦
+      - cell "500.00 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 0.00 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "1":
+    - img: 
+    - superscript: "1"
+  - separator
+  - generic: اليوم
+  - separator
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٣٨:١٥ م": ٨:٣٨ م
+    - paragraph: تم سداد قيمة الفاتورة
+    - list:
+      - text: غير مدفوع
+      - generic: 
+      - text: مدفوع
+      - generic: (حالة الدفع)
+  - group "إشعار من النظام":
+    - generic "فتح البطاقة":
+    - generic "فتح البطاقة":
+      - strong: IC1 QA owner
+    - generic "١٠‏/٩‏/٢٠٢٦، ٨:٣٨:١٤ م": ٨:٣٨ م
+    - paragraph: تم إنشاء فاتورة المورد
+- dialog:
+  - banner:
+    - heading "إلغاء العملية" [level=4]
+    - button "إغلاق"
+  - main:
+    - main:
+      - generic: الفاتورة
+      - generic: BILL/2026/09/0006 (IC2-UI-BATCH-0)
+      - generic: الدفعة
+      - generic: PBNK1/2026/00002
+      - generic: الطرف الصحيح
+      - generic: IC1 QA supplier — correction preview
+      - generic: سبب التصحيح
+      - textbox "سبب التصحيح":
+        - /placeholder: ما البيانات التي أُدخلت بشكل غير صحيح؟
+        - text: اختبار إلغاء إدخال خاطئ مع دفعته على النسخة التجريبية
+      - generic: إلغاء الدفعة المسجلة
+      - generic: مبلغ الدفعة المسجل
+      - generic: "500.00"
+      - generic: دفتر يومية النقد / البنك
+      - generic: البنك
+      - generic: أؤكد أن هذه الدفعة سُجلت بالخطأ وأوافق على إلغاء أثرها المحاسبي أيضًا
+      - checkbox "أؤكد أن هذه الدفعة سُجلت بالخطأ وأوافق على إلغاء أثرها المحاسبي أيضًا" [checked] [active]
+  - contentinfo:
+    - button "تأكيد إلغاء العملية"
+    - button "إلغاء"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

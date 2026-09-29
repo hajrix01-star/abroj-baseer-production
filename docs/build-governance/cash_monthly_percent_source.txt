@@ -1,0 +1,146 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - button "":
+      - generic: 
+    - generic: Outgoing source documents — percentage of positive evidenced sales collections
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - text: 
+      - button "Toggle menu":
+        - img "Menu"
+        - img "User is online": 
+      - text:  
+- button "Upload"
+- text: 
+- button "Actions menu":
+  - generic: 
+- search:
+  - navigation "Pager":
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- button "":
+  - generic: 
+- main:
+  - table:
+    - rowgroup:
+      - row "Number  Due Date  Tax Excluded  Total  Status  ":
+        - columnheader "Number ":
+          - generic: Number
+          - generic: 
+        - columnheader "Due Date ":
+          - generic: Due Date
+          - generic: 
+        - columnheader "Tax Excluded ":
+          - generic: Tax Excluded
+          - generic: 
+        - columnheader "Total ":
+          - generic: Total
+          - generic: 
+        - columnheader "Status ":
+          - generic: Status
+          - generic: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row "TA/2026/09/0004 Today 0.00 SR 32.00 SR":
+        - cell "TA/2026/09/0004":
+          - generic: TA/2026/09/0004
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "0.00 SR"
+        - cell "32.00 SR"
+        - cell
+        - cell
+      - row "TA/2026/09/0003 Today 0.00 SR 40.00 SR":
+        - cell "TA/2026/09/0003":
+          - generic: TA/2026/09/0003
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "0.00 SR"
+        - cell "40.00 SR"
+        - cell
+        - cell
+      - row "TA/2026/09/0002 Today 0.00 SR 200.00 SR":
+        - cell "TA/2026/09/0002":
+          - generic: TA/2026/09/0002
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "0.00 SR"
+        - cell "200.00 SR"
+        - cell
+        - cell
+      - row "TA/2026/09/0001 Today 0.00 SR 25.00 SR":
+        - cell "TA/2026/09/0001":
+          - generic: TA/2026/09/0001
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "0.00 SR"
+        - cell "25.00 SR"
+        - cell
+        - cell
+      - row "RINV/2026/00001 -10.00 SR -11.50 SR Paid":
+        - cell "RINV/2026/00001":
+          - generic: RINV/2026/00001
+        - cell
+        - cell "-10.00 SR"
+        - cell "-11.50 SR"
+        - cell "Paid":
+          - generic: Paid
+        - cell
+      - row "BILL/2026/09/0003 -50.00 SR -57.50 SR Paid":
+        - cell "BILL/2026/09/0003":
+          - generic: BILL/2026/09/0003
+        - cell
+        - cell "-50.00 SR"
+        - cell "-57.50 SR"
+        - cell "Paid":
+          - generic: Paid
+        - cell
+      - row "BILL/2026/09/0002 Today -1,000.00 SR -1,150.00 SR Partially Paid":
+        - cell "BILL/2026/09/0002":
+          - generic: BILL/2026/09/0002
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "-1,000.00 SR"
+        - cell "-1,150.00 SR"
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell
+      - row "BILL/2026/09/0001 Today -400.00 SR -445.00 SR Partially Paid":
+        - cell "BILL/2026/09/0001":
+          - generic: BILL/2026/09/0001
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "-400.00 SR"
+        - cell "-445.00 SR"
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell
+      - row "BILL/2026/08/0001 Today -100.00 SR -115.00 SR Partially Paid":
+        - cell "BILL/2026/08/0001":
+          - generic: BILL/2026/08/0001
+        - cell "Today":
+          - generic "09/07/2026": Today
+        - cell "-100.00 SR"
+        - cell "-115.00 SR"
+        - cell "Partially Paid":
+          - generic: Partially Paid
+        - cell
+    - rowgroup:
+      - row "-1,560.00 SR -1,482.00 SR":
+        - cell
+        - cell "-1,560.00 SR":
+          - generic: "-1,560.00 SR"
+        - cell "-1,482.00 SR":
+          - generic: "-1,482.00 SR"
+        - cell

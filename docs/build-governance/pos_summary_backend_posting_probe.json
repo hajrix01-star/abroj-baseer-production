@@ -1,0 +1,162 @@
+{
+  "summary_id": 18,
+  "session_id": 2,
+  "quote": {
+    "gross": "1800.00",
+    "net": "1565.22",
+    "tax": "234.78",
+    "unit_price": "1565.2173913043478"
+  },
+  "moves": [
+    {
+      "id": 591,
+      "journal": 30,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "id": 1263,
+          "account_id": 507,
+          "type": "liability_current",
+          "balance": -234.78,
+          "name": "15%"
+        },
+        {
+          "id": 1264,
+          "account_id": 595,
+          "type": "income",
+          "balance": -1565.22,
+          "name": "Sales  with 15%"
+        },
+        {
+          "id": 1265,
+          "account_id": 447,
+          "type": "asset_receivable",
+          "balance": 700.0,
+          "name": "QA ARZ — ملخصات المبيعات/00002 - بنك"
+        },
+        {
+          "id": 1268,
+          "account_id": 447,
+          "type": "asset_receivable",
+          "balance": 600.0,
+          "name": "QA ARZ — ملخصات المبيعات/00002 - هنقرستيشن"
+        },
+        {
+          "id": 1273,
+          "account_id": 447,
+          "type": "asset_receivable",
+          "balance": 500.0,
+          "name": "QA ARZ — ملخصات المبيعات/00002 - كاش"
+        }
+      ]
+    },
+    {
+      "id": 594,
+      "journal": 92,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "id": 1271,
+          "account_id": 1185,
+          "type": "asset_cash",
+          "balance": 500.0,
+          "name": "QA ARZ — ملخصات المبيعات/00002"
+        },
+        {
+          "id": 1272,
+          "account_id": 447,
+          "type": "asset_receivable",
+          "balance": -500.0,
+          "name": "QA ARZ — ملخصات المبيعات/00002"
+        }
+      ]
+    },
+    {
+      "id": 595,
+      "journal": 92,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "id": 1274,
+          "account_id": 1185,
+          "type": "asset_cash",
+          "balance": -500.0,
+          "name": "Cash difference observed during the counting (Loss) - closing"
+        },
+        {
+          "id": 1275,
+          "account_id": 613,
+          "type": "expense",
+          "balance": 500.0,
+          "name": "Cash difference observed during the counting (Loss) - closing"
+        }
+      ]
+    },
+    {
+      "id": 593,
+      "journal": 94,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "id": 1269,
+          "account_id": 1188,
+          "type": "asset_current",
+          "balance": 600.0,
+          "name": "Manual Payment: Combine هنقرستيشن POS payments from QA ARZ — ملخصات المبيعات/00002"
+        },
+        {
+          "id": 1270,
+          "account_id": 447,
+          "type": "asset_receivable",
+          "balance": -600.0,
+          "name": "Manual Payment: Combine هنقرستيشن POS payments from QA ARZ — ملخصات المبيعات/00002"
+        }
+      ]
+    },
+    {
+      "id": 592,
+      "journal": 93,
+      "date": "2026-07-17",
+      "lines": [
+        {
+          "id": 1266,
+          "account_id": 1186,
+          "type": "asset_cash",
+          "balance": 700.0,
+          "name": "Manual Payment: Combine بنك POS payments from QA ARZ — ملخصات المبيعات/00002"
+        },
+        {
+          "id": 1267,
+          "account_id": 447,
+          "type": "asset_receivable",
+          "balance": -700.0,
+          "name": "Manual Payment: Combine بنك POS payments from QA ARZ — ملخصات المبيعات/00002"
+        }
+      ]
+    }
+  ],
+  "allocations": [
+    {
+      "method": 1,
+      "amount": 500.0,
+      "type": "cash",
+      "outstanding": false,
+      "cash_account": 1185
+    },
+    {
+      "method": 2,
+      "amount": 700.0,
+      "type": "bank",
+      "outstanding": 1186,
+      "cash_account": 1186
+    },
+    {
+      "method": 3,
+      "amount": 600.0,
+      "type": "bank",
+      "outstanding": 1188,
+      "cash_account": 1187
+    }
+  ],
+  "exception": "Native cash and clearing balances do not match the declared payment methods."
+}

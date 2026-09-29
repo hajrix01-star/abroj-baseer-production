@@ -1,0 +1,236 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "لوحات البيانات"
+    - menu:
+      - menuitem "لوحات البيانات"
+      - button "التهيئة":
+        - generic: التهيئة
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - button "" [disabled]:
+        - generic: 
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- generic: لوحات البيانات
+- button " 2026" [expanded]:
+  - generic: 
+  - text: "2026"
+- button "":
+  - generic: 
+- button "":
+  - generic: 
+- generic "تبديل المفضلة": 
+- button "":
+  - generic: 
+- generic: المبيعات
+- list:
+  - listitem "ملخصات المبيعات":
+    - generic: ملخصات المبيعات
+- heading "ملخصات المبيعات" [level=1]
+- paragraph: المبيعات المعتمدة والعملاء المسجلون
+- generic: QA ARZ
+- generic: 2026-01-01 — 2026-12-31
+- button "عرض الملخصات المعتمدة":
+  - text: عرض الملخصات المعتمدة
+  - generic: 
+- button "تحديث":
+  - generic: 
+  - text: تحديث
+- generic: مقارنة بالفترة
+- generic: 2025-01-01 — 2025-12-31
+- article:
+  - heading "إجمالي المبيعات" [level=2]
+  - generic: 1,182,614.40
+  - generic: SAR
+  - paragraph: شاملة الضريبة
+  - generic: 
+  - generic: ارتفاع
+  - generic: +139.37%
+  - generic: السابق
+  - generic: 494,045.80
+- article:
+  - heading "العملاء المسجلون" [level=2]
+  - generic: 21,785
+  - paragraph: من الملخصات المعتمدة
+  - generic: 
+  - generic: ارتفاع
+  - generic: +64.27%
+  - generic: السابق
+  - generic: 13,262
+- article:
+  - heading "متوسط المبيعات اليومي" [level=2]
+  - generic: 4,768.61
+  - generic: SAR
+  - paragraph: أيام التشغيل المكتملة
+  - generic: 
+  - generic: ارتفاع
+  - generic: +20.65%
+  - generic: السابق
+  - generic: 3,952.37
+- article:
+  - heading "متوسط العملاء اليومي" [level=2]
+  - generic: —
+  - paragraph: أيام التشغيل المكتملة
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- article:
+  - heading "معدل الفاتورة" [level=2]
+  - generic: —
+  - paragraph: لكل عميل مسجل
+  - generic: 
+  - generic: المقارنة غير متاحة
+  - generic: غير متاح
+- generic: "248"
+- generic: أيام مكتملة
+- generic: "0"
+- generic: أيام غير مكتملة
+- generic: "2"
+- generic: أيام مغلقة
+- generic: "115"
+- generic: أيام غير مدخلة
+- status:
+  - generic: 
+  - text: توجد مبيعات معتمدة دون عدد عملاء مسجل؛ المتوسطات المتأثرة غير متاحة.
+- article:
+  - heading "المبيعات والعملاء" [level=2]
+  - generic: شهري
+  - img "أعمدة للمبيعات وخط للعملاء المسجلين خلال الفترة المختارة"
+- article:
+  - heading "أداء الشفتات" [level=2]
+  - tablist "أداء الشفتات":
+    - tab "الرسم البياني" [selected]
+    - tab "التفاصيل"
+  - tabpanel "الرسم البياني":
+    - generic: المؤشر
+    - combobox "المؤشر":
+      - option "المبيعات (SAR)" [selected]
+      - option "العملاء (العدد)"
+      - option "معدل الفاتورة (SAR)"
+    - img "أداء الشفتات — المبيعات (SAR)"
+- article:
+  - heading "المبيعات حسب طريقة الدفع" [level=2]
+  - tablist "المبيعات حسب طريقة الدفع":
+    - tab "الرسم البياني"
+    - tab "التفاصيل" [selected]
+  - tabpanel "التفاصيل":
+    - table "المبيعات حسب طريقة الدفع":
+      - caption: المبيعات حسب طريقة الدفع
+      - rowgroup:
+        - row "طريقة الدفع المبيعات (SAR) النسبة من إجمالي المبيعات (%)":
+          - columnheader "طريقة الدفع"
+          - columnheader "المبيعات (SAR)"
+          - columnheader "النسبة من إجمالي المبيعات (%)"
+      - rowgroup:
+        - row "كاش 255,777.74 21.63":
+          - rowheader "كاش":
+            - button "كاش"
+          - cell "255,777.74"
+          - cell "21.63"
+        - row "بنك 466,897.36 39.48":
+          - rowheader "بنك":
+            - button "بنك"
+          - cell "466,897.36"
+          - cell "39.48"
+        - row "هنقرستيشن 600.00 0.05":
+          - rowheader "هنقرستيشن":
+            - button "هنقرستيشن"
+          - cell "600.00"
+          - cell "0.05"
+        - row "جاهز 0.00 0.00":
+          - rowheader "جاهز":
+            - button "جاهز"
+          - cell "0.00"
+          - cell "0.00"
+        - row "كيتا 0.00 0.00":
+          - rowheader "كيتا":
+            - button "كيتا"
+          - cell "0.00"
+          - cell "0.00"
+        - row "هنقرستيشن | HungerStation 188,506.81 15.94":
+          - rowheader "هنقرستيشن | HungerStation":
+            - button "هنقرستيشن | HungerStation"
+          - cell "188,506.81"
+          - cell "15.94"
+        - row "كيتا | Keeta 141,380.11 11.95":
+          - rowheader "كيتا | Keeta":
+            - button "كيتا | Keeta"
+          - cell "141,380.11"
+          - cell "11.95"
+        - row "جاهز | Jahez 129,452.38 10.95":
+          - rowheader "جاهز | Jahez":
+            - button "جاهز | Jahez"
+          - cell "129,452.38"
+          - cell "10.95"
+    - generic: المبيعات المشمولة
+    - generic: 1,182,614.40
+    - generic: مبيعات غير مشمولة بتفصيل طرق الدفع
+    - generic: "0.00"
+    - generic: الملخصات المشمولة
+    - generic: 459 / 459
+    - generic: نسبة التطبيقات من إجمالي المبيعات (%)
+    - generic: 38.89%
+- generic "تفاصيل الفترةشهري"
+- generic "المبيعات حسب الفئة":
+  - strong: المبيعات حسب الفئة
+  - term: النقد
+  - definition: 255,777.74 SAR
+  - term: البنوك
+  - definition: 466,897.36 SAR
+  - term: تطبيقات التوصيل
+  - definition: 600.00 SAR
+  - term: تطبيقات | Applications
+  - definition: 459,339.30 SAR
+- menu:
+  - menuitem "اليوم":
+    - generic: اليوم
+  - menuitem "البارحة":
+    - generic: البارحة
+  - menuitem "آخر 7 أيام":
+    - generic: آخر 7 أيام
+  - menuitem "آخر 30 يوم":
+    - generic: آخر 30 يوم
+  - menuitem "آخر 90 يوم":
+    - generic: آخر 90 يوم
+  - menuitem "منذ بداية الشهر":
+    - generic: منذ بداية الشهر
+  - menuitem "الشهر الماضي":
+    - generic: الشهر الماضي
+  - menuitem "الشهر  سبتمبر 2026 ":
+    - generic: الشهر
+    - button ""
+    - textbox: سبتمبر 2026
+    - button ""
+  - menuitem "ربع السنة  ربع سنة 3 2026 ":
+    - generic: ربع السنة
+    - button ""
+    - textbox: ربع سنة 3 2026
+    - button ""
+  - menuitem "السنة حتى تاريخه":
+    - generic: السنة حتى تاريخه
+  - menuitem "آخر 12 شهراً":
+    - generic: آخر 12 شهراً
+  - menuitem " السنة  2026 ":
+    - text: 
+    - generic: السنة
+    - button ""
+    - textbox [active]: "2026"
+    - button ""
+  - menuitem "كل الوقت":
+    - generic: كل الوقت
+  - menuitem "نطاق مخصص 01/01/2026 إلى 31/12/2026":
+    - generic: نطاق مخصص
+    - textbox: 01/01/2026
+    - generic: إلى
+    - textbox: 31/12/2026

@@ -1,0 +1,38 @@
+{
+  "status": "COMPLETE_QA_ONLY",
+  "independent_unique_checks": 969,
+  "actual_qa_runtime_checks": 26,
+  "same_90day_business_data": true,
+  "original_changed": false,
+  "github_changed": false,
+  "evidence_sha256": {
+    "candidate.json": "e38ad27695c22e9b882b6168752c3abe76cec3fdcd99213878a7f2f39d185083",
+    "deployment.json": "a2c3904b58bcd805bb4c7760abd99a6811107344ac2c89660296c6a2f498a806",
+    "qa-smoke.json": "425097bdefcd5c6944babf745a7eeb34aa600e3773278d39ed5e7d4ebcce3f51",
+    "qa-upgrade-preservation.json": "d9438fae3ef1b86891144862b13e81d162e220b10b22d41c5d27b9b40eb648ff",
+    "qa-security-preservation.json": "86811cba4d606099bc4e6bb0dd26a0f9a8db7a6bc1ca72064d66745210b5f860",
+    "main-before.json": "227e525b194ac491dfa18ed5e32daaed6848bcfee3c4a7021a99acea8adc5388",
+    "main-after.json": "227e525b194ac491dfa18ed5e32daaed6848bcfee3c4a7021a99acea8adc5388",
+    "verification-final.json": "c42d36d6c73e404e12ebe4b39edb4277eb68d8f45505b2326dc148b2b0545336",
+    "PREDEPLOY-GO.md": "2bea7a5a70890347f793100679034db82d2372c35d438c37cd93cbf606c09d33",
+    "COMPARISON.md": "8d0619a179f053834902b27917cfafda134054f4bf57cc4ed7b6e3ee1040c762",
+    "UI-REVIEW.md": "90da87304d56a689f74afd4182aeacdb4c1686c925cca87e40ebda83507bea3a",
+    "backup.json": "9e789b5a0c8324832c585b39d82fca06a4c8f208bba5aeb715b4229290c0ddc5"
+  },
+  "accepted_ui_files": [
+    "01-cash-january-with-empty-september.png",
+    "01-cash-january-with-empty-september.txt",
+    "02-profit-loss-observed-after-upgrade.png",
+    "02-profit-loss-observed-after-upgrade.txt",
+    "07-cash-quarter-salary-verified.png",
+    "07-cash-quarter-salary-verified.txt",
+    "08-inout-empty-september-verified.png",
+    "08-inout-empty-september-verified.txt",
+    "10-inout-february-verified.png",
+    "10-inout-february-verified.txt",
+    "11-cash-quarter-full-verified.png",
+    "11-cash-quarter-full-verified.txt",
+    "12-all-register-verified.png",
+    "12-all-register-verified.txt"
+  ]
+}

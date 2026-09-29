@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "count": 25,
+  "checks": [
+    "all active configured methods prefilled",
+    "prefilled amounts zero",
+    "empty auto-default amounts cannot silently save",
+    "reference optional stable internal name",
+    "negative slot rejected",
+    "excess precision rejected",
+    "false amount rejected",
+    "zero slots do not create native payments",
+    "native gross115 tax15 unchanged",
+    "native payment dates match",
+    "native moves balanced",
+    "approved day metadata immutable",
+    "approved zero flag immutable",
+    "zero approval explicit and audited",
+    "zero repeated approval no finance",
+    "zero no fictitious source",
+    "zero whatsapp prepared manually",
+    "zero must not contain amounts",
+    "zero must not contain customers",
+    "fake boolean declaration",
+    "two independent customer counts",
+    "mismatched day schedule",
+    "all day cannot combine shifts",
+    "wrong period for single-shift schedule",
+    "explicit single shift permitted"
+  ]
+}

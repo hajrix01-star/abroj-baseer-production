@@ -1,0 +1,204 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "المبيعات"
+    - menu:
+      - button "الطلبات":
+        - generic: الطلبات
+      - button "بانتظار الفوترة":
+        - generic: بانتظار الفوترة
+      - button "المنتجات":
+        - generic: المنتجات
+    - menu:
+      - button "الرسائل 2":
+        - img "الرسائل": 
+        - generic: "2"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: عربي
+      - button "المعلم الشامي" [disabled]:
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "المستخدم المستخدم متصل الآن":
+        - img "المستخدم"
+        - img "المستخدم متصل الآن": 
+        - text: 
+- button "جديد"
+- generic: BILL/2026/09/0001 (IC1 QA UI 400 to 500)
+- button "قائمة الإجراءات":
+  - generic: 
+- button " مطابقة المشتريات":
+  - generic: 
+  - generic: مطابقة المشتريات
+- search:
+  - navigation "جهاز المناداة":
+    - generic: "1"
+    - text: / 1
+    - button "السابق" [disabled]:
+      - generic: 
+    - button "التالي" [disabled]:
+      - generic: 
+- main:
+  - button "الدفع"
+  - button "إشعار دائن"
+  - button "إشعار مدين"
+  - button "إعادة التعيين كمسودة"
+  - button "تصحيح العملية"
+  - radiogroup "شريط الحالة":
+    - radio "مُرحّل" [checked] [disabled]
+    - radio "مسودة" [disabled]
+  - generic: فاتورة المورد
+  - heading "BILL/2026/09/0001" [level=1]:
+    - generic: BILL/2026/09/0001
+  - generic: المورد
+  - link "IC1 QA supplier — correction preview":
+    - /url: /odoo/res.partner/188
+  - generic: الرقم المرجعي للفاتورة
+  - textbox "الرقم المرجعي للفاتورة": IC1 QA UI 400 to 500
+  - generic: تاريخ الفاتورة
+  - generic: ١٠ سبتمبر
+  - generic: تاريخ المحاسبة
+  - generic: ١٠ سبتمبر
+  - text: الرقم المرجعي للدفع
+  - superscript: "?"
+  - textbox "الرقم المرجعي للدفع?":
+    - /placeholder: استخدم الرقم المرجعي للفاتورة
+  - text: البنك المستلم
+  - superscript: "?"
+  - combobox "البنك المستلم?"
+  - generic: تاريخ الاستحقاق
+  - button "تاريخ الاستحقاق": ١٠ سبتمبر
+  - generic: العملة
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "بنود الفاتورة"
+    - tab "معلومات أخرى"
+  - table:
+    - rowgroup:
+      - row "بطاقة عنوان تحليلي الكمية السعر الضرائب مبلغ ":
+        - columnheader
+        - columnheader "بطاقة عنوان":
+          - generic: بطاقة عنوان
+          - text: 
+        - columnheader "تحليلي":
+          - generic: تحليلي
+          - text: 
+        - columnheader "الكمية":
+          - generic: الكمية
+          - text: 
+        - columnheader "السعر":
+          - generic: السعر
+          - text: 
+        - columnheader "الضرائب":
+          - generic: الضرائب
+          - text: 
+        - columnheader "مبلغ":
+          - generic: مبلغ
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " IC1 QA entered amount 1.00 400.00 400.00 SR":
+        - cell "":
+          - generic: 
+        - cell "IC1 QA entered amount":
+          - generic: IC1 QA entered amount
+        - cell
+        - cell "1.00"
+        - cell "400.00"
+        - cell
+        - cell "400.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: الشروط والأحكام
+  - table:
+    - rowgroup:
+      - 'row "المبلغ دون الضريبة: 400.00 SR"':
+        - cell "المبلغ دون الضريبة:":
+          - generic: "المبلغ دون الضريبة:"
+        - cell "400.00 SR"
+      - 'row "الإجمالي: 400.00 SR"':
+        - cell "الإجمالي:":
+          - generic: "الإجمالي:"
+        - cell "400.00 SR"
+  - generic: "المبلغ المستحق:"
+  - generic: 400.00 SR
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - generic: 😶
+  - generic: المحادثة فارغة.
+- dialog:
+  - banner:
+    - heading "تصحيح العملية" [level=4]
+    - button "إغلاق"
+  - main:
+    - main:
+      - generic: الفاتورة
+      - generic: BILL/2026/09/0001 (IC1 QA UI 400 to 500)
+      - generic: الطرف الصحيح
+      - combobox "المورد الطرف الصحيح" [active]: IC1 QA supplier — correction preview
+      - generic: سبب التصحيح
+      - textbox "سبب التصحيح":
+        - /placeholder: ما البيانات التي أُدخلت بشكل غير صحيح؟
+      - table:
+        - rowgroup:
+          - row "الوصف  الكمية  سعر الوحدة  الضرائب ":
+            - columnheader "الوصف ":
+              - generic: الوصف
+              - generic: 
+            - columnheader "الكمية ":
+              - generic: الكمية
+              - generic: 
+            - columnheader "سعر الوحدة ":
+              - generic: سعر الوحدة
+              - generic: 
+            - columnheader "الضرائب":
+              - generic: الضرائب
+              - text: 
+            - columnheader "":
+              - button "":
+                - generic: 
+        - rowgroup:
+          - row "IC1 QA entered amount 1.0 400.0":
+            - cell "IC1 QA entered amount"
+            - cell "1.0"
+            - cell "400.0"
+            - cell
+            - cell
+          - row:
+            - cell
+          - row:
+            - cell
+          - row:
+            - cell
+        - rowgroup:
+          - row:
+            - cell
+            - cell
+  - contentinfo:
+    - button "تأكيد التصحيح"
+    - button "إلغاء"
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

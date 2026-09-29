@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "environment": "MAIN 18069",
+  "method": "Root actual Arabic employee1 Payroll wizard; added unsaved default period then canceled and closed own tab",
+  "observed": {"average": "08:00", "weekly": "48:00", "title": "متوسط الدوام اليومي — ساعات:دقائق"},
+  "business_mutations": "None"
+}

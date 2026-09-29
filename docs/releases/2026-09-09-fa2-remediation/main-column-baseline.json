@@ -1,0 +1,52 @@
+{
+  "account_move": {
+    "columns": "id,sequence_number,message_main_attachment_id,journal_id,company_id,origin_payment_id,statement_line_id,tax_cash_basis_rec_id,tax_cash_basis_origin_move_id,auto_post_origin_id,secure_sequence_number,invoice_payment_term_id,partner_id,commercial_partner_id,partner_shipping_id,partner_bank_id,fiscal_position_id,preferred_payment_method_line_id,currency_id,reversed_entry_id,invoice_user_id,invoice_incoterm_id,invoice_cash_rounding_id,create_uid,write_uid,sequence_prefix,access_token,name,ref,state,move_type,auto_post,inalterable_hash,payment_reference,qr_code_method,payment_state,invoice_source_email,invoice_partner_display_name,invoice_origin,incoterm_location,date,auto_post_until,invoice_date,invoice_date_due,delivery_date,taxable_supply_date,sending_data,narration,invoice_currency_rate,amount_untaxed,amount_tax,amount_total,amount_residual,amount_untaxed_signed,amount_untaxed_in_currency_signed,amount_tax_signed,amount_total_signed,amount_total_in_currency_signed,amount_residual_signed,quick_edit_total_amount,always_tax_exigible,checked,posted_before,made_sequence_gap,is_manually_modified,is_move_sent,create_date,write_date,campaign_id,source_id,medium_id,team_id,reversed_pos_order_id,debit_origin_id,l10n_sa_reason,l10n_sa_confirmation_datetime,eh_sealed,eh_legacy_unverified_seal",
+    "ids": [],
+    "row_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_move_line": {
+    "columns": "id,move_id,journal_id,company_id,company_currency_id,sequence,account_id,currency_id,partner_id,reconcile_model_id,payment_id,statement_line_id,statement_id,group_tax_id,tax_line_id,tax_group_id,tax_repartition_line_id,full_reconcile_id,product_id,product_uom_id,create_uid,write_uid,move_name,parent_state,ref,name,matching_number,display_type,date,invoice_date,date_maturity,discount_date,analytic_distribution,extra_tax_data,debit,credit,balance,amount_currency,tax_base_amount,amount_residual,amount_residual_currency,quantity,price_unit,price_subtotal,price_total,discount,discount_amount_currency,discount_balance,is_storno,is_imported,reconciled,collapse_composition,collapse_prices,no_followup,create_date,write_date,deductible_amount,is_downpayment,cogs_origin_id,purchase_line_id,expense_id",
+    "ids": [],
+    "row_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_payment": {
+    "columns": "id,message_main_attachment_id,move_id,journal_id,company_id,partner_bank_id,paired_internal_transfer_payment_id,payment_method_line_id,payment_method_id,currency_id,partner_id,outstanding_account_id,destination_account_id,create_uid,write_uid,name,state,payment_type,partner_type,memo,payment_reference,date,amount,amount_company_currency_signed,is_reconciled,is_matched,is_sent,create_date,write_date,payment_transaction_id,payment_token_id,source_payment_id,pos_payment_method_id,force_outstanding_account_id,pos_session_id,pos_order_id,should_withhold_tax",
+    "ids": [],
+    "row_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_partial_reconcile": {
+    "columns": "id,debit_move_id,credit_move_id,full_reconcile_id,exchange_move_id,debit_currency_id,credit_currency_id,company_id,create_uid,write_uid,max_date,draft_caba_move_vals,amount,debit_amount_currency,credit_amount_currency,create_date,write_date",
+    "ids": [],
+    "row_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "res_company": {
+    "columns": "id,name,partner_id,currency_id,sequence,create_date,parent_path,parent_id,paperformat_id,external_report_layout_id,create_uid,write_uid,email,phone,font,primary_color,secondary_color,layout_background,report_header,report_footer,company_details,active,uses_default_logo,write_date,logo_web,resource_calendar_id,alias_domain_id,email_primary_color,email_secondary_color,iap_enrich_auto_done,snailmail_color,snailmail_cover,snailmail_duplex,fiscalyear_last_day,transfer_account_id,default_cash_difference_income_account_id,default_cash_difference_expense_account_id,account_journal_suspense_account_id,account_journal_early_pay_discount_gain_account_id,account_journal_early_pay_discount_loss_account_id,account_sale_tax_id,account_purchase_tax_id,account_purchase_receipt_fiscal_position_id,currency_exchange_journal_id,income_currency_exchange_account_id,expense_currency_exchange_account_id,incoterm_id,batch_payment_sequence_id,account_opening_move_id,account_default_pos_receivable_account_id,expense_accrual_account_id,revenue_accrual_account_id,automatic_entry_default_journal_id,domestic_fiscal_position_id,account_fiscal_country_id,tax_cash_basis_journal_id,account_cash_basis_base_account_id,account_discount_income_allocation_id,account_discount_expense_allocation_id,income_account_id,expense_account_id,price_difference_account_id,fiscalyear_last_month,chart_template,bank_account_code_prefix,cash_account_code_prefix,transfer_account_code_prefix,tax_calculation_rounding_method,terms_type,quick_edit_mode,account_price_include,fiscalyear_lock_date,tax_lock_date,sale_lock_date,purchase_lock_date,hard_lock_date,account_opening_date,invoice_terms,invoice_terms_html,expects_chart_of_accounts,anglo_saxon_accounting,qr_code,link_qr_code,display_invoice_amount_total_words,display_invoice_tax_company_currency,account_use_credit_limit,tax_exigibility,account_storno,restrictive_audit_trail,autopost_bills,quotation_validity_days,sale_discount_product_id,downpayment_account_id,sale_onboarding_payment_method,portal_confirmation_sign,portal_confirmation_pay,prepayment_percent,sale_order_template_id,nomenclature_id,internal_transit_location_id,stock_mail_confirmation_template_id,annual_inventory_day,annual_inventory_month,stock_confirmation_type,stock_move_email_validation,stock_text_confirmation,horizon_days,account_stock_journal_id,account_stock_valuation_id,account_production_wip_account_id,account_production_wip_overhead_account_id,inventory_period,inventory_valuation,cost_method,stock_sms_confirmation_template_id,has_received_warning_stock_sms,point_of_sale_update_stock_quantities,point_of_sale_ticket_portal_url_display_mode,point_of_sale_use_ticket_qr_code,point_of_sale_ticket_unique_code,security_lead,hr_presence_control_email_amount,contract_expiration_notice_period,work_permit_expiration_notice_period,hr_presence_control_ip_list,employee_properties_definition,hr_presence_control_login,hr_presence_control_email,hr_presence_control_ip,hr_presence_control_attendance,overtime_company_threshold,overtime_employee_threshold,attendance_kiosk_delay,attendance_kiosk_mode,attendance_barcode_source,attendance_kiosk_key,attendance_overtime_validation,hr_attendance_display_overtime,attendance_kiosk_use_pin,attendance_from_systray,auto_check_out,absence_management,attendance_device_tracking,auto_check_out_tolerance,po_lock,po_double_validation,po_double_validation_amount,days_to_purchase,expense_journal_id,social_twitter,social_facebook,social_github,social_linkedin,social_youtube,social_instagram,social_tiktok,social_discord,website_id,withholding_tax_base_account_id,l10n_gcc_dual_language_invoice,eh_gl_row_limit,eh_expand_page_size,eh_dashboard_lookback_days,eh_forecast_default_horizon,eh_forecast_default_history_months,eh_asset_default_useful_life_months,eh_lease_default_term_months,eh_collections_grace_days,eh_cash_fx_revaluation_journal_id,eh_ap_invoice_ref_regex,eh_ap_total_regex,eh_sepa_dd_default_instrument,eh_cf_interest_paid_section,eh_cf_interest_received_section,eh_cf_dividends_paid_section,eh_cf_dividends_received_section,eh_cf_tax_fallback,eh_approval_material_change_pct",
+    "ids": [
+      1,
+      2,
+      3
+    ],
+    "row_hash": "3ac840f9cb64bada5274e02a2fa03e11"
+  },
+  "res_partner": {
+    "columns": "id,company_id,create_date,name,parent_id,user_id,state_id,country_id,industry_id,color,commercial_partner_id,create_uid,write_uid,complete_name,ref,lang,tz,vat,company_registry,website,function,type,street,street2,zip,city,email,phone,commercial_company_name,company_name,properties,barcode,comment,partner_latitude,partner_longitude,active,employee,is_company,partner_share,write_date,message_bounce,email_normalized,signup_type,phone_sanitized,specific_property_product_pricelist,invoice_template_pdf_report_id,supplier_rank,customer_rank,autopost_bills,credit_limit,property_account_payable_id,property_account_receivable_id,property_account_position_id,property_payment_term_id,property_supplier_payment_term_id,trust,ignore_abnormal_invoice_date,ignore_abnormal_invoice_amount,invoice_sending_method,invoice_edi_format_store,property_outbound_payment_method_line_id,property_inbound_payment_method_line_id,global_location_number,peppol_endpoint,peppol_eas,sale_warn_msg,property_stock_customer,property_stock_supplier,picking_warn_msg,calendar_last_notif_ack,date_localization,buyer_id,property_purchase_currency_id,receipt_reminder_email,reminder_date_before_receipt,purchase_warn_msg,suggest_days,suggest_percent,suggest_based_on,group_rfq,group_on,website_id,is_published,baseer_purchase_category_map_id",
+    "ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "row_hash": "aa4fee4fe9a3dc6e4c1f079cc1bb28ee"
+  },
+  "hr_employee": {
+    "columns": "id,resource_id,company_id,message_main_attachment_id,current_version_id,user_id,work_contact_id,country_of_birth,parent_id,coach_id,color,create_uid,write_uid,name,work_phone,mobile_phone,work_email,legal_name,private_phone,private_email,lang,place_of_birth,permit_no,visa_no,certificate,study_field,study_school,emergency_contact,emergency_phone,barcode,pin,private_car_plate,birthday,visa_expire,work_permit_expiration_date,salary_distribution,employee_properties,active,birthday_public_display,work_permit_scheduled_activity,create_date,write_date,monday_location_id,tuesday_location_id,wednesday_location_id,thursday_location_id,friday_location_id,saturday_location_id,sunday_location_id,today_location_name,attendance_manager_id,last_attendance_id,last_check_in,last_check_out,expense_manager_id,leave_manager_id",
+    "ids": [
+      1
+    ],
+    "row_hash": "6b2c58404d9f31f61ed87dfdc76067b8"
+  }
+}

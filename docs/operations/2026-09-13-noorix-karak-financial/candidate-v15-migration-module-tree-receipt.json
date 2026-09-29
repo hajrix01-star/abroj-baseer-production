@@ -1,0 +1,59 @@
+{
+  "schema": "baseer-candidate-tree-receipt/v1",
+  "method": "sha256 of UTF-8 concatenation of sorted relative-posix-path|file-sha256|byte-length\\n records; excluding __pycache__ directories and .pyc files",
+  "root_name": "baseer_noorix_migration",
+  "file_count": 10,
+  "tree_sha256": "8c334d2b90090067f87dfd786372820d6c618278ed3be7cad27e8aae295fb222",
+  "records": [
+    {
+      "path": "__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+      "bytes": 21
+    },
+    {
+      "path": "__manifest__.py",
+      "sha256": "6d88ff00a46069df212def14974cb76eac78cbe1d44cde1a8a33a19cab746e6e",
+      "bytes": 378
+    },
+    {
+      "path": "karak_payroll_writer.py",
+      "sha256": "8a5509465feb92c3ff5782e3cfb00f102dd4e2bb89e7c24bb1a0ffd086cb79fc",
+      "bytes": 21565
+    },
+    {
+      "path": "karak_purchase_writer.py",
+      "sha256": "fbf7e0f5f9c4177305c7d49618f9006b8a88f5de258df967ea6019348b419dba",
+      "bytes": 45265
+    },
+    {
+      "path": "models/__init__.py",
+      "sha256": "814362a2e7cf27ac5bf938b0fc5e96442de6e946b5b4cf2c6f2fa87bd058df2b",
+      "bytes": 31
+    },
+    {
+      "path": "models/migration_models.py",
+      "sha256": "23cc40fa3e90ae82073453c7776f6dc027326d750d210ffeb7a5d175500a288a",
+      "bytes": 25625
+    },
+    {
+      "path": "tests/__init__.py",
+      "sha256": "5a302384498165fe84090fc24df469e6e5b00d10ffa684fa262e0836b5e3e773",
+      "bytes": 132
+    },
+    {
+      "path": "tests/test_company_sales_provenance.py",
+      "sha256": "462f18364e3414d28660ab829cc0d6f7899da69c7548c5778526bebc4c2d58e4",
+      "bytes": 5873
+    },
+    {
+      "path": "tests/test_karak_payroll_settlement.py",
+      "sha256": "69e53d1a0a24ad3cbcbfffcf53c36fd17ffc1676e9bb6dd342761ae9b2534df2",
+      "bytes": 19529
+    },
+    {
+      "path": "tests/test_karak_purchase_migration.py",
+      "sha256": "675b2cb5618a10089e4881effc81742fd4fafadf7ed33704812856d42315544b",
+      "bytes": 32116
+    }
+  ]
+}

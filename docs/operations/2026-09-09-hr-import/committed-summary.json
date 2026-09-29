@@ -1,0 +1,29 @@
+{
+  "mode": "committed",
+  "scope": "names_only",
+  "source_sha256": "a8eda338b31b9947ab69ff275c75f39cd7c5cb3d9922e46309564a8017e8ce13",
+  "created_count": 49,
+  "matched_count": 51,
+  "idempotent_second_pass": true,
+  "protected_tables_unchanged": 152,
+  "administrator_unchanged": true,
+  "by_company": {
+    "1": {
+      "active": 13,
+      "archived": 12
+    },
+    "2": {
+      "active": 15,
+      "archived": 3
+    },
+    "3": {
+      "active": 6,
+      "archived": 0
+    }
+  },
+  "salary_contract_schedule_deferred": true,
+  "placeholder_calendars": 3,
+  "new_calendars": 3,
+  "script_sha256": "69874545a922c19ff1c1f925d636394ba0c3daa2522b68ddbfee4288af233b3c",
+  "payload_sha256": "7c31b0e1b8d20b6e7a9f5a66828d1682bf0a3d5f94edd9cfe004554d7ed2d9e8"
+}

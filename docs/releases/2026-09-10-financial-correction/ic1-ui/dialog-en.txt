@@ -1,0 +1,249 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Sales"
+    - menu:
+      - button "Orders":
+        - generic: Orders
+      - button "To Invoice":
+        - generic: To Invoice
+      - button "Products":
+        - generic: Products
+    - menu:
+      - button "Messages 2":
+        - img "Messages": 
+        - generic: "2"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي" [disabled]:
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- button "New"
+- generic: BILL/2026/09/0001 (IC1 QA UI 400 to 500)
+- button "Actions menu":
+  - generic: 
+- button " Purchase Matching":
+  - generic: 
+  - generic: Purchase Matching
+- search:
+  - navigation "Pager":
+    - generic: "1"
+    - text: / 1
+    - button "Previous" [disabled]:
+      - generic: 
+    - button "Next" [disabled]:
+      - generic: 
+- main:
+  - button "Pay"
+  - button "Credit Note"
+  - button "Debit Note"
+  - button "Reset to Draft"
+  - button "Correct operation"
+  - radiogroup "Statusbar":
+    - radio "Posted" [checked] [disabled]
+    - radio "Draft" [disabled]
+  - generic: Vendor Bill
+  - heading "BILL/2026/09/0001" [level=1]:
+    - generic: BILL/2026/09/0001
+  - generic: Vendor
+  - link "IC1 QA supplier — correction preview":
+    - /url: /odoo/res.partner/188
+  - generic: Bill Reference
+  - textbox "Bill Reference": IC1 QA UI 400 to 500
+  - generic: Bill Date
+  - generic: Sep 10
+  - generic: Accounting Date
+  - generic: Sep 10
+  - text: Payment Reference
+  - superscript: "?"
+  - textbox "Payment Reference?":
+    - /placeholder: Use Bill Reference
+  - text: Recipient Bank
+  - superscript: "?"
+  - combobox "Recipient Bank?"
+  - generic: Due Date
+  - button "Due Date": Sep 10
+  - generic: Currency
+  - link "SAR":
+    - /url: /odoo/res.currency/151
+  - list:
+    - tab "Invoice Lines"
+    - tab "Other Info"
+  - table:
+    - rowgroup:
+      - row "Label Analytic Quantity Price Taxes Amount ":
+        - columnheader
+        - columnheader "Label":
+          - generic: Label
+          - text: 
+        - columnheader "Analytic":
+          - generic: Analytic
+          - text: 
+        - columnheader "Quantity":
+          - generic: Quantity
+          - text: 
+        - columnheader "Price":
+          - generic: Price
+          - text: 
+        - columnheader "Taxes":
+          - generic: Taxes
+          - text: 
+        - columnheader "Amount":
+          - generic: Amount
+          - text: 
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row " IC1 QA entered amount 1.00 500.00 500.00 SR":
+        - cell "":
+          - generic: 
+        - cell "IC1 QA entered amount":
+          - generic: IC1 QA entered amount
+        - cell
+        - cell "1.00"
+        - cell "500.00"
+        - cell
+        - cell "500.00 SR"
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+  - generic: Terms and Conditions
+  - table:
+    - rowgroup:
+      - 'row "Untaxed Amount: 500.00 SR"':
+        - cell "Untaxed Amount:":
+          - generic: "Untaxed Amount:"
+        - cell "500.00 SR"
+      - 'row "Total: 500.00 SR"':
+        - cell "Total:":
+          - generic: "Total:"
+        - cell "500.00 SR"
+  - generic: "Amount Due:"
+  - generic: 500.00 SR
+  - button "Send message"
+  - button "Log note"
+  - button "Activity"
+  - button "Search Messages":
+    - img: 
+  - button "Attach files":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - separator
+  - generic: Today
+  - separator
+  - group "System notification":
+    - generic "Open card":
+    - generic "Open card":
+      - strong: IC1 QA accountant
+    - generic "9/10/2026, 7:23:37 PM": 7:23 PM
+    - list:
+      - text: 400.00 SR
+      - generic: 
+      - text: 500.00 SR
+      - generic: (Untaxed Amount)
+  - group "System notification":
+    - generic "Open card":
+    - generic "Open card":
+      - strong: IC1 QA accountant
+    - generic "9/10/2026, 7:23:37 PM": 7:23 PM
+    - paragraph: "تم تصحيح العملية: IC1 QA تصحيح الإدخال إلى 500"
+  - group "System notification":
+    - generic "Open card":
+    - generic "Open card":
+      - strong: IC1 QA accountant
+    - generic "9/10/2026, 7:23:37 PM": 7:23 PM
+    - list:
+      - text: "-400.00 SR"
+      - generic: 
+      - text: "-500.00 SR"
+      - generic: (Balance)
+    - paragraph:
+      - text: تم تحديث عنصر اليومية
+      - link "#6":
+        - /url: "#"
+  - group "System notification":
+    - generic "Open card":
+    - generic "Open card":
+      - strong: IC1 QA accountant
+    - generic "9/10/2026, 7:23:37 PM": 7:23 PM
+    - list:
+      - text: 400.00 SR
+      - generic: 
+      - text: 500.00 SR
+      - generic: (Balance)
+    - paragraph:
+      - text: تم تحديث عنصر اليومية
+      - link "#5":
+        - /url: "#"
+- dialog:
+  - banner:
+    - heading "Correct operation" [level=4]
+    - button "Close"
+  - main:
+    - main:
+      - generic: Invoice
+      - generic: BILL/2026/09/0001 (IC1 QA UI 400 to 500)
+      - generic: Correct partner
+      - combobox "Vendor Correct partner" [active]: IC1 QA supplier — correction preview
+      - generic: Correction reason
+      - textbox "Correction reason":
+        - /placeholder: What was entered incorrectly?
+      - table:
+        - rowgroup:
+          - row "Description  Quantity  Unit price  Taxes ":
+            - columnheader "Description ":
+              - generic: Description
+              - generic: 
+            - columnheader "Quantity ":
+              - generic: Quantity
+              - generic: 
+            - columnheader "Unit price ":
+              - generic: Unit price
+              - generic: 
+            - columnheader "Taxes":
+              - generic: Taxes
+              - text: 
+            - columnheader "":
+              - button "":
+                - generic: 
+        - rowgroup:
+          - row "IC1 QA entered amount 1.0 500.0":
+            - cell "IC1 QA entered amount"
+            - cell "1.0"
+            - cell "500.0"
+            - cell
+            - cell
+          - row:
+            - cell
+          - row:
+            - cell
+          - row:
+            - cell
+        - rowgroup:
+          - row:
+            - cell
+            - cell
+  - contentinfo:
+    - button "Confirm correction"
+    - button "Cancel"
+- paragraph: Press esc to exit full screen

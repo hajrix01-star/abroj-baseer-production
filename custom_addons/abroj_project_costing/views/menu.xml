@@ -1,0 +1,7 @@
+<odoo>
+    <menuitem id="menu_abroj_cost_root" name="أبرج | تكاليف المشاريع" sequence="35" groups="abroj_project_costing.group_abroj_cost_user"/>
+    <menuitem id="menu_abroj_cost_dashboard" name="لوحة التحكم" parent="menu_abroj_cost_root" action="action_abroj_dashboard" sequence="5"/>
+    <menuitem id="menu_abroj_cost_projects" name="المشاريع" parent="menu_abroj_cost_root" action="action_abroj_project" sequence="10"/>
+    <menuitem id="menu_abroj_cost_materials" name="مكتبة المواد" parent="menu_abroj_cost_root" action="action_abroj_material" sequence="20"/>
+    <menuitem id="menu_abroj_cost_categories" name="الأقسام" parent="menu_abroj_cost_root" action="action_abroj_category" sequence="30" groups="abroj_project_costing.group_abroj_cost_manager"/>
+</odoo>

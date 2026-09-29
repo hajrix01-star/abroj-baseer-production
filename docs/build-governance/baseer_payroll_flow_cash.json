@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "account_id": 1244,
+  "journal_id": 125,
+  "before": [
+    {
+      "id": 2508,
+      "move_id": [
+        1025,
+        "CASH/2026/00001 (سلفة تجريبية — ستة أقساط — Advance repayment)"
+      ],
+      "debit": 150.0,
+      "credit": 0.0,
+      "amount_residual": 150.0,
+      "reconciled": false
+    }
+  ],
+  "after": [
+    {
+      "id": 2508,
+      "move_id": [
+        1025,
+        "CASH/2026/00001 (سلفة تجريبية — ستة أقساط — Advance repayment)"
+      ],
+      "debit": 150.0,
+      "credit": 0.0,
+      "amount_residual": 0.0,
+      "reconciled": false
+    }
+  ],
+  "loan_balance_unchanged": 600.0,
+  "operation": "Native reconcile=False; no payment, entry or allocation created"
+}

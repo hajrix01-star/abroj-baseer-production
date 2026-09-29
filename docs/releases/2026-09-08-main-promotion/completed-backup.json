@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".local-backups\\main-promotion-20260908\\completed\\compose.yaml",
+    "bytes": 1421,
+    "sha256": "51dd8c9d248895dd993fed79155ac4a1355e99eb5e1c9130503f63fa65763bf4"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\completed\\database.dump",
+    "bytes": 9560911,
+    "sha256": "155f14e9709d7d9aa058ab1437b558db74b7368aa5f30c246d8fd3631b9cbf56"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\completed\\filestore.tar.gz",
+    "bytes": 8182679,
+    "sha256": "d05358ddd6097e93a6543f70656135396aa4507bb7d14d995ef7855afb95d01d"
+  },
+  {
+    "path": ".local-backups\\main-promotion-20260908\\completed\\odoo.local.conf",
+    "bytes": 173,
+    "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+  }
+]

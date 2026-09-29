@@ -1,0 +1,173 @@
+{
+  "version": "19.0.1.1.1",
+  "target": "QA only",
+  "archive": "baseer_payroll-19.0.1.1.1.zip",
+  "archive_sha256": "d4c8fdd9d5984e7940414a94d7b00addc6d2cb8421ea41d57db7c73129c58b42",
+  "files": [
+    {
+      "path": "custom_addons/baseer_payroll/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/__manifest__.py",
+      "sha256": "1b95075c4204c674356ec3d2764ac09a327177d554b5e0ed36b8099223807332"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/i18n/ar.po",
+      "sha256": "683186129196a98373f873140faaec0068c13750b16d67c8ef76ac89670661c8"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/__init__.py",
+      "sha256": "b0276112b5d2c19ce755b74679b55e537bbe60abb28cd845be241a2c29983f6e"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/common.py",
+      "sha256": "d37e687c3c112e31cc1041133579a5dddef7feba6736644c32ceaa9e8177965d"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/financial_record.py",
+      "sha256": "c7e4ad4993d30f8fbe09093757d50fc811d61dbe1728e4c9d47a5af11cc95a11"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/guards.py",
+      "sha256": "5f11111f4572817b0d01c123b3ddb00307a9150d369a95a779fc761397de5488"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/loan.py",
+      "sha256": "5805130ad18a54722ac9f3c38027960e1a2f06bd93093ed59e2c24fdfe7fddbc"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/payroll.py",
+      "sha256": "bd179203dfc352303e8e442a09ccd015eff1719bb7f5cd754870b9771eeb5151"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/settings.py",
+      "sha256": "165fa5a5df6fce0e86470ceb070bcbfccece17ae01a4c3f8316c412728facb8b"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/models/settlement.py",
+      "sha256": "3b6b6ac7748a682a13b83f72ecbb51233710449b04091560cd8784f88989d11b"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/report/payment_receipt.xml",
+      "sha256": "59e34b1429e7b8bc02716c1e1c665a74292fd26b5cb290ccfeb8b78754e9aefb"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/report/payslip_report.xml",
+      "sha256": "e9caab2fd9c9a7e844888485546d044a945d054d4647e1477b45ae5e2f0fa93f"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/security/ir.model.access.csv",
+      "sha256": "1ad506b249f644a987242d9ed2c0c72391959cdaa0df1d5e9acbb60432f5a36f"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/security/security.xml",
+      "sha256": "dbab980a7590975c5f5cf245649c40199e84ce457915b5c8f64dd847efe0195e"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/static/src/payroll.scss",
+      "sha256": "d9171f84d50892034491dee7a93402c98a88750cf5a814f5eca25e9486559ceb"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/static/src/payroll_month_field.js",
+      "sha256": "2c6b355df7049aa2b9444bc05750c6d2d28c5b5c7609833accfaeed189efd3cb"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/static/src/payroll_month_field.xml",
+      "sha256": "a3fd32a1129ce6a14920134d5c8c9381694f8a77cd96b62c489c8f30ca6b7e1c"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/loan_views.xml",
+      "sha256": "8f809200b9c78f19c5c0992a68fb1d6f17c57f95d559b2d1c1b6c09f8cc1d264"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/payroll_views.xml",
+      "sha256": "273d92cb15dce45ee8c2314aee597f286526cf40bce3a6d2bc5d5d49365acf41"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/settings_views.xml",
+      "sha256": "71af8954eaff5a9cd76e0f0935d7517c0b1d89243d29473766c8b7fc5c2ddac6"
+    },
+    {
+      "path": "custom_addons/baseer_payroll/views/settlement_views.xml",
+      "sha256": "70a73f6f8fac7223892256fad57cedf1b42803eebe74759a3775eb264395c2df"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/baseer_payroll_month_checks.json",
+      "sha256": "f6ab51299a08efb0ca2e25a564e4d9e085e0e9c75da6e1c1b866971979be189d"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_picker_desktop.png",
+      "sha256": "ab1ec979e6728ad7f1d93185460145e9b6ba89bef963f1370d2ac33a48a09ba4"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_picker_mobile.png",
+      "sha256": "be3f4295d4ac6224129395ce38845abbf43bc306c411345e24c871b6b28caffb"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_payment_default.png",
+      "sha256": "f094394ccf1ba46bd329eefd9ba12007fe491c0e930d571954fc981367162d70"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_loans_desktop.png",
+      "sha256": "168a2e5ec95f487176f2b01b8fce25a91acafa533b31cb6f1162c29cf78fb66a"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_loans_mobile.png",
+      "sha256": "b3de71d5d03ab96f5041971339dd367590d4ba9f4dee27b2afa785f2c8431ba5"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_loan_history.png",
+      "sha256": "a707b55fb0463189833860dd8dee0845f3acf954c5a0f77d06aee0392b9e22ba"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_salary_setup.png",
+      "sha256": "3aaa029a7c63cd029239ba602c941aac1062fa6c463d1fa8c7c2a996971b2e7e"
+    },
+    {
+      "path": "docs/build-governance/baseer_payroll_month_upgrade_final.log",
+      "sha256": "810f882722a27b56593e6979e0b0599310fdbe300b13eb598ab1c459fa7ced66"
+    },
+    {
+      "path": "docs/releases/2026-09-08-baseer-payroll-month/preservation.json",
+      "sha256": "d19c62ffe42d2ba38e518afb9340ed0845e4efdb1434300ef4eec3248f5e0496"
+    },
+    {
+      "path": "docs/releases/2026-09-08-baseer-payroll-month/HANDOFF.md",
+      "sha256": "ff042fb676810ed6774e9466fdacdb435385213f1fdab3f9baf2bb4a5c831283"
+    },
+    {
+      "path": "docs/build-governance/BASEER-PAYROLL-MONTH.md",
+      "sha256": "2fa40d9d7fe5d5f4b52ef7abc1d75f048ad24d004104f5db9f86a6d95d6ae560"
+    }
+  ],
+  "backup": [
+    {
+      "path": ".local-backups\\baseer-payroll-month-20260908\\preinstall\\compose.reports-qa.yaml",
+      "bytes": 903,
+      "sha256": "cbcec000978e180751b7cf1bf149727b5b1509d2e5a7ac830fdd9fec175542ca"
+    },
+    {
+      "path": ".local-backups\\baseer-payroll-month-20260908\\preinstall\\database.dump",
+      "bytes": 8292926,
+      "sha256": "f20e24a888185f97eaf73b0fef9364ce391ac5742ec8885b6272c5e202beb162"
+    },
+    {
+      "path": ".local-backups\\baseer-payroll-month-20260908\\preinstall\\filestore.tar.gz",
+      "bytes": 50882511,
+      "sha256": "73cd5a447f8aaa3ffea014aafb77364228d5e96b23700478a6a051c55407f338"
+    },
+    {
+      "path": ".local-backups\\baseer-payroll-month-20260908\\preinstall\\odoo.local.conf",
+      "bytes": 173,
+      "sha256": "d3314661a944b61ea61d7c720ba50dfc3a847b9955a82a96284e595abf5d0f3f"
+    }
+  ],
+  "predecessor_archive_sha256": "b4fc12814961ddd43e4ef526fa98b4cd7c9fea6434143b3ae8bc30da4928bee3",
+  "upstream_files_unchanged": 210,
+  "checks": 18,
+  "main_exact": true,
+  "git_commit": null
+}

@@ -1,0 +1,120 @@
+{
+  "checks": [
+    {
+      "name": "one exact year award",
+      "expected": "1500.00",
+      "actual": "1500.00",
+      "pass": true
+    },
+    {
+      "name": "estimate no bill",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "one EOS bill after approval replay",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "EOS bill expense debit",
+      "expected": "1500.00",
+      "actual": "1500.00",
+      "pass": true
+    },
+    {
+      "name": "EOS bill zero VAT",
+      "expected": "0.00",
+      "actual": "0.00",
+      "pass": true
+    },
+    {
+      "name": "EOS unpaid receipt is statement",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "EOS residual after 444.44",
+      "expected": "1055.56",
+      "actual": "1055.56",
+      "pass": true
+    },
+    {
+      "name": "EOS confirmed cash after 444.44",
+      "expected": "444.44",
+      "actual": "444.44",
+      "pass": true
+    },
+    {
+      "name": "EOS residual after 1055.56",
+      "expected": "0.00",
+      "actual": "0.00",
+      "pass": true
+    },
+    {
+      "name": "EOS confirmed cash after 1055.56",
+      "expected": "1500.00",
+      "actual": "1500.00",
+      "pass": true
+    },
+    {
+      "name": "EOS final receipt ready",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "EOS report reprint exact data",
+      "expected": "{'job_title': '', 'approved_by': 'Administrator', 'company_vat': '', 'company_name': 'تجربة الرواتب والسلف', 'employee_name': 'INDEPENDENT EOS exact year', 'company_address': 'Saudi Arabia', 'departure_reason': 'Fired', 'departure_reason_ar': 'مطرود', 'departure_reason_en': 'Fired', 'employee_identifier': '363', 'id': 68, 'reference': 'EOS/00068', 'title': 'Final End-of-Service Receipt', 'is_final': True, 'stage_label': 'Paid', 'company_logo': False, 'service_start': '2023-01-01', 'service_end': '2024-01-01', 'service_days': 365, 'wage': '3,000.00', 'full_award': '1,500.00', 'factor': '100.00%', 'award': '1,500.00', 'paid': '1,500.00', 'remaining': '0.00', 'currency': 'SAR', 'bill_reference': 'BILL/2024/01/0001', 'payment_methods': 'Bank / الكاش التجريبي', 'payment_date': '2024-01-01', 'approval_reference': 'Independent test only', 'approval_date': '2026-09-08', 'note': '', 'acknowledgment': 'I acknowledge receipt of the end-of-service award amount stated above. This acknowledgment covers only the listed amount and does not waive any rights or amounts not stated in this document.'}",
+      "actual": "{'job_title': '', 'approved_by': 'Administrator', 'company_vat': '', 'company_name': 'تجربة الرواتب والسلف', 'employee_name': 'INDEPENDENT EOS exact year', 'company_address': 'Saudi Arabia', 'departure_reason': 'Fired', 'departure_reason_ar': 'مطرود', 'departure_reason_en': 'Fired', 'employee_identifier': '363', 'id': 68, 'reference': 'EOS/00068', 'title': 'Final End-of-Service Receipt', 'is_final': True, 'stage_label': 'Paid', 'company_logo': False, 'service_start': '2023-01-01', 'service_end': '2024-01-01', 'service_days': 365, 'wage': '3,000.00', 'full_award': '1,500.00', 'factor': '100.00%', 'award': '1,500.00', 'paid': '1,500.00', 'remaining': '0.00', 'currency': 'SAR', 'bill_reference': 'BILL/2024/01/0001', 'payment_methods': 'Bank / الكاش التجريبي', 'payment_date': '2024-01-01', 'approval_reference': 'Independent test only', 'approval_date': '2026-09-08', 'note': '', 'acknowledgment': 'I acknowledge receipt of the end-of-service award amount stated above. This acknowledgment covers only the listed amount and does not waive any rights or amounts not stated in this document.'}",
+      "pass": true
+    },
+    {
+      "name": "EOS report confirmed total",
+      "expected": "1,500.00",
+      "actual": "1,500.00",
+      "pass": true
+    },
+    {
+      "name": "EOS native posted reversal exists",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "EOS receipt final invalid after reversal",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    }
+  ],
+  "observations": [
+    {
+      "name": "duplicate award before reversal",
+      "blocked": true,
+      "message": "An award has already been issued for this employee and service period."
+    },
+    {
+      "name": "duplicate award after reversal",
+      "blocked": true,
+      "message": "An award has already been issued for this employee and service period."
+    },
+    {
+      "name": "validated partial leave fixture",
+      "state": "validate",
+      "half": true,
+      "hours": false,
+      "days": 0.5
+    },
+    {
+      "name": "managed payroll with approved half-day leave",
+      "blocked": true,
+      "message": "Partial-day unpaid leave requires a reviewed adjustment before generating this payroll."
+    }
+  ],
+  "status": "completed",
+  "rolled_back": true
+}

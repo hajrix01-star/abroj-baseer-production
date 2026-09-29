@@ -1,0 +1,254 @@
+{
+  "passed": 62,
+  "checks": [
+    {
+      "check": "migration preserves settlement intent 131",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 131",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 131",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 132",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 132",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 132",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 133",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 133",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 133",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 134",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 134",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 134",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 135",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 135",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 135",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 136",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 136",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 136",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 137",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 137",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 137",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 138",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 138",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 138",
+      "passed": true
+    },
+    {
+      "check": "migration preserves settlement intent 271",
+      "passed": true
+    },
+    {
+      "check": "migration preserves method 271",
+      "passed": true
+    },
+    {
+      "check": "migration preserves audit date 271",
+      "passed": true
+    },
+    {
+      "check": "missing payment is not credit",
+      "passed": true
+    },
+    {
+      "check": "explicit credit plus method rejected",
+      "passed": true
+    },
+    {
+      "check": "explicit credit stored",
+      "passed": true
+    },
+    {
+      "check": "credit off requires method",
+      "passed": true
+    },
+    {
+      "check": "paid intent with method accepted",
+      "passed": true
+    },
+    {
+      "check": "credit toggle clears draft method",
+      "passed": true
+    },
+    {
+      "check": "new rank-zero company supplier accepted",
+      "passed": true
+    },
+    {
+      "check": "even empty batch company immutable",
+      "passed": true
+    },
+    {
+      "check": "authorized inactive company create blocked",
+      "passed": true
+    },
+    {
+      "check": "authorized historical read remains possible",
+      "passed": true
+    },
+    {
+      "check": "active flags true",
+      "passed": true
+    },
+    {
+      "check": "active flags context sensitive",
+      "passed": true
+    },
+    {
+      "check": "inactive company blocks batch edit",
+      "passed": true
+    },
+    {
+      "check": "inactive company blocks batch delete",
+      "passed": true
+    },
+    {
+      "check": "inactive company blocks approve",
+      "passed": true
+    },
+    {
+      "check": "inactive company blocks line edit",
+      "passed": true
+    },
+    {
+      "check": "inactive company blocks line delete",
+      "passed": true
+    },
+    {
+      "check": "inactive company blocks line create",
+      "passed": true
+    },
+    {
+      "check": "shared supplier rejected",
+      "passed": true
+    },
+    {
+      "check": "foreign supplier rejected",
+      "passed": true
+    },
+    {
+      "check": "changing supplier to shared rejected",
+      "passed": true
+    },
+    {
+      "check": "omitted category uses supplier default",
+      "passed": true
+    },
+    {
+      "check": "explicit category overrides supplier default",
+      "passed": true
+    },
+    {
+      "check": "unrelated write preserves category",
+      "passed": true
+    },
+    {
+      "check": "native supplier onchange suggests category",
+      "passed": true
+    },
+    {
+      "check": "operator can read default",
+      "passed": true
+    },
+    {
+      "check": "operator cannot configure default",
+      "passed": true
+    },
+    {
+      "check": "operator create cannot configure default",
+      "passed": true
+    },
+    {
+      "check": "context default cannot bypass manager rights",
+      "passed": true
+    },
+    {
+      "check": "explicit false context default requires manager rights",
+      "passed": true
+    },
+    {
+      "check": "default from another company rejected",
+      "passed": true
+    },
+    {
+      "check": "operator can use supplier default",
+      "passed": true
+    },
+    {
+      "check": "inactive default category rejected",
+      "passed": true
+    },
+    {
+      "check": "supplier property isolated by active company",
+      "passed": true
+    },
+    {
+      "check": "all focused fixtures rolled back",
+      "passed": true
+    }
+  ],
+  "rollback": true
+}

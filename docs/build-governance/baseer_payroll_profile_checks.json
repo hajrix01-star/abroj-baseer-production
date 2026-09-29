@@ -1,0 +1,186 @@
+{
+  "checks": [
+    {
+      "name": "old_formula_2000_12h_30d",
+      "passed": true
+    },
+    {
+      "name": "fixed_allowances",
+      "passed": true
+    },
+    {
+      "name": "native_eight_hours_supported",
+      "passed": true
+    },
+    {
+      "name": "invalid_allowance_equal_total",
+      "passed": true
+    },
+    {
+      "name": "invalid_precision",
+      "passed": true
+    },
+    {
+      "name": "calendar_is_source",
+      "passed": true
+    },
+    {
+      "name": "native_version_preview",
+      "passed": true
+    },
+    {
+      "name": "unsaved_gross_preview",
+      "passed": true
+    },
+    {
+      "name": "invalid_preview_clear_warning",
+      "passed": true
+    },
+    {
+      "name": "preview_does_not_write_contract",
+      "passed": true
+    },
+    {
+      "name": "invalid_profile_save",
+      "passed": true
+    },
+    {
+      "name": "no_manual_employee_hours",
+      "passed": true
+    },
+    {
+      "name": "no_manual_version_hours",
+      "passed": true
+    },
+    {
+      "name": "fractional_calendar_preserved",
+      "passed": true
+    },
+    {
+      "name": "fractional_salary_matches",
+      "passed": true
+    },
+    {
+      "name": "historical_selected_version",
+      "passed": true
+    },
+    {
+      "name": "historical_edit_isolated",
+      "passed": true
+    },
+    {
+      "name": "native_form_live_preview",
+      "passed": true
+    },
+    {
+      "name": "native_form_save_single_wage",
+      "passed": true
+    },
+    {
+      "name": "native_calendar_unsaved_preview",
+      "passed": true
+    },
+    {
+      "name": "hr_role_separate",
+      "passed": true
+    },
+    {
+      "name": "hr_native_wage_edit",
+      "passed": true
+    },
+    {
+      "name": "payroll_role_separate",
+      "passed": true
+    },
+    {
+      "name": "payroll_salary_edit",
+      "passed": true
+    },
+    {
+      "name": "basic_cannot_read_salary",
+      "passed": true
+    },
+    {
+      "name": "basic_cannot_read_split",
+      "passed": true
+    },
+    {
+      "name": "basic_cannot_read_version_wage",
+      "passed": true
+    },
+    {
+      "name": "basic_cannot_read_version_split",
+      "passed": true
+    },
+    {
+      "name": "foreign_company_salary_read",
+      "passed": true
+    },
+    {
+      "name": "one_payroll_page_hr",
+      "passed": true
+    },
+    {
+      "name": "salary_view_hr",
+      "passed": true
+    },
+    {
+      "name": "one_payroll_page_payroll",
+      "passed": true
+    },
+    {
+      "name": "salary_view_payroll",
+      "passed": true
+    },
+    {
+      "name": "six_month_split_1",
+      "passed": true
+    },
+    {
+      "name": "six_month_balanced_1",
+      "passed": true
+    },
+    {
+      "name": "six_month_split_2",
+      "passed": true
+    },
+    {
+      "name": "six_month_balanced_2",
+      "passed": true
+    },
+    {
+      "name": "six_month_split_3",
+      "passed": true
+    },
+    {
+      "name": "six_month_balanced_3",
+      "passed": true
+    },
+    {
+      "name": "six_month_split_4",
+      "passed": true
+    },
+    {
+      "name": "six_month_balanced_4",
+      "passed": true
+    },
+    {
+      "name": "six_month_split_5",
+      "passed": true
+    },
+    {
+      "name": "six_month_balanced_5",
+      "passed": true
+    },
+    {
+      "name": "six_month_split_6",
+      "passed": true
+    },
+    {
+      "name": "six_month_balanced_6",
+      "passed": true
+    }
+  ],
+  "status": "passed",
+  "rolled_back": true
+}

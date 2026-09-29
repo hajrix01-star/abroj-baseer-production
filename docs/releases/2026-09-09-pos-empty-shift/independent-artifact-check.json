@@ -1,0 +1,17 @@
+{
+  "candidate": "d7c1d675f2176c1e125ca50c5522f917ad51d153",
+  "files": 1104,
+  "source_hash_failures": [],
+  "zip_entries": 1104,
+  "zip_hash_failures": [],
+  "archive_sha256": "ab0c3ae14e39a131a3c4c82441da340f5d5e6776779b30f0a5989af421925248",
+  "archive_matches": true,
+  "changed_files": [
+    "custom_addons/baseer_pos_summary/__manifest__.py",
+    "custom_addons/baseer_pos_summary/i18n/ar.po",
+    "custom_addons/baseer_pos_summary/models/day_entry.py",
+    "custom_addons/baseer_pos_summary/views/day_entry_views.xml",
+    "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml"
+  ],
+  "removed_files": []
+}

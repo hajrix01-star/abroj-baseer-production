@@ -1,0 +1,31 @@
+services:
+  heat_calendar_demo:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_heat_calendar_demo_20260914
+      - --db-filter=^baseer_heat_calendar_demo_20260914$
+      - --no-database-list
+      - --max-cron-threads=0
+      - --http-port=8069
+    ports:
+      - "127.0.0.1:18087:8069"
+    restart: "no"
+    volumes:
+      - heat-calendar-demo-odoo-data:/var/lib/odoo
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./release_candidates/2026-09-14-abroj-baseer/heat_calendar_demo_source/custom_addons:/mnt/baseer-addons:ro
+      - ./release_candidates/2026-09-14-abroj-baseer/heat_calendar_demo_source/third_party_addons:/mnt/third-party-addons:ro
+
+volumes:
+  heat-calendar-demo-odoo-data:
+    name: baseer_odoo_dev_heat-calendar-demo-odoo-data

@@ -1,0 +1,1612 @@
+{
+  "database": "baseer_release_rehearsal_20260907",
+  "status": "passed",
+  "failure": null,
+  "checks": [
+    {
+      "check": "Clone starts without this synthetic fixture",
+      "passed": true
+    },
+    {
+      "check": "All three source companies exist",
+      "passed": true,
+      "companies": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "check": "Source administrator already has the three companies",
+      "passed": true
+    },
+    {
+      "check": "Installed dependency grants source administrator report access",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: native liability_payable account exists",
+      "passed": true
+    },
+    {
+      "check": "1: native asset_receivable account exists",
+      "passed": true
+    },
+    {
+      "check": "1: native expense account exists",
+      "passed": true
+    },
+    {
+      "check": "1: native Saudi purchase tax",
+      "passed": true,
+      "actual": "15.00",
+      "expected": "15.00"
+    },
+    {
+      "check": "1: native journal created its cash account",
+      "passed": true
+    },
+    {
+      "check": "1: posting invalidates report input version",
+      "passed": true,
+      "before": 26,
+      "after": 27
+    },
+    {
+      "check": "1: supplier invoice: posted",
+      "passed": true,
+      "move_id": 5
+    },
+    {
+      "check": "1: supplier invoice: balanced journal entry 5",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: supplier invoice includes VAT",
+      "passed": true,
+      "actual": "115.00",
+      "expected": "115.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: posted unpaid bill does not change cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: posted unpaid bill accrues expense excluding VAT",
+      "passed": true,
+      "actual": "-100.00",
+      "expected": "-100.00"
+    },
+    {
+      "check": "1: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "1: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "1: payment: posted",
+      "passed": true,
+      "move_id": 6
+    },
+    {
+      "check": "1: payment: balanced journal entry 6",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: partial payment leaves native residual",
+      "passed": true,
+      "actual": "69.00",
+      "expected": "69.00"
+    },
+    {
+      "check": "1: native partial reconciliation exists",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: partial gross cash",
+      "passed": true,
+      "actual": "-46.00",
+      "expected": "-46.00"
+    },
+    {
+      "check": "1: partial net cash",
+      "passed": true,
+      "actual": "-40.00",
+      "expected": "-40.00"
+    },
+    {
+      "check": "1: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "1: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "1: payment: posted",
+      "passed": true,
+      "move_id": 7
+    },
+    {
+      "check": "1: payment: balanced journal entry 7",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: final payment clears native residual",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: payable lines fully reconciled",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: full gross payment counted once",
+      "passed": true,
+      "actual": "-115.00",
+      "expected": "-115.00"
+    },
+    {
+      "check": "1: full net payment",
+      "passed": true,
+      "actual": "-100.00",
+      "expected": "-100.00"
+    },
+    {
+      "check": "1: native reversal creates draft supplier credit",
+      "passed": true
+    },
+    {
+      "check": "1: supplier credit: posted",
+      "passed": true,
+      "move_id": 8
+    },
+    {
+      "check": "1: supplier credit: balanced journal entry 8",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: supplier credit VAT",
+      "passed": true,
+      "actual": "23.00",
+      "expected": "23.00"
+    },
+    {
+      "check": "1: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "1: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "1: payment: posted",
+      "passed": true,
+      "move_id": 9
+    },
+    {
+      "check": "1: payment: balanced journal entry 9",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: actual supplier refund settles credit",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: supplier refund is actual cash in",
+      "passed": true,
+      "actual": "23.00",
+      "expected": "23.00"
+    },
+    {
+      "check": "1: cash after supplier refund",
+      "passed": true,
+      "actual": "-92.00",
+      "expected": "-92.00"
+    },
+    {
+      "check": "1: net tax basis after refund",
+      "passed": true,
+      "actual": "-80.00",
+      "expected": "-80.00"
+    },
+    {
+      "check": "1: supplier credit reverses accrual expense",
+      "passed": true,
+      "actual": "-80.00",
+      "expected": "-80.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: posting invalidates report input version",
+      "passed": true,
+      "before": 34,
+      "after": 35
+    },
+    {
+      "check": "1: supplier invoice: posted",
+      "passed": true,
+      "move_id": 10
+    },
+    {
+      "check": "1: supplier invoice: balanced journal entry 10",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: two-month credit purchase has no September cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: deferred payment does not defer expense recognition",
+      "passed": true,
+      "actual": "-280.00",
+      "expected": "-280.00"
+    },
+    {
+      "check": "1: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "1: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "1: payment: posted",
+      "passed": true,
+      "move_id": 11
+    },
+    {
+      "check": "1: payment: balanced journal entry 11",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: November settlement clears credit purchase",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: deferred payment appears in November gross cash",
+      "passed": true,
+      "actual": "-230.00",
+      "expected": "-230.00"
+    },
+    {
+      "check": "1: deferred payment appears in November net cash",
+      "passed": true,
+      "actual": "-200.00",
+      "expected": "-200.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: paying in November does not rewrite September cash",
+      "passed": true,
+      "actual": "-92.00",
+      "expected": "-92.00"
+    },
+    {
+      "check": "1 September gross: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1 September net: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1 November gross: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1 November net: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: supplier refunds are excluded from collected sales denominator",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: disjoint month balances are not summed",
+      "passed": true
+    },
+    {
+      "check": "2: native liability_payable account exists",
+      "passed": true
+    },
+    {
+      "check": "2: native asset_receivable account exists",
+      "passed": true
+    },
+    {
+      "check": "2: native expense account exists",
+      "passed": true
+    },
+    {
+      "check": "2: native Saudi purchase tax",
+      "passed": true,
+      "actual": "15.00",
+      "expected": "15.00"
+    },
+    {
+      "check": "2: native journal created its cash account",
+      "passed": true
+    },
+    {
+      "check": "2: posting invalidates report input version",
+      "passed": true,
+      "before": 26,
+      "after": 27
+    },
+    {
+      "check": "2: supplier invoice: posted",
+      "passed": true,
+      "move_id": 12
+    },
+    {
+      "check": "2: supplier invoice: balanced journal entry 12",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: supplier invoice includes VAT",
+      "passed": true,
+      "actual": "230.00",
+      "expected": "230.00"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: posted unpaid bill does not change cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: posted unpaid bill accrues expense excluding VAT",
+      "passed": true,
+      "actual": "-200.00",
+      "expected": "-200.00"
+    },
+    {
+      "check": "2: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "2: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "2: payment: posted",
+      "passed": true,
+      "move_id": 13
+    },
+    {
+      "check": "2: payment: balanced journal entry 13",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: partial payment leaves native residual",
+      "passed": true,
+      "actual": "138.00",
+      "expected": "138.00"
+    },
+    {
+      "check": "2: native partial reconciliation exists",
+      "passed": true
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: partial gross cash",
+      "passed": true,
+      "actual": "-92.00",
+      "expected": "-92.00"
+    },
+    {
+      "check": "2: partial net cash",
+      "passed": true,
+      "actual": "-80.00",
+      "expected": "-80.00"
+    },
+    {
+      "check": "2: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "2: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "2: payment: posted",
+      "passed": true,
+      "move_id": 14
+    },
+    {
+      "check": "2: payment: balanced journal entry 14",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: final payment clears native residual",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: payable lines fully reconciled",
+      "passed": true
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: full gross payment counted once",
+      "passed": true,
+      "actual": "-230.00",
+      "expected": "-230.00"
+    },
+    {
+      "check": "2: full net payment",
+      "passed": true,
+      "actual": "-200.00",
+      "expected": "-200.00"
+    },
+    {
+      "check": "2: native reversal creates draft supplier credit",
+      "passed": true
+    },
+    {
+      "check": "2: supplier credit: posted",
+      "passed": true,
+      "move_id": 15
+    },
+    {
+      "check": "2: supplier credit: balanced journal entry 15",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: supplier credit VAT",
+      "passed": true,
+      "actual": "46.00",
+      "expected": "46.00"
+    },
+    {
+      "check": "2: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "2: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "2: payment: posted",
+      "passed": true,
+      "move_id": 16
+    },
+    {
+      "check": "2: payment: balanced journal entry 16",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: actual supplier refund settles credit",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: supplier refund is actual cash in",
+      "passed": true,
+      "actual": "46.00",
+      "expected": "46.00"
+    },
+    {
+      "check": "2: cash after supplier refund",
+      "passed": true,
+      "actual": "-184.00",
+      "expected": "-184.00"
+    },
+    {
+      "check": "2: net tax basis after refund",
+      "passed": true,
+      "actual": "-160.00",
+      "expected": "-160.00"
+    },
+    {
+      "check": "2: supplier credit reverses accrual expense",
+      "passed": true,
+      "actual": "-160.00",
+      "expected": "-160.00"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: posting invalidates report input version",
+      "passed": true,
+      "before": 34,
+      "after": 35
+    },
+    {
+      "check": "2: supplier invoice: posted",
+      "passed": true,
+      "move_id": 17
+    },
+    {
+      "check": "2: supplier invoice: balanced journal entry 17",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: two-month credit purchase has no September cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: deferred payment does not defer expense recognition",
+      "passed": true,
+      "actual": "-560.00",
+      "expected": "-560.00"
+    },
+    {
+      "check": "2: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "2: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "2: payment: posted",
+      "passed": true,
+      "move_id": 18
+    },
+    {
+      "check": "2: payment: balanced journal entry 18",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: November settlement clears credit purchase",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: deferred payment appears in November gross cash",
+      "passed": true,
+      "actual": "-460.00",
+      "expected": "-460.00"
+    },
+    {
+      "check": "2: deferred payment appears in November net cash",
+      "passed": true,
+      "actual": "-400.00",
+      "expected": "-400.00"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: paying in November does not rewrite September cash",
+      "passed": true,
+      "actual": "-184.00",
+      "expected": "-184.00"
+    },
+    {
+      "check": "2 September gross: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2 September net: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2 November gross: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2 November net: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: supplier refunds are excluded from collected sales denominator",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "2: disjoint month balances are not summed",
+      "passed": true
+    },
+    {
+      "check": "3: native liability_payable account exists",
+      "passed": true
+    },
+    {
+      "check": "3: native asset_receivable account exists",
+      "passed": true
+    },
+    {
+      "check": "3: native expense account exists",
+      "passed": true
+    },
+    {
+      "check": "3: native Saudi purchase tax",
+      "passed": true,
+      "actual": "15.00",
+      "expected": "15.00"
+    },
+    {
+      "check": "3: native journal created its cash account",
+      "passed": true
+    },
+    {
+      "check": "3: posting invalidates report input version",
+      "passed": true,
+      "before": 26,
+      "after": 27
+    },
+    {
+      "check": "3: supplier invoice: posted",
+      "passed": true,
+      "move_id": 19
+    },
+    {
+      "check": "3: supplier invoice: balanced journal entry 19",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: supplier invoice includes VAT",
+      "passed": true,
+      "actual": "345.00",
+      "expected": "345.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: posted unpaid bill does not change cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: posted unpaid bill accrues expense excluding VAT",
+      "passed": true,
+      "actual": "-300.00",
+      "expected": "-300.00"
+    },
+    {
+      "check": "3: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "3: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "3: payment: posted",
+      "passed": true,
+      "move_id": 20
+    },
+    {
+      "check": "3: payment: balanced journal entry 20",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: partial payment leaves native residual",
+      "passed": true,
+      "actual": "207.00",
+      "expected": "207.00"
+    },
+    {
+      "check": "3: native partial reconciliation exists",
+      "passed": true
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: partial gross cash",
+      "passed": true,
+      "actual": "-138.00",
+      "expected": "-138.00"
+    },
+    {
+      "check": "3: partial net cash",
+      "passed": true,
+      "actual": "-120.00",
+      "expected": "-120.00"
+    },
+    {
+      "check": "3: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "3: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "3: payment: posted",
+      "passed": true,
+      "move_id": 21
+    },
+    {
+      "check": "3: payment: balanced journal entry 21",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: final payment clears native residual",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: payable lines fully reconciled",
+      "passed": true
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: full gross payment counted once",
+      "passed": true,
+      "actual": "-345.00",
+      "expected": "-345.00"
+    },
+    {
+      "check": "3: full net payment",
+      "passed": true,
+      "actual": "-300.00",
+      "expected": "-300.00"
+    },
+    {
+      "check": "3: native reversal creates draft supplier credit",
+      "passed": true
+    },
+    {
+      "check": "3: supplier credit: posted",
+      "passed": true,
+      "move_id": 22
+    },
+    {
+      "check": "3: supplier credit: balanced journal entry 22",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: supplier credit VAT",
+      "passed": true,
+      "actual": "69.00",
+      "expected": "69.00"
+    },
+    {
+      "check": "3: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "3: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "3: payment: posted",
+      "passed": true,
+      "move_id": 23
+    },
+    {
+      "check": "3: payment: balanced journal entry 23",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: actual supplier refund settles credit",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: supplier refund is actual cash in",
+      "passed": true,
+      "actual": "69.00",
+      "expected": "69.00"
+    },
+    {
+      "check": "3: cash after supplier refund",
+      "passed": true,
+      "actual": "-276.00",
+      "expected": "-276.00"
+    },
+    {
+      "check": "3: net tax basis after refund",
+      "passed": true,
+      "actual": "-240.00",
+      "expected": "-240.00"
+    },
+    {
+      "check": "3: supplier credit reverses accrual expense",
+      "passed": true,
+      "actual": "-240.00",
+      "expected": "-240.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: posting invalidates report input version",
+      "passed": true,
+      "before": 34,
+      "after": 35
+    },
+    {
+      "check": "3: supplier invoice: posted",
+      "passed": true,
+      "move_id": 24
+    },
+    {
+      "check": "3: supplier invoice: balanced journal entry 24",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: two-month credit purchase has no September cash",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: deferred payment does not defer expense recognition",
+      "passed": true,
+      "actual": "-840.00",
+      "expected": "-840.00"
+    },
+    {
+      "check": "3: native payment method available",
+      "passed": true
+    },
+    {
+      "check": "3: native payment wizard created payment",
+      "passed": true
+    },
+    {
+      "check": "3: payment: posted",
+      "passed": true,
+      "move_id": 25
+    },
+    {
+      "check": "3: payment: balanced journal entry 25",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: November settlement clears credit purchase",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: deferred payment appears in November gross cash",
+      "passed": true,
+      "actual": "-690.00",
+      "expected": "-690.00"
+    },
+    {
+      "check": "3: deferred payment appears in November net cash",
+      "passed": true,
+      "actual": "-600.00",
+      "expected": "-600.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: paying in November does not rewrite September cash",
+      "passed": true,
+      "actual": "-276.00",
+      "expected": "-276.00"
+    },
+    {
+      "check": "3 September gross: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3 September net: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3 November gross: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3 November net: cash reconciles",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: supplier refunds are excluded from collected sales denominator",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "3: disjoint month balances are not summed",
+      "passed": true
+    },
+    {
+      "check": "Outstanding corridor has a native outbound method",
+      "passed": true
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "Outstanding payment: posted",
+      "passed": true,
+      "move_id": 27
+    },
+    {
+      "check": "Outstanding payment: balanced journal entry 27",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "Registered outstanding payment is not yet a cash movement",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Outstanding invoice and bank settlement: posted",
+      "passed": true,
+      "move_id": 26
+    },
+    {
+      "check": "Outstanding invoice and bank settlement: balanced journal entry 26",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Outstanding invoice and bank settlement: posted",
+      "passed": true,
+      "move_id": 28
+    },
+    {
+      "check": "Outstanding invoice and bank settlement: balanced journal entry 28",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "Bank settlement is recognized exactly once",
+      "passed": true,
+      "actual": "-57.50",
+      "expected": "-57.50"
+    },
+    {
+      "check": "Bank settlement traces actual invoice VAT",
+      "passed": true,
+      "actual": "-50.00",
+      "expected": "-50.00"
+    },
+    {
+      "check": "1: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "1: other companies do not leak into this ledger",
+      "passed": true,
+      "actual": "-149.50",
+      "expected": "-149.50"
+    },
+    {
+      "check": "2: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "2: other companies do not leak into this ledger",
+      "passed": true,
+      "actual": "-184.00",
+      "expected": "-184.00"
+    },
+    {
+      "check": "3: report computation uses non-sudo source admin",
+      "passed": true
+    },
+    {
+      "check": "3: other companies do not leak into this ledger",
+      "passed": true,
+      "actual": "-276.00",
+      "expected": "-276.00"
+    },
+    {
+      "check": "Restricted report tests run without sudo",
+      "passed": true
+    },
+    {
+      "check": "Restricted user sees only authorized company totals",
+      "passed": true,
+      "actual": "-149.50",
+      "expected": "-149.50"
+    },
+    {
+      "check": "Restricted user cannot render company 2",
+      "passed": true
+    },
+    {
+      "check": "Restricted user cannot open sources from company 2",
+      "passed": true
+    },
+    {
+      "check": "Restricted user cannot render company 3",
+      "passed": true
+    },
+    {
+      "check": "Restricted user cannot open sources from company 3",
+      "passed": true
+    },
+    {
+      "check": "Native invoice record rules reject direct access to another company",
+      "passed": true
+    },
+    {
+      "check": "Authorized source action opens original documents in the same company",
+      "passed": true
+    },
+    {
+      "check": "Source actions contain no foreign-company invoices",
+      "passed": true
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 5
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 5",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 6
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 6",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 7
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 7",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 8
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 8",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 9
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 9",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 10
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 10",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 11
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 11",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 12
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 12",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 13
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 13",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 14
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 14",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 15
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 15",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 16
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 16",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 17
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 17",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 18
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 18",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 19
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 19",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 20
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 20",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 21
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 21",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 22
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 22",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 23
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 23",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 24
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 24",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 25
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 25",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 26
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 26",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 27
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 27",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "Final synthetic ledger: posted",
+      "passed": true,
+      "move_id": 28
+    },
+    {
+      "check": "Final synthetic ledger: balanced journal entry 28",
+      "passed": true,
+      "actual": "0.00",
+      "expected": "0.00"
+    },
+    {
+      "check": "All synthetic business/configuration/user records rolled back",
+      "passed": true,
+      "before": {
+        "res.company": 3,
+        "res.users": 1,
+        "res.partner": 5,
+        "account.account": 534,
+        "account.journal": 30,
+        "account.move": 0,
+        "account.move.line": 0,
+        "account.payment": 0,
+        "account.partial.reconcile": 0,
+        "product.category": 4,
+        "product.template": 8
+      },
+      "after": {
+        "res.company": 3,
+        "res.users": 1,
+        "res.partner": 5,
+        "account.account": 534,
+        "account.journal": 30,
+        "account.move": 0,
+        "account.move.line": 0,
+        "account.payment": 0,
+        "account.partial.reconcile": 0,
+        "product.category": 4,
+        "product.template": 8
+      }
+    },
+    {
+      "check": "No synthetic ledger documents survive the rehearsal",
+      "passed": true
+    },
+    {
+      "check": "No synthetic restricted user survives the rehearsal",
+      "passed": true
+    }
+  ],
+  "companies": [
+    {
+      "company_id": 1,
+      "company_name": "ARZ",
+      "bill_id": 5,
+      "credit_id": 8,
+      "deferred_bill_id": 10,
+      "september_totals": {
+        "receipts": 23.0,
+        "payments": -115.0,
+        "displayed_net_movement": -92.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -92.0,
+        "opening_cash_balance": 0.0,
+        "closing_cash_balance": -92.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      },
+      "november_totals": {
+        "receipts": 0.0,
+        "payments": -230.0,
+        "displayed_net_movement": -230.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -230.0,
+        "opening_cash_balance": -92.0,
+        "closing_cash_balance": -322.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      }
+    },
+    {
+      "company_id": 2,
+      "company_name": "المعلم الشامي",
+      "bill_id": 12,
+      "credit_id": 15,
+      "deferred_bill_id": 17,
+      "september_totals": {
+        "receipts": 46.0,
+        "payments": -230.0,
+        "displayed_net_movement": -184.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -184.0,
+        "opening_cash_balance": 0.0,
+        "closing_cash_balance": -184.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      },
+      "november_totals": {
+        "receipts": 0.0,
+        "payments": -460.0,
+        "displayed_net_movement": -460.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -460.0,
+        "opening_cash_balance": -184.0,
+        "closing_cash_balance": -644.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      }
+    },
+    {
+      "company_id": 3,
+      "company_name": "دوحة المستهلك",
+      "bill_id": 19,
+      "credit_id": 22,
+      "deferred_bill_id": 24,
+      "september_totals": {
+        "receipts": 69.0,
+        "payments": -345.0,
+        "displayed_net_movement": -276.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -276.0,
+        "opening_cash_balance": 0.0,
+        "closing_cash_balance": -276.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      },
+      "november_totals": {
+        "receipts": 0.0,
+        "payments": -690.0,
+        "displayed_net_movement": -690.0,
+        "excluded_tax_bridge": 0.0,
+        "actual_net_movement": -690.0,
+        "opening_cash_balance": -276.0,
+        "closing_cash_balance": -966.0,
+        "balance_check": 0.0,
+        "unverified_tax_gross": 0.0
+      }
+    }
+  ],
+  "rollback_verified": true,
+  "elapsed_seconds": 8.363,
+  "main_database_accessed_by_this_script": false,
+  "main_fingerprint_verified_here": false,
+  "scope_note": "Only the named rehearsal clone is used. Parent release checks main separately. Native report execution audits may persist in this disposable clone."
+}

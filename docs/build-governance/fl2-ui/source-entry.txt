@@ -1,0 +1,70 @@
+- banner:
+  - navigation:
+    - link:
+      - /url: /odoo
+      - generic: 
+    - button "":
+      - generic: 
+    - generic: BNK1/2026/00002 (FL2 CASH DEMO Payments 5000)
+    - menu:
+      - button "الرسائل 1":
+        - img "الرسائل": 
+        - generic: "1"
+      - button "الأنشطة":
+        - img "الأنشطة": 
+      - button "Language / اللغة":
+        - generic: 
+      - text: 
+      - button "تبديل القائمة":
+        - img "القائمة"
+        - img "المستخدم متصل الآن": 
+      - text:  
+- text: 
+- button "قائمة الإجراءات":
+  - generic: 
+- search:
+  - navigation "جهاز المناداة":
+    - button "السابق":
+      - generic: 
+    - button "التالي":
+      - generic: 
+- main:
+  - button "عكس القيد"
+  - button "":
+    - generic: 
+  - radiogroup "شريط الحالة":
+    - button "مُرحّل" [disabled]
+  - heading "BNK1/2026/00002" [level=1]:
+    - generic: BNK1/2026/00002
+  - generic: الرقم المرجعي
+  - generic: FL2 CASH DEMO Payments 5000
+  - generic: تاريخ المحاسبة
+  - generic: ١٠ فبراير
+  - generic: دفتر اليومية
+  - generic: البنك
+  - list:
+    - tab "عناصر اليومية"
+    - tab "معلومات أخرى"
+  - link "400004 مصروف بدل سكن FL2 CASH DEMO Payments 5000 ملف ثنائي 5,000.00 SR (DR)":
+    - generic: 400004 مصروف بدل سكن
+    - emphasis: FL2 CASH DEMO Payments 5000
+    - img "ملف ثنائي"
+    - generic: 5,000.00 SR (DR)
+  - link "101001 البنك FL2 CASH DEMO Payments 5000 ملف ثنائي 5,000.00 SR (CR)":
+    - generic: 101001 البنك
+    - emphasis: FL2 CASH DEMO Payments 5000
+    - img "ملف ثنائي"
+    - generic: 5,000.00 SR (CR)
+  - button "إرسال رسالة"
+  - button "ملاحظة"
+  - button "النشاط"
+  - button "البحث عن الرسائل":
+    - img: 
+  - button "إرفاق الملفات":
+    - generic: 
+  - button "0":
+    - img: 
+    - superscript: "0"
+  - generic: 😶
+  - generic: المحادثة فارغة.
+- paragraph: اضغط على esc للخروج من وضع ملء الشاشة

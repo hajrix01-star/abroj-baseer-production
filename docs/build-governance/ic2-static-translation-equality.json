@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "retained_static_entries": 451,
+  "static_msgstr_plural_flags_and_occurrences_exact": true,
+  "removed_occurrences": 45,
+  "removed_entries": 12,
+  "database_calls": 0
+}

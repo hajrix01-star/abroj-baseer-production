@@ -1,0 +1,76 @@
+name: baseer-odoo-heat-rehearsal
+
+# Isolated, short-lived rehearsal only.  It does not join any production
+# network or reuse any production volume.  The copied .env is retained on the
+# host directory with mode 0600 and is never written to this file or Git.
+services:
+  db:
+    image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    mem_limit: 1g
+    pids_limit: 256
+    restart: "no"
+
+  odoo_data_init:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    user: "0:0"
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ["install -d -o 100 -g 101 -m 0755 /var/lib/odoo/sessions /var/lib/odoo/filestore"]
+    volumes:
+      - odoo-data:/var/lib/odoo
+    restart: "no"
+
+  odoo:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+      odoo_data_init:
+        condition: service_completed_successfully
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_heat_rehearsal
+      - --db-filter=^baseer_heat_rehearsal$
+      - --no-database-list
+      - --http-port=8069
+    ports:
+      - "127.0.0.1:18187:8069"
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
+      - ./source/custom_addons:/mnt/baseer-addons:ro
+      - ./source/third_party_addons:/mnt/third-party-addons:ro
+    networks: [frontend, backend]
+    mem_limit: 3g
+    pids_limit: 512
+    restart: "no"
+
+volumes:
+  postgres-data:
+    name: baseer-odoo-heat-rehearsal-postgres-data
+  odoo-data:
+    name: baseer-odoo-heat-rehearsal-odoo-data
+
+networks:
+  frontend:
+    name: baseer-odoo-heat-rehearsal-frontend
+  backend:
+    name: baseer-odoo-heat-rehearsal-backend
+    internal: true

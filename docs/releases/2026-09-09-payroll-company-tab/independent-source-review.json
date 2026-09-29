@@ -1,0 +1,12 @@
+{
+  "review_date": "2026-09-09",
+  "commit": "9c43256987654c4d988cd29c05f5f967b457235a",
+  "parent": "7c52ea751f6568eaec048e51f1011d5a5a109e15",
+  "files_verified_with_sha256": 1091,
+  "hash_mismatches": [],
+  "git_status_clean": true,
+  "changed_files_against_parent_manifest": ["custom_addons/baseer_payroll/views/settings_views.xml"],
+  "reviewed_delta": "One active=False field inserted into existing view_baseer_company_payroll XML record; no other content changes",
+  "archive_sha256_verified": "374dd504b8ff7d0b551fba661ab2669090ef59235998baecd394103aa2106cf0",
+  "method": "Independent PowerShell Get-FileHash for each candidate manifest path and archive, parent manifest comparison, git status --short, git diff --no-index of changed XML; release script and native rollback/apply logs reviewed"
+}

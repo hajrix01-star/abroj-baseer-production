@@ -1,0 +1,221 @@
+{
+  "reference": "POS-S3",
+  "module_version": "19.0.1.2.0",
+  "environment": "QA only",
+  "files": [
+    {
+      "path": "custom_addons/baseer_pos_summary/__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/__manifest__.py",
+      "sha256": "812adbccb3d4eb79c6c40878659c965fb4a3969fc702f524a932c3e4f5254a11"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/i18n/ar.po",
+      "sha256": "051f66681596e0066cd34ef5f7d9568455b6faa091d2559686a45e54dbdeeb49"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/migrations/19.0.1.1.0/post-migrate.py",
+      "sha256": "5cb22eb451ebf1b1bcba4776b9a540bd2d95c5f7d8bde3fa5163a52702917afb"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/__init__.py",
+      "sha256": "a16fd92ebf9b9ffd904f656d0f75c9f1fe329d637fdda4b6f3699166d47ba49c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/cash_report.py",
+      "sha256": "b637f42011ec24b67beed56870d309afeefad73a53f68821754a47381d166595"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/common.py",
+      "sha256": "4901ed946b30114cf9e0a715d1bb865047b4579c537cf2164656858a443929d1"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/daily_report.py",
+      "sha256": "5697630a5b810712d37e6ce297194aa595e033e92d200d25aeca94b9395219ff"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/day_archive.py",
+      "sha256": "0bb91cccbeae2d26d9f3ab7adb33969cf61805f5c14027b4d04b97c01653f9ef"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/day_entry.py",
+      "sha256": "5c44af51a4d0a3f9ca5631dbf245320a7da44c400d7c0f0ddb6da56abcee2e2b"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/operations.py",
+      "sha256": "a8059a1e6cb5c1bc5f12d82f0fcc2a82806a3bd4e2a8596eab85cc448bc8ef84"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_configuration.py",
+      "sha256": "e35e769afbb1c2206c0765f395adce8f9e7abc1722bbea2604fdd980e45ac358"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/pos_native.py",
+      "sha256": "8d7ed53c92d25686a3219390857803fa6a0572a4c6d5910a7e062b6e9c7ca63c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/models/summary.py",
+      "sha256": "85e16c1c3c6b73747814b131c79d97485734de4ceb18628375cfb3c069a0df87"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/ir.model.access.csv",
+      "sha256": "4d6060edef0c0942e3aac30b9bffc62c873c66e4c8dfb06e2a42278ec92b9bbe"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/security/security.xml",
+      "sha256": "352e0813fd4a92139151b3e83b10793f15ce394c113c51201cd464187a71a445"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/js/payment_amount_grid.js",
+      "sha256": "7e3eb3eadaf471af4e17ba2ef23ee109bc95733aa65df540cdc848a9a3846b06"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/scss/summary.scss",
+      "sha256": "5ab71f8bcf7cebd5405a9d1daaef8724e748af1fc87100dd593eadcee2d50e50"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/static/src/xml/payment_amount_grid.xml",
+      "sha256": "cd04874fb61021f43a93a235c191c8a8b5313b1ba05f849e03c3ba73486a728c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/allocation_views.xml",
+      "sha256": "c33eb35505837cbbc7ad7c1e3075837ca9eb9b4d2dc14a5fc0d5a673f3b7ce2c"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/configuration_views.xml",
+      "sha256": "8b06ac6c6fcefa243628e1fd7e2ac71ad5558a796b4a988c2bbc0d262d21c2a2"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/daily_report_views.xml",
+      "sha256": "2e6402225938a912c85ecc6ffd917616e80ee2c35a2d2bcc9d57e43bb218a3c9"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/day_archive_views.xml",
+      "sha256": "37a0528c11036b55a008e344d6b69fb9ec2b481a4d67855446a3b5efbaf97f60"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/day_entry_views.xml",
+      "sha256": "105dea2c52fe2448e1e39768389c2112a81ed060649f89ddde2341889cb718a7"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/operations_views.xml",
+      "sha256": "464a9e32f764262a341fc980208e9f053d5b9c238093635b37047406495cffbd"
+    },
+    {
+      "path": "custom_addons/baseer_pos_summary/views/summary_views.xml",
+      "sha256": "7c74a736cc0ddd81f7da7617193470c6964201d00dfd0bcb2969d5456bc2707f"
+    }
+  ],
+  "archive": ".local-backups/releases/2026-09-07-pos-summary-qa3/baseer-pos-summary-qa3.zip",
+  "archive_sha256": "607d4c5a92a7fd3170654e8e24871833a0f76a977cbd54ca97c4303775633d65",
+  "unchanged_shared_sources": [
+    "custom_addons/baseer_report_layout/__init__.py",
+    "custom_addons/baseer_report_layout/__manifest__.py",
+    "custom_addons/baseer_report_layout/README.md",
+    "custom_addons/baseer_report_layout/report/arabic_pdf_font.xml",
+    "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Bold.ttf",
+    "custom_addons/baseer_report_layout/static/fonts/IBMPlexSansArabic-Regular.ttf",
+    "custom_addons/baseer_report_layout/static/fonts/LICENSE.txt",
+    "custom_addons/baseer_report_layout/static/fonts/SOURCE.md",
+    "custom_addons/baseer_report_layout/static/src/js/latin_date_field.js",
+    "custom_addons/baseer_report_layout/static/src/report_layout.scss",
+    "custom_addons/baseer_report_layout/static/src/report_layout.xml",
+    "custom_addons/baseer_purchase_batch/__init__.py",
+    "custom_addons/baseer_purchase_batch/__manifest__.py",
+    "custom_addons/baseer_purchase_batch/data/sequence.xml",
+    "custom_addons/baseer_purchase_batch/i18n/ar_001.po",
+    "custom_addons/baseer_purchase_batch/migrations/19.0.1.2.0/post-migration.py",
+    "custom_addons/baseer_purchase_batch/models/__init__.py",
+    "custom_addons/baseer_purchase_batch/models/purchase_batch.py",
+    "custom_addons/baseer_purchase_batch/models/res_partner.py",
+    "custom_addons/baseer_purchase_batch/README.md",
+    "custom_addons/baseer_purchase_batch/report/purchase_batch_report.xml",
+    "custom_addons/baseer_purchase_batch/security/ir.model.access.csv",
+    "custom_addons/baseer_purchase_batch/security/security.xml",
+    "custom_addons/baseer_purchase_batch/static/src/js/latin_date_field.js",
+    "custom_addons/baseer_purchase_batch/static/src/scss/purchase_batch.scss",
+    "custom_addons/baseer_purchase_batch/views/category_mapping_views.xml",
+    "custom_addons/baseer_purchase_batch/views/purchase_batch_views.xml",
+    "custom_addons/baseer_purchase_batch/views/res_partner_views.xml"
+  ],
+  "evidence": [
+    {
+      "path": "docs/build-governance/pos_s3_checks.json",
+      "sha256": "4f55a0a833c0134a90c9cceed0a539af302b0504e60aab8375d3caab67a7f6ac"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_concurrency.json",
+      "sha256": "ecec672afa80bbc5c433c4a3f73695a7f28e25d45f65d2dd50e4619ba2abf280"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_day_off_checks.json",
+      "sha256": "dd02c394ab1aa29edb18f95cbb1b3351733517ab6d91812e8444037e12c92181"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_financial_audit.json",
+      "sha256": "159caf9291aab3f258476426ea0e2a04ef475e0c1cff2495cf6f7d2719eb9c2c"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_financial_before.json",
+      "sha256": "5c0a4473a38303b17936e7e710c1602dc7132c33b8b1716e99a207b6cb61ef3d"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_ui_evidence.json",
+      "sha256": "3497bd4b23f9f6c0c7ce6d45da876c92d062fb1538763f5ad22845f652f8508c"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_whatsapp_checks.json",
+      "sha256": "fbc4eab724d7fefa5214222b3d25b8dd09244dec47fc3a343a9e9fe9d47d4b8f"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_archive_desktop.png",
+      "sha256": "a46e1ffe683a186aac7596cfe33874416fadc61374fd913f41e80c58f7acfb12"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_archive_en_desktop.png",
+      "sha256": "d8bb18ee5a1583823faf01728dba0dd086db6e1162b4855131864a37d9006fc5"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_archive_en_mobile.png",
+      "sha256": "2b71cd474d1b1041162d43b59d5a3e315f3c3ef6bdbbb5e61fe4bd71dd402280"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_archive_mobile.png",
+      "sha256": "ba2abb24aa4ecf5e75a0268125dc336767cd9c191f95bf7981b79c47ec3cc75b"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_day_off_desktop.png",
+      "sha256": "1ac7f2fc81de612f08bb61a5ff4c4c307bac54d057da371418f2518814379aec"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_day_off_en_mobile.png",
+      "sha256": "00309dbc630b37e10960dcf36c17945923cce924a5724e0cf7630df1956b4ca5"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_day_off_mobile.png",
+      "sha256": "81873b0bd0a5ea239a6ae9683726ea8c37c332e956e430d523798774d38d1b44"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_entry_desktop.png",
+      "sha256": "dfa8a1264d6af686af3a08f7b1652ad4e10c028bd24229b85b15f98e2e2f370d"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_entry_en_mobile.png",
+      "sha256": "9d2e96a13c416c12d2484d68910a82990c4cc8eb34a66add40e75e36ed804cf7"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_entry_mobile.png",
+      "sha256": "b0d00cd5b60655d6cd537de53eb9b85b01e19e6320ded4354289cf0b93e23434"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_main_readonly.txt",
+      "sha256": "87472f9198f2a9b223d9df3e959dc9568c25f76924e6e447d79d06f3ae0f38df"
+    },
+    {
+      "path": "docs/build-governance/pos_s3_whatsapp_ui_message.txt",
+      "sha256": "7b1047221fc35994f065d18947016c96f8de4b4fc7d0eaa24addf5a687903ada"
+    }
+  ]
+}

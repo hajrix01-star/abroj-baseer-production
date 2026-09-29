@@ -1,0 +1,191 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "name": "handler is registered in native report handler registry",
+      "passed": true
+    },
+    {
+      "name": "POST delegates intact wizard action and merges user/action context preserving active ids",
+      "passed": true
+    },
+    {
+      "name": "authenticated transport supplies CSRF token same-origin no-store and bounded abort signal",
+      "passed": true
+    },
+    {
+      "name": "missing optional action context or CSRF does not drop user context",
+      "passed": true
+    },
+    {
+      "name": "valid PDF with absent or malformed disposition uses action filename",
+      "passed": true
+    },
+    {
+      "name": "PDF MIME alone cannot authorize a non-PDF signature",
+      "passed": true
+    },
+    {
+      "name": "PDF signature with wrong MIME is rejected without a preview blob",
+      "passed": true
+    },
+    {
+      "name": "HTTP errors preserve parsed native report exception",
+      "passed": true
+    },
+    {
+      "name": "unstructured server/login failure becomes a preparation error and clears timeout",
+      "passed": true
+    },
+    {
+      "name": "network rejection propagates an error and always clears timeout",
+      "passed": true
+    },
+    {
+      "name": "response body failure also clears timeout",
+      "passed": true
+    },
+    {
+      "name": "timeout abort yields actionable error and removes its timer",
+      "passed": true
+    },
+    {
+      "name": "synchronous URL preparation failure cannot leak timeout before fetch",
+      "passed": true
+    },
+    {
+      "name": "non-PDF and explicit bypass use native fallback without status check or fetch",
+      "passed": true
+    },
+    {
+      "name": "wkhtmltopdf missing/broken/upgrade status returns native fallback before fetch",
+      "passed": true
+    },
+    {
+      "name": "wkhtmltopdf probe rejection cannot produce false native fallback or report fetch",
+      "passed": true
+    },
+    {
+      "name": "preparation failure unblocks UI and rejects without dialog or duplicate fallback",
+      "passed": true
+    },
+    {
+      "name": "handler fetches once unblocks before dialog and remains pending until dialog closes",
+      "passed": true
+    },
+    {
+      "name": "dialog add failure rejects after UI is unblocked",
+      "passed": true
+    },
+    {
+      "name": "Print readiness is gated in template and load auto-prints only once",
+      "passed": true
+    },
+    {
+      "name": "Print exceptions show browser-help fallback without fetching another report",
+      "passed": true
+    },
+    {
+      "name": "Download is available before readiness and reuses exact prepared Blob/filename",
+      "passed": true
+    },
+    {
+      "name": "dialog destroy clears frame source and revokes only its owned Blob URL",
+      "passed": true
+    },
+    {
+      "name": "HTTP 502 maps to native ConnectionLostError without decoding response body",
+      "passed": true
+    },
+    {
+      "name": "trailing disposition separator is removed before native filename parser",
+      "passed": true
+    },
+    {
+      "name": "PDF MIME parameters do not reject a valid signature",
+      "passed": true
+    },
+    {
+      "name": "context serialization error before fetch still clears its timeout",
+      "passed": true
+    },
+    {
+      "name": "handler timeout rejects and unblocks with no preview dialog",
+      "passed": true
+    },
+    {
+      "name": "complete dialog lifecycle reuses one fetched blob for Print and Download until close",
+      "passed": true
+    },
+    {
+      "name": "native no-load switches after five seconds to bundled viewer with exact same encoded blob",
+      "passed": true
+    },
+    {
+      "name": "known unsupported native PDF viewer switches immediately without five-second timer",
+      "passed": true
+    },
+    {
+      "name": "native readiness cancels automatic fallback and explicit alternative remains available",
+      "passed": true
+    },
+    {
+      "name": "alternative frame no-load timeout shows help and destroy clears both timers",
+      "passed": true
+    },
+    {
+      "name": "compatible readiness awaits initializedPromise before pages and Print",
+      "passed": true
+    },
+    {
+      "name": "documentloaded alone stays unready until pageViewsReady and pagesPromise complete",
+      "passed": true
+    },
+    {
+      "name": "missing pdfDocument cannot authorize compatible Print",
+      "passed": true
+    },
+    {
+      "name": "page readiness polling is bounded to 120 attempts at 250ms with help afterwards",
+      "passed": true
+    },
+    {
+      "name": "destroy while awaiting initialization prevents delayed readiness or timers",
+      "passed": true
+    },
+    {
+      "name": "destroy while awaiting pages makes continuation inert and clears frame source",
+      "passed": true
+    },
+    {
+      "name": "late scheduled poll after destruction cannot reschedule or print",
+      "passed": true
+    },
+    {
+      "name": "missing or rejected viewer initialization remains unready with download available",
+      "passed": true
+    },
+    {
+      "name": "rejected pages promise shows help without automatic printing",
+      "passed": true
+    },
+    {
+      "name": "Print guard enforces readiness and rechecks compatible page views at click time",
+      "passed": true
+    },
+    {
+      "name": "repeated compatible load events cannot auto-print twice after shared page promise",
+      "passed": true
+    },
+    {
+      "name": "repeated compatible load events cannot orphan polling timer after destroy",
+      "passed": true
+    }
+  ],
+  "source_sha256": {
+    "report_transport.js": "801ff8f0d2857c8a48ee790b04b165f8ebba3984d543cdab07bdef75560d22db",
+    "print_dialog.js": "d1d76e4caf0c6887f67895f3cd01abcf4f8bed4cc14d43daba6d6c662b68abaa",
+    "print_dialog.xml": "6cc769687d5985b8b57a6c5ea2f76e39208c080b5cbc6ead6964a44604f7ad43"
+  },
+  "scope": "Actual production source imported into Node with stubbed Odoo services, timers, DOMParser and iframe. Native getReportUrl is stubbed: verifies exact action delegation, not native URL implementation. No real browser, printing, HTTP, Odoo or database mutation."
+}

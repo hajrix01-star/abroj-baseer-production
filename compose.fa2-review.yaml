@@ -1,0 +1,25 @@
+services:
+  fa2_review:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=baseer_fix_core_20260909
+      - --db-filter=^baseer_fix_core_20260909$
+      - --no-database-list
+      - --max-cron-threads=0
+      - --smtp=127.0.0.1
+      - --smtp-port=9
+    ports:
+      - '127.0.0.1:18072:8069'
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./.local-backups/fa2-20260909/candidate/custom_addons:/mnt/baseer-addons:ro
+      - ./.local-backups/fa2-20260909/candidate/third_party_addons:/mnt/third-party-addons:ro
+    restart: 'no'

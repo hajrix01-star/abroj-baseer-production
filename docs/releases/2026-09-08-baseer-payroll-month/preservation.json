@@ -1,0 +1,11 @@
+{
+  "account_move": true,
+  "account_move_line": true,
+  "account_payment": true,
+  "res_company": true,
+  "res_partner": true,
+  "res_users": true,
+  "res_groups_users_rel": true,
+  "res_company_users_rel": true,
+  "main_exact": true
+}

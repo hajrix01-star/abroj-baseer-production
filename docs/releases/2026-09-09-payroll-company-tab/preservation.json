@@ -1,0 +1,8 @@
+{
+  "tables_checked": 782,
+  "changed_tables": [
+    "ir_ui_view"
+  ],
+  "all_other_tables_exact": true,
+  "candidate": "9c43256987654c4d988cd29c05f5f967b457235a"
+}

@@ -1,0 +1,348 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "passed": 80,
+  "checks": [
+    {
+      "check": "configured native purchase VAT exists",
+      "passed": true
+    },
+    {
+      "check": "draft gross aggregate",
+      "passed": true
+    },
+    {
+      "check": "draft native tax preview",
+      "passed": true
+    },
+    {
+      "check": "three original vendor bills created",
+      "passed": true
+    },
+    {
+      "check": "only paid rows create payments",
+      "passed": true
+    },
+    {
+      "check": "native posted bill PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "gross retained PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "preview matches native tax PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "administrative entry date never shifts accounting PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "native service product category lineage PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "actually paid PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "payment date matches invoice PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "payable reconciled PB1 TEST/1",
+      "passed": true
+    },
+    {
+      "check": "native posted bill PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "gross retained PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "preview matches native tax PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "administrative entry date never shifts accounting PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "native service product category lineage PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "actually paid PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "payment date matches invoice PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "payable reconciled PB1 TEST/2",
+      "passed": true
+    },
+    {
+      "check": "native posted bill PB1 TEST/3",
+      "passed": true
+    },
+    {
+      "check": "gross retained PB1 TEST/3",
+      "passed": true
+    },
+    {
+      "check": "preview matches native tax PB1 TEST/3",
+      "passed": true
+    },
+    {
+      "check": "administrative entry date never shifts accounting PB1 TEST/3",
+      "passed": true
+    },
+    {
+      "check": "native service product category lineage PB1 TEST/3",
+      "passed": true
+    },
+    {
+      "check": "credit remains unpaid",
+      "passed": true
+    },
+    {
+      "check": "balanced move 420",
+      "passed": true
+    },
+    {
+      "check": "balanced move 422",
+      "passed": true
+    },
+    {
+      "check": "balanced move 424",
+      "passed": true
+    },
+    {
+      "check": "balanced move 421",
+      "passed": true
+    },
+    {
+      "check": "balanced move 423",
+      "passed": true
+    },
+    {
+      "check": "cash report counts only actual payments",
+      "passed": true
+    },
+    {
+      "check": "cash report shows chosen child category",
+      "passed": true
+    },
+    {
+      "check": "repeat approval creates nothing",
+      "passed": true
+    },
+    {
+      "check": "approved batch immutable state",
+      "passed": true
+    },
+    {
+      "check": "approved batch immutable company_id",
+      "passed": true
+    },
+    {
+      "check": "approved batch immutable name",
+      "passed": true
+    },
+    {
+      "check": "approved batch immutable approved_by_id",
+      "passed": true
+    },
+    {
+      "check": "approved batch cannot be deleted",
+      "passed": true
+    },
+    {
+      "check": "approved line mutation denied ['gross_amount']",
+      "passed": true
+    },
+    {
+      "check": "approved line mutation denied ['move_id']",
+      "passed": true
+    },
+    {
+      "check": "approved line mutation denied ['payment_id']",
+      "passed": true
+    },
+    {
+      "check": "approved line mutation denied ['batch_id']",
+      "passed": true
+    },
+    {
+      "check": "approved line cannot be deleted",
+      "passed": true
+    },
+    {
+      "check": "cannot append approved batch",
+      "passed": true
+    },
+    {
+      "check": "forged batch state rejected",
+      "passed": true
+    },
+    {
+      "check": "forged bill link rejected in draft",
+      "passed": true
+    },
+    {
+      "check": "more than two raw decimals rejected",
+      "passed": true
+    },
+    {
+      "check": "invalid gross rejected -1",
+      "passed": true
+    },
+    {
+      "check": "invalid gross rejected 0",
+      "passed": true
+    },
+    {
+      "check": "invalid gross rejected NaN",
+      "passed": true
+    },
+    {
+      "check": "invalid gross rejected Infinity",
+      "passed": true
+    },
+    {
+      "check": "blank invoice reference rejected",
+      "passed": true
+    },
+    {
+      "check": "duplicate reference within batch rejected",
+      "passed": true
+    },
+    {
+      "check": "existing supplier bill duplicate rejected",
+      "passed": true
+    },
+    {
+      "check": "exact gross roundtrip 0.01/True",
+      "passed": true
+    },
+    {
+      "check": "exact gross roundtrip 0.04/True",
+      "passed": true
+    },
+    {
+      "check": "exact gross roundtrip 115/False",
+      "passed": true
+    },
+    {
+      "check": "unsettled payment setup rejected",
+      "passed": true
+    },
+    {
+      "check": "failed batch has no financial side effects",
+      "passed": true
+    },
+    {
+      "check": "internal atomic rollback after first completed payment, even when caller catches error",
+      "passed": true
+    },
+    {
+      "check": "late failure leaves editable draft and no links",
+      "passed": true
+    },
+    {
+      "check": "foreign company tax rejected",
+      "passed": true
+    },
+    {
+      "check": "batch row ceiling enforced",
+      "passed": true
+    },
+    {
+      "check": "non accounting user cannot read batches",
+      "passed": true
+    },
+    {
+      "check": "non accounting user cannot create batches",
+      "passed": true
+    },
+    {
+      "check": "operator can read category mapping",
+      "passed": true
+    },
+    {
+      "check": "operator cannot alter category accounting mapping",
+      "passed": true
+    },
+    {
+      "check": "native invoicing operator can approve within rights",
+      "passed": true
+    },
+    {
+      "check": "native invoicing operator can fully settle paid batch",
+      "passed": true
+    },
+    {
+      "check": "context defaults cannot forge approval or accounting links",
+      "passed": true
+    },
+    {
+      "check": "native approval safely resets injected financial bypass context",
+      "passed": true
+    },
+    {
+      "check": "forged allowed company context denied",
+      "passed": true
+    },
+    {
+      "check": "foreign company batch create denied",
+      "passed": true
+    },
+    {
+      "check": "locked invoice date rejected without silent shift",
+      "passed": true
+    },
+    {
+      "check": "bounded capacity 1",
+      "passed": true,
+      "seconds": 0.10247347399126738
+    },
+    {
+      "check": "bounded capacity 10",
+      "passed": true,
+      "seconds": 0.8335085489670746
+    },
+    {
+      "check": "bounded capacity 50",
+      "passed": true,
+      "seconds": 4.292712208989542
+    },
+    {
+      "check": "all QA integration financial fixtures rolled back",
+      "passed": true
+    }
+  ],
+  "timings": [
+    {
+      "rows": 3,
+      "seconds": 0.8983157849870622
+    },
+    {
+      "rows": 1,
+      "seconds": 0.10247347399126738
+    },
+    {
+      "rows": 10,
+      "seconds": 0.8335085489670746
+    },
+    {
+      "rows": 50,
+      "seconds": 4.292712208989542
+    }
+  ],
+  "rollback": true
+}

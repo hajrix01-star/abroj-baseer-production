@@ -1,0 +1,150 @@
+- banner:
+  - navigation:
+    - button "":
+      - generic: 
+    - menuitem "Invoicing"
+    - menu:
+      - menuitem "Dashboard"
+      - button "Customers":
+        - generic: Customers
+      - button "Vendors":
+        - generic: Vendors
+      - button "Accounting":
+        - generic: Accounting
+      - menuitem "Financial operations"
+      - button "Review":
+        - generic: Review
+      - button "Reporting":
+        - generic: Reporting
+      - button "":
+        - generic: 
+    - menu:
+      - button "Messages 1":
+        - img "Messages": 
+        - generic: "1"
+      - button "Activities":
+        - img "Activities": 
+      - button "Language / اللغة":
+        - generic: 
+        - generic: EN
+      - button "المعلم الشامي":
+        - text: 
+        - generic: المعلم الشامي
+      - generic: 
+      - button "User User is online":
+        - img "User"
+        - img "User is online": 
+        - text: 
+- generic: Financial operations
+- button "Actions menu":
+  - generic: 
+- search:
+  - search:
+    - button "Search...":
+      - img: 
+    - listitem "search":
+      - button "Number or reference ":
+        - text: Number or reference
+        - generic: 
+      - generic "FL1-NO-MATCH-000"
+      - button "Remove": 
+    - searchbox "Search..." [active]
+  - button ""
+- navigation:
+  - button "القائمة View":
+    - generic: 
+  - button "كانبان View":
+    - generic: 
+- main:
+  - region "Financial summary":
+    - generic: Current balances · 2026-09-10
+    - button "Refresh financial summary":
+      - generic: 
+    - generic: SAR
+    - heading "Customers" [level=3]
+    - generic: 0 documents
+    - 'button "Customers — Net invoices: 0.00SAR"':
+      - generic: Net invoices
+      - generic: "0.00"
+    - 'button "Customers — Settled amount: 0.00SAR"':
+      - generic: Settled amount
+      - generic: "0.00"
+    - 'button "Customers — Outstanding: 0.00SAR"':
+      - generic: Outstanding
+      - generic: "0.00"
+    - 'button "Customers — Partially paid: 0"':
+      - generic: Partially paid
+      - generic: "0"
+    - 'button "Customers — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+    - heading "Suppliers" [level=3]
+    - generic: 0 documents
+    - 'button "Suppliers — Net invoices: 0.00SAR"':
+      - generic: Net invoices
+      - generic: "0.00"
+    - 'button "Suppliers — Settled amount: 0.00SAR"':
+      - generic: Settled amount
+      - generic: "0.00"
+    - 'button "Suppliers — Outstanding: 0.00SAR"':
+      - generic: Outstanding
+      - generic: "0.00"
+    - 'button "Suppliers — Partially paid: 0"':
+      - generic: Partially paid
+      - generic: "0"
+    - 'button "Suppliers — Net overdue: 0.00SAR"':
+      - generic: Net overdue
+      - generic: "0.00"
+  - table:
+    - rowgroup:
+      - row "Date  Number  Operation Partner  Journal  Company  Amount  Settled Outstanding  Payment Status  ":
+        - columnheader:
+          - checkbox
+        - columnheader "Date ":
+          - generic: Date
+          - generic: 
+        - columnheader "Number ":
+          - generic: Number
+          - generic: 
+        - columnheader "Operation":
+          - generic: Operation
+          - text: 
+        - columnheader "Partner ":
+          - generic: Partner
+          - generic: 
+        - columnheader "Journal ":
+          - generic: Journal
+          - generic: 
+        - columnheader "Company ":
+          - generic: Company
+          - generic: 
+        - columnheader "Amount ":
+          - generic: Amount
+          - generic: 
+        - columnheader "Settled":
+          - generic: Settled
+          - text: 
+        - columnheader "Outstanding ":
+          - generic: Outstanding
+          - generic: 
+        - columnheader "Payment Status ":
+          - generic: Payment Status
+          - generic: 
+        - columnheader
+        - columnheader "":
+          - button "":
+            - generic: 
+    - rowgroup:
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+      - row:
+        - cell
+    - rowgroup:
+      - row:
+        - cell
+        - cell
+- paragraph: Press esc to exit full screen

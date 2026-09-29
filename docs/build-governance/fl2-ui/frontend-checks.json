@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "assertions": 13,
+  "scope": "Isolated FL2 mode and month behavior with mocked hooks/services; FL1 native KeepLast suite is separate.",
+  "checks": [
+    "cash context selects cash mode",
+    "cash endpoint selected",
+    "server company displayed",
+    "month supplied only to server action",
+    "native company context forwarded",
+    "duplicate action blocked",
+    "server action passed unchanged to action service",
+    "all operations uses native server action",
+    "all operations restores header-selected companies",
+    "cash context is not mutated",
+    "invalid input reset",
+    "failed navigation restores month and visible error",
+    "destroyed component cannot navigate"
+  ]
+}

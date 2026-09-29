@@ -1,0 +1,23 @@
+services:
+  abroj_candidate_test:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.local.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons
+      - --database=abroj_baseer_candidate_20260914
+      - --db-filter=^abroj_baseer_candidate_20260914$
+      - --no-database-list
+      - -i
+      - website,abroj_website,baseer_abroj_login
+      - --stop-after-init
+    volumes:
+      - ./config/odoo.local.conf:/etc/odoo/odoo.local.conf:ro
+      - ./release_candidates/2026-09-14-abroj-baseer/custom_addons:/mnt/baseer-addons:ro

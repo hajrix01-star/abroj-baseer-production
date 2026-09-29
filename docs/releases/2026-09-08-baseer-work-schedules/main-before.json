@@ -1,0 +1,103 @@
+{
+  "account_move": {
+    "ids": [],
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_move_line": {
+    "ids": [],
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "account_payment": {
+    "ids": [],
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "hr_employee": {
+    "ids": [
+      1
+    ],
+    "hash": "6b2c58404d9f31f61ed87dfdc76067b8"
+  },
+  "hr_version": {
+    "ids": [
+      1
+    ],
+    "hash": "832e28c78854afd1d6bea97438ab4d25"
+  },
+  "res_company": {
+    "ids": [
+      1,
+      2,
+      3
+    ],
+    "hash": "29a23aeee6abfe05a5fc98c09e03b015"
+  },
+  "resource_calendar": {
+    "ids": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "hash": "58262194ae26e604a45b74f74fc590a7"
+  },
+  "resource_calendar_attendance": {
+    "ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "hash": "06e00f55d3e07e9b49bdd43d1f872770"
+  }
+}

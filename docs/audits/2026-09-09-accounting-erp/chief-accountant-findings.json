@@ -1,0 +1,45 @@
+{
+  "role": "chief-accountant",
+  "candidate": "8aff2c48f66df5925cf9dd98e9e7f11b55741f50",
+  "database": "baseer_dev",
+  "read_only": true,
+  "verdict": "Core accounting configuration consistent; conditional readiness for first owner funding/opening requires defining an appropriate equity or owner-loan purpose.",
+  "critical_configuration_defects_confirmed": 0,
+  "findings": [
+    {
+      "id": "CA-01",
+      "priority": "P2",
+      "confidence": "high that ordinary-equity accounts are absent; business necessity depends on intended funding",
+      "title": "No ordinary equity or explicitly named owner capital/contribution account in any company",
+      "companies": [1, 2, 3],
+      "ordinary_equity_count": 0,
+      "unaffected_earnings_account_ids": [220, 398, 576],
+      "recommendation": "Define the intended capital/contribution versus owner-loan accounting before the first relevant funding/opening transaction. Do not invent a code, amount, or silently repurpose an existing account.",
+      "blocks_sales_summary": false
+    },
+    {
+      "id": "CA-02",
+      "priority": "observation",
+      "confidence": "high",
+      "title": "General payment fallback routes to outstanding current-asset accounts 101003/101004; distinguish from direct treasury posting",
+      "missing_explicit_payment_account_lines": 18,
+      "data_corruption_found": false
+    }
+  ],
+  "confirmed_counts": {
+    "companies": 3,
+    "accounts": 561,
+    "journals": 45,
+    "taxes": 117,
+    "native_chart_account_comparisons": 507,
+    "native_tax_comparisons": 117,
+    "partner_company_checks": 133,
+    "product_company_checks": 107,
+    "service_mappings": 78,
+    "valid_summary_configs": 3,
+    "direct_payroll_ready_outbound_methods": 6
+  },
+  "no_ledger_transactions": "Expected user-confirmed pre-operation condition; evidence limitation only, not a defect.",
+  "manual_employee_contract_salary_completion": "User-owned prerequisite; excluded from remediation recommendations.",
+  "report": "chief-accountant.md"
+}

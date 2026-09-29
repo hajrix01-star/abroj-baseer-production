@@ -1,0 +1,63 @@
+{
+  "summary": 82,
+  "action": {
+    "id": 247,
+    "display_name": "Journal Entries",
+    "name": "Original Accounting Entries",
+    "type": "ir.actions.act_window",
+    "xml_id": "account.action_move_journal_line",
+    "path": "entries",
+    "help": "<p class=\"o_view_nocontent_smiling_face\">\n                Create a journal entry\n              </p><p>\n                A journal entry consists of several journal items, each of\n                which is either a debit or a credit transaction.\n              </p>\n            ",
+    "binding_model_id": false,
+    "binding_type": "action",
+    "binding_view_types": "list,form",
+    "view_id": 699,
+    "domain": [
+      [
+        "id",
+        "in",
+        [
+          645,
+          648,
+          647,
+          646
+        ]
+      ]
+    ],
+    "context": {
+      "allowed_company_ids": [
+        6
+      ],
+      "create": false,
+      "default_move_type": "entry",
+      "view_no_maturity": true
+    },
+    "res_id": 0,
+    "res_model": "account.move",
+    "target": "current",
+    "view_mode": "list,form",
+    "mobile_view_mode": "kanban",
+    "views": [
+      [
+        699,
+        "list"
+      ],
+      [
+        709,
+        "form"
+      ]
+    ],
+    "limit": 80,
+    "group_ids": [],
+    "search_view_id": [
+      711,
+      "account.move.select"
+    ],
+    "embedded_action_ids": [],
+    "filter": false,
+    "cache": true
+  },
+  "expected_native_list_xmlid": "account.view_move_tree",
+  "result": "PASS",
+  "read_only": true
+}

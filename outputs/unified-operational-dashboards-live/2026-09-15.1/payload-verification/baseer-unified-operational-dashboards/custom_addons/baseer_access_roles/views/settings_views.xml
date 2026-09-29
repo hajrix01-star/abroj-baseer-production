@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_baseer_operations_settings" model="ir.ui.view">
+        <field name="name">baseer.operations.settings</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Baseer" name="baseer_access_roles" groups="baseer_access_roles.group_owner">
+                    <block title="Operational policies" name="baseer_operational_policies">
+                        <setting id="cashier_purchase_batch_approval"
+                                 string="Allow cashier self-approval for purchase batches"
+                                 help="Disabled by default. When enabled, a cashier may approve only a draft batch they created in the selected company.">
+                            <field name="cashier_purchase_batch_approval_enabled"/>
+                            <div class="text-warning mt-2" role="note">
+                                This permits posting supplier bills and their selected payments through the protected batch workflow. It does not give cashiers access to the accounting documents.
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_baseer_operations_settings" model="ir.actions.act_window">
+        <field name="name">Baseer operational policies</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'baseer_access_roles'}</field>
+    </record>
+</odoo>

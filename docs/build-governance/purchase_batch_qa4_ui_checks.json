@@ -1,0 +1,17 @@
+{
+  "database": "baseer_reports_qa_20260907",
+  "version": "19.0.1.2.0",
+  "checks": [
+    "Native company header switched from QA ARZ to QA المعلم الشامي: purchase batch list empty; New form company readonly QA المعلم الشامي. Discarded new form and restored QA ARZ.",
+    "Preview24 company readonly QA ARZ; no visible currency field; native SAR amounts and 402.50/350/52.50 totals retained.",
+    "Legacy row133 explicitly shows Credit on, paid rows131/132 Credit off; VAT retained.",
+    "Native supplier33 Sales & Purchases tab shows manager default purchase category; set QA-only default to map3 اتصالات وإنترنت and saved through UI.",
+    "New preview row supplier dropdown offers only company6 contacts. Rank-zero supplier33 selected; category immediately auto-filled اتصالات وإنترنت. Explicit category remains editable.",
+    "Entered QA4 UI discard reference and115gross; Save without method and Credit off was rejected with native Missing required fields; DOM invalid field payment_method_line_id confirmed.",
+    "Credit toggle checked in unsaved row and empty payment retained. Discarded whole unsaved row; no financial approval or new saved row.",
+    "Full native line form opened from preview131 and shows VAT/Credit switches, amount/date/category/payment with native labels. Existing original invoice and payment links retained by unchanged view/model paths.",
+    "Desktop screenshot850x912 inspected: RTL text, centered date and switches, LTR tabular monetary values. Wide grid intentionally scrolls horizontally inside native container at850px; page itself does not overflow.",
+    "Final upgrade loaded native new-row guard and Arabic payment validation. Unsaved NewId company-context behavior verified by backend specialist; no current physical-phone or new mobile screenshot claimed. Existing QA2 native cards retained."
+  ],
+  "limitations": ["Live current viewport850px only; previous QA2 mobile601px evidence is historical, not a new QA4 mobile run.", "Default configured only for clearly named QA supplier33, no mass categorization/reassignment of real suppliers.", "No admin financial correction executed or bypass added; native account_move.button_draft/_check_draftable and account_payment.action_draft remain authority."]
+}

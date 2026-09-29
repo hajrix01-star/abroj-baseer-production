@@ -1,0 +1,40 @@
+{
+  "main_http": 200,
+  "main_running": true,
+  "qa_running": false,
+  "remaining_databases": [
+    "baseer_dev",
+    "baseer_reports_qa_20260907"
+  ],
+  "candidate": "7c52ea751f6568eaec048e51f1011d5a5a109e15",
+  "files_verified": 1091,
+  "mounts": [
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\bilingual-names-20260909\\candidate\\third_party_addons",
+      "Destination": "/mnt/third-party-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "D:\\Codex\\Baseer-odoo\\.local-backups\\bilingual-names-20260909\\candidate\\custom_addons",
+      "Destination": "/mnt/extra-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "/run/desktop/mnt/host/d/Codex/Baseer-odoo/.local-backups/bilingual-names-20260909/candidate/custom_addons",
+      "Destination": "/mnt/baseer-addons",
+      "Mode": "ro",
+      "RW": false,
+      "Propagation": "rprivate"
+    }
+  ],
+  "main_readonly_forms_search_sync": "passed",
+  "daily_backup_source_updated_and_executed": true,
+  "source_helper_sha256": "5514de65a51bfbe459af90d46730c96ce0ae7d6ee9562587de8cc29c6ed2e81e"
+}

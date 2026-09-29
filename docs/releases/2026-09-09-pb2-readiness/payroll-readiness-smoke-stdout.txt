@@ -1,0 +1,195 @@
+{
+  "checks": [
+    {
+      "name": "HR has no payroll manager",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "HR native creation default stored",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "native real version",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "no invented start",
+      "expected": "False",
+      "actual": "False",
+      "pass": true
+    },
+    {
+      "name": "no invented salary",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "HR protected flag read",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR protected flag write",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "pending row loaded",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "name": "pending state",
+      "expected": "pending",
+      "actual": "pending",
+      "pass": true
+    },
+    {
+      "name": "pending gross",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "Officer native readiness read",
+      "expected": "pending",
+      "actual": "pending",
+      "pass": true
+    },
+    {
+      "name": "Officer foreign parent read",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "pending net",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "pending residual",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "pending deduction retained",
+      "expected": "100",
+      "actual": "100.0",
+      "pass": true
+    },
+    {
+      "name": "pending deduction effective total",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "pending compute",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "pending approve",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "pending native approval",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "pending report",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "completed data still needs refresh",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "refresh same slip",
+      "expected": "[580]",
+      "actual": "[580]",
+      "pass": true
+    },
+    {
+      "name": "ready state",
+      "expected": "ready",
+      "actual": "ready",
+      "pass": true
+    },
+    {
+      "name": "half month days",
+      "expected": "16",
+      "actual": "16.0",
+      "pass": true
+    },
+    {
+      "name": "ready positive net",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "Officer allowed ready draft report",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    },
+    {
+      "name": "HR invalidates gross",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "HR invalidates net",
+      "expected": "0",
+      "actual": "0.0",
+      "pass": true
+    },
+    {
+      "name": "HR retains manual input",
+      "expected": "100",
+      "actual": "100.0",
+      "pass": true
+    },
+    {
+      "name": "HR removes native calculated lines",
+      "expected": "0",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "name": "invalidated native approval",
+      "expected": "True",
+      "actual": "True",
+      "pass": true
+    }
+  ],
+  "database": "baseer_pb2_test_20260909",
+  "warning_ar": "أدخل تاريخ بداية عقد الموظف ثم حدّث الموظفين. لم يُحتسب أي راتب أو خصومات.",
+  "problem_ar": "أدخل تاريخ بداية عقد الموظف ثم حدّث الموظفين. لم يُحتسب أي راتب أو خصومات.",
+  "status": "passed"
+}
+

@@ -1,0 +1,13 @@
+{
+  "custom_addons/baseer_cash_categories/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+  "custom_addons/baseer_cash_categories/__manifest__.py": "a33b09a448c675f09dfed98664a99a33a96c7db99be8984f31e4ebe624206f3a",
+  "custom_addons/baseer_cash_categories/data/report.xml": "8e3e00e3e6ad5b0323813cc78c9f86190101846835091c6b1404f8aa67fac1bb",
+  "custom_addons/baseer_cash_categories/i18n/ar_001.po": "bde61ad3859632554ed900ead2f1cb1c8c896da789420c735792cd129a74938b",
+  "custom_addons/baseer_cash_categories/models/__init__.py": "e6e47f90052e68bff038844f79037cbd2151461e28765993620d1256649af756",
+  "custom_addons/baseer_cash_categories/models/cash_categories.py": "54cab5ca4d32f9308e835f7e957eec7d6fc4cb33aa6fad5aab5cbfc5d3ca9da3",
+  "custom_addons/baseer_cash_categories/models/cash_pdf.py": "7470a0b53d8117db147d60eab82872fd35ca10ba9201130ccb36618c0540463f",
+  "custom_addons/baseer_cash_categories/report/report_note.xml": "a45ebab01ed40c3c9c71ace7b390bf927ebb62019f29cd901c22ea03fec60c9b",
+  "custom_addons/baseer_cash_categories/static/src/cash_categories.js": "4663cb6871b754f5246071f5f7481fb507e9d8189ea8eb86b04bc5092ba9816b",
+  "custom_addons/baseer_cash_categories/static/src/cash_categories.scss": "d0077013b59da03aab6ae59c6ae9def564fe6866aea221cccdfaeb8597a04202",
+  "custom_addons/baseer_cash_categories/static/src/cash_categories.xml": "3a678333524bae3bae3d732456361d00633c0b0d0356dd0b9be0dda941e4f490"
+}

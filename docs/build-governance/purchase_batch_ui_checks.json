@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-07",
+  "database": "baseer_reports_qa_20260907",
+  "method": "Observed native browser interactions, DOM snapshots and read-only SQL confirmation; no browser API accounting writes",
+  "checks": [
+    "Created batch55 and invoice PB1 UI/001 from native editable grid, saved then explicitly approved; original native bill412 is posted and paid, gross115/net100/tax15",
+    "Opened original bill through the row link; bill showed paid and matching amounts",
+    "Approved batch and standalone row inputs are read-only; approve action is absent",
+    "Native calendar selected entry date7 to8 September, saved and reopened; SQL date2026-09-08; restored to2026-09-07 through the same UI",
+    "Reopening date display does not expose a phantom dirty Save state",
+    "Arabic date and approval timestamp display Western0-9 digits; English uses native US date order",
+    "Desktop grid inspected at1280px during entry; final English capture at850px has LTR after page reload and body width equals viewport; native table can scroll at intermediate widths",
+    "Mobile at observed601px uses native cards and full row form; edited description, saved dialog then native Back; SQL confirmed saved description",
+    "Arabic and English labels, native origin links and both draft/approved PDF exports checked; final Arabic PDF visually reviewed",
+    "Admin language restored toArabic after English preference test; fresh load required for native RTL/LTR asset switch"
+  ],
+  "fixtures": {
+    "preview_batch_id": 24,
+    "preview_name": "PB/2026/00016",
+    "preview_rows": 3,
+    "preview_state": "draft",
+    "preview_gross": "402.50",
+    "approved_ui_batch_id": 55,
+    "approved_ui_bill_id": 412
+  },
+  "limitations": [
+    "No physical-phone test or390px claim; mobile evidence viewport was601px",
+    "Hard browser navigation discards unsaved native parent changes; tested save uses native form controls",
+    "QA fixture data only; no main installation or data migration"
+  ]
+}

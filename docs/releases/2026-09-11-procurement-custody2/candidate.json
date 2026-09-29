@@ -1,0 +1,54 @@
+{
+  "candidate": "PRC-CUSTODY2",
+  "module": "baseer_procurement_requests",
+  "version": "19.0.6.0.0",
+  "environment": "baseer_procurement_qa_20260911",
+  "date": "2026-09-11",
+  "git_commit": null,
+  "git_note": "Workspace has no tracked HEAD; this frozen SHA-256 source manifest is the candidate identity.",
+  "runtime_image": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd",
+  "scope": "QA-only changes in custom_addons/baseer_procurement_requests; production, point_of_sale, Odoo core, and dependencies are unchanged.",
+  "source_sha256": {
+    "custom_addons/baseer_procurement_requests/__init__.py": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e",
+    "custom_addons/baseer_procurement_requests/__manifest__.py": "4cb05beddae2001445ce00c7201f21ba7939350c35c70951f1c9aab7eb8994ed",
+    "custom_addons/baseer_procurement_requests/data/sequence.xml": "a9a189add1df0788d8613fa119ea6f7ca39842d59cc15c6989887f22e852a819",
+    "custom_addons/baseer_procurement_requests/i18n/ar_001.po": "40b31e9ed020aaab49d89a5c81413f6fb949870221a60d06eb4c4ed7818e4c3f",
+    "custom_addons/baseer_procurement_requests/models/__init__.py": "d3bc6d11859800c9d57276a734923dc2d68741595a2164d216fd26d4c2ea1ab3",
+    "custom_addons/baseer_procurement_requests/models/custody.py": "22b5aed074539d22b396cf775cf7b0813e35b57a67a4d2ced90c16eba553c4fc",
+    "custom_addons/baseer_procurement_requests/models/procurement.py": "8f63b8df9dcf4e9823368a92ca4a50e35671cda066bc1bc93f9aec0b4d88c41a",
+    "custom_addons/baseer_procurement_requests/security/ir.model.access.csv": "4dc27d5e31669c720553e3e2e62a794804fd7cb159a4116cb1aacd270a86e3b7",
+    "custom_addons/baseer_procurement_requests/security/security.xml": "96be8c6e08e520ff31a7078d5027f93781200bf65ed0cdd37e8154ebfe1e2aef",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.js": "582102e7ebec9e810ff3e36eecf7eebb897f3909e4a3c1a0c83a355445917e5a",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.scss": "d5e1aa1db0c30aebcd3683db1ec19bd9659edea3a76916e2051b827e9ecbf89c",
+    "custom_addons/baseer_procurement_requests/static/src/procurement_catalog.xml": "9b4275cbc4b06bd8a2797136436e31fd40c0ca5afb082182f76736ff745646e8",
+    "custom_addons/baseer_procurement_requests/tests/__init__.py": "588b91f0446b4a1dd4501b85fb7b8f5101b1e3d83dfd7e3fad5afba63900fc13",
+    "custom_addons/baseer_procurement_requests/tests/test_procurement_flow.py": "390d45493ea392058aefcec6555bda22c4128f7dce7ab0d16e081c3d562908b7",
+    "custom_addons/baseer_procurement_requests/tools/export_legacy_catalog.sql": "0aa8b28f0899fffabf726efb05c5973546af6be6314fc00859da0c77e493c855",
+    "custom_addons/baseer_procurement_requests/tools/import_legacy_catalog.py": "b97d2e229592e9b8704f656b702cdbc671dc40d98304d69ad136e233f0d8a1f2",
+    "custom_addons/baseer_procurement_requests/views/procurement_custody_views.xml": "c7c251b71210643731bc581228590341abe60d708469d7a291550ab2391ccdb3",
+    "custom_addons/baseer_procurement_requests/views/procurement_menus.xml": "a01e4bde6e2af3edc662946c9b512b9dacb36fd2e43b81de42c68327d2e29af8",
+    "custom_addons/baseer_procurement_requests/views/procurement_option_views.xml": "a88991c82998db307fba2f84d24c7d13abc72961a9b6ab26ca4000832e25c34b",
+    "custom_addons/baseer_procurement_requests/views/procurement_request_views.xml": "bf3a3dfe9671575e6c5cff3cf0259eff7318cdc04e0fba4be60390ba1f265a2b"
+  },
+  "backup": {
+    "database_dump_sha256": "fbbd5af5479f068465d4861dbb1f90c219059b9c28ece1c49eaf3d3fdc6b2d6a",
+    "filestore_sha256": "da50a943fc4a69b0affb7cf041f740eea200ac616d692b6fdebbc0f9d46ef6cb",
+    "restore_check": "database dump restored to baseer_procurement_custody2_restorecheck_20260911 and module 19.0.4.0.0 queried successfully; filestore extracted successfully (569 files, 64274460 bytes); temporary database dropped"
+  },
+  "verification": {
+    "odoo_tests": "18 test methods loaded, 20 test units, 0 failures, 0 errors",
+    "module_upgrade": "completed on QA with XML and ar_001 translation loading",
+    "local_http": "HTTP 200 from http://127.0.0.1:18081/web/login in 0.518s",
+    "tailscale_http": "HTTP 200 from https://desktop-cvc68i5.tail938958.ts.net:18081/web/login in 0.070s",
+    "browser": "authenticated Arabic UI verified: one custody fund, four cards, funding/return movements, and purchase-batch header request/payment selectors",
+    "independent_review": "Alpha delivery GO for QA only; no open P0/P1",
+    "live_financial_smoke": {
+      "request": "QA-CUSTODY2-LIVE-20260911 (id 370)",
+      "funding": "SAR 2000, custody event 326, posted balanced move 7689",
+      "supplier_purchase": "SAR 1800, batch 300, paid supplier bill 7690, custody settlement 74/move 7691, no direct supplier payment",
+      "return": "SAR 200, custody event 328, posted balanced move 7692",
+      "ending_balance": "SAR 0",
+      "normal_cash_regression": "batch 301 retained direct cash payment 3595"
+    }
+  }
+}

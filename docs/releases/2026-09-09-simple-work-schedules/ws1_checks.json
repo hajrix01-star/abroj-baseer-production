@@ -1,0 +1,491 @@
+{
+  "checks": [
+    {
+      "name": "wizard returns a native calendar 236",
+      "passed": true
+    },
+    {
+      "name": "split periods preserve 480 minutes daily",
+      "passed": true
+    },
+    {
+      "name": "split periods preserve 1440 minutes weekly",
+      "passed": true
+    },
+    {
+      "name": "six native intervals represent three selected days",
+      "passed": true
+    },
+    {
+      "name": "native duration agrees with three days and 24 hours",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 237",
+      "passed": true
+    },
+    {
+      "name": "three daily periods preserve eight hours",
+      "passed": true
+    },
+    {
+      "name": "24 hour period preview displays 24:00",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 238",
+      "passed": true
+    },
+    {
+      "name": "24 hour period native duration remains 24 hours",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 239",
+      "passed": true
+    },
+    {
+      "name": "custom day group contributes 270 minutes",
+      "passed": true
+    },
+    {
+      "name": "custom day group uses selected weekdays",
+      "passed": true
+    },
+    {
+      "name": "overlap on same day",
+      "passed": true
+    },
+    {
+      "name": "duplicate interval",
+      "passed": true
+    },
+    {
+      "name": "week wrap overlap",
+      "passed": true
+    },
+    {
+      "name": "zero length",
+      "passed": true
+    },
+    {
+      "name": "invalid minute",
+      "passed": true
+    },
+    {
+      "name": "invalid hour",
+      "passed": true
+    },
+    {
+      "name": "decimal input",
+      "passed": true
+    },
+    {
+      "name": "missing days",
+      "passed": true
+    },
+    {
+      "name": "missing custom days",
+      "passed": true
+    },
+    {
+      "name": "missing periods",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 250",
+      "passed": true
+    },
+    {
+      "name": "adjacent periods are valid",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 251",
+      "passed": true
+    },
+    {
+      "name": "Monday splits at midnight",
+      "passed": true
+    },
+    {
+      "name": "Monday maintains eight hour average",
+      "passed": true
+    },
+    {
+      "name": "Monday native row day weights sum to one",
+      "passed": true
+    },
+    {
+      "name": "Monday native weekly duration eight hours one day",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 252",
+      "passed": true
+    },
+    {
+      "name": "Sunday wrap splits at midnight",
+      "passed": true
+    },
+    {
+      "name": "Sunday wrap maintains eight hour average",
+      "passed": true
+    },
+    {
+      "name": "Sunday wrap native row day weights sum to one",
+      "passed": true
+    },
+    {
+      "name": "Sunday wrap native weekly duration eight hours one day",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 253",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 254",
+      "passed": true
+    },
+    {
+      "name": "editing template creates an independent native template",
+      "passed": true
+    },
+    {
+      "name": "source template untouched by copy",
+      "passed": true
+    },
+    {
+      "name": "repeated apply is idempotent",
+      "passed": true
+    },
+    {
+      "name": "generated calendar hours mutation denied",
+      "passed": true
+    },
+    {
+      "name": "generated attendance write denied",
+      "passed": true
+    },
+    {
+      "name": "generated attendance deletion denied",
+      "passed": true
+    },
+    {
+      "name": "generated attendance insertion denied",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot forge generated calendar marker",
+      "passed": true
+    },
+    {
+      "name": "RPC context cannot default generated calendar marker",
+      "passed": true
+    },
+    {
+      "name": "RPC boolean cannot impersonate internal schedule token",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot create payroll schedule version marker",
+      "passed": true
+    },
+    {
+      "name": "RPC context cannot default payroll schedule version marker",
+      "passed": true
+    },
+    {
+      "name": "RPC cannot mark existing version as schedule-only",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 255",
+      "passed": true
+    },
+    {
+      "name": "employee receives independent calendar",
+      "passed": true
+    },
+    {
+      "name": "history remains original native calendar",
+      "passed": true
+    },
+    {
+      "name": "another employee remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "future schedule does not become current early",
+      "passed": true
+    },
+    {
+      "name": "effective dated native employee context reads future schedule",
+      "passed": true
+    },
+    {
+      "name": "generated calendar deletion cannot remove employee history",
+      "passed": true
+    },
+    {
+      "name": "employee history remains after rejected calendar deletion",
+      "passed": true
+    },
+    {
+      "name": "existing effective date rejected",
+      "passed": true
+    },
+    {
+      "name": "past effective date rejected",
+      "passed": true
+    },
+    {
+      "name": "initial employee has one version dated today",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 258",
+      "passed": true
+    },
+    {
+      "name": "initial schedule updates sole native version",
+      "passed": true
+    },
+    {
+      "name": "initial employee allows inclusive split change midmonth without history",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 260",
+      "passed": true
+    },
+    {
+      "name": "stale employee form rejected after intervening save",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 261",
+      "passed": true
+    },
+    {
+      "name": "fixed salary schedule-only midmonth remains payroll compatible",
+      "passed": true
+    },
+    {
+      "name": "inclusive split-changing midmonth rejected",
+      "passed": true
+    },
+    {
+      "name": "rejection leaves no orphan calendar or version",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 263",
+      "passed": true
+    },
+    {
+      "name": "inclusive changed split accepted at month boundary",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 264",
+      "passed": true
+    },
+    {
+      "name": "worked days fixture currently ten hours historically eight",
+      "passed": true
+    },
+    {
+      "name": "traditional payroll historical worked hours",
+      "passed": true
+    },
+    {
+      "name": "historical leave fixture approved",
+      "passed": true
+    },
+    {
+      "name": "historical resource leave exists",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 265",
+      "passed": true
+    },
+    {
+      "name": "historical approved leave unchanged",
+      "passed": true
+    },
+    {
+      "name": "historical resource intervals unchanged",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 266",
+      "passed": true
+    },
+    {
+      "name": "source template preserves public holiday dates and exclusion",
+      "passed": true
+    },
+    {
+      "name": "source template does not clone employee time off",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 267",
+      "passed": true
+    },
+    {
+      "name": "current employee calendar preserves public holiday dates and exclusion",
+      "passed": true
+    },
+    {
+      "name": "current employee calendar does not clone employee time off",
+      "passed": true
+    },
+    {
+      "name": "future approved leave rejects affected schedule",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 269",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 270",
+      "passed": true
+    },
+    {
+      "name": "leave after next version boundary does not block earlier interval",
+      "passed": true
+    },
+    {
+      "name": "leave beyond next version boundary remains unchanged",
+      "passed": true
+    },
+    {
+      "name": "existing attendance rejects affected schedule",
+      "passed": true
+    },
+    {
+      "name": "open attendance crossing effective date rejected",
+      "passed": true
+    },
+    {
+      "name": "HR actor has no payroll manager role",
+      "passed": true
+    },
+    {
+      "name": "wizard returns a native calendar 273",
+      "passed": true
+    },
+    {
+      "name": "basic user cannot create schedule wizard",
+      "passed": true
+    },
+    {
+      "name": "ordinary check in actor has no HR or payroll manager role",
+      "passed": true
+    },
+    {
+      "name": "native systray resolves only the signed in employee",
+      "passed": true
+    },
+    {
+      "name": "ordinary user native web check in succeeds",
+      "passed": true
+    },
+    {
+      "name": "ordinary user native web check out updates same record",
+      "passed": true
+    },
+    {
+      "name": "native kiosk check in and out remains compatible",
+      "passed": true
+    },
+    {
+      "name": "native create fixtures omit context employee override",
+      "passed": true
+    },
+    {
+      "name": "attendance native default supplies linked employee before locking",
+      "passed": true
+    },
+    {
+      "name": "ordinary self leave native default supplies linked employee before locking",
+      "passed": true
+    },
+    {
+      "name": "foreign company employee rejected",
+      "passed": true
+    },
+    {
+      "name": "foreign company template rejected",
+      "passed": true
+    },
+    {
+      "name": "small QA apply below two seconds excluding registry",
+      "passed": true
+    }
+  ],
+  "apply_seconds": [
+    0.018,
+    0.0044,
+    0.0036,
+    0.004,
+    0.007,
+    0.0037,
+    0.0041,
+    0.0041,
+    0.0043,
+    0.0178,
+    0.0226,
+    0.0199,
+    0.022,
+    0.019,
+    0.0214,
+    0.0136,
+    0.0232,
+    0.02,
+    0.0289,
+    0.0238,
+    0.0689
+  ],
+  "rejection_messages": {
+    "overlap on same day": "Working periods overlap, including periods after midnight.",
+    "duplicate interval": "Working periods overlap, including periods after midnight.",
+    "week wrap overlap": "Working periods overlap, including periods after midnight.",
+    "zero length": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "invalid minute": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "invalid hour": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "decimal input": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "missing days": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "missing custom days": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "missing periods": "Select working days and enter valid, non-zero periods in HH:MM format.",
+    "generated calendar hours mutation denied": "Use Set working times to create a new schedule. Existing employee schedules must remain unchanged.",
+    "generated attendance write denied": "Use the simplified form to change working times.",
+    "generated attendance deletion denied": "Use the simplified form to change working times.",
+    "generated attendance insertion denied": "Use the simplified form to change working times.",
+    "RPC cannot forge generated calendar marker": "Create this schedule through the simplified schedule form.",
+    "RPC context cannot default generated calendar marker": "Create this schedule through the simplified schedule form.",
+    "RPC boolean cannot impersonate internal schedule token": "Create this schedule through the simplified schedule form.",
+    "RPC cannot create payroll schedule version marker": "Apply employee schedules through Set working times.",
+    "RPC context cannot default payroll schedule version marker": "Apply employee schedules through Set working times.",
+    "RPC cannot mark existing version as schedule-only": "Apply employee schedules through Set working times.",
+    "generated calendar deletion cannot remove employee history": "This schedule belongs to an employee history. Archive it instead of deleting it.",
+    "existing effective date rejected": "An employee version already starts on this date. Choose another date.",
+    "past effective date rejected": "Choose today or a future date to preserve past attendance and payroll.",
+    "stale employee form rejected after intervening save": "The employee schedule changed while this form was open. Reopen Set working times.",
+    "inclusive split-changing midmonth rejected": "These hours change the salary breakdown. Apply them from the first day of a month.",
+    "future approved leave rejects affected schedule": "Time off exists in the affected period. Review it before changing the schedule.",
+    "existing attendance rejects affected schedule": "Attendance exists in the affected period. Choose a later effective date.",
+    "open attendance crossing effective date rejected": "Attendance exists in the affected period. Choose a later effective date.",
+    "basic user cannot create schedule wizard": "You are not allowed to create 'Set Working Times' (baseer.schedule.wizard) records.\n\nThis operation is allowed for the following groups:\n\t- Employees/Administrator\n\nContact your administrator to request access if necessary.",
+    "foreign company employee rejected": "Uh-oh! Looks like you have stumbled upon some top-secret records.\n\nSorry, WS1 HR cd607c60 (id=141) doesn't have 'read' access to:\n- Employee (hr.employee)\n\nIf you really, really need access, perhaps you can win over your friendly administrator with a batch of freshly baked cookies.\n\nThis seems to be a multi-company issue, but you do not have access to the proper company to access the record anyhow.",
+    "foreign company template rejected": "Choose a work schedule from the same company."
+  },
+  "maximum_apply_seconds": 0.0689,
+  "status": "passed",
+  "rolled_back": true
+}

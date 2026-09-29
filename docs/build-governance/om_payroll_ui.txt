@@ -1,0 +1,5 @@
+Browser tab: 2, Title: "قسيمات المرتب", URL: "http://127.0.0.1:18070/odoo/action-633".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 40
++				75 text 
+The focused UI element is 38 search text field (settable)

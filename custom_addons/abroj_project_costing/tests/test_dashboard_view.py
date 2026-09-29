@@ -17,3 +17,13 @@ class TestDashboardView(TransactionCase):
         for field_name in ('name', 'owner_id', 'customer_name', 'agreement_amount',
                            'estimated_total', 'actual_total', 'description', 'note'):
             self.assertTrue(overview.xpath('.//field[@name="%s"]' % field_name), field_name)
+
+    def test_project_pdf_uses_its_company_and_compact_rows(self):
+        report = self.env.ref('abroj_project_costing.report_project_costing')
+        arch = report.get_combined_arch()
+        self.assertIn('t-set="o" t-value="doc"', arch)
+        self.assertIn('t-set="company" t-value="doc.company_id"', arch)
+        self.assertIn('abroj-report-kpis', arch)
+        self.assertIn('abroj-report-details', arch)
+        paperformat = self.env.ref('abroj_project_costing.paperformat_abroj_project_report')
+        self.assertEqual(paperformat.margin_top, 42)

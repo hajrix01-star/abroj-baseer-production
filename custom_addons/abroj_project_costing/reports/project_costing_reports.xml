@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="paperformat_abroj_receipt_voucher" model="report.paperformat">
-        <field name="name">أبرج - سند استلام A4</field><field name="default" eval="False"/><field name="format">A4</field><field name="orientation">Portrait</field><field name="margin_top">12</field><field name="margin_bottom">12</field><field name="margin_left">10</field><field name="margin_right">10</field><field name="header_line" eval="False"/><field name="header_spacing">8</field><field name="dpi">90</field>
+        <field name="name">أبرج - سند استلام A4</field><field name="default" eval="False"/><field name="format">A4</field><field name="orientation">Portrait</field><field name="margin_top">42</field><field name="margin_bottom">12</field><field name="margin_left">10</field><field name="margin_right">10</field><field name="header_line" eval="False"/><field name="header_spacing">8</field><field name="dpi">90</field>
+    </record>
+
+    <record id="paperformat_abroj_project_report" model="report.paperformat">
+        <field name="name">أبرج - تقرير المشروع A4</field><field name="default" eval="False"/><field name="format">A4</field><field name="orientation">Portrait</field><field name="margin_top">42</field><field name="margin_bottom">12</field><field name="margin_left">10</field><field name="margin_right">10</field><field name="header_line" eval="False"/><field name="header_spacing">8</field><field name="dpi">90</field>
     </record>
 
     <record id="action_report_project_costing" model="ir.actions.report">
-        <field name="name">تقرير المشروع</field><field name="model">abroj.cost.project</field><field name="report_type">qweb-pdf</field><field name="report_name">abroj_project_costing.report_project_costing</field><field name="report_file">abroj_project_costing.report_project_costing</field><field name="binding_model_id" ref="model_abroj_cost_project"/><field name="binding_type">report</field>
+        <field name="name">تقرير المشروع</field><field name="model">abroj.cost.project</field><field name="report_type">qweb-pdf</field><field name="report_name">abroj_project_costing.report_project_costing</field><field name="report_file">abroj_project_costing.report_project_costing</field><field name="binding_model_id" ref="model_abroj_cost_project"/><field name="binding_type">report</field><field name="paperformat_id" ref="paperformat_abroj_project_report"/>
     </record>
     <record id="action_report_receipt_voucher" model="ir.actions.report">
         <field name="name">سند استلام</field><field name="model">abroj.cost.receipt</field><field name="report_type">qweb-pdf</field><field name="report_name">abroj_project_costing.report_receipt_voucher</field><field name="report_file">abroj_project_costing.report_receipt_voucher</field><field name="binding_model_id" ref="model_abroj_cost_receipt"/><field name="binding_type">report</field><field name="print_report_name">'%s - %s' % (object.name.replace('/', '-'), object.project_id.name)</field><field name="paperformat_id" ref="paperformat_abroj_receipt_voucher"/>
@@ -16,6 +20,54 @@
     </record>
 
     <template id="report_project_costing"><t t-call="web.html_container"><t t-foreach="docs" t-as="doc"><t t-call="web.external_layout"><div class="page" dir="rtl"><style>.abroj-report{font-family:'DejaVu Sans',Arial,sans-serif;direction:rtl;color:#26343d;font-size:11px}.abroj-report h1{color:#80506f;margin-bottom:10px;font-size:23px;font-weight:700}.abroj-report h2{color:#80506f;font-size:15px;margin:22px 0 8px;font-weight:700}.abroj-report table{width:100%;border-collapse:collapse;margin-top:12px}.abroj-report th{background:#f6eef2;color:#58646c;font-weight:700}.abroj-report th,.abroj-report td{border:1px solid #d9dfe2;padding:7px;text-align:right}.abroj-report .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.abroj-report .summary div{border:1px solid #ded7dc;border-top:3px solid #80506f;padding:9px;background:#fcfafb;line-height:1.7}.abroj-report .muted{color:#777}</style><main class="abroj-report"><h1>تقرير تكاليف المشروع</h1><p><strong>المشروع:</strong> <span t-field="doc.name"/> — <strong>الحالة:</strong> <span t-field="doc.state"/></p><p><strong>قيمة الاتفاقية:</strong> <span t-field="doc.agreement_amount"/> — <strong>مدة الاتفاقية:</strong> <span t-field="doc.agreement_start_date"/> إلى <span t-field="doc.agreement_end_date"/></p><div class="summary"><div>المتوقع<br/><strong t-field="doc.estimated_total"/></div><div>الفعلي<br/><strong t-field="doc.actual_total"/></div><div>الانحراف<br/><strong t-field="doc.variance_amount"/></div><div>المستلم<br/><strong t-field="doc.received_total"/></div><div>المتبقي<br/><strong t-field="doc.receivable_remaining"/></div><div>نسبة الإنجاز<br/><strong><span t-field="doc.progress"/>%</strong></div></div><h2>دراسة المشروع</h2><table><thead><tr><th>الفئة</th><th>البند</th><th>الكمية</th><th>طريقة التسعير</th><th>المتوقع</th><th>الفعلي</th><th>الانحراف</th></tr></thead><tbody><tr t-foreach="doc.plan_line_ids" t-as="line"><td><span t-field="line.category_id"/></td><td><span t-field="line.name"/></td><td><span t-field="line.quantity"/></td><td><span t-field="line.pricing_method"/></td><td><span t-field="line.estimated_total"/></td><td><span t-field="line.actual_total"/></td><td><span t-field="line.variance_amount"/></td></tr></tbody></table><h2>التكاليف الفعلية</h2><table><thead><tr><th>التاريخ</th><th>البند</th><th>النوع</th><th>المبلغ</th><th>المورد / المستفيد</th></tr></thead><tbody><tr t-foreach="doc.actual_line_ids" t-as="line"><td><span t-field="line.date"/></td><td><span t-field="line.name"/></td><td><span t-field="line.cost_type"/></td><td><span t-field="line.amount"/></td><td><span t-field="line.supplier_id"/><span t-if="not line.supplier_id" t-field="line.supplier_text"/></td></tr></tbody></table></main></div></t></t></t></template>
+    <template id="report_project_costing_compact" inherit_id="abroj_project_costing.report_project_costing">
+        <xpath expr="//t[@t-call='web.external_layout']" position="before">
+            <t t-set="o" t-value="doc"/>
+            <t t-set="company" t-value="doc.company_id"/>
+        </xpath>
+        <xpath expr="//main[hasclass('abroj-report')]" position="replace">
+            <section class="abroj-report abroj-report-compact">
+                <style type="text/css">
+                    @font-face {font-family:'Baseer Plex Arabic';src:url('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Regular.ttf') format('truetype');font-weight:400}
+                    @font-face {font-family:'Baseer Plex Arabic';src:url('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Bold.ttf') format('truetype');font-weight:700}
+                    .abroj-report.abroj-report-compact{font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;color:#26343d!important;font-size:12px!important;line-height:1.45!important}
+                    .abroj-report-compact h1{font-family:inherit!important;font-size:21px!important;line-height:1.3!important;color:#1d3444!important;margin:0 0 10px!important}
+                    .abroj-report-compact h2{font-family:inherit!important;font-size:14px!important;color:#1d3444!important;margin:16px 0 5px!important;border-bottom:1px solid #9daab3;padding-bottom:4px}
+                    .abroj-report-compact table{width:100%!important;border-collapse:collapse!important;margin:0!important;page-break-inside:auto}
+                    .abroj-report-compact th,.abroj-report-compact td{font-family:inherit!important;font-size:11px!important;line-height:1.4!important;border:0!important;border-bottom:1px solid #d7dee2!important;padding:5px 6px!important;text-align:right!important;vertical-align:middle!important;background:#fff!important;color:#26343d!important}
+                    .abroj-report-compact th{font-weight:700!important;color:#435360!important}
+                    .abroj-report-compact .abroj-report-kpis{table-layout:fixed!important;border-top:1px solid #d7dee2!important}
+                    .abroj-report-compact .abroj-report-kpis td{width:33.333%!important;padding:7px 8px!important}
+                    .abroj-report-compact .abroj-report-kpis strong{display:block;font-size:14px!important;margin-top:2px;color:#1d3444!important}
+                    .abroj-report-compact .abroj-report-lines thead th{border-bottom:2px solid #8797a1!important}
+                    .abroj-report-compact .abroj-report-lines tr{page-break-inside:avoid}
+                    .abroj-report-compact .abroj-report-empty{text-align:center!important;color:#697780!important;padding:10px!important}
+                </style>
+                <h1>تقرير تكاليف المشروع</h1>
+                <table class="abroj-report-details">
+                    <tbody>
+                        <tr><th>المشروع</th><td><span t-field="doc.name"/></td><th>الحالة</th><td><span t-field="doc.state"/></td><th>العميل</th><td><span t-esc="doc.customer_name or doc.partner_id.name or '—'"/></td></tr>
+                        <tr><th>قيمة الاتفاقية</th><td><span t-field="doc.agreement_amount"/></td><th>بداية الاتفاقية</th><td><span t-field="doc.agreement_start_date"/></td><th>نهاية الاتفاقية</th><td><span t-field="doc.agreement_end_date"/></td></tr>
+                    </tbody>
+                </table>
+                <h2>الملخص المالي</h2>
+                <table class="abroj-report-kpis"><tbody>
+                    <tr><td>إجمالي الدراسة<strong t-field="doc.estimated_total"/></td><td>إجمالي التكاليف الفعلية<strong t-field="doc.actual_total"/></td><td>الانحراف<strong t-field="doc.variance_amount"/></td></tr>
+                    <tr><td>الدفعات المستلمة<strong t-field="doc.received_total"/></td><td>المتبقي من الاتفاقية<strong t-field="doc.receivable_remaining"/></td><td>نسبة الإنجاز<strong><span t-field="doc.progress"/>%</strong></td></tr>
+                </tbody></table>
+                <h2>دراسة المشروع</h2>
+                <table class="abroj-report-lines"><thead><tr><th>الفئة</th><th>البند</th><th>الكمية</th><th>طريقة التسعير</th><th>المتوقع</th><th>الفعلي</th><th>الانحراف</th></tr></thead><tbody>
+                    <tr t-foreach="doc.plan_line_ids" t-as="line"><td><span t-field="line.category_id"/></td><td><span t-field="line.name"/></td><td><span t-field="line.quantity"/></td><td><span t-field="line.pricing_method"/></td><td><span t-field="line.estimated_total"/></td><td><span t-field="line.actual_total"/></td><td><span t-field="line.variance_amount"/></td></tr>
+                    <tr t-if="not doc.plan_line_ids"><td colspan="7" class="abroj-report-empty">لا توجد بنود دراسة مسجلة.</td></tr>
+                </tbody></table>
+                <h2>التكاليف الفعلية</h2>
+                <table class="abroj-report-lines"><thead><tr><th>التاريخ</th><th>البند</th><th>النوع</th><th>المبلغ</th><th>المورد / المستفيد</th></tr></thead><tbody>
+                    <tr t-foreach="doc.actual_line_ids" t-as="line"><td><span t-field="line.date"/></td><td><span t-field="line.name"/></td><td><span t-field="line.cost_type"/></td><td><span t-field="line.amount"/></td><td><span t-field="line.supplier_id"/><span t-if="not line.supplier_id" t-field="line.supplier_text"/></td></tr>
+                    <tr t-if="not doc.actual_line_ids"><td colspan="5" class="abroj-report-empty">لا توجد تكاليف فعلية مسجلة.</td></tr>
+                </tbody></table>
+            </section>
+        </xpath>
+    </template>
     <template id="report_receipt_voucher"><t t-call="web.html_container"><t t-foreach="docs" t-as="o"><t t-set="lang" t-value="o.env.context.get('lang') or o.partner_id.lang or o.company_id.partner_id.lang"/><t t-call="account.report_payment_receipt_document" t-lang="lang"/></t></t></template>
     <template id="report_receipt_voucher_legacy" active="False"><t t-call="web.html_container"><t t-foreach="docs" t-as="doc"><t t-set="company" t-value="doc.company_id"/><t t-set="layout_document_title" t-value="False"/><t t-call="web.external_layout"><div class="page abroj-receipt-page" dir="rtl"><style>
         div[name='address'],div[name='information_block']{display:none!important}.abroj-receipt-page{font-family:'DejaVu Sans',Arial,sans-serif;direction:rtl;color:#26343d;font-size:12px;line-height:1.7}.abroj-receipt-page *{box-sizing:border-box}.abroj-receipt-header{border:1px solid #ded7dc;border-top:6px solid #80506f;padding:16px 18px 14px;margin-bottom:18px;background:#fcfafb}.abroj-receipt-header table{width:100%;border-collapse:collapse}.abroj-receipt-logo{width:68px;max-height:54px;object-fit:contain}.abroj-receipt-company{font-size:11px;line-height:1.9;color:#5d6870}.abroj-receipt-company strong{color:#273944;font-size:15px;font-weight:700}.abroj-receipt-title{text-align:left}.abroj-receipt-title h1{margin:0 0 5px;color:#80506f;font-size:25px;font-weight:700}.abroj-receipt-title p{margin:0;color:#69757d}.abroj-receipt-number{display:inline-block;background:#80506f;color:#fff;padding:5px 10px;border-radius:2px;margin-top:8px;direction:ltr;font-family:'DejaVu Sans',Arial,sans-serif;font-weight:700;letter-spacing:.3px}.abroj-receipt-intro{border-right:4px solid #80506f;background:#f8f5f7;padding:13px 15px;margin:0 0 18px;line-height:2}.abroj-receipt-section{margin:18px 0 10px;color:#80506f;font-size:15px;font-weight:700}.abroj-receipt-table{width:100%;border-collapse:collapse;margin-bottom:16px}.abroj-receipt-table th,.abroj-receipt-table td{border:1px solid #d9dfe2;padding:10px;text-align:right;vertical-align:middle}.abroj-receipt-table th{width:22%;background:#f2eef1;color:#58646c;font-weight:700}.abroj-receipt-table td{width:28%;font-weight:600}.abroj-receipt-amount{background:#f8f5f7!important;color:#80506f!important;font-size:16px;font-weight:700}.abroj-receipt-note{border:1px solid #d9dfe2;min-height:54px;padding:10px;line-height:1.9}.abroj-receipt-signatures{width:100%;border-collapse:separate;border-spacing:12px 0;margin-top:42px}.abroj-receipt-signatures td{width:50%;border-top:1px solid #8c979d;text-align:center;padding-top:9px;color:#5d6870;font-weight:600}.abroj-receipt-footer{border-top:1px solid #d9dfe2;margin-top:25px;padding-top:9px;color:#7b858b;text-align:center;font-size:10px}</style>
@@ -45,19 +97,47 @@
             <footer class="abroj-receipt-footer">تم إنشاء السند من أبرج | تكاليف المشاريع — يحتفظ المشروع بسجل الدفعات للمتابعة والمراجعة.</footer>
         </main></div></t></t></t></template>
     <template id="report_receipt_voucher_native_project_appendix" inherit_id="account.report_payment_receipt_document">
+        <xpath expr="//span[@t-field='o.partner_id']" position="replace">
+            <t t-if="o._name == 'abroj.cost.receipt'">
+                <span t-esc="o.project_id.customer_name or o.partner_id.name or '—'"/>
+            </t>
+            <span t-else="" t-field="o.partner_id"/>
+        </xpath>
+        <xpath expr="//div[hasclass('page')]" position="attributes">
+            <attribute name="t-attf-class">page #{'abroj-cost-receipt' if o._name == 'abroj.cost.receipt' else ''}</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('page')]" position="inside">
+            <t t-if="o._name == 'abroj.cost.receipt'">
+                <style type="text/css">
+                    @font-face {font-family:'Baseer Plex Arabic';src:url('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Regular.ttf') format('truetype');font-weight:400}
+                    @font-face {font-family:'Baseer Plex Arabic';src:url('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Bold.ttf') format('truetype');font-weight:700}
+                    .abroj-cost-receipt{font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;font-size:12px!important;color:#26343d!important;direction:rtl!important;line-height:1.5!important}
+                    .abroj-cost-receipt h3{font-family:inherit!important;font-size:20px!important;line-height:1.35!important;margin:0 0 12px!important;color:#1d3444!important;border-bottom:1px solid #aebbc2!important;padding-bottom:7px!important}
+                    .abroj-cost-receipt h4{font-family:inherit!important;font-size:14px!important;line-height:1.4!important;margin:14px 0 5px!important;color:#1d3444!important}
+                    .abroj-cost-receipt .mb-4.mt-3{margin:0 0 14px!important;padding:0 0 9px!important;border-bottom:1px solid #d7dee2!important}
+                    .abroj-cost-receipt .mb-4.mt-3 .row{margin:0!important;padding:2px 0!important}
+                    .abroj-cost-receipt .mb-4.mt-3 .col-6{padding:0 0 0 18px!important;font-size:11px!important}
+                    .abroj-cost-receipt .abroj-receipt-summary,.abroj-cost-receipt .abroj-receipt-history{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;margin:0!important}
+                    .abroj-cost-receipt .abroj-receipt-summary th,.abroj-cost-receipt .abroj-receipt-summary td,.abroj-cost-receipt .abroj-receipt-history th,.abroj-cost-receipt .abroj-receipt-history td{font-family:inherit!important;font-size:11px!important;line-height:1.35!important;color:#26343d!important;border:0!important;border-bottom:1px solid #d7dee2!important;background:#fff!important;padding:6px 7px!important;text-align:right!important;vertical-align:middle!important}
+                    .abroj-cost-receipt .abroj-receipt-summary th{font-weight:700!important;color:#485963!important;width:27%!important}
+                    .abroj-cost-receipt .abroj-receipt-summary td{width:23%!important}
+                    .abroj-cost-receipt .abroj-receipt-history thead th{border-bottom:2px solid #8797a1!important;font-weight:700!important}
+                </style>
+            </t>
+        </xpath>
         <xpath expr="//table[@name='invoices']" position="after">
             <t t-if="o._name == 'abroj.cost.receipt'">
                 <t t-set="project_summary" t-value="o._get_project_receipt_summary()"/>
                 <div class="mt-4" dir="rtl">
-                    <h4>ملخص المشروع والدفعات</h4>
-                    <table class="table table-sm table-borderless">
+                    <h4>ملخص المشروع والدفعات — <span t-field="o.project_id.name"/></h4>
+                    <table class="table table-sm abroj-receipt-summary">
                         <tbody>
                             <tr><th>المبلغ الإجمالي للاتفاقية</th><td><span t-field="o.project_id.agreement_amount"/></td><th>الدفعة المستلمة</th><td><span t-field="o.amount"/></td></tr>
                             <tr><th>إجمالي المبالغ المستلمة قبل</th><td><span t-out="project_summary['prior_amount']" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/></td><th>المتبقي بعد هذه الدفعة</th><td><span t-out="project_summary['remaining_after']" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/></td></tr>
                         </tbody>
                     </table>
                     <h4>الإيصالات السابقة</h4>
-                    <table class="table table-sm" t-if="project_summary['prior_receipts']">
+                    <table class="table table-sm abroj-receipt-history" t-if="project_summary['prior_receipts']">
                         <thead><tr><th>رقم السند</th><th>التاريخ</th><th class="text-end">المبلغ</th></tr></thead>
                         <tbody><tr t-foreach="project_summary['prior_receipts']" t-as="previous"><td dir="ltr"><span t-field="previous.name"/></td><td><span t-field="previous.date"/></td><td class="text-end"><span t-field="previous.amount"/></td></tr></tbody>
                     </table>

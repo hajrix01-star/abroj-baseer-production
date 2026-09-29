@@ -51,12 +51,13 @@ class TestCompanySeal(TransactionCase):
             'baseer_document_theme.external_layout_baseer_boxed'
         )
         arch = layout.get_combined_arch()
-        self.assertIn('width="178"', arch)
-        self.assertIn('max-width:178px!important', arch)
-        self.assertIn('max-height:80px!important', arch)
-        self.assertIn('margin-top:132px!important', arch)
-        self.assertIn('padding-top:56px!important', arch)
+        self.assertIn('width="156"', arch)
+        self.assertIn('max-width:156px!important', arch)
+        self.assertIn('max-height:64px!important', arch)
+        self.assertIn('margin-top:0!important', arch)
+        self.assertIn('padding-top:0!important', arch)
         self.assertIn('box-sizing:border-box!important', arch)
+        self.assertIn('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Regular.ttf', arch)
 
     def test_seal_template_uses_uploaded_image(self):
         html = self.env['ir.ui.view']._render_template(

@@ -102,18 +102,17 @@
               name="Baseer Boxed">
         <xpath expr="//div[contains(@t-attf-class, 'header')]" position="before">
             <style type="text/css">
-                .o_report_layout_baseer_boxed,.baseer-boxed-header,.baseer-boxed-footer{font-family:'Tajawal','DejaVu Sans',sans-serif!important;color:#1f2933}
-                .baseer-boxed-header{position:relative!important;min-height:108px!important;margin:0 0 12px!important;padding:8px 0 10px!important;background:#fff!important}
+                .o_report_layout_baseer_boxed,.baseer-boxed-header,.baseer-boxed-footer{font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;color:#1f2933}
+                .baseer-boxed-header{position:relative!important;margin:0 0 12px!important;padding:0 0 8px!important;background:#fff!important}
                 .baseer-boxed-brand{width:100%!important;direction:ltr!important}
-                .baseer-boxed-name-ar{font-size:23px!important;line-height:1.3!important;font-weight:700!important;color:#18242d!important}
-                .baseer-boxed-name-en{margin-top:3px!important;font-family:'Open Sans','DejaVu Sans',sans-serif!important;font-size:11px!important;font-weight:600!important;letter-spacing:.08em!important;color:#52616b!important;direction:ltr!important;text-align:right!important}
-                .baseer-boxed-meta{margin-top:9px!important;font-size:9px!important;line-height:1.7!important;color:#4a5964!important;white-space:nowrap!important}
+                .baseer-boxed-name-ar{font-size:22px!important;line-height:1.25!important;font-weight:700!important;color:#18242d!important}
+                .baseer-boxed-name-en{margin-top:2px!important;font-size:10px!important;font-weight:600!important;letter-spacing:.03em!important;color:#52616b!important;direction:ltr!important;text-align:right!important}
+                .baseer-boxed-meta{margin-top:5px!important;font-size:9px!important;line-height:1.4!important;color:#4a5964!important}
                 .baseer-boxed-meta span{display:inline-block!important;margin-left:12px!important}
-                .baseer-boxed-rule{height:2px!important;margin-top:9px!important;background:#354b59!important}
-                /* Boxed keeps the header out of normal flow; reserve its full height for every report body. */
-                .article.o_report_layout_boxed{margin-top:132px!important;font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important}
-                /* Prevent the first report heading from collapsing into the header in wkhtmltopdf. */
-                .article.o_report_layout_boxed > .page{padding-top:56px!important;box-sizing:border-box!important}
+                .baseer-boxed-rule{height:2px!important;margin-top:7px!important;background:#354b59!important}
+                /* The paper format reserves the PDF header; do not add a second body offset. */
+                .article.o_report_layout_boxed{margin-top:0!important;padding-top:0!important;font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;background:#fff!important}
+                .article.o_report_layout_boxed > .page{padding-top:0!important;box-sizing:border-box!important}
                 .article.o_report_layout_boxed h2{color:#18242d!important;font-weight:700!important}
                 .o_report_layout_baseer_boxed table,.o_report_layout_baseer_boxed table th,.o_report_layout_baseer_boxed table td{background:#fff!important}
                 .baseer-boxed-footer{border-top:1px solid #b8c1c7!important;padding-top:7px!important;font-size:8.5px!important;color:#56636d!important;direction:rtl!important;text-align:center!important}
@@ -122,37 +121,44 @@
             </style>
         </xpath>
         <xpath expr="//div[contains(@t-attf-class, 'header')]" position="replace">
-            <div t-attf-class="header o_company_#{company.id}_layout baseer-boxed-header">
+            <div t-attf-class="header o_company_#{company.id}_layout baseer-boxed-header"
+                 style="margin:0!important;padding:0 0 8px!important;border:0!important;background:#fff!important;font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;color:#1f2933!important;">
+                <!-- wkhtmltopdf renders the header as a separate HTML document. -->
+                <style type="text/css">
+                    @font-face {font-family:'Baseer Plex Arabic';src:url('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Regular.ttf') format('truetype');font-weight:400}
+                    @font-face {font-family:'Baseer Plex Arabic';src:url('/baseer_document_theme/static/fonts/IBMPlexSansArabic-Bold.ttf') format('truetype');font-weight:700}
+                </style>
                 <div class="baseer-boxed-brand">
                     <!-- Tables and explicit image dimensions render consistently in wkhtmltopdf. -->
-                    <table role="presentation" style="width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;">
+                    <table role="presentation" style="width:100%!important;border:0!important;border-collapse:collapse!important;table-layout:fixed!important;background:#fff!important;">
                         <tr>
-                            <td style="width:32%!important;vertical-align:middle!important;text-align:left!important;direction:ltr!important;padding:0!important;">
-                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" width="178" style="display:block!important;width:178px!important;max-width:178px!important;max-height:80px!important;height:auto!important;margin:0!important;" alt="Company Logo"/>
+                            <td style="width:32%!important;border:0!important;vertical-align:middle!important;text-align:left!important;direction:ltr!important;padding:0!important;background:#fff!important;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" width="156" style="display:block!important;width:156px!important;max-width:156px!important;max-height:64px!important;height:auto!important;margin:0!important;" alt="Company Logo"/>
                             </td>
-                            <td style="width:68%!important;vertical-align:middle!important;text-align:right!important;direction:rtl!important;padding:4px 0 6px 12px!important;">
+                            <td style="width:68%!important;border:0!important;vertical-align:middle!important;text-align:right!important;direction:rtl!important;padding:0 0 0 12px!important;background:#fff!important;">
                         <t t-set="baseer_name_ar" t-value="company.baseer_name_ar if 'baseer_name_ar' in company._fields else company.name"/>
                         <t t-set="baseer_name_en" t-value="company.baseer_name_en if 'baseer_name_en' in company._fields else company.name"/>
-                        <div class="baseer-boxed-name-ar" t-esc="baseer_name_ar or company.name"/>
-                        <div class="baseer-boxed-name-en" t-esc="baseer_name_en or company.name"/>
-                        <div class="baseer-boxed-meta">
-                            <span t-if="company.partner_id.company_registry">CR: <b dir="ltr" t-esc="company.partner_id.company_registry"/></span>
-                            <span t-if="company.vat">VAT: <b dir="ltr" t-esc="company.vat"/></span>
-                            <span t-if="company.phone or company.partner_id.phone">Tel: <b dir="ltr" t-esc="company.phone or company.partner_id.phone"/></span>
+                        <div class="baseer-boxed-name-ar" style="font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;font-size:22px!important;line-height:1.25!important;font-weight:700!important;color:#18242d!important;" t-esc="baseer_name_ar or company.name"/>
+                        <div class="baseer-boxed-name-en" style="font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;font-size:10px!important;line-height:1.3!important;font-weight:600!important;direction:ltr!important;text-align:right!important;color:#52616b!important;" t-esc="baseer_name_en or company.name"/>
+                        <div class="baseer-boxed-meta" style="margin-top:5px!important;font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;font-size:9px!important;line-height:1.4!important;color:#4a5964!important;">
+                            <span t-if="company.partner_id.company_registry" style="display:inline-block!important;margin-left:10px!important;">CR: <b dir="ltr" t-esc="company.partner_id.company_registry"/></span>
+                            <span t-if="company.vat" style="display:inline-block!important;margin-left:10px!important;">VAT: <b dir="ltr" t-esc="company.vat"/></span>
+                            <span t-if="company.phone or company.partner_id.phone" style="display:inline-block!important;margin-left:10px!important;">Tel: <b dir="ltr" t-esc="company.phone or company.partner_id.phone"/></span>
                         </div>
                             </td>
                         </tr>
                     </table>
                 </div>
-                <div class="baseer-boxed-rule"/>
+                <div class="baseer-boxed-rule" style="height:2px!important;margin-top:7px!important;background:#354b59!important;"/>
             </div>
         </xpath>
         <xpath expr="//div[contains(@t-attf-class, 'o_report_layout_boxed')]" position="attributes">
             <!-- The PDF renderer separates header and body styles, so these safeguards must be inline. -->
-            <attribute name="t-attf-style">margin-top:132px!important;padding-top:56px!important;box-sizing:border-box!important;font-family:'Tajawal','DejaVu Sans',sans-serif!important;background:#fff!important;{{ 'background-image: url(%s);' % layout_background_url if layout_background_url else '' }}</attribute>
+            <attribute name="t-attf-style">margin-top:0!important;padding-top:0!important;box-sizing:border-box!important;font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;background:#fff!important;{{ 'background-image: url(%s);' % layout_background_url if layout_background_url else '' }}</attribute>
         </xpath>
         <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="replace">
-            <div t-attf-class="footer o_company_#{company.id}_layout baseer-boxed-footer {{report_type != 'pdf' and 'mt-auto'}}">
+            <div t-attf-class="footer o_company_#{company.id}_layout baseer-boxed-footer {{report_type != 'pdf' and 'mt-auto'}}"
+                 style="border-top:1px solid #b8c1c7!important;padding:6px 0 0!important;font-family:'Baseer Plex Arabic','DejaVu Sans',sans-serif!important;font-size:8.5px!important;color:#56636d!important;direction:rtl!important;text-align:center!important;">
                 <span t-if="company.country_id" t-field="company.country_id"/>
                 <span t-if="'city' in company.partner_id._fields and company.partner_id.city" t-esc="company.partner_id.city"/>
                 <span t-if="'street' in company.partner_id._fields and company.partner_id.street" t-esc="company.partner_id.street"/>

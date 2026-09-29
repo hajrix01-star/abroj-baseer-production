@@ -66,11 +66,12 @@
                     <group string="Print customization" invisible="not baseer_direct_print_enabled">
                         <field name="baseer_preparation_binding_ids" domain="[('ticket_type','=','preparation')]"
                                help="Use the default kitchen route for a single kitchen printer. Add category rows only when different product categories need different printers.">
-                            <list editable="bottom" default_order="pos_category_id, printer_id">
-                                <field name="pos_category_id"/>
+                            <list editable="bottom" default_order="printer_id, id">
+                                <field name="pos_category_ids" widget="many2many_tags"/>
                                 <field name="printer_id" domain="[('active','=',True), ('paper_width','=','80'), ('agent_id','=',parent.baseer_effective_print_agent_id), ('allowed_company_ids','in', parent.company_id)]"/>
                                 <field name="copies"/>
                                 <field name="active"/>
+                                <button name="action_test_preparation_printer" type="object" string="Test kitchen printer" icon="fa-print"/>
                             </list>
                         </field>
                     </group>

@@ -1,0 +1,11 @@
+[Unit]
+Description=Poll for a reviewed Baseer QA release request
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+Persistent=true
+Unit=baseer-qa-release-poller.service
+
+[Install]
+WantedBy=timers.target

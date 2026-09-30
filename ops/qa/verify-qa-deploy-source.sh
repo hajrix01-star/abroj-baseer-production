@@ -9,7 +9,8 @@ cd "$repo_root"
 for script in \
     ops/qa/baseer-qa-approve-release \
     ops/qa/baseer-qa-deploy \
-    ops/qa/install-github-deploy-access.sh; do
+    ops/qa/baseer-qa-release-poller \
+    ops/qa/install-qa-release-poller.sh; do
     bash -n "$script"
 done
 

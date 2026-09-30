@@ -10,7 +10,8 @@ The owner needs to deploy a reviewed Baseer Odoo candidate to QA from GitHub
 without an interactive Hostinger terminal.  The critical journey is:
 
 1. An authorized maintainer dispatches a named QA release from `main`.
-2. A restricted GitHub runner on the QA host runs only the reviewed QA job.
+2. GitHub writes a bounded release-request tag; a root-owned QA timer collects
+   it from inside the private network.
 3. A root-owned QA wrapper verifies the named policy, fetches the pinned
    commit, takes a database + filestore recovery pair, and upgrades only the
    policy's allowed modules.
@@ -60,8 +61,8 @@ passwords.
 
 ```mermaid
 flowchart LR
-  A[GitHub QA workflow] -->|private QA runner| B[QA restricted deploy user]
-  B -->|named release only via sudo| C[Root-owned QA wrapper]
+  A[GitHub QA workflow] -->|bounded immutable tag| B[Root-owned QA poller]
+  B -->|named release only| C[Root-owned QA wrapper]
   C --> D[QA policy directory]
   C --> E[GitHub source archive pinned to commit]
   C --> F[QA database + filestore recovery pair]
@@ -76,9 +77,9 @@ flowchart LR
   paths before stopping Odoo.
 - The policy names a precise commit and a fixed module allowlist.  Candidate
   source changes outside the allowlist cause a fail-closed exit.
-- `qa` is a separate GitHub environment and its private runner has the unique
-  `baseer-qa` label. It cannot read a production secret or run production
-  workflows. Production workflow files are not reused or called.
+- `qa` is a separate GitHub environment. The hosted job has no SSH identity
+  and writes only a bounded request tag; the QA poller validates it before any
+  root action. Production workflow files are not reused or called.
 - Odoo remains the source of truth for operational data.  This workflow only
   upgrades source modules and never imports QA fixtures or mutates business
   rows deliberately.
@@ -125,4 +126,4 @@ that experience.
 | QAD-002 | G0–G3 | inspection | Reviewed the existing production workflow/wrappers and GitHub repository environments. Only `production` and `PRODUCTION_SSH_KEY` exist; no QA host credential is present. The implementation must fail closed until an independent QA bootstrap supplies QA-only credentials. |
 | QAD-003 | G5 | implementation | Added the QA-only GitHub dispatcher, root-owned policy/deployment wrappers, bootstrap installer, pinned bridge-only policy, and source-integrity shell validation. Static validation is `bash -n` for all wrappers, YAML parsing for all workflows in the pinned Odoo image, and `git diff --check`. No host, QA database, QA secret, or production resource changed. |
 | QAD-004 | G5 | security correction | Independent review found that root could execute mutable QA compose/env files. The deploy path now accepts only fixed `/etc/baseer-qa` root-owned, non-group/non-other-writable files, requires the QA-only base/database/runtime namespace and loopback health URL, and bootstrap rejects a deploy user with supplementary privileges. PR CI now parses changed workflow YAML and runs a policy/shell static guard whenever QA deployment source changes. |
-| QAD-005 | G5 | architecture correction | QA is reachable only through its private network, so a hosted GitHub runner cannot safely SSH to it. The dispatcher now uses a restricted, QA-labelled self-hosted runner under the limited deploy account. This removes public-host/SSH secrets from GitHub while preserving the root-owned allowlist and recovery boundary. |
+| QAD-005 | G5 | architecture correction | QA is reachable only through its private network, so a hosted GitHub runner cannot safely SSH to it. The dispatcher writes only a bounded request tag; a root-owned QA poller fetches it from inside the private network and validates it through the existing policy/allowlist path. This removes public-host/SSH secrets and a persistent self-hosted runner from GitHub. |

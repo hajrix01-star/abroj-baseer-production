@@ -25,8 +25,8 @@ for policy in ops/qa/release-policies/*.env; do
             modules++
             if ($2 !~ /^baseer_[a-z0-9_]+(,baseer_[a-z0-9_]+)*$/) { valid=0; next }
             count=split($2, values, ",")
-            for (index = 1; index <= count; index++) {
-                if (seen[values[index]]++) valid=0
+            for (item = 1; item <= count; item++) {
+                if (seen[values[item]]++) valid=0
             }
             next
         }

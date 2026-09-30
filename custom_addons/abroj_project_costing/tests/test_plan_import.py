@@ -210,3 +210,84 @@ class TestAbrojCostPlanImport(TransactionCase):
         example = project.plan_line_ids.filtered(lambda line: line.name == 'مثال بند')
         self.assertEqual(kitchen.node_kind, 'section')
         self.assertEqual(example.parent_id, kitchen)
+
+    def test_template_download_uses_an_existing_company_category(self):
+        self.category.write({'name': 'كهرباء الشركة', 'sequence': 0})
+        project = self._project()
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id, 'company_id': self.company.id,
+        })
+        action = wizard.action_download_template()
+        self.assertEqual(action['type'], 'ir.actions.act_url')
+        self.assertEqual(wizard.export_filename, 'abroj_cost_plan_template.xlsx')
+        workbook = load_workbook(BytesIO(base64.b64decode(wizard.export_file)))
+        self.assertEqual(workbook['بنود الدراسة']['A3'].value, self.category.name)
+        self.assertEqual(workbook['بنود الدراسة']['L2'].value, 'section')
+        self.assertEqual(workbook['بنود الدراسة']['L3'].value, 'item')
+        self.assertGreater(workbook['التعليمات'].max_row, 8)
+        wizard.write({'import_file': wizard.export_file, 'import_filename': wizard.export_filename})
+        wizard.action_import_plan()
+        self.assertEqual(project.estimated_total, 1500)
+
+    def test_template_without_active_categories_contains_only_a_section(self):
+        project = self._project()
+        self.env['abroj.cost.category'].search([('company_id', '=', self.company.id)]).write({'active': False})
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id, 'company_id': self.company.id,
+        })
+        wizard.action_download_template()
+        wizard.write({'import_file': wizard.export_file, 'import_filename': wizard.export_filename})
+        wizard.action_import_plan()
+        self.assertEqual(len(project.plan_line_ids), 1)
+        self.assertEqual(project.plan_line_ids.node_kind, 'section')
+        self.assertEqual(project.estimated_total, 0)
+
+    def test_template_keeps_formula_like_category_name_literal_and_importable(self):
+        self.category.write({'name': '=كهرباء', 'sequence': 0})
+        project = self._project()
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id, 'company_id': self.company.id,
+        })
+        wizard.action_download_template()
+        workbook = load_workbook(BytesIO(base64.b64decode(wizard.export_file)), data_only=False)
+        self.assertEqual(workbook['بنود الدراسة']['A3'].data_type, 's')
+        self.assertEqual(workbook['بنود الدراسة']['A3'].value, self.category.name)
+        wizard.write({'import_file': wizard.export_file, 'import_filename': wizard.export_filename})
+        wizard.action_import_plan()
+        self.assertEqual(project.plan_line_ids.filtered(lambda line: line.node_kind == 'item').category_id, self.category)
+
+    def test_export_reimport_preserves_dragged_tree_order_and_amounts(self):
+        source = self._project()
+        Line = self.env['abroj.cost.plan.line'].with_company(self.company)
+        kitchen = Line.create({'project_id': source.id, 'name': 'المطبخ', 'node_kind': 'section'})
+        lounge = Line.create({'project_id': source.id, 'name': 'الصالة', 'node_kind': 'section'})
+        plumbing = Line.create({'project_id': source.id, 'parent_id': kitchen.id, 'name': 'سباكة', 'node_kind': 'section'})
+        electricity = Line.create({'project_id': source.id, 'parent_id': kitchen.id, 'name': 'كهرباء', 'node_kind': 'section'})
+        for parent, name, amount in [(plumbing, 'تمديدات', 200), (electricity, 'تمديدات', 350), (lounge, 'دهان', 450)]:
+            Line.create({
+                'project_id': source.id, 'parent_id': parent.id, 'name': name,
+                'category_id': self.category.id, 'pricing_method': 'lump_sum', 'lump_sum_cost': amount,
+            })
+        source.action_reorder_plan_section(kitchen.id, lounge.id)
+        source.action_reorder_plan_section(plumbing.id, electricity.id)
+        expected_names = ['الصالة', 'دهان', 'المطبخ', 'كهرباء', 'تمديدات', 'سباكة', 'تمديدات']
+        self.assertEqual([row['name'] for row in source.get_study_tree_data()], expected_names)
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': source.id, 'company_id': self.company.id,
+        })
+        wizard.action_export_plan()
+        workbook = load_workbook(BytesIO(base64.b64decode(wizard.export_file)))
+        self.assertEqual([row[1] for row in list(workbook['بنود الدراسة'].values)[1:]], expected_names)
+        target = self._project()
+        importer = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': target.id, 'company_id': self.company.id,
+            'import_file': wizard.export_file, 'import_filename': wizard.export_filename,
+        })
+        importer.action_import_plan()
+        self.assertEqual([row['name'] for row in target.get_study_tree_data()], expected_names)
+        self.assertEqual(target.estimated_total, source.estimated_total)
+        self.assertEqual(target.estimated_total, 1000)
+        self.assertEqual(
+            {wizard._plan_path(line): (line.node_kind, line.estimated_total) for line in source.plan_line_ids},
+            {wizard._plan_path(line): (line.node_kind, line.estimated_total) for line in target.plan_line_ids},
+        )

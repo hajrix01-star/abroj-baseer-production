@@ -347,18 +347,24 @@ class AbrojCostPlanImportWizard(models.TransientModel):
             '', 'المطبخ', 'detailed', 0,
             0, 0, 0, 0, 0, '', 'المطبخ', 'section',
         ))
-        plan_sheet.append((
-            'التشطيبات', 'مثال بند', 'lump_sum', 1,
-            0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا', 'المطبخ/مثال بند', 'item',
-        ))
+        category = self.env['abroj.cost.category'].search([
+            ('company_id', '=', self.project_id.company_id.id), ('active', '=', True),
+        ], limit=1)
+        if category:
+            plan_sheet.append((
+                category.name, 'مثال بند', 'lump_sum', 1,
+                0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا', 'المطبخ/مثال بند', 'item',
+            ))
+            # Keep the exact category name importable without allowing formulas.
+            plan_sheet['A3'].data_type = 's'
         for cell in plan_sheet[1]:
             cell.font = Font(bold=True)
-        for column, width in {'A': 24, 'B': 32, 'C': 20, 'D': 12, 'E': 20, 'F': 22, 'G': 20, 'H': 22, 'I': 18, 'J': 36}.items():
+        for column, width in {'A': 24, 'B': 32, 'C': 20, 'D': 12, 'E': 20, 'F': 22, 'G': 20, 'H': 22, 'I': 18, 'J': 36, 'K': 48, 'L': 18}.items():
             plan_sheet.column_dimensions[column].width = width
         instructions = workbook.create_sheet('التعليمات')
         instructions.append((_('العمود'), _('الوصف')))
-        instructions.extend([
-            ('category', _('اسم فئة موجودة في الشركة المختارة؛ لن ينشئ النظام فئة أو مادة.')),
+        for row in [
+            ('category', _('اسم نوع عمل موجود في الشركة المختارة؛ مطلوب للبند المسعّر فقط. لن ينشئ النظام فئة أو مادة.')),
             ('name', _('اسم بند الدراسة.')),
             ('pricing_method', 'detailed / supply_only / labor_only / supply_install / lump_sum'),
             ('quantity', _('كمية موجبة، ومنزلتان عشريتان كحد أقصى.')),
@@ -366,7 +372,11 @@ class AbrojCostPlanImportWizard(models.TransientModel):
             ('notes', _('اختياري.')),
             ('path', _('اختياري للبند الجذري. للشجرة اكتب المسار كاملاً، وينتهي باسم هذا الصف، مثل المطبخ/سباكة/تمديدات.')),
             ('node_kind', _('item لبند مسعّر أو section لقسم تجميعي. القسم لا يحتاج نوع عمل أو سعر.')),
-        ])
+            (_('ترتيب الصفوف'), _('اكتب القسم الأب قبل أبنائه. ترتيب الصفوف يحدد ترتيب البنود داخل كل قسم.')),
+            (_('الأمثلة'), _('عدّل أو احذف صفوف المثال قبل الاستيراد. إذا لم توجد فئات فعالة، أضف نوع عمل في النظام ثم أضف بنداً في الملف.')),
+            (_('الدراسة الحالية'), _('الاستيراد إلى دراسة فارغة فقط؛ لا يحدث البنود الموجودة ولا يكررها.')),
+        ]:
+            instructions.append(row)
         for cell in instructions[1]:
             cell.font = Font(bold=True)
         instructions.column_dimensions['A'].width = 24
@@ -398,7 +408,9 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         sheet.append(IMPORT_COLUMNS)
         for cell in sheet[1]:
             cell.font = Font(bold=True)
-        for line in self.project_id.plan_line_ids.sorted(lambda record: (record.parent_path or '', record.sequence, record.id)):
+        # Share the UI's authoritative depth-first order, including dragged sections.
+        ordered_ids = [row['id'] for row in self.project_id.get_study_tree_data()]
+        for line in self.env['abroj.cost.plan.line'].browse(ordered_ids):
             sheet.append((
                 self._safe_excel_text(line.category_id.name if line.category_id else ''),
                 self._safe_excel_text(line.name),

@@ -41,16 +41,16 @@ git -C "$fetch_dir/repo.git" fetch --quiet --no-tags origin main:refs/heads/sour
 
 process_request() {
     local tag_ref=$1 tag_name=$2 release_id=$3 run_id=$4
-    git -C "$fetch_dir/repo.git" fetch --quiet origin "$tag_ref:$tag_ref"
-    [ "$(git -C "$fetch_dir/repo.git" cat-file -t "$tag_ref")" = tag ]
-    [ "$(git -C "$fetch_dir/repo.git" cat-file -p "$tag_ref" | sed -n '3s/^tag //p')" = "$tag_name" ]
+    git -C "$fetch_dir/repo.git" fetch --quiet origin "$tag_ref:$tag_ref" || return 1
+    [ "$(git -C "$fetch_dir/repo.git" cat-file -t "$tag_ref")" = tag ] || return 1
+    [ "$(git -C "$fetch_dir/repo.git" cat-file -p "$tag_ref" | sed -n '3s/^tag //p')" = "$tag_name" ] || return 1
     git -C "$fetch_dir/repo.git" -c gpg.format=ssh \
-        -c "gpg.ssh.allowedSignersFile=$QA_TAG_ALLOWED_SIGNERS" verify-tag "$tag_ref"
+        -c "gpg.ssh.allowedSignersFile=$QA_TAG_ALLOWED_SIGNERS" verify-tag "$tag_ref" || return 1
     local tag_commit
-    tag_commit="$(git -C "$fetch_dir/repo.git" rev-parse "$tag_ref^{commit}")"
-    git -C "$fetch_dir/repo.git" merge-base --is-ancestor "$tag_commit" refs/heads/source-main
-    /usr/local/sbin/baseer-qa-approve-release "$release_id" "$run_id" "$tag_commit"
-    /usr/local/sbin/baseer-qa-deploy "$release_id" "$run_id"
+    tag_commit="$(git -C "$fetch_dir/repo.git" rev-parse "$tag_ref^{commit}")" || return 1
+    git -C "$fetch_dir/repo.git" merge-base --is-ancestor "$tag_commit" refs/heads/source-main || return 1
+    /usr/local/sbin/baseer-qa-approve-release "$release_id" "$run_id" "$tag_commit" || return 1
+    /usr/local/sbin/baseer-qa-deploy "$release_id" "$run_id" || return 1
 }
 
 while IFS=$'\t' read -r tag_object tag_ref; do

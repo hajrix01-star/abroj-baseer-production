@@ -8,5 +8,8 @@
 }
 
 .o_abroj_cost_list .o_list_record_remove {
-    padding-inline: .5rem !important;
+    width: 2rem !important;
+    min-width: 2rem !important;
+    padding: 0 !important;
+    text-align: center !important;
 }

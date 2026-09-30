@@ -16,10 +16,14 @@ class BasserWorkspaceCase(TransactionCase):
             'baseer_access_role': role,
         })
 
-    def test_basser_t00_pos_cashier_gets_only_the_native_pos_selector(self):
-        """A POS-only cashier reaches POS without acquiring branch privileges."""
+    def test_basser_t00_pos_cashier_gets_only_the_native_pos_dashboard(self):
+        """A POS-only cashier reaches the native dashboard, never config list."""
         cashier = self._user('pos_cashier')
-        pos_menu = self.env.ref('point_of_sale.menu_point_of_sale_list')
+        pos_menu = self.env.ref(
+            'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard'
+        )
+        native_dashboard = self.env.ref('point_of_sale.action_pos_config_kanban')
+        forbidden_config_list = self.env.ref('point_of_sale.menu_point_of_sale_list')
 
         self.assertTrue(cashier.has_group('baseer_access_roles.group_pos_cashier'))
         self.assertTrue(cashier.has_group('point_of_sale.group_pos_user'))
@@ -46,7 +50,10 @@ class BasserWorkspaceCase(TransactionCase):
         )
         self.assertSetEqual(item_ids, {pos_item.id})
         opened = workspace_model.open_workspace_item(pos_item.id)
+        self.assertEqual(opened['action_id'], native_dashboard.id)
         self.assertEqual(opened['action_id'], pos_menu.action.id)
+        self.assertNotEqual(opened['action_id'], forbidden_config_list.action.id)
+        self.assertIn('kanban', native_dashboard.view_mode.split(','))
         with self.assertRaises(AccessError):
             workspace_model.open_workspace_item(
                 self.env.ref(

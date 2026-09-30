@@ -16,6 +16,44 @@ class BasserWorkspaceCase(TransactionCase):
             'baseer_access_role': role,
         })
 
+    def test_basser_t00_pos_cashier_gets_only_the_native_pos_selector(self):
+        """A POS-only cashier reaches POS without acquiring branch privileges."""
+        cashier = self._user('pos_cashier')
+        pos_menu = self.env.ref('point_of_sale.menu_point_of_sale_list')
+
+        self.assertTrue(cashier.has_group('baseer_access_roles.group_pos_cashier'))
+        self.assertTrue(cashier.has_group('point_of_sale.group_pos_user'))
+        self.assertFalse(cashier.has_group('baseer_access_roles.group_cashier'))
+        self.assertFalse(cashier.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ))
+        self.assertIn(
+            pos_menu.id,
+            self.env['ir.ui.menu'].with_user(cashier)._baseer_native_visible_menu_ids(),
+        )
+
+        workspace_model = self.env['baseer.basser.workspace.section'].with_user(cashier)
+        workspace = workspace_model.get_workspace()
+        self.assertEqual(workspace['role'], 'pos_cashier')
+        self.assertFalse(workspace['can_manage'])
+        item_ids = {
+            item['id']
+            for section in workspace['sections']
+            for item in section['items']
+        }
+        pos_item = self.env.ref(
+            'baseer_basser_workspace.workspace_item_pos_cashier_point_of_sale'
+        )
+        self.assertSetEqual(item_ids, {pos_item.id})
+        opened = workspace_model.open_workspace_item(pos_item.id)
+        self.assertEqual(opened['action_id'], pos_menu.action.id)
+        with self.assertRaises(AccessError):
+            workspace_model.open_workspace_item(
+                self.env.ref(
+                    'baseer_basser_workspace.workspace_item_cashier_procurement_requests'
+                ).id,
+            )
+
     def test_basser_t01_cashier_gets_only_seeded_shortcuts_and_native_actions(self):
         cashier = self._user('cashier')
         advance_menu = self.env.ref('baseer_access_roles.menu_pos_advance_entries')

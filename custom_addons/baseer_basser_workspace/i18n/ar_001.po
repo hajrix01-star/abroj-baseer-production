@@ -64,6 +64,17 @@ msgid "Cashier operations"
 msgstr "عمليات الكاشير"
 
 #. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.section,name:baseer_basser_workspace.workspace_section_pos_cashier_operations
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_pos_cashier_point_of_sale
+msgid "Point of Sale"
+msgstr "نقطة البيع"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_pos_cashier_point_of_sale
+msgid "Open the active company's point of sale."
+msgstr "فتح نقطة البيع للشركة النشطة."
+
+#. module: baseer_basser_workspace
 #: model:baseer.basser.workspace.section,name:baseer_basser_workspace.workspace_section_accountant_operations
 msgid "Accountant operations"
 msgstr "عمليات المحاسب"

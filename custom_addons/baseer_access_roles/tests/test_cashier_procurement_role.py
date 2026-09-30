@@ -175,6 +175,28 @@ class CashierProcurementRoleCase(TransactionCase):
         self.assertTrue(payment_wizard.check_access('read'))
         self.assertTrue(payment_wizard.check_access('create'))
 
+    def test_cpr_t01ba_pos_cashier_navigation_is_limited_to_the_baseer_workspace(self):
+        """The curated workspace must not strand the dedicated POS cashier."""
+        company = self.env.company
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'POS workspace cashier',
+            'login': 'pos-workspace-cashier-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'baseer_access_role': 'pos_cashier',
+        })
+        menu_model = self.env['ir.ui.menu'].with_user(cashier)
+        workspace_root = self.env.ref('baseer_basser_workspace.menu_basser_root')
+        native_pos_menu = self.env.ref('point_of_sale.menu_point_of_sale_list')
+
+        self.assertIn(workspace_root.id, menu_model._visible_menu_ids())
+        self.assertNotIn(native_pos_menu.id, menu_model._visible_menu_ids())
+        self.assertIn(native_pos_menu.id, menu_model._baseer_native_visible_menu_ids())
+        self.assertNotIn(
+            self.env.ref('baseer_procurement_requests.menu_procurement_root').id,
+            menu_model._visible_menu_ids(),
+        )
+
     def test_cpr_t01c_pos_cashier_never_receives_paid_ticket_history(self):
         """The paid-ticket endpoint is empty only for the POS cashier role."""
         company = self.env.company

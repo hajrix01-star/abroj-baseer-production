@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
+    <record id="workspace_section_pos_cashier_operations" model="baseer.basser.workspace.section">
+        <field name="name">Point of Sale</field>
+        <field name="role">pos_cashier</field>
+        <field name="sequence">5</field>
+    </record>
+    <record id="workspace_item_pos_cashier_point_of_sale" model="baseer.basser.workspace.item">
+        <field name="section_id" ref="workspace_section_pos_cashier_operations"/>
+        <field name="name">Point of Sale</field>
+        <field name="description">Open the active company's point of sale.</field>
+        <field name="menu_id" ref="point_of_sale.menu_point_of_sale_list"/>
+        <field name="sequence">10</field>
+    </record>
     <record id="workspace_section_cashier_operations" model="baseer.basser.workspace.section">
         <field name="name">Cashier operations</field>
         <field name="role">cashier</field>

@@ -12,6 +12,15 @@ MAX_WORKSPACE_ITEMS = 40
 # configuration may arrange and rename only the operational entries approved for
 # the role below; extending the catalogue is an auditable code change.
 BASEER_WORKSPACE_TARGET_POLICY = {
+    # POS cashiers are intentionally separate from the branch-operations
+    # cashier role below.  Their one approved route is the native POS selector;
+    # they do not inherit purchasing, cash custody, or reporting shortcuts.
+    'pos_cashier': {
+        'point_of_sale.menu_point_of_sale_list': {
+            'action_type': 'ir.actions.act_window',
+            'icon': 'fa fa-shopping-cart',
+        },
+    },
     'cashier': {
         'baseer_procurement_requests.menu_procurement_catalog': {
             'action_type': 'ir.actions.client',
@@ -88,6 +97,7 @@ BASEER_WORKSPACE_TARGET_POLICY = {
 }
 
 ROLE_SELECTION = [
+    ('pos_cashier', 'Cashier'),
     ('cashier', 'Cashier'),
     ('accountant', 'Accountant'),
 ]
@@ -117,6 +127,8 @@ class BasserWorkspaceSection(models.Model):
             return 'owner'
         if user.has_group('baseer_access_roles.group_owner'):
             return 'owner'
+        if user.has_group('baseer_access_roles.group_pos_cashier'):
+            return 'pos_cashier'
         if user.has_group('baseer_access_roles.group_cashier'):
             return 'cashier'
         if user.has_group('baseer_access_roles.group_accountant'):

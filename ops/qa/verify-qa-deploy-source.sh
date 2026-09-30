@@ -36,4 +36,15 @@ for policy in ops/qa/release-policies/*.env; do
     ' "$policy" || { printf 'invalid QA release policy: %s\n' "$policy" >&2; exit 1; }
 done
 
+for unit in ops/qa/systemd/*.service ops/qa/systemd/*.timer; do
+    [ -f "$unit" ] || continue
+    grep -Fqx '[Unit]' "$unit" || { printf 'invalid systemd unit: %s\n' "$unit" >&2; exit 1; }
+done
+
+grep -Fqx 'ReadWritePaths=/srv/baseer-qa /etc/baseer-qa/release-policies /var/lock' \
+    ops/qa/systemd/baseer-qa-release-poller.service || {
+    printf 'QA poller must permit only its release-policy directory under /etc\n' >&2
+    exit 1
+}
+
 printf 'QA_DEPLOY_SOURCE=PASS\n'

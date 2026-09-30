@@ -49,11 +49,20 @@ jobs:
         shell: bash
         env:
           RELEASE_ID: ${{ inputs.release_id }}
+          QA_REQUEST_SIGNING_KEY: ${{ secrets.QA_REQUEST_SIGNING_KEY }}
         run: |
           set -Eeuo pipefail
+          test -n "$QA_REQUEST_SIGNING_KEY"
           request_tag="qa-release-${RELEASE_ID}-${GITHUB_RUN_ID}"
           git config user.name 'baseer-qa-release-bot'
           git config user.email 'baseer-qa-release-bot@users.noreply.github.com'
-          git tag "$request_tag" "$GITHUB_SHA"
+          signing_key="$RUNNER_TEMP/qa-request-signing-key"
+          printf '%s\n' "$QA_REQUEST_SIGNING_KEY" > "$signing_key"
+          chmod 0600 "$signing_key"
+          git config gpg.format ssh
+          git config user.signingkey "$signing_key"
+          git tag --sign --message "Reviewed QA release request ${RELEASE_ID}" \
+            "$request_tag" "$GITHUB_SHA"
+          rm -f -- "$signing_key"
           git push origin "refs/tags/$request_tag"
           printf 'QA_REQUEST=QUEUED\nTAG=%s\n' "$request_tag"

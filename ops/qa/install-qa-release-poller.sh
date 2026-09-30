@@ -22,7 +22,7 @@ done
 grep -Fqx 'QA_ENVIRONMENT=qa' "$CONFIG" || die 'QA config must declare QA_ENVIRONMENT=qa'
 grep -Fqx "QA_BASE=$BASE" "$CONFIG" || die "QA config must use QA_BASE=$BASE"
 
-install -d -o root -g root -m 0700 /etc/baseer-qa "$BASE" "$BASE/releases" "$BASE/backups" "$BASE/deploy-staging" "$BASE/processed-requests"
+install -d -o root -g root -m 0700 /etc/baseer-qa /etc/baseer-qa/release-policies "$BASE" "$BASE/releases" "$BASE/backups" "$BASE/deploy-staging" "$BASE/processed-requests"
 install -o root -g root -m 0750 "$APPROVAL_WRAPPER" /usr/local/sbin/baseer-qa-approve-release
 install -o root -g root -m 0750 "$DEPLOY_WRAPPER" /usr/local/sbin/baseer-qa-deploy
 install -o root -g root -m 0750 "$POLLER" /usr/local/sbin/baseer-qa-release-poller

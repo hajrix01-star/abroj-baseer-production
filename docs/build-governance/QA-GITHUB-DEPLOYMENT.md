@@ -22,7 +22,8 @@ without an interactive Hostinger terminal.  The critical journey is:
 
 - A QA workflow cannot run on or reach the production runtime, or use a
   production key.
-- It accepts only a reviewed, named policy in `ops/qa/release-policies`.
+- It accepts only a reviewed, named policy in `ops/qa/release-policies` and a
+  request tag signed by the root-pinned QA request signer.
 - The QA host, exact database name, Docker project, port, source key, and
   known-host key are configured only on the QA host/GitHub environment; they
   are not committed.
@@ -70,8 +71,10 @@ flowchart LR
   G --> H[QA smoke result]
 ```
 
-- GitHub is a dispatcher only.  It never sends a shell string or module list
-  supplied by a user directly to the host.
+- GitHub is a dispatcher only. It never sends a shell string or module list
+  supplied by a user directly to the host. Its request tag is SSH-signed with
+  a private key exposed only to the `qa` environment; the QA poller verifies
+  it against a root-owned public-key allowlist before invoking any wrapper.
 - The QA host owns the effective policy and validates the release identifier,
   policy revision, commit, allowed modules, prior-source ancestry, and source
   paths before stopping Odoo.

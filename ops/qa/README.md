@@ -24,6 +24,7 @@ QA_LOGIN_URL=http://127.0.0.1:<QA port>/web/login
 QA_SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
 QA_SOURCE_SSH_KEY=/etc/baseer-qa/source-readonly.key
 QA_SOURCE_KNOWN_HOSTS=/etc/baseer-qa/github-known_hosts
+QA_TAG_ALLOWED_SIGNERS=/etc/baseer-qa/request-signers
 ```
 
 The root-owned `0600` compose and env files must be under `/etc/baseer-qa`, and
@@ -33,7 +34,9 @@ with the exact current QA source and a `RELEASE_COMMIT` file; the wrapper
 refuses to deploy without it. The restricted deploy account must have no
 supplementary groups, especially no Docker or sudo membership.
 The configured source key is read-only and used only by the QA host to fetch
-the reviewed source and request tags.
+the reviewed source and request tags. `request-signers` is root-owned `0644`
+and contains only the public SSH signing key whose private half is stored as
+the `QA_REQUEST_SIGNING_KEY` secret in the protected `qa` environment.
 
 Install the root-owned `baseer-qa-release-poller` systemd timer with
 `install-qa-release-poller.sh`. GitHub's

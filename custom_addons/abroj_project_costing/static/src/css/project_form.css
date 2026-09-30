@@ -6,3 +6,54 @@
 .o_abroj_project_width_marker {
     display: none;
 }
+
+/*
+ * Odoo intentionally makes the last x2many action column one pixel wide.
+ * That is efficient for icon-only controls, but in RTL it makes the remove
+ * control look detached or clipped at the edge of the table.  Abroj uses a
+ * named list class on every list it owns, so keep this local to the module.
+ */
+.o_abroj_cost_list .o_list_record_remove,
+.o_abroj_cost_list .o_list_record_open_form_view {
+    width: 5.25rem !important;
+    min-width: 5.25rem !important;
+    padding-inline: .5rem !important;
+    border-inline-start: 1px solid var(--border-color, #dee2e6);
+    white-space: nowrap;
+}
+
+.o_abroj_cost_list .o_list_record_remove button,
+.o_abroj_cost_list .o_list_record_open_form_view button {
+    min-width: 4rem;
+    min-height: 2rem;
+    padding: .25rem .5rem !important;
+    border: 1px solid var(--border-color, #dee2e6) !important;
+    border-radius: .25rem;
+    color: var(--primary, #80506f);
+    background: #fff;
+    line-height: 1;
+}
+
+.o_abroj_cost_list .o_list_record_remove button:hover,
+.o_abroj_cost_list .o_list_record_remove button:focus-visible {
+    color: #fff;
+    border-color: #80506f !important;
+    background: #80506f;
+}
+
+/* Give destructive actions an explicit Arabic label instead of a clipped icon. */
+.o_abroj_cost_list .o_list_record_remove button.fa-trash-o::after {
+    content: "حذف";
+    margin-inline-start: .35rem;
+    font-family: inherit;
+    font-size: .8125rem;
+    font-weight: 600;
+}
+
+.o_abroj_cost_list .o_list_record_remove button.fa-times::after {
+    content: "إزالة";
+    margin-inline-start: .35rem;
+    font-family: inherit;
+    font-size: .8125rem;
+    font-weight: 600;
+}

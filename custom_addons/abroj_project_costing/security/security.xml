@@ -86,25 +86,76 @@
         <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_manager'))]"/>
     </record>
 
+    <!-- Match user and edit access on the same membership row. Separate dotted
+         conditions could accidentally borrow another member's edit access.
+         Manager rules retain the original assigned scope for all operations. -->
     <record id="rule_abroj_project_child_user" model="ir.rule">
-        <field name="name">Abroj project children: assigned</field><field name="model_id" ref="model_abroj_cost_plan_line"/>
+        <field name="name">Abroj project children: assigned read</field><field name="model_id" ref="model_abroj_cost_plan_line"/>
         <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_plan_user_edit" model="ir.rule">
+        <field name="name">Abroj project children: owner or editing member</field><field name="model_id" ref="model_abroj_cost_plan_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids', 'any', [('user_id', '=', user.id), ('access_level', '=', 'edit')])]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="False"/><field name="perm_write" eval="True"/><field name="perm_create" eval="True"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_plan_manager_assigned" model="ir.rule">
+        <field name="name">Abroj project children: manager assigned</field><field name="model_id" ref="model_abroj_cost_plan_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_manager'))]"/>
     </record>
     <record id="rule_abroj_actual_user" model="ir.rule">
-        <field name="name">Abroj actual costs: assigned</field><field name="model_id" ref="model_abroj_cost_actual_line"/>
+        <field name="name">Abroj actual costs: assigned read</field><field name="model_id" ref="model_abroj_cost_actual_line"/>
         <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_actual_user_edit" model="ir.rule">
+        <field name="name">Abroj actual costs: owner or editing member</field><field name="model_id" ref="model_abroj_cost_actual_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids', 'any', [('user_id', '=', user.id), ('access_level', '=', 'edit')])]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="False"/><field name="perm_write" eval="True"/><field name="perm_create" eval="True"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_actual_manager_assigned" model="ir.rule">
+        <field name="name">Abroj actual costs: manager assigned</field><field name="model_id" ref="model_abroj_cost_actual_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_manager'))]"/>
     </record>
     <record id="rule_abroj_stage_user" model="ir.rule">
-        <field name="name">Abroj progress: assigned</field><field name="model_id" ref="model_abroj_cost_progress_stage"/>
+        <field name="name">Abroj progress: assigned read</field><field name="model_id" ref="model_abroj_cost_progress_stage"/>
         <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_stage_user_edit" model="ir.rule">
+        <field name="name">Abroj progress: owner or editing member</field><field name="model_id" ref="model_abroj_cost_progress_stage"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids', 'any', [('user_id', '=', user.id), ('access_level', '=', 'edit')])]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="False"/><field name="perm_write" eval="True"/><field name="perm_create" eval="True"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_stage_manager_assigned" model="ir.rule">
+        <field name="name">Abroj progress: manager assigned</field><field name="model_id" ref="model_abroj_cost_progress_stage"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_manager'))]"/>
     </record>
     <record id="rule_abroj_receipt_user" model="ir.rule">
-        <field name="name">Abroj receipts: assigned</field><field name="model_id" ref="model_abroj_cost_receipt"/>
+        <field name="name">Abroj receipts: assigned read</field><field name="model_id" ref="model_abroj_cost_receipt"/>
         <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="True"/><field name="perm_write" eval="False"/><field name="perm_create" eval="False"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_receipt_user_edit" model="ir.rule">
+        <field name="name">Abroj receipts: owner or editing member</field><field name="model_id" ref="model_abroj_cost_receipt"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids', 'any', [('user_id', '=', user.id), ('access_level', '=', 'edit')])]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_user'))]"/>
+        <field name="perm_read" eval="False"/><field name="perm_write" eval="True"/><field name="perm_create" eval="True"/><field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_abroj_receipt_manager_assigned" model="ir.rule">
+        <field name="name">Abroj receipts: manager assigned</field><field name="model_id" ref="model_abroj_cost_receipt"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), '|', ('project_id.owner_id', '=', user.id), ('project_id.member_ids.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('abroj_project_costing.group_abroj_cost_manager'))]"/>
     </record>
     <record id="rule_abroj_amendment_user" model="ir.rule">
         <field name="name">Abroj amendments: assigned</field><field name="model_id" ref="model_abroj_cost_agreement_amendment"/>

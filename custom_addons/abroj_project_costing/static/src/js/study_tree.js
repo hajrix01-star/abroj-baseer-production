@@ -1,14 +1,10 @@
 /** @odoo-module **/
 
 import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
-
-const PLAN_FIELDS = [
-    "name", "node_kind", "parent_id", "category_id", "quantity",
-    "estimated_total", "actual_total", "variance_amount", "currency_id", "sequence",
-];
 
 export class AbrojStudyTree extends Component {
     static template = "abroj_project_costing.StudyTree";
@@ -17,8 +13,9 @@ export class AbrojStudyTree extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.dialog = useService("dialog");
         this.notification = useService("notification");
-        this.state = useState({ loading: true, error: false, nodes: [], expanded: {} });
+        this.state = useState({ loading: true, error: false, nodes: [], flatNodes: [], expanded: {}, draggedId: false });
         this.loadGeneration = 0;
         onWillStart(() => this.load(this.props));
         onWillUpdateProps((nextProps) => this.load(nextProps));
@@ -44,38 +41,44 @@ export class AbrojStudyTree extends Component {
         this.state.loading = true;
         this.state.error = false;
         try {
-            const lines = await this.orm.searchRead(
-                "abroj.cost.plan.line",
-                [["project_id", "=", projectId]],
-                PLAN_FIELDS,
-                { order: "parent_path, sequence, id", limit: 500 }
+            const lines = await this.orm.call(
+                "abroj.cost.project",
+                "get_study_tree_data",
+                [[projectId]]
             );
-            const byParent = new Map();
-            for (const line of lines) {
-                const parentId = line.parent_id ? line.parent_id[0] : false;
-                if (!byParent.has(parentId)) {
-                    byParent.set(parentId, []);
-                }
-                byParent.get(parentId).push({ ...line, children: [] });
-            }
-            const attach = (node) => {
-                node.children = byParent.get(node.id) || [];
-                node.children.forEach(attach);
-                return node;
-            };
+            const nodes = this.buildTree(lines);
             if (generation === this.loadGeneration) {
-                this.state.nodes = (byParent.get(false) || []).map(attach);
+                this.state.nodes = nodes;
+                this.state.flatNodes = lines;
             }
         } catch (error) {
             console.error("ABROJ study tree could not load", error);
             if (generation === this.loadGeneration) {
                 this.state.error = true;
+                this.notification.add("تعذر تحديث دراسة المشروع. حاول مرة أخرى.", { type: "danger" });
             }
         } finally {
             if (generation === this.loadGeneration) {
                 this.state.loading = false;
             }
         }
+    }
+
+    buildTree(lines) {
+        const byParent = new Map();
+        for (const line of lines) {
+            const parentId = line.parent_id ? line.parent_id[0] : false;
+            if (!byParent.has(parentId)) {
+                byParent.set(parentId, []);
+            }
+            byParent.get(parentId).push({ ...line, children: [] });
+        }
+        const attach = (node) => {
+            node.children = byParent.get(node.id) || [];
+            node.children.forEach(attach);
+            return node;
+        };
+        return (byParent.get(false) || []).map(attach);
     }
 
     isExpanded(node) {
@@ -116,6 +119,15 @@ export class AbrojStudyTree extends Component {
         await this.action.doAction(action, { onClose: () => this.load() });
     }
 
+    async addChildSection(node) {
+        const action = await this.orm.call(
+            "abroj.cost.project",
+            "action_open_plan_section_form",
+            [[this.projectId], node.id]
+        );
+        await this.action.doAction(action, { onClose: () => this.load() });
+    }
+
     addChild(node) {
         return this.openForm({
             default_project_id: this.projectId,
@@ -126,6 +138,104 @@ export class AbrojStudyTree extends Component {
 
     editNode(node) {
         return this.openForm({}, node.id);
+    }
+
+    dragStart(node, event) {
+        if (node.node_kind !== "section") return;
+        this.state.draggedId = node.id;
+        event.dataTransfer?.setData("text/plain", String(node.id));
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    }
+
+    dragEnd() {
+        this.state.draggedId = false;
+    }
+
+    allowDrop(node, event) {
+        if (this.state.draggedId && this.state.draggedId !== node.id) {
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+        }
+    }
+
+    allowRootDrop(event) {
+        if (this.state.draggedId) {
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+        }
+    }
+
+    async dropOn(node, event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const sourceId = Number(event.dataTransfer?.getData("text/plain") || this.state.draggedId);
+        this.state.draggedId = false;
+        if (!sourceId || sourceId === node.id) return;
+        await this.reorderSection(sourceId, node.id);
+    }
+
+    async dropAtRoot(event) {
+        event.preventDefault();
+        const sourceId = Number(event.dataTransfer?.getData("text/plain") || this.state.draggedId);
+        this.state.draggedId = false;
+        if (sourceId) await this.reorderSection(sourceId, false);
+    }
+
+    siblingNodes(node) {
+        const parentId = node.parent_id ? node.parent_id[0] : false;
+        return this.state.flatNodes.filter((line) => (line.parent_id ? line.parent_id[0] : false) === parentId);
+    }
+
+    async moveUp(node) {
+        const siblings = this.siblingNodes(node);
+        const index = siblings.findIndex((line) => line.id === node.id);
+        if (index > 0) await this.reorderSection(node.id, siblings[index - 1].id);
+    }
+
+    async moveDown(node) {
+        const siblings = this.siblingNodes(node);
+        const index = siblings.findIndex((line) => line.id === node.id);
+        if (index >= 0 && index < siblings.length - 1) await this.reorderSection(node.id, siblings[index + 1].id);
+    }
+
+    async reorderSection(sourceId, targetId) {
+        try {
+            const lines = await this.orm.call(
+                "abroj.cost.project",
+                "action_reorder_plan_section",
+                [[this.projectId], sourceId, targetId || false]
+            );
+            this.state.flatNodes = lines;
+            this.state.nodes = this.buildTree(lines);
+            this.notification.add("تم تحديث ترتيب الأقسام.", { type: "success" });
+        } catch (error) {
+            console.error("ABROJ study tree reorder failed", error);
+            this.notification.add(error?.data?.message || "تعذر تغيير ترتيب القسم.", { type: "danger" });
+            await this.load();
+        }
+    }
+
+    confirmDelete(node) {
+        const title = node.node_kind === "section" ? "حذف القسم" : "حذف البند";
+        this.dialog.add(ConfirmationDialog, {
+            title,
+            body: `هل تريد حذف «${node.name}»؟ لا يمكن التراجع عن ذلك.`,
+            confirmLabel: "حذف",
+            confirmClass: "btn-danger",
+            cancelLabel: "إلغاء",
+            confirm: () => this.deleteNode(node),
+        });
+    }
+
+    async deleteNode(node) {
+        try {
+            await this.orm.call("abroj.cost.project", "action_delete_plan_node", [[this.projectId], node.id]);
+            await this.load();
+            this.notification.add("تم حذف البند من الدراسة.", { type: "success" });
+        } catch (error) {
+            console.error("ABROJ study tree delete failed", error);
+            this.notification.add(error?.data?.message || "تعذر حذف البند.", { type: "danger" });
+        }
     }
 }
 

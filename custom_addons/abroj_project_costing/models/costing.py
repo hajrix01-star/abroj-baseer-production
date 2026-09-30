@@ -1,6 +1,6 @@
 from collections import defaultdict
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 PRICING_METHODS = [
@@ -306,13 +306,16 @@ class AbrojCostProject(models.Model):
         })
         return wizard.action_export_plan()
 
-    def action_open_plan_section_form(self):
-        """Open the dedicated, aggregation-only form for a root study section."""
+    def action_open_plan_section_form(self, parent_id=False):
+        """Open the aggregation-only form for a root or nested study section."""
         self.ensure_one()
+        parent = self.env['abroj.cost.plan.line'].browse(parent_id).exists() if parent_id else self.env['abroj.cost.plan.line']
+        if parent and (parent.project_id != self or parent.node_kind != 'section'):
+            raise ValidationError(_('لا يمكن إضافة قسم فرعي إلا داخل قسم من المشروع نفسه.'))
         section_view = self.env.ref('abroj_project_costing.view_abroj_plan_section_form')
         return {
             'type': 'ir.actions.act_window',
-            'name': _('إنشاء البند الأب'),
+            'name': _('إنشاء قسم فرعي') if parent else _('إنشاء البند الأب'),
             'res_model': 'abroj.cost.plan.line',
             'view_mode': 'form',
             # The web client's action service normalizes ``views`` first.  A
@@ -326,9 +329,116 @@ class AbrojCostProject(models.Model):
                 'default_project_id': self.id,
                 'default_node_kind': 'section',
                 'default_quantity': 0.0,
-                'abroj_create_root_section': True,
+                'default_parent_id': parent.id if parent else False,
+                'abroj_create_section': True,
+                'abroj_create_root_section': not bool(parent),
             },
         }
+
+    def get_study_tree_data(self):
+        """Return the project tree in its authoritative order for the OWL field.
+
+        ``sequence`` and ``parent_id`` are the persisted source of truth.  The
+        displayed number is deliberately calculated here so a browser never
+        becomes responsible for business ordering.
+        """
+        self.ensure_one()
+        self.check_access('read')
+        plan_model = self.env['abroj.cost.plan.line']
+        lines = plan_model.search([('project_id', '=', self.id)], order='sequence, id', limit=501)
+        if len(lines) > 500:
+            raise UserError(_('لا يمكن عرض أكثر من 500 بند في شجرة دراسة المشروع.'))
+
+        fields_to_read = [
+            'name', 'node_kind', 'parent_id', 'category_id', 'quantity',
+            'estimated_total', 'actual_total', 'variance_amount', 'currency_id', 'sequence',
+        ]
+        rows_by_id = {row['id']: row for row in lines.read(fields_to_read)}
+        children_by_parent = defaultdict(list)
+        for line in lines:
+            children_by_parent[line.parent_id.id].append(line)
+
+        result = []
+
+        def append_children(parent_id, prefix=''):
+            siblings = children_by_parent.get(parent_id, self.env['abroj.cost.plan.line'])
+            for index, line in enumerate(siblings, start=1):
+                tree_number = '%s.%s' % (prefix, index) if prefix else str(index)
+                row = dict(rows_by_id[line.id], tree_number=tree_number)
+                result.append(row)
+                append_children(line.id, tree_number)
+
+        append_children(False)
+        return result
+
+    def action_reorder_plan_section(self, source_id, target_id=False):
+        """Move a section directly after another section, atomically.
+
+        The target's parent determines the new level.  This permits moving a
+        section between levels without exposing arbitrary parent writes to the
+        client, and keeps every existing leaf/actual-cost relation intact.
+        """
+        self.ensure_one()
+        self.check_access('write')
+        self._check_project_write_allowed({})
+        plan_model = self.env['abroj.cost.plan.line']
+        source = plan_model.browse(source_id).exists()
+        target = plan_model.browse(target_id).exists() if target_id else plan_model.browse()
+        if not source or source.project_id != self or source.node_kind != 'section':
+            raise ValidationError(_('اختر قسماً صالحاً من دراسة هذا المشروع لتحريكه.'))
+        if target and (target.project_id != self or target.node_kind != 'section'):
+            raise ValidationError(_('لا يمكن وضع القسم إلا بجانب قسم من المشروع نفسه.'))
+        if target == source:
+            return self.get_study_tree_data()
+
+        destination_parent = target.parent_id if target else False
+        if destination_parent and destination_parent.id in source.ids:
+            raise ValidationError(_('لا يمكن نقل القسم إلى أحد أقسامه التابعة.'))
+        if destination_parent and destination_parent.parent_path.startswith(source.parent_path):
+            raise ValidationError(_('لا يمكن نقل القسم إلى أحد أقسامه التابعة.'))
+
+        plan_model._lock_project_structures(self)
+        # Re-read under the project lock.  The source is removed from both
+        # sibling lists before positions are recomputed, then inserted after
+        # the target (or at the end of root sections when target is empty).
+        old_parent = source.parent_id
+        old_siblings = plan_model.search([
+            ('project_id', '=', self.id), ('parent_id', '=', old_parent.id), ('id', '!=', source.id),
+        ], order='sequence, id')
+        new_siblings = old_siblings if old_parent == destination_parent else plan_model.search([
+            ('project_id', '=', self.id), ('parent_id', '=', destination_parent.id), ('id', '!=', source.id),
+        ], order='sequence, id')
+
+        if target:
+            target_index = new_siblings.ids.index(target.id) + 1
+        else:
+            target_index = len(new_siblings)
+        ordered_new_siblings = list(new_siblings)
+        ordered_new_siblings.insert(target_index, source)
+
+        if source.parent_id != destination_parent:
+            source.write({'parent_id': destination_parent.id})
+        for index, sibling in enumerate(old_siblings, start=1):
+            sibling.write({'sequence': index * 10})
+        for index, sibling in enumerate(ordered_new_siblings, start=1):
+            sibling.write({'sequence': index * 10})
+        return self.get_study_tree_data()
+
+    def action_delete_plan_node(self, node_id):
+        """Delete one safe tree node; never cascade through a study section."""
+        self.ensure_one()
+        self.check_access('write')
+        self._check_project_write_allowed({})
+        node = self.env['abroj.cost.plan.line'].browse(node_id).exists()
+        if not node or node.project_id != self:
+            raise ValidationError(_('البند المراد حذفه لا ينتمي إلى هذا المشروع.'))
+        if node.child_ids:
+            raise UserError(_('لا يمكن حذف قسم يحتوي بنوداً. انقل البنود أو احذفها أولاً.'))
+        if node.actual_line_ids:
+            raise UserError(_('لا يمكن حذف بند مرتبط بتكاليف فعلية. احتفظ به للمراجعة المالية.'))
+        self.env['abroj.cost.plan.line']._lock_project_structures(self)
+        node.unlink()
+        return True
 
 
 class AbrojCostPlanLine(models.Model):
@@ -394,11 +504,14 @@ class AbrojCostPlanLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if self.env.context.get('abroj_create_root_section'):
+        if self.env.context.get('abroj_create_section') or self.env.context.get('abroj_create_root_section'):
             # This context selects the dedicated parent-section flow, but it
             # is client supplied. Enforce the safe aggregation-only shape on
             # the server instead of trusting a browser default selection.
-            vals_list = [dict(values, node_kind='section', parent_id=False) for values in vals_list]
+            vals_list = [
+                dict(values, node_kind='section', **({'parent_id': False} if self.env.context.get('abroj_create_root_section') else {}))
+                for values in vals_list
+            ]
         vals_list = [self._normalize_section_values(vals) for vals in vals_list]
         projects = self.env['abroj.cost.project'].browse(
             [vals['project_id'] for vals in vals_list if vals.get('project_id')]
@@ -409,12 +522,13 @@ class AbrojCostPlanLine(models.Model):
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
-        if self.env.context.get('abroj_create_root_section'):
+        if self.env.context.get('abroj_create_section') or self.env.context.get('abroj_create_root_section'):
             defaults.update({
                 'node_kind': 'section',
-                'parent_id': False,
                 'quantity': 0.0,
             })
+            if self.env.context.get('abroj_create_root_section'):
+                defaults['parent_id'] = False
         return defaults
 
     @api.constrains('parent_id', 'project_id', 'node_kind', 'category_id', 'child_ids')
@@ -591,6 +705,51 @@ class AbrojCostActualLine(models.Model):
         string='مرفقات الفاتورة أو سند الصرف',
     )
     attachment_count = fields.Integer(compute='_compute_attachment_count')
+
+    @api.model
+    def _fill_planned_line_defaults(self, values):
+        """Fill required planned-cost data from its priced leaf on the server.
+
+        Browser onchange is a convenience only.  Inline editing, imports and
+        integrations must receive the same safe category/name defaults.
+        """
+        values = dict(values)
+        plan_line_id = values.get('plan_line_id')
+        if not plan_line_id:
+            return values
+        plan_line = self.env['abroj.cost.plan.line'].browse(plan_line_id).exists()
+        if not plan_line:
+            return values
+        if plan_line.node_kind != 'item':
+            raise ValidationError(_('التكلفة الفعلية يجب أن ترتبط ببند مسعّر، وليس بقسم تجميعي.'))
+        values['is_unplanned'] = False
+        if not values.get('category_id'):
+            values['category_id'] = plan_line.category_id.id
+        if not values.get('name'):
+            values['name'] = plan_line.name
+        if not values.get('material_id'):
+            values['material_id'] = plan_line.material_id.id
+        if not values.get('description'):
+            values['description'] = plan_line.description
+        if not values.get('uom_type'):
+            values['uom_type'] = plan_line.uom_type
+        if not values.get('supplier_id'):
+            values['supplier_id'] = plan_line.supplier_id.id
+        if not values.get('supplier_text'):
+            values['supplier_text'] = plan_line.supplier_text
+        return values
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create([self._fill_planned_line_defaults(values) for values in vals_list])
+
+    def write(self, vals):
+        # A selected leaf is authoritative.  Fill fields missing from a
+        # non-form write, but retain the constraint below for a deliberately
+        # supplied mismatched category.
+        if 'plan_line_id' in vals and vals.get('plan_line_id'):
+            return super().write(self._fill_planned_line_defaults(vals))
+        return super().write(vals)
 
     @api.depends('plan_line_id')
     def _compute_plan_scope_id(self):

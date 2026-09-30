@@ -192,3 +192,21 @@ class TestAbrojCostPlanImport(TransactionCase):
         self.assertEqual(plumbing.parent_id, kitchen)
         self.assertEqual(leaf.parent_id, plumbing)
         self.assertEqual(project.estimated_total, 200)
+
+    def test_download_template_is_importable(self):
+        project = self._project()
+        template_wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id,
+            'company_id': self.company.id,
+        })
+        import_wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id,
+            'company_id': self.company.id,
+            'import_file': base64.b64encode(template_wizard._template_workbook()),
+            'import_filename': 'template.xlsx',
+        })
+        import_wizard.action_import_plan()
+        kitchen = project.plan_line_ids.filtered(lambda line: line.name == 'المطبخ')
+        example = project.plan_line_ids.filtered(lambda line: line.name == 'مثال بند')
+        self.assertEqual(kitchen.node_kind, 'section')
+        self.assertEqual(example.parent_id, kitchen)

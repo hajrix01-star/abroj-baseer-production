@@ -15,6 +15,10 @@ class TestAbrojStudyTree(TransactionCase):
             'name': 'كهرباء',
             'company_id': cls.company.id,
         })
+        cls.other_category = cls.env['abroj.cost.category'].with_company(cls.company).create({
+            'name': 'سباكة',
+            'company_id': cls.company.id,
+        })
         cls.other_company = cls.env['res.company'].create({
             'name': 'Study tree other company',
             'abroj_project_costing_enabled': True,
@@ -97,3 +101,22 @@ class TestAbrojStudyTree(TransactionCase):
         self.assertEqual(legacy.node_kind, 'item')
         self.assertFalse(legacy.parent_id)
         self.assertEqual(project.estimated_total, 150)
+
+    def test_planned_actual_cost_must_keep_the_leaf_work_category(self):
+        project = self._project()
+        leaf = self._item(project, 'تمديدات كهرباء', amount=100)
+        with self.assertRaises(ValidationError):
+            self.env['abroj.cost.actual.line'].with_company(self.company).create({
+                'project_id': project.id,
+                'plan_line_id': leaf.id,
+                'category_id': self.other_category.id,
+                'name': 'فاتورة بفئة خاطئة',
+                'amount': 100,
+            })
+        self.env['abroj.cost.actual.line'].with_company(self.company).create({
+            'project_id': project.id,
+            'is_unplanned': True,
+            'category_id': self.other_category.id,
+            'name': 'تكلفة غير مخططة',
+            'amount': 100,
+        })

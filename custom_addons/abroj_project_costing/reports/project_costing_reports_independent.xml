@@ -138,7 +138,7 @@
                 </tbody></table>
                 <div class="abroj-print-section-title">دراسة المشروع</div>
                 <table class="abroj-data"><thead><tr><th style="width:15%">الفئة</th><th style="width:29%">البند</th><th style="width:10%">الكمية</th><th style="width:14%">طريقة التسعير</th><th style="width:11%">المتوقع</th><th style="width:11%">الفعلي</th><th style="width:10%">الانحراف</th></tr></thead><tbody>
-                    <tr t-foreach="doc.plan_line_ids" t-as="line"><td><span t-field="line.category_id"/></td><td><span t-field="line.name"/></td><td><span t-field="line.quantity"/></td><td><span t-field="line.pricing_method"/></td><td><span t-field="line.estimated_total"/></td><td><span t-field="line.actual_total"/></td><td><span t-field="line.variance_amount"/></td></tr>
+                    <tr t-foreach="doc.plan_leaf_ids" t-as="line"><td><span t-field="line.category_id"/></td><td><span t-field="line.name"/></td><td><span t-field="line.quantity"/></td><td><span t-field="line.pricing_method"/></td><td><span t-field="line.estimated_total"/></td><td><span t-field="line.actual_total"/></td><td><span t-field="line.variance_amount"/></td></tr>
                     <tr t-if="not doc.plan_line_ids"><td colspan="7" class="abroj-empty">لا توجد بنود دراسة.</td></tr>
                 </tbody></table>
                 <div class="abroj-print-section-title">التكاليف الفعلية</div>

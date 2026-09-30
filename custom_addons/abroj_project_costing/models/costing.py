@@ -136,6 +136,10 @@ class AbrojCostProject(models.Model):
     active = fields.Boolean('نشط', default=True)
     note = fields.Html('ملاحظات')
     plan_line_ids = fields.One2many('abroj.cost.plan.line', 'project_id', string='دراسة المشروع')
+    plan_leaf_ids = fields.One2many(
+        'abroj.cost.plan.line', 'project_id', string='بنود الدراسة المسعّرة',
+        domain=[('node_kind', '=', 'item')],
+    )
     actual_line_ids = fields.One2many('abroj.cost.actual.line', 'project_id', string='التكاليف الفعلية')
     progress_stage_ids = fields.One2many('abroj.cost.progress.stage', 'project_id', string='الإنجاز')
     receipt_ids = fields.One2many('abroj.cost.receipt', 'project_id', string='دفعات العميل')
@@ -542,13 +546,15 @@ class AbrojCostActualLine(models.Model):
 
     @api.model
     def _search_plan_scope_id(self, operator, value):
-        return [('plan_line_id.parent_id', operator, value)]
+        return [('plan_line_id', 'child_of', value)]
 
     @api.onchange('plan_scope_id')
     def _onchange_plan_scope_id(self):
         for line in self:
-            if line.plan_scope_id and line.plan_line_id and line.plan_line_id not in line.plan_scope_id.child_ids:
-                line.plan_line_id = False
+            if line.plan_scope_id and line.plan_line_id:
+                scope_prefix = '%s%s/' % (line.plan_scope_id.parent_path, line.plan_scope_id.id)
+                if not line.plan_line_id.parent_path.startswith(scope_prefix):
+                    line.plan_line_id = False
 
     @api.onchange('plan_line_id')
     def _onchange_plan_line_id(self):
@@ -563,7 +569,7 @@ class AbrojCostActualLine(models.Model):
             self.supplier_id = line.supplier_id
             self.supplier_text = line.supplier_text
 
-    @api.constrains('plan_line_id', 'project_id', 'is_unplanned')
+    @api.constrains('plan_line_id', 'project_id', 'is_unplanned', 'category_id')
     def _check_plan_line_project(self):
         for line in self:
             if not line.plan_line_id and not line.is_unplanned:
@@ -572,6 +578,10 @@ class AbrojCostActualLine(models.Model):
                 raise ValidationError(_('بند الدراسة يجب أن ينتمي للمشروع نفسه.'))
             if line.plan_line_id and line.plan_line_id.node_kind != 'item':
                 raise ValidationError(_('التكلفة الفعلية يجب أن ترتبط ببند مسعّر، وليس بقسم تجميعي.'))
+            if line.plan_line_id and line.is_unplanned:
+                raise ValidationError(_('لا يمكن اعتبار تكلفة مرتبطة ببند دراسة تكلفة غير مخططة.'))
+            if line.plan_line_id and line.category_id != line.plan_line_id.category_id:
+                raise ValidationError(_('نوع عمل التكلفة الفعلية يجب أن يطابق نوع عمل بند الدراسة المرتبط.'))
 
     @api.depends('attachment_ids')
     def _compute_attachment_count(self):

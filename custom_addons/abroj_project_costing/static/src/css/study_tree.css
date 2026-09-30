@@ -30,9 +30,10 @@
     border-bottom: 1px solid var(--abroj-tree-rule);
     display: grid;
     gap: 12px;
-    grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(105px, .3fr)) 76px;
+    grid-template-columns: minmax(260px, 1fr) repeat(4, minmax(105px, .3fr)) 76px;
     min-height: 58px;
-    padding: 8px 10px 8px calc(10px + var(--abroj-tree-level) * 24px);
+    padding: 8px 10px;
+    padding-inline-start: calc(10px + var(--abroj-tree-level) * 24px);
 }
 .o_abroj_study_tree_row.is-section { background: #faf8f9; border-right: 3px solid var(--abroj-tree-accent); }
 .o_abroj_study_tree_name { align-items: center; display: flex; gap: 7px; min-width: 0; }
@@ -53,6 +54,6 @@
     .o_abroj_study_tree_header { align-items: stretch; flex-direction: column; gap: 12px; }
     .o_abroj_study_tree_header .btn { min-height: 44px; }
     .o_abroj_study_tree_row { gap: 8px; grid-template-columns: minmax(0, 1fr) repeat(2, 72px); padding-inline-start: calc(6px + var(--abroj-tree-level) * 14px); }
-    .o_abroj_study_tree_metric:nth-of-type(4) { display: none; }
+    .o_abroj_study_tree_metric:nth-of-type(5) { display: none; }
     .o_abroj_tree_add_child { grid-column: 1 / -1; justify-self: stretch; min-height: 40px; }
 }

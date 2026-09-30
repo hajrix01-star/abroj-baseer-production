@@ -1,13 +1,13 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
 const PLAN_FIELDS = [
     "name", "node_kind", "parent_id", "category_id", "quantity",
-    "estimated_total", "actual_total", "variance_amount", "sequence",
+    "estimated_total", "actual_total", "variance_amount", "currency_id", "sequence",
 ];
 
 export class AbrojStudyTree extends Component {
@@ -19,16 +19,25 @@ export class AbrojStudyTree extends Component {
         this.action = useService("action");
         this.notification = useService("notification");
         this.state = useState({ loading: true, error: false, nodes: [], expanded: {} });
-        onWillStart(() => this.load());
+        this.loadGeneration = 0;
+        onWillStart(() => this.load(this.props));
+        onWillUpdateProps((nextProps) => this.load(nextProps));
+    }
+
+    projectIdFor(props) {
+        return props.record.resId;
     }
 
     get projectId() {
-        return this.props.record.resId;
+        return this.projectIdFor(this.props);
     }
 
-    async load() {
-        if (!this.projectId) {
+    async load(props) {
+        const generation = ++this.loadGeneration;
+        const projectId = this.projectIdFor(props);
+        if (!projectId) {
             this.state.loading = false;
+            this.state.error = false;
             this.state.nodes = [];
             return;
         }
@@ -37,7 +46,7 @@ export class AbrojStudyTree extends Component {
         try {
             const lines = await this.orm.searchRead(
                 "abroj.cost.plan.line",
-                [["project_id", "=", this.projectId]],
+                [["project_id", "=", projectId]],
                 PLAN_FIELDS,
                 { order: "parent_path, sequence, id", limit: 500 }
             );
@@ -54,12 +63,18 @@ export class AbrojStudyTree extends Component {
                 node.children.forEach(attach);
                 return node;
             };
-            this.state.nodes = (byParent.get(false) || []).map(attach);
+            if (generation === this.loadGeneration) {
+                this.state.nodes = (byParent.get(false) || []).map(attach);
+            }
         } catch (error) {
             console.error("ABROJ study tree could not load", error);
-            this.state.error = true;
+            if (generation === this.loadGeneration) {
+                this.state.error = true;
+            }
         } finally {
-            this.state.loading = false;
+            if (generation === this.loadGeneration) {
+                this.state.loading = false;
+            }
         }
     }
 
@@ -71,8 +86,12 @@ export class AbrojStudyTree extends Component {
         this.state.expanded[node.id] = !this.isExpanded(node);
     }
 
-    formatAmount(value) {
-        return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(value || 0);
+    formatAmount(value, currency) {
+        const amount = new Intl.NumberFormat("en-US", {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+        }).format(value || 0);
+        return currency ? `${amount} ${currency[1]}` : amount;
     }
 
     async openForm(context, resId = false) {

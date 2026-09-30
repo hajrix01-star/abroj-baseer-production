@@ -344,6 +344,10 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         plan_sheet.title = 'بنود الدراسة'
         plan_sheet.append(IMPORT_COLUMNS)
         plan_sheet.append((
+            '', 'المطبخ', 'detailed', 0,
+            0, 0, 0, 0, 0, '', 'المطبخ', 'section',
+        ))
+        plan_sheet.append((
             'التشطيبات', 'مثال بند', 'lump_sum', 1,
             0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا', 'المطبخ/مثال بند', 'item',
         ))

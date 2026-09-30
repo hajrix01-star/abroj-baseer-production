@@ -40,9 +40,10 @@
                         <strong t-esc="node.name"/>
                     </button>
                 </div>
-                <div class="o_abroj_study_tree_metric"><span>المتوقع</span><strong t-esc="formatAmount(node.estimated_total)"/></div>
-                <div class="o_abroj_study_tree_metric"><span>الفعلي</span><strong t-esc="formatAmount(node.actual_total)"/></div>
-                <div class="o_abroj_study_tree_metric"><span>الانحراف</span><strong t-att-class="node.variance_amount &gt; 0 ? 'is-over' : ''" t-esc="formatAmount(node.variance_amount)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>الكمية</span><strong t-esc="node.quantity || 0"/></div>
+                <div class="o_abroj_study_tree_metric"><span>المتوقع</span><strong t-esc="formatAmount(node.estimated_total, node.currency_id)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>الفعلي</span><strong t-esc="formatAmount(node.actual_total, node.currency_id)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>الانحراف</span><strong t-att-class="node.variance_amount &gt; 0 ? 'is-over' : ''" t-esc="formatAmount(node.variance_amount, node.currency_id)"/></div>
                 <button t-if="node.node_kind === 'section'" type="button" class="btn btn-secondary o_abroj_tree_add_child" t-on-click="() =&gt; addChild(node)">
                     <i class="fa fa-plus"/> تابع
                 </button>

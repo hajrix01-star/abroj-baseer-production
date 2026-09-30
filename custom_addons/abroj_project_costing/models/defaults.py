@@ -136,6 +136,15 @@ class AbrojCostProject(models.Model):
 class ResCompany(models.Model):
     _inherit = "res.company"
 
+    abroj_report_name_ar = fields.Char(
+        string="اسم الشركة بالعربية في مستندات المشاريع",
+        help="يظهر في رأس سندات وتقارير تكاليف المشاريع فقط.",
+    )
+    abroj_report_name_en = fields.Char(
+        string="اسم الشركة بالإنجليزية في مستندات المشاريع",
+        help="يظهر أسفل الاسم العربي في مستندات تكاليف المشاريع فقط.",
+    )
+
     abroj_project_costing_enabled = fields.Boolean(
         string="إظهار أبرج | تكاليف المشاريع",
         default=False,

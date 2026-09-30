@@ -35,11 +35,12 @@ supplementary groups, especially no Docker or sudo membership.
 The configured source key is read-only and distinct from the GitHub Actions
 key.
 
-Add the QA deploy public key through `install-github-deploy-access.sh`, then
-create a GitHub environment named `qa` with only:
-
-- secret `QA_SSH_KEY`
-- variables `QA_HOST` and `QA_KNOWN_HOST`
+Install a restricted self-hosted GitHub Actions runner on the QA host under
+the `baseer_qa_deploy` account and give it the labels `self-hosted`, `linux`,
+and `baseer-qa`. It may run only the reviewed QA workflow from `main`; its
+`sudoers` entry permits only the two root-owned QA wrappers. Create a GitHub
+environment named `qa` for the dispatch approval boundary. No SSH secret or
+public QA address is stored in GitHub.
 
 Do not store Odoo passwords, database URLs, host configuration, production
 keys, or data backups in GitHub or this repository.

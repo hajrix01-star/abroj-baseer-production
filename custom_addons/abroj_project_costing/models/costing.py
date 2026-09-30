@@ -786,6 +786,13 @@ class AbrojCostActualLine(models.Model):
             self.supplier_id = line.supplier_id
             self.supplier_text = line.supplier_text
 
+    @api.onchange('is_unplanned')
+    def _onchange_is_unplanned(self):
+        """Keep the two actual-cost entry paths mutually exclusive in the UI."""
+        for line in self:
+            if line.is_unplanned:
+                line.plan_line_id = False
+
     @api.constrains('plan_line_id', 'project_id', 'is_unplanned', 'category_id')
     def _check_plan_line_project(self):
         for line in self:

@@ -440,17 +440,22 @@ class AbrojCostPlanLine(models.Model):
             self.supplier_id = material.supplier_id
             self.supplier_text = material.supplier_text
 
+    def _round_amount(self, amount):
+        """Round draft lines safely before their related project currency is resolved."""
+        self.ensure_one()
+        currency = self.currency_id or self.project_id.currency_id or self.env.company.currency_id
+        return currency.round(amount) if currency else amount
+
     @api.depends('node_kind', 'pricing_method', 'quantity', 'material_unit_cost', 'auxiliary_unit_cost', 'labor_unit_cost', 'inclusive_unit_cost', 'lump_sum_cost',
                  'child_ids.estimated_material_amount', 'child_ids.estimated_auxiliary_amount', 'child_ids.estimated_labor_amount', 'child_ids.estimated_lump_sum_amount', 'child_ids.estimated_total')
     def _compute_amounts(self):
         for line in self:
             if line.node_kind == 'section':
-                currency = line.currency_id
-                line.estimated_material_amount = currency.round(sum(line.child_ids.mapped('estimated_material_amount')))
-                line.estimated_auxiliary_amount = currency.round(sum(line.child_ids.mapped('estimated_auxiliary_amount')))
-                line.estimated_labor_amount = currency.round(sum(line.child_ids.mapped('estimated_labor_amount')))
-                line.estimated_lump_sum_amount = currency.round(sum(line.child_ids.mapped('estimated_lump_sum_amount')))
-                line.estimated_total = currency.round(sum(line.child_ids.mapped('estimated_total')))
+                line.estimated_material_amount = line._round_amount(sum(line.child_ids.mapped('estimated_material_amount')))
+                line.estimated_auxiliary_amount = line._round_amount(sum(line.child_ids.mapped('estimated_auxiliary_amount')))
+                line.estimated_labor_amount = line._round_amount(sum(line.child_ids.mapped('estimated_labor_amount')))
+                line.estimated_lump_sum_amount = line._round_amount(sum(line.child_ids.mapped('estimated_lump_sum_amount')))
+                line.estimated_total = line._round_amount(sum(line.child_ids.mapped('estimated_total')))
                 line.estimated_unit_cost = 0.0
                 continue
             quantity = line.quantity or 0.0
@@ -465,20 +470,19 @@ class AbrojCostPlanLine(models.Model):
                 material = quantity * line.inclusive_unit_cost
             elif line.pricing_method == 'lump_sum':
                 lump = line.lump_sum_cost
-            currency = line.currency_id
-            line.estimated_material_amount = currency.round(material)
-            line.estimated_auxiliary_amount = currency.round(auxiliary)
-            line.estimated_labor_amount = currency.round(labor)
-            line.estimated_lump_sum_amount = currency.round(lump)
-            line.estimated_total = currency.round(material + auxiliary + labor + lump)
-            line.estimated_unit_cost = currency.round(line.estimated_total / quantity) if quantity and line.pricing_method != 'lump_sum' else currency.round(lump)
+            line.estimated_material_amount = line._round_amount(material)
+            line.estimated_auxiliary_amount = line._round_amount(auxiliary)
+            line.estimated_labor_amount = line._round_amount(labor)
+            line.estimated_lump_sum_amount = line._round_amount(lump)
+            line.estimated_total = line._round_amount(material + auxiliary + labor + lump)
+            line.estimated_unit_cost = line._round_amount(line.estimated_total / quantity) if quantity and line.pricing_method != 'lump_sum' else line._round_amount(lump)
 
     @api.depends('node_kind', 'actual_line_ids.amount', 'estimated_total', 'child_ids.actual_total')
     def _compute_actual_total(self):
         for line in self:
             actual_total = sum(line.child_ids.mapped('actual_total')) if line.node_kind == 'section' else sum(line.actual_line_ids.mapped('amount'))
-            line.actual_total = line.currency_id.round(actual_total)
-            line.variance_amount = line.currency_id.round(line.actual_total - line.estimated_total)
+            line.actual_total = line._round_amount(actual_total)
+            line.variance_amount = line._round_amount(line.actual_total - line.estimated_total)
             line.variance_percent = (line.variance_amount / line.estimated_total * 100.0) if line.estimated_total else 0.0
 
     def write(self, vals):

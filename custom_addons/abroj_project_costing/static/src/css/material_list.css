@@ -1,9 +1,9 @@
-/* Keep the material-library labels legible without changing other Odoo lists. */
-.o_abroj_material_list .o_list_table thead th[data-name] {
+/* One scoped presentation for every Abroj costing list; native Odoo controls remain intact. */
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table thead th[data-name] {
     vertical-align: middle;
 }
 
-.o_abroj_material_list .o_list_table thead th[data-name] .text-truncate {
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table thead th[data-name] .text-truncate {
     display: -webkit-box !important;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -15,9 +15,13 @@
     overflow-wrap: anywhere;
 }
 
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table > :is(thead, tbody, tfoot) > tr > :not(:last-child) {
+    border-inline-end: 1px solid rgba(125, 135, 150, 0.24);
+}
+
 .o_abroj_material_list .o_list_table thead th[data-name="material_unit_cost"],
 .o_abroj_material_list .o_list_table thead th[data-name="auxiliary_unit_cost"],
 .o_abroj_material_list .o_list_table thead th[data-name="labor_unit_cost"],
 .o_abroj_material_list .o_list_table thead th[data-name="inclusive_unit_cost"] {
-    min-width: 8.5rem;
+    min-width: 7.5rem;
 }

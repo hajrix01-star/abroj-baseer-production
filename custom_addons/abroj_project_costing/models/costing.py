@@ -136,6 +136,10 @@ class AbrojCostProject(models.Model):
     active = fields.Boolean('نشط', default=True)
     note = fields.Html('ملاحظات')
     plan_line_ids = fields.One2many('abroj.cost.plan.line', 'project_id', string='دراسة المشروع')
+    plan_leaf_ids = fields.One2many(
+        'abroj.cost.plan.line', 'project_id', string='بنود الدراسة المسعّرة',
+        domain=[('node_kind', '=', 'item')],
+    )
     actual_line_ids = fields.One2many('abroj.cost.actual.line', 'project_id', string='التكاليف الفعلية')
     progress_stage_ids = fields.One2many('abroj.cost.progress.stage', 'project_id', string='الإنجاز')
     receipt_ids = fields.One2many('abroj.cost.receipt', 'project_id', string='دفعات العميل')
@@ -156,21 +160,31 @@ class AbrojCostProject(models.Model):
     receipt_count = fields.Integer('عدد دفعات العميل', compute='_compute_receipt_count')
     progress = fields.Float('نسبة الإنجاز', compute='_compute_totals', store=True, digits=(16, 2))
     attachment_count = fields.Integer(compute='_compute_attachment_count')
+    # Presentation-only field.  The Study Tree OWL field reads the protected
+    # project record and never becomes a second source of plan data.
+    study_tree_token = fields.Char(compute='_compute_study_tree_token')
 
-    @api.depends('plan_line_ids.estimated_material_amount', 'plan_line_ids.estimated_auxiliary_amount',
+    def _compute_study_tree_token(self):
+        for project in self:
+            project.study_tree_token = str(project.id or '')
+
+    @api.depends('plan_line_ids.node_kind', 'plan_line_ids.estimated_material_amount', 'plan_line_ids.estimated_auxiliary_amount',
                  'plan_line_ids.estimated_labor_amount', 'plan_line_ids.estimated_lump_sum_amount',
                  'plan_line_ids.estimated_total', 'actual_line_ids.amount', 'receipt_ids.amount',
                  'progress_stage_ids.state', 'agreement_amount')
     def _compute_totals(self):
         for project in self:
-            plan_lines = project.plan_line_ids
-            project.estimated_material_total = sum(plan_lines.mapped('estimated_material_amount'))
-            project.estimated_auxiliary_total = sum(plan_lines.mapped('estimated_auxiliary_amount'))
-            project.estimated_labor_total = sum(plan_lines.mapped('estimated_labor_amount'))
-            project.estimated_lump_sum_total = sum(plan_lines.mapped('estimated_lump_sum_amount'))
-            project.estimated_total = sum(plan_lines.mapped('estimated_total'))
-            project.actual_total = sum(project.actual_line_ids.mapped('amount'))
-            project.variance_amount = project.actual_total - project.estimated_total
+            # Only priced leaves are included.  A section displays its own
+            # rolled-up total, so including it here would double count.
+            plan_lines = project.plan_line_ids.filtered(lambda line: line.node_kind == 'item')
+            currency = project.currency_id
+            project.estimated_material_total = currency.round(sum(plan_lines.mapped('estimated_material_amount')))
+            project.estimated_auxiliary_total = currency.round(sum(plan_lines.mapped('estimated_auxiliary_amount')))
+            project.estimated_labor_total = currency.round(sum(plan_lines.mapped('estimated_labor_amount')))
+            project.estimated_lump_sum_total = currency.round(sum(plan_lines.mapped('estimated_lump_sum_amount')))
+            project.estimated_total = currency.round(sum(plan_lines.mapped('estimated_total')))
+            project.actual_total = currency.round(sum(project.actual_line_ids.mapped('amount')))
+            project.variance_amount = currency.round(project.actual_total - project.estimated_total)
             project.variance_percent = (project.variance_amount / project.estimated_total * 100.0) if project.estimated_total else 0.0
             project.expected_profit = project.agreement_amount - project.estimated_total
             project.actual_profit = project.agreement_amount - project.actual_total
@@ -241,6 +255,10 @@ class AbrojCostProject(models.Model):
             'name': _('دفعات العميل'),
             'res_model': 'abroj.cost.receipt',
             'view_mode': 'list,form',
+            'views': [
+                (self.env.ref('abroj_project_costing.view_abroj_receipt_list').id, 'list'),
+                (self.env.ref('abroj_project_costing.view_abroj_receipt_form_readonly').id, 'form'),
+            ],
             'domain': [('project_id', '=', self.id)],
             'context': {
                 'default_project_id': self.id,
@@ -293,12 +311,24 @@ class AbrojCostPlanLine(models.Model):
     _name = 'abroj.cost.plan.line'
     _description = 'Abroj Project Cost Plan Line'
     _order = 'sequence, id'
+    _parent_store = True
+    _parent_name = 'parent_id'
 
     project_id = fields.Many2one('abroj.cost.project', 'المشروع', required=True, ondelete='restrict', index=True, check_company=True)
     company_id = fields.Many2one(related='project_id.company_id', store=True, index=True)
     currency_id = fields.Many2one(related='project_id.currency_id', readonly=True)
     sequence = fields.Integer('الترتيب', default=10)
-    category_id = fields.Many2one('abroj.cost.category', 'الفئة', required=True, check_company=True)
+    node_kind = fields.Selection([
+        ('section', 'قسم'),
+        ('item', 'بند مسعّر'),
+    ], string='نوع العقدة', required=True, default='item', index=True)
+    parent_id = fields.Many2one(
+        'abroj.cost.plan.line', 'البند الأب', ondelete='restrict', index=True,
+        check_company=True,
+    )
+    parent_path = fields.Char(index=True)
+    child_ids = fields.One2many('abroj.cost.plan.line', 'parent_id', string='البنود التابعة')
+    category_id = fields.Many2one('abroj.cost.category', 'نوع العمل', check_company=True)
     material_id = fields.Many2one('abroj.cost.material', 'المادة', check_company=True)
     image_1920 = fields.Image('الصورة')
     name = fields.Char('اسم البند', required=True)
@@ -311,20 +341,88 @@ class AbrojCostPlanLine(models.Model):
     labor_unit_cost = fields.Monetary('شغل اليد للوحدة', currency_field='currency_id')
     inclusive_unit_cost = fields.Monetary('توريد وتركيب للوحدة', currency_field='currency_id')
     lump_sum_cost = fields.Monetary('قيمة المقطوعية', currency_field='currency_id')
-    estimated_unit_cost = fields.Monetary('إجمالي تكلفة الوحدة', compute='_compute_amounts', store=True, currency_field='currency_id')
-    estimated_total = fields.Monetary('إجمالي التكلفة المتوقعة', compute='_compute_amounts', store=True, currency_field='currency_id')
-    estimated_material_amount = fields.Monetary(compute='_compute_amounts', store=True, currency_field='currency_id')
-    estimated_auxiliary_amount = fields.Monetary(compute='_compute_amounts', store=True, currency_field='currency_id')
-    estimated_labor_amount = fields.Monetary(compute='_compute_amounts', store=True, currency_field='currency_id')
-    estimated_lump_sum_amount = fields.Monetary(compute='_compute_amounts', store=True, currency_field='currency_id')
-    actual_total = fields.Monetary('إجمالي التكلفة الفعلية', compute='_compute_actual_total', store=True, currency_field='currency_id')
-    variance_amount = fields.Monetary('الانحراف', compute='_compute_actual_total', store=True, currency_field='currency_id')
-    variance_percent = fields.Float('نسبة الانحراف', compute='_compute_actual_total', store=True, digits=(16, 2))
+    estimated_unit_cost = fields.Monetary('إجمالي تكلفة الوحدة', compute='_compute_amounts', store=True, recursive=True, currency_field='currency_id')
+    estimated_total = fields.Monetary('إجمالي التكلفة المتوقعة', compute='_compute_amounts', store=True, recursive=True, currency_field='currency_id')
+    estimated_material_amount = fields.Monetary(compute='_compute_amounts', store=True, recursive=True, currency_field='currency_id')
+    estimated_auxiliary_amount = fields.Monetary(compute='_compute_amounts', store=True, recursive=True, currency_field='currency_id')
+    estimated_labor_amount = fields.Monetary(compute='_compute_amounts', store=True, recursive=True, currency_field='currency_id')
+    estimated_lump_sum_amount = fields.Monetary(compute='_compute_amounts', store=True, recursive=True, currency_field='currency_id')
+    actual_total = fields.Monetary('إجمالي التكلفة الفعلية', compute='_compute_actual_total', store=True, recursive=True, currency_field='currency_id')
+    variance_amount = fields.Monetary('الانحراف', compute='_compute_actual_total', store=True, recursive=True, currency_field='currency_id')
+    variance_percent = fields.Float('نسبة الانحراف', compute='_compute_actual_total', store=True, recursive=True, digits=(16, 2))
     supplier_id = fields.Many2one('res.partner', 'المورد', check_company=True)
     supplier_text = fields.Char('اسم المورد')
     status = fields.Selection([('draft', 'مسودة'), ('pricing', 'قيد التسعير'), ('waiting', 'بانتظار الاعتماد'), ('approved', 'معتمد'), ('in_progress', 'جاري التنفيذ'), ('done', 'مكتمل'), ('cancelled', 'ملغي')], 'الحالة', default='draft')
     notes = fields.Text('ملاحظات')
     actual_line_ids = fields.One2many('abroj.cost.actual.line', 'plan_line_id')
+
+    @api.model
+    def _lock_project_structures(self, projects):
+        """Serialize hierarchy changes for a project without bypassing ORM ACLs."""
+        projects = projects.exists()
+        if not projects:
+            return
+        projects.check_access('write')
+        self.env.cr.execute(
+            'SELECT id FROM abroj_cost_project WHERE id IN %s FOR UPDATE',
+            [tuple(projects.ids)],
+        )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        vals_list = [self._normalize_section_values(vals) for vals in vals_list]
+        projects = self.env['abroj.cost.project'].browse(
+            [vals['project_id'] for vals in vals_list if vals.get('project_id')]
+        )
+        self._lock_project_structures(projects)
+        return super().create(vals_list)
+
+    @api.constrains('parent_id', 'project_id', 'node_kind', 'category_id', 'child_ids')
+    def _check_tree_contract(self):
+        if self._has_cycle():
+            raise ValidationError(_('لا يمكن إنشاء دورة في شجرة دراسة المشروع.'))
+        for line in self:
+            if line.parent_id:
+                if line.parent_id.project_id != line.project_id or line.parent_id.company_id != line.company_id:
+                    raise ValidationError(_('البند الأب يجب أن ينتمي إلى المشروع والشركة نفسيهما.'))
+                if line.parent_id == line:
+                    raise ValidationError(_('لا يمكن ربط البند بنفسه أو بأحد أبنائه.'))
+                if line.parent_id.node_kind != 'section':
+                    raise ValidationError(_('لا يمكن إضافة بند تابع إلى بند مسعّر. أضف قسماً أولاً.'))
+            if line.node_kind == 'section':
+                if line.category_id or line.material_id or line.actual_line_ids:
+                    raise ValidationError(_('القسم للتجميع فقط ولا يحمل نوع عمل أو مادة أو تكلفة فعلية.'))
+            else:
+                if not line.category_id:
+                    raise ValidationError(_('نوع العمل مطلوب للبند المسعّر.'))
+                if line.child_ids:
+                    raise ValidationError(_('لا يمكن للبند المسعّر أن يحتوي بنوداً تابعة. استخدم قسماً.'))
+
+    @api.model
+    def _normalize_section_values(self, values):
+        """A section is a pure roll-up node, never a directly priced row."""
+        values = dict(values)
+        if values.get('node_kind') == 'section':
+            values.update({
+                'category_id': False,
+                'material_id': False,
+                'quantity': 0.0,
+                'material_unit_cost': 0.0,
+                'auxiliary_unit_cost': 0.0,
+                'labor_unit_cost': 0.0,
+                'inclusive_unit_cost': 0.0,
+                'lump_sum_cost': 0.0,
+                'supplier_id': False,
+                'supplier_text': False,
+            })
+        return values
+
+    @api.onchange('node_kind')
+    def _onchange_node_kind(self):
+        if self.node_kind == 'section':
+            for field_name, value in self._normalize_section_values({'node_kind': 'section'}).items():
+                if field_name != 'node_kind':
+                    setattr(self, field_name, value)
 
     @api.onchange('material_id')
     def _onchange_material_id(self):
@@ -342,9 +440,19 @@ class AbrojCostPlanLine(models.Model):
             self.supplier_id = material.supplier_id
             self.supplier_text = material.supplier_text
 
-    @api.depends('pricing_method', 'quantity', 'material_unit_cost', 'auxiliary_unit_cost', 'labor_unit_cost', 'inclusive_unit_cost', 'lump_sum_cost')
+    @api.depends('node_kind', 'pricing_method', 'quantity', 'material_unit_cost', 'auxiliary_unit_cost', 'labor_unit_cost', 'inclusive_unit_cost', 'lump_sum_cost',
+                 'child_ids.estimated_material_amount', 'child_ids.estimated_auxiliary_amount', 'child_ids.estimated_labor_amount', 'child_ids.estimated_lump_sum_amount', 'child_ids.estimated_total')
     def _compute_amounts(self):
         for line in self:
+            if line.node_kind == 'section':
+                currency = line.currency_id
+                line.estimated_material_amount = currency.round(sum(line.child_ids.mapped('estimated_material_amount')))
+                line.estimated_auxiliary_amount = currency.round(sum(line.child_ids.mapped('estimated_auxiliary_amount')))
+                line.estimated_labor_amount = currency.round(sum(line.child_ids.mapped('estimated_labor_amount')))
+                line.estimated_lump_sum_amount = currency.round(sum(line.child_ids.mapped('estimated_lump_sum_amount')))
+                line.estimated_total = currency.round(sum(line.child_ids.mapped('estimated_total')))
+                line.estimated_unit_cost = 0.0
+                continue
             quantity = line.quantity or 0.0
             material = auxiliary = labor = lump = 0.0
             if line.pricing_method == 'detailed':
@@ -357,24 +465,36 @@ class AbrojCostPlanLine(models.Model):
                 material = quantity * line.inclusive_unit_cost
             elif line.pricing_method == 'lump_sum':
                 lump = line.lump_sum_cost
-            line.estimated_material_amount = material
-            line.estimated_auxiliary_amount = auxiliary
-            line.estimated_labor_amount = labor
-            line.estimated_lump_sum_amount = lump
-            line.estimated_total = material + auxiliary + labor + lump
-            line.estimated_unit_cost = line.estimated_total / quantity if quantity and line.pricing_method != 'lump_sum' else lump
+            currency = line.currency_id
+            line.estimated_material_amount = currency.round(material)
+            line.estimated_auxiliary_amount = currency.round(auxiliary)
+            line.estimated_labor_amount = currency.round(labor)
+            line.estimated_lump_sum_amount = currency.round(lump)
+            line.estimated_total = currency.round(material + auxiliary + labor + lump)
+            line.estimated_unit_cost = currency.round(line.estimated_total / quantity) if quantity and line.pricing_method != 'lump_sum' else currency.round(lump)
 
-    @api.depends('actual_line_ids.amount', 'estimated_total')
+    @api.depends('node_kind', 'actual_line_ids.amount', 'estimated_total', 'child_ids.actual_total')
     def _compute_actual_total(self):
         for line in self:
-            line.actual_total = sum(line.actual_line_ids.mapped('amount'))
-            line.variance_amount = line.actual_total - line.estimated_total
+            actual_total = sum(line.child_ids.mapped('actual_total')) if line.node_kind == 'section' else sum(line.actual_line_ids.mapped('amount'))
+            line.actual_total = line.currency_id.round(actual_total)
+            line.variance_amount = line.currency_id.round(line.actual_total - line.estimated_total)
             line.variance_percent = (line.variance_amount / line.estimated_total * 100.0) if line.estimated_total else 0.0
 
     def write(self, vals):
         if any(line.project_id.state == 'closed' for line in self) and not self.env.user.has_group('abroj_project_costing.group_abroj_cost_manager'):
             raise AccessError(_('لا يمكن تعديل بنود مشروع مغلق.'))
-        return super().write(vals)
+        structural_fields = {'parent_id', 'project_id', 'node_kind'}
+        if structural_fields.intersection(vals):
+            projects = self.mapped('project_id')
+            if vals.get('project_id'):
+                projects |= self.env['abroj.cost.project'].browse(vals['project_id'])
+            self._lock_project_structures(projects)
+        return super().write(self._normalize_section_values(vals))
+
+    def unlink(self):
+        self._lock_project_structures(self.mapped('project_id'))
+        return super().unlink()
 
 
 class AbrojCostActualLine(models.Model):
@@ -386,6 +506,12 @@ class AbrojCostActualLine(models.Model):
     company_id = fields.Many2one(related='project_id.company_id', store=True, index=True)
     currency_id = fields.Many2one(related='project_id.currency_id', readonly=True)
     plan_line_id = fields.Many2one('abroj.cost.plan.line', 'بند الدراسة', check_company=True, ondelete='restrict')
+    # This is deliberately non-stored.  It is a convenient scope picker for
+    # the form, while plan_line_id remains the one auditable source of truth.
+    plan_scope_id = fields.Many2one(
+        'abroj.cost.plan.line', 'نطاق الدراسة', compute='_compute_plan_scope_id',
+        inverse='_inverse_plan_scope_id', search='_search_plan_scope_id',
+    )
     is_unplanned = fields.Boolean('تكلفة إضافية غير مخططة')
     category_id = fields.Many2one('abroj.cost.category', 'الفئة', required=True, check_company=True)
     material_id = fields.Many2one('abroj.cost.material', 'المادة', check_company=True)
@@ -408,6 +534,28 @@ class AbrojCostActualLine(models.Model):
     )
     attachment_count = fields.Integer(compute='_compute_attachment_count')
 
+    @api.depends('plan_line_id')
+    def _compute_plan_scope_id(self):
+        for line in self:
+            line.plan_scope_id = line.plan_line_id.parent_id or line.plan_line_id
+
+    def _inverse_plan_scope_id(self):
+        # The scope only filters the picker.  Saving it must never create a
+        # second hierarchy reference alongside the selected priced leaf.
+        return None
+
+    @api.model
+    def _search_plan_scope_id(self, operator, value):
+        return [('plan_line_id', 'child_of', value)]
+
+    @api.onchange('plan_scope_id')
+    def _onchange_plan_scope_id(self):
+        for line in self:
+            if line.plan_scope_id and line.plan_line_id:
+                scope_prefix = '%s%s/' % (line.plan_scope_id.parent_path, line.plan_scope_id.id)
+                if not line.plan_line_id.parent_path.startswith(scope_prefix):
+                    line.plan_line_id = False
+
     @api.onchange('plan_line_id')
     def _onchange_plan_line_id(self):
         line = self.plan_line_id
@@ -421,13 +569,19 @@ class AbrojCostActualLine(models.Model):
             self.supplier_id = line.supplier_id
             self.supplier_text = line.supplier_text
 
-    @api.constrains('plan_line_id', 'project_id', 'is_unplanned')
+    @api.constrains('plan_line_id', 'project_id', 'is_unplanned', 'category_id')
     def _check_plan_line_project(self):
         for line in self:
             if not line.plan_line_id and not line.is_unplanned:
                 raise ValidationError(_('اختر بند الدراسة أو حدّد أن التكلفة غير مخططة.'))
             if line.plan_line_id and line.plan_line_id.project_id != line.project_id:
                 raise ValidationError(_('بند الدراسة يجب أن ينتمي للمشروع نفسه.'))
+            if line.plan_line_id and line.plan_line_id.node_kind != 'item':
+                raise ValidationError(_('التكلفة الفعلية يجب أن ترتبط ببند مسعّر، وليس بقسم تجميعي.'))
+            if line.plan_line_id and line.is_unplanned:
+                raise ValidationError(_('لا يمكن اعتبار تكلفة مرتبطة ببند دراسة تكلفة غير مخططة.'))
+            if line.plan_line_id and line.category_id != line.plan_line_id.category_id:
+                raise ValidationError(_('نوع عمل التكلفة الفعلية يجب أن يطابق نوع عمل بند الدراسة المرتبط.'))
 
     @api.depends('attachment_ids')
     def _compute_attachment_count(self):

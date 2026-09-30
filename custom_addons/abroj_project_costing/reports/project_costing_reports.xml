@@ -57,8 +57,8 @@
                 </tbody></table>
                 <h2>دراسة المشروع</h2>
                 <table class="abroj-report-lines"><thead><tr><th>الفئة</th><th>البند</th><th>الكمية</th><th>طريقة التسعير</th><th>المتوقع</th><th>الفعلي</th><th>الانحراف</th></tr></thead><tbody>
-                    <tr t-foreach="doc.plan_line_ids" t-as="line"><td><span t-field="line.category_id"/></td><td><span t-field="line.name"/></td><td><span t-field="line.quantity"/></td><td><span t-field="line.pricing_method"/></td><td><span t-field="line.estimated_total"/></td><td><span t-field="line.actual_total"/></td><td><span t-field="line.variance_amount"/></td></tr>
-                    <tr t-if="not doc.plan_line_ids"><td colspan="7" class="abroj-report-empty">لا توجد بنود دراسة مسجلة.</td></tr>
+                    <tr t-foreach="doc.plan_leaf_ids" t-as="line"><td><span t-field="line.category_id"/></td><td><span t-field="line.name"/></td><td><span t-field="line.quantity"/></td><td><span t-field="line.pricing_method"/></td><td><span t-field="line.estimated_total"/></td><td><span t-field="line.actual_total"/></td><td><span t-field="line.variance_amount"/></td></tr>
+                    <tr t-if="not doc.plan_leaf_ids"><td colspan="7" class="abroj-report-empty">لا توجد بنود دراسة مسجلة.</td></tr>
                 </tbody></table>
                 <h2>التكاليف الفعلية</h2>
                 <table class="abroj-report-lines"><thead><tr><th>التاريخ</th><th>البند</th><th>النوع</th><th>المبلغ</th><th>المورد / المستفيد</th></tr></thead><tbody>

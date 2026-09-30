@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="abroj_project_costing.StudyTree">
+        <section class="o_abroj_study_tree" dir="rtl">
+            <header class="o_abroj_study_tree_header">
+                <div>
+                    <p>نطاق العمل والتكلفة</p>
+                    <h2>دراسة المشروع</h2>
+                </div>
+                <button type="button" class="btn btn-primary" t-on-click="addMainSection">
+                    <i class="fa fa-plus"/> إضافة بند رئيسي
+                </button>
+            </header>
+            <div t-if="state.loading" class="o_abroj_study_tree_status">جارٍ تحميل دراسة المشروع…</div>
+            <div t-elif="state.error" class="o_abroj_study_tree_status is-error">تعذر تحميل الدراسة. حدّث الصفحة وحاول مرة أخرى.</div>
+            <div t-elif="!state.nodes.length" class="o_abroj_study_tree_empty">
+                <strong>ابدأ بنطاق العمل</strong>
+                <span>أضف بندًا رئيسيًا مثل «المطبخ»، ثم أضف تحته الأقسام والبنود المسعّرة.</span>
+                <button type="button" class="btn btn-secondary" t-on-click="addMainSection">إضافة بند رئيسي</button>
+            </div>
+            <div t-else="" class="o_abroj_study_tree_rows">
+                <t t-call="abroj_project_costing.StudyTreeRows">
+                    <t t-set="nodes" t-value="state.nodes"/>
+                    <t t-set="level" t-value="0"/>
+                </t>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="abroj_project_costing.StudyTreeRows">
+        <t t-foreach="nodes" t-as="node" t-key="node.id">
+            <article class="o_abroj_study_tree_row" t-att-class="node.node_kind === 'section' ? 'is-section' : 'is-item'" t-att-style="'--abroj-tree-level:' + level">
+                <div class="o_abroj_study_tree_name">
+                    <button t-if="node.children.length" type="button" class="o_abroj_tree_toggle" t-on-click="() =&gt; toggle(node)" t-att-aria-expanded="isExpanded(node) ? 'true' : 'false'">
+                        <i t-att-class="isExpanded(node) ? 'fa fa-chevron-down' : 'fa fa-chevron-left'"/>
+                    </button>
+                    <span t-else="" class="o_abroj_tree_leaf_marker"/>
+                    <button type="button" class="o_abroj_tree_name_button" t-on-click="() =&gt; editNode(node)">
+                        <span class="o_abroj_tree_kind" t-esc="node.node_kind === 'section' ? 'قسم' : (node.category_id ? node.category_id[1] : 'بند')"/>
+                        <strong t-esc="node.name"/>
+                    </button>
+                </div>
+                <div class="o_abroj_study_tree_metric"><span>الكمية</span><strong t-esc="node.quantity || 0"/></div>
+                <div class="o_abroj_study_tree_metric"><span>المتوقع</span><strong t-esc="formatAmount(node.estimated_total, node.currency_id)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>الفعلي</span><strong t-esc="formatAmount(node.actual_total, node.currency_id)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>الانحراف</span><strong t-att-class="node.variance_amount &gt; 0 ? 'is-over' : ''" t-esc="formatAmount(node.variance_amount, node.currency_id)"/></div>
+                <button t-if="node.node_kind === 'section'" type="button" class="btn btn-secondary o_abroj_tree_add_child" t-on-click="() =&gt; addChild(node)">
+                    <i class="fa fa-plus"/> تابع
+                </button>
+            </article>
+            <t t-if="node.children.length and isExpanded(node)">
+                <t t-call="abroj_project_costing.StudyTreeRows">
+                    <t t-set="nodes" t-value="node.children"/>
+                    <t t-set="level" t-value="level + 1"/>
+                </t>
+            </t>
+        </t>
+    </t>
+</templates>

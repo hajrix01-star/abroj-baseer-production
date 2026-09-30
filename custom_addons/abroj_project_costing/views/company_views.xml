@@ -8,6 +8,8 @@
             <xpath expr="//sheet" position="inside">
                 <group string="تطبيقات أبرج" groups="base.group_system">
                     <field name="abroj_project_costing_enabled"/>
+                    <field name="abroj_report_name_ar"/>
+                    <field name="abroj_report_name_en"/>
                     <div class="text-muted" colspan="2">
                         يختفي التطبيق من القائمة عند اختيار شركة غير مفعّلة، وتبقى بيانات كل شركة معزولة.
                     </div>

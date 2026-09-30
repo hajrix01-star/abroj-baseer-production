@@ -6,3 +6,7 @@
 .o_abroj_project_width_marker {
     display: none;
 }
+
+.o_abroj_cost_list .o_list_record_remove {
+    padding-inline: .5rem !important;
+}

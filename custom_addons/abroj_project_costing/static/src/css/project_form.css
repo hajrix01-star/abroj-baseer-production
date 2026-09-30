@@ -18,7 +18,7 @@
 }
 
 /* The native button is display: table-cell, which ignores its parent's centering. */
-:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_record_remove > button {
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table .o_list_record_remove > button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -34,7 +34,7 @@
     vertical-align: middle;
 }
 
-:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_record_open_form_view > button {
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table .o_list_record_open_form_view > button {
     display: inline-block;
     white-space: nowrap;
 }

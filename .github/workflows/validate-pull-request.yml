@@ -27,8 +27,9 @@ jobs:
           git diff --check "$BASE_SHA" "$HEAD_SHA"
           mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
           for path in "${changed[@]}"; do
+            [ -f "$path" ] || continue
             case "$path" in
-              ops/production/baseer-production-*|ops/qa/baseer-qa-*|ops/qa/install-github-deploy-access.sh) bash -n "$path" ;;
+              ops/production/baseer-production-*|ops/qa/baseer-qa-*|ops/qa/install-qa-release-poller.sh) bash -n "$path" ;;
               .github/workflows/*.yml) ruby -e 'require "yaml"; YAML.safe_load(File.read(ARGV.fetch(0)), aliases: false)' "$path" ;;
             esac
           done

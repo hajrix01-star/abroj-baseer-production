@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+    <!-- Existing installations created this item under noupdate=1.  Update
+         only its fixed, approved target on upgrade; do not rewrite any other
+         workspace settings that an owner may have configured. -->
+    <record id="workspace_item_pos_cashier_point_of_sale" model="baseer.basser.workspace.item">
+        <field name="menu_id" ref="menu_pos_cashier_point_of_sale_dashboard"/>
+    </record>
+</odoo>

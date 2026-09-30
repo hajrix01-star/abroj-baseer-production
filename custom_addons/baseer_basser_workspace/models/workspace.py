@@ -13,10 +13,12 @@ MAX_WORKSPACE_ITEMS = 40
 # the role below; extending the catalogue is an auditable code change.
 BASEER_WORKSPACE_TARGET_POLICY = {
     # POS cashiers are intentionally separate from the branch-operations
-    # cashier role below.  Their one approved route is the native POS selector;
-    # they do not inherit purchasing, cash custody, or reporting shortcuts.
+    # cashier role below.  Their one approved route is Odoo's POS dashboard
+    # (the Kanban action), not the `pos.config` backend list.  The latter
+    # exposes configuration navigation such as printer settings and was never
+    # an appropriate cashier entry point.
     'pos_cashier': {
-        'point_of_sale.menu_point_of_sale_list': {
+        'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard': {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-shopping-cart',
         },

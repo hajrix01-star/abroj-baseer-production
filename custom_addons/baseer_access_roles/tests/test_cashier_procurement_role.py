@@ -187,11 +187,17 @@ class CashierProcurementRoleCase(TransactionCase):
         })
         menu_model = self.env['ir.ui.menu'].with_user(cashier)
         workspace_root = self.env.ref('baseer_basser_workspace.menu_basser_root')
-        native_pos_menu = self.env.ref('point_of_sale.menu_point_of_sale_list')
+        native_pos_menu = self.env.ref(
+            'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard'
+        )
 
         self.assertIn(workspace_root.id, menu_model._visible_menu_ids())
         self.assertNotIn(native_pos_menu.id, menu_model._visible_menu_ids())
         self.assertIn(native_pos_menu.id, menu_model._baseer_native_visible_menu_ids())
+        self.assertEqual(
+            native_pos_menu.action,
+            self.env.ref('point_of_sale.action_pos_config_kanban'),
+        )
         self.assertNotIn(
             self.env.ref('baseer_procurement_requests.menu_procurement_root').id,
             menu_model._visible_menu_ids(),

@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Workspace',
     'summary': 'Role-curated navigation to approved Baseer operations',
-    'version': '19.0.1.0.10',
+    'version': '19.0.1.0.11',
     'category': 'Productivity',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -13,7 +13,9 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/pos_cashier_menu.xml',
         'data/workspace_data.xml',
+        'data/pos_cashier_dashboard_data.xml',
         'views/workspace_views.xml',
     ],
     'assets': {

@@ -107,12 +107,13 @@ export class AbrojStudyTree extends Component {
         await this.action.doAction(action, { onClose: () => this.load() });
     }
 
-    addMainSection() {
-        return this.openForm({
-            default_project_id: this.projectId,
-            default_node_kind: "section",
-            default_quantity: 0,
-        });
+    async addMainSection() {
+        const action = await this.orm.call(
+            "abroj.cost.project",
+            "action_open_plan_section_form",
+            [[this.projectId]]
+        );
+        await this.action.doAction(action, { onClose: () => this.load() });
     }
 
     addChild(node) {

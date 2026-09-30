@@ -306,6 +306,25 @@ class AbrojCostProject(models.Model):
         })
         return wizard.action_export_plan()
 
+    def action_open_plan_section_form(self):
+        """Open the dedicated, aggregation-only form for a root study section."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('إنشاء البند الأب'),
+            'res_model': 'abroj.cost.plan.line',
+            'view_mode': 'form',
+            'view_id': self.env.ref('abroj_project_costing.view_abroj_plan_section_form').id,
+            'target': 'new',
+            'context': {
+                **self.env.context,
+                'default_project_id': self.id,
+                'default_node_kind': 'section',
+                'default_quantity': 0.0,
+                'abroj_create_root_section': True,
+            },
+        }
+
 
 class AbrojCostPlanLine(models.Model):
     _name = 'abroj.cost.plan.line'
@@ -370,12 +389,28 @@ class AbrojCostPlanLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if self.env.context.get('abroj_create_root_section'):
+            # This context selects the dedicated parent-section flow, but it
+            # is client supplied. Enforce the safe aggregation-only shape on
+            # the server instead of trusting a browser default selection.
+            vals_list = [dict(values, node_kind='section', parent_id=False) for values in vals_list]
         vals_list = [self._normalize_section_values(vals) for vals in vals_list]
         projects = self.env['abroj.cost.project'].browse(
             [vals['project_id'] for vals in vals_list if vals.get('project_id')]
         )
         self._lock_project_structures(projects)
         return super().create(vals_list)
+
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        if self.env.context.get('abroj_create_root_section'):
+            defaults.update({
+                'node_kind': 'section',
+                'parent_id': False,
+                'quantity': 0.0,
+            })
+        return defaults
 
     @api.constrains('parent_id', 'project_id', 'node_kind', 'category_id', 'child_ids')
     def _check_tree_contract(self):
@@ -494,7 +529,21 @@ class AbrojCostPlanLine(models.Model):
             if vals.get('project_id'):
                 projects |= self.env['abroj.cost.project'].browse(vals['project_id'])
             self._lock_project_structures(projects)
-        return super().write(self._normalize_section_values(vals))
+        # A section remains an aggregation node once created.  Turning an
+        # empty section into a priced item would silently reintroduce direct
+        # prices on a parent through RPC or a future form view.
+        sections = self.filtered(lambda line: line.node_kind == 'section' or vals.get('node_kind') == 'section')
+        other_lines = self - sections
+        result = True
+        if sections:
+            # Existing and newly selected sections remain aggregation-only
+            # even when a write comes from an import, RPC call, or a future
+            # form view.
+            section_vals = self._normalize_section_values({**vals, 'node_kind': 'section'})
+            result = super(AbrojCostPlanLine, sections).write(section_vals)
+        if other_lines:
+            result = super(AbrojCostPlanLine, other_lines).write(vals) and result
+        return result
 
     def unlink(self):
         self._lock_project_structures(self.mapped('project_id'))

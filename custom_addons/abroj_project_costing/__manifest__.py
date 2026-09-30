@@ -1,7 +1,7 @@
 {
     'name': 'أبرج | تكاليف المشاريع',
     'summary': 'Independent multi-company project costing for Abroj',
-    'version': '19.0.1.5.8',
+    'version': '19.0.1.5.9',
     'category': 'Services/Project Costing',
     'author': 'Abroj',
     'license': 'LGPL-3',

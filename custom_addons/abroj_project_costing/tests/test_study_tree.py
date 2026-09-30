@@ -116,6 +116,62 @@ class TestAbrojStudyTree(TransactionCase):
         self.assertEqual(draft_section.estimated_total, 0.0)
         self.assertEqual(draft_item.estimated_total, 125.25)
 
+    def test_parent_section_action_forces_an_aggregation_only_root(self):
+        project = self._project()
+        action = project.action_open_plan_section_form()
+        self.assertEqual(action['name'], 'إنشاء البند الأب')
+        self.assertEqual(action['target'], 'new')
+        self.assertTrue(action['context']['abroj_create_root_section'])
+        self.assertEqual(action['context']['default_node_kind'], 'section')
+        self.assertEqual(
+            action['view_id'],
+            self.env.ref('abroj_project_costing.view_abroj_plan_section_form').id,
+        )
+        section_view = self.env['ir.ui.view'].browse(action['view_id']).arch_db
+        for field_name in ('parent_id', 'category_id', 'material_id', 'pricing_method', 'uom_type', 'quantity', 'supplier_id'):
+            self.assertNotIn('name="%s"' % field_name, section_view)
+
+        defaults = self.env['abroj.cost.plan.line'].with_company(self.company).with_context(
+            abroj_create_root_section=True,
+        ).default_get(['node_kind', 'parent_id', 'quantity'])
+        self.assertEqual(defaults['node_kind'], 'section')
+        self.assertFalse(defaults['parent_id'])
+        self.assertEqual(defaults['quantity'], 0.0)
+
+        section = self.env['abroj.cost.plan.line'].with_company(self.company).with_context(
+            abroj_create_root_section=True,
+        ).create({
+            'project_id': project.id,
+            'node_kind': 'item',
+            'category_id': self.category.id,
+            'name': 'قسم مثبت من الخادم',
+            'pricing_method': 'lump_sum',
+            'lump_sum_cost': 500,
+        })
+        self.assertEqual(section.node_kind, 'section')
+        self.assertFalse(section.parent_id)
+        self.assertFalse(section.category_id)
+        self.assertEqual(section.estimated_total, 0.0)
+
+        section.write({
+            'quantity': 2,
+            'material_unit_cost': 100,
+            'lump_sum_cost': 500,
+        })
+        self.assertEqual(section.quantity, 0.0)
+        self.assertEqual(section.material_unit_cost, 0.0)
+        self.assertEqual(section.lump_sum_cost, 0.0)
+        self.assertEqual(section.estimated_total, 0.0)
+
+        section.write({
+            'node_kind': 'item',
+            'category_id': self.category.id,
+            'lump_sum_cost': 500,
+        })
+        self.assertEqual(section.node_kind, 'section')
+        self.assertFalse(section.category_id)
+        self.assertEqual(section.lump_sum_cost, 0.0)
+
     def test_planned_actual_cost_must_keep_the_leaf_work_category(self):
         project = self._project()
         leaf = self._item(project, 'تمديدات كهرباء', amount=100)

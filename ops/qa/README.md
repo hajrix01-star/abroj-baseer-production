@@ -37,6 +37,14 @@ The configured source key is read-only and used only by the QA host to fetch
 the reviewed source and request tags. `request-signers` is root-owned `0644`
 and contains only the public SSH signing key whose private half is stored as
 the `QA_REQUEST_SIGNING_KEY` secret in the protected `qa` environment.
+Its required OpenSSH allowed-signers entry is:
+
+```text
+baseer-qa-release-bot@users.noreply.github.com ssh-ed25519 <public-key>
+```
+
+Bootstrap verifies a signed request tag with this file before enabling the
+timer.
 
 Install the root-owned `baseer-qa-release-poller` systemd timer with
 `install-qa-release-poller.sh`. GitHub's

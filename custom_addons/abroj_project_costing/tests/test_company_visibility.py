@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+from unittest.mock import patch
+
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
@@ -129,3 +132,53 @@ class TestCompanyVisibility(TransactionCase):
             Category.create({'name': 'Forbidden category', 'company_id': self.disabled_company.id})
         with self.assertRaises(AccessError):
             Wizard.browse(self.disabled_import.id).read(['company_id'])
+
+    def test_material_image_uses_selected_company_cookie_without_bypassing_rules(self):
+        category = self.env['abroj.cost.category'].sudo().create({
+            'name': 'Image access test category',
+            'company_id': self.enabled_company.id,
+        })
+        material = self.env['abroj.cost.material'].sudo().create({
+            'name': 'Image access test material',
+            'company_id': self.enabled_company.id,
+            'category_id': category.id,
+        })
+        binary = self.env['ir.binary'].with_user(self.manager).with_context(
+            allowed_company_ids=[self.disabled_company.id, self.enabled_company.id],
+        )
+
+        def image_with_cookie(cookie):
+            fake_request = SimpleNamespace(
+                httprequest=SimpleNamespace(cookies={'cids': cookie}),
+            )
+            with patch('odoo.addons.abroj_project_costing.models.ir_binary.request', fake_request):
+                return binary._find_record(
+                    res_model='abroj.cost.material', res_id=material.id,
+                    field='image_1920',
+                )
+
+        self.assertEqual(
+            image_with_cookie(f'{self.enabled_company.id}-{self.disabled_company.id}').id,
+            material.id,
+        )
+        with self.assertRaises(AccessError):
+            image_with_cookie(str(self.disabled_company.id))
+        with self.assertRaises(AccessError):
+            image_with_cookie(str(self.env.company.id))
+        with self.assertRaises(AccessError):
+            image_with_cookie('invalid')
+
+        fake_request = SimpleNamespace(
+            httprequest=SimpleNamespace(cookies={'cids': str(self.enabled_company.id)}),
+        )
+        with patch('odoo.addons.abroj_project_costing.models.ir_binary.request', fake_request):
+            with self.assertRaises(AccessError):
+                binary._find_record(
+                    res_model='abroj.cost.material', res_id=material.id,
+                    field='image_1920', access_token='untrusted',
+                )
+            with self.assertRaises(AccessError):
+                binary._find_record(
+                    res_model='abroj.cost.project', res_id=self.enabled_project.id,
+                    field='image_1920',
+                )

@@ -241,7 +241,10 @@ class AbrojCostProject(models.Model):
             'name': _('دفعات العميل'),
             'res_model': 'abroj.cost.receipt',
             'view_mode': 'list,form',
-            'views': [(self.env.ref('abroj_project_costing.view_abroj_receipt_list').id, 'list'), (False, 'form')],
+            'views': [
+                (self.env.ref('abroj_project_costing.view_abroj_receipt_list').id, 'list'),
+                (self.env.ref('abroj_project_costing.view_abroj_receipt_form_readonly').id, 'form'),
+            ],
             'domain': [('project_id', '=', self.id)],
             'context': {
                 'default_project_id': self.id,

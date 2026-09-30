@@ -48,6 +48,21 @@ class TestReceiptNumbering(TransactionCase):
         self.assertIn('js_class="abroj_receipt_share_form"', view.arch_db)
         self.assertNotIn('action_open_whatsapp', view.arch_db)
 
+    def test_all_saved_receipt_paths_use_the_shareable_readonly_view(self):
+        readonly_view = self.env.ref('abroj_project_costing.view_abroj_receipt_form_readonly')
+        receipt_list = self.project.action_open_receipts()
+        self.assertEqual(receipt_list['views'][1], (readonly_view.id, 'form'))
+        self.assertIn(
+            'js_class="abroj_receipt_share_form"',
+            self.env['abroj.cost.receipt'].get_view(view_type='form')['arch'],
+        )
+        self.assertLess(readonly_view.priority, self.env.ref(
+            'abroj_project_costing.view_abroj_receipt_form_create').priority)
+        self.assertLess(readonly_view.priority, self.env.ref(
+            'abroj_project_costing.view_abroj_receipt_form_edit').priority)
+        project_view = self.env.ref('abroj_project_costing.view_abroj_project_form')
+        self.assertIn('widget="abroj_receipt_list"', project_view.arch_db)
+
     def test_native_receipt_template_adapter_keeps_project_totals_in_backend(self):
         first = self.env['abroj.cost.receipt'].create({
             'project_id': self.project.id,

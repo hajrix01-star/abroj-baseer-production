@@ -32,7 +32,7 @@ export class AbrojStudyTree extends Component {
         return this.projectIdFor(this.props);
     }
 
-    async load(props) {
+    async load(props = this.props) {
         const generation = ++this.loadGeneration;
         const projectId = this.projectIdFor(props);
         if (!projectId) {

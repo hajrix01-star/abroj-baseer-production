@@ -49,7 +49,12 @@ process_request() {
     local tag_commit
     tag_commit="$(git -C "$fetch_dir/repo.git" rev-parse "$tag_ref^{commit}")" || return 1
     git -C "$fetch_dir/repo.git" merge-base --is-ancestor "$tag_commit" refs/heads/source-main || return 1
-    /usr/local/sbin/baseer-qa-approve-release "$release_id" "$run_id" "$tag_commit" || return 1
+    # The signed tag fixes the code candidate.  The release policy is read
+    # from the separately fetched, reviewed main revision so a policy may
+    # approve an earlier candidate commit without having to exist in it.
+    local policy_revision
+    policy_revision="$(git -C "$fetch_dir/repo.git" rev-parse refs/heads/source-main)" || return 1
+    /usr/local/sbin/baseer-qa-approve-release "$release_id" "$run_id" "$policy_revision" || return 1
     /usr/local/sbin/baseer-qa-deploy "$release_id" "$run_id" || return 1
 }
 

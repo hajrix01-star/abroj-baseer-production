@@ -13,7 +13,9 @@ IMPORT_COLUMNS = (
     'category', 'name', 'pricing_method', 'quantity',
     'material_unit_cost', 'auxiliary_unit_cost', 'labor_unit_cost',
     'inclusive_unit_cost', 'lump_sum_cost', 'notes',
+    'path', 'node_kind',
 )
+LEGACY_IMPORT_COLUMNS = IMPORT_COLUMNS[:10]
 MAX_IMPORT_ROWS = 500
 MAX_IMPORT_SIZE = 5 * 1024 * 1024
 MAX_XLSX_UNCOMPRESSED_SIZE = 25 * 1024 * 1024
@@ -29,6 +31,8 @@ PRICING_METHOD_LABELS = {
 VALID_PRICING_METHODS = {
     'detailed', 'supply_only', 'labor_only', 'supply_install', 'lump_sum',
 }
+NODE_KIND_LABELS = {'قسم': 'section', 'بند': 'item', 'بند مسعّر': 'item'}
+VALID_NODE_KINDS = {'section', 'item'}
 
 
 class AbrojCostPlanImportWizard(models.TransientModel):
@@ -99,7 +103,9 @@ class AbrojCostPlanImportWizard(models.TransientModel):
     @staticmethod
     def _header_map(headers):
         normalized = {str(name or '').strip().lower(): index for index, name in enumerate(headers)}
-        missing = [column for column in IMPORT_COLUMNS if column not in normalized]
+        # path/node_kind were added after the first released template.  Keep
+        # accepting that flat template as root priced leaves.
+        missing = [column for column in LEGACY_IMPORT_COLUMNS if column not in normalized]
         if missing:
             raise ValidationError(_('الملف لا يحتوي الأعمدة المطلوبة: %(columns)s.') % {
                 'columns': ', '.join(missing),
@@ -208,39 +214,65 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         ])
         category_by_name = {self._clean_text(category.name): category for category in categories}
         values = []
-        names = []
+        identities = []
+        known_paths = set()
         for sequence, (row_number, row) in enumerate(self._read_import_rows(), start=10):
-            category_name = self._clean_text(row['category'])
-            category = category_by_name.get(category_name)
-            if not category:
-                raise ValidationError(_('الصف %(row)s: الفئة "%(category)s" غير موجودة أو غير نشطة في الشركة المختارة.') % {
-                    'row': row_number, 'category': category_name or '—',
-                })
+            path = self._clean_text(row.get('path'))
+            node_kind = NODE_KIND_LABELS.get(self._clean_text(row.get('node_kind')), self._clean_text(row.get('node_kind')) or 'item')
+            if node_kind not in VALID_NODE_KINDS:
+                raise ValidationError(_('الصف %(row)s: نوع العقدة غير صالح. استخدم section أو item.') % {'row': row_number})
             name = self._clean_text(row['name'])
             if not name:
                 raise ValidationError(_('الصف %(row)s: اسم البند مطلوب.') % {'row': row_number})
-            names.append(name)
-            quantity = self._decimal(row['quantity'], row_number, 'quantity', default=Decimal('1'))
-            if quantity <= 0:
-                raise ValidationError(_('الصف %(row)s: الكمية يجب أن تكون أكبر من صفر.') % {'row': row_number})
-            pricing_method = self._pricing_method(row['pricing_method'], row_number)
-            values.append({
+            path_parts = [part.strip() for part in path.split('/') if part.strip()]
+            if path and (not path_parts or path_parts[-1] != name):
+                raise ValidationError(_('الصف %(row)s: يجب أن ينتهي المسار باسم العقدة نفسها.') % {'row': row_number})
+            if node_kind == 'section' and not path:
+                raise ValidationError(_('الصف %(row)s: القسم يحتاج مساراً مثل "المطبخ/سباكة".') % {'row': row_number})
+            parent_path = '/'.join(path_parts[:-1]) if path else False
+            if parent_path and parent_path not in known_paths:
+                raise ValidationError(_('الصف %(row)s: أضف القسم الأب "%(path)s" في صف سابق أولاً.') % {
+                    'row': row_number, 'path': parent_path,
+                })
+            identity = path or 'legacy:%s' % name
+            identities.append(identity)
+            if path:
+                known_paths.add(path)
+            row_values = {
                 'project_id': self.project_id.id,
-                'category_id': category.id,
                 'sequence': sequence,
                 'name': name,
-                'pricing_method': pricing_method,
-                'quantity': float(quantity),
-                'material_unit_cost': float(self._decimal(row['material_unit_cost'], row_number, 'material_unit_cost')),
-                'auxiliary_unit_cost': float(self._decimal(row['auxiliary_unit_cost'], row_number, 'auxiliary_unit_cost')),
-                'labor_unit_cost': float(self._decimal(row['labor_unit_cost'], row_number, 'labor_unit_cost')),
-                'inclusive_unit_cost': float(self._decimal(row['inclusive_unit_cost'], row_number, 'inclusive_unit_cost')),
-                'lump_sum_cost': float(self._decimal(row['lump_sum_cost'], row_number, 'lump_sum_cost')),
                 'notes': self._clean_text(row['notes']),
-            })
-        duplicates = [name for name, count in Counter(names).items() if count > 1]
+                'node_kind': node_kind,
+                '_path': path,
+                '_parent_path': parent_path,
+            }
+            if node_kind == 'item':
+                category_name = self._clean_text(row['category'])
+                category = category_by_name.get(category_name)
+                if not category:
+                    raise ValidationError(_('الصف %(row)s: نوع العمل "%(category)s" غير موجود أو غير نشط في الشركة المختارة.') % {
+                        'row': row_number, 'category': category_name or '—',
+                    })
+                quantity = self._decimal(row['quantity'], row_number, 'quantity', default=Decimal('1'))
+                if quantity <= 0:
+                    raise ValidationError(_('الصف %(row)s: الكمية يجب أن تكون أكبر من صفر.') % {'row': row_number})
+                row_values.update({
+                    'category_id': category.id,
+                    'pricing_method': self._pricing_method(row['pricing_method'], row_number),
+                    'quantity': float(quantity),
+                    'material_unit_cost': float(self._decimal(row['material_unit_cost'], row_number, 'material_unit_cost')),
+                    'auxiliary_unit_cost': float(self._decimal(row['auxiliary_unit_cost'], row_number, 'auxiliary_unit_cost')),
+                    'labor_unit_cost': float(self._decimal(row['labor_unit_cost'], row_number, 'labor_unit_cost')),
+                    'inclusive_unit_cost': float(self._decimal(row['inclusive_unit_cost'], row_number, 'inclusive_unit_cost')),
+                    'lump_sum_cost': float(self._decimal(row['lump_sum_cost'], row_number, 'lump_sum_cost')),
+                })
+            else:
+                row_values.update({'quantity': 0.0, 'pricing_method': 'detailed'})
+            values.append(row_values)
+        duplicates = [identity for identity, count in Counter(identities).items() if count > 1]
         if duplicates:
-            raise ValidationError(_('يتضمن الملف أسماء بنود مكررة: %(names)s.') % {
+            raise ValidationError(_('يتضمن الملف مسارات أو أسماء بنود مكررة: %(names)s.') % {
                 'names': ', '.join(duplicates),
             })
         return values
@@ -269,7 +301,16 @@ class AbrojCostPlanImportWizard(models.TransientModel):
             # The row lock makes simultaneous imports queue, then the second
             # request sees the lines created by the first request and stops.
             self._lock_empty_project_plan()
-            self.env['abroj.cost.plan.line'].create(values)
+            paths = {}
+            Line = self.env['abroj.cost.plan.line']
+            for values_row in values:
+                parent_path = values_row.pop('_parent_path')
+                path = values_row.pop('_path')
+                if parent_path:
+                    values_row['parent_id'] = paths[parent_path]
+                line = Line.create(values_row)
+                if path:
+                    paths[path] = line.id
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -304,7 +345,7 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         plan_sheet.append(IMPORT_COLUMNS)
         plan_sheet.append((
             'التشطيبات', 'مثال بند', 'lump_sum', 1,
-            0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا',
+            0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا', 'المطبخ/مثال بند', 'item',
         ))
         for cell in plan_sheet[1]:
             cell.font = Font(bold=True)
@@ -319,6 +360,8 @@ class AbrojCostPlanImportWizard(models.TransientModel):
             ('quantity', _('كمية موجبة، ومنزلتان عشريتان كحد أقصى.')),
             ('*_cost', _('سعر غير سالب ومنزلتان عشريتان كحد أقصى.')),
             ('notes', _('اختياري.')),
+            ('path', _('اختياري للبند الجذري. للشجرة اكتب المسار كاملاً، وينتهي باسم هذا الصف، مثل المطبخ/سباكة/تمديدات.')),
+            ('node_kind', _('item لبند مسعّر أو section لقسم تجميعي. القسم لا يحتاج نوع عمل أو سعر.')),
         ])
         for cell in instructions[1]:
             cell.font = Font(bold=True)
@@ -351,14 +394,16 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         sheet.append(IMPORT_COLUMNS)
         for cell in sheet[1]:
             cell.font = Font(bold=True)
-        for line in self.project_id.plan_line_ids:
+        for line in self.project_id.plan_line_ids.sorted(lambda record: (record.parent_path or '', record.sequence, record.id)):
             sheet.append((
-                self._safe_excel_text(line.category_id.name),
+                self._safe_excel_text(line.category_id.name if line.category_id else ''),
                 self._safe_excel_text(line.name),
                 line.pricing_method,
                 line.quantity, line.material_unit_cost, line.auxiliary_unit_cost,
                 line.labor_unit_cost, line.inclusive_unit_cost, line.lump_sum_cost,
                 self._safe_excel_text(line.notes),
+                self._safe_excel_text(self._plan_path(line)),
+                line.node_kind,
             ))
         output = BytesIO()
         workbook.save(output)
@@ -374,3 +419,12 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         """Keep user-controlled values as literals when an XLSX is opened."""
         text = str(value or '')
         return "'%s" % text if text.startswith(('=', '+', '-', '@')) else text
+
+    @staticmethod
+    def _plan_path(line):
+        names = []
+        current = line
+        while current:
+            names.append(current.name)
+            current = current.parent_id
+        return '/'.join(reversed(names))

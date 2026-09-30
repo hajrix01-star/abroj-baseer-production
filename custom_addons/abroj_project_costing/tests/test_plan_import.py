@@ -169,3 +169,26 @@ class TestAbrojCostPlanImport(TransactionCase):
         self.assertEqual(sheet['B2'].data_type, 's')
         self.assertEqual(sheet['B2'].value, "'=2+2")
         self.assertEqual(sheet['J2'].value, "'@unsafe")
+
+    def test_tree_import_accepts_sections_then_priced_leaves(self):
+        project = self._project()
+        content = '\n'.join([
+            'category,name,pricing_method,quantity,material_unit_cost,auxiliary_unit_cost,labor_unit_cost,inclusive_unit_cost,lump_sum_cost,notes,path,node_kind',
+            ',المطبخ,detailed,0,0,0,0,0,0,,المطبخ,section',
+            ',سباكة,detailed,0,0,0,0,0,0,,المطبخ/سباكة,section',
+            'التشطيبات,تمديدات,lump_sum,1,0,0,0,0,200,,المطبخ/سباكة/تمديدات,item',
+        ]).encode()
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id,
+            'company_id': self.company.id,
+            'import_file': base64.b64encode(content),
+            'import_filename': 'tree.csv',
+        })
+        wizard.action_import_plan()
+        kitchen = project.plan_line_ids.filtered(lambda line: line.name == 'المطبخ')
+        plumbing = project.plan_line_ids.filtered(lambda line: line.name == 'سباكة')
+        leaf = project.plan_line_ids.filtered(lambda line: line.name == 'تمديدات')
+        self.assertEqual(kitchen.node_kind, 'section')
+        self.assertEqual(plumbing.parent_id, kitchen)
+        self.assertEqual(leaf.parent_id, plumbing)
+        self.assertEqual(project.estimated_total, 200)

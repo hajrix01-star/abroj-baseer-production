@@ -29,29 +29,7 @@
                     <group><field name="description"/><field name="note" widget="html"/></group>
                 </page>
                 <page string="دراسة المشروع" name="plan">
-                    <field name="plan_line_ids" mode="list,form" class="o_abroj_cost_table">
-                        <list editable="bottom" open_form_view="1" class="o_abroj_cost_list">
-                            <field name="sequence" widget="handle"/>
-                            <field name="category_id" required="1"/>
-                            <field name="material_id" optional="hide"/>
-                            <field name="name" required="1"/>
-                            <field name="pricing_method"/>
-                            <field name="uom_type" optional="hide"/>
-                            <field name="quantity" optional="show"/>
-                            <field name="material_unit_cost" optional="show"/>
-                            <field name="auxiliary_unit_cost" optional="hide"/>
-                            <field name="labor_unit_cost" optional="show"/>
-                            <field name="inclusive_unit_cost" optional="hide"/>
-                            <field name="lump_sum_cost" optional="show"/>
-                            <field name="estimated_unit_cost" readonly="1" optional="hide"/>
-                            <field name="estimated_total" readonly="1" sum="إجمالي الدراسة" optional="show"/>
-                            <field name="actual_total" readonly="1" optional="hide"/>
-                            <field name="variance_amount" readonly="1" optional="hide"/>
-                            <field name="status" optional="hide"/>
-                            <control><create string="إضافة بند دراسة"/></control>
-                        </list>
-                        <form string="بند دراسة المشروع"><sheet><group><group><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/><field name="pricing_method"/><field name="uom_type"/><field name="quantity"/></group><group><field name="material_unit_cost" invisible="pricing_method not in ('detailed', 'supply_only')"/><field name="auxiliary_unit_cost" invisible="pricing_method != 'detailed'"/><field name="labor_unit_cost" invisible="pricing_method not in ('detailed', 'labor_only')"/><field name="inclusive_unit_cost" invisible="pricing_method != 'supply_install'"/><field name="lump_sum_cost" invisible="pricing_method != 'lump_sum'"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group string="النتيجة"><field name="estimated_unit_cost" readonly="1"/><field name="estimated_total" readonly="1"/><field name="notes"/></group></sheet></form>
-                    </field>
+                    <field name="study_tree_token" widget="abroj_study_tree" nolabel="1" readonly="1"/>
                 </page>
                 <page string="التكاليف الفعلية" name="actual">
                     <field name="actual_line_ids" mode="list,form" class="o_abroj_cost_table">
@@ -69,7 +47,7 @@
                             <field name="supplier_id" optional="hide"/>
                             <control><create string="إضافة تكلفة فعلية"/></control>
                         </list>
-                        <form string="تكلفة فعلية"><header><button name="%(action_report_actual_cost_voucher)d" type="action" string="طباعة سند صرف" class="btn-secondary" invisible="not id"/></header><sheet><group><group><field name="date"/><field name="plan_line_id"/><field name="is_unplanned"/><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/></group><group><field name="cost_type"/><field name="uom_type"/><field name="quantity"/><field name="amount"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group><field name="attachment_ids" widget="many2many_binary"/><field name="notes"/></group></sheet></form>
+                        <form string="تكلفة فعلية"><header><button name="%(action_report_actual_cost_voucher)d" type="action" string="طباعة سند صرف" class="btn-secondary" invisible="not id"/></header><sheet><group><group><field name="date"/><field name="plan_scope_id" domain="[('project_id', '=', project_id), ('node_kind', '=', 'section')]"/><field name="plan_line_id" domain="[('project_id', '=', project_id), ('node_kind', '=', 'item'), ('id', 'child_of', plan_scope_id)]"/><field name="is_unplanned"/><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/></group><group><field name="cost_type"/><field name="uom_type"/><field name="quantity"/><field name="amount"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group><field name="attachment_ids" widget="many2many_binary"/><field name="notes"/></group></sheet></form>
                     </field>
                 </page>
                 <page string="الإنجاز" name="progress"><group><field name="progress" widget="percentage" readonly="1"/></group><field name="progress_stage_ids" mode="list,form" class="o_abroj_cost_table"><list class="o_abroj_cost_list"><field name="sequence" widget="handle"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/><field name="planned_end_date" readonly="1" optional="show"/><field name="state"/><field name="actual_completion_date" readonly="1" optional="hide"/><field name="delay_days" readonly="1" optional="hide"/><button name="action_mark_done" type="object" string="تم الإنجاز" invisible="state == 'done'"/><control><create string="إضافة مرحلة إنجاز"/></control></list><form string="مرحلة إنجاز"><sheet><group><group><field name="stage_template_key"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/></group><group><field name="state"/><field name="planned_end_date" readonly="1"/><field name="actual_completion_date" readonly="1"/><field name="delay_days" readonly="1"/></group></group><group><field name="notes"/></group></sheet></form></field></page>
@@ -78,6 +56,45 @@
                 <page string="الأعضاء" name="members"><field name="member_ids" mode="list,form" class="o_abroj_cost_table"><list class="o_abroj_cost_list"><field name="user_id"/><field name="access_level"/><field name="company_id" optional="hide"/><control><create string="إضافة عضو"/></control></list><form string="عضو المشروع"><sheet><group><field name="user_id"/><field name="access_level"/></group></sheet></form></field></page>
             </notebook>
         </sheet></form></field>
+    </record>
+    <record id="view_abroj_plan_line_form" model="ir.ui.view">
+        <field name="name">abroj.cost.plan.line.form</field>
+        <field name="model">abroj.cost.plan.line</field>
+        <field name="arch" type="xml">
+            <form string="بند دراسة المشروع">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="project_id" readonly="1"/>
+                            <field name="parent_id" domain="[('project_id', '=', project_id), ('node_kind', '=', 'section')]"/>
+                            <field name="node_kind"/>
+                            <field name="name"/>
+                            <field name="category_id" required="node_kind == 'item'" invisible="node_kind == 'section'"/>
+                            <field name="material_id" invisible="node_kind == 'section'"/>
+                            <field name="description"/>
+                        </group>
+                        <group invisible="node_kind == 'section'">
+                            <field name="pricing_method"/>
+                            <field name="uom_type"/>
+                            <field name="quantity"/>
+                            <field name="material_unit_cost" invisible="pricing_method not in ('detailed', 'supply_only')"/>
+                            <field name="auxiliary_unit_cost" invisible="pricing_method != 'detailed'"/>
+                            <field name="labor_unit_cost" invisible="pricing_method not in ('detailed', 'labor_only')"/>
+                            <field name="inclusive_unit_cost" invisible="pricing_method != 'supply_install'"/>
+                            <field name="lump_sum_cost" invisible="pricing_method != 'lump_sum'"/>
+                            <field name="supplier_id"/>
+                            <field name="supplier_text"/>
+                        </group>
+                    </group>
+                    <group string="النتيجة">
+                        <field name="estimated_total" readonly="1"/>
+                        <field name="actual_total" readonly="1"/>
+                        <field name="variance_amount" readonly="1"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
     </record>
       <record id="action_abroj_project" model="ir.actions.act_window"><field name="name">المشاريع</field><field name="res_model">abroj.cost.project</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_abroj_project_search"/></record>
       <record id="view_abroj_receipt_list" model="ir.ui.view"><field name="name">abroj.cost.receipt.list</field><field name="model">abroj.cost.receipt</field><field name="arch" type="xml"><list string="دفعات العميل" class="o_abroj_cost_list"><field name="name" string="رقم السند"/><field name="date" optional="show"/><field name="amount" optional="show"/><field name="project_id" optional="hide"/></list></field></record>

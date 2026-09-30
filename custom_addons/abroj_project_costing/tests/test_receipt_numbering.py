@@ -52,9 +52,9 @@ class TestReceiptNumbering(TransactionCase):
         readonly_view = self.env.ref('abroj_project_costing.view_abroj_receipt_form_readonly')
         receipt_list = self.project.action_open_receipts()
         self.assertEqual(receipt_list['views'][1], (readonly_view.id, 'form'))
-        self.assertEqual(
-            self.env['abroj.cost.receipt'].get_view(view_type='form')['view_id'],
-            readonly_view.id,
+        self.assertIn(
+            'js_class="abroj_receipt_share_form"',
+            self.env['abroj.cost.receipt'].get_view(view_type='form')['arch'],
         )
         self.assertLess(readonly_view.priority, self.env.ref(
             'abroj_project_costing.view_abroj_receipt_form_create').priority)

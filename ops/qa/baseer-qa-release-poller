@@ -67,7 +67,10 @@ while IFS=$'\t' read -r tag_object tag_ref; do
     install -o root -g root -m 0600 /dev/null "$STATE_DIR/$tag_name.result"
     printf 'QA_POLLER=%s\nTAG=%s\n' "$result" "$tag_name" > "$STATE_DIR/$tag_name.result"
     [ "$result" = GO ] && exit 0
-    exit 1
+    # A rejected request is a completed security decision, not a failed
+    # service.  Keep the failure in the immutable result marker and let the
+    # timer remain healthy for the next legitimate signed request.
+    exit 0
 done < <(git ls-remote --refs "$QA_SOURCE_REMOTE" 'refs/tags/qa-release-*' | sort -k2)
 
 printf 'QA_POLLER=IDLE\n'

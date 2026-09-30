@@ -309,12 +309,17 @@ class AbrojCostProject(models.Model):
     def action_open_plan_section_form(self):
         """Open the dedicated, aggregation-only form for a root study section."""
         self.ensure_one()
+        section_view = self.env.ref('abroj_project_costing.view_abroj_plan_section_form')
         return {
             'type': 'ir.actions.act_window',
             'name': _('إنشاء البند الأب'),
             'res_model': 'abroj.cost.plan.line',
             'view_mode': 'form',
-            'view_id': self.env.ref('abroj_project_costing.view_abroj_plan_section_form').id,
+            # The web client's action service normalizes ``views`` first.  A
+            # ``view_id`` on its own makes that list undefined when the action
+            # originates from the custom Owl workspace.
+            'views': [(section_view.id, 'form')],
+            'view_id': section_view.id,
             'target': 'new',
             'context': {
                 **self.env.context,

@@ -207,20 +207,21 @@ git -C "$stage.git" remote add origin "$QA_SOURCE_REMOTE"
 source_ssh git -C "$stage.git" fetch --no-tags --quiet origin main:refs/heads/source-main "$commit"
 git -C "$stage.git" cat-file -e "$commit^{commit}" || die 'candidate commit is missing'
 git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit" || die 'candidate does not advance current QA source'
-while IFS= read -r changed; do
-    case "$changed" in
-        custom_addons/*/*)
-            module="${changed#custom_addons/}"; module="${module%%/*}"
-            [ -n "${APPROVED_MODULE_SET[$module]+x}" ] || die "custom module changed outside QA policy: $module"
-            ;;
-        custom_addons/*|third_party_addons/*|compose.*|config/*) die "runtime source changed outside QA policy: $changed" ;;
-    esac
-done < <(git -C "$stage.git" diff --name-only "$live_commit" "$commit" -- custom_addons third_party_addons compose.production.yaml config)
 for module in "${APPROVED_MODULES[@]}"; do
     git -C "$stage.git" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "approved module absent from candidate: $module"
 done
+
+# Release policies are module-scoped.  Retain the exact current QA tree and
+# overlay only the reviewed modules so unrelated commits in the candidate
+# cannot leak into QA merely because they share Git history.
 mkdir -m 0700 "$stage"
-git -C "$stage.git" archive --format=tar "$commit" | tar -x -C "$stage" --no-same-owner --no-same-permissions
+cp -a -- "$old_release/." "$stage/"
+for module in "${APPROVED_MODULES[@]}"; do
+    rm -rf -- "$stage/custom_addons/$module"
+    mkdir -p "$stage/custom_addons"
+    git -C "$stage.git" archive --format=tar "$commit" "custom_addons/$module" | \
+        tar -x -C "$stage" --no-same-owner --no-same-permissions
+done
 rm -rf -- "$stage.git"
 mv "$stage" "$release"
 printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"

@@ -28,7 +28,7 @@ jobs:
           mapfile -t changed < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
           for path in "${changed[@]}"; do
             case "$path" in
-              ops/production/baseer-production-*) bash -n "$path" ;;
+              ops/production/baseer-production-*|ops/qa/baseer-qa-*|ops/qa/install-github-deploy-access.sh) bash -n "$path" ;;
             esac
           done
           python3 - "$BASE_SHA" "$HEAD_SHA" <<'PY'

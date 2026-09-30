@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Root-owned QA policy approval wrapper.  It accepts a named, reviewed policy
+# only; GitHub never supplies a commit or module list directly.
+set -Eeuo pipefail
+umask 027
+
+readonly CONFIG=/etc/baseer-qa/deploy.env
+
+die() { printf 'QA_APPROVAL=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
+
+require_safe_file() {
+    local file=$1 mode=$2
+    [ -f "$file" ] && [ ! -L "$file" ] || die "missing or unsafe file: $file"
+    [ "$(stat -c '%U:%G:%a' -- "$file")" = "root:root:$mode" ] || die "unsafe ownership or mode: $file"
+}
+
+require_root() { [ "$(id -u)" -eq 0 ] || die 'root is required'; }
+
+load_config() {
+    require_safe_file "$CONFIG" 600
+    # The config is created by the QA host administrator and is root-only.
+    # shellcheck disable=SC1090
+    . "$CONFIG"
+    for name in QA_BASE QA_SOURCE_REMOTE QA_SOURCE_SSH_KEY QA_SOURCE_KNOWN_HOSTS; do
+        [ -n "${!name:-}" ] || die "missing config value: $name"
+    done
+    [[ "$QA_BASE" = /* ]] || die 'QA_BASE must be absolute'
+    readonly POLICY_DIR=/etc/baseer-qa/release-policies
+    readonly STAGING="$QA_BASE/deploy-staging"
+}
+
+validate_arguments() {
+    [ "$#" -eq 3 ] || die 'expected: release_id github_run_id policy_revision'
+    release_id=$1
+    run_id=$2
+    policy_revision=$3
+    [[ "$release_id" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]] || die 'invalid release id'
+    [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid GitHub run id'
+    [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy revision'
+}
+
+verify_source_identity() {
+    require_safe_file "$QA_SOURCE_SSH_KEY" 600
+    require_safe_file "$QA_SOURCE_KNOWN_HOSTS" 644
+}
+
+parse_policy() {
+    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules=0
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+        case "$key" in
+            RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate RELEASE_ID'; policy_release_id=$value; seen_release=1 ;;
+            COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate COMMIT'; commit=$value; seen_commit=1 ;;
+            MODULES) [ "$seen_modules" -eq 0 ] || die 'duplicate MODULES'; policy_modules=$value; seen_modules=1 ;;
+            ''|'#'*) ;;
+            *) die "unknown policy key: $key" ;;
+        esac
+    done < "$policy"
+    [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules" -eq 1 ] || die 'incomplete policy'
+    [ "$policy_release_id" = "$release_id" ] || die 'release id mismatch'
+    [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy commit'
+    IFS=',' read -r -a modules <<< "$policy_modules"
+    [ "${#modules[@]}" -gt 0 ] || die 'policy has no modules'
+    declare -A seen=()
+    for module in "${modules[@]}"; do
+        [[ "$module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'invalid module name'
+        [ -z "${seen[$module]+x}" ] || die 'duplicate module name'
+        seen[$module]=1
+    done
+}
+
+require_root
+load_config
+validate_arguments "$@"
+verify_source_identity
+install -d -o root -g root -m 0700 "$POLICY_DIR" "$STAGING"
+
+lock="$STAGING/.policy-${release_id}-${run_id}.lock"
+exec 9>"$lock"
+flock -n 9 || die 'another QA policy operation is running'
+
+fetch_repo="$STAGING/.policy-fetch-${release_id}-${run_id}"
+candidate="$POLICY_DIR/.${release_id}.${run_id}.new"
+[ ! -e "$fetch_repo" ] && [ ! -e "$candidate" ] || die 'staging already exists'
+trap 'rm -rf -- "$fetch_repo" "$candidate"' EXIT
+
+git init --bare --quiet "$fetch_repo"
+git -C "$fetch_repo" remote add origin "$QA_SOURCE_REMOTE"
+GIT_SSH_COMMAND="ssh -i $QA_SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$QA_SOURCE_KNOWN_HOSTS" \
+    git -C "$fetch_repo" fetch --no-tags --quiet origin \
+    main:refs/heads/source-main "$policy_revision":refs/heads/policy-revision
+[ "$(git -C "$fetch_repo" rev-parse refs/heads/policy-revision^{commit})" = "$policy_revision" ] || die 'policy revision mismatch'
+git -C "$fetch_repo" merge-base --is-ancestor "$policy_revision" refs/heads/source-main || die 'policy revision is not on main'
+git -C "$fetch_repo" show "$policy_revision:ops/qa/release-policies/$release_id.env" > "$candidate" || die 'policy is absent from reviewed revision'
+parse_policy "$candidate"
+git -C "$fetch_repo" cat-file -e "$commit^{commit}" || die 'candidate commit is unavailable'
+git -C "$fetch_repo" merge-base --is-ancestor "$commit" refs/heads/source-main || die 'candidate commit is not on main'
+for module in "${modules[@]}"; do
+    git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "module absent from candidate: $module"
+done
+
+printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' \
+    "$release_id" "$commit" "$policy_modules" "$policy_revision" "$run_id" > "$candidate.canonical"
+mv "$candidate.canonical" "$candidate"
+chown root:root "$candidate"
+chmod 0600 "$candidate"
+policy="$POLICY_DIR/$release_id.env"
+if [ -e "$policy" ]; then
+    require_safe_file "$policy" 600
+    cmp -s "$candidate" "$policy" || die 'release id is already approved with a different policy'
+    printf 'QA_APPROVAL=ALREADY_APPROVED\nRELEASE_ID=%s\nCOMMIT=%s\n' "$release_id" "$commit"
+    exit 0
+fi
+mv "$candidate" "$policy"
+printf 'QA_APPROVAL=GO\nRELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"

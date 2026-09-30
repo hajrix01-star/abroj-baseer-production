@@ -1,0 +1,239 @@
+#!/usr/bin/env bash
+# Root-owned QA deployment wrapper.  The caller supplies a release ID only;
+# this wrapper owns the policy, source verification, recovery pair and module
+# allowlist.
+set -Eeuo pipefail
+umask 027
+
+readonly CONFIG=/etc/baseer-qa/deploy.env
+declare -A APPROVED_MODULE_SET=()
+
+die() { printf 'QA_DEPLOY=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
+
+require_safe_file() {
+    local file=$1 mode=$2
+    [ -f "$file" ] && [ ! -L "$file" ] || die "missing or unsafe file: $file"
+    [ "$(stat -c '%U:%G:%a' -- "$file")" = "root:root:$mode" ] || die "unsafe ownership or mode: $file"
+}
+
+require_root() { [ "$(id -u)" -eq 0 ] || die 'root is required'; }
+
+load_config() {
+    require_safe_file "$CONFIG" 600
+    # The root-owned configuration contains QA infrastructure identity only.
+    # shellcheck disable=SC1090
+    . "$CONFIG"
+    for name in QA_BASE QA_DATABASE QA_DB_CONTAINER QA_ODOO_CONTAINER QA_ODOO_VOLUME QA_COMPOSE_PROJECT QA_COMPOSE_FILE QA_ENV_FILE QA_LOGIN_URL QA_SOURCE_REMOTE QA_SOURCE_SSH_KEY QA_SOURCE_KNOWN_HOSTS; do
+        [ -n "${!name:-}" ] || die "missing config value: $name"
+    done
+    [[ "$QA_BASE" = /* ]] || die 'QA_BASE must be absolute'
+    [[ "$QA_DATABASE" =~ ^[a-zA-Z0-9_]+$ ]] || die 'unsafe QA database name'
+    [ -f "$QA_COMPOSE_FILE" ] && [ ! -L "$QA_COMPOSE_FILE" ] || die 'QA compose file is missing or unsafe'
+    [ -f "$QA_ENV_FILE" ] && [ ! -L "$QA_ENV_FILE" ] || die 'QA env file is missing or unsafe'
+    readonly POLICY_DIR=/etc/baseer-qa/release-policies
+    readonly RELEASES="$QA_BASE/releases"
+    readonly BACKUPS="$QA_BASE/backups"
+    readonly STAGING="$QA_BASE/deploy-staging"
+    readonly LOCK_FILE=/var/lock/baseer-qa-deploy.lock
+    readonly ODOO_SERVICE="${QA_ODOO_SERVICE:-odoo}"
+    readonly ADDONS_PATH="${QA_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19}"
+}
+
+validate_arguments() {
+    [ "$#" -eq 2 ] || die 'expected: release_id github_run_id'
+    release_id=$1
+    run_id=$2
+    [[ "$release_id" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]] || die 'invalid release id'
+    [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid GitHub run id'
+}
+
+verify_source_identity() {
+    require_safe_file "$QA_SOURCE_SSH_KEY" 600
+    require_safe_file "$QA_SOURCE_KNOWN_HOSTS" 644
+}
+
+load_policy() {
+    local key value seen_release=0 seen_commit=0 seen_modules=0 seen_revision=0 seen_run=0
+    policy="$POLICY_DIR/$release_id.env"
+    require_safe_file "$policy" 600
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+        case "$key" in
+            RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate RELEASE_ID'; policy_release_id=$value; seen_release=1 ;;
+            COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate COMMIT'; commit=$value; seen_commit=1 ;;
+            MODULES) [ "$seen_modules" -eq 0 ] || die 'duplicate MODULES'; policy_modules=$value; seen_modules=1 ;;
+            POLICY_REVISION) [ "$seen_revision" -eq 0 ] || die 'duplicate POLICY_REVISION'; policy_revision=$value; seen_revision=1 ;;
+            APPROVED_RUN_ID) [ "$seen_run" -eq 0 ] || die 'duplicate APPROVED_RUN_ID'; approved_run_id=$value; seen_run=1 ;;
+            ''|'#'*) ;;
+            *) die "unknown policy key: $key" ;;
+        esac
+    done < "$policy"
+    [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules" -eq 1 ] && [ "$seen_revision" -eq 1 ] && [ "$seen_run" -eq 1 ] || die 'incomplete approved policy'
+    [ "$policy_release_id" = "$release_id" ] || die 'release id mismatch'
+    [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy commit'
+    [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy revision'
+    [[ "$approved_run_id" =~ ^[0-9]+$ ]] || die 'invalid approval run id'
+    IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
+    [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
+    APPROVED_MODULE_SET=()
+    for module in "${APPROVED_MODULES[@]}"; do
+        [[ "$module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'invalid module name'
+        [ -z "${APPROVED_MODULE_SET[$module]+x}" ] || die 'duplicate module name'
+        APPROVED_MODULE_SET[$module]=1
+    done
+}
+
+compose=()
+compose_cmd() {
+    docker compose --project-name "$QA_COMPOSE_PROJECT" --env-file "$QA_ENV_FILE" -f "$QA_COMPOSE_FILE" --project-directory "$QA_BASE" "$@"
+}
+
+source_ssh() {
+    GIT_SSH_COMMAND="ssh -i $QA_SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$QA_SOURCE_KNOWN_HOSTS" "$@"
+}
+
+module_state() {
+    local module=$1
+    docker exec "$QA_DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d '$QA_DATABASE' -Atqc \"SELECT state FROM ir_module_module WHERE name = '$module'\""
+}
+
+wait_for_login() {
+    local attempt
+    for attempt in $(seq 1 90); do
+        curl -fsSL --max-time 10 "$QA_LOGIN_URL" >/dev/null && return 0
+        sleep 1
+    done
+    return 1
+}
+
+restore_pair() (
+    set -Eeuo pipefail
+    sha256sum -c "$backup/recovery.sha256"
+    compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || true
+    docker exec "$QA_DB_CONTAINER" sh -lc "dropdb -U \"\$POSTGRES_USER\" --if-exists '$QA_DATABASE'"
+    docker exec "$QA_DB_CONTAINER" sh -lc "createdb -U \"\$POSTGRES_USER\" '$QA_DATABASE'"
+    docker exec -i "$QA_DB_CONTAINER" sh -lc "pg_restore -U \"\$POSTGRES_USER\" --no-owner --no-privileges -d '$QA_DATABASE'" < "$backup/database.dump"
+    docker run --rm --network none -v "$QA_ODOO_VOLUME":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
+        set -eu
+        rm -rf -- "/target/filestore/'"$QA_DATABASE"'"
+        mkdir -p /target/filestore
+        tar -xf /backup/filestore.tar -C /target
+        test -d "/target/filestore/'"$QA_DATABASE"'"
+    '
+)
+
+rollback() {
+    local status=$? rollback_failed=0
+    trap - ERR
+    set +e
+    if [ "${release_switched:-0}" -eq 1 ]; then
+        compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
+    fi
+    if [ "${database_mutated:-0}" -eq 1 ]; then
+        restore_pair >/dev/null 2>&1 || rollback_failed=1
+    fi
+    if [ "${release_switched:-0}" -eq 1 ]; then
+        ln -sfn "$old_release" "$QA_BASE/current" || rollback_failed=1
+    fi
+    if [ "${service_quiesced:-0}" -eq 1 ]; then
+        compose_cmd up -d "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
+        wait_for_login >/dev/null 2>&1 || rollback_failed=1
+    fi
+    if [ -n "${backup:-}" ] && [ -d "$backup" ]; then
+        if [ "$rollback_failed" -eq 0 ]; then
+            printf 'QA_DEPLOY=ROLLED_BACK\nPREVIOUS_RELEASE=%s\n' "$old_release" > "$backup/result.env"
+        else
+            printf 'QA_DEPLOY=ROLLBACK_FAILED\nPREVIOUS_RELEASE=%s\n' "$old_release" > "$backup/result.env"
+        fi
+    fi
+    [ "$rollback_failed" -eq 0 ] || exit 70
+    exit "$status"
+}
+
+require_root
+load_config
+validate_arguments "$@"
+verify_source_identity
+load_policy
+install -d -o root -g root -m 0700 "$RELEASES" "$BACKUPS" "$STAGING"
+exec 9>"$LOCK_FILE"
+flock -n 9 || die 'another QA deployment is running'
+
+old_release="$(readlink -f "$QA_BASE/current")"
+[ -d "$old_release" ] || die 'current QA release cannot be resolved'
+[ -f "$old_release/RELEASE_COMMIT" ] || die 'current QA release has no source marker'
+live_commit="$(tr -d '\r\n' < "$old_release/RELEASE_COMMIT")"
+[[ "$live_commit" =~ ^[a-f0-9]{40}$ ]] || die 'current QA source marker is invalid'
+
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+stage="$STAGING/.stage-${commit:0:12}-${run_id}-$stamp"
+backup="$BACKUPS/pre-${commit:0:12}-${run_id}-$stamp"
+release="$RELEASES/${commit:0:12}-run-${run_id}-$stamp"
+release_switched=0
+database_mutated=0
+service_quiesced=0
+trap rollback ERR
+[ ! -e "$stage" ] && [ ! -e "$backup" ] && [ ! -e "$release" ] || die 'deployment path already exists'
+
+git init --bare --quiet "$stage.git"
+git -C "$stage.git" remote add origin "$QA_SOURCE_REMOTE"
+source_ssh git -C "$stage.git" fetch --no-tags --quiet origin main:refs/heads/source-main "$commit"
+git -C "$stage.git" cat-file -e "$commit^{commit}" || die 'candidate commit is missing'
+git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit" || die 'candidate does not advance current QA source'
+while IFS= read -r changed; do
+    case "$changed" in
+        custom_addons/*/*)
+            module="${changed#custom_addons/}"; module="${module%%/*}"
+            [ -n "${APPROVED_MODULE_SET[$module]+x}" ] || die "custom module changed outside QA policy: $module"
+            ;;
+        custom_addons/*|third_party_addons/*|compose.*|config/*) die "runtime source changed outside QA policy: $changed" ;;
+    esac
+done < <(git -C "$stage.git" diff --name-only "$live_commit" "$commit" -- custom_addons third_party_addons compose.production.yaml config)
+for module in "${APPROVED_MODULES[@]}"; do
+    git -C "$stage.git" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "approved module absent from candidate: $module"
+done
+mkdir -m 0700 "$stage"
+git -C "$stage.git" archive --format=tar "$commit" | tar -x -C "$stage" --no-same-owner --no-same-permissions
+rm -rf -- "$stage.git"
+mv "$stage" "$release"
+printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"
+chmod -R a+rX -- "$release"
+
+upgrade_modules=()
+install_modules=()
+for module in "${APPROVED_MODULES[@]}"; do
+    state="$(module_state "$module")"
+    case "$state" in
+        installed) upgrade_modules+=("$module") ;;
+        ''|uninstalled) install_modules+=("$module") ;;
+        *) die "module is in an unsafe state: $module=$state" ;;
+    esac
+done
+service_quiesced=1
+compose_cmd stop "$ODOO_SERVICE"
+mkdir -p "$backup"
+docker exec "$QA_DB_CONTAINER" sh -lc "pg_dump -Fc -U \"\$POSTGRES_USER\" -d '$QA_DATABASE'" > "$backup/database.dump"
+docker run --rm --network none -v "$QA_ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore.tar "filestore/'"$QA_DATABASE"'"'
+sha256sum "$backup/database.dump" "$backup/filestore.tar" > "$backup/recovery.sha256"
+
+ln -sfn "$release" "$QA_BASE/current"
+release_switched=1
+odoo_command="odoo --config=/etc/odoo/odoo.conf --db_host=\"\$HOST\" --db_user=\"\$USER\" --db_password=\"\$PASSWORD\" --addons-path=$ADDONS_PATH -d $QA_DATABASE"
+if [ "${#upgrade_modules[@]}" -gt 0 ]; then
+    odoo_command+=" -u $(IFS=,; printf '%s' "${upgrade_modules[*]}")"
+fi
+if [ "${#install_modules[@]}" -gt 0 ]; then
+    odoo_command+=" -i $(IFS=,; printf '%s' "${install_modules[*]}")"
+fi
+odoo_command+=' --stop-after-init --workers=0 --max-cron-threads=0'
+database_mutated=1
+compose_cmd run --rm --no-deps --entrypoint sh "$ODOO_SERVICE" -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
+compose_cmd up -d "$ODOO_SERVICE"
+wait_for_login
+for module in "${APPROVED_MODULES[@]}"; do
+    [ "$(module_state "$module")" = installed ] || die "module not installed after QA deployment: $module"
+done
+compose_cmd logs --no-color --tail=300 "$ODOO_SERVICE" > "$backup/odoo-smoke.log"
+! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
+printf 'QA_DEPLOY=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\n' \
+    "$release_id" "$release" "$backup" "$commit" "$policy_modules" > "$backup/result.env"
+printf 'QA_DEPLOY=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

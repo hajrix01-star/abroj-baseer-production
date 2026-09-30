@@ -38,30 +38,37 @@
     border-bottom: 1px solid var(--abroj-tree-rule);
     display: grid;
     gap: 12px;
-    grid-template-columns: minmax(260px, 1fr) repeat(4, minmax(105px, .3fr)) 76px;
+    grid-template-columns: minmax(260px, 1fr) repeat(4, minmax(105px, .3fr)) minmax(185px, auto);
     min-height: 58px;
     padding: 8px 10px;
     padding-inline-start: calc(10px + var(--abroj-tree-level) * 24px);
 }
 .o_abroj_study_tree_row.is-section { background: #faf8f9; border-right: 3px solid var(--abroj-tree-accent); }
+.o_abroj_study_tree_row.is-section[draggable="true"] { cursor: grab; }
+.o_abroj_study_tree_row.is-section[draggable="true"]:active { cursor: grabbing; }
 .o_abroj_study_tree_name { align-items: center; display: flex; gap: 7px; min-width: 0; }
+.o_abroj_tree_drag_handle { color: #9aa5ab; cursor: grab; font-size: 17px; padding: 4px 2px; }
 .o_abroj_tree_toggle,
 .o_abroj_tree_name_button { background: transparent; border: 0; color: inherit; padding: 4px; }
 .o_abroj_tree_toggle { height: 30px; width: 30px; }
 .o_abroj_tree_leaf_marker { border: 1px solid #b9c4ca; border-radius: 50%; height: 8px; margin: 0 11px; width: 8px; }
 .o_abroj_tree_name_button { align-items: baseline; display: flex; gap: 8px; min-width: 0; text-align: right; }
 .o_abroj_tree_name_button strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o_abroj_tree_number { color: var(--abroj-tree-accent); font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 .o_abroj_tree_kind { color: #73808a; font-size: 12px; font-weight: 500; white-space: nowrap; }
 .o_abroj_study_tree_metric { display: flex; flex-direction: column; gap: 1px; }
 .o_abroj_study_tree_metric span { color: #73808a; font-size: 11px; }
 .o_abroj_study_tree_metric strong { font-variant-numeric: tabular-nums; font-weight: 650; }
 .o_abroj_study_tree_metric .is-over { color: #a13853; }
-.o_abroj_tree_add_child { justify-self: end; white-space: nowrap; }
+.o_abroj_tree_actions { align-items: center; display: flex; flex-wrap: wrap; gap: 5px; justify-content: end; }
+.o_abroj_tree_actions .btn { white-space: nowrap; }
+.o_abroj_tree_move, .o_abroj_tree_delete { min-width: 34px; }
 
 @media (max-width: 767px) {
     .o_abroj_study_tree_header { align-items: stretch; flex-direction: column; gap: 12px; }
     .o_abroj_study_tree_header .btn { min-height: 44px; }
     .o_abroj_study_tree_row { gap: 8px; grid-template-columns: minmax(0, 1fr) repeat(2, 72px); padding-inline-start: calc(6px + var(--abroj-tree-level) * 14px); }
     .o_abroj_study_tree_metric:nth-of-type(5) { display: none; }
-    .o_abroj_tree_add_child { grid-column: 1 / -1; justify-self: stretch; min-height: 40px; }
+    .o_abroj_tree_actions { grid-column: 1 / -1; justify-content: stretch; }
+    .o_abroj_tree_actions .btn { flex: 1 1 auto; min-height: 40px; }
 }

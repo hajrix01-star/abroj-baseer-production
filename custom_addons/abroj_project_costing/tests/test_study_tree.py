@@ -1,4 +1,4 @@
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -191,3 +191,52 @@ class TestAbrojStudyTree(TransactionCase):
             'name': 'تكلفة غير مخططة',
             'amount': 100,
         })
+
+    def test_planned_actual_cost_derives_required_data_from_leaf_on_create(self):
+        project = self._project()
+        leaf = self._item(project, 'تمديدات كهرباء', amount=100)
+        actual = self.env['abroj.cost.actual.line'].with_company(self.company).create({
+            'project_id': project.id,
+            'plan_line_id': leaf.id,
+            'amount': 125,
+        })
+        self.assertEqual(actual.category_id, self.category)
+        self.assertEqual(actual.name, leaf.name)
+        self.assertFalse(actual.is_unplanned)
+
+    def test_section_reorder_updates_server_sequence_and_tree_numbers(self):
+        project = self._project()
+        kitchen = self._section(project, 'المطبخ')
+        hall = self._section(project, 'الصالة')
+        exterior = self._section(project, 'الواجهة')
+        electrical = self._section(project, 'كهرباء المطبخ', kitchen)
+        leaf = self._item(project, 'تمديدات كهرباء', electrical, 100)
+        actual = self.env['abroj.cost.actual.line'].with_company(self.company).create({
+            'project_id': project.id,
+            'plan_line_id': leaf.id,
+            'amount': 80,
+        })
+
+        rows = project.action_reorder_plan_section(exterior.id, kitchen.id)
+        root_rows = [row for row in rows if not row['parent_id']]
+        self.assertEqual([row['name'] for row in root_rows], ['المطبخ', 'الواجهة', 'الصالة'])
+        self.assertEqual([row['tree_number'] for row in root_rows], ['1', '2', '3'])
+        self.assertEqual(exterior.sequence, 20)
+        self.assertEqual(actual.plan_line_id, leaf)
+        self.assertEqual(project.actual_total, 80)
+
+    def test_section_cannot_move_into_its_descendant_or_be_deleted_with_children(self):
+        project = self._project()
+        kitchen = self._section(project, 'المطبخ')
+        electrical = self._section(project, 'كهرباء المطبخ', kitchen)
+        branch = self._section(project, 'لوحة التوزيع', electrical)
+        self._item(project, 'قاطع رئيسي', kitchen, 100)
+
+        with self.assertRaises(ValidationError):
+            project.action_reorder_plan_section(kitchen.id, branch.id)
+        with self.assertRaises(UserError):
+            project.action_delete_plan_node(kitchen.id)
+
+        empty = self._section(project, 'قسم فارغ')
+        project.action_delete_plan_node(empty.id)
+        self.assertFalse(empty.exists())

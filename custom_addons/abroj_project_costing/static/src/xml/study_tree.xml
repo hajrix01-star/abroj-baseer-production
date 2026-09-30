@@ -18,7 +18,7 @@
                 <span>أضف بندًا رئيسيًا مثل «المطبخ»، ثم أضف تحته الأقسام والبنود المسعّرة.</span>
                 <button type="button" class="btn btn-secondary" t-on-click="() =&gt; this.addMainSection()">إضافة بند رئيسي</button>
             </div>
-            <div t-else="" class="o_abroj_study_tree_rows" t-on-dragover="allowRootDrop" t-on-drop="dropAtRoot">
+            <div t-else="" class="o_abroj_study_tree_rows" t-att-class="state.dropAtRoot ? 'is-root-drop-target' : ''" t-on-dragover="allowRootDrop" t-on-drop="dropAtRoot">
                 <t t-call="abroj_project_costing.StudyTreeRows">
                     <t t-set="nodes" t-value="state.nodes"/>
                     <t t-set="level" t-value="0"/>
@@ -29,7 +29,7 @@
 
     <t t-name="abroj_project_costing.StudyTreeRows">
         <t t-foreach="nodes" t-as="node" t-key="node.id">
-            <article class="o_abroj_study_tree_row" t-att-class="node.node_kind === 'section' ? 'is-section' : 'is-item'" t-att-style="'--abroj-tree-level:' + level" t-att-draggable="node.node_kind === 'section' ? 'true' : 'false'" t-on-dragstart="(event) =&gt; this.dragStart(node, event)" t-on-dragend="dragEnd" t-on-dragover="(event) =&gt; this.allowDrop(node, event)" t-on-drop="(event) =&gt; this.dropOn(node, event)">
+            <article class="o_abroj_study_tree_row" t-att-class="(node.node_kind === 'section' ? 'is-section' : 'is-item') + (state.draggedId === node.id ? ' is-dragging' : '') + (state.dropTargetId === node.id ? ' is-drop-target' : '')" t-att-style="'--abroj-tree-level:' + level" t-att-draggable="node.node_kind === 'section' ? 'true' : 'false'" t-on-dragstart="(event) =&gt; this.dragStart(node, event)" t-on-dragend="dragEnd" t-on-dragover="(event) =&gt; this.allowDrop(node, event)" t-on-drop="(event) =&gt; this.dropOn(node, event)">
                 <div class="o_abroj_study_tree_name">
                     <span t-if="node.node_kind === 'section'" class="o_abroj_tree_drag_handle" title="اسحب لتحريك القسم" aria-hidden="true"><i class="fa fa-bars"/></span>
                     <button t-if="node.children.length" type="button" class="o_abroj_tree_toggle" t-on-click="() =&gt; this.toggle(node)" t-att-aria-expanded="isExpanded(node) ? 'true' : 'false'">

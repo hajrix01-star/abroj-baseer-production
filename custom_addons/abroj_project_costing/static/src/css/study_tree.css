@@ -42,10 +42,27 @@
     min-height: 58px;
     padding: 8px 10px;
     padding-inline-start: calc(10px + var(--abroj-tree-level) * 24px);
+    position: relative;
 }
 .o_abroj_study_tree_row.is-section { background: #faf8f9; border-right: 3px solid var(--abroj-tree-accent); }
 .o_abroj_study_tree_row.is-section[draggable="true"] { cursor: grab; }
 .o_abroj_study_tree_row.is-section[draggable="true"]:active { cursor: grabbing; }
+.o_abroj_study_tree_row.is-dragging { opacity: .45; }
+.o_abroj_study_tree_row.is-drop-target::after,
+.o_abroj_study_tree_rows.is-root-drop-target::after {
+    background: var(--abroj-tree-accent);
+    border-radius: 999px;
+    content: "";
+    display: block;
+    height: 3px;
+    inset-inline: 8px;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+}
+.o_abroj_study_tree_row.is-drop-target::after { bottom: -2px; }
+.o_abroj_study_tree_rows.is-root-drop-target { min-height: 18px; position: relative; }
+.o_abroj_study_tree_rows.is-root-drop-target::after { bottom: 3px; }
 .o_abroj_study_tree_name { align-items: center; display: flex; gap: 7px; min-width: 0; }
 .o_abroj_tree_drag_handle { color: #9aa5ab; cursor: grab; font-size: 17px; padding: 4px 2px; }
 .o_abroj_tree_toggle,

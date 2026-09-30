@@ -15,7 +15,16 @@ export class AbrojStudyTree extends Component {
         this.action = useService("action");
         this.dialog = useService("dialog");
         this.notification = useService("notification");
-        this.state = useState({ loading: true, error: false, nodes: [], flatNodes: [], expanded: {}, draggedId: false });
+        this.state = useState({
+            loading: true,
+            error: false,
+            nodes: [],
+            flatNodes: [],
+            expanded: {},
+            draggedId: false,
+            dropTargetId: false,
+            dropAtRoot: false,
+        });
         this.loadGeneration = 0;
         onWillStart(() => this.load(this.props));
         onWillUpdateProps((nextProps) => this.load(nextProps));
@@ -143,24 +152,33 @@ export class AbrojStudyTree extends Component {
     dragStart(node, event) {
         if (node.node_kind !== "section") return;
         this.state.draggedId = node.id;
+        this.state.dropTargetId = false;
+        this.state.dropAtRoot = false;
         event.dataTransfer?.setData("text/plain", String(node.id));
         if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
     }
 
     dragEnd() {
         this.state.draggedId = false;
+        this.state.dropTargetId = false;
+        this.state.dropAtRoot = false;
     }
 
     allowDrop(node, event) {
         if (this.state.draggedId && this.state.draggedId !== node.id) {
             event.preventDefault();
+            event.stopPropagation();
+            this.state.dropTargetId = node.id;
+            this.state.dropAtRoot = false;
             if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
         }
     }
 
     allowRootDrop(event) {
-        if (this.state.draggedId) {
+        if (this.state.draggedId && event.target === event.currentTarget) {
             event.preventDefault();
+            this.state.dropTargetId = false;
+            this.state.dropAtRoot = true;
             if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
         }
     }
@@ -170,6 +188,8 @@ export class AbrojStudyTree extends Component {
         event.stopPropagation();
         const sourceId = Number(event.dataTransfer?.getData("text/plain") || this.state.draggedId);
         this.state.draggedId = false;
+        this.state.dropTargetId = false;
+        this.state.dropAtRoot = false;
         if (!sourceId || sourceId === node.id) return;
         await this.reorderSection(sourceId, node.id);
     }
@@ -178,6 +198,8 @@ export class AbrojStudyTree extends Component {
         event.preventDefault();
         const sourceId = Number(event.dataTransfer?.getData("text/plain") || this.state.draggedId);
         this.state.draggedId = false;
+        this.state.dropTargetId = false;
+        this.state.dropAtRoot = false;
         if (sourceId) await this.reorderSection(sourceId, false);
     }
 

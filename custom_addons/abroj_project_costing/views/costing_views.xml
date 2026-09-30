@@ -29,7 +29,7 @@
                     <group><field name="description"/><field name="note" widget="html"/></group>
                 </page>
                 <page string="دراسة المشروع" name="plan">
-                    <field name="study_tree_token" widget="abroj_study_tree" nolabel="1" readonly="1"/>
+                    <field name="study_tree_token" widget="abroj_study_tree" nolabel="1" readonly="1" class="o_abroj_study_tree_field"/>
                 </page>
                 <page string="التكاليف الفعلية" name="actual">
                     <field name="actual_line_ids" mode="list,form" class="o_abroj_cost_table">

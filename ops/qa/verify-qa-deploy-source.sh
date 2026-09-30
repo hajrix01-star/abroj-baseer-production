@@ -24,7 +24,7 @@ for policy in ops/qa/release-policies/*.env; do
         $1 == "COMMIT" { commit++; if ($2 !~ /^[a-f0-9]{40}$/) valid=0; next }
         $1 == "MODULES" {
             modules++
-            if ($2 !~ /^baseer_[a-z0-9_]+(,baseer_[a-z0-9_]+)*$/) { valid=0; next }
+            if ($2 !~ /^(baseer|abroj)_[a-z0-9_]+(,(baseer|abroj)_[a-z0-9_]+)*$/) { valid=0; next }
             count=split($2, values, ",")
             for (item = 1; item <= count; item++) {
                 if (seen[values[item]]++) valid=0

@@ -104,7 +104,7 @@ load_policy() {
     [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
     APPROVED_MODULE_SET=()
     for module in "${APPROVED_MODULES[@]}"; do
-        [[ "$module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'invalid module name'
+        [[ "$module" =~ ^(baseer|abroj)_[a-z0-9_]+$ ]] || die 'invalid module name'
         [ -z "${APPROVED_MODULE_SET[$module]+x}" ] || die 'duplicate module name'
         APPROVED_MODULE_SET[$module]=1
     done

@@ -17,19 +17,21 @@ require_safe_file() {
 }
 
 require_root_owned_path() {
-    local path=$1 expected_root=$2 actual mode part
+    local path=$1 expected_root=$2 expected_mode=$3 actual mode part
     actual="$(realpath -e -- "$path")" || die "cannot resolve path: $path"
     case "$actual" in "$expected_root"|"$expected_root"/*) ;; *) die "path is outside required root: $path" ;; esac
     [ -f "$actual" ] && [ ! -L "$actual" ] || die "missing or unsafe file: $path"
     mode="$(stat -c '%U:%G:%a' -- "$actual")"
-    [[ "$mode" =~ ^root:root:[0-7]{3,4}$ ]] || die "unsafe ownership or mode: $path"
-    mode="${mode##*:}"
-    (( (8#$mode & 022) == 0 )) || die "group/other may write: $path"
+    [ "$mode" = "root:root:$expected_mode" ] || die "unsafe ownership or mode: $path"
     part="$actual"
     while :; do
-        [ "$(stat -c '%U:%G' -- "$part")" = root:root ] || die "unsafe parent ownership: $part"
-        mode="$(stat -c '%a' -- "$part")"
-        (( (8#$mode & 022) == 0 )) || die "group/other may write parent: $part"
+        if [ "$part" = "$expected_root" ]; then
+            [ "$(stat -c '%U:%G:%a' -- "$part")" = root:root:700 ] || die "unsafe QA config directory: $part"
+        else
+            [ "$(stat -c '%U:%G' -- "$part")" = root:root ] || die "unsafe parent ownership: $part"
+            mode="$(stat -c '%a' -- "$part")"
+            (( (8#$mode & 022) == 0 )) || die "group/other may write parent: $part"
+        fi
         [ "$part" = "$expected_root" ] && break
         part="$(dirname -- "$part")"
     done
@@ -52,8 +54,8 @@ load_config() {
     [[ "$QA_LOGIN_URL" =~ ^http://127\.0\.0\.1:[0-9]+/web/login$ ]] || die 'QA login URL must be loopback only'
     [ "$QA_COMPOSE_FILE" = /etc/baseer-qa/compose.yaml ] || die 'QA compose path must be fixed'
     [ "$QA_ENV_FILE" = /etc/baseer-qa/runtime.env ] || die 'QA env path must be fixed'
-    require_root_owned_path "$QA_COMPOSE_FILE" /etc/baseer-qa
-    require_root_owned_path "$QA_ENV_FILE" /etc/baseer-qa
+    require_root_owned_path "$QA_COMPOSE_FILE" /etc/baseer-qa 600
+    require_root_owned_path "$QA_ENV_FILE" /etc/baseer-qa 600
     grep -Fq "$QA_BASE/current/custom_addons:/mnt/baseer-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount current custom addons read-only'
     readonly POLICY_DIR=/etc/baseer-qa/release-policies
     readonly RELEASES="$QA_BASE/releases"
@@ -196,7 +198,7 @@ release="$RELEASES/${commit:0:12}-run-${run_id}-$stamp"
 release_switched=0
 database_mutated=0
 service_quiesced=0
-trap rollback ERR
+trap rollback ERR HUP INT TERM
 [ ! -e "$stage" ] && [ ! -e "$backup" ] && [ ! -e "$release" ] || die 'deployment path already exists'
 
 git init --bare --quiet "$stage.git"

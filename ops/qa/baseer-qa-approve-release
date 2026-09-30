@@ -63,7 +63,7 @@ parse_policy() {
     [ "${#modules[@]}" -gt 0 ] || die 'policy has no modules'
     declare -A seen=()
     for module in "${modules[@]}"; do
-        [[ "$module" =~ ^baseer_[a-z0-9_]+$ ]] || die 'invalid module name'
+        [[ "$module" =~ ^(baseer|abroj)_[a-z0-9_]+$ ]] || die 'invalid module name'
         [ -z "${seen[$module]+x}" ] || die 'duplicate module name'
         seen[$module]=1
     done

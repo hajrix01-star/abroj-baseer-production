@@ -7,9 +7,34 @@
     display: none;
 }
 
-.o_abroj_cost_list .o_list_record_remove {
+/* Odoo freezes widths on the header, so action sizing must include both cells. */
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table
+:is(th.o_list_actions_header, td.o_list_record_remove) {
     width: 2rem !important;
     min-width: 2rem !important;
     padding: 0 !important;
-    text-align: left !important;
+    text-align: center !important;
+    vertical-align: middle;
+}
+
+/* The native button is display: table-cell, which ignores its parent's centering. */
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table .o_list_record_remove > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 1.75rem;
+    margin: 0;
+}
+
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table
+:is(th.o_list_open_form_view, td.o_list_record_open_form_view) {
+    width: 7rem !important;
+    min-width: 7rem !important;
+    vertical-align: middle;
+}
+
+:is(.o_abroj_cost_list, .o_abroj_cost_table) .o_list_table .o_list_record_open_form_view > button {
+    display: inline-block;
+    white-space: nowrap;
 }

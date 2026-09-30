@@ -102,6 +102,20 @@ class TestAbrojStudyTree(TransactionCase):
         self.assertFalse(legacy.parent_id)
         self.assertEqual(project.estimated_total, 150)
 
+    def test_new_line_amounts_use_company_currency_before_project_default_resolves(self):
+        draft_section = self.env['abroj.cost.plan.line'].with_company(self.company).new({
+            'node_kind': 'section',
+            'name': 'قسم جديد',
+        })
+        draft_item = self.env['abroj.cost.plan.line'].with_company(self.company).new({
+            'node_kind': 'item',
+            'name': 'بند جديد',
+            'pricing_method': 'lump_sum',
+            'lump_sum_cost': 125.25,
+        })
+        self.assertEqual(draft_section.estimated_total, 0.0)
+        self.assertEqual(draft_item.estimated_total, 125.25)
+
     def test_planned_actual_cost_must_keep_the_leaf_work_category(self):
         project = self._project()
         leaf = self._item(project, 'تمديدات كهرباء', amount=100)

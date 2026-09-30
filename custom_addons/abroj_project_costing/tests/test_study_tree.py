@@ -74,8 +74,11 @@ class TestAbrojStudyTree(TransactionCase):
     def test_sections_cannot_be_priced_or_receive_actual_costs(self):
         project = self._project()
         section = self._section(project, 'الصالة')
-        with self.assertRaises(ValidationError):
-            section.write({'category_id': self.category.id})
+        # Section values are normalized server-side, not rejected by the form.
+        section.write({'category_id': self.category.id, 'material_unit_cost': 100})
+        self.assertFalse(section.category_id)
+        self.assertEqual(section.material_unit_cost, 0)
+        self.assertEqual(section.estimated_total, 0)
         with self.assertRaises(ValidationError):
             self.env['abroj.cost.actual.line'].with_company(self.company).create({
                 'project_id': project.id,

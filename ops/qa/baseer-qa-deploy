@@ -16,6 +16,25 @@ require_safe_file() {
     [ "$(stat -c '%U:%G:%a' -- "$file")" = "root:root:$mode" ] || die "unsafe ownership or mode: $file"
 }
 
+require_root_owned_path() {
+    local path=$1 expected_root=$2 actual mode part
+    actual="$(realpath -e -- "$path")" || die "cannot resolve path: $path"
+    case "$actual" in "$expected_root"|"$expected_root"/*) ;; *) die "path is outside required root: $path" ;; esac
+    [ -f "$actual" ] && [ ! -L "$actual" ] || die "missing or unsafe file: $path"
+    mode="$(stat -c '%U:%G:%a' -- "$actual")"
+    [[ "$mode" =~ ^root:root:[0-7]{3,4}$ ]] || die "unsafe ownership or mode: $path"
+    mode="${mode##*:}"
+    (( (8#$mode & 022) == 0 )) || die "group/other may write: $path"
+    part="$actual"
+    while :; do
+        [ "$(stat -c '%U:%G' -- "$part")" = root:root ] || die "unsafe parent ownership: $part"
+        mode="$(stat -c '%a' -- "$part")"
+        (( (8#$mode & 022) == 0 )) || die "group/other may write parent: $part"
+        [ "$part" = "$expected_root" ] && break
+        part="$(dirname -- "$part")"
+    done
+}
+
 require_root() { [ "$(id -u)" -eq 0 ] || die 'root is required'; }
 
 load_config() {
@@ -23,13 +42,19 @@ load_config() {
     # The root-owned configuration contains QA infrastructure identity only.
     # shellcheck disable=SC1090
     . "$CONFIG"
-    for name in QA_BASE QA_DATABASE QA_DB_CONTAINER QA_ODOO_CONTAINER QA_ODOO_VOLUME QA_COMPOSE_PROJECT QA_COMPOSE_FILE QA_ENV_FILE QA_LOGIN_URL QA_SOURCE_REMOTE QA_SOURCE_SSH_KEY QA_SOURCE_KNOWN_HOSTS; do
+    for name in QA_ENVIRONMENT QA_BASE QA_DATABASE QA_DB_CONTAINER QA_ODOO_VOLUME QA_COMPOSE_PROJECT QA_COMPOSE_FILE QA_ENV_FILE QA_LOGIN_URL QA_SOURCE_REMOTE QA_SOURCE_SSH_KEY QA_SOURCE_KNOWN_HOSTS; do
         [ -n "${!name:-}" ] || die "missing config value: $name"
     done
-    [[ "$QA_BASE" = /* ]] || die 'QA_BASE must be absolute'
-    [[ "$QA_DATABASE" =~ ^[a-zA-Z0-9_]+$ ]] || die 'unsafe QA database name'
-    [ -f "$QA_COMPOSE_FILE" ] && [ ! -L "$QA_COMPOSE_FILE" ] || die 'QA compose file is missing or unsafe'
-    [ -f "$QA_ENV_FILE" ] && [ ! -L "$QA_ENV_FILE" ] || die 'QA env file is missing or unsafe'
+    [ "$QA_ENVIRONMENT" = qa ] || die 'environment marker is not qa'
+    [ "$QA_BASE" = /srv/baseer-qa ] || die 'QA_BASE must be /srv/baseer-qa'
+    [[ "$QA_DATABASE" =~ ^baseer(_live)?_qa(_[a-zA-Z0-9]+)*$ ]] || die 'database is not QA-namespaced'
+    [[ "$QA_DB_CONTAINER" =~ qa ]] && [[ "$QA_ODOO_VOLUME" =~ qa ]] && [[ "$QA_COMPOSE_PROJECT" =~ qa ]] || die 'runtime identity is not QA-namespaced'
+    [[ "$QA_LOGIN_URL" =~ ^http://127\.0\.0\.1:[0-9]+/web/login$ ]] || die 'QA login URL must be loopback only'
+    [ "$QA_COMPOSE_FILE" = /etc/baseer-qa/compose.yaml ] || die 'QA compose path must be fixed'
+    [ "$QA_ENV_FILE" = /etc/baseer-qa/runtime.env ] || die 'QA env path must be fixed'
+    require_root_owned_path "$QA_COMPOSE_FILE" /etc/baseer-qa
+    require_root_owned_path "$QA_ENV_FILE" /etc/baseer-qa
+    grep -Fq "$QA_BASE/current/custom_addons:/mnt/baseer-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount current custom addons read-only'
     readonly POLICY_DIR=/etc/baseer-qa/release-policies
     readonly RELEASES="$QA_BASE/releases"
     readonly BACKUPS="$QA_BASE/backups"

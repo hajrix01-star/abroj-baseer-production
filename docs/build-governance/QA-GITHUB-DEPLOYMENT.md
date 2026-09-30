@@ -98,7 +98,7 @@ the one-time host bootstrap.
 ## G4 — operator experience
 
 The operator-facing interface is GitHub Actions.  It has exactly two required
-inputs: a bounded QA release ID and the confirmation word `DEPLOY`.  The job
+inputs: a bounded QA release ID and the confirmation word `DEPLOY_QA`.  The job
 name and result distinguish QA clearly from production.  No mobile browser
 layout is owned by this repository; GitHub's native responsive interface owns
 that experience.
@@ -122,3 +122,4 @@ that experience.
 | QAD-001 | G0–G4 | decision | Owner authorized a QA-only GitHub deployment path after confirming that interactive QA terminal access is unavailable. Production remains excluded. |
 | QAD-002 | G0–G3 | inspection | Reviewed the existing production workflow/wrappers and GitHub repository environments. Only `production` and `PRODUCTION_SSH_KEY` exist; no QA host credential is present. The implementation must fail closed until an independent QA bootstrap supplies QA-only credentials. |
 | QAD-003 | G5 | implementation | Added the QA-only GitHub dispatcher, root-owned policy/deployment wrappers, bootstrap installer, pinned bridge-only policy, and source-integrity shell validation. Static validation is `bash -n` for all wrappers, YAML parsing for all workflows in the pinned Odoo image, and `git diff --check`. No host, QA database, QA secret, or production resource changed. |
+| QAD-004 | G5 | security correction | Independent review found that root could execute mutable QA compose/env files. The deploy path now accepts only fixed `/etc/baseer-qa` root-owned, non-group/non-other-writable files, requires the QA-only base/database/runtime namespace and loopback health URL, and bootstrap rejects a deploy user with supplementary privileges. PR CI now parses changed workflow YAML and runs a policy/shell static guard whenever QA deployment source changes. |

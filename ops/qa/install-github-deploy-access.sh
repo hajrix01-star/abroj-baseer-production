@@ -24,15 +24,26 @@ approval_wrapper=$3
 [ -f "$approval_wrapper" ] && [ ! -L "$approval_wrapper" ] || die 'approval wrapper is missing or unsafe'
 [ -f "$CONFIG" ] && [ ! -L "$CONFIG" ] || die 'root-owned QA config must exist first'
 [ "$(stat -c '%U:%G:%a' -- "$CONFIG")" = root:root:600 ] || die 'QA config must be root:root 600'
+grep -Fqx 'QA_ENVIRONMENT=qa' "$CONFIG" || die 'QA config must declare QA_ENVIRONMENT=qa'
+grep -Fqx "QA_BASE=$BASE" "$CONFIG" || die "QA config must use QA_BASE=$BASE"
 
-id "$DEPLOY_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash --user-group "$DEPLOY_USER"
+if id "$DEPLOY_USER" >/dev/null 2>&1; then
+    [ "$(id -gn "$DEPLOY_USER")" = "$DEPLOY_USER" ] || die 'existing deploy user has an unsafe primary group'
+    [ "$(id -nG "$DEPLOY_USER")" = "$DEPLOY_USER" ] || die 'existing deploy user has unsafe supplementary groups'
+else
+    useradd --create-home --shell /bin/bash --user-group "$DEPLOY_USER"
+fi
+for group in docker sudo wheel adm admin; do
+    getent group "$group" | grep -Eq "(^|:|,)$DEPLOY_USER(,|$)" && die "deploy user must not belong to $group"
+done
+
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 0700 "/home/$DEPLOY_USER/.ssh"
 touch "/home/$DEPLOY_USER/.ssh/authorized_keys"
 chown "$DEPLOY_USER:$DEPLOY_USER" "/home/$DEPLOY_USER/.ssh/authorized_keys"
 chmod 0600 "/home/$DEPLOY_USER/.ssh/authorized_keys"
 grep -Fqx "$public_key" "/home/$DEPLOY_USER/.ssh/authorized_keys" || printf '%s\n' "$public_key" >> "/home/$DEPLOY_USER/.ssh/authorized_keys"
 
-install -d -o root -g root -m 0700 /etc/baseer-qa "$BASE/releases" "$BASE/backups" "$BASE/deploy-staging"
+install -d -o root -g root -m 0700 /etc/baseer-qa "$BASE" "$BASE/releases" "$BASE/backups" "$BASE/deploy-staging"
 install -o root -g root -m 0750 "$deploy_wrapper" "$WRAPPER_DEST"
 install -o root -g root -m 0750 "$approval_wrapper" "$APPROVAL_DEST"
 cat > "$SUDOERS_DEST" <<'EOF'

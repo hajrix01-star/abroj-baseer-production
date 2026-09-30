@@ -399,6 +399,27 @@ class BasserWorkspaceItem(models.Model):
     sequence = fields.Integer(default=10, index=True)
     active = fields.Boolean(string='Visible in Baseer', default=True, index=True)
 
+    @api.model
+    def _repair_pos_cashier_dashboard_target(self):
+        """Migrate the source-owned cashier card across protected XML data.
+
+        The original card was created in a ``noupdate`` file, so a later XML
+        record alone cannot safely change its target in an existing database.
+        This bounded migration changes only that fixed card to the fixed,
+        allowlisted native POS dashboard menu on module upgrade.
+        """
+        item = self.env.ref(
+            'baseer_basser_workspace.workspace_item_pos_cashier_point_of_sale',
+            raise_if_not_found=False,
+        )
+        target_menu = self.env.ref(
+            'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard',
+            raise_if_not_found=False,
+        )
+        if item and target_menu and item.menu_id != target_menu:
+            item.sudo().write({'menu_id': target_menu.id})
+        return True
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)

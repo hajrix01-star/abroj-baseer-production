@@ -6,4 +6,6 @@
     <record id="workspace_item_pos_cashier_point_of_sale" model="baseer.basser.workspace.item">
         <field name="menu_id" ref="menu_pos_cashier_point_of_sale_dashboard"/>
     </record>
+    <function model="baseer.basser.workspace.item"
+              name="_repair_pos_cashier_dashboard_target"/>
 </odoo>

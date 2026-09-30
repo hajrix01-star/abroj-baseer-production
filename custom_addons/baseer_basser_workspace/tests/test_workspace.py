@@ -61,6 +61,19 @@ class BasserWorkspaceCase(TransactionCase):
                 ).id,
             )
 
+    def test_basser_t00a_upgrade_repairs_the_protected_pos_cashier_card_target(self):
+        """The fixed cashier card must migrate even when its original XML is noupdate."""
+        item = self.env.ref(
+            'baseer_basser_workspace.workspace_item_pos_cashier_point_of_sale'
+        )
+        legacy_menu = self.env.ref('point_of_sale.menu_point_of_sale_list')
+        dashboard_menu = self.env.ref(
+            'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard'
+        )
+        item.sudo().write({'menu_id': legacy_menu.id})
+        self.env['baseer.basser.workspace.item']._repair_pos_cashier_dashboard_target()
+        self.assertEqual(item.menu_id, dashboard_menu)
+
     def test_basser_t01_cashier_gets_only_seeded_shortcuts_and_native_actions(self):
         cashier = self._user('cashier')
         advance_menu = self.env.ref('baseer_access_roles.menu_pos_advance_entries')

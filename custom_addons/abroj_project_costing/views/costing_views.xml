@@ -1,8 +1,8 @@
 <odoo>
     <record id="view_abroj_project_list" model="ir.ui.view">
         <field name="name">abroj.cost.project.list</field><field name="model">abroj.cost.project</field>
-        <field name="arch" type="xml"><list string="المشاريع" decoration-success="state == 'completed'" decoration-muted="state in ('closed', 'cancelled')" decoration-warning="state == 'pricing'">
-            <field name="name"/><field name="customer_name" optional="hide"/><field name="agreement_amount" sum="إجمالي الاتفاق"/><field name="estimated_total" sum="إجمالي الدراسة"/><field name="actual_total" sum="إجمالي الفعلي"/><field name="actual_profit" string="النتيجة" sum="إجمالي النتيجة"/><field name="progress" widget="progressbar"/><field name="state" widget="badge"/><field name="write_date" string="آخر تحديث" optional="hide"/>
+        <field name="arch" type="xml"><list string="المشاريع" class="o_abroj_cost_list" decoration-success="state == 'completed'" decoration-muted="state in ('closed', 'cancelled')" decoration-warning="state == 'pricing'">
+            <field name="name"/><field name="customer_name" optional="hide"/><field name="agreement_amount" sum="إجمالي الاتفاق" optional="show"/><field name="estimated_total" sum="إجمالي الدراسة" optional="show"/><field name="actual_total" sum="إجمالي الفعلي" optional="show"/><field name="actual_profit" string="النتيجة" sum="إجمالي النتيجة" optional="show"/><field name="progress" widget="progressbar" optional="show"/><field name="state" widget="badge" optional="show"/><field name="write_date" string="آخر تحديث" optional="hide"/>
         </list></field>
     </record>
     <record id="view_abroj_project_search" model="ir.ui.view">
@@ -29,22 +29,22 @@
                     <group><field name="description"/><field name="note" widget="html"/></group>
                 </page>
                 <page string="دراسة المشروع" name="plan">
-                    <field name="plan_line_ids" mode="list,form">
-                        <list editable="bottom" open_form_view="1">
+                    <field name="plan_line_ids" mode="list,form" class="o_abroj_cost_table">
+                        <list editable="bottom" open_form_view="1" class="o_abroj_cost_list">
                             <field name="sequence" widget="handle"/>
                             <field name="category_id" required="1"/>
                             <field name="material_id" optional="hide"/>
                             <field name="name" required="1"/>
                             <field name="pricing_method"/>
                             <field name="uom_type" optional="hide"/>
-                            <field name="quantity"/>
-                            <field name="material_unit_cost"/>
+                            <field name="quantity" optional="show"/>
+                            <field name="material_unit_cost" optional="show"/>
                             <field name="auxiliary_unit_cost" optional="hide"/>
-                            <field name="labor_unit_cost"/>
+                            <field name="labor_unit_cost" optional="show"/>
                             <field name="inclusive_unit_cost" optional="hide"/>
-                            <field name="lump_sum_cost"/>
+                            <field name="lump_sum_cost" optional="show"/>
                             <field name="estimated_unit_cost" readonly="1" optional="hide"/>
-                            <field name="estimated_total" readonly="1" sum="إجمالي الدراسة"/>
+                            <field name="estimated_total" readonly="1" sum="إجمالي الدراسة" optional="show"/>
                             <field name="actual_total" readonly="1" optional="hide"/>
                             <field name="variance_amount" readonly="1" optional="hide"/>
                             <field name="status" optional="hide"/>
@@ -54,15 +54,15 @@
                     </field>
                 </page>
                 <page string="التكاليف الفعلية" name="actual">
-                    <field name="actual_line_ids" mode="list,form">
-                        <list editable="bottom" open_form_view="1">
+                    <field name="actual_line_ids" mode="list,form" class="o_abroj_cost_table">
+                        <list editable="bottom" open_form_view="1" class="o_abroj_cost_list">
                             <field name="date"/>
-                            <field name="plan_line_id"/>
-                            <field name="is_unplanned"/>
+                            <field name="plan_line_id" optional="show"/>
+                            <field name="is_unplanned" optional="show"/>
                             <field name="category_id" required="1"/>
                             <field name="name" required="1"/>
                             <field name="cost_type"/>
-                            <field name="quantity"/>
+                            <field name="quantity" optional="show"/>
                             <field name="amount" sum="إجمالي التكاليف"/>
                             <field name="supplier_text" optional="hide"/>
                             <field name="material_id" optional="hide"/>
@@ -72,14 +72,15 @@
                         <form string="تكلفة فعلية"><header><button name="%(action_report_actual_cost_voucher)d" type="action" string="طباعة سند صرف" class="btn-secondary" invisible="not id"/></header><sheet><group><group><field name="date"/><field name="plan_line_id"/><field name="is_unplanned"/><field name="category_id"/><field name="material_id"/><field name="name"/><field name="description"/></group><group><field name="cost_type"/><field name="uom_type"/><field name="quantity"/><field name="amount"/><field name="supplier_id"/><field name="supplier_text"/></group></group><group><field name="attachment_ids" widget="many2many_binary"/><field name="notes"/></group></sheet></form>
                     </field>
                 </page>
-                <page string="الإنجاز" name="progress"><group><field name="progress" widget="percentage" readonly="1"/></group><field name="progress_stage_ids" mode="list,form"><list><field name="sequence" widget="handle"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/><field name="planned_end_date" readonly="1"/><field name="state"/><field name="actual_completion_date" readonly="1" optional="hide"/><field name="delay_days" readonly="1" optional="hide"/><button name="action_mark_done" type="object" string="تم الإنجاز" invisible="state == 'done'"/><control><create string="إضافة مرحلة إنجاز"/></control></list><form string="مرحلة إنجاز"><sheet><group><group><field name="stage_template_key"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/></group><group><field name="state"/><field name="planned_end_date" readonly="1"/><field name="actual_completion_date" readonly="1"/><field name="delay_days" readonly="1"/></group></group><group><field name="notes"/></group></sheet></form></field></page>
-                <page string="دفعات العميل" name="receipts"><group string="ملخص دفعات العميل" col="3"><field name="received_total" readonly="1"/><field name="receivable_remaining" readonly="1"/><button name="action_create_customer_receipt" type="object" string="إصدار سند قبض" class="btn-primary" icon="fa-plus"/><button name="action_open_receipts" type="object" string="عرض كل الدفعات" class="btn-secondary"/></group><field name="receipt_ids" mode="list" context="{'form_view_ref': 'abroj_project_costing.view_abroj_receipt_form_readonly'}"><list create="0" delete="0" edit="0"><field name="name" string="رقم السند"/><field name="date" string="التاريخ"/><field name="amount" string="المبلغ"/><button name="action_open_receipt_view" type="object" string="عرض" class="btn-secondary" icon="fa-eye"/></list></field></page>
-                <page string="تعديل الاتفاقية" name="amendments"><field name="amendment_ids" mode="list,form"><list><field name="date"/><field name="previous_amount" readonly="1"/><field name="new_amount"/><field name="reason"/><field name="state"/><button name="action_apply" type="object" string="تطبيق" invisible="state == 'applied'"/><control><create string="إضافة تعديل اتفاقية"/></control></list><form string="تعديل الاتفاقية"><sheet><group><field name="date"/><field name="previous_amount" readonly="1"/><field name="new_amount"/><field name="reason"/><field name="state"/></group></sheet></form></field></page>
-                <page string="الأعضاء" name="members"><field name="member_ids" mode="list,form"><list><field name="user_id"/><field name="access_level"/><control><create string="إضافة عضو"/></control></list><form string="عضو المشروع"><sheet><group><field name="user_id"/><field name="access_level"/></group></sheet></form></field></page>
+                <page string="الإنجاز" name="progress"><group><field name="progress" widget="percentage" readonly="1"/></group><field name="progress_stage_ids" mode="list,form" class="o_abroj_cost_table"><list class="o_abroj_cost_list"><field name="sequence" widget="handle"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/><field name="planned_end_date" readonly="1" optional="show"/><field name="state"/><field name="actual_completion_date" readonly="1" optional="hide"/><field name="delay_days" readonly="1" optional="hide"/><button name="action_mark_done" type="object" string="تم الإنجاز" invisible="state == 'done'"/><control><create string="إضافة مرحلة إنجاز"/></control></list><form string="مرحلة إنجاز"><sheet><group><group><field name="stage_template_key"/><field name="name"/><field name="planned_start_date"/><field name="planned_duration_days"/></group><group><field name="state"/><field name="planned_end_date" readonly="1"/><field name="actual_completion_date" readonly="1"/><field name="delay_days" readonly="1"/></group></group><group><field name="notes"/></group></sheet></form></field></page>
+                <page string="دفعات العميل" name="receipts"><group string="ملخص دفعات العميل" col="3"><field name="received_total" readonly="1"/><field name="receivable_remaining" readonly="1"/><button name="action_create_customer_receipt" type="object" string="إصدار سند قبض" class="btn-primary" icon="fa-plus"/><button name="action_open_receipts" type="object" string="عرض كل الدفعات" class="btn-secondary"/></group><field name="receipt_ids" mode="list" class="o_abroj_cost_table" context="{'form_view_ref': 'abroj_project_costing.view_abroj_receipt_form_readonly'}"><list class="o_abroj_cost_list" create="0" delete="0" edit="0"><field name="name" string="رقم السند"/><field name="date" string="التاريخ" optional="show"/><field name="amount" string="المبلغ" optional="show"/><button name="action_open_receipt_view" type="object" string="عرض" class="btn-secondary" icon="fa-eye"/></list></field></page>
+                <page string="تعديل الاتفاقية" name="amendments"><field name="amendment_ids" mode="list,form" class="o_abroj_cost_table"><list class="o_abroj_cost_list"><field name="date"/><field name="previous_amount" readonly="1" optional="show"/><field name="new_amount"/><field name="reason"/><field name="state"/><button name="action_apply" type="object" string="تطبيق" invisible="state == 'applied'"/><control><create string="إضافة تعديل اتفاقية"/></control></list><form string="تعديل الاتفاقية"><sheet><group><field name="date"/><field name="previous_amount" readonly="1"/><field name="new_amount"/><field name="reason"/><field name="state"/></group></sheet></form></field></page>
+                <page string="الأعضاء" name="members"><field name="member_ids" mode="list,form" class="o_abroj_cost_table"><list class="o_abroj_cost_list"><field name="user_id"/><field name="access_level"/><field name="company_id" optional="hide"/><control><create string="إضافة عضو"/></control></list><form string="عضو المشروع"><sheet><group><field name="user_id"/><field name="access_level"/></group></sheet></form></field></page>
             </notebook>
         </sheet></form></field>
     </record>
       <record id="action_abroj_project" model="ir.actions.act_window"><field name="name">المشاريع</field><field name="res_model">abroj.cost.project</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_abroj_project_search"/></record>
+      <record id="view_abroj_receipt_list" model="ir.ui.view"><field name="name">abroj.cost.receipt.list</field><field name="model">abroj.cost.receipt</field><field name="arch" type="xml"><list string="دفعات العميل" class="o_abroj_cost_list"><field name="name" string="رقم السند"/><field name="date" optional="show"/><field name="amount" optional="show"/><field name="project_id" optional="hide"/></list></field></record>
       <record id="view_abroj_receipt_form_create" model="ir.ui.view"><field name="name">abroj.cost.receipt.form.create</field><field name="model">abroj.cost.receipt</field><field name="arch" type="xml"><form string="إصدار سند قبض للعميل"><sheet><group><field name="name" readonly="1"/><field name="project_id" readonly="1"/><field name="date"/><field name="amount"/><field name="note"/></group></sheet><footer><button string="إصدار وحفظ" special="save" class="btn-primary"/><button string="إلغاء" special="cancel" class="btn-secondary"/></footer></form></field></record>
       <record id="view_abroj_receipt_form_readonly" model="ir.ui.view"><field name="name">abroj.cost.receipt.form.readonly</field><field name="model">abroj.cost.receipt</field><field name="arch" type="xml"><form string="سند قبض العميل" js_class="abroj_receipt_share_form" create="0" edit="0" delete="0"><header><button name="%(action_report_receipt_voucher)d" type="action" string="طباعة سند القبض" class="btn-secondary"/><button name="action_open_edit_form" type="object" string="تعديل السند" class="btn-secondary"/></header><sheet><group><field name="name" readonly="1"/><field name="project_id" readonly="1"/><field name="date" readonly="1"/><field name="amount" readonly="1"/><field name="note" readonly="1"/></group></sheet><footer><button string="إغلاق" special="cancel" class="btn-secondary"/></footer></form></field></record>
       <record id="view_abroj_receipt_form_edit" model="ir.ui.view"><field name="name">abroj.cost.receipt.form.edit</field><field name="model">abroj.cost.receipt</field><field name="arch" type="xml"><form string="تعديل سند الاستلام"><header><button name="%(action_report_receipt_voucher)d" type="action" string="طباعة سند استلام" class="btn-secondary"/></header><sheet><group><field name="name" readonly="1"/><field name="project_id" readonly="1"/><field name="date"/><field name="amount"/><field name="note"/></group></sheet></form></field></record>
@@ -88,10 +89,10 @@
            is handled by the receipt form's native Web Share control instead. -->
       <record id="action_abroj_receipt_whatsapp" model="ir.actions.server"><field name="name">إرسال سند القبض عبر واتساب</field><field name="model_id" ref="model_abroj_cost_receipt"/><field name="binding_model_id" eval="False"/><field name="state">code</field><field name="code">action = False</field></record>
 
-    <record id="view_abroj_material_list" model="ir.ui.view"><field name="name">abroj.cost.material.list</field><field name="model">abroj.cost.material</field><field name="arch" type="xml"><list string="مكتبة المواد" class="o_abroj_material_list"><field name="image_1920" widget="image"/><field name="code"/><field name="name"/><field name="category_id"/><field name="uom_type"/><field name="material_unit_cost"/><field name="auxiliary_unit_cost"/><field name="labor_unit_cost"/><field name="inclusive_unit_cost"/><field name="supplier_id"/><field name="active"/></list></field></record>
+    <record id="view_abroj_material_list" model="ir.ui.view"><field name="name">abroj.cost.material.list</field><field name="model">abroj.cost.material</field><field name="arch" type="xml"><list string="مكتبة المواد" class="o_abroj_material_list o_abroj_cost_list"><field name="image_1920" widget="image" optional="show"/><field name="code"/><field name="name"/><field name="category_id"/><field name="uom_type"/><field name="material_unit_cost" optional="show"/><field name="auxiliary_unit_cost" optional="show"/><field name="labor_unit_cost" optional="show"/><field name="inclusive_unit_cost" optional="show"/><field name="supplier_id" optional="show"/><field name="active" optional="show"/></list></field></record>
     <record id="view_abroj_material_form" model="ir.ui.view"><field name="name">abroj.cost.material.form</field><field name="model">abroj.cost.material</field><field name="arch" type="xml"><form string="مادة"><sheet><group><group><field name="image_1920" widget="image" class="oe_avatar"/><field name="code"/><field name="name"/><field name="name_en"/><field name="category_id"/><field name="uom_type"/><field name="default_pricing_method"/></group><group><field name="material_unit_cost"/><field name="auxiliary_unit_cost"/><field name="labor_unit_cost"/><field name="inclusive_unit_cost"/><field name="supplier_id"/><field name="supplier_text"/><field name="last_price_update"/><field name="active"/></group></group><notebook><page string="الوصف"><field name="description"/></page><page string="ملاحظات"><field name="notes"/></page><page string="مرجع أودو"><field name="original_product_id" readonly="1"/></page></notebook></sheet></form></field></record>
     <record id="view_abroj_material_search" model="ir.ui.view"><field name="name">abroj.cost.material.search</field><field name="model">abroj.cost.material</field><field name="arch" type="xml"><search><field name="name"/><field name="code"/><field name="category_id"/><field name="uom_type"/><field name="supplier_id"/><filter string="الفئة" name="group_category" context="{'group_by':'category_id'}"/></search></field></record>
     <record id="action_abroj_material" model="ir.actions.act_window"><field name="name">مكتبة المواد</field><field name="res_model">abroj.cost.material</field><field name="view_mode">list,form</field></record>
-    <record id="view_abroj_category_list" model="ir.ui.view"><field name="name">abroj.cost.category.list</field><field name="model">abroj.cost.category</field><field name="arch" type="xml"><list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="active"/></list></field></record>
+    <record id="view_abroj_category_list" model="ir.ui.view"><field name="name">abroj.cost.category.list</field><field name="model">abroj.cost.category</field><field name="arch" type="xml"><list editable="bottom" class="o_abroj_cost_list"><field name="sequence" widget="handle"/><field name="name"/><field name="active" optional="show"/></list></field></record>
     <record id="action_abroj_category" model="ir.actions.act_window"><field name="name">الأقسام</field><field name="res_model">abroj.cost.category</field><field name="view_mode">list,form</field></record>
 </odoo>

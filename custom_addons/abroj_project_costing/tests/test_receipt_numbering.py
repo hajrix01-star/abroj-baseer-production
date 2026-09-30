@@ -60,6 +60,8 @@ class TestReceiptNumbering(TransactionCase):
             'abroj_project_costing.view_abroj_receipt_form_create').priority)
         self.assertLess(readonly_view.priority, self.env.ref(
             'abroj_project_costing.view_abroj_receipt_form_edit').priority)
+        project_view = self.env.ref('abroj_project_costing.view_abroj_project_form')
+        self.assertIn('widget="abroj_receipt_list"', project_view.arch_db)
 
     def test_native_receipt_template_adapter_keeps_project_totals_in_backend(self):
         first = self.env['abroj.cost.receipt'].create({

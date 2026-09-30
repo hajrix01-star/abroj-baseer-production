@@ -88,7 +88,7 @@ load_policy() {
 }
 
 fetch_reviewed_source() {
-    local fetch_repo fetched_commit changed_path changed_module
+    local fetch_repo fetched_commit approved_module
     fetch_repo="$stage/fetch.git"
     install -d -o root -g root -m 0700 "$stage"
     git init --bare --quiet "$fetch_repo"
@@ -103,27 +103,30 @@ fetch_reviewed_source() {
     git -C "$fetch_repo" merge-base --is-ancestor "$live_commit" "$commit" || die 'approved commit does not advance from the live release'
     fetched_commit="$(git -C "$fetch_repo" rev-parse "${commit}^{commit}")"
     [ "$fetched_commit" = "$commit" ] || die 'fetched source does not match the approved commit'
-    declare -A allowed_modules=() allowed_third_party_modules=()
-    for approved_module in "${APPROVED_MODULES[@]}"; do allowed_modules[$approved_module]=1; done
-    for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do allowed_third_party_modules[$approved_module]=1; done
-    while IFS= read -r changed_path; do
-        case "$changed_path" in
-            custom_addons/*/*)
-                changed_module="${changed_path#custom_addons/}"
-                changed_module="${changed_module%%/*}"
-                [ -n "${allowed_modules[$changed_module]+x}" ] || die "custom module changed outside release policy: $changed_module"
-                ;;
-            custom_addons/*) die 'custom-addons root file changed outside release policy' ;;
-            third_party_addons/erp_heritage_19/*/*)
-                changed_module="${changed_path#third_party_addons/erp_heritage_19/}"
-                changed_module="${changed_module%%/*}"
-                [ -n "${allowed_third_party_modules[$changed_module]+x}" ] || die "third-party module changed outside release policy: $changed_module"
-                ;;
-            third_party_addons/*|compose.production.yaml|config/*) die "runtime source changed outside release policy: $changed_path" ;;
-        esac
-    done < <(git -C "$fetch_repo" diff --name-only "$live_commit" "$commit" -- custom_addons third_party_addons compose.production.yaml config)
+    # A policy approves an explicit module set, not an entire Git history.  A
+    # candidate can legitimately be descended from main while main also holds
+    # unrelated, unreleased work.  Start with the exact running release and
+    # overlay only those reviewed modules; compose/config and every other
+    # add-on remain byte-for-byte on the current production release.
     mkdir -m 0700 "$stage/source"
-    git -C "$fetch_repo" archive --format=tar "$commit" | tar -x -C "$stage/source" --no-same-owner --no-same-permissions
+    cp -a -- "$old_release/." "$stage/source/"
+    rm -f -- "$stage/source/.env" "$stage/source/config/odoo.conf"
+    for approved_module in "${APPROVED_MODULES[@]}"; do
+        if git -C "$fetch_repo" ls-tree -r "$commit" -- "custom_addons/$approved_module" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
+            die "approved module contains a symbolic link: $approved_module"
+        fi
+        rm -rf -- "$stage/source/custom_addons/$approved_module"
+        git -C "$fetch_repo" archive --format=tar "$commit" "custom_addons/$approved_module" | \
+            tar -x -C "$stage/source" --no-same-owner --no-same-permissions
+    done
+    for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
+        if git -C "$fetch_repo" ls-tree -r "$commit" -- "third_party_addons/erp_heritage_19/$approved_module" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
+            die "approved third-party module contains a symbolic link: $approved_module"
+        fi
+        rm -rf -- "$stage/source/third_party_addons/erp_heritage_19/$approved_module"
+        git -C "$fetch_repo" archive --format=tar "$commit" "third_party_addons/erp_heritage_19/$approved_module" | \
+            tar -x -C "$stage/source" --no-same-owner --no-same-permissions
+    done
     rm -rf -- "$fetch_repo"
 }
 

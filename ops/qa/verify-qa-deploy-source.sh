@@ -9,7 +9,8 @@ cd "$repo_root"
 for script in \
     ops/qa/baseer-qa-approve-release \
     ops/qa/baseer-qa-deploy \
-    ops/qa/install-github-deploy-access.sh; do
+    ops/qa/baseer-qa-release-poller \
+    ops/qa/install-qa-release-poller.sh; do
     bash -n "$script"
 done
 
@@ -34,5 +35,16 @@ for policy in ops/qa/release-policies/*.env; do
         END { exit !(valid && release == 1 && commit == 1 && modules == 1) }
     ' "$policy" || { printf 'invalid QA release policy: %s\n' "$policy" >&2; exit 1; }
 done
+
+for unit in ops/qa/systemd/*.service ops/qa/systemd/*.timer; do
+    [ -f "$unit" ] || continue
+    grep -Fqx '[Unit]' "$unit" || { printf 'invalid systemd unit: %s\n' "$unit" >&2; exit 1; }
+done
+
+grep -Fqx 'ReadWritePaths=/srv/baseer-qa /etc/baseer-qa/release-policies /var/lock' \
+    ops/qa/systemd/baseer-qa-release-poller.service || {
+    printf 'QA poller must permit only its release-policy directory under /etc\n' >&2
+    exit 1
+}
 
 printf 'QA_DEPLOY_SOURCE=PASS\n'

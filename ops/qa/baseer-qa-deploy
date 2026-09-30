@@ -99,6 +99,7 @@ load_policy() {
     [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy commit'
     [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy revision'
     [[ "$approved_run_id" =~ ^[0-9]+$ ]] || die 'invalid approval run id'
+    [ "$approved_run_id" = "$run_id" ] || die 'approval run does not match deployment request'
     IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
     [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
     APPROVED_MODULE_SET=()

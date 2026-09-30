@@ -1,0 +1,15 @@
+[Unit]
+Description=Baseer QA bounded release poller
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/sbin/baseer-qa-release-poller
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/baseer-qa /etc/baseer-qa/release-policies /var/lock

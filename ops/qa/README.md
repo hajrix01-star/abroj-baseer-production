@@ -7,8 +7,8 @@ environment.
 
 ## One-time host bootstrap
 
-An administrator on the QA host installs the two root-owned wrappers and a
-restricted `baseer_qa_deploy` account.  The host also creates a root-owned
+An administrator on the QA host installs the root-owned wrappers and poller.
+The host also creates a root-owned
 `/etc/baseer-qa/deploy.env` (mode `0600`) with the QA-only paths and names:
 
 ```text
@@ -24,6 +24,7 @@ QA_LOGIN_URL=http://127.0.0.1:<QA port>/web/login
 QA_SOURCE_REMOTE=ssh://git@ssh.github.com:443/hajrix01-star/abroj-baseer-production.git
 QA_SOURCE_SSH_KEY=/etc/baseer-qa/source-readonly.key
 QA_SOURCE_KNOWN_HOSTS=/etc/baseer-qa/github-known_hosts
+QA_TAG_ALLOWED_SIGNERS=/etc/baseer-qa/request-signers
 ```
 
 The root-owned `0600` compose and env files must be under `/etc/baseer-qa`, and
@@ -32,21 +33,32 @@ the compose file must contain the exact mount
 with the exact current QA source and a `RELEASE_COMMIT` file; the wrapper
 refuses to deploy without it. The restricted deploy account must have no
 supplementary groups, especially no Docker or sudo membership.
-The configured source key is read-only and distinct from the GitHub Actions
-key.
+The configured source key is read-only and used only by the QA host to fetch
+the reviewed source and request tags. `request-signers` is root-owned `0644`
+and contains only the public SSH signing key whose private half is stored as
+the `QA_REQUEST_SIGNING_KEY` secret in the protected `qa` environment.
+Its required OpenSSH allowed-signers entry is:
 
-Add the QA deploy public key through `install-github-deploy-access.sh`, then
-create a GitHub environment named `qa` with only:
+```text
+baseer-qa-release-bot@users.noreply.github.com ssh-ed25519 <public-key>
+```
 
-- secret `QA_SSH_KEY`
-- variables `QA_HOST` and `QA_KNOWN_HOST`
+Bootstrap verifies a signed request tag with this file before enabling the
+timer.
+
+Install the root-owned `baseer-qa-release-poller` systemd timer with
+`install-qa-release-poller.sh`. GitHub's
+hosted workflow writes only a bounded, immutable `qa-release-<release>-<run>`
+tag. The poller runs on QA, verifies that the tag points to reviewed `main`,
+then invokes the same root-owned approval and deployment wrappers. It accepts
+no arbitrary command, SSH secret, public QA address, or self-hosted runner.
+Create a GitHub environment named `qa` for the dispatch approval boundary.
 
 Do not store Odoo passwords, database URLs, host configuration, production
 keys, or data backups in GitHub or this repository.
 
 ## Routine use
 
-From `main`, run **Deploy a reviewed Baseer Odoo QA release**, enter the
-policy identifier and `DEPLOY_QA`. The workflow first stores the policy on
-the QA host, then deploys it.  The host takes the recovery pair and only
-upgrades the policy allowlist.
+From `main`, run **Queue a reviewed Baseer Odoo QA release**, enter the policy
+identifier and `DEPLOY_QA`. GitHub queues a bounded tag only; the QA timer
+collects it, takes the recovery pair, and upgrades only the policy allowlist.

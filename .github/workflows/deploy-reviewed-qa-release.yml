@@ -1,4 +1,4 @@
-name: Deploy a reviewed Baseer Odoo QA release
+name: Queue a reviewed Baseer Odoo QA release
 
 on:
   workflow_dispatch:
@@ -13,14 +13,14 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: baseer-qa
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  queue:
     if: >-
       github.ref == 'refs/heads/main' &&
       inputs.confirmation == 'DEPLOY_QA'
@@ -28,53 +28,41 @@ jobs:
     timeout-minutes: 30
     environment:
       name: qa
-    env:
-      QA_HOST: ${{ vars.QA_HOST }}
-      QA_USER: baseer_qa_deploy
-      QA_KNOWN_HOST: ${{ vars.QA_KNOWN_HOST }}
-
     steps:
-      - name: Validate the bounded QA release identifier
+      - name: Check out the reviewed main source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Validate the bounded QA release identifier and policy
         shell: bash
         env:
           RELEASE_ID: ${{ inputs.release_id }}
         run: |
           set -Eeuo pipefail
           [[ "$RELEASE_ID" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]]
-          test -n "$QA_HOST"
-          test -n "$QA_KNOWN_HOST"
+          test -f "ops/qa/release-policies/$RELEASE_ID.env"
+          bash ops/qa/verify-qa-deploy-source.sh
 
-      - name: Configure the QA-only SSH identity
-        shell: bash
-        env:
-          QA_SSH_KEY: ${{ secrets.QA_SSH_KEY }}
-        run: |
-          set -Eeuo pipefail
-          test -n "$QA_SSH_KEY"
-          install -d -m 0700 "$HOME/.ssh"
-          printf '%s\n' "$QA_SSH_KEY" > "$HOME/.ssh/id_ed25519"
-          chmod 0600 "$HOME/.ssh/id_ed25519"
-          printf '%s\n' "$QA_KNOWN_HOST" > "$HOME/.ssh/known_hosts"
-          chmod 0600 "$HOME/.ssh/known_hosts"
-
-      - name: Store the reviewed QA policy on the QA host
+      - name: Queue the bounded QA deployment request
         shell: bash
         env:
           RELEASE_ID: ${{ inputs.release_id }}
+          QA_REQUEST_SIGNING_KEY: ${{ secrets.QA_REQUEST_SIGNING_KEY }}
         run: |
           set -Eeuo pipefail
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            "$QA_USER@$QA_HOST" \
-            "sudo -n /usr/local/sbin/baseer-qa-approve-release '$RELEASE_ID' '$GITHUB_RUN_ID' '$GITHUB_SHA'"
-
-      - name: Deploy only the approved QA release
-        shell: bash
-        env:
-          RELEASE_ID: ${{ inputs.release_id }}
-        run: |
-          set -Eeuo pipefail
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            "$QA_USER@$QA_HOST" \
-            "sudo -n /usr/local/sbin/baseer-qa-deploy '$RELEASE_ID' '$GITHUB_RUN_ID'"
+          test -n "$QA_REQUEST_SIGNING_KEY"
+          request_tag="qa-release-${RELEASE_ID}-${GITHUB_RUN_ID}"
+          git config user.name 'baseer-qa-release-bot'
+          git config user.email 'baseer-qa-release-bot@users.noreply.github.com'
+          signing_key="$RUNNER_TEMP/qa-request-signing-key"
+          printf '%s\n' "$QA_REQUEST_SIGNING_KEY" > "$signing_key"
+          chmod 0600 "$signing_key"
+          git config gpg.format ssh
+          git config user.signingkey "$signing_key"
+          git tag --sign --message "Reviewed QA release request ${RELEASE_ID}" \
+            "$request_tag" "$GITHUB_SHA"
+          rm -f -- "$signing_key"
+          git push origin "refs/tags/$request_tag"
+          printf 'QA_REQUEST=QUEUED\nTAG=%s\n' "$request_tag"

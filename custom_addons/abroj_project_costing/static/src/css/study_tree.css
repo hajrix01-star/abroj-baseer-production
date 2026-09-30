@@ -1,8 +1,16 @@
+.o_abroj_study_tree_field {
+    display: block !important;
+    width: 100%;
+}
+
 .o_abroj_study_tree {
     --abroj-tree-accent: #80506f;
     --abroj-tree-rule: #dfe5e8;
     color: #26343d;
+    margin-inline: auto;
+    max-width: 1440px;
     padding: 4px 0 18px;
+    width: 100%;
 }
 
 .o_abroj_study_tree_header {

@@ -127,6 +127,7 @@ class TestAbrojStudyTree(TransactionCase):
             action['view_id'],
             self.env.ref('abroj_project_costing.view_abroj_plan_section_form').id,
         )
+        self.assertEqual(action['views'], [(action['view_id'], 'form')])
         section_view = self.env['ir.ui.view'].browse(action['view_id']).arch_db
         for field_name in ('parent_id', 'category_id', 'material_id', 'pricing_method', 'uom_type', 'quantity', 'supplier_id'):
             self.assertNotIn('name="%s"' % field_name, section_view)

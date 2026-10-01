@@ -6,7 +6,7 @@ from io import BytesIO, StringIO
 from zipfile import BadZipFile, ZipFile
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import AccessError, MissingError, UserError, ValidationError
 
 
 IMPORT_COLUMNS = (

@@ -292,7 +292,9 @@ class BaseerPrintJob(models.Model):
                 or order.company_id not in self.env.companies
                 or order.session_id.config_id != config):
             raise ValidationError(_('This order is not ready for an original Odoo customer receipt.'))
-        printer = config.baseer_receipt_printer_id
+        # Hardware metadata remains admin-only. The caller keeps its order
+        # access and company scope; elevate only the configured printer.
+        printer = config.baseer_receipt_printer_id.sudo()
         if (not printer or not printer.active or printer.paper_width != '80'
                 or not printer._allows_company(order.company_id)):
             raise ValidationError(_('The 80 mm receipt printer is not available for this company.'))

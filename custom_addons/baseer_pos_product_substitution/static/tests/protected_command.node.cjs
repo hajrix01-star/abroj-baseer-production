@@ -23,7 +23,7 @@ const context = {
 vm.runInNewContext(source + '\nglobalThis.helpers = { pendingKey, readPending, substitutionLock, isSubstitutionOutputLine };', context);
 const posMethods = patches.get(classes.PosStore.prototype);
 const orderMethods = patches.get(classes.PosOrder.prototype);
-const order = { id: 100, uuid: 'order-uuid', config_id: { id: 40 }, isSynced: true, baseer_protected_revision: 'revision-1' };
+const order = { id: 100, uuid: 'order-uuid', config_id: { id: 40 }, isSynced: true, baseer_protected_revision: 'revision-1', lines: [{ uuid: 'source' }] };
 const intent = { orderId: 100, orderUuid: order.uuid, kind: 'edit', action: { action_uuid: 'stable-id', source_line_uuid: 'source' }, expectedRevision: 'revision-1' };
 const key = context.helpers.pendingKey(order);
 function mockPos() {
@@ -31,6 +31,7 @@ function mockPos() {
         ...posMethods,
         env: { services: { ui: { block() {}, unblock() {} } } },
         notification: { add() {} }, dialog: { add() {} },
+        models: { 'pos.order': { getBy: () => order } },
         data: { network: { offline: false }, call: async () => ({ accepted: true, action_uuid: 'stable-id', data: {} }) },
         baseerReconcileProtectedState: async () => order,
     };
@@ -41,6 +42,24 @@ async function test(name, run) {
     console.log('PASS', name);
 }
 (async () => {
+    await test('printer recovery resumes without a repair dialog; unreachable server only warns', async () => {
+        const pos = mockPos(); const notices = [];
+        pos.dialog.add = () => { throw new Error('must not open a repair dialog'); };
+        pos.notification.add = message => notices.push(message);
+        const uncertain = { uiState: { baseerPreparationOutcomeUnknown: true } };
+        pos.baseerResolvePreparationOutcome = async () => true;
+        assert.equal(await pos.baseerResolvePendingKitchenAction(uncertain), true);
+        assert.equal(notices.length, 0);
+        pos.baseerResolvePreparationOutcome = async () => false;
+        assert.equal(await pos.baseerResolvePendingKitchenAction(uncertain), false);
+        assert.match(notices[0], /Reconnect to the server/);
+    });
+    await test('a line removed by canonical recovery cannot dispatch a stale protected action', async () => {
+        const pos = mockPos();
+        pos.models['pos.order'].getBy = () => ({ ...order, lines: [] });
+        pos.syncAllOrders = async () => { throw new Error('must not sync'); };
+        assert.equal(await pos.baseerSubmitProtectedAction({ order_id: order, uuid: 'source' }, 'cancel', {}), false);
+    });
     await test('pending intent blocks generic payment/autosync serialization', () => {
         storage.set(key, JSON.stringify(intent));
         assert.throws(() => orderMethods.serializeForORM.call(order), /previous edit/);
@@ -110,6 +129,22 @@ async function test(name, run) {
         assert.equal(await pos.baseerSubmitProtectedAction({ order_id: order, uuid: 'source' }, 'cancel', {}), false);
         assert.equal(calls, 0);
         assert.equal(storage.size, 0);
+    });
+    await test('two submissions awaiting the same kitchen recovery cannot replace the durable protected intent', async () => {
+        const pos = mockPos(); let release; let syncs = 0; let commands = 0;
+        const recovery = new Promise(resolve => { release = resolve; });
+        pos.baseerResolvePendingKitchenAction = () => recovery;
+        pos.syncAllOrders = async () => { syncs++; return [order]; };
+        pos.baseerExecuteProtectedIntent = async () => { commands++; return true; };
+        const line = { order_id: order, uuid: 'source' };
+        const first = pos.baseerSubmitProtectedAction(line, 'cancel', {});
+        const second = pos.baseerSubmitProtectedAction(line, 'cancel', {});
+        release(true);
+        const results = await Promise.all([first, second]);
+        assert.deepEqual(results, [true, false]);
+        assert.equal(syncs, 1);
+        assert.equal(commands, 1);
+        assert.equal(JSON.parse(storage.get(key)).action.source_line_uuid, 'source');
     });
     await test('accepted output lock survives disabling the feature', () => {
         const line = { uuid: 'replacement', order_id: { finalized: false }, baseer_substitution_minimum_quantity: 2 };

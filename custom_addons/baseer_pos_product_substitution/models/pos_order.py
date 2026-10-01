@@ -436,6 +436,11 @@ class PosOrder(models.Model):
 
     @api.model
     def _process_order(self, order, existing_order):
+        # This outer extension normally locks the order before calling the
+        # print bridge. Kitchen sync must share resolution's UUID-first order.
+        if order.get('baseer_preparation_action'):
+            preparation = self.env['baseer.print.preparation.state']._normalize_action(order['baseer_preparation_action'])
+            self.env['baseer.print.preparation.attempt']._lock_action(preparation['action_uuid'])
         order.pop('baseer_protected_revision', None)
         # Protected actions are commands, not metadata on ordinary save/payment.
         # Legacy clients may resend an acknowledged action, but must still run

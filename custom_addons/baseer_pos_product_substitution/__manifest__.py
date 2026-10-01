@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Product Substitution',
     'summary': 'Controlled product edits and cancellation records',
-    'version': '19.0.2.0.1',
+    'version': '19.0.2.0.2',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',

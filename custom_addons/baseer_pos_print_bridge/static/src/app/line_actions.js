@@ -135,6 +135,18 @@ patch(Orderline.prototype, {
 });
 
 patch(PosStore.prototype, {
+    async _baseerCurrentKitchenLine(line) {
+        const order = line?.order_id;
+        if (order?.uiState?.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order?.uuid)) {
+            if (!(await this.baseerResolvePreparationOutcome(order))) {
+                this.notification.add(_t("Reconnect to the server to check the pending kitchen action."), { type: "warning" });
+                return null;
+            }
+            const canonical = this.models["pos.order"].getBy("uuid", order.uuid);
+            return canonical?.lines.find((candidate) => candidate.uuid === line.uuid) || null;
+        }
+        return line;
+    },
     baseerCanManageLine(line) {
         const order = line?.order_id;
         return Boolean(
@@ -197,6 +209,7 @@ patch(PosStore.prototype, {
     },
 
     async _baseerRunSentLineAction(line, action) {
+        line = await this._baseerCurrentKitchenLine(line);
         const order = line?.order_id;
         if (!order) return false;
         if (order.uiState.baseerKitchenLineActionPending) {
@@ -208,13 +221,15 @@ patch(PosStore.prototype, {
         }
         order.uiState.baseerKitchenLineActionPending = true;
         try {
-            return await action();
+            return await action(line);
         } finally {
             delete order.uiState.baseerKitchenLineActionPending;
         }
     },
 
     async _baseerCommitSentLineQuantity(line, newQuantity, cancellation = null) {
+        line = await this._baseerCurrentKitchenLine(line);
+        if (!line) return false;
         const order = line.order_id;
         if (order.uiState.baseerPreparationAction) {
             this.notification.add(_t("The kitchen result is still unknown. Reconnect and check it before retrying."), { type: "warning" });
@@ -237,17 +252,20 @@ patch(PosStore.prototype, {
             return false;
         }
 
-        order.uiState.baseerPreparationAction = buildBaseerPreparationAction(order, "line_change", [{
+        const action = buildBaseerPreparationAction(order, "line_change", [{
             line_uuid: line.uuid,
             expected_quantity: expectedQuantity,
             new_quantity: Math.max(0, newQuantity - getBaseerSilentQuantity(line)),
             reason_code: cancellation?.reasonCode || "",
             reason_note: cancellation?.reasonNote || "",
         }]);
+        order.uiState.baseerPreparationAction = action;
+        const stillCurrent = () => order.uiState.baseerPreparationAction?.action_uuid === action.action_uuid;
 
         this.env.services.ui.block();
         try {
-            await this.sendOrderInPreparation(order, { byPassPrint: true });
+            const result = await this.sendOrderInPreparation(order, { byPassPrint: true });
+            if (result === false || !stillCurrent()) return false;
             if (newQuantity === 0 && line.order_id) {
                 order.removeOrderline(line);
             }
@@ -262,6 +280,7 @@ patch(PosStore.prototype, {
             }
             return true;
         } catch (error) {
+            if (!stillCurrent()) return false;
             if (error?.baseerPreparationOutcomeUnknown) {
                 this.notification.add(
                     _t("The kitchen result is still unknown. Reconnect and check it before retrying."),
@@ -279,17 +298,20 @@ patch(PosStore.prototype, {
             );
             return false;
         } finally {
-            if (!order.uiState.baseerPreparationOutcomeUnknown) {
+            if (!order.uiState.baseerPreparationOutcomeUnknown && stillCurrent()) {
                 delete order.uiState.baseerPreparationAction;
                 delete order.uiState.baseerPreparationPreviousChange;
             }
-            await this.data.synchronizeLocalDataInIndexedDB();
-            this.env.services.ui.unblock();
+            try {
+                await this.data.synchronizeLocalDataInIndexedDB();
+            } finally {
+                this.env.services.ui.unblock();
+            }
         }
     },
 
     async baseerCancelSentLine(line) {
-        return await this._baseerRunSentLineAction(line, async () => {
+        return await this._baseerRunSentLineAction(line, async (line) => {
             if (!this.baseerIsSentLine(line)) return false;
             const cancellation = await this._baseerAskLineCancellationReason();
             if (!cancellation) return false;
@@ -314,7 +336,7 @@ patch(PosStore.prototype, {
         if (newQuantity <= 0) {
             return await this.baseerCancelSentLine(line);
         }
-        return await this._baseerRunSentLineAction(line, async () => {
+        return await this._baseerRunSentLineAction(line, async (line) => {
             const sentQuantity = getBaseerSentQuantity(line.order_id, line);
             if (newQuantity === line.getQuantity()) return true;
             // Dropping only an unsent increment does not require a kitchen event.
@@ -327,6 +349,7 @@ patch(PosStore.prototype, {
     },
 
     async baseerOpenLineActions(line) {
+        line = await this._baseerCurrentKitchenLine(line);
         if (!this.baseerCanManageLine(line)) {
             return;
         }

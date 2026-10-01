@@ -238,10 +238,15 @@ class BaseerPrintPreparationEvent(models.Model):
         if not self.env.user.has_group('point_of_sale.group_pos_user'):
             raise AccessError(_('Only a Point of Sale user can inspect a kitchen action.'))
         action_uuid = self._canonical_uuid(action_uuid)
+        receipt = self.env['baseer.print.preparation.attempt']._for_action(action_uuid)
+        if receipt:
+            receipt._assert_identity(order_uuid)
+            if receipt.outcome == 'skipped':
+                return {'accepted': True, 'skipped': True, 'pending': False, 'failed': False, 'done': False, 'job_count': 0}
         events = self.sudo().search([('action_uuid', '=', action_uuid)])
         if not events:
-            return {'accepted': False, 'pending': False, 'failed': False, 'done': False}
-        orders = events.order_id
+            return {'accepted': bool(receipt), 'pending': False, 'failed': False, 'done': False}
+        orders = self.env['pos.order'].browse(events.order_id.ids)
         if len(orders) != 1 or not orders.exists():
             raise ValidationError(_('The kitchen action does not have one valid order.'))
         order = orders.ensure_one()

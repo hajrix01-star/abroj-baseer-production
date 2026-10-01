@@ -1,4 +1,23 @@
 # Translation of Odoo Server.
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
+msgid "Reconnect to the server to check the pending kitchen action."
+msgstr "أعد الاتصال بالنظام للتحقق من إرسال المطبخ المعلّق."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen printing failed. The order is saved and you can continue working."
+msgstr "تعذّرت طباعة المطبخ. الطلب محفوظ ويمكنك متابعة العمل."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen sending was skipped. You can continue working on this order."
+msgstr "تم تجاوز محاولة الإرسال إلى المطبخ. يمكنك متابعة العمل على الطلب."
+
 # This file contains the translation of the following modules:
 # 	* baseer_pos_print_bridge
 #

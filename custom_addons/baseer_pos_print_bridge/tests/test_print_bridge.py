@@ -1,4 +1,5 @@
 import base64
+import copy
 import io
 from urllib.parse import parse_qs, urlparse
 from datetime import timedelta
@@ -878,6 +879,134 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                 'reason_note': reason_note,
             }],
         }
+
+    def _recovery_payload(self, order, action):
+        return {
+            'uuid': order.uuid, 'state': 'draft', 'session_id': order.session_id.id,
+            'company_id': order.company_id.id, 'amount_tax': order.amount_tax,
+            'amount_total': order.amount_total, 'amount_paid': 0, 'amount_return': 0,
+            'baseer_preparation_action': copy.deepcopy(action),
+        }
+
+    def test_recovery_skip_retains_order_and_retires_late_payload(self):
+        self._enable()
+        order = self._order(5)
+        action = self._preparation_action(order, 0, 5)
+        before = (order.lines.qty, order.amount_total, order.state, order.write_date)
+        job_count = self.env['baseer.print.job'].search_count([])
+        result = order.baseer_resolve_preparation_action(action)
+        self.assertTrue(result['accepted'])
+        self.assertTrue(result['skipped'])
+        payload = self._recovery_payload(order, action)
+        payload['amount_total'] = 999
+        payload['lines'] = [Command.update(order.lines.id, {'qty': 99})]
+        self.assertEqual(self.env['pos.order']._process_order(payload, order), order.id)
+        self.assertEqual((order.lines.qty, order.amount_total, order.state, order.write_date), before)
+        self.assertEqual(self.env['baseer.print.job'].search_count([]), job_count)
+        self.assertFalse(self.env['baseer.print.preparation.event'].search([('action_uuid', '=', action['action_uuid'])]))
+
+    def test_recovery_tombstone_survives_draft_deletion_and_prevents_ghost_order(self):
+        self._enable()
+        order = self._order()
+        action = self._preparation_action(order, 0, 1)
+        payload = self._recovery_payload(order, action)
+        order.baseer_resolve_preparation_action(action)
+        receipt = self.env['baseer.print.preparation.attempt']._for_action(action['action_uuid'])
+        uuid = order.uuid
+        order.unlink()
+        receipt.invalidate_recordset()
+        self.assertFalse(receipt.order_id)
+        self.assertEqual(receipt.order_uuid, uuid)
+        with self.assertRaises(UserError):
+            self.env['pos.order']._process_order(payload, False)
+        self.assertFalse(self.env['pos.order'].search([('uuid', '=', uuid)]))
+
+    def test_recovery_accepted_without_routes_has_receipt_and_idempotent_replay(self):
+        self._enable()
+        order = self._order(5)
+        action = self._preparation_action(order, 0, 5)
+        result = self.env['pos.order']._process_order(self._recovery_payload(order, action), order)
+        self.assertEqual(result, order.id)
+        status = self.env['baseer.print.preparation.event'].baseer_action_status(action['action_uuid'], order.uuid)
+        self.assertTrue(status['accepted'])
+        self.assertFalse(status['pending'])
+        self.assertFalse(self.env['baseer.print.preparation.event'].search([('action_uuid', '=', action['action_uuid'])]))
+        receipt = self.env['baseer.print.preparation.attempt']._for_action(action['action_uuid'])
+        self.assertEqual(receipt.outcome, 'accepted')
+        payload = self._recovery_payload(order, action)
+        payload['amount_total'] = 999
+        self.env['pos.order']._process_order(payload, order)
+        self.assertEqual(order.amount_total, 50)
+
+    def test_recovery_of_accepted_legacy_event_never_reprints(self):
+        self._enable()
+        self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
+        order = self._order(5)
+        action = self._preparation_action(order, 0, 5)
+        self.env['baseer.print.preparation.state']._apply_action(order, action)
+        jobs = self.env['baseer.print.preparation.event']._retry_events(action).job_ids
+        result = order.baseer_resolve_preparation_action(action)
+        self.assertTrue(result['accepted'])
+        self.assertFalse(result.get('skipped'))
+        self.assertEqual(self.env['baseer.print.preparation.event']._retry_events(action).job_ids, jobs)
+
+    def test_recovery_receipt_rejects_fingerprint_order_and_company_reuse(self):
+        self._enable()
+        order = self._order()
+        action = self._preparation_action(order, 0, 1)
+        order.baseer_resolve_preparation_action(action)
+        changed = copy.deepcopy(action)
+        changed['lines'][0]['new_quantity'] = 2
+        with self.assertRaises(ValidationError):
+            order.baseer_resolve_preparation_action(changed)
+        other = self._order()
+        with self.assertRaises(AccessError):
+            other.baseer_resolve_preparation_action(action)
+        other_company = self.env['res.company'].create({'name': 'Recovery forbidden company'})
+        with self.assertRaises(AccessError):
+            self.env['baseer.print.preparation.event'].with_context(allowed_company_ids=[other_company.id]).baseer_action_status(action['action_uuid'], order.uuid)
+
+    def test_recovery_receipts_are_service_only_and_immutable(self):
+        self._enable()
+        order = self._order()
+        action = self._preparation_action(order, 0, 1)
+        order.baseer_resolve_preparation_action(action)
+        receipt = self.env['baseer.print.preparation.attempt']._for_action(action['action_uuid'])
+        with self.assertRaises(AccessError):
+            receipt.sudo().write({'outcome': 'accepted'})
+        with self.assertRaises(AccessError):
+            receipt.sudo().unlink()
+        with self.assertRaises(AccessError):
+            receipt.sudo().with_context(baseer_preparation_attempt_create=True).create({})
+
+    def test_recovery_rejects_paid_order_and_non_pos_user(self):
+        self._enable()
+        order = self._order()
+        action = self._preparation_action(order, 0, 1)
+        with self.assertRaises(AccessError):
+            order.with_user(self.env.ref('base.public_user')).baseer_resolve_preparation_action(action)
+        order.state = 'paid'
+        with self.assertRaises(AccessError):
+            order.baseer_resolve_preparation_action(action)
+
+    def test_recovery_legacy_status_respects_order_record_rules(self):
+        self._enable()
+        self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
+        order = self._order()
+        action = self._preparation_action(order, 0, 1)
+        self.env['baseer.print.preparation.state']._apply_action(order, action)
+        cashier = self.env['res.users'].create({
+            'name': 'Recovery record rule cashier', 'login': 'recovery-rule-cashier',
+            'group_ids': [Command.set([self.env.ref('point_of_sale.group_pos_user').id])],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        self.env['ir.rule'].create({
+            'name': 'Recovery QA deny order reading', 'model_id': self.env.ref('point_of_sale.model_pos_order').id,
+            'domain_force': "[('id', '=', -1)]", 'perm_read': True,
+            'perm_write': False, 'perm_create': False, 'perm_unlink': False,
+        })
+        with self.assertRaises(AccessError):
+            self.env['baseer.print.preparation.event'].with_user(cashier).baseer_action_status(action['action_uuid'], order.uuid)
 
     def test_preparation_event_records_new_quantity_five(self):
         self._enable()

@@ -6,7 +6,7 @@ from io import BytesIO, StringIO
 from zipfile import BadZipFile, ZipFile
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import AccessError, MissingError, UserError, ValidationError
 
 
 IMPORT_COLUMNS = (
@@ -327,11 +327,27 @@ class AbrojCostPlanImportWizard(models.TransientModel):
     def _download_action(wizard, filename):
         return {
             'type': 'ir.actions.act_url',
-            'url': '/web/content/?model=%s&id=%s&field=export_file&filename_field=export_filename&download=true' % (
-                wizard._name, wizard.id,
+            'url': '/abroj/costing/plan/export/%s?company_id=%s' % (
+                wizard.id, wizard.company_id.id,
             ),
-            'target': 'self',
+            'target': 'download',
         }
+
+    @api.model
+    def _export_download_record(self, wizard_id, company_id):
+        """Restore HTTP company context without bypassing access or ownership."""
+        if company_id not in self.env.user.company_ids.ids:
+            raise AccessError(_('لا تملك صلاحية الوصول إلى شركة الملف.'))
+        wizard = self.with_context(allowed_company_ids=[company_id]).browse(wizard_id).exists()
+        if not wizard:
+            raise MissingError(_('ملف التصدير غير موجود. أعد تصدير الدراسة.'))
+        wizard.check_access('read')
+        if wizard.create_uid.id != self.env.uid:
+            raise AccessError(_('يمكن لصاحب ملف التصدير فقط تنزيله.'))
+        wizard.project_id.check_access('read')
+        if not wizard.export_file:
+            raise MissingError(_('ملف التصدير غير موجود. أعد تصدير الدراسة.'))
+        return wizard
 
     def _template_workbook(self):
         try:

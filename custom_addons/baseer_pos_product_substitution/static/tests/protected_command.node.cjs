@@ -178,9 +178,63 @@ async function test(name, run) {
         pos.data.synchronizeLocalDataInIndexedDB = async () => sequence.push('persist');
         pos.removePendingOrder = () => sequence.push('remove-pending');
         await posMethods.baseerReconcileProtectedState.call(pos, { data: {
-            'pos.order': [{ uuid: order.uuid }], 'pos.order.line': [{ uuid: 'replacement' }],
+            'pos.order': [{ uuid: order.uuid }], 'pos.order.line': [{ uuid: 'replacement' }], 'pos.payment': [],
         } }, order.uuid);
         assert.deepEqual(sequence, ['delete-cache', 'delete-source', 'drain-commands', 'load-canonical', 'remove-pending', 'persist']);
         assert.equal(accepted.uiState.selected_orderline_uuid, 'replacement');
+    });
+    await test('canonical acknowledgement removes only stale payments from memory and IndexedDB before future sync', async () => {
+        const pos = mockPos(); const sequence = [];
+        const provisional = { uuid: 'provisional', delete: () => sequence.push('remove-provisional') };
+        const retained = { uuid: 'retained', delete: () => { throw new Error('must retain canonical payment'); } };
+        const local = { ...order, payment_ids: [provisional, retained] };
+        const accepted = { ...order, state: 'draft', uiState: {}, payment_ids: [retained] };
+        pos.models = {
+            'pos.order': { getBy: () => local, serializeForORM: () => sequence.push('drain-commands') },
+            loadConnectedData: () => { sequence.push('load-canonical'); return { 'pos.order': [accepted] }; },
+        };
+        pos.data.missingRecursive = async value => value;
+        pos.data.deleteRecordsInIndexedDB = async (model, ids) => sequence.push(model + ':' + ids[0]);
+        pos.data.synchronizeLocalDataInIndexedDB = async () => sequence.push('persist');
+        pos.removePendingOrder = () => {};
+        await posMethods.baseerReconcileProtectedState.call(pos, { data: {
+            'pos.order': [{ uuid: order.uuid }], 'pos.order.line': [{ uuid: 'source' }],
+            'pos.payment': [{ uuid: 'retained' }],
+        } }, order.uuid);
+        assert.deepEqual(sequence, ['pos.payment:provisional', 'remove-provisional', 'drain-commands', 'load-canonical', 'persist']);
+        assert.deepEqual(accepted.payment_ids, [retained]);
+    });
+    await test('incomplete canonical payment data never removes local tender', async () => {
+        const pos = mockPos();
+        pos.data.deleteRecordsInIndexedDB = () => { throw new Error('must not delete'); };
+        await assert.rejects(() => posMethods.baseerReconcileProtectedState.call(pos, { data: {
+            'pos.order': [{ uuid: order.uuid }], 'pos.order.line': [],
+        } }, order.uuid), /complete order/);
+    });
+    await test('electronic or terminal tender blocks editing before native sync or durable intent creation', async () => {
+        for (const marker of ['done', 'waiting', 'pending', 'terminal', 'qr_code', 'global']) {
+            const pos = mockPos(); let alerts = 0;
+            const local = { ...order, uiState: {}, payment_ids: [{
+                payment_status: ['done', 'waiting', 'pending'].includes(marker) ? marker : false,
+                payment_method_id: { payment_method_type: ['terminal', 'qr_code'].includes(marker) ? marker : 'none' },
+            }] };
+            pos.models['pos.order'].getBy = () => local;
+            pos.paymentTerminalInProgress = marker === 'global';
+            pos.dialog.add = () => alerts++;
+            pos.syncAllOrders = async () => { throw new Error('must not sync'); };
+            assert.equal(await posMethods.baseerSubmitProtectedAction.call(pos, { order_id: local, uuid: 'source' }, 'cancel', {}), false);
+            assert.equal(alerts, 1); assert.equal(storage.size, 0);
+        }
+    });
+    await test('manual tender after payment-screen return follows the existing edit submission', async () => {
+        const pos = mockPos(); let syncs = 0; let commands = 0;
+        const local = { ...order, uiState: {}, payment_ids: [{
+            amount: 100, payment_status: false, payment_method_id: { payment_method_type: 'none', use_payment_terminal: false },
+        }] };
+        pos.models['pos.order'].getBy = () => local;
+        pos.syncAllOrders = async () => { syncs++; return [local]; };
+        pos.baseerExecuteProtectedIntent = async () => { commands++; return true; };
+        assert.equal(await posMethods.baseerSubmitProtectedAction.call(pos, { order_id: local, uuid: 'source' }, 'edit', {}), true);
+        assert.equal(syncs, 1); assert.equal(commands, 1);
     });
 })().catch(error => { console.error(error); process.exitCode = 1; });

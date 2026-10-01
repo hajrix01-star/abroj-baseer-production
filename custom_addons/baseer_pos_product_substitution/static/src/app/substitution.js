@@ -197,14 +197,20 @@ patch(PosStore.prototype, {
     async baseerReconcileProtectedState(result, orderUuid) {
         const data = result.data;
         const rawOrder = data?.["pos.order"]?.find((item) => item.uuid === orderUuid);
-        if (!rawOrder || !Array.isArray(data["pos.order.line"])) throw new Error(_t("The server did not return the complete order. Check the result again."));
+        if (!rawOrder || !Array.isArray(data["pos.order.line"]) || !Array.isArray(data["pos.payment"])) throw new Error(_t("The server did not return the complete order. Check the result again."));
         const localOrder = this.models["pos.order"].getBy("uuid", orderUuid);
         const serverLineUuids = new Set(data["pos.order.line"].map((line) => line.uuid));
         const stale = [...(localOrder?.lines || [])].filter((line) => !serverLineUuids.has(line.uuid));
+        const serverPaymentUuids = new Set(data["pos.payment"].map((payment) => payment.uuid));
+        const stalePayments = [...(localOrder?.payment_ids || [])].filter((payment) => !serverPaymentUuids.has(payment.uuid));
         const complete = await this.data.missingRecursive(data);
         for (const line of stale) {
             await this.data.deleteRecordsInIndexedDB("pos.order.line", [line.uuid]);
             line.delete({ silent: true });
+        }
+        for (const payment of stalePayments) {
+            await this.data.deleteRecordsInIndexedDB("pos.payment", [payment.uuid]);
+            payment.delete({ silent: true });
         }
         // Native model deletion still records relation commands even when silent.
         // Drain those acknowledged commands BEFORE canonical loading, as Odoo's
@@ -280,6 +286,18 @@ patch(PosStore.prototype, {
         }
         if (this.data.network.offline) {
             this.dialog.add(AlertDialog, { title: _t("Connection required"), body: _t("Reconnect before editing or cancelling this item.") });
+            return false;
+        }
+        if (this.paymentTerminalInProgress || order.electronicPaymentInProgress?.()
+                || (order.payment_ids || []).some((payment) => payment.payment_status
+                    || payment.payment_method_id?.use_payment_terminal
+                    || payment.payment_method_id?.payment_terminal
+                    || (payment.payment_method_id?.payment_method_type
+                        && payment.payment_method_id.payment_method_type !== "none"))) {
+            this.dialog.add(AlertDialog, {
+                title: _t("Action requires verification"),
+                body: _t("Only an unpaid draft in an open session can be edited or cancelled."),
+            });
             return false;
         }
         this._baseerProtectedSubmissionRunning = true;

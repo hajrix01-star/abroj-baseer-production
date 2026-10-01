@@ -546,6 +546,70 @@ class CashierPurchaseBatchApprovalCase(TransactionCase):
             batch.with_user(cashier).action_approve()
         self._assert_no_batch_documents(batch)
 
+    def test_branch_manager_selects_payment_point_without_accounting_approval(self):
+        """Draft cash/bank selection is separate from posting and cash custody."""
+        cashier = self._cashier()
+        cash_account = self.env['account.account'].create({
+            'name': 'Branch picker cash',
+            'code': 'BPC%s' % uuid4().hex[:7].upper(),
+            'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company_a.ids)],
+        })
+        bank = self.env['account.journal'].create({
+            'name': 'Branch picker bank', 'code': 'BPC', 'type': 'bank',
+            'company_id': self.company_a.id, 'default_account_id': cash_account.id,
+        })
+        method = bank.outbound_payment_method_line_ids.filtered(
+            lambda item: item.code == 'manual'
+        )[:1]
+        self.assertTrue(method)
+        method.payment_account_id = cash_account
+        Line = self.env['baseer.purchase.batch.line'].with_user(cashier).with_context(
+            allowed_company_ids=[self.company_a.id],
+        )
+        choices = Line.payment_settlement_choices(self.company_a.id)
+        self.assertIn(method.id, {point['id'] for point in choices['payment_points']})
+        self.assertFalse(choices['representatives'])
+        self.assertFalse(choices['can_use_representative'])
+        self.assertTrue(all(set(point) == {'id', 'name'} for point in choices['payment_points']))
+        batch = self._draft_batch(cashier)
+        batch.line_ids.write({
+            'payment_source_type': 'payment_method', 'is_credit': False,
+            'payment_method_line_id': method.id,
+        })
+        self.assertEqual(batch.line_ids.payment_method_line_id, method)
+        self.assertFalse(batch.line_ids.payment_id)
+        for approval in (batch.action_approve, batch.action_cashier_approve):
+            with self.assertRaises(AccessError):
+                approval()
+        self._assert_no_batch_documents(batch)
+        with self.assertRaises(AccessError):
+            Line.payment_settlement_choices(self.env.ref('base.main_company').id)
+        with self.assertRaises(AccessError):
+            Line._baseer_source_values({
+                'payment_source_type': 'representative_petty_cash',
+                'representative_petty_cash_representative_id': self.supplier.id,
+            }, creating=True)
+        viewer = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Unprivileged settlement viewer', 'login': 'settlement-viewer-%s' % uuid4().hex,
+            'company_id': self.company_a.id, 'company_ids': [Command.set(self.company_a.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            Line.with_user(viewer).payment_settlement_choices(self.company_a.id)
+        viewer.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_cashier')
+        self.assertFalse(Line.with_user(viewer).check_access_rights('create', raise_exception=False))
+        with self.assertRaises(AccessError):
+            Line.with_user(viewer).payment_settlement_choices(self.company_a.id)
+        viewer.group_ids = [Command.set([
+            self.env.ref('base.group_user').id,
+            self.env.ref('account.group_account_invoice').id,
+        ])]
+        invoice_choices = Line.with_user(viewer).payment_settlement_choices(self.company_a.id)
+        self.assertIn(method.id, {point['id'] for point in invoice_choices['payment_points']})
+        self.assertFalse(invoice_choices['can_use_representative'])
+        self.assertFalse(invoice_choices['representatives'])
+
     def test_cbpa_t02_enabled_cashier_approves_only_own_active_company_batch_without_bill_access(self):
         cashier = self._cashier()
         batch = self._draft_batch(cashier)

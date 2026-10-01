@@ -1,11 +1,12 @@
 /** @odoo-module **/
 
-import { Component, onMounted, useState } from "@odoo/owl";
+import { Component, useEffect, useState } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
 // Share a request while identical picker cells mount together, but never keep
@@ -18,6 +19,10 @@ function relationId(value) {
         return value[0] || false;
     }
     return value?.id || value || false;
+}
+
+function relationName(value) {
+    return Array.isArray(value) ? value[1] || "" : value?.display_name || "";
 }
 
 function fetchChoices(orm, companyId) {
@@ -44,24 +49,18 @@ export class PaymentSettlementSelector extends Component {
         this.orm = useService("orm");
         this.state = useState({
             loading: true,
+            canChooseSettlement: false,
             choices: { payment_points: [], representatives: [], can_use_representative: false },
         });
         // Do not block a newly-created inline x2many record from rendering
         // while its presentation-only choices are fetched.  In particular,
         // the parent batch can be saved immediately before Odoo mounts the
         // new row, so this request belongs after the row is mounted.
-        onMounted(async () => {
-            const companyId = relationId(this.props.record.data.company_id);
-            if (!companyId) {
-                this.state.loading = false;
-                return;
-            }
-            try {
-                this.state.choices = await fetchChoices(this.orm, companyId);
-            } finally {
-                this.state.loading = false;
-            }
-        });
+        // Reading a saved settlement does not require the accountant-only
+        // choices RPC. Re-run when an accountant starts editing the row.
+        useEffect(() => {
+            this.refreshChoices();
+        }, () => [this.props.readonly, relationId(this.props.record.data.company_id)]);
     }
 
     get paymentMethodId() {
@@ -93,15 +92,22 @@ export class PaymentSettlementSelector extends Component {
             return _t("Choose a settlement method");
         }
         if (this.isRepresentativePettyCash) {
-            return this.selectedRepresentative?.name || _t("Purchasing representative");
+            return this.selectedRepresentative?.name
+                || relationName(this.props.record.data.representative_petty_cash_representative_id)
+                || _t("Purchasing representative");
         }
         if (this.props.record.data.payment_source_type === "credit") {
             return _t("Credit");
         }
-        return this.selectedPaymentPoint?.name || _t("Choose a settlement method");
+        return this.selectedPaymentPoint?.name
+            || relationName(this.props.record.data.payment_method_line_id)
+            || _t("Choose a settlement method");
     }
 
     get representativeBalance() {
+        if (this.props.readonly || !this.state.canChooseSettlement) {
+            return false;
+        }
         const amount = this.selectedRepresentative?.available_balance;
         if (amount === undefined) {
             return false;
@@ -111,12 +117,30 @@ export class PaymentSettlementSelector extends Component {
 
     async refreshChoices() {
         const companyId = relationId(this.props.record.data.company_id);
-        if (!companyId) {
+        this.state.canChooseSettlement = false;
+        if (this.props.readonly || !companyId) {
+            this.state.loading = false;
             return;
         }
         this.state.loading = true;
         try {
-            this.state.choices = await fetchChoices(this.orm, companyId);
+            // Match the server's choice capabilities without granting financial
+            // groups to branch managers who only submit purchase drafts.
+            const groups = await Promise.all([
+                user.hasGroup("baseer_procurement_requests.group_procurement_accountant"),
+                user.hasGroup("account.group_account_invoice"),
+                user.hasGroup("baseer_procurement_requests.group_procurement_cashier"),
+            ]);
+            if (!groups.some(Boolean) || this.props.readonly
+                    || companyId !== relationId(this.props.record.data.company_id)) {
+                return;
+            }
+            const choices = await fetchChoices(this.orm, companyId);
+            if (!this.props.readonly
+                    && companyId === relationId(this.props.record.data.company_id)) {
+                this.state.choices = choices;
+                this.state.canChooseSettlement = true;
+            }
         } finally {
             this.state.loading = false;
         }
@@ -130,6 +154,9 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async choosePaymentPoint(point) {
+        if (this.props.readonly || !this.state.canChooseSettlement) {
+            return;
+        }
         // A fresh invoice row already has this source.  When changing from
         // Credit or Representative Petty Cash, however, the replacement
         // source and its payment point must be saved together.  Saving the
@@ -151,9 +178,15 @@ export class PaymentSettlementSelector extends Component {
     }
 
     async chooseRepresentative(representative) {
+        if (this.props.readonly || !this.state.canChooseSettlement) {
+            return;
+        }
         // Refresh here as well: a funding or return may have been posted while
         // this draft batch remained open in the same browser session.
         await this.refreshChoices();
+        if (this.props.readonly || !this.state.canChooseSettlement) {
+            return;
+        }
         const currentRepresentative = this.state.choices.representatives.find(
             (item) => item.id === representative.id
         ) || representative;

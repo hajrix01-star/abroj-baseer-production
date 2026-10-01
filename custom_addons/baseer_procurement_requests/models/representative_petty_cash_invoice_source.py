@@ -283,7 +283,15 @@ class BaseerPurchaseBatchLine(models.Model):
         can_use_representative = self.env.user.has_group(
             'baseer_procurement_requests.group_procurement_accountant'
         )
-        if not (can_use_representative or self.env.user.has_group('account.group_account_invoice')):
+        # Branch operators already create company-scoped purchase drafts and
+        # can save their cash/bank selection. Listing those existing payment
+        # points must not require invoice-posting or representative-balance rights.
+        can_submit_draft = (
+            self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier')
+            and self.env['baseer.purchase.batch'].check_access_rights('create', raise_exception=False)
+        )
+        if not (can_use_representative or can_submit_draft
+                or self.env.user.has_group('account.group_account_invoice')):
             raise AccessError(_('Only an invoice accountant can choose an invoice settlement method.'))
         try:
             company_id = int(company_id)

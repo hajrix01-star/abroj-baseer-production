@@ -94,6 +94,12 @@ class TestAbrojMemberPermissions(TransactionCase):
 
     def test_view_member_can_read_project_and_children(self):
         self.assertTrue(self.project.with_user(self.viewer).read(['name']))
+        tree_view = self._as_user(self.viewer, 'abroj.cost.project').browse(
+            self.project.id,
+        ).get_study_tree_view_data()
+        self.assertEqual(tree_view['summary']['estimated_total'], 100)
+        self.assertEqual(tree_view['summary']['actual_total'], 50)
+        self.assertEqual(len(tree_view['lines']), 1)
         for model, child in self.children.items():
             with self.subTest(model=model):
                 Model = self._as_user(self.viewer, model)
@@ -203,6 +209,10 @@ class TestAbrojMemberPermissions(TransactionCase):
                 self.assertTrue(created.unlink())
         Project = self._as_user(self.owner, 'abroj.cost.project')
         unrelated = Project.create({'name': 'Unassigned project', 'agreement_amount': 1000})
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self._as_user(self.viewer, 'abroj.cost.project').browse(
+                unrelated.id,
+            ).get_study_tree_view_data()
         for model, values in self.child_values.items():
             with self.subTest(unassigned_model=model):
                 values = dict(values, project_id=unrelated.id)

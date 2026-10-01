@@ -350,7 +350,7 @@ class AbrojCostProject(models.Model):
             raise UserError(_('لا يمكن عرض أكثر من 500 بند في شجرة دراسة المشروع.'))
 
         fields_to_read = [
-            'name', 'description', 'node_kind', 'parent_id', 'category_id', 'quantity',
+            'name', 'description', 'node_kind', 'parent_id', 'category_id', 'quantity', 'uom_type',
             'estimated_total', 'actual_total', 'variance_amount', 'currency_id', 'sequence',
         ]
         rows_by_id = {row['id']: row for row in lines.read(fields_to_read)}
@@ -359,17 +359,33 @@ class AbrojCostProject(models.Model):
             children_by_parent[line.parent_id.id].append(line)
 
         result = []
+        unit_labels = dict(plan_model._fields['uom_type']._description_selection(self.env))
 
         def append_children(parent_id, prefix=''):
+            totals = defaultdict(float)
             siblings = children_by_parent.get(parent_id, self.env['abroj.cost.plan.line'])
             for index, line in enumerate(siblings, start=1):
                 tree_number = '%s.%s' % (prefix, index) if prefix else str(index)
                 row = dict(rows_by_id[line.id], tree_number=tree_number)
                 result.append(row)
-                append_children(line.id, tree_number)
+                children_totals = append_children(line.id, tree_number)
+                quantities = children_totals if row['node_kind'] == 'section' else {row['uom_type']: row['quantity']}
+                row['quantity_totals'] = [
+                    {'uom_type': unit, 'label': unit_labels.get(unit, _('بدون وحدة')), 'quantity': quantity}
+                    for unit, quantity in quantities.items()
+                ]
+                for unit, quantity in quantities.items():
+                    totals[unit] += quantity
+            return totals
 
         append_children(False)
         return result
+
+    def get_study_tree_view_data(self):
+        """Read the tree and authoritative project totals in one transaction."""
+        lines = self.get_study_tree_data()
+        summary = self.read(['currency_id', 'estimated_total', 'actual_total', 'variance_amount'])[0]
+        return {'lines': lines, 'summary': summary}
 
     def action_reorder_plan_section(self, source_id, target_id=False):
         """Move a section directly after another section, atomically.

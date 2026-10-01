@@ -20,6 +20,7 @@ export class AbrojStudyTree extends Component {
             error: false,
             nodes: [],
             flatNodes: [],
+            summary: {},
             expanded: {},
             draggedId: false,
             dropTargetId: false,
@@ -45,20 +46,23 @@ export class AbrojStudyTree extends Component {
             this.state.loading = false;
             this.state.error = false;
             this.state.nodes = [];
+            this.state.flatNodes = [];
+            this.state.summary = {};
             return;
         }
         this.state.loading = true;
         this.state.error = false;
         try {
-            const lines = await this.orm.call(
+            const { lines, summary } = await this.orm.call(
                 "abroj.cost.project",
-                "get_study_tree_data",
+                "get_study_tree_view_data",
                 [[projectId]]
             );
             const nodes = this.buildTree(lines);
             if (generation === this.loadGeneration) {
                 this.state.nodes = nodes;
                 this.state.flatNodes = lines;
+                this.state.summary = summary;
             }
         } catch (error) {
             console.error("ABROJ study tree could not load", error);
@@ -104,6 +108,26 @@ export class AbrojStudyTree extends Component {
             minimumFractionDigits: 2,
         }).format(value || 0);
         return currency ? `${amount} ${currency[1]}` : amount;
+    }
+
+    get totalQuantities() {
+        const totals = new Map();
+        for (const root of this.state.nodes) {
+            for (const quantity of root.quantity_totals || []) {
+                const previous = totals.get(quantity.uom_type);
+                totals.set(quantity.uom_type, {
+                    ...quantity,
+                    quantity: (previous?.quantity || 0) + quantity.quantity,
+                });
+            }
+        }
+        return [...totals.values()];
+    }
+
+    formatQuantities(totals) {
+        if (!totals?.length) return "0";
+        const formatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 });
+        return totals.map((total) => `${formatter.format(total.quantity)} ${total.label}`).join(" · ");
     }
 
     async openForm(context, resId = false) {
@@ -221,16 +245,20 @@ export class AbrojStudyTree extends Component {
     }
 
     async reorderSection(sourceId, targetId) {
+        const generation = this.loadGeneration;
+        const projectId = this.projectId;
         try {
             const lines = await this.orm.call(
                 "abroj.cost.project",
                 "action_reorder_plan_section",
-                [[this.projectId], sourceId, targetId || false]
+                [[projectId], sourceId, targetId || false]
             );
+            if (generation !== this.loadGeneration || projectId !== this.projectId) return;
             this.state.flatNodes = lines;
             this.state.nodes = this.buildTree(lines);
             this.notification.add("تم تحديث ترتيب الأقسام.", { type: "success" });
         } catch (error) {
+            if (generation !== this.loadGeneration || projectId !== this.projectId) return;
             console.error("ABROJ study tree reorder failed", error);
             this.notification.add(error?.data?.message || "تعذر تغيير ترتيب القسم.", { type: "danger" });
             await this.load();

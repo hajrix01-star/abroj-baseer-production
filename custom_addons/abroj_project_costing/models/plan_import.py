@@ -16,6 +16,23 @@ IMPORT_COLUMNS = (
     'path', 'node_kind',
 )
 LEGACY_IMPORT_COLUMNS = IMPORT_COLUMNS[:10]
+IMPORT_COLUMN_LABELS = {
+    'category': ('نوع العمل', 'Work Type'),
+    'name': ('اسم البند', 'Item Name'),
+    'pricing_method': ('طريقة التسعير', 'Pricing Method'),
+    'quantity': ('الكمية', 'Quantity'),
+    'material_unit_cost': ('سعر المادة للوحدة', 'Material Unit Cost'),
+    'auxiliary_unit_cost': ('المواد المساعدة للوحدة', 'Auxiliary Unit Cost'),
+    'labor_unit_cost': ('شغل اليد للوحدة', 'Labor Unit Cost'),
+    'inclusive_unit_cost': ('السعر الشامل للوحدة', 'Inclusive Unit Cost'),
+    'lump_sum_cost': ('قيمة المقطوعية', 'Lump Sum Cost'),
+    'notes': ('الملاحظات', 'Notes'),
+    'path': ('مسار البند', 'Item Path'),
+    'node_kind': ('نوع العقدة', 'Node Type'),
+}
+BILINGUAL_IMPORT_HEADERS = tuple(
+    '\n'.join(IMPORT_COLUMN_LABELS[column]) for column in IMPORT_COLUMNS
+)
 MAX_IMPORT_ROWS = 500
 MAX_IMPORT_SIZE = 5 * 1024 * 1024
 MAX_XLSX_UNCOMPRESSED_SIZE = 25 * 1024 * 1024
@@ -102,7 +119,22 @@ class AbrojCostPlanImportWizard(models.TransientModel):
 
     @staticmethod
     def _header_map(headers):
-        normalized = {str(name or '').strip().lower(): index for index, name in enumerate(headers)}
+        def normalize(value):
+            return ' '.join(str(value or '').split()).lower()
+
+        aliases = {column: column for column in IMPORT_COLUMNS}
+        for column, labels in IMPORT_COLUMN_LABELS.items():
+            for label in (*labels, '\n'.join(labels)):
+                aliases[normalize(label)] = column
+        normalized = {}
+        for index, name in enumerate(headers):
+            header = normalize(name)
+            column = aliases.get(header, header)
+            if column in IMPORT_COLUMNS and column in normalized:
+                raise ValidationError(_('الملف يحتوي عموداً مكرراً: %(column)s.') % {
+                    'column': IMPORT_COLUMN_LABELS[column][0],
+                })
+            normalized[column] = index
         # path/node_kind were added after the first released template.  Keep
         # accepting that flat template as root priced leaves.
         missing = [column for column in LEGACY_IMPORT_COLUMNS if column not in normalized]
@@ -352,54 +384,71 @@ class AbrojCostPlanImportWizard(models.TransientModel):
     def _template_workbook(self):
         try:
             from openpyxl import Workbook
-            from openpyxl.styles import Font
         except ImportError as error:
             raise UserError(_('لا تتوفر مكتبة إنشاء ملفات Excel في بيئة أودو.')) from error
         workbook = Workbook()
         plan_sheet = workbook.active
         plan_sheet.title = 'بنود الدراسة'
-        plan_sheet.append(IMPORT_COLUMNS)
+        plan_sheet.append(BILINGUAL_IMPORT_HEADERS)
         plan_sheet.append((
-            '', 'المطبخ', 'detailed', 0,
-            0, 0, 0, 0, 0, '', 'المطبخ', 'section',
+            '', 'المطبخ', 'تفصيلي', 0,
+            0, 0, 0, 0, 0, '', 'المطبخ', 'قسم',
         ))
         category = self.env['abroj.cost.category'].search([
             ('company_id', '=', self.project_id.company_id.id), ('active', '=', True),
         ], limit=1)
         if category:
             plan_sheet.append((
-                category.name, 'مثال بند', 'lump_sum', 1,
-                0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا', 'المطبخ/مثال بند', 'item',
+                category.name, 'مثال بند', 'مقطوعية', 1,
+                0, 0, 0, 0, 1500, 'اكتب ملاحظتك هنا', 'المطبخ/مثال بند', 'بند',
             ))
             # Keep the exact category name importable without allowing formulas.
             plan_sheet['A3'].data_type = 's'
-        for cell in plan_sheet[1]:
-            cell.font = Font(bold=True)
-        for column, width in {'A': 24, 'B': 32, 'C': 20, 'D': 12, 'E': 20, 'F': 22, 'G': 20, 'H': 22, 'I': 18, 'J': 36, 'K': 48, 'L': 18}.items():
-            plan_sheet.column_dimensions[column].width = width
+        self._format_plan_sheet(plan_sheet)
         instructions = workbook.create_sheet('التعليمات')
-        instructions.append((_('العمود'), _('الوصف')))
+        instructions.sheet_view.rightToLeft = True
+        instructions.append(('العمود\nColumn', 'الوصف\nDescription'))
         for row in [
-            ('category', _('اسم نوع عمل موجود في الشركة المختارة؛ مطلوب للبند المسعّر فقط. لن ينشئ النظام فئة أو مادة.')),
-            ('name', _('اسم بند الدراسة.')),
-            ('pricing_method', 'detailed / supply_only / labor_only / supply_install / lump_sum'),
-            ('quantity', _('كمية موجبة، ومنزلتان عشريتان كحد أقصى.')),
-            ('*_cost', _('سعر غير سالب ومنزلتان عشريتان كحد أقصى.')),
-            ('notes', _('اختياري.')),
-            ('path', _('اختياري للبند الجذري. للشجرة اكتب المسار كاملاً، وينتهي باسم هذا الصف، مثل المطبخ/سباكة/تمديدات.')),
-            ('node_kind', _('item لبند مسعّر أو section لقسم تجميعي. القسم لا يحتاج نوع عمل أو سعر.')),
+            (BILINGUAL_IMPORT_HEADERS[0], _('اسم نوع عمل موجود في الشركة المختارة؛ مطلوب للبند المسعّر فقط. لن ينشئ النظام فئة أو مادة.')),
+            (BILINGUAL_IMPORT_HEADERS[1], _('اسم بند الدراسة.')),
+            (BILINGUAL_IMPORT_HEADERS[2], ' / '.join(PRICING_METHOD_LABELS)),
+            (BILINGUAL_IMPORT_HEADERS[3], _('كمية موجبة، ومنزلتان عشريتان كحد أقصى.')),
+            ('الأسعار\nCosts', _('سعر غير سالب ومنزلتان عشريتان كحد أقصى.')),
+            (BILINGUAL_IMPORT_HEADERS[9], _('اختياري.')),
+            (BILINGUAL_IMPORT_HEADERS[10], _('اختياري للبند الجذري. للشجرة اكتب المسار كاملاً، وينتهي باسم هذا الصف، مثل المطبخ/سباكة/تمديدات.')),
+            (BILINGUAL_IMPORT_HEADERS[11], _('بند لبند مسعّر أو قسم لقسم تجميعي. القسم لا يحتاج نوع عمل أو سعر.')),
             (_('ترتيب الصفوف'), _('اكتب القسم الأب قبل أبنائه. ترتيب الصفوف يحدد ترتيب البنود داخل كل قسم.')),
             (_('الأمثلة'), _('عدّل أو احذف صفوف المثال قبل الاستيراد. إذا لم توجد فئات فعالة، أضف نوع عمل في النظام ثم أضف بنداً في الملف.')),
             (_('الدراسة الحالية'), _('الاستيراد إلى دراسة فارغة فقط؛ لا يحدث البنود الموجودة ولا يكررها.')),
         ]:
             instructions.append(row)
+        from openpyxl.styles import Alignment, Font
+        for row in instructions:
+            for cell in row:
+                cell.alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
         for cell in instructions[1]:
             cell.font = Font(bold=True)
-        instructions.column_dimensions['A'].width = 24
+        instructions.row_dimensions[1].height = 36
+        instructions.column_dimensions['A'].width = 28
         instructions.column_dimensions['B'].width = 90
         output = BytesIO()
         workbook.save(output)
         return output.getvalue()
+
+    @staticmethod
+    def _format_plan_sheet(sheet):
+        """Use the same bilingual, readable layout for template and export."""
+        from openpyxl.styles import Alignment, Font
+
+        sheet.sheet_view.rightToLeft = True
+        sheet.freeze_panes = 'A2'
+        sheet.auto_filter.ref = sheet.dimensions
+        sheet.row_dimensions[1].height = 36
+        for cell in sheet[1]:
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        for column, width in {'A': 24, 'B': 32, 'C': 24, 'D': 12, 'E': 24, 'F': 24, 'G': 24, 'H': 24, 'I': 22, 'J': 36, 'K': 48, 'L': 18}.items():
+            sheet.column_dimensions[column].width = width
 
     def action_download_template(self):
         self.ensure_one()
@@ -415,28 +464,27 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         self._ensure_project_scope()
         try:
             from openpyxl import Workbook
-            from openpyxl.styles import Font
         except ImportError as error:
             raise UserError(_('لا تتوفر مكتبة إنشاء ملفات Excel في بيئة أودو.')) from error
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = 'بنود الدراسة'
-        sheet.append(IMPORT_COLUMNS)
-        for cell in sheet[1]:
-            cell.font = Font(bold=True)
+        sheet.append(BILINGUAL_IMPORT_HEADERS)
+        pricing_labels = {value: label for label, value in PRICING_METHOD_LABELS.items()}
         # Share the UI's authoritative depth-first order, including dragged sections.
         ordered_ids = [row['id'] for row in self.project_id.get_study_tree_data()]
         for line in self.env['abroj.cost.plan.line'].browse(ordered_ids):
             sheet.append((
                 self._safe_excel_text(line.category_id.name if line.category_id else ''),
                 self._safe_excel_text(line.name),
-                line.pricing_method,
+                pricing_labels[line.pricing_method],
                 line.quantity, line.material_unit_cost, line.auxiliary_unit_cost,
                 line.labor_unit_cost, line.inclusive_unit_cost, line.lump_sum_cost,
                 self._safe_excel_text(line.notes),
                 self._safe_excel_text(self._plan_path(line)),
-                line.node_kind,
+                'قسم' if line.node_kind == 'section' else 'بند',
             ))
+        self._format_plan_sheet(sheet)
         output = BytesIO()
         workbook.save(output)
         filename = 'abroj_cost_plan_%s.xlsx' % (self.project_id.name or self.project_id.id)

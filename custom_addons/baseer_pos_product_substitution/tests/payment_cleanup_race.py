@@ -6,11 +6,13 @@ waits for its row lock. These fixtures remain exclusively in the test clone.
 import threading
 import time
 
-from odoo import api, SUPERUSER_ID
+from odoo import api, tools, SUPERUSER_ID
 from odoo.exceptions import AccessError
 from odoo.addons.baseer_pos_product_substitution.tests.test_substitution import TestBaseerPosProductSubstitution
 
 assert env.cr.dbname == 'baseer_prc_latest_qa_test_20261001', 'Test clone only'
+# Match TransactionCase: native Odoo blocks opening a register as uid=1 outside test mode.
+tools.config['test_enable'] = True
 env.cr.rollback()
 env = api.Environment(env.cr, SUPERUSER_ID, dict(env.context))
 registry = env.registry

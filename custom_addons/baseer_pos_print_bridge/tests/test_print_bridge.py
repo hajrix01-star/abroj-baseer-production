@@ -891,7 +891,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
     def _recovery_order(self, quantity=1):
         order = self._order(quantity)
         if order.session_id.state == 'opening_control':
-            order.session_id.action_pos_session_open()
+            order.session_id.set_opening_control(0, 'Kitchen recovery QA')
         return order
 
     def test_recovery_skip_retains_order_and_retires_late_payload(self):

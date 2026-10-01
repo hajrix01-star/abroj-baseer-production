@@ -656,6 +656,98 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         Image.new('RGB', size, color).save(output, format='JPEG')
         return base64.b64encode(output.getvalue()).decode('ascii')
 
+    def _native_receipt_cashier(self):
+        values = {
+            'name': 'Receipt access cashier', 'login': 'receipt-cashier-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        }
+        if 'baseer_access_role' in self.env['res.users']._fields:
+            values['baseer_access_role'] = 'pos_cashier'
+        else:
+            values['group_ids'] = [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])]
+        return self.env['res.users'].with_context(no_reset_password=True).create(values)
+
+    def _cashier_native_receipt_order(self, state='paid'):
+        self.company.country_id = self.env.ref('base.us')
+        self._enable()
+        self.config.baseer_native_receipt_enabled = True
+        cashier = self._native_receipt_cashier()
+        order = self._order()
+        order.write({'state': state, 'user_id': cashier.id, 'amount_paid': order.amount_total})
+        return cashier, order
+
+    def test_native_cashier_receipt_without_hardware_access_is_idempotent(self):
+        cashier, order = self._cashier_native_receipt_order()
+        self.assertFalse(cashier.has_group('base.group_system'))
+        self.assertFalse(self.receipt.with_user(cashier).has_access('read'))
+        financial = order.read(['state', 'amount_paid', 'amount_total', 'amount_tax',
+                                'amount_return', 'payment_ids', 'account_move'])[0]
+        image = self._native_receipt_sample()
+        scoped = order.with_user(cashier).with_context(allowed_company_ids=self.company.ids)
+        first = scoped.baseer_enqueue_native_receipt(image)
+        second = scoped.baseer_enqueue_native_receipt(image)
+        self.assertEqual(first['job_id'], second['job_id'])
+        job = self.env['baseer.print.job'].browse(first['job_id'])
+        self.assertEqual(job.printer_id, self.receipt)
+        self.assertEqual(job.create_uid, cashier)
+        self.assertEqual(job.payload['schema'], 4)
+        self.assertEqual(job.state, 'pending')
+        self.assertEqual(order.nb_print, 1)
+        self.assertEqual(order.read(list(financial.keys() - {'id'}))[0], financial)
+        self.assertFalse(self.receipt.with_user(cashier).has_access('read'))
+        self.assertFalse(self.agent.with_user(cashier).has_access('read'))
+        with self.assertRaises(ValidationError):
+            scoped.baseer_enqueue_native_receipt(self._native_receipt_sample('black'))
+
+    def test_native_cashier_receipt_cannot_use_another_company(self):
+        cashier, order = self._cashier_native_receipt_order()
+        other = self.env['res.company'].create({'name': 'Receipt foreign active company'})
+        cashier.company_ids = [Command.set((self.company | other).ids)]
+        with self.assertRaises(AccessError):
+            order.with_user(cashier).with_context(allowed_company_ids=other.ids).baseer_enqueue_native_receipt(
+                self._native_receipt_sample())
+        self.assertFalse(order.nb_print)
+        self.assertFalse(self.env['baseer.print.job'].search([('source_order_id', '=', order.id)]))
+
+    def test_native_cashier_receipt_rejects_unapproved_hardware(self):
+        cashier, order = self._cashier_native_receipt_order()
+        other = self.env['res.company'].create({'name': 'Receipt hardware foreign company'})
+        self.agent.allowed_company_ids = [Command.set((self.company | other).ids)]
+        self.receipt.allowed_company_ids = [Command.set(other.ids)]
+        with self.assertRaisesRegex(ValidationError, 'not available'):
+            order.with_user(cashier).baseer_enqueue_native_receipt(self._native_receipt_sample())
+        self.assertFalse(order.nb_print)
+
+    def test_native_cashier_receipt_rejects_non_pos_and_draft(self):
+        cashier, order = self._cashier_native_receipt_order(state='draft')
+        with self.assertRaises(ValidationError):
+            order.with_user(cashier).baseer_enqueue_native_receipt(self._native_receipt_sample())
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Receipt non POS user', 'login': 'receipt-non-pos-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set(self.env.ref('base.group_user').ids)],
+        })
+        order.state = 'paid'
+        with self.assertRaises(AccessError):
+            order.with_user(user).baseer_enqueue_native_receipt(self._native_receipt_sample())
+        self.assertFalse(order.nb_print)
+
+    def test_native_cashier_receipt_cannot_recapture_or_reprint(self):
+        cashier, order = self._cashier_native_receipt_order()
+        image = self._native_receipt_sample()
+        result = order.with_user(cashier).baseer_enqueue_native_receipt(image)
+        job = self.env['baseer.print.job'].browse(result['job_id'])
+        with self.assertRaises(AccessError):
+            job.with_user(cashier).action_reprint()
+        job.write({'state': 'done', 'receipt_image': False,
+                   'receipt_image_purged_at': fields.Datetime.now()})
+        with self.assertRaisesRegex(AccessError, 'manager'):
+            order.with_user(cashier).baseer_enqueue_native_receipt(image)
+        self.assertEqual(self.env['baseer.print.job'].search_count([('source_order_id', '=', order.id)]), 1)
+
     def test_tall_native_receipt_survives_attachment_storage_and_fresh_claim(self):
         self._enable()
         self.config.baseer_native_receipt_enabled = True

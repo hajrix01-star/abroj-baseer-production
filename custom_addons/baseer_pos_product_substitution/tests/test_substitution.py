@@ -7,12 +7,15 @@ from odoo.tests.common import TransactionCase, tagged
 
 @tagged('post_install', '-at_install')
 class TestBaseerPosProductSubstitution(TransactionCase):
-    def _protected_order(self, *, enabled=False):
-        config = self.env['pos.config'].create({
+    def _protected_order(self, *, enabled=False, payment_method_ids=None):
+        config_values = {
             'name': 'PPS controlled register',
             'company_id': self.env.company.id,
             'baseer_substitution_enabled': enabled,
-        })
+        }
+        if payment_method_ids is not None:
+            config_values['payment_method_ids'] = [Command.set(payment_method_ids)]
+        config = self.env['pos.config'].create(config_values)
         config.open_ui()
         # A freshly opened POS test session can still be in opening control.
         # The protected-substitution workflow is intentionally available only
@@ -385,8 +388,8 @@ class TestBaseerPosProductSubstitution(TransactionCase):
                 'reason_code': '', 'reason_note': '',
             })
 
-    def _atomic_edit_fixture(self):
-        config, order, replacement = self._protected_order(enabled=True)
+    def _atomic_edit_fixture(self, **config_options):
+        config, order, replacement = self._protected_order(enabled=True, **config_options)
         replacement.product_tmpl_id.write({'taxes_id': [Command.clear()]})
         action = {
             'action_uuid': str(uuid4()), 'source_line_uuid': order.lines.uuid,
@@ -573,16 +576,18 @@ class TestBaseerPosProductSubstitution(TransactionCase):
                 self.assertEqual(len(event.source_snapshot['cleared_provisional_payments']), 2)
 
     def test_manual_bank_tender_can_be_cleared_by_an_accepted_edit(self):
-        config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
         journal = self.env['account.journal'].search([
-            ('company_id', '=', order.company_id.id), ('type', '=', 'bank')], limit=1)
+            ('company_id', '=', self.env.company.id), ('type', '=', 'bank')], limit=1)
         self.assertTrue(journal)
         method = self.env['pos.payment.method'].create({
-            'name': 'PPS manual bank', 'company_id': order.company_id.id,
+            'name': 'PPS manual bank', 'company_id': self.env.company.id,
             'journal_id': journal.id, 'payment_method_type': 'none',
         })
-        config.write({'payment_method_ids': [Command.link(method.id)]})
-        payment.write({'payment_method_id': method.id})
+        _config, order, _replacement, action = self._atomic_edit_fixture(payment_method_ids=method.ids)
+        payment = self.env['pos.payment'].create({
+            'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': 10,
+        })
+        order._compute_prices()
         self.assertEqual(method.type, 'bank')
         order.baseer_apply_protected_action('edit', action, order._baseer_revision())
         self.assertFalse(payment.exists())

@@ -8,7 +8,7 @@
     --abroj-tree-rule: #dfe5e8;
     color: #26343d;
     margin-inline: auto;
-    max-width: 1440px;
+    max-width: none;
     padding: 4px 0 18px;
     width: 100%;
 }
@@ -38,7 +38,7 @@
     border-bottom: 1px solid var(--abroj-tree-rule);
     display: grid;
     gap: 12px;
-    grid-template-columns: minmax(260px, 1fr) repeat(4, minmax(105px, .3fr)) minmax(185px, auto);
+    grid-template-columns: minmax(220px, 1fr) minmax(200px, 1fr) repeat(4, minmax(95px, .35fr)) minmax(260px, auto);
     min-height: 58px;
     padding: 8px 10px;
     padding-inline-start: calc(10px + var(--abroj-tree-level) * 24px);
@@ -73,6 +73,9 @@
 .o_abroj_tree_name_button strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .o_abroj_tree_number { color: var(--abroj-tree-accent); font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 .o_abroj_tree_kind { color: #73808a; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.o_abroj_study_tree_description { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.o_abroj_tree_description_label { color: #73808a; font-size: 11px; }
+.o_abroj_tree_description_text { overflow-wrap: anywhere; white-space: pre-line; }
 .o_abroj_study_tree_metric { display: flex; flex-direction: column; gap: 1px; }
 .o_abroj_study_tree_metric span { color: #73808a; font-size: 11px; }
 .o_abroj_study_tree_metric strong { font-variant-numeric: tabular-nums; font-weight: 650; }
@@ -81,11 +84,17 @@
 .o_abroj_tree_actions .btn { white-space: nowrap; }
 .o_abroj_tree_move, .o_abroj_tree_delete { min-width: 34px; }
 
+@media (max-width: 1199px) {
+    .o_abroj_study_tree_row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .o_abroj_study_tree_name, .o_abroj_study_tree_description { grid-column: span 2; }
+    .o_abroj_tree_actions { grid-column: 1 / -1; }
+}
+
 @media (max-width: 767px) {
     .o_abroj_study_tree_header { align-items: stretch; flex-direction: column; gap: 12px; }
     .o_abroj_study_tree_header .btn { min-height: 44px; }
-    .o_abroj_study_tree_row { gap: 8px; grid-template-columns: minmax(0, 1fr) repeat(2, 72px); padding-inline-start: calc(6px + var(--abroj-tree-level) * 14px); }
-    .o_abroj_study_tree_metric:nth-of-type(5) { display: none; }
+    .o_abroj_study_tree_row { gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline-start: calc(6px + var(--abroj-tree-level) * 14px); }
+    .o_abroj_study_tree_name, .o_abroj_study_tree_description { grid-column: 1 / -1; }
     .o_abroj_tree_actions { grid-column: 1 / -1; justify-content: stretch; }
     .o_abroj_tree_actions .btn { flex: 1 1 auto; min-height: 40px; }
 }

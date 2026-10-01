@@ -105,6 +105,23 @@ class TestAbrojStudyTree(TransactionCase):
         self.assertFalse(legacy.parent_id)
         self.assertEqual(project.estimated_total, 150)
 
+    def test_tree_returns_saved_descriptions_without_changing_rollups(self):
+        project = self._project()
+        section = self._section(project, 'المطبخ')
+        description = 'أعمال المطبخ كاملة\nالكهرباء والسباكة <حسب المخطط>'
+        section.write({'description': description})
+        leaf = self._item(project, 'تمديدات كهرباء', section, 200)
+        leaf.write({'description': 'تمديد الكيبل داخل الجدار'})
+        empty = self._section(project, 'الصالة')
+
+        rows = {row['id']: row for row in project.get_study_tree_data()}
+        self.assertEqual(rows[section.id]['description'], description)
+        self.assertEqual(rows[leaf.id]['description'], leaf.description)
+        self.assertFalse(rows[empty.id]['description'])
+        self.assertEqual(rows[section.id]['estimated_total'], 200)
+        self.assertEqual(project.estimated_total, 200)
+        self.assertEqual(leaf.parent_id, section)
+
     def test_new_line_amounts_use_company_currency_before_project_default_resolves(self):
         draft_section = self.env['abroj.cost.plan.line'].with_company(self.company).new({
             'node_kind': 'section',

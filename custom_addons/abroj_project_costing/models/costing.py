@@ -350,7 +350,7 @@ class AbrojCostProject(models.Model):
             raise UserError(_('لا يمكن عرض أكثر من 500 بند في شجرة دراسة المشروع.'))
 
         fields_to_read = [
-            'name', 'node_kind', 'parent_id', 'category_id', 'quantity',
+            'name', 'description', 'node_kind', 'parent_id', 'category_id', 'quantity',
             'estimated_total', 'actual_total', 'variance_amount', 'currency_id', 'sequence',
         ]
         rows_by_id = {row['id']: row for row in lines.read(fields_to_read)}

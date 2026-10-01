@@ -42,6 +42,10 @@
                         <strong t-esc="node.name"/>
                     </button>
                 </div>
+                <div class="o_abroj_study_tree_description">
+                    <span class="o_abroj_tree_description_label">الوصف</span>
+                    <span class="o_abroj_tree_description_text" t-esc="node.description || '—'"/>
+                </div>
                 <div class="o_abroj_study_tree_metric"><span>الكمية</span><strong t-esc="node.quantity || 0"/></div>
                 <div class="o_abroj_study_tree_metric"><span>المتوقع</span><strong t-esc="formatAmount(node.estimated_total, node.currency_id)"/></div>
                 <div class="o_abroj_study_tree_metric"><span>الفعلي</span><strong t-esc="formatAmount(node.actual_total, node.currency_id)"/></div>

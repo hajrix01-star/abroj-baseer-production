@@ -322,3 +322,10 @@ msgstr "تأكيد التعديل"
 #: model:ir.module.module,summary:base.module_baseer_pos_product_substitution
 msgid "Controlled product edits and cancellation records"
 msgstr "يوثق تعديل الأصناف المحمية وإلغاءها بأسباب واضحة."
+
+#. module: baseer_pos_product_substitution
+#. odoo-javascript
+#: code:addons/baseer_pos_product_substitution/static/src/app/substitution.js:0
+#: code:addons/baseer_pos_product_substitution/models/pos_order.py:0
+msgid "Only an unpaid draft in an open session can be edited or cancelled."
+msgstr "يمكن تعديل الأصناف أو إلغاؤها في طلب مسودة غير مؤكد الدفع ضمن جلسة مفتوحة فقط."

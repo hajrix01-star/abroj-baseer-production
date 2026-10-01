@@ -487,6 +487,194 @@ class TestBaseerPosProductSubstitution(TransactionCase):
         self.assertEqual(order.state, 'draft')
         self.assertEqual(len(order.lines), 1)
 
+    def _manual_draft_payment_fixture(self, *, cashier=False, amount=10):
+        config, order, replacement, action = self._atomic_edit_fixture()
+        method = config.payment_method_ids.filtered(
+            lambda row: row.type in ('cash', 'bank')
+            and row.payment_method_type == 'none' and not row.use_payment_terminal
+            and not row._is_online_payment())[:1]
+        self.assertTrue(method)
+        payment = self.env['pos.payment'].create({
+            'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': amount,
+        })
+        order._compute_prices()
+        if cashier:
+            values = {
+                'name': 'PPS cashier payment draft', 'login': 'pps-payment-' + str(uuid4()),
+                'company_id': order.company_id.id, 'company_ids': [Command.set(order.company_id.ids)],
+                'group_ids': [Command.set((self.env.ref('base.group_user')
+                                          | self.env.ref('point_of_sale.group_pos_user')).ids)],
+            }
+            if 'baseer_access_role' in self.env['res.users']._fields:
+                values.update(baseer_access_role='pos_cashier', baseer_restrict_pos_history=True)
+            user = self.env['res.users'].create(values)
+            order.user_id = user
+            order = order.with_user(user).with_context(allowed_company_ids=order.company_id.ids)
+        return config, order, replacement, action, payment
+
+    def test_cashier_can_edit_draft_with_provisional_payment(self):
+        _config, order, replacement, action, payment = self._manual_draft_payment_fixture(cashier=True)
+        self.assertFalse(order.env.user.has_group('base.group_system'))
+        moves = self.env['account.move'].search_count([])
+        payment_uuid = payment.uuid
+        revision = order._baseer_revision()
+        quote = order.baseer_quote_protected_action('edit', action, revision)
+        self.assertTrue(quote['valid'])
+        self.assertTrue(payment.exists(), 'A quotation must not remove provisional tender')
+        result = order.baseer_apply_protected_action('edit', action, revision)
+        self.assertTrue(result['accepted'])
+        self.assertEqual(order.state, 'draft')
+        self.assertEqual(order.lines.product_id, replacement)
+        self.assertFalse(payment.exists())
+        self.assertFalse(order.payment_ids)
+        self.assertEqual(order.amount_paid, 0)
+        self.assertEqual(order.amount_return, 0)
+        self.assertEqual(order.amount_total, 10)
+        self.assertEqual(result['data']['pos.payment'], [])
+        self.assertEqual(self.env['account.move'].search_count([]), moves)
+        event = self.env['baseer.pos.substitution'].search([('order_id', '=', order.id)])
+        self.assertEqual(event.cashier_id, order.env.user)
+        self.assertEqual(event.source_snapshot['cleared_provisional_payments'][0]['amount'], 10)
+        self.assertEqual(event.source_snapshot['cleared_provisional_payments'][0]['uuid'], payment_uuid)
+        # The standard payment step remains available after the protected edit.
+        order.sudo().add_payment({
+            'pos_order_id': order.id, 'payment_method_id': _config.payment_method_ids.filtered(
+                lambda row: row.type in ('cash', 'bank') and row.payment_method_type == 'none')[:1].id,
+            'amount': order.amount_total,
+        })
+        order.action_pos_order_paid()
+        self.assertEqual(order.state, 'paid')
+        self.assertEqual(order.amount_paid, 10)
+        self.assertFalse(order.account_move)
+        self.assertEqual(self.env['account.move'].search_count([]), moves)
+
+    def test_cancel_after_return_clears_only_provisional_tender_and_reprices(self):
+        _config, order, _replacement, _action, payment = self._manual_draft_payment_fixture(cashier=True)
+        action = {'action_uuid': str(uuid4()), 'source_line_uuid': order.lines.uuid,
+                  'reason_code': 'wrong_order', 'reason_note': ''}
+        result = order.baseer_apply_protected_action('cancel', action, order._baseer_revision())
+        self.assertTrue(result['accepted'])
+        self.assertEqual(order.state, 'cancel')
+        self.assertFalse(payment.exists())
+        self.assertEqual((order.amount_total, order.amount_paid, order.amount_return), (0, 0, 0))
+
+    def test_zero_partial_and_multiple_manual_payment_drafts_can_be_edited(self):
+        for amount in (0, 3, 10):
+            with self.subTest(amount=amount):
+                config, order, _replacement, action, payment = self._manual_draft_payment_fixture(amount=amount)
+                self.env['pos.payment'].create({
+                    'pos_order_id': order.id, 'payment_method_id': payment.payment_method_id.id, 'amount': 2,
+                })
+                order._compute_prices()
+                order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+                self.assertFalse(order.payment_ids)
+                self.assertEqual(order.amount_paid, 0)
+                event = self.env['baseer.pos.substitution'].search([('order_id', '=', order.id)])
+                self.assertEqual(len(event.source_snapshot['cleared_provisional_payments']), 2)
+
+    def test_provisional_payment_is_preserved_by_stale_and_invalid_edit(self):
+        _config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+        with self.assertRaises(ValidationError):
+            order.baseer_apply_protected_action('edit', action, 'stale-revision')
+        self.assertTrue(payment.exists())
+        self.assertEqual(order.amount_paid, 10)
+        bad = dict(action, replacements=[dict(action['replacements'][0], quantity=2)])
+        with self.assertRaises(ValidationError):
+            order.baseer_apply_protected_action('edit', bad, order._baseer_revision())
+        self.assertTrue(payment.exists())
+        self.assertEqual(order.lines.uuid, action['source_line_uuid'])
+
+    def test_provisional_payment_cleanup_rolls_back_if_audit_creation_fails(self):
+        from unittest.mock import patch
+        _config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+        before = (order.amount_total, order.amount_paid, order.lines.uuid)
+        with patch.object(type(self.env['baseer.pos.substitution']), 'create',
+                          side_effect=ValidationError('Audit unavailable')):
+            with self.assertRaises(ValidationError):
+                order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+        order.invalidate_recordset()
+        self.assertTrue(payment.exists())
+        self.assertEqual((order.amount_total, order.amount_paid, order.lines.uuid), before)
+
+    def test_retry_of_edit_does_not_remove_a_new_payment(self):
+        _config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+        method = payment.payment_method_id
+        revision = order._baseer_revision()
+        order.baseer_apply_protected_action('edit', action, revision)
+        later = self.env['pos.payment'].create({
+            'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': 10,
+        })
+        order._compute_prices()
+        result = order.baseer_apply_protected_action('edit', action, revision)
+        self.assertTrue(result['accepted'])
+        self.assertTrue(later.exists())
+        self.assertEqual(order.payment_ids, later)
+        self.assertEqual(order.amount_paid, 10)
+
+    def test_confirmed_or_uncertain_payment_metadata_prevents_cleanup(self):
+        for values in (
+            {'payment_status': 'done'}, {'payment_status': 'waiting'}, {'payment_status': 'pending'},
+            {'payment_status': 'retry'}, {'payment_status': 'unknown'},
+            {'transaction_id': 'captured'}, {'payment_ref_no': 'reference'}, {'ticket': 'receipt'},
+            {'card_type': 'DEBIT'}, {'card_brand': 'brand'}, {'card_no': '1234'},
+            {'cardholder_name': 'Card Holder'}, {'payment_method_authcode': 'auth'},
+            {'payment_method_issuer_bank': 'issuer'}, {'payment_method_payment_mode': 'online'},
+            {'is_change': True}, {'amount': -1},
+        ):
+            with self.subTest(values=values):
+                _config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+                payment.write(values)
+                order._compute_prices()
+                with self.assertRaises(AccessError):
+                    order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+                self.assertTrue(payment.exists())
+                self.assertEqual(order.lines.uuid, action['source_line_uuid'])
+
+    def test_electronic_method_and_online_hook_prevent_provisional_cleanup(self):
+        from unittest.mock import patch
+        for kind in ('terminal', 'qr_code', 'online'):
+            with self.subTest(kind=kind):
+                _config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+                if kind != 'online':
+                    # Direct SQL avoids unrelated provider setup while exercising the
+                    # actual server-side integration discriminator.
+                    self.env.cr.execute(
+                        'UPDATE pos_payment_method SET payment_method_type=%s WHERE id=%s',
+                        [kind, payment.payment_method_id.id])
+                    payment.payment_method_id.invalidate_recordset()
+                    with self.assertRaises(AccessError):
+                        order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+                    self.env.cr.execute(
+                        "UPDATE pos_payment_method SET payment_method_type='none' WHERE id=%s",
+                        [payment.payment_method_id.id])
+                    payment.payment_method_id.invalidate_recordset()
+                else:
+                    with patch.object(type(payment.payment_method_id), '_is_online_payment', return_value=True):
+                        with self.assertRaises(AccessError):
+                            order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+                self.assertTrue(payment.exists())
+
+    def test_payment_accounting_or_order_completion_blocks_cleanup(self):
+        for change in ('order_move', 'payment_move', 'paid', 'closed', 'inconsistent_paid'):
+            with self.subTest(change=change):
+                config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+                if change in ('order_move', 'payment_move'):
+                    journal = self.env['account.journal'].search([
+                        ('company_id', '=', order.company_id.id), ('type', '=', 'general')], limit=1)
+                    move = self.env['account.move'].create({'journal_id': journal.id})
+                    (order if change == 'order_move' else payment).write(
+                        {'account_move' if change == 'order_move' else 'account_move_id': move.id})
+                elif change == 'paid':
+                    order.write({'state': 'paid'})
+                elif change == 'closed':
+                    config.current_session_id.write({'state': 'closing_control'})
+                else:
+                    order.write({'amount_paid': 99})
+                with self.assertRaises(AccessError):
+                    order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+                self.assertTrue(payment.exists())
+
+
     def test_new_command_rejects_paid_order_and_existing_payment(self):
         _config, order, _replacement, action = self._atomic_edit_fixture()
         order.write({'state': 'paid'})
@@ -499,6 +687,7 @@ class TestBaseerPosProductSubstitution(TransactionCase):
         self.assertTrue(method, 'The POS test fixture needs an active payment method.')
         self.env['pos.payment'].create({
             'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': 1,
+            'payment_status': 'done',
         })
         with self.assertRaises(AccessError):
             order.baseer_apply_protected_action('edit', action, order._baseer_revision())

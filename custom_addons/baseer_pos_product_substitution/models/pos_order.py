@@ -56,6 +56,11 @@ class PosOrder(models.Model):
         if self.company_id not in self.env.companies:
             raise AccessError(_('This order does not belong to an allowed company.'))
         self.env['baseer.print.preparation.state']._lock_order_state(self)
+        # Terminal callbacks may update a payment without touching its order.
+        # Read/revision/cleanup must share a stable, ordered payment snapshot.
+        self.env.cr.execute(
+            'SELECT id FROM pos_payment WHERE pos_order_id = %s ORDER BY id FOR UPDATE',
+            [self.id])
         self.invalidate_recordset()
         self.lines.invalidate_recordset()
         self.payment_ids.invalidate_recordset()
@@ -86,11 +91,12 @@ class PosOrder(models.Model):
         return self._baseer_command_result(accepted=False)
 
     def _baseer_validate_new_command(self, action, expected_revision):
-        if (self.state != 'draft' or self.payment_ids or self.is_refund
-                or self.amount_paid or self.amount_return
+        if (self.state != 'draft' or self.is_refund or self.account_move or self.session_move_id
+                or not self.currency_id.is_zero(self.amount_return)
                 or self.session_id.state != 'opened'
                 or not self.config_id.baseer_substitution_enabled):
             raise AccessError(_('Only an unpaid draft in an open session can be edited or cancelled.'))
+        self._baseer_assert_provisional_payments()
         if not expected_revision or expected_revision != self._baseer_revision():
             raise ValidationError(_('The order changed on another device. Refresh it before trying again.'))
         source = self.lines.filtered(lambda line: line.uuid == action['source_line_uuid'])
@@ -99,6 +105,23 @@ class PosOrder(models.Model):
         if source.uuid in self._baseer_substitution_locked_snapshots(self):
             raise AccessError(_('An accepted replacement cannot be edited or cancelled again.'))
         return source
+
+    def _baseer_assert_provisional_payments(self):
+        """A manual tender on a draft is not a validated or electronic payment."""
+        evidence_fields = (
+            'payment_status', 'account_move_id', 'transaction_id', 'payment_ref_no',
+            'ticket', 'card_type', 'card_brand', 'card_no', 'cardholder_name',
+            'payment_method_authcode', 'payment_method_issuer_bank', 'payment_method_payment_mode',
+        )
+        for payment in self.payment_ids:
+            method = payment.payment_method_id
+            if (method.type not in ('cash', 'bank') or method.payment_method_type != 'none'
+                    or method.use_payment_terminal or method._is_online_payment()
+                    or payment.is_change or payment.amount < 0
+                    or any(payment[field] for field in evidence_fields)):
+                raise AccessError(_('Only an unpaid draft in an open session can be edited or cancelled.'))
+        if self.currency_id.compare_amounts(self.amount_paid, self._compute_amount_paid()) != 0:
+            raise AccessError(_('Only an unpaid draft in an open session can be edited or cancelled.'))
 
     def _baseer_quote_replacements(self, source, action):
         requested = action['replacements']
@@ -175,6 +198,14 @@ class PosOrder(models.Model):
             if kind == 'edit' and not self.currency_id.is_zero(
                     sum(row[4]['total_included'] for row in quote) - snapshot['gross']):
                 raise ValidationError(_('Replacement products must equal the protected item total exactly.'))
+            if self.payment_ids:
+                snapshot['cleared_provisional_payments'] = [{
+                    'id': payment.id, 'uuid': payment.uuid,
+                    'payment_method_id': payment.payment_method_id.id, 'amount': payment.amount,
+                } for payment in self.payment_ids.sorted('id')]
+                # Only after full validation, in this command's savepoint. Native
+                # _compute_prices below recomputes paid/return and the new total.
+                self.payment_ids.unlink()
             protected = self.with_context(baseer_protected_command=_PROTECTED_COMMAND_TOKEN)
             prepared = self.env['baseer.print.preparation.state'].sudo().search([
                 ('order_id', '=', self.id), ('line_uuid', '=', source.uuid)])

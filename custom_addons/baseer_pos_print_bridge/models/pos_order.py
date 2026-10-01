@@ -85,6 +85,9 @@ class PosOrder(models.Model):
         State._lock_order_state(self)
         self.invalidate_recordset()
         State._assert_order_can_prepare(self)
+        self.session_id.invalidate_recordset(['state'])
+        if self.session_id.state not in ('opened', 'closing_control'):
+            raise AccessError(_('The point of sale session is not active.'))
         receipt = Attempt._for_action(action['action_uuid'])
         if receipt:
             receipt._assert_identity(self.uuid, session_id=self.session_id.id, order=self, action=action)

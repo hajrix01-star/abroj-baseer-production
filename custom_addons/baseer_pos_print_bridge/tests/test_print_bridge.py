@@ -888,9 +888,15 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             'baseer_preparation_action': copy.deepcopy(action),
         }
 
+    def _recovery_order(self, quantity=1):
+        order = self._order(quantity)
+        if order.session_id.state == 'opening_control':
+            order.session_id.action_pos_session_open()
+        return order
+
     def test_recovery_skip_retains_order_and_retires_late_payload(self):
         self._enable()
-        order = self._order(5)
+        order = self._recovery_order(5)
         action = self._preparation_action(order, 0, 5)
         before = (order.lines.qty, order.amount_total, order.state, order.write_date)
         job_count = self.env['baseer.print.job'].search_count([])
@@ -907,7 +913,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_recovery_tombstone_survives_draft_deletion_and_prevents_ghost_order(self):
         self._enable()
-        order = self._order()
+        order = self._recovery_order()
         action = self._preparation_action(order, 0, 1)
         payload = self._recovery_payload(order, action)
         order.baseer_resolve_preparation_action(action)
@@ -923,7 +929,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_recovery_accepted_without_routes_has_receipt_and_idempotent_replay(self):
         self._enable()
-        order = self._order(5)
+        order = self._recovery_order(5)
         action = self._preparation_action(order, 0, 5)
         result = self.env['pos.order']._process_order(self._recovery_payload(order, action), order)
         self.assertEqual(result, order.id)
@@ -941,7 +947,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
     def test_recovery_of_accepted_legacy_event_never_reprints(self):
         self._enable()
         self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
-        order = self._order(5)
+        order = self._recovery_order(5)
         action = self._preparation_action(order, 0, 5)
         self.env['baseer.print.preparation.state']._apply_action(order, action)
         jobs = self.env['baseer.print.preparation.event']._retry_events(action).job_ids
@@ -952,14 +958,14 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_recovery_receipt_rejects_fingerprint_order_and_company_reuse(self):
         self._enable()
-        order = self._order()
+        order = self._recovery_order()
         action = self._preparation_action(order, 0, 1)
         order.baseer_resolve_preparation_action(action)
         changed = copy.deepcopy(action)
         changed['lines'][0]['new_quantity'] = 2
         with self.assertRaises(ValidationError):
             order.baseer_resolve_preparation_action(changed)
-        other = self._order()
+        other = self._recovery_order()
         with self.assertRaises(AccessError):
             other.baseer_resolve_preparation_action(action)
         other_company = self.env['res.company'].create({'name': 'Recovery forbidden company'})
@@ -968,7 +974,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_recovery_receipts_are_service_only_and_immutable(self):
         self._enable()
-        order = self._order()
+        order = self._recovery_order()
         action = self._preparation_action(order, 0, 1)
         order.baseer_resolve_preparation_action(action)
         receipt = self.env['baseer.print.preparation.attempt']._for_action(action['action_uuid'])
@@ -981,7 +987,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_recovery_rejects_paid_order_and_non_pos_user(self):
         self._enable()
-        order = self._order()
+        order = self._recovery_order()
         action = self._preparation_action(order, 0, 1)
         with self.assertRaises(AccessError):
             order.with_user(self.env.ref('base.public_user')).baseer_resolve_preparation_action(action)
@@ -992,7 +998,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
     def test_recovery_legacy_status_respects_order_record_rules(self):
         self._enable()
         self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
-        order = self._order()
+        order = self._recovery_order()
         action = self._preparation_action(order, 0, 1)
         self.env['baseer.print.preparation.state']._apply_action(order, action)
         cashier = self.env['res.users'].create({

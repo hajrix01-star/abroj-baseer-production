@@ -663,6 +663,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         }
         if 'baseer_access_role' in self.env['res.users']._fields:
             values['baseer_access_role'] = 'pos_cashier'
+            values['baseer_restrict_pos_history'] = True
         else:
             values['group_ids'] = [Command.set([
                 self.env.ref('base.group_user').id,

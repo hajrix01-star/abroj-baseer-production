@@ -103,3 +103,64 @@ or operational record deletion.
 - Named release `baseer-2026-10-01-google-runtime-recovery` pins PR128 merged
   source and exactly `baseer_google_business,baseer_google_ads`. No module
   application code changed; upgrade runs existing reviewed source only.
+
+## Production closeout
+
+- Policy PR129 merged as `295aafc505589cf13e6705a052fea1df53273e30`, with
+  source-integrity run36903897294 passing 11/11 tests. Independent reviewer
+  issued GO for policy/bootstrap/deploy, subject to actual-runtime acceptance.
+- Windows archive export initially contained CRLF; the pre-install blob check
+  rejected it before any wrapper replacement. Canonical archive generated with
+  `git -c core.autocrlf=false archive` has SHA256
+  `66caccc7261f96b91d87c926f5f5ef84a60ba8520b2095bd6125f659cc5f4260`.
+  Extracted Git blobs match `83418949a5fa0099ca16040b272c77dca96c838f`
+  (deploy) and `79026e4ab24163b3e32ff20b8408975d6565bc42` (rehearsal).
+- Reviewed root wrapper bootstrap: `/usr/local/sbin/baseer-production-deploy`
+  is root:root:750, SHA256
+  `bb6fab2746816b0c28d6732aba5292da68f6da2b1edf274a1a134ba2bd366613`.
+  Previous root:root:600 wrapper and checksums are retained under
+  `/etc/baseer-production/bootstrap-recovery/google-runtime-84121624/`,
+  previous SHA256
+  `0eae97e5b568bab1eec58008aa9d80abaa7f25e9d45c996d9900f6e6d49a4811`.
+  The reviewed recovery rehearsal helper is retained there as well; runtime
+  module-only deployment intentionally does not rewrite release operations files.
+- Approval Action36904108514: first attempt timed out reaching public SSH before
+  touching server policy; rerun succeeded. No firewall or SSH configuration
+  changed. Deploy Action36904728327 succeeded in 46s; server receipt `LIVE=GO`.
+- Actual release:
+  `/srv/abroj-baseer-production/releases/84121624ee49-run-36904728327-20261001T180936Z`.
+  Consistent recovery pair:
+  `/srv/abroj-baseer-production/backups/pre-84121624ee49-36904728327-20261001T180936Z`.
+  Both recovery SHA256 checks passed and protected before/after fingerprints
+  match exactly. HTTPS login HTTP200.
+- Source receipt: 31/31 Google files match canonical reviewed artifact SHA256
+  `68fb6880ba5d9a23bfb63dfb68352e0ce24ee8e2495de85f5f855c415a3806b2`.
+  `abroj_project_costing` source is byte-for-byte unchanged from the previous
+  LIVE release. No project/accounting/POS source or protected business change.
+- Actual Odoo process contains the original 8 Google settings; PostgreSQL
+  contains none. All four stored credentials decrypt, all four OAuth calls
+  return HTTP200 and all four bounded provider reads return HTTP200. Both GBP
+  connections have `writer_enabled=false` and effective writer disallowed.
+- One native manager-authorized, company-scoped read sync per connection
+  committed Google reporting snapshots only. Business syncs completed at
+  18:13:41/18:13:49 UTC, Ads at 18:13:50/18:14:08 UTC on 2026-10-01.
+  Review count 1191→1195; campaign-day facts 68→70; 38 detail datasets retained.
+  No Google write action, credential rotation, new connection, or company move.
+
+## Remaining report limitations / acceptance boundary
+
+Runtime connection recovery is GO. Native Ads detailed sync is partial: for
+company1, 16 datasets available, 1 no-data, 2 query_failed; for company2,
+13 available, 1 limited, 4 no-data, 1 query_failed. `recent_changes` failed for
+both accounts and `conversion_performance` for company1. These are separate
+provider-query/reporting failures, not failed OAuth or missing runtime settings;
+their exact query rejection reason and first failing version are not proven.
+Existing last-good snapshots are preserved by the native dataset savepoint.
+Do not represent all detailed reports as successfully refreshed. Repairing
+these queries is outside this runtime-only release.
+
+No new OAuth connect/discovery UI or automatic scheduled synchronization was
+added. The Ads dashboard refresh still rereads stored reports; native connection
+form sync is the provider-refresh path. This release restores the four existing
+connections for their original two companies, not a new Google connection for
+other companies. No browser visual verification claimed.

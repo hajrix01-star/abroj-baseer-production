@@ -572,6 +572,22 @@ class TestBaseerPosProductSubstitution(TransactionCase):
                 event = self.env['baseer.pos.substitution'].search([('order_id', '=', order.id)])
                 self.assertEqual(len(event.source_snapshot['cleared_provisional_payments']), 2)
 
+    def test_manual_bank_tender_can_be_cleared_by_an_accepted_edit(self):
+        config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', order.company_id.id), ('type', '=', 'bank')], limit=1)
+        self.assertTrue(journal)
+        method = self.env['pos.payment.method'].create({
+            'name': 'PPS manual bank', 'company_id': order.company_id.id,
+            'journal_id': journal.id, 'payment_method_type': 'none',
+        })
+        config.write({'payment_method_ids': [Command.link(method.id)]})
+        payment.write({'payment_method_id': method.id})
+        self.assertEqual(method.type, 'bank')
+        order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+        self.assertFalse(payment.exists())
+        self.assertEqual(order.amount_paid, 0)
+
     def test_provisional_payment_is_preserved_by_stale_and_invalid_edit(self):
         _config, order, _replacement, action, payment = self._manual_draft_payment_fixture()
         with self.assertRaises(ValidationError):

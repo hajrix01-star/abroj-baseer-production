@@ -5,6 +5,9 @@
         <field name="model">pos.config</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_config_kanban"/>
         <field name="arch" type="xml">
+            <xpath expr="//t[@t-name='menu']" position="attributes">
+                <attribute name="groups">!baseer_access_roles.group_pos_cashier</attribute>
+            </xpath>
             <xpath expr="//kanban" position="inside">
                 <field name="baseer_cashier_history_hidden"/>
             </xpath>

@@ -2,7 +2,7 @@
     'category': 'Baseer/Platform',
     'name': 'Baseer Ready Access Roles',
     'summary': 'Ready access roles for owners, accountants and branch managers',
-    'version': '19.0.1.0.19',
+    'version': '19.0.1.0.20',
     'license': 'LGPL-3',
     'depends': ['baseer_service_seed', 'baseer_pos_summary', 'sale_management', 'purchase', 'baseer_payroll', 'baseer_procurement_requests'],
     'data': [

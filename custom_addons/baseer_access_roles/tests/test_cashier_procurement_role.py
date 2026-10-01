@@ -1,6 +1,8 @@
 from uuid import uuid4
 from unittest.mock import patch
 
+from lxml import etree
+
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase
@@ -270,11 +272,32 @@ class CashierProcurementRoleCase(TransactionCase):
         self.assertEqual(result, {'ordersInfo': [], 'totalCount': 0})
         native_search.assert_not_called()
 
-    def test_cpr_t01d_pos_cashier_dashboard_hides_the_orders_link(self):
-        """The POS-card menu must not expose its backend orders route."""
-        view = self.env.ref('baseer_access_roles.view_pos_config_kanban_cashier_orders')
-        self.assertEqual(view.arch_db.count('baseer_cashier_history_hidden'), 4)
-        self.assertNotIn('groups="!baseer_access_roles.group_pos_cashier"', view.arch_db)
+    def test_cpr_t01d_pos_cashier_dashboard_hides_the_whole_menu(self):
+        """No menu template means no three-dot trigger in native KanbanRecord."""
+        company = self.env.company
+        view_id = self.env.ref('point_of_sale.view_pos_config_kanban').id
+        for role in ('pos_cashier', 'cashier', 'accountant', 'owner'):
+            user = self.env['res.users'].with_context(no_reset_password=True).create({
+                'name': 'POS dashboard %s' % role,
+                'login': 'pos-dashboard-%s-%s' % (role, uuid4().hex),
+                'company_id': company.id,
+                'company_ids': [Command.set(company.ids)],
+                'baseer_access_role': role,
+            })
+            session_access = self.env['pos.session'].with_user(user).check_access('read')
+            for restrict_history in (False, True):
+                with self.subTest(role=role, restrict_history=restrict_history):
+                    user.baseer_restrict_pos_history = restrict_history
+                    view = self.env['pos.config'].with_user(user).get_view(
+                        view_id=view_id, view_type='kanban',
+                    )
+                    arch = etree.fromstring(view['arch'].encode())
+                    self.assertEqual(bool(arch.xpath("//t[@t-name='menu']")), role != 'pos_cashier')
+                    self.assertTrue(arch.xpath("//t[@t-name='card']//button[@name='open_ui']"))
+                    self.assertTrue(arch.xpath("//t[@t-name='card']//button[@name='open_existing_session_cb']"))
+                    self.assertEqual(
+                        self.env['pos.session'].with_user(user).check_access('read'), session_access,
+                    )
 
     def test_cpr_t01a_cashier_sees_only_curated_navigation(self):
         """BASSER replaces native roots when installed; otherwise preserve legacy paths."""

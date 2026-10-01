@@ -36,6 +36,9 @@ class TestAbrojPlanExportHttp(HttpCase):
             'name': 'Export HTTP category', 'company_id': cls.company.id,
         })
         cls.project = cls.owner_env['abroj.cost.project'].create({'name': 'Export HTTP project'})
+        cls.owner_env['abroj.cost.project.member'].create({
+            'project_id': cls.project.id, 'user_id': cls.other.id, 'access_level': 'view',
+        })
         cls.line = cls.owner_env['abroj.cost.plan.line'].create({
             'project_id': cls.project.id, 'category_id': cls.category.id,
             'name': 'HTTP study item', 'quantity': 3,
@@ -62,6 +65,8 @@ class TestAbrojPlanExportHttp(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('attachment', response.headers['Content-Disposition'])
         self.assertIn('spreadsheetml.sheet', response.headers['Content-Type'])
+        self.assertIn('private', response.headers['Cache-Control'])
+        self.assertNotIn('public', response.headers['Cache-Control'])
         workbook = load_workbook(BytesIO(response.content))
         self.assertEqual(workbook.active['B2'].value, 'HTTP study item')
         self.assertEqual(self.line.quantity, 3)
@@ -82,6 +87,7 @@ class TestAbrojPlanExportHttp(HttpCase):
 
     def test_download_rejects_other_user_company_tampering_and_missing_file(self):
         wizard, url = self._export()
+        self.project.with_user(self.other).check_access('read')
         self.authenticate(self.other.login, 'export-http-test')
         self.assertEqual(self.url_open(url).status_code, 404)
         self._authenticate_owner()
@@ -98,3 +104,10 @@ class TestAbrojPlanExportHttp(HttpCase):
         self.assertEqual(self.url_open(url).status_code, 404)
         self.opener.cookies.clear()
         self.assertNotEqual(self.url_open(url, allow_redirects=False).status_code, 200)
+
+    def test_download_rechecks_project_access_after_export(self):
+        wizard, url = self._export()
+        self._authenticate_owner()
+        self.project.with_user(self.env.user).write({'owner_id': self.other.id})
+        wizard.check_access('read')
+        self.assertEqual(self.url_open(url).status_code, 404)

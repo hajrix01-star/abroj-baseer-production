@@ -342,6 +342,8 @@ class AbrojCostPlanImportWizard(models.TransientModel):
         if not wizard:
             raise MissingError(_('ملف التصدير غير موجود. أعد تصدير الدراسة.'))
         wizard.check_access('read')
+        if wizard.create_uid.id != self.env.uid:
+            raise AccessError(_('يمكن لصاحب ملف التصدير فقط تنزيله.'))
         wizard.project_id.check_access('read')
         if not wizard.export_file:
             raise MissingError(_('ملف التصدير غير موجود. أعد تصدير الدراسة.'))

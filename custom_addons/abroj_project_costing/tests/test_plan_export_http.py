@@ -35,7 +35,9 @@ class TestAbrojPlanExportHttp(HttpCase):
         cls.category = cls.env['abroj.cost.category'].with_company(cls.company).create({
             'name': 'Export HTTP category', 'company_id': cls.company.id,
         })
-        cls.project = cls.owner_env['abroj.cost.project'].create({'name': 'Export HTTP project'})
+        cls.project = cls.owner_env['abroj.cost.project'].create({
+            'name': 'Export HTTP project', 'agreement_amount': 10000,
+        })
         cls.owner_env['abroj.cost.project.member'].create({
             'project_id': cls.project.id, 'user_id': cls.other.id, 'access_level': 'view',
         })

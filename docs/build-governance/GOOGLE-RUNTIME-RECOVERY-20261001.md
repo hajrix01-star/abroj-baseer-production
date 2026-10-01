@@ -88,3 +88,18 @@ or operational record deletion.
 - Capacity: initial available 2,256,532 KiB versus protected deployment
   requirement 2,692,248 KiB (plus source staging). Keep the safety threshold;
   inspect recoverable unused image cache before any service interruption.
+- Source: frozen `faff5534d7a9cd0f70fcc5dc303fb9e033b6d6b0`, merged via
+  PR128 as `84121624ee4958f5c56617dd372abfa36ddaaa59`. GitHub source-integrity
+  run36903624022 passed all 11 focused tests and six changed-source checks.
+  Independent review: CONDITIONAL GO with runtime/parent/Compose evidence,
+  named two-module policy, protected previous-wrapper recovery copy and final
+  actual-process/provider checks as release conditions.
+- Capacity remediation: removed only unused cached official PostgreSQL image
+  `sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3`.
+  No container references it; registry manifest was verified before removal,
+  so it is recoverable by digest. No volume, DB, backup or application source
+  deleted. Available space became 2,812,884 KiB; deployment still enforces its
+  original capacity threshold before stopping Odoo.
+- Named release `baseer-2026-10-01-google-runtime-recovery` pins PR128 merged
+  source and exactly `baseer_google_business,baseer_google_ads`. No module
+  application code changed; upgrade runs existing reviewed source only.

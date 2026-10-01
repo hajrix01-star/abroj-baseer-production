@@ -122,6 +122,70 @@ class TestAbrojStudyTree(TransactionCase):
         self.assertEqual(project.estimated_total, 200)
         self.assertEqual(leaf.parent_id, section)
 
+    def test_section_display_quantity_sums_leaves_without_pricing_the_parent(self):
+        project = self._project()
+        section = self._section(project, 'الأثاث')
+        for index, (quantity, amount) in enumerate(zip([8, 4, 2, 8, 5, 3], [5600, 2800, 3000, 5600, 1250, 2100])):
+            leaf = self._item(project, 'أثاث %s' % index, section, amount)
+            leaf.write({'quantity': quantity})
+
+        row = project.get_study_tree_data()[0]
+        self.assertEqual(row['quantity_totals'], [{'uom_type': False, 'label': 'بدون وحدة', 'quantity': 30}])
+        self.assertEqual(row['quantity'], 0)
+        self.assertEqual(section.quantity, 0)
+        self.assertEqual(section.estimated_total, 20350)
+        self.assertEqual(project.estimated_total, 20350)
+
+    def test_quantity_rollups_keep_units_separate_and_nested_leaves_counted_once(self):
+        project = self._project()
+        parent = self._section(project, 'المطبخ')
+        branch = self._section(project, 'أثاث المطبخ', parent)
+        material_model = self.env['abroj.cost.material'].with_company(self.company)
+        materials = {}
+        for unit in ('unit', 'm2'):
+            materials[unit] = material_model.create({
+                'name': 'مادة %s' % unit,
+                'company_id': self.company.id,
+                'category_id': self.category.id,
+                'uom_type': unit,
+            })
+        for name, parent_line, unit, quantity, amount in (
+            ('كراسي', branch, 'unit', 8, 80),
+            ('بلاط', parent, 'm2', 12.5, 125),
+            ('بند جذري مستقل', False, 'unit', 3, 30),
+        ):
+            leaf = self._item(project, name, parent_line, amount)
+            leaf.write({'material_id': materials[unit].id, 'quantity': quantity})
+
+        rows = {row['id']: row for row in project.get_study_tree_data()}
+        self.assertEqual({value['uom_type']: value['quantity'] for value in rows[parent.id]['quantity_totals']}, {'unit': 8, 'm2': 12.5})
+        self.assertEqual({value['uom_type']: value['quantity'] for value in rows[branch.id]['quantity_totals']}, {'unit': 8})
+        self.assertEqual(parent.quantity, 0)
+        self.assertEqual(project.estimated_total, 235)
+
+    def test_view_summary_uses_project_totals_including_unplanned_costs(self):
+        project = self._project()
+        parent = self._section(project, 'المطبخ')
+        leaf = self._item(project, 'كهرباء', parent, 100)
+        actual_model = self.env['abroj.cost.actual.line'].with_company(self.company)
+        actual_model.create({'project_id': project.id, 'plan_line_id': leaf.id, 'amount': 40})
+        actual_model.create({
+            'project_id': project.id, 'is_unplanned': True,
+            'name': 'خارج الدراسة', 'category_id': self.category.id, 'amount': 15,
+        })
+        data = project.get_study_tree_view_data()
+        self.assertEqual(data['summary']['estimated_total'], 100)
+        self.assertEqual(data['summary']['actual_total'], 55)
+        self.assertEqual(data['summary']['variance_amount'], -45)
+        self.assertEqual(data['lines'][0]['actual_total'], 40)
+        self.assertEqual(data['summary']['currency_id'][0], project.currency_id.id)
+
+    def test_empty_tree_returns_zero_project_summary(self):
+        data = self._project().get_study_tree_view_data()
+        self.assertEqual(data['lines'], [])
+        for field_name in ('estimated_total', 'actual_total', 'variance_amount'):
+            self.assertEqual(data['summary'][field_name], 0)
+
     def test_new_line_amounts_use_company_currency_before_project_default_resolves(self):
         draft_section = self.env['abroj.cost.plan.line'].with_company(self.company).new({
             'node_kind': 'section',

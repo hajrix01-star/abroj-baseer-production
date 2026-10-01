@@ -34,6 +34,9 @@
 .o_abroj_study_tree_empty strong { color: #26343d; font-size: 16px; }
 
 .o_abroj_study_tree_rows { border-top: 1px solid var(--abroj-tree-rule); }
+.o_abroj_study_tree_summary { background: #faf8f9; border: 1px solid var(--abroj-tree-rule); display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; padding: 14px; }
+.o_abroj_study_tree_summary small { color: #73808a; grid-column: 1 / -1; }
+.o_abroj_study_tree_summary strong { overflow-wrap: anywhere; }
 .o_abroj_study_tree_row {
     align-items: center;
     border-bottom: 1px solid var(--abroj-tree-rule);
@@ -91,6 +94,7 @@
 }
 
 @container abroj-study (max-width: 767px) {
+    .o_abroj_study_tree_summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .o_abroj_study_tree_header { align-items: stretch; flex-direction: column; gap: 12px; }
     .o_abroj_study_tree_header .btn { min-height: 44px; }
     .o_abroj_study_tree_row { gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }

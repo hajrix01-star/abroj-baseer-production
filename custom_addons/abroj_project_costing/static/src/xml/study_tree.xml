@@ -11,6 +11,13 @@
                     <i class="fa fa-plus"/> إضافة بند رئيسي
                 </button>
             </header>
+            <div t-if="!state.loading &amp;&amp; !state.error" class="o_abroj_study_tree_summary" aria-label="إجمالي دراسة المشروع">
+                <div class="o_abroj_study_tree_metric"><span>مجموع الكميات حسب الوحدة</span><strong t-esc="formatQuantities(totalQuantities)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>إجمالي المتوقع</span><strong t-esc="formatAmount(state.summary.estimated_total, state.summary.currency_id)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>إجمالي الفعلي</span><strong t-esc="formatAmount(state.summary.actual_total, state.summary.currency_id)"/></div>
+                <div class="o_abroj_study_tree_metric"><span>إجمالي الانحراف</span><strong t-att-class="state.summary.variance_amount &gt; 0 ? 'is-over' : ''" t-esc="formatAmount(state.summary.variance_amount, state.summary.currency_id)"/></div>
+                <small>الفعلي يشمل التكاليف المرتبطة بالدراسة والتكاليف خارج الدراسة.</small>
+            </div>
             <div t-if="state.loading" class="o_abroj_study_tree_status">جارٍ تحميل دراسة المشروع…</div>
             <div t-elif="state.error" class="o_abroj_study_tree_status is-error">تعذر تحميل الدراسة. حدّث الصفحة وحاول مرة أخرى.</div>
             <div t-elif="!state.nodes.length" class="o_abroj_study_tree_empty">
@@ -46,7 +53,7 @@
                     <span class="o_abroj_tree_description_label">الوصف</span>
                     <span class="o_abroj_tree_description_text" t-esc="node.description || '—'"/>
                 </div>
-                <div class="o_abroj_study_tree_metric"><span>الكمية</span><strong t-esc="node.quantity || 0"/></div>
+                <div class="o_abroj_study_tree_metric"><span t-esc="node.node_kind === 'section' ? 'مجموع الكميات' : 'الكمية'"/><strong t-esc="node.node_kind === 'section' ? formatQuantities(node.quantity_totals) : (node.quantity || 0)"/></div>
                 <div class="o_abroj_study_tree_metric"><span>المتوقع</span><strong t-esc="formatAmount(node.estimated_total, node.currency_id)"/></div>
                 <div class="o_abroj_study_tree_metric"><span>الفعلي</span><strong t-esc="formatAmount(node.actual_total, node.currency_id)"/></div>
                 <div class="o_abroj_study_tree_metric"><span>الانحراف</span><strong t-att-class="node.variance_amount &gt; 0 ? 'is-over' : ''" t-esc="formatAmount(node.variance_amount, node.currency_id)"/></div>

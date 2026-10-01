@@ -10,7 +10,8 @@ from odoo import api, tools, SUPERUSER_ID
 from odoo.exceptions import AccessError
 from odoo.addons.baseer_pos_product_substitution.tests.test_substitution import TestBaseerPosProductSubstitution
 
-assert env.cr.dbname == 'baseer_prc_latest_qa_test_20261001', 'Test clone only'
+if env.cr.dbname != 'baseer_prc_latest_qa_test_20261001':
+    raise RuntimeError('Test clone only')
 # Match TransactionCase: native Odoo blocks opening a register as uid=1 outside test mode.
 tools.config['test_enable'] = True
 env.cr.rollback()
@@ -89,4 +90,3 @@ for label, mutation in [('confirmation', {'payment_status': 'done'}), ('amount',
     env.cr.rollback()
     print('RACE_PASS', label, 'lock wait -> serialization rollback -> guarded fresh retry; payment and source retained')
 print('RACE_ALL_PASS=2')
-

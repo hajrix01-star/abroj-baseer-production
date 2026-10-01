@@ -26,7 +26,11 @@ const BASEER_CANCELLATION_REASONS = [
  */
 patch(PosStore.prototype, {
     async _baseerConfirmPaymentWithoutKitchen() {
-        const order = this.getOrder();
+        let order = this.getOrder();
+        if (order?.uiState?.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order?.uuid)) {
+            if (!(await this.baseerResolvePreparationOutcome(order))) return false;
+            order = this.models?.["pos.order"]?.getBy("uuid", order.uuid) || order;
+        }
         if (order?.uiState?.baseerPreparationAction) {
             this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
             return false;
@@ -82,40 +86,83 @@ patch(PosStore.prototype, {
     },
 
     async baseerResolvePreparationOutcome(order) {
+        // Persistence clears flags before its asynchronous commit. Controls
+        // entering in that window must still await the same durable result.
+        if (this._baseerPreparationResolutions?.has(order?.uuid)) {
+            return this._baseerPreparationResolutions.get(order.uuid);
+        }
         if (!order?.uiState?.baseerPreparationOutcomeUnknown) {
             return true;
         }
         const action = order.uiState.baseerPreparationAction;
-        let status;
-        try {
-            status = await this._baseerPreparationStatus(order, action);
-        } catch {
-            return false;
+        if (!action?.action_uuid || !order.uuid || this.data.network?.offline) return false;
+        this._baseerPreparationResolutions ||= new Map();
+        const key = order.uuid;
+        if (this._baseerPreparationResolutions.has(key)) {
+            return this._baseerPreparationResolutions.get(key);
         }
-        if (!status?.accepted) {
-            return false;
-        }
-        // The server is authoritative. Refresh its canonical order before
-        // releasing the local lock, so a confirmed cancellation never leaves
-        // an editable stale item in the cashier's cart.
+        const resolution = this._baseerResolvePreparationAttempt(order, action);
+        this._baseerPreparationResolutions.set(key, resolution);
         try {
+            return await resolution;
+        } finally {
+            this._baseerPreparationResolutions.delete(key);
+        }
+    },
+
+    async _baseerResolvePreparationAttempt(order, action) {
+        const matches = (candidate) => candidate?.uiState?.baseerPreparationAction?.action_uuid === action.action_uuid;
+        const fields = ["baseerPreparationAction", "baseerPreparationOutcomeUnknown", "baseerPreparationPreviousChange"];
+        try {
+            let status = await this._baseerPreparationStatus(order, action);
+            if (!matches(order)) return false;
+            if (!status?.accepted) {
+                // An atomic server receipt retires an unaccepted attempt. A
+                // delayed copy of the original payload cannot send it later.
+                if (!order.isSynced || !Number.isInteger(order.id)) return false;
+                status = await this.data.silentCall(
+                    "pos.order", "baseer_resolve_preparation_action", [[order.id], action], {}, false
+                );
+            }
+            if (!status?.accepted || !matches(order)) return false;
             await this.deviceSync.readDataFromServer();
+            const canonical = this.models?.["pos.order"]?.getBy("uuid", order.uuid);
+            if (this.models?.["pos.order"] && !canonical) return false;
+            const current = canonical || order;
+            if (!matches(order) || (current.uiState?.baseerPreparationAction && !matches(current))) return false;
+            // Refresh first; never restore old quantities when IndexedDB fails.
+            const snapshots = [...new Set([order, current])].map((candidate) => ({
+                candidate, values: Object.fromEntries(fields.map((field) => [field, candidate.uiState[field] ?? order.uiState[field]])),
+            }));
+            for (const { candidate } of snapshots) {
+                for (const field of fields) delete candidate.uiState[field];
+            }
+            try {
+                await this.data.synchronizeLocalDataInIndexedDB();
+            } catch {
+                for (const { candidate, values } of snapshots) {
+                    if (!candidate.uiState.baseerPreparationAction) {
+                        Object.assign(candidate.uiState, values);
+                    }
+                }
+                return false;
+            }
+            if (current.uiState.baseerPreparationAction) return false;
+            this._baseerNotifyPreparationStatus(status);
+            return true;
         } catch {
             return false;
         }
-        delete order.uiState.baseerPreparationAction;
-        delete order.uiState.baseerPreparationOutcomeUnknown;
-        delete order.uiState.baseerPreparationPreviousChange;
-        await this.data.synchronizeLocalDataInIndexedDB();
-        this._baseerNotifyPreparationStatus(status);
-        return true;
     },
 
     async syncAllOrders(options = {}) {
         const pending = this.getPendingOrder();
         const requested = options.orders || [...pending.orderToCreate, ...pending.orderToUpdate];
         const blocked = requested.filter(
-            (order) => order?.uiState?.baseerPreparationOutcomeUnknown && !order._baseerPreparationRetrySync
+            (order) => this._baseerPreparationResolutions?.has(order?.uuid)
+                || (order?.uiState?.baseerPreparationOutcomeUnknown
+                    && (!order._baseerPreparationRetrySync
+                        || order._baseerPreparationRetrySync !== order.uiState.baseerPreparationAction?.action_uuid))
         );
         if (blocked.length && options.throw) {
             throw new Error(_t("Confirm the pending kitchen change before payment."));
@@ -130,10 +177,15 @@ patch(PosStore.prototype, {
         if (!status?.accepted) {
             return;
         }
-        if (status.failed) {
+        if (status.skipped) {
             this.notification.add(
-                _t("Kitchen change was recorded, but printing failed. Ask a manager to retry the print job."),
-                { type: "danger" }
+                _t("Kitchen sending was skipped. You can continue working on this order."),
+                { type: "warning" }
+            );
+        } else if (status.failed) {
+            this.notification.add(
+                _t("Kitchen printing failed. The order is saved and you can continue working."),
+                { type: "warning" }
             );
         } else if (status.pending) {
             this.notification.add(
@@ -252,7 +304,7 @@ patch(PosStore.prototype, {
         }
         // A lost response is not a rejected action: retain its UUID and first
         // query the durable receipt instead of creating a duplicate action.
-        if (order.uiState.baseerPreparationOutcomeUnknown) {
+        if (order.uiState.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order.uuid)) {
             if (await this.baseerResolvePreparationOutcome(order)) {
                 return true;
             }
@@ -270,7 +322,7 @@ patch(PosStore.prototype, {
             this.addPendingOrder([order.id]);
             return true;
         } finally {
-            if (!order.uiState.baseerPreparationOutcomeUnknown) {
+            if (!order.uiState.baseerPreparationOutcomeUnknown && order.uiState.baseerPreparationAction?.action_uuid === action.action_uuid) {
                 delete order.uiState.baseerPreparationAction;
                 delete order.uiState.baseerPreparationPreviousChange;
             }
@@ -306,7 +358,11 @@ patch(PosStore.prototype, {
     },
 
     async beforeDeleteOrder(order) {
-        const allowed = await super.beforeDeleteOrder(...arguments);
+        if (order?.uiState?.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order?.uuid)) {
+            if (!(await this.baseerResolvePreparationOutcome(order))) return false;
+            order = this.models?.["pos.order"]?.getBy("uuid", order.uuid) || order;
+        }
+        const allowed = await super.beforeDeleteOrder(order);
         if (!allowed || !this.config.baseer_direct_print_enabled || !order?.isSynced || !Number.isInteger(order.id)) {
             return allowed;
         }
@@ -332,6 +388,12 @@ patch(PosStore.prototype, {
         if (!this.config.baseer_direct_print_enabled) {
             return super.deleteOrders(orders, serverIds, ignoreChange);
         }
+        for (const order of orders) {
+            if (!(await this.baseerResolvePreparationOutcome(order))) {
+                return false;
+            }
+        }
+        orders = orders.map((order) => this.models?.["pos.order"]?.getBy("uuid", order.uuid) || order);
         const localById = new Map(
             orders.filter((order) => order?.isSynced && Number.isInteger(order.id)).map((order) => [order.id, order])
         );
@@ -533,9 +595,11 @@ patch(PosStore.prototype, {
             || JSON.parse(JSON.stringify(order.last_order_preparation_change || { lines: {} }));
         const hasAuditedAction = Boolean(order.uiState.baseerPreparationAction);
         const auditedAction = order.uiState.baseerPreparationAction;
+        const stillCurrent = () => !hasAuditedAction || order.uiState.baseerPreparationAction?.action_uuid === auditedAction.action_uuid;
         if (direct && hasAuditedAction) {
             order.uiState.baseerPreparationPreviousChange = previousChange;
             await this.data.synchronizeLocalDataInIndexedDB();
+            if (!stillCurrent()) return false;
         }
         try {
             const result = await super.sendOrderInPreparation(order, {
@@ -543,17 +607,21 @@ patch(PosStore.prototype, {
                 byPassPrint: direct || opts.byPassPrint,
             });
             if (direct && !opts.orderDone && hasAuditedAction) {
+                if (!stillCurrent()) return false;
                 // Native direct-print bypass does not synchronize after it
                 // advances the local preparation baseline. Keep the intent on
                 // the order until this explicit sync commits the order change,
                 // immutable event and print job in one server transaction.
-                order._baseerPreparationRetrySync = true;
+                order._baseerPreparationRetrySync = auditedAction.action_uuid;
                 try {
                     await this.syncAllOrders({ orders: [order], throw: true, force: true });
                 } finally {
-                    delete order._baseerPreparationRetrySync;
+                    if (order._baseerPreparationRetrySync === auditedAction.action_uuid) {
+                        delete order._baseerPreparationRetrySync;
+                    }
                 }
                 const status = await this._baseerPreparationStatus(order, auditedAction);
+                if (!stillCurrent()) return false;
                 if (!status?.accepted) {
                     const error = new Error(_t("The kitchen change has not been acknowledged by the server. Refresh and check the order before retrying."));
                     error.baseerPreparationOutcomeUnknown = true;
@@ -568,8 +636,10 @@ patch(PosStore.prototype, {
             return result;
         } catch (error) {
             if (direct) {
+                if (!stillCurrent()) return false;
                 try {
                     const status = await this._baseerPreparationStatus(order, auditedAction);
+                    if (!stillCurrent()) return false;
                     if (status?.accepted) {
                         delete order.uiState.baseerPreparationOutcomeUnknown;
                         this._baseerNotifyPreparationStatus(status);
@@ -581,6 +651,7 @@ patch(PosStore.prototype, {
                 } catch {
                     // Preserve the original transport/server error below.
                 }
+                if (!stillCurrent()) return false;
                 const definitive = ["odoo.exceptions.ValidationError", "odoo.exceptions.AccessError",
                     "odoo.exceptions.UserError"].includes(error?.data?.name);
                 if (definitive) {

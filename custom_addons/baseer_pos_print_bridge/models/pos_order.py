@@ -19,17 +19,29 @@ class PosOrder(models.Model):
 
         State = self.env['baseer.print.preparation.state']
         Event = self.env['baseer.print.preparation.event']
+        Attempt = self.env['baseer.print.preparation.attempt']
         if not self.env.user.has_group('point_of_sale.group_pos_user'):
             raise AccessError(_('Only a Point of Sale user can submit kitchen changes.'))
         action = State._normalize_action(raw_action)
         if order.get('state', 'draft') != 'draft':
             raise AccessError(_('Kitchen changes cannot be submitted while paying or closing an order.'))
 
+        # Both resolution and original sync take this lock before row locks or
+        # creation. A retired payload can never recreate a deleted draft.
+        Attempt._lock_action(action['action_uuid'])
+        receipt = Attempt._for_action(action['action_uuid'])
+        if receipt:
+            original = receipt._assert_identity(
+                order.get('uuid'), session_id=order.get('session_id'),
+                order=existing_order, action=action,
+            )
+            return original.id
+
         if existing_order:
             State._lock_order_state(existing_order)
         retry_events = Event._retry_events(action)
         if retry_events:
-            retry_orders = retry_events.order_id
+            retry_orders = self.env['pos.order'].browse(retry_events.order_id.ids)
             if len(retry_orders) != 1 or not retry_orders.exists():
                 raise ValidationError(_('The previous kitchen action no longer has a valid order.'))
             retry_order = retry_orders.ensure_one()
@@ -55,7 +67,37 @@ class PosOrder(models.Model):
         if not existing_order:
             State._lock_order_state(pos_order)
         State._apply_action(pos_order, action)
+        Attempt._record_decision(pos_order, action, 'accepted')
         return order_id
+
+    def baseer_resolve_preparation_action(self, raw_action):
+        """Retire an unaccepted send without changing the order or print jobs."""
+        self.ensure_one()
+        State = self.env['baseer.print.preparation.state']
+        Event = self.env['baseer.print.preparation.event']
+        Attempt = self.env['baseer.print.preparation.attempt']
+        action = State._normalize_action(raw_action)
+        # Validate access before waiting; validate the draft again under locks.
+        State._assert_order_can_prepare(self)
+        if self.session_id.state not in ('opened', 'closing_control'):
+            raise AccessError(_('The point of sale session is not active.'))
+        Attempt._lock_action(action['action_uuid'])
+        State._lock_order_state(self)
+        self.invalidate_recordset()
+        State._assert_order_can_prepare(self)
+        self.session_id.invalidate_recordset(['state'])
+        if self.session_id.state not in ('opened', 'closing_control'):
+            raise AccessError(_('The point of sale session is not active.'))
+        receipt = Attempt._for_action(action['action_uuid'])
+        if receipt:
+            receipt._assert_identity(self.uuid, session_id=self.session_id.id, order=self, action=action)
+        else:
+            events = Event._retry_events(action)
+            if events and (events.order_id != self or events.company_id != self.company_id
+                           or events.session_id != self.session_id):
+                raise AccessError(_('This kitchen action does not belong to the synchronized order.'))
+            Attempt._record_decision(self, action, 'accepted' if events else 'skipped')
+        return Event.baseer_action_status(action['action_uuid'], self.uuid)
 
     def _baseer_assert_cancellation_batch(self, session_id):
         if not self or not self.env.user.has_group('point_of_sale.group_pos_user'):

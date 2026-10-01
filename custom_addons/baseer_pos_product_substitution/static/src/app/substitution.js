@@ -133,16 +133,13 @@ patch(PosStore.prototype, {
     },
 
     async baseerResolvePendingKitchenAction(order) {
-        if (!order?.uiState?.baseerPreparationOutcomeUnknown) {
+        if (!order?.uiState?.baseerPreparationOutcomeUnknown && !this._baseerPreparationResolutions?.has(order?.uuid)) {
             return true;
         }
         if (await this.baseerResolvePreparationOutcome(order)) {
             return true;
         }
-        this.dialog.add(AlertDialog, {
-            title: _t("Confirmation required"),
-            body: _t("Confirm the pending kitchen action before editing or cancelling this item."),
-        });
+        this.notification.add(_t("Reconnect to the server to check the pending kitchen action."), { type: "warning" });
         return false;
     },
 
@@ -166,11 +163,12 @@ patch(PosStore.prototype, {
         if (!(await this.baseerResolvePendingKitchenAction(order))) {
             return;
         }
+        order = order?.uuid ? this.models["pos.order"].getBy("uuid", order.uuid) || order : order;
         if (readPending(order)) {
             await this.baseerRetryProtectedAction(order);
             return;
         }
-        return super.addLineToOrder(...arguments);
+        return super.addLineToOrder(vals, order, ...Array.from(arguments).slice(2));
     },
 
     async baseerRecoverProtectedActions() {
@@ -265,12 +263,17 @@ patch(PosStore.prototype, {
     },
 
     async baseerSubmitProtectedAction(line, kind, action) {
-        const order = line.order_id;
+        let order = line.order_id;
         if (readPending(order)) return this.baseerRetryProtectedAction(order);
         if (this._baseerProtectedSubmissionRunning) return false;
         if (!(await this.baseerResolvePendingKitchenAction(order))) {
             return false;
         }
+        order = this.models["pos.order"].getBy("uuid", order.uuid) || order;
+        line = order.lines.find((candidate) => candidate.uuid === line.uuid);
+        if (!line) return false;
+        if (readPending(order)) return this.baseerRetryProtectedAction(order);
+        if (this._baseerProtectedSubmissionRunning) return false;
         if (order.uiState?.baseerPreparationAction) {
             this.dialog.add(AlertDialog, { title: _t("Confirmation required"), body: _t("Confirm the pending kitchen action before editing or cancelling this item.") });
             return false;
@@ -387,10 +390,16 @@ patch(OrderSummary.prototype, {
     async updateSelectedOrderline({ buffer, key }) {
         let line = this.currentOrder?.getSelectedOrderline();
         if (line?.combo_parent_id) line = line.combo_parent_id;
+        const selectedUuid = line?.uuid;
         if (!(await this.pos.baseerResolvePendingKitchenAction(line?.order_id))) {
             this.numberBuffer.reset();
             return;
         }
+        // Server refresh may replace or remove the selected line. Resume only
+        // against the current cart, retaining its existing protection rules.
+        line = this.currentOrder?.getSelectedOrderline();
+        if (line?.combo_parent_id) line = line.combo_parent_id;
+        if (!line || line.uuid !== selectedUuid) return;
         if (readPending(line?.order_id)) {
             this.numberBuffer.reset();
             await this.pos.baseerRetryProtectedAction(line.order_id);
@@ -413,7 +422,7 @@ patch(OrderSummary.prototype, {
         let line = this.currentOrder?.getSelectedOrderline();
         if (line?.combo_parent_id) line = line.combo_parent_id;
         if (readPending(line?.order_id)) { this.numberBuffer.reset(); return; }
-        if (line?.order_id?.uiState?.baseerPreparationOutcomeUnknown) {
+        if (line?.order_id?.uiState?.baseerPreparationOutcomeUnknown || this.pos._baseerPreparationResolutions?.has(line?.order_id?.uuid)) {
             this.numberBuffer.reset();
             void this.pos.baseerResolvePendingKitchenAction(line.order_id);
             return;

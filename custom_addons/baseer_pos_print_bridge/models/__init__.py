@@ -4,6 +4,7 @@ from . import agent
 from . import agent_release
 from . import cancellation
 from . import preparation_event
+from . import preparation_attempt
 from . import printer
 from . import print_setup_wizard
 from . import route

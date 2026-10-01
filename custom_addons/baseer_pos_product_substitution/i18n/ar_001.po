@@ -1,4 +1,11 @@
 # Translation of Odoo Server.
+
+#. module: baseer_pos_product_substitution
+#. odoo-javascript
+#: code:addons/baseer_pos_product_substitution/static/src/app/substitution.js:0
+msgid "Reconnect to the server to check the pending kitchen action."
+msgstr "أعد الاتصال بالنظام للتحقق من إرسال المطبخ المعلّق."
+
 # Arabic (Modern Standard Arabic) translations for Baseer POS substitutions.
 msgid ""
 msgstr ""

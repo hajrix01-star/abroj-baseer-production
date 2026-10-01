@@ -144,6 +144,7 @@ serializedStore.baseerIsSentLine = () => true;
 const serializedOrder = { uiState: {} };
 const serializedLine = { order_id: serializedOrder };
 const firstCancellation = serializedStore.baseerCancelSentLine(serializedLine);
+await Promise.resolve(); // The current-line recovery check precedes acquiring the item guard.
 assert.equal(serializedOrder.uiState.baseerKitchenLineActionPending, true);
 assert.equal(await serializedStore.baseerCancelSentLine(serializedLine), false);
 assert.equal(serializedNotices.length, 1);

@@ -5,3 +5,4 @@ from . import test_representative_petty_cash
 from . import test_company_onboarding
 from . import test_product_source
 from . import test_catalog_quick
+from . import test_onboarding_compatibility

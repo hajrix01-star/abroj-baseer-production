@@ -1,10 +1,16 @@
 import base64
-from io import BytesIO
+import csv
+from io import BytesIO, StringIO
 
 from openpyxl import Workbook, load_workbook
 
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+
+from ..models.plan_import import (
+    BILINGUAL_IMPORT_HEADERS, IMPORT_COLUMN_LABELS, IMPORT_COLUMNS,
+    PRICING_METHOD_LABELS,
+)
 
 
 @tagged('post_install', '-at_install')
@@ -224,8 +230,12 @@ class TestAbrojCostPlanImport(TransactionCase):
         self.assertEqual(wizard.export_filename, 'abroj_cost_plan_template.xlsx')
         workbook = load_workbook(BytesIO(base64.b64decode(wizard.export_file)))
         self.assertEqual(workbook['بنود الدراسة']['A3'].value, self.category.name)
-        self.assertEqual(workbook['بنود الدراسة']['L2'].value, 'section')
-        self.assertEqual(workbook['بنود الدراسة']['L3'].value, 'item')
+        self.assertEqual(workbook['بنود الدراسة']['L2'].value, 'قسم')
+        self.assertEqual(workbook['بنود الدراسة']['L3'].value, 'بند')
+        self.assertEqual(workbook['بنود الدراسة']['C3'].value, 'مقطوعية')
+        self.assertEqual(tuple(cell.value for cell in workbook['بنود الدراسة'][1]), BILINGUAL_IMPORT_HEADERS)
+        self.assertTrue(workbook['بنود الدراسة'].sheet_view.rightToLeft)
+        self.assertEqual(workbook['التعليمات']['A1'].value, 'العمود\nColumn')
         self.assertGreater(workbook['التعليمات'].max_row, 8)
         wizard.write({'import_file': wizard.export_file, 'import_filename': wizard.export_filename})
         wizard.action_import_plan()
@@ -293,3 +303,79 @@ class TestAbrojCostPlanImport(TransactionCase):
             {wizard._plan_path(line): (line.node_kind, line.estimated_total) for line in source.plan_line_ids},
             {wizard._plan_path(line): (line.node_kind, line.estimated_total) for line in target.plan_line_ids},
         )
+
+    def test_bilingual_export_arabic_values_round_trip_all_pricing_methods(self):
+        source = self._project()
+        Line = self.env['abroj.cost.plan.line'].with_company(self.company)
+        for index, method in enumerate(PRICING_METHOD_LABELS.values(), start=1):
+            Line.create({
+                'project_id': source.id, 'category_id': self.category.id,
+                'name': 'بند %s' % index, 'pricing_method': method, 'quantity': 2,
+                'material_unit_cost': 25, 'auxiliary_unit_cost': 5,
+                'labor_unit_cost': 10, 'inclusive_unit_cost': 100,
+                'lump_sum_cost': 1500, 'notes': 'ملاحظة عربية',
+            })
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': source.id, 'company_id': self.company.id,
+        })
+        wizard.action_export_plan()
+        sheet = load_workbook(BytesIO(base64.b64decode(wizard.export_file))).active
+        self.assertEqual(tuple(cell.value for cell in sheet[1]), BILINGUAL_IMPORT_HEADERS)
+        self.assertEqual([sheet.cell(index, 3).value for index in range(2, 7)], list(PRICING_METHOD_LABELS))
+        self.assertEqual([sheet.cell(index, 12).value for index in range(2, 7)], ['بند'] * 5)
+        self.assertTrue(sheet.sheet_view.rightToLeft)
+        self.assertEqual(sheet.freeze_panes, 'A2')
+        self.assertEqual(sheet.auto_filter.ref, 'A1:L6')
+        self.assertTrue(sheet['A1'].alignment.wrap_text)
+        self.assertGreaterEqual(sheet.row_dimensions[1].height, 36)
+        target = self._project()
+        importer = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': target.id, 'company_id': self.company.id,
+            'import_file': wizard.export_file, 'import_filename': wizard.export_filename,
+        })
+        importer.action_import_plan()
+        columns = ['name', 'pricing_method', 'quantity', 'material_unit_cost',
+                   'auxiliary_unit_cost', 'labor_unit_cost', 'inclusive_unit_cost',
+                   'lump_sum_cost', 'notes', 'node_kind', 'estimated_total']
+        self.assertEqual(
+            [[line[column] for column in columns] for line in source.plan_line_ids.sorted('sequence')],
+            [[line[column] for column in columns] for line in target.plan_line_ids.sorted('sequence')],
+        )
+        self.assertEqual(target.estimated_total, source.estimated_total)
+
+    def test_import_header_aliases_preserve_legacy_and_accept_bilingual_labels(self):
+        wizard = self.env['abroj.cost.plan.import.wizard']
+        variants = [
+            IMPORT_COLUMNS,
+            BILINGUAL_IMPORT_HEADERS,
+            tuple(labels[0] for labels in IMPORT_COLUMN_LABELS.values()),
+            tuple(labels[1] for labels in IMPORT_COLUMN_LABELS.values()),
+            tuple(header.replace('\n', '  ') for header in BILINGUAL_IMPORT_HEADERS),
+        ]
+        for headers in variants:
+            with self.subTest(headers=headers):
+                # Reordering columns must still map by name, not position.
+                self.assertEqual(wizard._header_map(reversed(headers)), {
+                    column: index for index, column in enumerate(reversed(IMPORT_COLUMNS))
+                })
+
+    def test_bilingual_csv_headers_and_arabic_values_are_importable(self):
+        project = self._project()
+        content = StringIO()
+        writer = csv.writer(content)
+        writer.writerow(BILINGUAL_IMPORT_HEADERS)
+        writer.writerow(['التشطيبات', 'بند عربي', 'مقطوعية', 1, 0, 0, 0, 0, 200, '', '', 'بند'])
+        wizard = self.env['abroj.cost.plan.import.wizard'].with_company(self.company).create({
+            'project_id': project.id, 'company_id': self.company.id,
+            'import_file': base64.b64encode(content.getvalue().encode('utf-8-sig')),
+            'import_filename': 'bilingual.csv',
+        })
+        wizard.action_import_plan()
+        self.assertEqual(project.plan_line_ids.name, 'بند عربي')
+        self.assertEqual(project.estimated_total, 200)
+
+    def test_duplicate_canonical_header_and_bilingual_alias_is_rejected(self):
+        wizard = self.env['abroj.cost.plan.import.wizard']
+        for alias in ('quantity', 'Quantity', 'الكمية', 'الكمية\nQuantity'):
+            with self.subTest(alias=alias), self.assertRaises(ValidationError):
+                wizard._header_map((*IMPORT_COLUMNS, alias))

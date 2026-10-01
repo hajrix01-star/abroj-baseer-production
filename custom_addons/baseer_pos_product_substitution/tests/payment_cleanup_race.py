@@ -55,6 +55,7 @@ for label, mutation in [('confirmation', {'payment_status': 'done'}), ('amount',
     with registry.cursor() as writer_cr:
         writer = api.Environment(writer_cr, env.uid, dict(env.context))
         writer['pos.payment'].browse(payment_id).write(mutation)
+        writer.flush_all()  # Send the update to PostgreSQL before letting the editor request its lock.
         proceed.set()
         waiting = False
         deadline = time.monotonic() + 5

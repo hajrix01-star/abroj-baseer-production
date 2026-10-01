@@ -17,6 +17,9 @@ readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_CONTAINER=baseer-odoo-prod-odoo-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
+readonly GOOGLE_ENV="$BASE/secrets/google/odoo-google.env"
+google_compose_override=''
+google_compose_files=()
 die() {
     printf 'DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
     exit 1
@@ -24,6 +27,36 @@ die() {
 
 require_root() {
     [ "$(id -u)" -eq 0 ] || die 'root is required'
+}
+
+cleanup_google_override() {
+    [ -z "$google_compose_override" ] || rm -f -- "$google_compose_override"
+}
+trap cleanup_google_override EXIT
+
+prepare_google_runtime() {
+    local installed_count approved_module google_required=0
+    # Capture the query directly: process substitution would hide a failed
+    # database check and could let the service stop without its runtime keys.
+    installed_count="$(docker exec "$DB_CONTAINER" sh -lc \
+        'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT count(*) FROM ir_module_module WHERE state = '\''installed'\'' AND name IN ('\''baseer_google_business'\'', '\''baseer_google_ads'\'')"')" \
+        || die 'could not check installed Google modules'
+    [[ "$installed_count" =~ ^[012]$ ]] || die 'installed Google module check returned an invalid result'
+    [ "$installed_count" = 0 ] || google_required=1
+    for approved_module in "${APPROVED_MODULES[@]}"; do
+        case "$approved_module" in baseer_google_business|baseer_google_ads) google_required=1 ;; esac
+    done
+    if [ "$google_required" -eq 0 ] && [ ! -e "$GOOGLE_ENV" ] && [ ! -L "$GOOGLE_ENV" ]; then
+        return 0
+    fi
+    [ -f "$GOOGLE_ENV" ] && [ ! -L "$GOOGLE_ENV" ] || die 'Google runtime environment file is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$GOOGLE_ENV")" = 'root:root:600' ] || die 'Google runtime environment ownership or mode is unsafe'
+    # Root generates this exact Odoo-only document; no release-selected or
+    # mutable runtime override is accepted. Compose retains the base .env
+    # relative to its explicit release project directory, including rollback.
+    google_compose_override="$(mktemp /run/baseer-google-odoo.XXXXXXXX.yaml)"
+    printf 'services:\n  odoo:\n    env_file:\n      - "%s"\n' "$GOOGLE_ENV" > "$google_compose_override"
+    google_compose_files=(-f "$google_compose_override")
 }
 
 verify_source_identity() {
@@ -261,6 +294,7 @@ old_release="$(readlink -f "$BASE/current")"
 [ -d "$old_release" ] || die 'current release cannot be resolved'
 [ -f "$old_release/.env" ] || die 'current .env is missing'
 [ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
+prepare_google_runtime
 if [ -f "$old_release/RELEASE_COMMIT" ]; then
     live_commit="$(tr -d '\r\n' < "$old_release/RELEASE_COMMIT")"
     [[ "$live_commit" =~ ^[a-f0-9]{40}$ ]] || die 'current release commit marker is invalid'
@@ -290,7 +324,7 @@ for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
 done
 verify_installed_baseer_module_source
 
-compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
+compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" "${google_compose_files[@]}" --project-directory "$old_release")
 odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"
 [[ "$odoo_config_gid" =~ ^[0-9]+$ ]] || die 'could not resolve the Odoo configuration group'
 
@@ -324,7 +358,9 @@ install -D -m 0600 "$old_release/.env" "$release/.env"
 # without exposing `admin_passwd` to the constrained deploy account; `.env`
 # above remains root-only.
 install -D -o root -g "$odoo_config_gid" -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
-docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release" config --quiet
+compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" "${google_compose_files[@]}" --project-directory "$release")
+"${compose_old[@]}" config --quiet >/dev/null 2>&1 || die 'current compose configuration is invalid'
+"${compose[@]}" config --quiet >/dev/null 2>&1 || die 'release compose configuration is invalid'
 
 # Quiesce first: DB, filestore and the protected snapshot must describe the
 # same instant.  The trap restarts this exact release if capture fails.
@@ -339,7 +375,6 @@ sha256sum "$backup/baseer_prod.dump" "$backup/filestore-baseer_prod.tar" > "$bac
 
 ln -sfn "$release" "$BASE/current"
 release_switched=1
-compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" --project-directory "$release")
 
 upgrade_modules=()
 install_modules=()

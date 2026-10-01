@@ -9,9 +9,35 @@ readonly DB_CONTAINER=baseer-odoo-prod-db-1
 readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly BACKUPS="$BASE/backups"
 readonly REHEARSAL_MODULES=baseer_purchase_batch,baseer_financial_correction,baseer_service_seed,baseer_hr_services
+readonly GOOGLE_ENV="$BASE/secrets/google/odoo-google.env"
+google_compose_override=''
+google_compose_files=()
+google_run_env=()
 
 die() { printf 'REHEARSAL=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" -eq 0 ] || die 'root is required'
+
+cleanup_google_override() {
+    [ -z "$google_compose_override" ] || rm -f -- "$google_compose_override"
+}
+trap cleanup_google_override EXIT
+
+prepare_google_runtime() {
+    local installed_count
+    installed_count="$(docker exec "$DB_CONTAINER" sh -lc \
+        'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT count(*) FROM ir_module_module WHERE state = '\''installed'\'' AND name IN ('\''baseer_google_business'\'', '\''baseer_google_ads'\'')"')" \
+        || die 'could not check installed Google modules'
+    [[ "$installed_count" =~ ^[012]$ ]] || die 'installed Google module check returned an invalid result'
+    if [ "$installed_count" = 0 ] && [ ! -e "$GOOGLE_ENV" ] && [ ! -L "$GOOGLE_ENV" ]; then
+        return 0
+    fi
+    [ -f "$GOOGLE_ENV" ] && [ ! -L "$GOOGLE_ENV" ] || die 'Google runtime environment file is missing or unsafe'
+    [ "$(stat -c '%U:%G:%a' -- "$GOOGLE_ENV")" = 'root:root:600' ] || die 'Google runtime environment ownership or mode is unsafe'
+    google_compose_override="$(mktemp /run/baseer-google-odoo.XXXXXXXX.yaml)"
+    printf 'services:\n  odoo:\n    env_file:\n      - "%s"\n' "$GOOGLE_ENV" > "$google_compose_override"
+    google_compose_files=(-f "$google_compose_override")
+    google_run_env=(--env-file "$GOOGLE_ENV")
+}
 
 old_release="$(readlink -f "$BASE/current")"
 [ -d "$old_release" ] || die 'current release cannot be resolved'
@@ -24,7 +50,9 @@ candidate_source="$(readlink -f "$candidate_source")"
 for candidate_module in baseer_purchase_batch baseer_financial_correction baseer_service_seed baseer_hr_services; do
     [ -f "$candidate_source/custom_addons/$candidate_module/__manifest__.py" ] || die "candidate module is missing: $candidate_module"
 done
-compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" --project-directory "$old_release")
+prepare_google_runtime
+compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" "${google_compose_files[@]}" --project-directory "$old_release")
+"${compose_old[@]}" config --quiet >/dev/null 2>&1 || die 'current compose configuration is invalid'
 
 wait_for_login() {
     local attempt
@@ -97,8 +125,10 @@ cleanup() {
     fi
     if [ "$restart_failed" -ne 0 ]; then
         [ -d "$backup" ] && printf 'REHEARSAL=SERVICE_RESTART_FAILED\n' >> "$backup/result.env"
+        cleanup_google_override
         exit 70
     fi
+    cleanup_google_override
     exit "$status"
 }
 trap cleanup EXIT
@@ -140,6 +170,7 @@ docker run --rm --network none -e REHEARSAL_DB="$rehearsal_db" -v "$rehearsal_vo
 odoo_image="$(docker inspect baseer-odoo-prod-odoo-1 --format '{{.Config.Image}}')"
 docker run --rm --network baseer-odoo-prod-backend \
     --env-file "$old_release/.env" \
+    "${google_run_env[@]}" \
     -e REHEARSAL_DB="$rehearsal_db" \
     -e REHEARSAL_MODULES="$REHEARSAL_MODULES" \
     -v "$rehearsal_volume":/var/lib/odoo \

@@ -245,16 +245,20 @@ export class AbrojStudyTree extends Component {
     }
 
     async reorderSection(sourceId, targetId) {
+        const generation = this.loadGeneration;
+        const projectId = this.projectId;
         try {
             const lines = await this.orm.call(
                 "abroj.cost.project",
                 "action_reorder_plan_section",
-                [[this.projectId], sourceId, targetId || false]
+                [[projectId], sourceId, targetId || false]
             );
+            if (generation !== this.loadGeneration || projectId !== this.projectId) return;
             this.state.flatNodes = lines;
             this.state.nodes = this.buildTree(lines);
             this.notification.add("تم تحديث ترتيب الأقسام.", { type: "success" });
         } catch (error) {
+            if (generation !== this.loadGeneration || projectId !== this.projectId) return;
             console.error("ABROJ study tree reorder failed", error);
             this.notification.add(error?.data?.message || "تعذر تغيير ترتيب القسم.", { type: "danger" });
             await this.load();

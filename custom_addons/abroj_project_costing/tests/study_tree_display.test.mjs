@@ -76,3 +76,18 @@ test('unsaved project clears all previous nodes and totals without an RPC', asyn
     assert.deepEqual(clone(tree.state.summary), {});
     assert.equal(tree.totalQuantities.length, 0);
 });
+
+test('a delayed reorder cannot mix old project nodes with the new project summary', async () => {
+    let resolveReorder;
+    const pending = new Promise((resolve) => { resolveReorder = resolve; });
+    const tree = component({ call: async (_model, method) => method === 'action_reorder_plan_section'
+        ? pending : { lines: [{ id: 6, parent_id: false, quantity_totals: [quantity('unit', 3)] }], summary: { estimated_total: 250 } } });
+    const reorder = tree.reorderSection(1, 2);
+    tree.props = { record: { resId: 6 } };
+    await tree.load();
+    resolveReorder([{ id: 5, parent_id: false, quantity_totals: [quantity('unit', 8)] }]);
+    await reorder;
+    assert.equal(tree.state.nodes[0].id, 6);
+    assert.equal(tree.totalQuantities[0].quantity, 3);
+    assert.equal(tree.state.summary.estimated_total, 250);
+});

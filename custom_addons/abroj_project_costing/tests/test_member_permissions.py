@@ -210,7 +210,7 @@ class TestAbrojMemberPermissions(TransactionCase):
         Project = self._as_user(self.owner, 'abroj.cost.project')
         unrelated = Project.create({'name': 'Unassigned project', 'agreement_amount': 1000})
         with self.assertRaises(AccessError), self.cr.savepoint():
-            self._as_user(self.manager, 'abroj.cost.project').browse(
+            self._as_user(self.viewer, 'abroj.cost.project').browse(
                 unrelated.id,
             ).get_study_tree_view_data()
         for model, values in self.child_values.items():

@@ -147,7 +147,9 @@ class TestAbrojCostPlanImport(TransactionCase):
         })
         action = project.action_export_plan()
         self.assertEqual(action['type'], 'ir.actions.act_url')
-        self.assertIn('download=true', action['url'])
+        self.assertIn('/abroj/costing/plan/export/', action['url'])
+        self.assertIn('company_id=%s' % self.company.id, action['url'])
+        self.assertEqual(action['target'], 'download')
 
     def test_export_escapes_spreadsheet_formula_text(self):
         project = self._project()

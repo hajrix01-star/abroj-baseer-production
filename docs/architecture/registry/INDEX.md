@@ -261,3 +261,9 @@ mirror test passed for funding, current-balance RPC, representative change,
 cash/bank change, and paid no-direct-payment settlement. Shared QA browser
 acceptance with a funded representative remains required before any production
 release. [Record](../../build-governance/REPRESENTATIVE-PETTY-CASH-SETTLEMENT-UI-FIX-2026-09-19.md).
+
+## POS-CANCELLATION-SESSION-AMOUNTS-20261002 — ملخص كميات ومبالغ الجلسات
+
+- التصنيف ARCHITECTURAL محدود لعقد عرضمالي؛ مالك baseer_pos_cancellation_report 19.0.1.2.0 وحده. المرجع السابق lastVerifiedCommit=b5dbda77a76e69020855ed1073cf9d3e4b0d3d86. التطبيق والقيد المالي والطباعة ومصادر التدقيق وACL بلا تغيير.
+- group.metrics ثلاث فئات، counters/quantities/known amounts numeric/Decimal لكل يوم/company/config/session قبل الترقيم؛ source_gross/currency_id الأصليان immutable؛ لا جمع عملات أو فئات باعتبارها خسارة. مبلغ الاستبدال قيمة الأصناف الأصلية، شامل الضريبة والخصم عند الحدث. سجلات المطبخ دون مبلغ تاريخي تبقى NULL مع عداد واضح لنقص التغطية، والصفر الموثق0.00. الإضافات لا تغيّر المجاميع الكمية القائمة أو lazy details.
+- G0–G3 راجعها permission_review قبل التنفيذ؛ G4يضبط رأسالجلسة للعربية/الإنجليزية والجوال. دليل الاختبار/السعة/قرارالإطلاق يتبع في docs/build-governance/POS-CANCELLATION-FOLLOWUP-20261002.md، ولا تعتمد هذه المسودة دليلاً على نشر.

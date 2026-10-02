@@ -47,6 +47,8 @@ for table in ('baseer_pos_substitution','baseer_pos_protected_item_cancellation'
     env.cr.execute(SQL('UPDATE %s SET pos_config_id=%s',SQL.identifier(table),config.id))
     env.cr.execute(SQL('UPDATE %s SET session_id=10000+id/500',SQL.identifier(table)))
     env.cr.execute(SQL('ANALYZE %s',SQL.identifier(table)))
+env.cr.execute('UPDATE baseer_pos_substitution SET source_gross=12.50,currency_id=%s', [env.company.currency_id.id])
+env.cr.execute('ANALYZE baseer_pos_substitution')
 report=env['baseer.pos.cancellation.report'].with_user(manager).with_context(allowed_company_ids=[env.company.id],tz='Asia/Riyadh')
 env.cr.execute("SET LOCAL statement_timeout='15s'")
 samples=[]
@@ -55,6 +57,8 @@ for attempt in range(3):
     started=time.perf_counter()
     result=report.get_report({'preset':'month','month':'2026-10'})
     samples.append(round(time.perf_counter()-started,3))
+    assert all([metric['key'] for metric in group['metrics']] == ['substitution','cancellation','reduction']
+               for day in result['session_days'] for group in day['groups'])
     group=result['session_days'][0]['groups'][0]
     started=time.perf_counter()
     session_result=report.get_session_details(result['filters'],group)

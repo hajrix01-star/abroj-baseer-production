@@ -36,6 +36,8 @@ class CancellationFollowupReport(models.Model):
     source_name = fields.Char(readonly=True)
     replacement_names = fields.Char(readonly=True)
     quantity = fields.Float(readonly=True)
+    gross_amount = fields.Monetary(readonly=True, currency_field='currency_id')
+    currency_id = fields.Many2one('res.currency', readonly=True)
     reason_code = fields.Char(readonly=True)
     reason_note = fields.Char(readonly=True)
     same_order_review = fields.Boolean(readonly=True)
@@ -210,10 +212,38 @@ class CancellationFollowupReport(models.Model):
                     count(DISTINCT operation_key) FILTER (WHERE event_type IN ('item_cancel','order_cancel')) AS cancellations,
                     count(DISTINCT operation_key) FILTER (WHERE event_type='quantity_reduce') AS reductions
                 FROM scoped GROUP BY local_time::date,company_id,pos_config_id,session_id
+            ), session_metric_base AS MATERIALIZED (
+                SELECT local_time::date::text AS date,company_id,pos_config_id,session_id,
+                    CASE WHEN event_type='substitution' THEN 'substitution'
+                         WHEN event_type='quantity_reduce' THEN 'reduction' ELSE 'cancellation' END AS key,
+                    count(DISTINCT operation_key) AS operations,sum(quantity) AS quantity,
+                    count(*) FILTER (WHERE quantity IS NULL) AS quantity_missing,
+                    count(*) FILTER (WHERE gross_amount IS NULL OR currency_id IS NULL) AS missing_amounts
+                FROM scoped GROUP BY 1,2,3,4,5
+            ), session_amount_base AS MATERIALIZED (
+                SELECT local_time::date::text AS date,company_id,pos_config_id,session_id,
+                    CASE WHEN event_type='substitution' THEN 'substitution'
+                         WHEN event_type='quantity_reduce' THEN 'reduction' ELSE 'cancellation' END AS key,
+                    currency_id,sum(gross_amount) AS amount,count(*) AS known_rows
+                FROM scoped WHERE gross_amount IS NOT NULL AND currency_id IS NOT NULL
+                GROUP BY 1,2,3,4,5,6
             ), session_summary AS (SELECT count(*) AS total FROM session_groups)
             SELECT to_json(session_summary.total)::text AS group_total,
                 (SELECT COALESCE(json_agg(r),'[]')::text FROM (
-                    SELECT * FROM session_groups
+                    SELECT g.*,(SELECT COALESCE(json_agg(m),'[]') FROM (
+                        SELECT b.key,b.operations,b.quantity,b.quantity_missing,b.missing_amounts,
+                            (SELECT COALESCE(json_agg(a),'[]') FROM (
+                                SELECT a.currency_id,a.amount,a.known_rows FROM session_amount_base a
+                                WHERE a.date=b.date AND a.company_id=b.company_id AND a.key=b.key
+                                    AND a.pos_config_id IS NOT DISTINCT FROM b.pos_config_id
+                                    AND a.session_id IS NOT DISTINCT FROM b.session_id
+                                ORDER BY a.currency_id
+                            ) a) AS amounts
+                        FROM session_metric_base b
+                        WHERE b.date=g.date AND b.company_id=g.company_id
+                            AND b.pos_config_id IS NOT DISTINCT FROM g.pos_config_id
+                            AND b.session_id IS NOT DISTINCT FROM g.session_id
+                    ) m) AS raw_metrics FROM session_groups g
                     ORDER BY date DESC,latest_event_at DESC,company_id,pos_config_id NULLS LAST,session_id NULLS LAST
                     LIMIT %s OFFSET CASE WHEN %s >= session_summary.total
                         THEN greatest(0,(session_summary.total-1)/%s*%s) ELSE %s END
@@ -328,7 +358,8 @@ class CancellationFollowupReport(models.Model):
             details=details, pagination=dict(offset=offset, limit=limit, total=total), options=options,
             session_days=session_days, group_pagination=group_pagination,
             coverage_note=_('Only stored audit events are covered. Ordinary unaudited deletions are not included. '
-                            'Quantities are POS units, not financial totals. Cancellation reason percentages use '
+                            'Quantities are POS units. Session amounts cover only audit rows with a recorded amount and currency. '
+                            'Cancellation reason percentages use '
                             'documented cancellation operations; an operation with multiple reasons can appear in several groups. '
                             'Source rows with incomplete data: %s.') % number(summary['gaps']),
             **groups,
@@ -376,6 +407,7 @@ class CancellationFollowupReport(models.Model):
             # JSON-RPC must not carry raw datetime/numeric values from SQL.
             row.pop('local_time', None)
             row.pop('prior_substitution_at', None)
+            row.pop('gross_amount', None)
         return details
 
     @staticmethod
@@ -386,6 +418,10 @@ class CancellationFollowupReport(models.Model):
         rows = data['session_groups']
         session_names = self._names('pos.session', [row['session_id'] for row in rows if row['session_id']])
         register_names = self._names('pos.config', [row['pos_config_id'] for row in rows if row['pos_config_id']])
+        currency_ids = {amount['currency_id'] for row in rows for metric in row['raw_metrics']
+                        for amount in metric['amounts']}
+        currencies = self.env['res.currency'].with_context(active_test=False).search([('id', 'in', sorted(currency_ids))])
+        currency_names = {currency.id: currency.name for currency in currencies}
         days = {}
         for row in rows:
             row.pop('latest_event_at', None)
@@ -399,6 +435,7 @@ class CancellationFollowupReport(models.Model):
                 if row['session_id'] else _('Session not recorded')
             )
             row['pos_name'] = register_names.get(row['pos_config_id'], _('Not recorded'))
+            row['metrics'] = self._format_session_metrics(row.pop('raw_metrics'), currency_names)
             for name in ('operations', 'substitutions', 'cancellations', 'reductions'):
                 row[name] = self._number(row[name])
             day = days.setdefault(row['date'], dict(key=row['date'], date=row['date'], groups=[]))
@@ -407,6 +444,33 @@ class CancellationFollowupReport(models.Model):
         offset = self._page_offset(normalized['group_offset'], limit, total)
         normalized['group_offset'] = offset
         return list(days.values()), dict(offset=offset, limit=limit, total=total)
+
+    def _format_session_metrics(self, raw_metrics, currency_names):
+        by_key = {metric['key']: metric for metric in raw_metrics}
+        metrics = []
+        for key in ('substitution', 'cancellation', 'reduction'):
+            raw = by_key.get(key, {})
+            operations = raw.get('operations', 0)
+            quantity_missing = raw.get('quantity_missing', 0)
+            missing_amounts = raw.get('missing_amounts', 0)
+            amounts = []
+            for amount in raw.get('amounts', []):
+                currency = currency_names.get(amount['currency_id'])
+                if currency:
+                    amounts.append(dict(currency_id=amount['currency_id'], currency=currency,
+                                        amount=self._number(amount['amount'], 2)))
+                else:
+                    # A recorded numeric value without an accessible currency is incomplete evidence.
+                    missing_amounts += amount['known_rows']
+            amounts.sort(key=lambda amount: (amount['currency'], amount['currency_id']))
+            quantity = raw.get('quantity')
+            metrics.append(dict(
+                key=key, operations=self._number(operations), has_operations=bool(operations),
+                quantity=(_('Not recorded') if quantity is None and operations else self._number(quantity, 2)),
+                quantity_missing=self._number(quantity_missing), has_quantity_missing=bool(quantity_missing),
+                amounts=amounts, missing_amounts=self._number(missing_amounts), has_missing_amounts=bool(missing_amounts),
+            ))
+        return metrics
 
     def _validate_session_group(self, group):
         if not isinstance(group, dict):

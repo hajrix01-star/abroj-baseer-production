@@ -597,3 +597,57 @@ msgstr "مجموعة جلسة التقرير غير صالحة."
 #: code:addons/baseer_pos_cancellation_report/models/report.py:0
 msgid "The report session company is not accessible."
 msgstr "لا تملك صلاحية الوصول إلى شركة جلسة التقرير."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Operations"
+msgstr "العمليات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Quantity"
+msgstr "الكمية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Recorded amount including tax"
+msgstr "المبلغ المسجل شامل الضريبة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Amount not recorded"
+msgstr "المبلغ غير مسجل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "No operations"
+msgstr "لا توجد عمليات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Audit rows without an amount"
+msgstr "سجلات دون مبلغ مسجل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Audit rows without a quantity"
+msgstr "سجلات دون كمية مسجلة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Substitution amounts refer to the original items. Amounts include tax and recorded discounts; currencies are kept separate. These categories are not a combined loss total."
+msgstr "مبالغ الاستبدال تخص الأصناف الأصلية. المبالغ تشمل الضريبة والخصومات المسجلة وتُعرض لكل عملة على حدة. لا تُجمع هذه الفئات باعتبارها إجمالي خسارة."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Only stored audit events are covered. Ordinary unaudited deletions are not included. Quantities are POS units. Session amounts cover only audit rows with a recorded amount and currency. Cancellation reason percentages use documented cancellation operations; an operation with multiple reasons can appear in several groups. Source rows with incomplete data: %s."
+msgstr "يشمل التقرير سجلات التدقيق المحفوظة فقط، ولا يشمل الحذف العادي غير الموثق. الكميات بوحدات نقاط البيع. مبالغ الجلسة تشمل فقط السجلات التي حُفظ لها مبلغ وعملة. تُحسب نسب أسباب الإلغاء من عمليات الإلغاء الموثقة؛ وقد تظهر العملية ذات الأسباب المتعددة في أكثر من مجموعة. السجلات ذات البيانات الناقصة: %s."

@@ -1,5 +1,9 @@
 # سجل معمارية بصير أودو
 
+## COMMAND-CENTER-RECOVERY-20261002 — استعادة مركز القيادة
+
+استعادة `CONTROLLED` فوق `a9495b06` في `baseer_sales_dashboard` وحده؛ لوحة12 ونوعها محفوظان لكن المصدر الحالي يفقد واجهة المركز وRPC. يستعاد تنفيذ EC1-v2 وحدود شهر الرياض المعتمدة، دون تغيير مجمع POS أو الأرقام أو صلاحيات الشركات أو تفضيل البداية. بيانات الأصل للقراءة فقط، واختبارات معزولة قبل نشر محدود عبر السياسة المحمية. [خريطة الأثر والعقد والدليل والنشر](../../build-governance/COMMAND-CENTER-RECOVERY-20261002.md). قيد التنفيذ، لا GO نهائي بعد.
+
 ## POS-CANCELLATION-FOLLOWUP-20261002 — تقرير متابعة الإلغاءات
 
 أثر ARCHITECTURAL محدود، مالكه موديول قراءة مستقل `baseer_pos_cancellation_report 19.0.1.0.0` تحت حزمة نقاط البيع. **QA وLive منشوران وGO للنطاق المحدود** من المصدر `ee2c099cac956cb03b466fa928f147834794783e` عبر [PR137](https://github.com/hajrix01-star/abroj-baseer-production/pull/137)، [سياسةPR138](https://github.com/hajrix01-star/abroj-baseer-production/pull/138)، [QA36985420211](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/36985420211)، [اعتماد36986223692](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/36986223692)، و[Live36986695509](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/36986695509). يجمع الاستبدال والإلغاءات وخفض الكمية بمجاميع خلفية للفترة والوردية والكاشير والنقطة ومؤشرات المراجعة. المصدر23/23مطابق فيQA/Live، نسخةDB/filestore سليمة، البياناتالمحمية وبقيةالموديولات/ERP Heritage والاعتماديات دون تغيير؛ إلغاءالتواريخ المحلي لم ينشر.11اختبارOdoo و17SQL و7دوال و7طلباتواجهة، وAR/EN والجوال بالمكوناتالأصلية نجحت محليًا. تحققRPCبقراءة/rollback عرض17حدثًا فيQA و41فيLive، معACLوالشركةوالفترةوالترقيمواللغة. قياس100k المحلي3.9s، ولاشهادة2s/20concurrent. [العقد والأدلة والاسترجاع](../../build-governance/POS-CANCELLATION-FOLLOWUP-20261002.md). [فتح التقرير الحي](https://baseer.abroj.sa/odoo/action-932).

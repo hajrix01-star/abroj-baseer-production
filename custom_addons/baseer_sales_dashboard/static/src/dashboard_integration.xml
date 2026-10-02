@@ -10,7 +10,7 @@
     </t>
     <t t-name="baseer_sales_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension">
         <xpath expr="//DashboardSearchBar" position="attributes">
-            <attribute name="t-if">!isBaseerSalesDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerExecutiveDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
         </xpath>
         <xpath expr="//DashboardSearchBar" position="after">
             <div t-if="isBaseerSalesDashboard" class="o_sp_date_filter_button d-flex ms-auto">
@@ -18,20 +18,40 @@
             </div>
         </xpath>
         <xpath expr="//SpreadsheetShareButton" position="attributes">
-            <attribute name="t-if">!isBaseerSalesDashboard</attribute>
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerExecutiveDashboard</attribute>
         </xpath>
         <xpath expr="//div[hasclass('o_search_toggler')]" position="attributes">
-            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard</attribute>
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerExecutiveDashboard</attribute>
         </xpath>
         <xpath expr="//MobileFigureContainer" position="before">
             <BaseerSalesDashboard t-if="isBaseerSalesDashboard" dashboardId="dashboard.data.id" dateFilter="baseerDate.value || undefined" t-key="dashboard.data.id"/>
+            <section t-if="isBaseerExecutiveDashboard" class="o_baseer_executive_page">
+                <BaseerExecutiveCenter dashboardId="dashboard.data.id" t-key="dashboard.data.id"/>
+            </section>
         </xpath>
         <xpath expr="//MobileFigureContainer" position="attributes">
-            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard</attribute>
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerExecutiveDashboard</attribute>
         </xpath>
         <xpath expr="//div[hasclass('o_renderer')]" position="attributes">
             <attribute name="t-else"/>
-            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard</attribute>
+            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard and !isBaseerExecutiveDashboard</attribute>
+        </xpath>
+        <!-- Other dashboard extensions replace the native t-if attributes.
+             Keep the executive boundary outside those shared nodes. -->
+        <xpath expr="//DashboardSearchBar" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><DashboardSearchBar t-if="!isBaseerSalesDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length" t-key="activeDashboardId" model="loader.getActiveDashboard().model" toggler="searchBarToggler"/></t>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><SpreadsheetShareButton t-if="!isBaseerSalesDashboard" t-key="activeDashboardId" model="loader.getActiveDashboard()?.model" onSpreadsheetShared.bind="shareSpreadsheet" togglerClass="'btn-light'"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><div class="ms-1 o_search_toggler" t-if="env.isSmall and !isBaseerSalesDashboard"><t t-component="searchBarToggler.component" t-props="searchBarToggler.props"/></div></t>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><MobileFigureContainer t-if="env.isSmall and !isBaseerSalesDashboard" spreadsheetModel="dashboard.model" t-key="dashboard.data.id"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><div t-if="!env.isSmall and !isBaseerSalesDashboard" class="o_renderer" t-att-class="{'o-sample-dashboard': dashboard.isSample}"><SpreadsheetComponent model="dashboard.model" t-key="dashboard.data.id"/></div></t>
         </xpath>
     </t>
 </templates>

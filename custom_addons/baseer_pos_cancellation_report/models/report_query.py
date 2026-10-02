@@ -9,7 +9,7 @@ WITH events AS (
            s.source_snapshot->>'product_name' AS source_name,
            names.value AS replacement_names, s.source_quantity::numeric AS quantity,
            NULL::text AS reason_code, s.reason_note, ARRAY[s.source_line_uuid]::text[] AS line_uuids,
-           false AS data_gap
+           false AS data_gap, s.source_gross::numeric AS gross_amount, s.currency_id
     FROM baseer_pos_substitution s
     LEFT JOIN LATERAL (
         SELECT string_agg(x->>'product_name', ', ' ORDER BY x->>'line_uuid') AS value
@@ -22,7 +22,8 @@ WITH events AS (
            'item_cancel', 'baseer.pos.protected_item_cancellation', c.id,
            'a:cancel:' || c.company_id || ':' || c.order_id || ':' || c.action_uuid,
            c.source_snapshot->>'product_name', NULL, c.source_quantity::numeric,
-           c.reason_code, c.reason_note, ARRAY[c.source_line_uuid]::text[], false
+           c.reason_code, c.reason_note, ARRAY[c.source_line_uuid]::text[], false,
+           c.source_gross::numeric, c.currency_id
     FROM baseer_pos_protected_item_cancellation c
     UNION ALL
     SELECT p.id::bigint * 4 + 2, p.company_id, p.order_id, identity.value,
@@ -33,7 +34,8 @@ WITH events AS (
                 || p.company_id || ':' || COALESCE(identity.value::text, 'unknown:' || p.id)
                 || ':' || p.action_uuid,
            p.snapshot->'line'->>'name', NULL, abs(p.delta_quantity)::numeric,
-           p.reason_code, p.reason_note, ARRAY[p.line_uuid]::text[], identity.value IS NULL
+           p.reason_code, p.reason_note, ARRAY[p.line_uuid]::text[], identity.value IS NULL,
+           NULL::numeric, NULL::integer
     FROM baseer_print_preparation_event p
     CROSS JOIN LATERAL (
         SELECT COALESCE(p.order_id::bigint,
@@ -53,7 +55,7 @@ WITH events AS (
            'o:' || c.company_id || ':' || c.id,
            lines.names, NULL, CASE WHEN lines.gap THEN NULL ELSE lines.quantity END,
            c.reason_code, c.reason_note, lines.uuids,
-           identity.value IS NULL OR COALESCE(lines.gap, true)
+           identity.value IS NULL OR COALESCE(lines.gap, true), NULL::numeric, NULL::integer
     FROM baseer_print_cancellation c
     CROSS JOIN LATERAL (
         SELECT COALESCE(c.order_id::bigint,
@@ -92,7 +94,7 @@ WITH events AS (
 )
 SELECT e.id, e.company_id, e.order_id, e.order_identity, e.order_reference, e.pos_config_id, e.session_id,
        e.cashier_id, e.event_at, e.event_type, e.source_model, e.source_record_id,
-       e.operation_key, e.source_name, e.replacement_names, e.quantity,
+       e.operation_key, e.source_name, e.replacement_names, e.quantity, e.gross_amount, e.currency_id,
        e.reason_code, e.reason_note, e.data_gap OR e.event_at IS NULL AS data_gap,
        prior.id IS NOT NULL AS same_order_review,
        COALESCE(prior.exact, false) AS replacement_cancelled,

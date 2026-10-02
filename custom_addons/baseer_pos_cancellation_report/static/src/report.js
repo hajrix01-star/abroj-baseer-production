@@ -66,6 +66,12 @@ export class CancellationFollowupReport extends Component {
             sessionNote: _t("Totals cover the full selection. Open a session to see its operations."),
             groupPages: _t("Sessions and their details are paginated."),
             sessionError: _t("The session details could not be loaded. Please try again."),
+            metricLabels: { substitution: _t("Substitutions"), cancellation: _t("Cancellations"), reduction: _t("Quantity reduction") },
+            metricOperations: _t("Operations"), metricQuantity: _t("Quantity"),
+            knownAmount: _t("Recorded amount including tax"), noAmount: _t("Amount not recorded"),
+            noOperations: _t("No operations"), unpricedRows: _t("Audit rows without an amount"),
+            unknownQuantity: _t("Audit rows without a quantity"),
+            amountNote: _t("Substitution amounts refer to the original items. Amounts include tax and recorded discounts; currencies are kept separate. These categories are not a combined loss total."),
         };
     }
 

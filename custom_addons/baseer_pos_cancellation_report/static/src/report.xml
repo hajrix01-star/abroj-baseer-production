@@ -106,7 +106,7 @@
                 </div>
                 <section class="card o_baseer_report_details">
                     <div class="o_baseer_details_heading"><h2 t-esc="labels.details"/><Pager offset="state.payload.group_pagination.offset" limit="state.payload.group_pagination.limit" total="state.payload.group_pagination.total" onUpdate="(data) => this.updateGroupPage(data)" isEditable="false"/></div>
-                    <p class="text-muted small" t-esc="labels.sessionNote"/><p class="text-muted small" t-esc="labels.groupPages"/><p class="text-muted small" t-esc="labels.reviewNote"/>
+                    <p class="text-muted small" t-esc="labels.sessionNote"/><p class="text-muted small" t-esc="labels.groupPages"/><p class="text-muted small" t-esc="labels.reviewNote"/><p class="text-muted small" t-esc="labels.amountNote"/>
                     <p t-if="!state.payload.session_days.length" class="o_baseer_empty text-muted" t-esc="labels.noData"/>
                     <t t-foreach="state.payload.session_days" t-as="day" t-key="day.key">
                         <h3 class="o_baseer_session_day"><span dir="ltr" t-esc="day.date"/></h3>
@@ -114,8 +114,18 @@
                             <button class="o_baseer_session_toggle" type="button" t-att-aria-expanded="state.sessions[group.key]?.expanded ? 'true' : 'false'" t-att-aria-controls="'baseer-session-' + group.key" t-on-click="() => this.toggleSession(group)">
                                 <i t-att-class="state.sessions[group.key]?.expanded ? 'fa fa-chevron-down' : 'fa fa-chevron-left'" aria-hidden="true"/>
                                 <span class="o_baseer_session_summary">
-                                    <span><strong t-esc="group.session_name"/><small class="d-block text-muted" t-esc="group.pos_name"/></span>
-                                    <span class="o_baseer_session_counts"><span><t t-esc="labels.operations"/>: <b dir="ltr" t-esc="group.operations"/></span><span><t t-esc="labels.substitutions"/>: <b dir="ltr" t-esc="group.substitutions"/></span><span><t t-esc="labels.cancellations"/>: <b dir="ltr" t-esc="group.cancellations"/></span></span>
+                                    <span class="o_baseer_session_identity"><strong t-esc="group.session_name"/><small class="d-block text-muted" t-esc="group.pos_name"/><small class="d-block"><t t-esc="labels.operations"/>: <b dir="ltr" t-esc="group.operations"/></small></span>
+                                    <span class="o_baseer_session_metrics">
+                                        <span t-foreach="group.metrics" t-as="metric" t-key="metric.key" class="o_baseer_session_metric">
+                                            <strong class="o_baseer_metric_title" t-esc="labels.metricLabels[metric.key]"/>
+                                            <span class="o_baseer_metric_counts"><span><t t-esc="labels.metricOperations"/>: <b dir="ltr" t-esc="metric.operations"/></span><span><t t-esc="labels.metricQuantity"/>: <b t-esc="metric.quantity"/></span></span>
+                                            <small t-if="metric.has_quantity_missing" class="o_baseer_metric_gap"><t t-esc="labels.unknownQuantity"/>: <b dir="ltr" t-esc="metric.quantity_missing"/></small>
+                                            <small class="text-muted" t-esc="labels.knownAmount"/>
+                                            <span t-foreach="metric.amounts" t-as="money" t-key="money.currency_id" class="o_baseer_metric_amount" dir="ltr"><b t-esc="money.amount"/> <t t-esc="money.currency"/></span>
+                                            <span t-if="!metric.amounts.length" class="text-muted" t-esc="metric.has_operations ? labels.noAmount : labels.noOperations"/>
+                                            <small t-if="metric.has_missing_amounts" class="o_baseer_metric_gap"><t t-esc="labels.unpricedRows"/>: <b dir="ltr" t-esc="metric.missing_amounts"/></small>
+                                        </span>
+                                    </span>
                                 </span>
                             </button>
                             <div t-if="state.sessions[group.key]?.expanded" t-att-id="'baseer-session-' + group.key" class="o_baseer_session_body">

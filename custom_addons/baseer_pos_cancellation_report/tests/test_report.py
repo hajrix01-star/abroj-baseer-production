@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -295,3 +296,116 @@ class TestCancellationReport(TransactionCase):
         self.assertEqual([group['key'] for group in groups],
                          [group['key'] for group in self._session_groups(report.get_report(payload['filters']))])
         self.assertEqual(sum(group['detail_count'] for group in groups), payload['pagination']['total'])
+
+    def _session_money_fixture(self):
+        report, other = self._session_projection_fixture()
+        sar = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'SAR')], limit=1)
+        usd = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'USD')], limit=1)
+        self.assertTrue(sar and usd)
+        self.env.cr.execute('UPDATE baseer_pos_substitution SET source_gross=10,currency_id=%s', [sar.id])
+        self.env.cr.execute('UPDATE baseer_pos_protected_item_cancellation SET source_gross=0,currency_id=%s', [sar.id])
+        # Preparation and full-order snapshots never become monetary evidence.
+        for table in ('baseer_print_preparation_event', 'baseer_print_cancellation'):
+            self.env.cr.execute(SQL('UPDATE %s SET source_gross=9999,currency_id=%s', SQL.identifier(table), sar.id))
+        self.env.cr.execute("""
+            INSERT INTO baseer_pos_substitution
+                (id,company_id,order_id,pos_config_id,cashier_id,event_at,order_reference,
+                 source_snapshot,replacement_snapshot,source_quantity,reason_note,source_line_uuid,
+                 session_id,source_gross,currency_id)
+            SELECT x.id,s.company_id,1000+x.id,s.pos_config_id,s.cashier_id,s.event_at,'MONEY/'||x.id,
+                s.source_snapshot,s.replacement_snapshot,x.quantity,s.reason_note,'money-'||x.id,
+                s.session_id,x.amount,x.currency_id
+            FROM baseer_pos_substitution s CROSS JOIN (VALUES
+                (100,1::numeric,10::numeric,%s),(101,1,10,%s),(102,2.005,12.345,%s),
+                (103,0,0,%s),(104,NULL,NULL,%s),(105,1,9,NULL),(106,1,19,2147483647)
+            ) AS x(id,quantity,amount,currency_id) WHERE s.id=3
+        """, [sar.id, sar.id, usd.id, sar.id, sar.id])
+        return report, other, sar, usd
+
+    @staticmethod
+    def _metric(group, key):
+        return next(metric for metric in group['metrics'] if metric['key'] == key)
+
+    def test_session_money_exact_sums_multiple_currencies_and_missing_evidence(self):
+        report, other, sar, usd = self._session_money_fixture()
+        payload = report.get_report({'preset': 'month', 'month': '2026-10', 'limit': 1})
+        groups = self._session_groups(payload)
+        group = next(group for group in groups if group['date']=='2026-10-01' and group['session_id']==102)
+        self.assertEqual([metric['key'] for metric in group['metrics']], ['substitution', 'cancellation', 'reduction'])
+        metric = self._metric(group, 'substitution')
+        self.assertEqual(metric['operations'], '8')
+        self.assertIs(metric['has_operations'], True)
+        self.assertEqual(metric['quantity'], '7.01')
+        self.assertEqual(metric['quantity_missing'], '1')
+        self.assertIs(metric['has_quantity_missing'], True)
+        self.assertEqual(metric['amounts'], [
+            {'currency_id': sar.id, 'currency': 'SAR', 'amount': '30.00'},
+            {'currency_id': usd.id, 'currency': 'USD', 'amount': '12.35'}])
+        self.assertEqual(metric['missing_amounts'], '3')
+        self.assertIs(metric['has_missing_amounts'], True)
+        # A currency absent from the permitted ORM lookup must add its known rows to missing evidence.
+        self.assertNotIn(2147483647, [amount['currency_id'] for amount in metric['amounts']])
+        self.assertTrue(all('gross_amount' not in row for row in payload['details']))
+        details = report.get_session_details(payload['filters'], group, limit=2)
+        self.assertTrue(all('gross_amount' not in row for row in details['details']))
+        json.dumps(payload)
+        json.dumps(details)
+
+    def test_session_money_known_zero_dedup_and_missing_quantities(self):
+        report, other, sar, usd = self._session_money_fixture()
+        self.env.cr.execute('UPDATE baseer_print_preparation_event SET delta_quantity=NULL WHERE id=3')
+        payload = report.get_report({'preset': 'month', 'month': '2026-10'})
+        groups = self._session_groups(payload)
+        group = next(group for group in groups if group['session_id']==101)
+        cancellation = self._metric(group, 'cancellation')
+        self.assertEqual(cancellation['operations'], '1')
+        self.assertEqual(cancellation['quantity'], '5.00')
+        self.assertEqual(cancellation['amounts'], [{'currency_id': sar.id, 'currency': 'SAR', 'amount': '0.00'}])
+        self.assertEqual(cancellation['missing_amounts'], '1')
+        self.assertEqual(cancellation['quantity_missing'], '0')
+        reduction = self._metric(group, 'reduction')
+        self.assertEqual(reduction['operations'], '1')
+        self.assertEqual(reduction['quantity'], 'Not recorded')
+        self.assertEqual(reduction['quantity_missing'], '1')
+        self.assertEqual(reduction['missing_amounts'], '1')
+        self.assertEqual(reduction['amounts'], [])
+        empty = self._metric(group, 'substitution')
+        self.assertEqual(empty, dict(key='substitution',operations='0',has_operations=False,quantity='0.00',
+                                    quantity_missing='0',has_quantity_missing=False,amounts=[],
+                                    missing_amounts='0',has_missing_amounts=False))
+        full_order = self._metric(next(group for group in groups if group['session_id']==103), 'cancellation')
+        self.assertEqual(full_order['quantity'], '5.00')
+        self.assertEqual(full_order['quantity_missing'], '4')
+        self.assertEqual(full_order['missing_amounts'], '5')
+        self.assertEqual(full_order['amounts'], [])
+        self.env.cr.execute('SELECT gross_amount,currency_id FROM report_test WHERE source_model=%s',
+                            ['baseer.print.preparation.event'])
+        self.assertTrue(all(amount is None and currency is None for amount,currency in self.env.cr.fetchall()))
+        self.env.cr.execute('SELECT gross_amount,currency_id FROM report_test WHERE source_model=%s',
+                            ['baseer.print.cancellation'])
+        self.assertTrue(all(amount is None and currency is None for amount,currency in self.env.cr.fetchall()))
+
+    def test_session_money_filters_and_pages_keep_full_scope(self):
+        report, other, sar, usd = self._session_money_fixture()
+        payload = report.get_report({'preset': 'month', 'month': '2026-10', 'group_limit': 2, 'limit': 1})
+        next_page = report.get_report(dict(payload['filters'], group_offset=2))
+        group = next(group for group in self._session_groups(next_page) if group['session_id']==102)
+        whole = report.get_report(dict(payload['filters'], group_limit=50, limit=100))
+        whole_group = next(item for item in self._session_groups(whole) if item['key']==group['key'])
+        self.assertEqual(group['metrics'], whole_group['metrics'])
+        report.get_session_details(whole['filters'], group, offset=2, limit=2)
+        after_details = report.get_report(next_page['filters'])
+        self.assertEqual(group['metrics'], next(item['metrics'] for item in self._session_groups(after_details)
+                                             if item['key']==group['key']))
+        self.assertEqual(payload['kpis'], whole['kpis'])
+        only_substitutions = report.get_report(dict(whole['filters'], event_type='substitution'))
+        filtered = next(item for item in self._session_groups(only_substitutions) if item['session_id']==102)
+        self.assertEqual(self._metric(filtered, 'substitution'), self._metric(group, 'substitution'))
+        self.assertEqual(self._metric(filtered, 'cancellation')['operations'], '0')
+        self.assertTrue(all(item['company_id']==self.env.company.id for item in self._session_groups(whole)))
+        outside = report.get_report(dict(whole['filters'], cashier_id=2147483647))
+        self.assertEqual(outside['session_days'], [])
+        outside = report.get_report(dict(whole['filters'], pos_config_id=2147483647))
+        self.assertEqual(outside['session_days'], [])
+        outside = report.get_report(dict(whole['filters'], shift='evening', preset='day', day='2026-10-01'))
+        self.assertEqual(outside['session_days'], [])

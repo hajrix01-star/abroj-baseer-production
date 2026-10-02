@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_cancellation_followup" model="ir.actions.client">
+        <field name="name">Cancellation follow-up report</field>
+        <field name="tag">baseer_pos_cancellation_report</field>
+    </record>
+    <menuitem id="menu_cancellation_followup" name="Cancellation follow-up report"
+        parent="baseer_pos_suite.menu_baseer_pos_suite"
+        action="action_cancellation_followup" sequence="2"
+        groups="point_of_sale.group_pos_manager,base.group_system"/>
+</odoo>

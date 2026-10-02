@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_cancellation_report.Report">
+        <div class="o_baseer_cancellation_report h-100 overflow-auto" aria-live="polite" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <header class="o_baseer_report_header">
+                <div><h1 t-esc="labels.title"/><p class="text-muted mb-0" t-esc="labels.subtitle"/></div>
+                <span t-if="state.payload" class="badge text-bg-light" t-att-title="labels.timezone" t-esc="state.payload.filters.timezone"/>
+            </header>
+            <form class="o_baseer_report_filters card" t-on-submit.prevent="() => this.load(true)" t-att-aria-label="labels.selectedFilters">
+                <div class="o_baseer_filter_grid">
+                    <label><span t-esc="labels.period"/>
+                        <select class="form-select" t-model="state.filters.preset" t-att-aria-label="labels.period">
+                            <option value="today" t-esc="labels.today"/><option value="day" t-esc="labels.day"/>
+                            <option value="month" t-esc="labels.month"/><option value="custom" t-esc="labels.custom"/>
+                        </select>
+                    </label>
+                    <label t-if="state.filters.preset === 'day'"><span t-esc="labels.day"/><input class="form-control" type="date" required="required" t-model="state.filters.day"/></label>
+                    <label t-if="state.filters.preset === 'month'"><span t-esc="labels.month"/><input class="form-control" type="month" required="required" t-model="state.filters.month"/></label>
+                    <div t-if="state.filters.preset === 'custom'" class="o_baseer_filter_field">
+                        <label for="baseer-report-from" t-esc="labels.from"/>
+                        <DateTimeInput id="'baseer-report-from'" type="'datetime'" value="fromValue" onChange="(value) => this.setDate('date_from', value)"/>
+                    </div>
+                    <div t-if="state.filters.preset === 'custom'" class="o_baseer_filter_field">
+                        <label for="baseer-report-to" t-esc="labels.to"/>
+                        <DateTimeInput id="'baseer-report-to'" type="'datetime'" value="toValue" onChange="(value) => this.setDate('date_to', value)"/>
+                    </div>
+                    <label><span t-esc="labels.register"/>
+                        <select class="form-select" t-model="state.filters.pos_config_id" t-att-aria-label="labels.register">
+                            <option value="" t-esc="labels.all"/>
+                            <t t-foreach="state.payload?.options.registers || []" t-as="register" t-key="register.id"><option t-att-value="register.id" t-esc="register.name"/></t>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.cashier"/>
+                        <select class="form-select" t-model="state.filters.cashier_id" t-att-aria-label="labels.cashier">
+                            <option value="" t-esc="labels.all"/>
+                            <t t-foreach="state.payload?.options.cashiers || []" t-as="cashier" t-key="cashier.id"><option t-att-value="cashier.id" t-esc="cashier.name"/></t>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.type"/>
+                        <select class="form-select" t-model="state.filters.event_type" t-att-aria-label="labels.type">
+                            <option value="all" t-esc="labels.all"/><option value="substitution" t-esc="labels.substitution"/>
+                            <option value="item_cancel" t-esc="labels.itemCancel"/><option value="order_cancel" t-esc="labels.orderCancel"/>
+                            <option value="quantity_reduce" t-esc="labels.reduce"/>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.shift"/>
+                        <select class="form-select" t-model="state.filters.shift" t-att-aria-label="labels.shift">
+                            <option value="all" t-esc="labels.all"/><option value="morning" t-esc="labels.morningShift"/><option value="evening" t-esc="labels.eveningShift"/>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.morning"/><input class="form-control" type="time" required="required" t-model="state.filters.morning_start"/></label>
+                    <label><span t-esc="labels.evening"/><input class="form-control" type="time" required="required" t-model="state.filters.evening_start"/></label>
+                </div>
+                <div class="o_baseer_filter_actions">
+                    <label class="form-check mb-0"><input class="form-check-input" type="checkbox" t-model="state.filters.review_only"/><span class="form-check-label" t-esc="labels.reviewOnly"/></label>
+                    <small class="text-muted" t-esc="labels.shiftNote"/>
+                    <button class="btn btn-primary" type="submit" t-att-disabled="state.loading"><i t-if="state.loading" class="fa fa-spinner fa-spin me-2" aria-hidden="true"/><t t-esc="labels.show"/></button>
+                </div>
+            </form>
+            <div t-if="state.error" class="alert alert-danger d-flex align-items-center gap-3" role="alert"><span t-esc="state.error"/><button class="btn btn-outline-danger" t-on-click="() => this.retry()" t-esc="labels.retry"/></div>
+            <div t-if="state.loading" class="o_baseer_report_loading text-muted" role="status"><i class="fa fa-spinner fa-spin me-2" aria-hidden="true"/><t t-esc="labels.loading"/></div>
+            <t t-if="state.payload &amp;&amp; !state.loading &amp;&amp; !state.error">
+                <div class="o_baseer_report_range" dir="ltr"><t t-esc="state.payload.filters.date_from"/> — <t t-esc="state.payload.filters.date_to"/></div>
+                <section class="o_baseer_report_kpis" t-att-aria-label="labels.title">
+                    <article t-foreach="state.payload.kpis" t-as="kpi" t-key="kpi.key" class="card o_baseer_kpi">
+                        <span class="text-muted" t-esc="kpi.label"/><strong dir="ltr" t-esc="kpi.value"/><small class="text-muted" t-esc="kpi.note"/>
+                    </article>
+                </section>
+                <p class="o_baseer_report_coverage text-muted" t-esc="state.payload.coverage_note"/>
+                <div class="o_baseer_report_charts">
+                    <section class="card o_baseer_chart"><h2 t-esc="labels.reasons"/><p class="text-muted small" t-esc="labels.reasonBasis"/>
+                        <p t-if="!state.payload.reasons.length" class="text-muted" t-esc="labels.noReasons"/>
+                        <div t-foreach="state.payload.reasons" t-as="reason" t-key="reason.key" class="o_baseer_chart_row">
+                            <div class="o_baseer_chart_label"><span t-esc="reason.label"/><span class="o_baseer_chart_value" dir="ltr"><t t-esc="reason.count"/> · <t t-esc="reason.percentage"/>%</span></div>
+                            <div class="o_baseer_bar_track" aria-hidden="true"><div class="o_baseer_bar_fill" t-att-style="'width: ' + reason.bar_width + '%;'"/></div>
+                        </div>
+                    </section>
+                    <section class="card o_baseer_chart"><h2 t-esc="labels.shiftDistribution"/>
+                        <p t-if="!state.payload.shifts.length" class="text-muted" t-esc="labels.noGroups"/>
+                        <div t-foreach="state.payload.shifts" t-as="shift" t-key="shift.key" class="o_baseer_chart_row">
+                            <div class="o_baseer_chart_label"><span t-esc="shift.label"/><span class="o_baseer_chart_value" dir="ltr"><t t-esc="shift.count"/> · <t t-esc="shift.percentage"/>%</span></div>
+                            <div class="o_baseer_bar_track" aria-hidden="true"><div class="o_baseer_bar_fill o_baseer_bar_secondary" t-att-style="'width: ' + shift.bar_width + '%;'"/></div>
+                        </div>
+                    </section>
+                </div>
+                <section class="card o_baseer_chart mb-3"><h2 t-esc="labels.timeline"/>
+                    <div class="o_baseer_timeline">
+                        <div t-foreach="state.payload.timeline" t-as="day" t-key="day.key" class="o_baseer_chart_row">
+                            <div class="o_baseer_chart_label"><span dir="ltr" t-esc="day.label"/><span class="o_baseer_chart_value" dir="ltr" t-esc="day.count"/></div>
+                            <div class="o_baseer_bar_track" aria-hidden="true"><div class="o_baseer_bar_fill" t-att-style="'width: ' + day.bar_width + '%;'"/></div>
+                        </div>
+                        <p t-if="!state.payload.timeline.length" class="text-muted" t-esc="labels.noGroups"/>
+                    </div>
+                </section>
+                <div class="o_baseer_report_charts">
+                    <section class="card o_baseer_chart"><h2 t-esc="labels.cashiers"/>
+                        <table class="table o_baseer_group_table"><thead><tr><th t-esc="labels.cashier"/><th t-esc="labels.substitutions"/><th t-esc="labels.cancellations"/><th t-esc="labels.reviews"/></tr></thead>
+                            <tbody><tr t-foreach="state.payload.cashiers" t-as="row" t-key="row.key"><td t-esc="row.label"/><td dir="ltr" t-esc="row.substitutions"/><td dir="ltr" t-esc="row.cancellations"/><td dir="ltr" t-esc="row.reviews"/></tr></tbody>
+                        </table><p t-if="!state.payload.cashiers.length" class="text-muted" t-esc="labels.noGroups"/>
+                    </section>
+                    <section class="card o_baseer_chart"><h2 t-esc="labels.registers"/>
+                        <table class="table o_baseer_group_table"><thead><tr><th t-esc="labels.register"/><th t-esc="labels.substitutions"/><th t-esc="labels.cancellations"/><th t-esc="labels.reviews"/></tr></thead>
+                            <tbody><tr t-foreach="state.payload.registers" t-as="row" t-key="row.key"><td t-esc="row.label"/><td dir="ltr" t-esc="row.substitutions"/><td dir="ltr" t-esc="row.cancellations"/><td dir="ltr" t-esc="row.reviews"/></tr></tbody>
+                        </table><p t-if="!state.payload.registers.length" class="text-muted" t-esc="labels.noGroups"/>
+                    </section>
+                </div>
+                <section class="card o_baseer_report_details">
+                    <div class="o_baseer_details_heading"><h2 t-esc="labels.details"/><Pager offset="state.payload.pagination.offset" limit="state.payload.pagination.limit" total="state.payload.pagination.total" onUpdate="(data) => this.updatePage(data)" isEditable="false"/></div>
+                    <p class="text-muted small" t-esc="labels.totalNote"/><p class="text-muted small" t-esc="labels.reviewNote"/>
+                    <p t-if="!state.payload.details.length" class="o_baseer_empty text-muted" t-esc="labels.noData"/>
+                    <table t-else="" class="table o_baseer_detail_table">
+                        <thead><tr><th t-esc="labels.time"/><th t-esc="labels.order"/><th t-esc="labels.type"/><th t-esc="labels.cashier"/><th t-esc="labels.product"/><th t-esc="labels.quantity"/><th t-esc="labels.reason"/><th t-esc="labels.indicator"/><th><span class="visually-hidden" t-esc="labels.source"/></th></tr></thead>
+                        <tbody><tr t-foreach="state.payload.details" t-as="row" t-key="row.id" t-att-class="row.review_label ? 'o_baseer_review_row' : ''">
+                            <td t-att-data-label="labels.time"><span dir="ltr" t-esc="row.event_at"/></td>
+                            <td t-att-data-label="labels.order"><strong t-esc="row.order_reference"/><small class="d-block text-muted" t-esc="row.pos_name"/></td>
+                            <td t-att-data-label="labels.type" t-esc="row.event_label"/>
+                            <td t-att-data-label="labels.cashier" t-esc="row.cashier_name"/>
+                            <td t-att-data-label="labels.product"><span t-esc="row.source_name"/><small t-if="row.replacement_names" class="d-block text-muted"><i class="fa fa-exchange me-1" aria-hidden="true"/><t t-esc="row.replacement_names"/></small></td>
+                            <td t-att-data-label="labels.quantity"><span dir="ltr" t-esc="row.quantity"/></td>
+                            <td t-att-data-label="labels.reason" t-esc="row.reason"/>
+                            <td t-att-data-label="labels.indicator"><span t-if="row.review_label" class="badge text-bg-warning text-wrap" t-esc="row.review_label"/><small t-if="row.review_context" class="d-block text-muted mt-1" t-esc="row.review_context"/></td>
+                            <td><button t-if="row.source_record_id" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.openSource(row)" t-esc="labels.source"/><span t-else="" class="text-muted" t-esc="labels.sourceUnavailable"/></td>
+                        </tr></tbody>
+                    </table>
+                </section>
+            </t>
+        </div>
+    </t>
+</templates>

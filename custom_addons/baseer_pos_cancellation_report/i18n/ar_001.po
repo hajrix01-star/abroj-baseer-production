@@ -1,0 +1,545 @@
+# Translation of Odoo Server.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "%s%% of documented operations"
+msgstr "%s%% من العمليات الموثقة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "All"
+msgstr "الكل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "By cashier"
+msgstr "حسب الكاشير"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "By point of sale"
+msgstr "حسب نقطة البيع"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+#: model:ir.actions.client,name:baseer_pos_cancellation_report.action_cancellation_followup
+#: model:ir.ui.menu,name:baseer_pos_cancellation_report.menu_cancellation_followup
+msgid "Cancellation follow-up report"
+msgstr "تقرير متابعة الإلغاءات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Cancellation operations"
+msgstr "عمليات الإلغاء"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Cancellation reasons"
+msgstr "أسباب الإلغاء"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Cancellations"
+msgstr "الإلغاءات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Cancelled item quantity"
+msgstr "كمية الأصناف الملغاة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Cases to review"
+msgstr "حالات للمراجعة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Cases to review only"
+msgstr "الحالات التي تستحق المراجعة فقط"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Cashier"
+msgstr "الكاشير"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Choose a valid period of up to 366 days."
+msgstr "اختر نطاقًا زمنيًا صحيحًا لا يتجاوز 366 يومًا."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Customer cancelled"
+msgstr "إلغاء العميل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Date and time"
+msgstr "التاريخ والوقت"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Date and time range"
+msgstr "نطاق تاريخ ووقت"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Day"
+msgstr "يومي"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Documented cancellation operations grouped by reason"
+msgstr "عمليات الإلغاء الموثقة مجمعة حسب السبب"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Duplicate order"
+msgstr "طلب مكرر"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Enter a valid shift time (HH:mm)."
+msgstr "أدخل وقت بداية صحيحًا بصيغة ساعة:دقيقة."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Equal timestamps: sequence uncertain"
+msgstr "وقت متساوٍ: ترتيب العمليات غير محسوم"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Evening"
+msgstr "مسائي"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Evening starts"
+msgstr "بداية الفترة المسائية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "From"
+msgstr "من"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Incomplete source data"
+msgstr "بيانات المصدر ناقصة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Item cancellation"
+msgstr "إلغاء صنف"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Item unavailable"
+msgstr "الصنف غير متاح"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Known quantities only; incomplete snapshots are excluded"
+msgstr "الكميات الموثقة فقط؛ تستثنى اللقطات الناقصة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Loading report…"
+msgstr "جارٍ تحميل التقرير…"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Matched by recorded replacement line identifier"
+msgstr "مطابقة حسب معرّف سطر البديل المحفوظ"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Month"
+msgstr "شهري"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Morning"
+msgstr "صباحي"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Morning and evening must start at different times."
+msgstr "يجب أن تختلف بداية الصباح عن بداية المساء."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Morning runs until evening starts. Evening runs until the next morning."
+msgstr "الصباح من بدايته حتى بداية المساء، والمساء حتى بداية الصباح التالي."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Morning starts"
+msgstr "بداية الفترة الصباحية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "No documented cancellations in this selection."
+msgstr "لا توجد إلغاءات موثقة ضمن الاختيار الحالي."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "No documented operations match this period and these filters."
+msgstr "لا توجد عمليات موثقة تطابق الفترة والفلاتر المحددة."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "No operations in this selection."
+msgstr "لا توجد عمليات ضمن الاختيار الحالي."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Not recorded"
+msgstr "غير مسجل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Only a POS manager can view this report."
+msgstr "عرض التقرير متاح لمدير نقاط البيع فقط."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Only stored audit events are covered. Ordinary unaudited deletions are not included. Quantities are POS units, not financial totals. Cancellation reason percentages use documented cancellation operations; an operation with multiple reasons can appear in several groups. Source rows with incomplete data: %s."
+msgstr "يشمل التقرير سجلات التدقيق المحفوظة فقط؛ لا يشمل الحذف العادي غير الموثق. الكميات وحدات أصناف وليست مجاميع مالية. نسب الأسباب محسوبة من عمليات الإلغاء الموثقة، وقد تظهر العملية ذات الأسباب المتعددة في أكثر من مجموعة. سجلات المصدر ذات البيانات الناقصة: %s."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Operation"
+msgstr "العملية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Operation details"
+msgstr "تفاصيل العمليات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Operations by shift"
+msgstr "العمليات حسب الفترة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Operations over the selected period"
+msgstr "العمليات خلال الفترة المحددة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Order"
+msgstr "الفاتورة / الطلب"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Order cancellation"
+msgstr "إلغاء طلب كامل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Orders to review"
+msgstr "فواتير تستحق المراجعة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Original item / replacements"
+msgstr "الصنف الأصلي / البدائل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Other"
+msgstr "أخرى"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Period"
+msgstr "الفترة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Point of sale"
+msgstr "نقطة البيع"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Prior substitution: %s · %s"
+msgstr "الاستبدال السابق: %s · %s"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Quantity reduction"
+msgstr "خفض كمية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Quantity reduction operations"
+msgstr "عمليات خفض الكمية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Reason"
+msgstr "السبب"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Reason not recorded"
+msgstr "السبب غير مسجل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Recorded POS units across products"
+msgstr "وحدات الأصناف المسجلة في نقاط البيع"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Recorded quantity"
+msgstr "الكمية المسجلة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Recorded replacement cancelled"
+msgstr "إلغاء بديل موثق"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Replacement cancellation operations"
+msgstr "عمليات إلغاء البدائل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Report filters"
+msgstr "فلاتر التقرير"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Report timezone"
+msgstr "توقيت التقرير"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Review indicator"
+msgstr "مؤشر للمراجعة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Same-order cancellation after substitution"
+msgstr "إلغاء بعد استبدال في الفاتورة نفسها"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Separate from complete item cancellations"
+msgstr "منفصلة عن إلغاء الصنف بالكامل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Shift"
+msgstr "الفترة التشغيلية"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Show report"
+msgstr "عرض التقرير"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Source record unavailable"
+msgstr "السجل الأصلي غير متاح"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Staff error"
+msgstr "خطأ الموظف"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Substituted item quantity"
+msgstr "كمية الأصناف المستبدلة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Substitution"
+msgstr "استبدال صنف"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Substitution followed by cancellation in the same order"
+msgstr "استبدال ثم إلغاء في الفاتورة نفسها"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Substitution followed by cancellation is a review indicator; it does not establish misconduct."
+msgstr "الاستبدال ثم الإلغاء مؤشر للمراجعة، ولا يثبت التلاعب بمفرده."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Substitution operations"
+msgstr "عمليات استبدال الأصناف"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Substitutions"
+msgstr "الاستبدالات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Substitutions, documented cancellations and cases to review"
+msgstr "الاستبدالات والإلغاءات الموثقة والحالات التي تستحق المراجعة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "The report could not be loaded. Please try again."
+msgstr "تعذّر تحميل التقرير. يرجى إعادة المحاولة."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "The report filter is invalid."
+msgstr "أحد فلاتر التقرير غير صحيح."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "The report timezone is invalid."
+msgstr "المنطقة الزمنية للتقرير غير صحيحة."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "This report is read-only."
+msgstr "هذا التقرير للقراءة فقط."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "To (exclusive)"
+msgstr "إلى (دون وقت النهاية)"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Today"
+msgstr "اليوم"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Totals cover the full selection. Details are paginated."
+msgstr "المجاميع تشمل كامل الاختيار. التفاصيل موزعة على صفحات."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Try again"
+msgstr "إعادة المحاولة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "View record"
+msgstr "عرض السجل"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Wrong order"
+msgstr "طلب غير صحيح"

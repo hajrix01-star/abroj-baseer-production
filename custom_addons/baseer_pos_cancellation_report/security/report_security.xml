@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cancellation_report_company_rule" model="ir.rule">
+        <field name="name">Cancellation report: active companies</field>
+        <field name="model_id" ref="model_baseer_pos_cancellation_report"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

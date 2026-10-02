@@ -4,10 +4,11 @@ import time
 from pathlib import Path
 
 from odoo.tools import SQL
+from odoo.modules.module import get_module_path
 from odoo.addons.baseer_pos_cancellation_report.models.report_query import REPORT_QUERY
 
 assert env.cr.dbname == 'baseer_cancellation_report_test_20261002'
-module = Path('/mnt/baseer-addons/baseer_pos_cancellation_report')
+module = Path(get_module_path('baseer_pos_cancellation_report'))
 fixture = (module/'tests/projection_fixture.sql').read_text()
 fixture = fixture.replace('BEGIN;\n','',1).replace('\nROLLBACK;','')
 fixture = fixture.replace('-- REPORT_VIEW_PLACEHOLDER','CREATE TEMP VIEW report_test AS '+REPORT_QUERY+';')
@@ -44,16 +45,26 @@ env.cr.execute("""
 for table in ('baseer_pos_substitution','baseer_pos_protected_item_cancellation',
               'baseer_print_preparation_event','baseer_print_cancellation'):
     env.cr.execute(SQL('UPDATE %s SET pos_config_id=%s',SQL.identifier(table),config.id))
+    env.cr.execute(SQL('UPDATE %s SET session_id=10000+id/500',SQL.identifier(table)))
     env.cr.execute(SQL('ANALYZE %s',SQL.identifier(table)))
 report=env['baseer.pos.cancellation.report'].with_user(manager).with_context(allowed_company_ids=[env.company.id],tz='Asia/Riyadh')
 env.cr.execute("SET LOCAL statement_timeout='15s'")
 samples=[]
+session_samples=[]
 for attempt in range(3):
     started=time.perf_counter()
     result=report.get_report({'preset':'month','month':'2026-10'})
     samples.append(round(time.perf_counter()-started,3))
+    group=result['session_days'][0]['groups'][0]
+    started=time.perf_counter()
+    session_result=report.get_session_details(result['filters'],group)
+    session_samples.append(round(time.perf_counter()-started,3))
+    assert len(session_result['details']) <= 50
+    assert len([group for day in result['session_days'] for group in day['groups']]) <= 50
 assert result['pagination']['total'] >= 100000
 print('BENCHMARK_JSON='+json.dumps({'synthetic_events':100000,'details':result['pagination']['total'],
-    'single_user_seconds':samples,'monthly_target_seconds':2,'within_target':max(samples)<2,
+    'single_user_seconds':samples,'session_details_seconds':session_samples,
+    'session_groups':result['group_pagination']['total'],'groups_per_page':result['group_pagination']['limit'],
+    'monthly_target_seconds':2,'within_target':max(samples)<2,
     'concurrency_tested':False,'production_data_tested':False}))
 env.cr.rollback()

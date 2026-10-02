@@ -543,3 +543,57 @@ msgstr "عرض السجل"
 #: code:addons/baseer_pos_cancellation_report/models/report.py:0
 msgid "Wrong order"
 msgstr "طلب غير صحيح"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Sessions"
+msgstr "الجلسات"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Documented operations"
+msgstr "العمليات الموثقة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Totals cover the full selection. Open a session to see its operations."
+msgstr "المجاميع تشمل كامل الاختيار. افتح الجلسة لعرض عملياتها."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "Sessions and their details are paginated."
+msgstr "الجلسات وتفاصيل عملياتها موزعة على صفحات."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-javascript
+#: code:addons/baseer_pos_cancellation_report/static/src/report.js:0
+msgid "The session details could not be loaded. Please try again."
+msgstr "تعذّر تحميل تفاصيل الجلسة. حاول مرة أخرى."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Session not recorded"
+msgstr "الجلسة غير مسجلة"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "Session %s"
+msgstr "الجلسة %s"
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "The report session group is invalid."
+msgstr "مجموعة جلسة التقرير غير صالحة."
+
+#. module: baseer_pos_cancellation_report
+#. odoo-python
+#: code:addons/baseer_pos_cancellation_report/models/report.py:0
+msgid "The report session company is not accessible."
+msgstr "لا تملك صلاحية الوصول إلى شركة جلسة التقرير."

@@ -20,12 +20,12 @@ export class CancellationFollowupReport extends Component {
         this.sequence = 0;
         this.disposed = false;
         this.state = useState({
-            loading: true, error: "", payload: null,
+            loading: true, error: "", payload: null, sessions: {},
             filters: {
                 preset: "today", day: "", month: "", date_from: "", date_to: "",
                 morning_start: "06:00", evening_start: "18:00", pos_config_id: "",
                 cashier_id: "", shift: "all", event_type: "all", review_only: false,
-                offset: 0, limit: 50,
+                offset: 0, limit: 50, group_offset: 0, group_limit: 50,
             },
         });
         onWillStart(() => this.load());
@@ -62,6 +62,10 @@ export class CancellationFollowupReport extends Component {
             totalNote: _t("Totals cover the full selection. Details are paginated."),
             shiftNote: _t("Morning runs until evening starts. Evening runs until the next morning."),
             selectedFilters: _t("Report filters"),
+            sessions: _t("Sessions"), operations: _t("Documented operations"),
+            sessionNote: _t("Totals cover the full selection. Open a session to see its operations."),
+            groupPages: _t("Sessions and their details are paginated."),
+            sessionError: _t("The session details could not be loaded. Please try again."),
         };
     }
 
@@ -78,7 +82,7 @@ export class CancellationFollowupReport extends Component {
 
     async load(reset = false, appliedFilters = null) {
         const request = ++this.sequence;
-        if (reset) { this.state.filters.offset = 0; }
+        if (reset) { this.state.filters.offset = 0; this.state.filters.group_offset = 0; }
         const inputSnapshot = JSON.stringify(this.state.filters);
         const filters = { ...(appliedFilters || this.state.filters) };
         for (const key of ["pos_config_id", "cashier_id"]) {
@@ -87,6 +91,7 @@ export class CancellationFollowupReport extends Component {
         this.lastRequestFilters = { ...filters };
         this.state.loading = true;
         this.state.error = "";
+        this.state.sessions = {};
         try {
             const payload = await this.orm.call("baseer.pos.cancellation.report", "get_report", [filters]);
             if (this.disposed || request !== this.sequence) { return; }
@@ -111,6 +116,49 @@ export class CancellationFollowupReport extends Component {
         const filters = { ...this.state.payload.filters, offset, limit };
         await this.load(false, filters);
     }
+
+    async updateGroupPage({ offset, limit }) {
+        await this.load(false, { ...this.state.payload.filters, preset: "custom", group_offset: offset, group_limit: limit });
+    }
+
+    async toggleSession(group) {
+        const current = this.state.sessions[group.key];
+        if (current?.expanded) { current.expanded = false; return; }
+        // Only one session page is retained; switching groups bounds memory and cancels stale replies.
+        this.state.sessions = {
+            [group.key]: current || { expanded: false, loading: false, error: "", payload: null, request: 0 },
+        };
+        const entry = this.state.sessions[group.key];
+        entry.expanded = true;
+        if (!entry.payload && !entry.loading) { await this.loadSession(group); }
+    }
+
+    async loadSession(group, offset = 0, limit = 50) {
+        const entry = this.state.sessions[group.key];
+        if (!entry) { return; }
+        const generation = this.sequence;
+        const request = ++entry.request;
+        entry.loading = true;
+        entry.error = "";
+        entry.lastPage = { offset, limit };
+        const identity = { date: group.date, company_id: group.company_id,
+            pos_config_id: group.pos_config_id, session_id: group.session_id };
+        try {
+            const payload = await this.orm.call("baseer.pos.cancellation.report", "get_session_details",
+                [{ ...this.state.payload.filters, preset: "custom" }, identity, offset, limit]);
+            if (this.disposed || generation !== this.sequence || this.state.sessions[group.key] !== entry || request !== entry.request) { return; }
+            entry.payload = payload;
+        } catch (error) {
+            if (this.disposed || generation !== this.sequence || this.state.sessions[group.key] !== entry || request !== entry.request) { return; }
+            const businessError = ["odoo.exceptions.AccessError", "odoo.exceptions.ValidationError"].includes(error.data?.name);
+            entry.error = businessError ? error.data.message : this.labels.sessionError;
+        } finally {
+            if (!this.disposed && generation === this.sequence && this.state.sessions[group.key] === entry && request === entry.request) { entry.loading = false; }
+        }
+    }
+
+    updateSessionPage(group, { offset, limit }) { return this.loadSession(group, offset, limit); }
+    retrySession(group) { return this.loadSession(group, this.state.sessions[group.key].lastPage.offset, this.state.sessions[group.key].lastPage.limit); }
 
     retry() {
         return this.load(false, this.lastRequestFilters);

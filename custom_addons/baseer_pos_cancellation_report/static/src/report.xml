@@ -105,12 +105,38 @@
                     </section>
                 </div>
                 <section class="card o_baseer_report_details">
-                    <div class="o_baseer_details_heading"><h2 t-esc="labels.details"/><Pager offset="state.payload.pagination.offset" limit="state.payload.pagination.limit" total="state.payload.pagination.total" onUpdate="(data) => this.updatePage(data)" isEditable="false"/></div>
-                    <p class="text-muted small" t-esc="labels.totalNote"/><p class="text-muted small" t-esc="labels.reviewNote"/>
-                    <p t-if="!state.payload.details.length" class="o_baseer_empty text-muted" t-esc="labels.noData"/>
+                    <div class="o_baseer_details_heading"><h2 t-esc="labels.details"/><Pager offset="state.payload.group_pagination.offset" limit="state.payload.group_pagination.limit" total="state.payload.group_pagination.total" onUpdate="(data) => this.updateGroupPage(data)" isEditable="false"/></div>
+                    <p class="text-muted small" t-esc="labels.sessionNote"/><p class="text-muted small" t-esc="labels.groupPages"/><p class="text-muted small" t-esc="labels.reviewNote"/>
+                    <p t-if="!state.payload.session_days.length" class="o_baseer_empty text-muted" t-esc="labels.noData"/>
+                    <t t-foreach="state.payload.session_days" t-as="day" t-key="day.key">
+                        <h3 class="o_baseer_session_day"><span dir="ltr" t-esc="day.date"/></h3>
+                        <section t-foreach="day.groups" t-as="group" t-key="group.key" class="o_baseer_session_group">
+                            <button class="o_baseer_session_toggle" type="button" t-att-aria-expanded="state.sessions[group.key]?.expanded ? 'true' : 'false'" t-att-aria-controls="'baseer-session-' + group.key" t-on-click="() => this.toggleSession(group)">
+                                <i t-att-class="state.sessions[group.key]?.expanded ? 'fa fa-chevron-down' : 'fa fa-chevron-left'" aria-hidden="true"/>
+                                <span class="o_baseer_session_summary">
+                                    <span><strong t-esc="group.session_name"/><small class="d-block text-muted" t-esc="group.pos_name"/></span>
+                                    <span class="o_baseer_session_counts"><span><t t-esc="labels.operations"/>: <b dir="ltr" t-esc="group.operations"/></span><span><t t-esc="labels.substitutions"/>: <b dir="ltr" t-esc="group.substitutions"/></span><span><t t-esc="labels.cancellations"/>: <b dir="ltr" t-esc="group.cancellations"/></span></span>
+                                </span>
+                            </button>
+                            <div t-if="state.sessions[group.key]?.expanded" t-att-id="'baseer-session-' + group.key" class="o_baseer_session_body">
+                                <p t-if="state.sessions[group.key].loading" class="text-muted" role="status" t-esc="labels.loading"/>
+                                <div t-elif="state.sessions[group.key].error" class="alert alert-danger" role="alert"><span t-esc="state.sessions[group.key].error"/><button class="btn btn-outline-danger ms-2" t-on-click="() => this.retrySession(group)" t-esc="labels.retry"/></div>
+                                <t t-elif="state.sessions[group.key].payload">
+                                    <div class="o_baseer_session_pager"><Pager offset="state.sessions[group.key].payload.pagination.offset" limit="state.sessions[group.key].payload.pagination.limit" total="state.sessions[group.key].payload.pagination.total" onUpdate="(data) => this.updateSessionPage(group, data)" isEditable="false"/></div>
+                                    <t t-call="baseer_pos_cancellation_report.Details"><t t-set="rows" t-value="state.sessions[group.key].payload.details"/></t>
+                                </t>
+                            </div>
+                        </section>
+                    </t>
+                </section>
+            </t>
+        </div>
+    </t>
+    <t t-name="baseer_pos_cancellation_report.Details">
+                    <p t-if="!rows.length" class="o_baseer_empty text-muted" t-esc="labels.noData"/>
                     <table t-else="" class="table o_baseer_detail_table">
                         <thead><tr><th t-esc="labels.time"/><th t-esc="labels.order"/><th t-esc="labels.type"/><th t-esc="labels.cashier"/><th t-esc="labels.product"/><th t-esc="labels.quantity"/><th t-esc="labels.reason"/><th t-esc="labels.indicator"/><th><span class="visually-hidden" t-esc="labels.source"/></th></tr></thead>
-                        <tbody><tr t-foreach="state.payload.details" t-as="row" t-key="row.id" t-att-class="row.review_label ? 'o_baseer_review_row' : ''">
+                        <tbody><tr t-foreach="rows" t-as="row" t-key="row.id" t-att-class="row.review_label ? 'o_baseer_review_row' : ''">
                             <td t-att-data-label="labels.time"><span dir="ltr" t-esc="row.event_at"/></td>
                             <td t-att-data-label="labels.order"><strong t-esc="row.order_reference"/><small class="d-block text-muted" t-esc="row.pos_name"/></td>
                             <td t-att-data-label="labels.type" t-esc="row.event_label"/>
@@ -122,8 +148,8 @@
                             <td><button t-if="row.source_record_id" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.openSource(row)" t-esc="labels.source"/><span t-else="" class="text-muted" t-esc="labels.sourceUnavailable"/></td>
                         </tr></tbody>
                     </table>
-                    <div t-if="state.payload.details.length" class="o_baseer_detail_cards">
-                        <article t-foreach="state.payload.details" t-as="row" t-key="row.id" class="o_baseer_detail_card" t-att-class="row.review_label ? 'o_baseer_review_row' : ''">
+                    <div t-if="rows.length" class="o_baseer_detail_cards">
+                        <article t-foreach="rows" t-as="row" t-key="row.id" class="o_baseer_detail_card" t-att-class="row.review_label ? 'o_baseer_review_row' : ''">
                             <dl class="o_baseer_detail_fields">
                                 <div><dt t-esc="labels.time"/><dd><span dir="ltr" t-esc="row.event_at"/></dd></div>
                                 <div><dt t-esc="labels.order"/><dd><strong t-esc="row.order_reference"/><small class="d-block text-muted" t-esc="row.pos_name"/></dd></div>
@@ -137,8 +163,5 @@
                             <button t-if="row.source_record_id" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.openSource(row)" t-esc="labels.source"/><span t-else="" class="text-muted" t-esc="labels.sourceUnavailable"/>
                         </article>
                     </div>
-                </section>
-            </t>
-        </div>
     </t>
 </templates>

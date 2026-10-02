@@ -3,7 +3,7 @@
 REPORT_QUERY = r"""
 WITH events AS (
     SELECT s.id::bigint * 4 AS id, s.company_id, s.order_id, s.order_id::bigint AS order_identity,
-           s.order_reference, s.pos_config_id, s.cashier_id, s.event_at,
+           s.order_reference, s.pos_config_id, s.session_id, s.cashier_id, s.event_at,
            'substitution'::text AS event_type, 'baseer.pos.substitution'::text AS source_model,
            s.id AS source_record_id, 's:' || s.company_id || ':' || s.id AS operation_key,
            s.source_snapshot->>'product_name' AS source_name,
@@ -18,7 +18,7 @@ WITH events AS (
     ) names ON true
     UNION ALL
     SELECT c.id::bigint * 4 + 1, c.company_id, c.order_id, c.order_id::bigint,
-           c.order_reference, c.pos_config_id, c.cashier_id, c.event_at,
+           c.order_reference, c.pos_config_id, c.session_id, c.cashier_id, c.event_at,
            'item_cancel', 'baseer.pos.protected_item_cancellation', c.id,
            'a:cancel:' || c.company_id || ':' || c.order_id || ':' || c.action_uuid,
            c.source_snapshot->>'product_name', NULL, c.source_quantity::numeric,
@@ -26,7 +26,7 @@ WITH events AS (
     FROM baseer_pos_protected_item_cancellation c
     UNION ALL
     SELECT p.id::bigint * 4 + 2, p.company_id, p.order_id, identity.value,
-           p.order_reference, p.pos_config_id, p.requested_by, p.create_date,
+           p.order_reference, p.pos_config_id, p.session_id, p.requested_by, p.create_date,
            CASE WHEN p.action = 'cancel' THEN 'item_cancel' ELSE 'quantity_reduce' END,
            'baseer.print.preparation.event', p.id,
            'a:' || CASE WHEN p.action = 'cancel' THEN 'cancel:' ELSE 'reduce:' END
@@ -48,7 +48,7 @@ WITH events AS (
     )
     UNION ALL
     SELECT c.id::bigint * 4 + 3, c.company_id, c.order_id, identity.value,
-           c.order_reference, c.pos_config_id, c.requested_by, c.create_date,
+           c.order_reference, c.pos_config_id, c.session_id, c.requested_by, c.create_date,
            'order_cancel', 'baseer.print.cancellation', c.id,
            'o:' || c.company_id || ':' || c.id,
            lines.names, NULL, CASE WHEN lines.gap THEN NULL ELSE lines.quantity END,
@@ -90,7 +90,7 @@ WITH events AS (
         ) l
     ) lines ON true
 )
-SELECT e.id, e.company_id, e.order_id, e.order_identity, e.order_reference, e.pos_config_id,
+SELECT e.id, e.company_id, e.order_id, e.order_identity, e.order_reference, e.pos_config_id, e.session_id,
        e.cashier_id, e.event_at, e.event_type, e.source_model, e.source_record_id,
        e.operation_key, e.source_name, e.replacement_names, e.quantity,
        e.reason_code, e.reason_note, e.data_gap OR e.event_at IS NULL AS data_gap,

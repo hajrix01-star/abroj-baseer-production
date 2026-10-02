@@ -4,21 +4,21 @@ SET LOCAL search_path = pg_temp, public;
 CREATE TEMP TABLE baseer_pos_substitution (
  id int, company_id int, order_id int, pos_config_id int, cashier_id int,
  event_at timestamp, order_reference text, source_snapshot jsonb,
- replacement_snapshot jsonb, source_quantity numeric, reason_note text, source_line_uuid text
+ replacement_snapshot jsonb, source_quantity numeric, reason_note text, source_line_uuid text, session_id int DEFAULT 1
 );
 CREATE TEMP TABLE baseer_pos_protected_item_cancellation (
  id int, company_id int, order_id int, pos_config_id int, cashier_id int,
  event_at timestamp, order_reference text, source_snapshot jsonb, source_quantity numeric,
- reason_code text, reason_note text, source_line_uuid text, action_uuid text
+ reason_code text, reason_note text, source_line_uuid text, action_uuid text, session_id int DEFAULT 1
 );
 CREATE TEMP TABLE baseer_print_preparation_event (
  id int, company_id int, order_id int, pos_config_id int, requested_by int, create_date timestamp,
  order_reference text, action text, action_uuid text, line_uuid text, snapshot jsonb,
- delta_quantity numeric, reason_code text, reason_note text
+ delta_quantity numeric, reason_code text, reason_note text, session_id int DEFAULT 1
 );
 CREATE TEMP TABLE baseer_print_cancellation (
  id int, company_id int, order_id int, pos_config_id int, requested_by int, create_date timestamp,
- order_reference text, reason_code text, reason_note text, snapshot jsonb
+ order_reference text, reason_code text, reason_note text, snapshot jsonb, session_id int DEFAULT 1
 );
 INSERT INTO baseer_pos_substitution VALUES
  (1,1,10,1,1,'2026-09-30 12:00','R10','{"product_name":"Tea"}', '[{"line_uuid":"replacement-1","product_name":"Coffee"}]',2,NULL,'original-1'),

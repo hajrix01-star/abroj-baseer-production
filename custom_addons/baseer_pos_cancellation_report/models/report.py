@@ -23,6 +23,7 @@ class CancellationFollowupReport(models.Model):
     order_identity = fields.Integer(readonly=True)
     order_reference = fields.Char(readonly=True)
     pos_config_id = fields.Many2one('pos.config', readonly=True)
+    session_id = fields.Many2one('pos.session', readonly=True)
     cashier_id = fields.Many2one('res.users', readonly=True)
     event_at = fields.Datetime(readonly=True)
     event_type = fields.Selection([
@@ -149,8 +150,21 @@ class CancellationFollowupReport(models.Model):
             cashier_id=self._integer(raw.get('cashier_id'), False, 1, 2147483647),
             offset=self._integer(raw.get('offset'), 0, 0, 10000000),
             limit=self._integer(raw.get('limit'), 50, 1, 100),
+            group_offset=self._integer(raw.get('group_offset'), 0, 0, 10000000),
+            group_limit=self._integer(raw.get('group_limit'), 50, 1, 100),
         )
         return normalized, utc_start, utc_end, m, e, zone
+
+    def _report_domain(self, normalized, start, end):
+        domain = [('company_id', 'in', self.env.companies.ids), ('event_at', '>=', start), ('event_at', '<', end)]
+        for name in ('pos_config_id', 'cashier_id'):
+            if normalized[name]:
+                domain.append((name, '=', normalized[name]))
+        if normalized['event_type'] != 'all':
+            domain.append(('event_type', '=', normalized['event_type']))
+        if normalized['review_only']:
+            domain += ['|', '|', ('same_order_review', '=', True), ('sequence_uncertain', '=', True), ('data_gap', '=', True)]
+        return domain
 
     def _scoped_query(self, domain, filters, morning, evening):
         # ORM supplies ACL and record-rule WHERE conditions before any aggregation.
@@ -173,7 +187,7 @@ class CancellationFollowupReport(models.Model):
     def _names(self, model, ids):
         return {record.id: record.display_name for record in self.env[model].browse(sorted(set(ids))).exists()}
 
-    def _report_data(self, scoped, offset, limit):
+    def _report_data(self, scoped, offset, limit, group_offset=0, group_limit=50):
         # Evaluate the permission-filtered audit projection once per request.
         # JSON text preserves exact numeric values through Decimal decoding.
         result = self._rows(SQL("""
@@ -188,8 +202,23 @@ class CancellationFollowupReport(models.Model):
                     sum(quantity) FILTER (WHERE event_type='substitution') AS substituted_quantity,
                     sum(quantity) FILTER (WHERE event_type IN ('item_cancel','order_cancel')) AS cancelled_quantity
                 FROM scoped
-            )
-            SELECT row_to_json(summary)::text AS summary,
+            ), session_groups AS (
+                SELECT local_time::date::text AS date, company_id, pos_config_id, session_id,
+                    max(event_at) AS latest_event_at, count(*) AS detail_count,
+                    count(DISTINCT operation_key) AS operations,
+                    count(DISTINCT operation_key) FILTER (WHERE event_type='substitution') AS substitutions,
+                    count(DISTINCT operation_key) FILTER (WHERE event_type IN ('item_cancel','order_cancel')) AS cancellations,
+                    count(DISTINCT operation_key) FILTER (WHERE event_type='quantity_reduce') AS reductions
+                FROM scoped GROUP BY local_time::date,company_id,pos_config_id,session_id
+            ), session_summary AS (SELECT count(*) AS total FROM session_groups)
+            SELECT to_json(session_summary.total)::text AS group_total,
+                (SELECT COALESCE(json_agg(r),'[]')::text FROM (
+                    SELECT * FROM session_groups
+                    ORDER BY date DESC,latest_event_at DESC,company_id,pos_config_id NULLS LAST,session_id NULLS LAST
+                    LIMIT %s OFFSET CASE WHEN %s >= session_summary.total
+                        THEN greatest(0,(session_summary.total-1)/%s*%s) ELSE %s END
+                ) r) AS session_groups,
+                row_to_json(summary)::text AS summary,
                 (SELECT COALESCE(json_agg(r),'[]')::text FROM (
                     SELECT COALESCE(reason_code,'') AS key,count(DISTINCT operation_key) AS count
                     FROM scoped WHERE event_type IN ('item_cancel','order_cancel')
@@ -219,8 +248,13 @@ class CancellationFollowupReport(models.Model):
                         CASE WHEN %s >= summary.details
                             THEN greatest(0, (summary.details-1)/%s*%s) ELSE %s END
                 ) r) AS details
-            FROM summary
-        """, scoped, limit, offset, limit, limit, offset))[0]
+            FROM summary CROSS JOIN session_summary
+        """, scoped, group_limit, group_offset, group_limit, group_limit, group_offset,
+            limit, offset, limit, limit, offset))[0]
+        return self._decode_data(result)
+
+    @staticmethod
+    def _decode_data(result):
         data = {key: json.loads(value, parse_float=Decimal) for key, value in result.items()}
         for row in data['details']:
             for name in ('event_at', 'local_time', 'prior_substitution_at'):
@@ -232,16 +266,9 @@ class CancellationFollowupReport(models.Model):
     def get_report(self, filters=None):
         self._assert_report_access()
         normalized, start, end, morning, evening, zone = self._normalize_filters(filters)
-        domain = [('company_id', 'in', self.env.companies.ids), ('event_at', '>=', start), ('event_at', '<', end)]
-        for name in ('pos_config_id', 'cashier_id'):
-            if normalized[name]:
-                domain.append((name, '=', normalized[name]))
-        if normalized['event_type'] != 'all':
-            domain.append(('event_type', '=', normalized['event_type']))
-        if normalized['review_only']:
-            domain += ['|', '|', ('same_order_review', '=', True), ('sequence_uncertain', '=', True), ('data_gap', '=', True)]
-        scoped = self._scoped_query(domain, normalized, morning, evening)
-        data = self._report_data(scoped, normalized['offset'], normalized['limit'])
+        scoped = self._scoped_query(self._report_domain(normalized, start, end), normalized, morning, evening)
+        data = self._report_data(scoped, normalized['offset'], normalized['limit'],
+                                 normalized['group_offset'], normalized['group_limit'])
         summary = data['summary']
         number = self._number
         def percentage(value, total):
@@ -259,11 +286,7 @@ class CancellationFollowupReport(models.Model):
             dict(key='cancelled_quantity', label=_('Cancelled item quantity'), value=number(summary['cancelled_quantity'], 2), note=_('Known quantities only; incomplete snapshots are excluded')),
         ]
         reasons = data['reasons']
-        reason_labels = {
-            'customer_cancelled': _('Customer cancelled'), 'wrong_order': _('Wrong order'),
-            'duplicate_order': _('Duplicate order'), 'unavailable_item': _('Item unavailable'),
-            'staff_error': _('Staff error'), 'other': _('Other'), '': _('Reason not recorded'),
-        }
+        reason_labels = self._reason_labels()
         for row in reasons:
             row.update(label=reason_labels.get(row['key'], _('Reason not recorded')),
                        percentage=percentage(row['count'], summary['cancellations']),
@@ -290,7 +313,37 @@ class CancellationFollowupReport(models.Model):
         if offset >= total:
             offset = max(0, (total - 1) // limit * limit)
             normalized['offset'] = offset
-        details = data['details']
+        details = self._format_details(data['details'], zone)
+        session_days, group_pagination = self._format_session_days(data, normalized)
+        # Options use only accessible audit rows in the active companies.
+        option_rows = self._read_group([('company_id', 'in', self.env.companies.ids)], ['pos_config_id', 'cashier_id'])
+        register_ids = {register.id for register, cashier in option_rows if register}
+        cashier_ids = {cashier.id for register, cashier in option_rows if cashier}
+        options = {
+            'registers': [dict(id=key, name=name) for key, name in self._names('pos.config', register_ids).items()],
+            'cashiers': [dict(id=key, name=name) for key, name in self._names('res.users', cashier_ids).items()],
+        }
+        return dict(
+            filters=normalized, kpis=kpis, reasons=reasons, shifts=shifts, timeline=timeline,
+            details=details, pagination=dict(offset=offset, limit=limit, total=total), options=options,
+            session_days=session_days, group_pagination=group_pagination,
+            coverage_note=_('Only stored audit events are covered. Ordinary unaudited deletions are not included. '
+                            'Quantities are POS units, not financial totals. Cancellation reason percentages use '
+                            'documented cancellation operations; an operation with multiple reasons can appear in several groups. '
+                            'Source rows with incomplete data: %s.') % number(summary['gaps']),
+            **groups,
+        )
+
+    def _reason_labels(self):
+        return {
+            'customer_cancelled': _('Customer cancelled'), 'wrong_order': _('Wrong order'),
+            'duplicate_order': _('Duplicate order'), 'unavailable_item': _('Item unavailable'),
+            'staff_error': _('Staff error'), 'other': _('Other'), '': _('Reason not recorded'),
+        }
+
+    def _format_details(self, details, zone):
+        number = self._number
+        reason_labels = self._reason_labels()
         cashier_names = self._names('res.users', [row['cashier_id'] for row in details if row['cashier_id']])
         register_names = self._names('pos.config', [row['pos_config_id'] for row in details if row['pos_config_id']])
         event_labels = {'substitution': _('Substitution'), 'item_cancel': _('Item cancellation'),
@@ -323,20 +376,84 @@ class CancellationFollowupReport(models.Model):
             # JSON-RPC must not carry raw datetime/numeric values from SQL.
             row.pop('local_time', None)
             row.pop('prior_substitution_at', None)
-        # Options use only accessible audit rows in the active companies.
-        option_rows = self._read_group([('company_id', 'in', self.env.companies.ids)], ['pos_config_id', 'cashier_id'])
-        register_ids = {register.id for register, cashier in option_rows if register}
-        cashier_ids = {cashier.id for register, cashier in option_rows if cashier}
-        options = {
-            'registers': [dict(id=key, name=name) for key, name in self._names('pos.config', register_ids).items()],
-            'cashiers': [dict(id=key, name=name) for key, name in self._names('res.users', cashier_ids).items()],
-        }
-        return dict(
-            filters=normalized, kpis=kpis, reasons=reasons, shifts=shifts, timeline=timeline,
-            details=details, pagination=dict(offset=offset, limit=limit, total=total), options=options,
-            coverage_note=_('Only stored audit events are covered. Ordinary unaudited deletions are not included. '
-                            'Quantities are POS units, not financial totals. Cancellation reason percentages use '
-                            'documented cancellation operations; an operation with multiple reasons can appear in several groups. '
-                            'Source rows with incomplete data: %s.') % number(summary['gaps']),
-            **groups,
-        )
+        return details
+
+    @staticmethod
+    def _page_offset(offset, limit, total):
+        return max(0, (total - 1) // limit * limit) if offset >= total else offset
+
+    def _format_session_days(self, data, normalized):
+        rows = data['session_groups']
+        session_names = self._names('pos.session', [row['session_id'] for row in rows if row['session_id']])
+        register_names = self._names('pos.config', [row['pos_config_id'] for row in rows if row['pos_config_id']])
+        days = {}
+        for row in rows:
+            row.pop('latest_event_at', None)
+            row['session_id'] = row['session_id'] or False
+            row['pos_config_id'] = row['pos_config_id'] or False
+            row['key'] = '%s:%s:%s:%s' % (
+                row['date'], row['company_id'], row['pos_config_id'] or 'unknown', row['session_id'] or 'unknown')
+            session_name = (session_names.get(row['session_id']) or '').strip()
+            row['session_name'] = (
+                (session_name if session_name and session_name != '/' else _('Session %s') % self._number(row['session_id']))
+                if row['session_id'] else _('Session not recorded')
+            )
+            row['pos_name'] = register_names.get(row['pos_config_id'], _('Not recorded'))
+            for name in ('operations', 'substitutions', 'cancellations', 'reductions'):
+                row[name] = self._number(row[name])
+            day = days.setdefault(row['date'], dict(key=row['date'], date=row['date'], groups=[]))
+            day['groups'].append(row)
+        total, limit = data['group_total'], normalized['group_limit']
+        offset = self._page_offset(normalized['group_offset'], limit, total)
+        normalized['group_offset'] = offset
+        return list(days.values()), dict(offset=offset, limit=limit, total=total)
+
+    def _validate_session_group(self, group):
+        if not isinstance(group, dict):
+            raise ValidationError(_('The report session group is invalid.'))
+        day = group.get('date')
+        try:
+            if not isinstance(day, str) or not re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', day):
+                raise ValueError()
+            date.fromisoformat(day)
+        except (ValueError, TypeError):
+            raise ValidationError(_('The report session group is invalid.')) from None
+        result = dict(date=day)
+        for name in ('company_id', 'pos_config_id', 'session_id'):
+            value = group.get(name)
+            if value is False and name != 'company_id':
+                result[name] = False
+            elif type(value) is int and 1 <= value <= 2147483647:
+                result[name] = value
+            else:
+                raise ValidationError(_('The report session group is invalid.'))
+        if result['company_id'] not in self.env.companies.ids:
+            raise AccessError(_('The report session company is not accessible.'))
+        return result
+
+    @api.model
+    def get_session_details(self, filters, group, offset=0, limit=50):
+        self._assert_report_access()
+        selected = self._validate_session_group(group)
+        normalized, start, end, morning, evening, zone = self._normalize_filters(filters)
+        offset = self._integer(offset, 0, 0, 10000000)
+        limit = self._integer(limit, 50, 1, 100)
+        domain = self._report_domain(normalized, start, end)
+        domain += [(name, '=', selected[name]) for name in ('company_id', 'pos_config_id', 'session_id')]
+        scoped = self._scoped_query(domain, normalized, morning, evening)
+        scoped = SQL('SELECT * FROM (%s) e WHERE local_time::date = %s::date', scoped, selected['date'])
+        result = self._rows(SQL("""
+            WITH scoped AS MATERIALIZED (%s), summary AS (SELECT count(*) AS total FROM scoped)
+            SELECT row_to_json(summary)::text AS summary,
+                (SELECT COALESCE(json_agg(r),'[]')::text FROM (
+                    SELECT * FROM scoped ORDER BY event_at DESC,id DESC LIMIT %s OFFSET
+                        CASE WHEN %s >= summary.total
+                            THEN greatest(0,(summary.total-1)/%s*%s) ELSE %s END
+                ) r) AS details
+            FROM summary
+        """, scoped, limit, offset, limit, limit, offset))[0]
+        data = self._decode_data(result)
+        total = data['summary']['total']
+        offset = self._page_offset(offset, limit, total)
+        return dict(details=self._format_details(data['details'], zone),
+                    pagination=dict(offset=offset, limit=limit, total=total))

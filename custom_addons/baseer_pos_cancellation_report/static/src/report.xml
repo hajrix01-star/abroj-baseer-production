@@ -122,6 +122,21 @@
                             <td><button t-if="row.source_record_id" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.openSource(row)" t-esc="labels.source"/><span t-else="" class="text-muted" t-esc="labels.sourceUnavailable"/></td>
                         </tr></tbody>
                     </table>
+                    <div t-if="state.payload.details.length" class="o_baseer_detail_cards">
+                        <article t-foreach="state.payload.details" t-as="row" t-key="row.id" class="o_baseer_detail_card" t-att-class="row.review_label ? 'o_baseer_review_row' : ''">
+                            <dl class="o_baseer_detail_fields">
+                                <div><dt t-esc="labels.time"/><dd><span dir="ltr" t-esc="row.event_at"/></dd></div>
+                                <div><dt t-esc="labels.order"/><dd><strong t-esc="row.order_reference"/><small class="d-block text-muted" t-esc="row.pos_name"/></dd></div>
+                                <div><dt t-esc="labels.type"/><dd t-esc="row.event_label"/></div>
+                                <div><dt t-esc="labels.cashier"/><dd t-esc="row.cashier_name"/></div>
+                                <div><dt t-esc="labels.product"/><dd><span t-esc="row.source_name"/><small t-if="row.replacement_names" class="d-block text-muted"><i class="fa fa-exchange me-1" aria-hidden="true"/><t t-esc="row.replacement_names"/></small></dd></div>
+                                <div><dt t-esc="labels.quantity"/><dd><span dir="ltr" t-esc="row.quantity"/></dd></div>
+                                <div><dt t-esc="labels.reason"/><dd t-esc="row.reason"/></div>
+                                <div t-if="row.review_label || row.review_context"><dt t-esc="labels.indicator"/><dd><span t-if="row.review_label" class="badge text-bg-warning text-wrap" t-esc="row.review_label"/><small t-if="row.review_context" class="d-block text-muted mt-1" t-esc="row.review_context"/></dd></div>
+                            </dl>
+                            <button t-if="row.source_record_id" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.openSource(row)" t-esc="labels.source"/><span t-else="" class="text-muted" t-esc="labels.sourceUnavailable"/>
+                        </article>
+                    </div>
                 </section>
             </t>
         </div>

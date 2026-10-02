@@ -37,14 +37,17 @@
     .o_baseer_detail_table { font-size: .82rem; table-layout: fixed; margin-bottom: 0; }
     .o_baseer_detail_table th, .o_baseer_detail_table td { overflow-wrap: anywhere; vertical-align: middle; }
     .o_baseer_detail_table th:nth-child(5) { width: 17%; }
+    .o_baseer_detail_cards { display: none; }
+    .o_baseer_detail_card { border: 1px solid var(--border-color, #dee2e6); border-radius: 6px; padding: 16px; min-width: 0; }
+    .o_baseer_detail_fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; margin: 0 0 16px; }
+    .o_baseer_detail_fields > div { min-width: 0; }
+    .o_baseer_detail_fields dt { position: static; margin: 0 0 4px; color: var(--body-color, #212529); font-size: .8rem; font-weight: 600; line-height: 1.5; }
+    .o_baseer_detail_fields dd { position: static; margin: 0; font-size: .9rem; line-height: 1.6; overflow-wrap: anywhere; }
     .o_baseer_review_row { background: rgba(255, 193, 7, .06); }
     .o_baseer_report_loading, .o_baseer_empty { padding: 28px 0; text-align: center; }
     @media (max-width: 1100px) {
-        .o_baseer_detail_table thead { display: none; }
-        .o_baseer_detail_table, .o_baseer_detail_table tbody { display: block; }
-        .o_baseer_detail_table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; border: 1px solid var(--border-color, #dee2e6); border-radius: 6px; padding: 14px; margin-bottom: 12px; }
-        .o_baseer_detail_table td { display: block; border: 0; padding: 0; }
-        .o_baseer_detail_table td[data-label]::before { content: attr(data-label); display: block; color: var(--secondary, #6c757d); font-size: .75rem; margin-bottom: 3px; }
+        .o_baseer_detail_table { display: none; }
+        .o_baseer_detail_cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
     }
     @media (max-width: 600px) {
         padding: 12px;
@@ -58,6 +61,6 @@
         .o_baseer_kpi strong { font-size: 1.5rem; }
         .o_baseer_filter_actions button { width: 100%; }
         .o_baseer_details_heading { flex-wrap: wrap; }
-        .o_baseer_detail_table tr { grid-template-columns: minmax(0, 1fr); }
+        .o_baseer_detail_fields { grid-template-columns: minmax(0, 1fr); }
     }
 }

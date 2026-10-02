@@ -34,6 +34,15 @@
     .o_baseer_report_details { padding: 20px; margin-bottom: 24px; }
     .o_baseer_details_heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; }
     .o_baseer_details_heading h2 { margin: 0; }
+    .o_baseer_session_day { font-size: 1rem; font-weight: 600; margin: 22px 0 12px; }
+    .o_baseer_session_group { border: 1px solid var(--border-color, #dee2e6); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+    .o_baseer_session_toggle { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 14px 16px; border: 0; background: var(--o-view-background-color, #f8f9fa); color: inherit; text-align: start; }
+    .o_baseer_session_toggle:focus-visible { outline: 2px solid var(--primary, #714b67); outline-offset: -2px; }
+    .o_baseer_session_summary { display: flex; flex: 1; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; min-width: 0; }
+    .o_baseer_session_summary > span { overflow-wrap: anywhere; min-width: 0; }
+    .o_baseer_session_counts { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: .8rem; }
+    .o_baseer_session_body { padding: 16px; border-top: 1px solid var(--border-color, #dee2e6); }
+    .o_baseer_session_pager { display: flex; justify-content: flex-end; margin-bottom: 14px; }
     .o_baseer_detail_table { font-size: .82rem; table-layout: fixed; margin-bottom: 0; }
     .o_baseer_detail_table th, .o_baseer_detail_table td { overflow-wrap: anywhere; vertical-align: middle; }
     .o_baseer_detail_table th:nth-child(5) { width: 17%; }
@@ -62,5 +71,7 @@
         .o_baseer_filter_actions button { width: 100%; }
         .o_baseer_details_heading { flex-wrap: wrap; }
         .o_baseer_detail_fields { grid-template-columns: minmax(0, 1fr); }
+        .o_baseer_session_toggle, .o_baseer_session_body { padding: 12px; }
+        .o_baseer_session_summary { align-items: flex-start; flex-direction: column; }
     }
 }

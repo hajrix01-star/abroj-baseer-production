@@ -25,6 +25,12 @@
     .o_bec_point_closed .o_bec_bar_fill { background: #b8afa0; }
     .o_bec_point_partial .o_bec_bar_fill { background: #b88b35; }
     .o_bec_snapshot_note { color: #81796d; font-size: 12px; margin-bottom: 16px; }
+    .o_bec_filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 12px; label { display: grid; gap: 6px; flex: 1 1 180px; min-width: 0; font-size: 13px; } .form-control, .form-select, .btn { min-height: 44px; } input[type='date'] { /*rtl:ignore*/ direction: ltr; font-variant-numeric: tabular-nums; } }
+    .o_bec_period { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: #81796d; }
+    .o_bec_outside { font-size: 12px; margin-top: 16px; p:last-child { margin-bottom: 0; } }
+    .o_bec_sessions { margin-top: 24px; border-top: 1px solid #eee7da; padding-top: 16px; summary { cursor: pointer; min-height: 44px; font-size: 14px; font-weight: 600; } ul { list-style: none; padding: 0; margin: 0; } li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid #eee7da; > div { min-width: 0; flex: 1 1 140px; } strong { overflow-wrap: anywhere; } small { display: block; color: #81796d; font-size: 11px; margin-top: 4px; } } }
+    .o_bec_session_pages { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; .btn { min-height: 44px; } }
+    .o_bec_point_negative .o_bec_bar_fill { background: #ba4736; }
     .o_bec_warning { color: #875f20; font-size: 11px; margin-top: 12px; }
     .o_bec_tooltip { display: none; pointer-events: none; position: absolute; bottom: calc(100% + 8px); inset-inline-start: 0; z-index: 5; width: 160px; background: #28251f; color: #fff; padding: 12px; border-radius: 12px; text-align: start; font-size: 12px; box-shadow: 0 8px 24px rgba(24,21,17,.2); span, strong { display: block; margin-bottom: 3px; } }
     .o_bec_bar:nth-child(n+8) .o_bec_tooltip { inset-inline-start: auto; inset-inline-end: 0; }

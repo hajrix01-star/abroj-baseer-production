@@ -412,7 +412,7 @@ export class BaseerHeatCalendar extends Component {
         });
         this.labels = {
             title: _t("Heat calendar"),
-            subtitle: _t("Approved daily sales summaries, including VAT"),
+            subtitle: _t("POS sales, including historical summaries and VAT. Operating day: 07:00–05:00 Riyadh."),
             previous: _t("Previous month"),
             next: _t("Next month"),
             refresh: _t("Refresh"),
@@ -421,7 +421,7 @@ export class BaseerHeatCalendar extends Component {
             details: _t("Day details"),
             status: _t("Operating status"),
             performance: _t("Performance"),
-            source: _t("Open approved sales summaries"),
+            source: _t("Open sales sources"),
             sourceLink: _t("Source"),
             approvedShifts: _t("Approved shifts"),
             manage: _t("Manage occasions"),
@@ -429,7 +429,7 @@ export class BaseerHeatCalendar extends Component {
             feed: _t("Feed Saudi occasions"),
             feedHelp: _t("Adds fixed official holidays and clearly labelled Eid estimates. Confirm published dates before relying on them."),
             close: _t("Close"),
-            empty: _t("No sales summary has been approved for this day."),
+            empty: _t("No paid POS sales or approved zero-sales summary are available for this day."),
             partial: _t("The day is not evaluated until its operating status is complete."),
             noOccasion: _t("No occasion"),
         };

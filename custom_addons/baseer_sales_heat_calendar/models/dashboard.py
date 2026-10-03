@@ -1,10 +1,12 @@
 import calendar
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
 from decimal import Decimal
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools import SQL
 from odoo.addons.baseer_pos_summary.models.common import active_company, money
+from odoo.addons.baseer_sales_dashboard.models.executive import RIYADH, _utc_at
 from .occasion import HEAT_CALENDAR_MANAGER_GROUP
 
 
@@ -12,6 +14,7 @@ ZERO = Decimal('0.00')
 MAX_HEAT_DAYS = 366
 BASELINE_WEEKS = 8
 BASELINE_MINIMUM = 3
+MAX_HEAT_SESSIONS = 1000
 
 
 def _money_display(value):
@@ -115,6 +118,105 @@ class SalesHeatCalendarDashboard(models.Model):
         cells += [None] * ((7 - len(cells) % 7) % 7)
         return [cells[index:index + 7] for index in range(0, len(cells), 7)]
 
+    def _heat_aggregate_days(self, company, first, last, now):
+        """Native money once; summary/closure records supply metadata only."""
+        active_company(self, company)
+        if last == date.max:
+            raise ValidationError(_('Choose a calendar month before December 9999.'))
+        period = {'from': first.isoformat(), 'to': last.isoformat()}
+        for model in ('pos.order', 'pos.session'):
+            self.env[model].check_access('read')
+        self._baseer_executive_capacity(period, now)
+        if not self._baseer_executive_currency_supported(period, now):
+            raise ValidationError(_('This calendar supports SAR sales configurations only.'))
+
+        Summary = self.env['baseer.pos.summary']
+        summaries = Summary.search([
+            ('company_id', '=', company.id), ('state', '=', 'approved'),
+            ('business_date', '>=', first), ('business_date', '<=', last),
+        ])
+        nonzero = summaries.filtered(lambda item: not item.zero_sales)
+        visible_orders = self.env['pos.order'].search(self._baseer_executive_source() + [
+            ('id', 'in', nonzero.order_id.ids), ('source', '=', 'baseer_summary'),
+            ('date_order', '<', now), ('date_order', '>=', _utc_at(first, 7)),
+            ('date_order', '<', _utc_at(last + timedelta(days=1), 5)),
+        ])
+        visible_ids = set(visible_orders.ids)
+        for summary in nonzero:
+            order = summary.order_id
+            if (not order or order.id not in visible_ids or order.baseer_summary_id != summary
+                    or order.session_id != summary.session_id
+                    or order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).date() != summary.business_date
+                    or order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).hour < 7):
+                raise ValidationError(_('An approved summary has no matching accessible POS order. Review its source before evaluating this calendar.'))
+
+        # Include only generated orders whose approved metadata is visible.
+        # Reject an orphan marker rather than presenting it as a direct sale.
+        query = self._baseer_executive_query(period, now)
+        orders = self.env['pos.order']
+        summary_id = SQL.identifier(orders._table, 'baseer_summary_id')
+        source = SQL.identifier(orders._table, 'source')
+        orphan_query = self._baseer_executive_query(period, now)
+        orphan_query.add_where(SQL(
+            "(%s IS NOT NULL OR COALESCE(%s, '') = 'baseer_summary') AND NOT (COALESCE(%s = ANY(%s), FALSE) AND COALESCE(%s, '') = 'baseer_summary')",
+            summary_id, source, summary_id, summaries.ids, source))
+        if self.env.execute_query(orphan_query.select(SQL('COUNT(*)')))[0][0]:
+            raise ValidationError(_('A summary POS order has no accessible approved summary. Review its source before evaluating this calendar.'))
+        session = SQL.identifier(orders._table, 'session_id')
+        if self.env.execute_query(query.select(SQL('COUNT(DISTINCT %s)', session)))[0][0] > MAX_HEAT_SESSIONS:
+            raise ValidationError(_('This calendar exceeds 1,000 contributing sessions. No sales have been omitted.'))
+        stamp = SQL.identifier(orders._table, 'date_order')
+        business_day = SQL("CAST((%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh') - INTERVAL '7 hours' AS DATE)", stamp)
+        generated = SQL('(%s IS NOT NULL)', summary_id)
+        query.groupby = SQL('%s, %s, %s', business_day, generated, session)
+        grouped = {}
+        for day, is_summary, session_id, amount, count in self.env.execute_query(query.select(
+                business_day, generated, session, self._baseer_executive_amount(), SQL('COUNT(*)'))):
+            kind = 'summary' if is_summary else 'direct'
+            bucket = grouped.setdefault(day, {}).setdefault(kind, {'sales': ZERO, 'count': 0, 'sessions': set()})
+            bucket['sales'] += Decimal(amount)
+            bucket['count'] += count
+            bucket['sessions'].add(session_id)
+        outside_query = self._baseer_executive_query(period, now, outside=True)
+        outside_query.groupby = business_day
+        outside = dict(self.env.execute_query(outside_query.select(business_day, SQL('COUNT(*)'))))
+
+        rows = self.env['baseer.pos.daily.report']._aggregate_days(company, first, last)['days']
+        for row in rows:
+            day = row['business_date']
+            native = grouped.get(day, {})
+            summary = native.get('summary')
+            direct = native.get('direct')
+            has_summary = row['has_sales']
+            row.update(sales=ZERO, source_kind='none', order_count=0,
+                       outside_count=outside.get(day, 0), source_action=None)
+            if direct and (has_summary or row['status'] == 'closed'):
+                row.update(status='conflict', has_sales=False, customers=0, source_kind='conflict')
+                continue
+            if has_summary:
+                row.update(sales=money(summary['sales']) if summary else ZERO, source_kind='summary',
+                           order_count=summary['count'] if summary else 0)
+            elif direct:
+                row.update(sales=money(direct['sales']), customers=direct['count'], has_sales=True,
+                           order_count=direct['count'], source_kind='direct',
+                           status='complete' if _utc_at(day + timedelta(days=1), 5) <= now else 'incomplete')
+            if row['source_kind'] == 'summary' and not summary:
+                # Explicit zero-day summaries have no order by design.
+                row['source_action'] = self._baseer_source_action(company, day, day)
+            elif row['has_sales']:
+                bucket = summary or direct
+                row['source_action'] = {
+                    'type': 'ir.actions.act_window', 'name': _('POS sales sources'),
+                    'res_model': 'pos.order', 'view_mode': 'list,form',
+                    'domain': [('company_id', '=', company.id), ('state', 'in', ['paid', 'done', 'invoiced']),
+                               ('session_id', 'in', sorted(bucket['sessions'])),
+                               ('date_order', '>=', fields.Datetime.to_string(_utc_at(day, 7))),
+                               ('date_order', '<', fields.Datetime.to_string(min(_utc_at(day + timedelta(days=1), 5), now)))],
+                    'context': {'allowed_company_ids': [company.id], 'create': False, 'edit': False, 'delete': False},
+                }
+        return rows
+
+    @api.readonly
     def get_baseer_heat_calendar(self, month=None):
         """Return a month of heat data without copying or changing sales data."""
         self.ensure_one()
@@ -128,6 +230,10 @@ class SalesHeatCalendarDashboard(models.Model):
         if self.company_ids and company not in self.company_ids:
             raise AccessError(_('Switch to a company enabled for this heat calendar.'))
         active_company(self, company)
+        # Only the selected company and presentation context may reach source queries.
+        self = self.with_context({'allowed_company_ids': [company.id], 'lang': self.env.lang, 'tz': 'Asia/Riyadh'})
+        company = self.env.company
+        now = fields.Datetime.to_datetime(fields.Datetime.now())
         first, last = self._heat_month_bounds(month)
         if (last - first).days + 1 > MAX_HEAT_DAYS:
             raise ValidationError(_('Choose a calendar range of at most 366 days.'))
@@ -148,7 +254,7 @@ class SalesHeatCalendarDashboard(models.Model):
             first - timedelta(weeks=BASELINE_WEEKS)
             if first >= earliest_history else date.min
         )
-        all_rows = Report._aggregate_days(company, history_first, last)['days']
+        all_rows = self._heat_aggregate_days(company, history_first, last, now)
         month_rows = [row for row in all_rows if first <= row['business_date'] <= last]
         complete_rows = [row for row in month_rows if row['status'] == 'complete']
         weekday_names = (
@@ -215,16 +321,21 @@ class SalesHeatCalendarDashboard(models.Model):
                 'incomplete': _('Incomplete'),
                 'closed': _('Closed'),
                 'missing': _('No entry'),
+                'conflict': _('Conflicting daily sources'),
             }[status]
             partial_closure = status == 'complete' and bool(raw['closure_ids'])
             occasion_names = ', '.join(
                 _('%(kind)s: %(name)s', kind=event['kind_label'], name=event['name'])
                 for event in occasions_by_day.get(business_date, [])
             )
-            source_action = self._baseer_source_action(company, business_date, business_date)
-            aria = _('%(date)s: %(sales)s; %(customers)s customers; %(status)s',
-                     date=business_date.strftime('%d/%m/%Y'), sales=_money_display(sales),
-                     customers=_integer_display(customers), status=status_label)
+            source_kind = raw.get('source_kind', 'summary' if raw['has_sales'] else 'none')
+            count_label = _('POS transactions') if source_kind == 'direct' else _('Recorded customers')
+            source_label = {'summary': _('Approved summary'), 'direct': _('Direct POS sales'),
+                            'none': _('No sales source'), 'conflict': _('Conflicting daily sources')}[source_kind]
+            source_action = raw.get('source_action')
+            aria = _('%(date)s: %(sales)s; %(count)s %(count_label)s; %(status)s',
+                     date=business_date.strftime('%d/%m/%Y'), sales=_money_display(sales if raw['has_sales'] else None),
+                     count=_integer_display(customers if raw['has_sales'] else None), count_label=count_label, status=status_label)
             if occasion_names:
                 aria += _('; occasion: %s', occasion_names)
             prepared.append({
@@ -237,6 +348,14 @@ class SalesHeatCalendarDashboard(models.Model):
                 'customers_display': _integer_display(customers) if raw['has_sales'] else '—',
                 'status': status,
                 'status_label': status_label,
+                'source_kind': source_kind,
+                'source_label': source_label,
+                'count_label': count_label,
+                'warning': (_('A summary and direct POS sales, or a closure and sales, overlap on this day. Totals and performance are withheld to avoid double counting.')
+                            if status == 'conflict' else ''),
+                'outside_count': raw.get('outside_count', 0),
+                'outside_warning': (_('Sales between 05:00 and 07:00 Riyadh time are outside the operating day and are not included.')
+                                    if raw.get('outside_count') else ''),
                 'partial_closure': partial_closure,
                 'partial_closure_label': _('Partially closed') if partial_closure else '',
                 'has_sales': bool(raw['has_sales']),
@@ -248,7 +367,7 @@ class SalesHeatCalendarDashboard(models.Model):
                 'ratio_display': f'{ratio:,.1f}%' if ratio is not None else '—',
                 'occasions': occasions_by_day.get(business_date, []),
                 'occasion_label': occasion_names,
-                'shift_breakdown': breakdowns_by_day.get(business_date, []),
+                'shift_breakdown': breakdowns_by_day.get(business_date, []) if source_kind == 'summary' else [],
                 'source_action': source_action if raw['has_sales'] else None,
                 'aria_label': aria,
             })
@@ -266,7 +385,7 @@ class SalesHeatCalendarDashboard(models.Model):
             'weekdays': weekday_headers,
             'labels': {
                 'sales': _('Sales including VAT'),
-                'customers': _('Recorded customers'),
+                'customers': _('Customers / POS transactions'),
                 'basis_target': _('Daily target'),
                 'basis_baseline': _('Reference median'),
                 'basis_none': _('No target or reference'),

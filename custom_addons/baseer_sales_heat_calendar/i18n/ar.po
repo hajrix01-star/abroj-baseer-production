@@ -2,9 +2,120 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Odoo 19.0\n"
-"Language: ar_001\n"
+"Language: ar\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "POS sales, including historical summaries and VAT. Operating day: 07:00–05:00 Riyadh."
+msgstr "مبيعات نقاط البيع والملخصات السابقة، شاملة الضريبة. يوم العمل من 07:00 إلى 05:00 بتوقيت الرياض."
+
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Open sales sources"
+msgstr "عرض مصادر المبيعات"
+
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "No paid POS sales or approved zero-sales summary are available for this day."
+msgstr "لا توجد مبيعات مدفوعة أو ملخص معتمد بلا مبيعات لهذا اليوم."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Choose a calendar month before December 9999."
+msgstr "اختر شهرًا قبل ديسمبر 9999."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "This calendar supports SAR sales configurations only."
+msgstr "يعرض التقويم مبيعات نقاط البيع بالريال السعودي فقط."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "An approved summary has no matching accessible POS order. Review its source before evaluating this calendar."
+msgstr "تعذر الوصول إلى عملية البيع المرتبطة بملخص معتمد. راجع مصدره."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "A summary POS order has no accessible approved summary. Review its source before evaluating this calendar."
+msgstr "تعذر الوصول إلى الملخص المعتمد المرتبط بعملية بيع. راجع مصدرها."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "This calendar exceeds 1,000 contributing sessions. No sales have been omitted."
+msgstr "تجاوزت الفترة 1,000 جلسة بيع. لم نستبعد أي مبيعات."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "POS sales sources"
+msgstr "مصادر مبيعات نقاط البيع"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Conflicting daily sources"
+msgstr "تعارض مصادر اليوم"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "POS transactions"
+msgstr "عمليات نقاط البيع"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Approved summary"
+msgstr "ملخص معتمد"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Direct POS sales"
+msgstr "مبيعات مباشرة من نقاط البيع"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "No sales source"
+msgstr "لا يوجد مصدر مبيعات"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "A summary and direct POS sales, or a closure and sales, overlap on this day. Totals and performance are withheld to avoid double counting."
+msgstr "تعارضت مصادر المبيعات أو الإغلاق لهذا اليوم. راجع المصادر؛ أخفينا الإجمالي والتقييم لمنع التكرار."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Sales between 05:00 and 07:00 Riyadh time are outside the operating day and are not included."
+msgstr "مبيعات الفترة من 05:00 إلى 07:00 خارج يوم العمل، ولا تدخل في الإجمالي."
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Customers / POS transactions"
+msgstr "العملاء أو عمليات نقاط البيع"
+
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "%(date)s: %(sales)s; %(count)s %(count_label)s; %(status)s"
+msgstr "%(date)s: %(sales)s؛ %(count)s %(count_label)s؛ %(status)s"
+
 
 #. module: baseer_sales_heat_calendar
 #. odoo-javascript

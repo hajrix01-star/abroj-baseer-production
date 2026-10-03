@@ -138,7 +138,7 @@ class SalesHeatCalendarDashboard(models.Model):
         nonzero = summaries.filtered(lambda item: not item.zero_sales)
         visible_orders = self.env['pos.order'].search(self._baseer_executive_source() + [
             ('id', 'in', nonzero.order_id.ids), ('source', '=', 'baseer_summary'),
-            ('date_order', '<=', now), ('date_order', '>=', _utc_at(first, 7)),
+            ('date_order', '<', now), ('date_order', '>=', _utc_at(first, 7)),
             ('date_order', '<', _utc_at(last + timedelta(days=1), 5)),
         ])
         visible_ids = set(visible_orders.ids)
@@ -147,7 +147,7 @@ class SalesHeatCalendarDashboard(models.Model):
             if (not order or order.id not in visible_ids or order.baseer_summary_id != summary
                     or order.session_id != summary.session_id
                     or order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).date() != summary.business_date
-                    or not 7 <= order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).hour):
+                    or order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).hour < 7):
                 raise ValidationError(_('An approved summary has no matching accessible POS order. Review its source before evaluating this calendar.'))
 
         # Include only generated orders whose approved metadata is visible.

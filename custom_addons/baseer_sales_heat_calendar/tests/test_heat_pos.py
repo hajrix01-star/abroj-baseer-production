@@ -324,6 +324,12 @@ class HeatPosCase(TransactionCase):
         self._summary('2026-10-03')
         with self.assertRaises(ValidationError):
             self._rows(now=datetime(2026, 10, 3, 7))  # 10:00 local, source noon is future
+        with self.assertRaises(ValidationError):
+            self._rows(now=datetime(2026, 10, 3, 9))  # exactly noon: native upper bound is exclusive
+        row = self._rows(now=datetime(2026, 10, 3, 9, 0, 1))[date(2026, 10, 3)]
+        self.assertEqual(row['source_kind'], 'summary')
+        self.assertEqual(row['sales'], Decimal('115.00'))
+        self.assertEqual(row['order_count'], 1)
 
     def test_summary_marker_with_null_source_and_unapproved_metadata_is_unavailable(self):
         draft = self._summary('2026-10-03', state='draft', linked=False)

@@ -41,10 +41,11 @@
             </xpath>
         </field>
     </record>
-    <record id="view_company_localized_list_name" model="ir.ui.view">
+    <record id="view_company_list_language_name" model="ir.ui.view">
         <field name="name">res.company.localized.list.name</field>
         <field name="model">res.company</field>
         <field name="inherit_id" ref="base.view_company_tree"/>
+        <field name="priority">30</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="attributes">
                 <attribute name="name">display_name</attribute>
@@ -52,10 +53,11 @@
             </xpath>
         </field>
     </record>
-    <record id="view_company_localized_kanban_name" model="ir.ui.view">
+    <record id="view_company_card_language_name" model="ir.ui.view">
         <field name="name">res.company.localized.kanban.name</field>
         <field name="model">res.company</field>
         <field name="inherit_id" ref="base.view_res_company_kanban"/>
+        <field name="priority">30</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="attributes">
                 <attribute name="name">display_name</attribute>

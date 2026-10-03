@@ -48,6 +48,13 @@ class ExecutivePosCase(TransactionCase):
 
     @classmethod
     def _insert(cls, model, values):
+        # Installed POS extensions can add required scalar columns (for example
+        # pos_self_order.self_ordering_mode). Use their engine defaults without
+        # invoking create/payment hooks or copying production financial data.
+        required = [name for name, field in cls.env[model]._fields.items()
+                    if field.required and field.store and field.column_type
+                    and not field.compute and not field.related and name not in values]
+        values = dict(cls.env[model].default_get(required), **values)
         cls.env.cr.execute(SQL('INSERT INTO %s (%s) VALUES (%s) RETURNING id',
             SQL.identifier(cls.env[model]._table),
             SQL(', ').join(SQL.identifier(key) for key in values),
@@ -235,6 +242,37 @@ class ExecutivePosCase(TransactionCase):
         read.assert_not_called()
         self.assertEqual(card['reason'], 'unsupported_currency')
         self.assertIsNone(card['total']['value'])
+
+    def test_sar_company_with_foreign_pos_currency_refuses_entire_card(self):
+        config = self._insert('pos.config', {
+            'name': 'USD till inside SAR company', 'company_id': self.company.id,
+            'currency_id': self.env.ref('base.USD').id,
+            'picking_type_id': self.config.picking_type_id.id,
+            'iface_tax_included': 'total', 'picking_policy': 'direct', 'active': True})
+        session = self._session('EC foreign currency', config)
+        self._order('2026-10-03 12:00:00', '50')
+        foreign = self._order('2026-10-03 13:00:00', '10', session)
+        with patch.object(type(self.dashboard), '_baseer_executive_capacity') as aggregate:
+            card = self._cards()
+        aggregate.assert_not_called()
+        self.assertFalse(card['available'])
+        self.assertEqual(card['reason'], 'unsupported_currency')
+        self.assertIsNone(card['total']['value'])
+        # A foreign-currency order only in the final gap is also unsafe.
+        self.env.cr.execute(SQL('UPDATE pos_order SET date_order = %s WHERE id = %s',
+                                datetime(2026, 10, 4, 2, 30), foreign.id))
+        self.assertEqual(self._cards()['reason'], 'unsupported_currency')
+        with patch('odoo.fields.Datetime.now', return_value=self.NOW), self.assertRaises(ValidationError):
+            self.dashboard.with_user(self.reader).get_baseer_executive_sessions(
+                self.company.id, 'custom', '2026-10-02', '2026-10-03')
+        # An older foreign day must not contaminate the optional comparison.
+        self.env.cr.execute(SQL('UPDATE pos_order SET date_order = %s WHERE id = %s',
+                                datetime(2026, 10, 1, 9), foreign.id))
+        self._order('2026-10-02 12:00:00', '5')
+        card = self._cards(first='2026-10-02', last='2026-10-02')
+        self.assertTrue(card['available'])
+        self.assertEqual(card['total']['value'], '5.00')
+        self.assertFalse(card['daily_change']['available'])
 
     def test_100000_orders_limit_rejects_without_truncation(self):
         self.env.cr.execute(SQL('''

@@ -137,7 +137,8 @@ class ExecutiveDashboard(models.Model):
         now = fields.Datetime.to_datetime(fields.Datetime.now())
         selected = _resolve_period(period, date_from, date_to, now)
         scoped = self._baseer_executive_scope(company_id)
-        if companies.filtered(lambda item: item.id == company_id).currency_id.name != 'SAR':
+        if (companies.filtered(lambda item: item.id == company_id).currency_id.name != 'SAR'
+                or not scoped._baseer_executive_currency_supported(selected, now)):
             raise ValidationError(_('This command center supports SAR companies only.'))
         scoped._baseer_executive_capacity(selected, now)
         result = scoped._baseer_executive_session_page(selected, now, page)
@@ -165,6 +166,19 @@ class ExecutiveDashboard(models.Model):
             ('date_order', '<', min(_utc_at(last + timedelta(days=1), 7), now))]
         if self.env['pos.order'].search_count(domain, limit=MAX_ORDERS + 1) > MAX_ORDERS:
             raise ValidationError(_('This period exceeds 100,000 POS orders. Choose a shorter period; no records have been omitted.'))
+
+    def _baseer_executive_currency_supported(self, period, now):
+        """A SAR company can have a foreign-currency POS journal/configuration.
+
+        Inspect the same visible source including gaps before summing anything.
+        Refuse the whole card rather than silently drop or convert those orders.
+        """
+        first, last = date.fromisoformat(period['from']), date.fromisoformat(period['to'])
+        domain = self._baseer_executive_source() + [
+            ('date_order', '>=', _utc_at(first, 7)),
+            ('date_order', '<', min(_utc_at(last + timedelta(days=1), 7), now)),
+            ('config_id.currency_id', '!=', self.env.ref('base.SAR').id)]
+        return not self.env['pos.order'].search_count(domain, limit=1)
 
     def _baseer_executive_query(self, period, now, outside=False):
         first, last = date.fromisoformat(period['from']), date.fromisoformat(period['to'])
@@ -224,7 +238,7 @@ class ExecutiveDashboard(models.Model):
         return latest.replace(tzinfo=timezone.utc).astimezone(RIYADH).strftime('%Y-%m-%d %H:%M:%S') if latest else None
 
     def _baseer_executive_card(self, company, period, now):
-        if company.currency_id.name != 'SAR':
+        if company.currency_id.name != 'SAR' or not self._baseer_executive_currency_supported(period, now):
             empty = _card(None, False)
             return {'company': {'id': company.id, 'name': report_name(company.name, self.env.lang),
                                 'currency': company.currency_id.name},
@@ -247,8 +261,9 @@ class ExecutiveDashboard(models.Model):
         if period['status'] != 'current' and daily['count'] and prior is None:
             previous = dict(period, **{'from': (last - timedelta(days=1)).isoformat(),
                                       'to': (last - timedelta(days=1)).isoformat()})
-            self._baseer_executive_capacity(previous, now)
-            prior = self._baseer_executive_days(previous, now).get(last - timedelta(days=1))
+            if self._baseer_executive_currency_supported(previous, now):
+                self._baseer_executive_capacity(previous, now)
+                prior = self._baseer_executive_days(previous, now).get(last - timedelta(days=1))
         change = self._baseer_executive_change(_card(daily['sales']), _card(prior['sales']), True) \
             if period['status'] != 'current' and daily['count'] and prior and prior['count'] else unavailable_change
         chart_start = max(first, last - timedelta(days=13))

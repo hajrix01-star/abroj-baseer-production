@@ -4,4 +4,5 @@ from . import hr_service_analytic_readiness
 from . import shared_provider
 from . import res_partner
 from . import company_names
+from . import ir_http
 from . import purchase_batch

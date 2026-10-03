@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Common Services Seed',
     'summary': 'Shared suppliers, company service products and native expense mappings',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.5.1',
     'license': 'LGPL-3',
     'depends': ['baseer_company_setup', 'baseer_purchase_batch', 'baseer_native_spend'],
     'data': [

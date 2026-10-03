@@ -86,7 +86,7 @@
                                     </span>
                                     <span class="o_baseer_heat_day_number o_baseer_heat_numeric" t-esc="day.day"/>
                                     <span class="o_baseer_heat_sales"><span class="visually-hidden" t-esc="state.payload.labels.sales"/><span class="o_baseer_heat_numeric" t-esc="day.sales_display"/></span>
-                                    <span class="o_baseer_heat_customers text-muted"><span class="visually-hidden" t-esc="state.payload.labels.customers"/><i class="fa fa-users me-1" aria-hidden="true"/><span class="o_baseer_heat_numeric" t-esc="day.customers_display"/></span>
+                                    <span class="o_baseer_heat_customers text-muted" t-att-title="day.count_label"><span class="visually-hidden" t-esc="day.count_label"/><i class="fa fa-users me-1" aria-hidden="true"/><span class="o_baseer_heat_numeric" t-esc="day.customers_display"/></span>
                                     <span class="o_baseer_heat_status" t-esc="day.heat_label"/>
                                     <span t-if="day.partial_closure" class="badge text-bg-secondary" t-esc="day.partial_closure_label"/>
                                 </button>
@@ -137,12 +137,15 @@
                 <div class="o_baseer_heat_dialog">
                 <dl>
                     <div><dt t-esc="props.labels.sales"/><dd class="o_baseer_heat_numeric"><span t-esc="props.day.sales_display"/> <span t-esc="props.currency"/></dd></div>
-                    <div><dt t-esc="props.labels.customers"/><dd class="o_baseer_heat_numeric" t-esc="props.day.customers_display"/></div>
+                    <div><dt t-esc="props.day.count_label"/><dd class="o_baseer_heat_numeric" t-esc="props.day.customers_display"/></div>
+                    <div><dt t-esc="props.labels.source_link"/><dd t-esc="props.day.source_label"/></div>
                     <div><dt t-esc="props.labels.status"/><dd><span t-esc="props.day.status_label"/><span t-if="props.day.partial_closure" class="badge text-bg-secondary ms-2" t-esc="props.day.partial_closure_label"/></dd></div>
                     <div><dt t-esc="props.labels.performance"/><dd><span t-esc="props.day.heat_label"/> <span class="o_baseer_heat_numeric" t-esc="props.day.ratio_display"/></dd></div>
                     <div><dt t-esc="basisLabel"/><dd class="o_baseer_heat_numeric" t-esc="props.day.basis_display"/></div>
                     <div><dt t-esc="props.labels.baseline_sample"/><dd class="o_baseer_heat_numeric" t-esc="props.day.baseline_sample_count"/></div>
                 </dl>
+                <p t-if="props.day.warning" class="alert alert-warning" role="status" t-esc="props.day.warning"/>
+                <p t-if="props.day.outside_warning" class="alert alert-warning" role="status" t-esc="props.day.outside_warning"/>
                 <p t-if="props.day.status !== 'complete'" class="alert alert-secondary mb-0" role="status" t-esc="props.labels.partial"/>
                 <div t-if="props.day.occasions.length" class="mt-3">
                     <h3 t-esc="props.labels.occasion"/>

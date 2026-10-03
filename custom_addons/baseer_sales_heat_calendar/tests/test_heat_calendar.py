@@ -177,15 +177,15 @@ class HeatCalendarCase(TransactionCase):
         """The monthly header is a backend aggregate of complete source days."""
         aggregate_calls = []
 
-        def aggregate_days(report, company, date_from, date_to):
+        def aggregate_days(dashboard, company, date_from, date_to, now):
             aggregate_calls.append((company.id, date_from, date_to))
-            return {'days': self._aggregate_rows(date_from, date_to)}
+            return self._aggregate_rows(date_from, date_to)
 
-        report_model = type(self.env['baseer.pos.daily.report'])
+        dashboard_model = type(self.dashboard)
         def untranslated(message, *args, **kwargs):
             return message % kwargs if kwargs else message
 
-        with patch.object(report_model, '_aggregate_days', new=aggregate_days), patch(
+        with patch.object(dashboard_model, '_heat_aggregate_days', new=aggregate_days), patch(
             'odoo.addons.baseer_sales_heat_calendar.models.dashboard._', new=untranslated,
         ):
             payload = self.dashboard.with_user(self.pos_user).with_context(
@@ -237,15 +237,15 @@ class HeatCalendarCase(TransactionCase):
 
     def test_hc_t04_earliest_iso_month_is_a_safe_calendar_request(self):
         """A valid early ISO month must not underflow the baseline window."""
-        report_model = type(self.env['baseer.pos.daily.report'])
+        dashboard_model = type(self.dashboard)
 
-        def aggregate_days(_report, _company, date_from, date_to):
-            return {'days': self._aggregate_rows(date_from, date_to)}
+        def aggregate_days(_dashboard, _company, date_from, date_to, now):
+            return self._aggregate_rows(date_from, date_to)
 
         def untranslated(message, *args, **kwargs):
             return message % kwargs if kwargs else message
 
-        with patch.object(report_model, '_aggregate_days', new=aggregate_days), patch(
+        with patch.object(dashboard_model, '_heat_aggregate_days', new=aggregate_days), patch(
             'odoo.addons.baseer_sales_heat_calendar.models.dashboard._',
             new=untranslated,
         ):
@@ -258,14 +258,14 @@ class HeatCalendarCase(TransactionCase):
 
     def test_hct_t01_exact_thursday_and_friday_targets_change_heat_not_sales(self):
         """Each named weekday has one independent target and fresh RPC result."""
-        def aggregate_days(_report, _company, date_from, date_to):
+        def aggregate_days(_dashboard, _company, date_from, date_to, now):
             rows = self._aggregate_rows(date_from, date_to)
             for row in rows:
                 if row['business_date'] == date(2037, 9, 3):  # Thursday
                     row.update(status='complete', has_sales=True, sales=100, customers=4)
                 elif row['business_date'] == date(2037, 9, 4):  # Friday
                     row.update(status='complete', has_sales=True, sales=150, customers=6)
-            return {'days': rows}
+            return rows
 
         def untranslated(message, *args, **kwargs):
             return message % kwargs if kwargs else message
@@ -273,8 +273,8 @@ class HeatCalendarCase(TransactionCase):
         summaries_before = self.env['baseer.pos.summary'].search_count([])
         self._set_target(weekday='3', amount=200)
         self._set_target(weekday='4', amount=100)
-        report_model = type(self.env['baseer.pos.daily.report'])
-        with patch.object(report_model, '_aggregate_days', new=aggregate_days), patch(
+        dashboard_model = type(self.dashboard)
+        with patch.object(dashboard_model, '_heat_aggregate_days', new=aggregate_days), patch(
             'odoo.addons.baseer_sales_heat_calendar.models.dashboard._', new=untranslated,
         ):
             payload = self.dashboard.with_user(self.pos_user).with_context(

@@ -197,7 +197,9 @@ class ExecutiveDashboard(models.Model):
 
     def _baseer_executive_amount(self):
         orders = self.env['pos.order']
-        return SQL('COALESCE(SUM(CAST(%s AS NUMERIC)), 0)',
+        # Odoo's PostgreSQL numeric decoder returns float. Serialize the exact
+        # SQL decimal result as text before it reaches that decoder.
+        return SQL('CAST(COALESCE(SUM(CAST(%s AS NUMERIC)), 0) AS TEXT)',
                    SQL.identifier(orders._table, 'amount_total', to_flush=orders._fields['amount_total']))
 
     def _baseer_executive_days(self, period, now):
@@ -206,7 +208,7 @@ class ExecutiveDashboard(models.Model):
         stamp = SQL.identifier(orders._table, 'date_order', to_flush=orders._fields['date_order'])
         business_day = SQL("CAST((%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh') - INTERVAL '7 hours' AS DATE)", stamp)
         query.groupby = business_day
-        return {day: {'sales': total, 'count': count} for day, total, count in
+        return {day: {'sales': Decimal(total), 'count': count} for day, total, count in
                 self.env.execute_query(query.select(business_day, self._baseer_executive_amount(), SQL('COUNT(*)')))}
 
     def _baseer_executive_session_page(self, period, now, page=1):

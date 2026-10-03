@@ -155,10 +155,15 @@ class ExecutivePosCase(TransactionCase):
             _resolve_period('this_month', None, None, datetime(2026, 10, 1, 0))
 
     def test_money_precision_empty_and_fourteen_day_chart(self):
-        for amount in ('0.10', '0.20', '0.30', '-0.10'):
+        for amount in ('0.10', '0.20', '0.30', '-0.10', '9999999999.99', '0.01', '-9999999999.98'):
             self._order('2026-10-03 10:00:00', amount)
         card = self._cards(first='2026-09-01')
-        self.assertEqual(card['total']['value'], '0.50')
+        self.assertEqual(card['total']['value'], '0.52')
+        period = _resolve_period('custom', '2026-09-01', '2026-10-03', self.NOW)
+        days = self.dashboard.with_user(self.reader)._baseer_executive_scope(
+            self.company.id)._baseer_executive_days(period, self.NOW)
+        self.assertIsInstance(days[date(2026, 10, 3)]['sales'], Decimal)
+        self.assertEqual(days[date(2026, 10, 3)]['sales'], Decimal('0.52'))
         self.assertEqual(len(card['timeline']), 14)
         self.assertEqual(card['timeline'][0]['date'], '2026-09-20')
         self.assertEqual(card['timeline'][-1]['bar_height'], '100.00')

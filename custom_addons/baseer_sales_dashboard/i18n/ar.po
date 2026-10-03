@@ -700,3 +700,291 @@ msgstr "أيام غير مدخلة"
 #: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
 msgid "View approved summaries"
 msgstr "عرض الملخصات المعتمدة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Point of Sale · net sales including tax"
+msgstr "نقاط البيع · صافي المبيعات شامل الضريبة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No Point of Sale sales are recorded in this period."
+msgstr "لا توجد مبيعات مسجلة في نقاط البيع خلال هذه الفترة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "This overview supports SAR only"
+msgstr "هذا المركز يدعم الريال السعودي فقط"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Last operating day's sales"
+msgstr "مبيعات آخر يوم تشغيل في الفترة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Change from previous operating day"
+msgstr "التغير مقارنة بيوم التشغيل السابق"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Operating days · last 14 days of selected period"
+msgstr "أيام التشغيل · آخر 14 يومًا من الفترة المختارة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "07:00 to 05:00 next day · Riyadh time. Paid sales after refunds, including tax. Sessions do not define the operating date."
+msgstr "من 07:00 إلى 05:00 اليوم التالي بتوقيت الرياض. المبيعات المدفوعة بعد المرتجعات، شامل الضريبة. تعدد الجلسات لا يغيّر يوم التشغيل."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "From operating date"
+msgstr "من يوم تشغيل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "To operating date"
+msgstr "إلى يوم تشغيل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Apply filters"
+msgstr "تطبيق الفلاتر"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Last ended operating day"
+msgstr "آخر يوم تشغيل منتهٍ"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Current operating day"
+msgstr "يوم التشغيل الجاري"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "This month · ended days"
+msgstr "هذا الشهر · أيام التشغيل المنتهية"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Previous month"
+msgstr "الشهر السابق"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Last 30 ended days"
+msgstr "آخر 30 يوم تشغيل منتهٍ"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Custom period"
+msgstr "فترة مخصصة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "In progress · not a full day"
+msgstr "جارٍ · اليوم غير مكتمل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Operating window ended · not an accounting approval"
+msgstr "انتهت فترة التشغيل · لا تعني اعتمادًا محاسبيًا"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Outside operating hours"
+msgstr "خارج ساعات التشغيل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Period net sales including tax"
+msgstr "صافي مبيعات الفترة شامل الضريبة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Paid orders including refunds"
+msgstr "الطلبات المدفوعة بما فيها المرتجعات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sessions with sales in this period"
+msgstr "الجلسات التي فيها مبيعات خلال الفترة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Latest recorded POS sale · Riyadh time"
+msgstr "آخر عملية بيع مسجلة في نقاط البيع · بتوقيت الرياض"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sales by session within selected period"
+msgstr "مبيعات كل جلسة داخل الفترة المختارة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No sessions have sales in this period."
+msgstr "لا توجد جلسات لها مبيعات خلال هذه الفترة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Next page"
+msgstr "الصفحة التالية"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Previous page"
+msgstr "الصفحة السابقة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sales between 05:00 and 07:00 are outside the operating window and excluded from the total above."
+msgstr "المبيعات بين 05:00 و07:00 خارج فترة التشغيل، ولا تدخل في الإجمالي أعلاه."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Outside-hours orders"
+msgstr "الطلبات خارج ساعات التشغيل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Outside-hours net sales including tax"
+msgstr "صافي المبيعات خارج ساعات التشغيل شامل الضريبة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Page"
+msgstr "الصفحة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Unable to load session details. Please try again."
+msgstr "تعذر تحميل تفاصيل الجلسات. حاول مرة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Choose both operating dates for the custom period."
+msgstr "اختر تاريخ بداية ونهاية يوم التشغيل للفترة المخصصة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Operating window ended"
+msgstr "انتهت فترة التشغيل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No recorded POS sales"
+msgstr "لا توجد مبيعات مسجلة في نقاط البيع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Opening"
+msgstr "قيد الفتح"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Open"
+msgstr "مفتوحة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Closing"
+msgstr "قيد الإغلاق"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Choose between one and three distinct companies per request."
+msgstr "اختر من شركة واحدة إلى 3 شركات مختلفة لكل طلب."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "One or more selected companies are not available."
+msgstr "إحدى الشركات المختارة غير متاحة لك."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Custom dates require the custom period."
+msgstr "اختر «فترة مخصصة» لاستخدام تواريخ محددة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Choose valid start and end dates."
+msgstr "اختر تاريخ بداية ونهاية صحيحين."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Choose a valid command center period."
+msgstr "اختر فترة صحيحة لمركز القيادة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "No completed operating window exists in this period, or the dates are reversed."
+msgstr "لا توجد فترة تشغيل منتهية ضمن هذه الفترة، أو أن تاريخ البداية بعد النهاية."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Future operating days are not available."
+msgstr "لا يمكن عرض أيام تشغيل مستقبلية."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Choose a period of at most 366 days; no dates have been omitted."
+msgstr "اختر فترة لا تتجاوز 366 يومًا؛ لم تُستبعد أي تواريخ من النتائج."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Point of Sale access is required to view POS sales."
+msgstr "تحتاج صلاحية نقاط البيع لعرض مبيعاتها."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Choose a valid session page."
+msgstr "اختر صفحة صحيحة لتفاصيل الجلسات."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "This command center supports SAR companies only."
+msgstr "مركز القيادة يدعم الشركات التي تعمل بالريال السعودي فقط."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "This period exceeds 100,000 POS orders. Choose a shorter period; no records have been omitted."
+msgstr "تتجاوز هذه الفترة 100,000 طلب في نقاط البيع. اختر فترة أقصر؛ لم تُستبعد أي سجلات من النتائج."

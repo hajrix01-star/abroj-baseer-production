@@ -10,6 +10,17 @@ class Company(models.Model):
     baseer_name_ar = fields.Char(related='partner_id.baseer_name_ar', readonly=False)
     baseer_name_en = fields.Char(related='partner_id.baseer_name_en', readonly=False)
 
+    @api.depends('name', 'baseer_name_ar', 'baseer_name_en')
+    @api.depends_context('lang')
+    def _compute_display_name(self):
+        """Localize labels without rewriting the native company identity."""
+        super()._compute_display_name()
+        arabic_ui = (self.env.lang or '').split('_')[0] == 'ar'
+        for company in self:
+            preferred = company.baseer_name_ar if arabic_ui else company.baseer_name_en
+            fallback = company.baseer_name_en if arabic_ui else company.baseer_name_ar
+            company.display_name = (preferred or fallback or company.name or '').strip()
+
     @api.onchange('baseer_name_ar', 'baseer_name_en')
     def _onchange_baseer_names(self):
         for company in self:

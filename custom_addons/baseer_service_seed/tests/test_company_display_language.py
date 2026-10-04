@@ -40,8 +40,11 @@ class CompanyDisplayLanguageCase(TransactionCase):
         for record, expected in (
                 (arabic, 'شركة اختبار الاسم'), (english, 'Company label fixture'),
                 (arabic, 'شركة اختبار الاسم'), (english, 'Company label fixture')):
-            self.assertEqual(record.display_name, expected)
-            self.assertEqual(record.read(['display_name'])[0]['display_name'], expected)
+            self.assertEqual(record.baseer_display_name, expected)
+            self.assertEqual(record.read(['baseer_display_name'])[0]['baseer_display_name'], expected)
+            self.assertEqual(record.display_name, before['company']['name'])
+            self.assertEqual(record.display_name, record.partner_id.name)
+            self.assertEqual(record.read(['display_name'])[0]['display_name'], record.name)
         self.assertEqual(self._identity(self.company), before)
         self.assertEqual(self.company.export_data(['name'])['datas'], [[before['company']['name']]])
         arabic_only = self.env['res.company'].create({'baseer_name_ar': 'اسم عربي فقط'})
@@ -50,23 +53,27 @@ class CompanyDisplayLanguageCase(TransactionCase):
         # partner components without editing persisted identity through SQL.
         legacy = self.env['res.company'].new({'name': 'Legacy canonical company'})
         for lang in ('ar_001', 'en_US'):
-            self.assertEqual(arabic_only.with_context(lang=lang).display_name, 'اسم عربي فقط')
-            self.assertEqual(english_only.with_context(lang=lang).display_name, 'English only')
-            self.assertEqual(legacy.with_context(lang=lang).display_name, 'Legacy canonical company')
+            self.assertEqual(arabic_only.with_context(lang=lang).baseer_display_name, 'اسم عربي فقط')
+            self.assertEqual(english_only.with_context(lang=lang).baseer_display_name, 'English only')
+            self.assertEqual(legacy.with_context(lang=lang).baseer_display_name, 'Legacy canonical company')
 
     def test_name_component_and_native_rename_invalidate_both_cached_labels(self):
         arabic = self.company.with_context(lang='ar_001')
         english = self.company.with_context(lang='en_US')
-        self.assertEqual(arabic.display_name, 'شركة اختبار الاسم')
-        self.assertEqual(english.display_name, 'Company label fixture')
+        self.assertEqual(arabic.baseer_display_name, 'شركة اختبار الاسم')
+        self.assertEqual(english.baseer_display_name, 'Company label fixture')
         self.company.write({'baseer_name_en': 'Updated English label'})
-        self.assertEqual(english.display_name, 'Updated English label')
-        self.assertEqual(arabic.display_name, 'شركة اختبار الاسم')
+        self.assertEqual(english.baseer_display_name, 'Updated English label')
+        self.assertEqual(arabic.baseer_display_name, 'شركة اختبار الاسم')
         self.company.write({'baseer_name_ar': 'الاسم العربي المعدل'})
-        self.assertEqual(arabic.display_name, 'الاسم العربي المعدل')
-        self.assertEqual(english.display_name, 'Updated English label')
+        self.assertEqual(arabic.baseer_display_name, 'الاسم العربي المعدل')
+        self.assertEqual(english.baseer_display_name, 'Updated English label')
+        self.assertEqual(arabic.display_name, self.company.name)
+        self.assertEqual(english.display_name, self.company.name)
         self.company.write({'name': 'Native API rename'})
         self.assertEqual(self.company.name, 'Native API rename')
+        self.assertEqual(arabic.baseer_display_name, 'Native API rename')
+        self.assertEqual(english.baseer_display_name, 'Native API rename')
         self.assertEqual(arabic.display_name, 'Native API rename')
         self.assertEqual(english.display_name, 'Native API rename')
 
@@ -125,26 +132,28 @@ class CompanyDisplayLanguageCase(TransactionCase):
         Company = self.env['res.company'].with_context(lang='en_US')
         arch = etree.fromstring(Company.get_view(
             view_id=self.env.ref('base.view_company_form').id, view_type='form')['arch'].encode())
-        self.assertTrue(arch.xpath('//h1/field[@name="display_name"]'))
+        self.assertTrue(arch.xpath('//h1/field[@name="baseer_display_name"]'))
         self.assertTrue(arch.xpath('//h1/field[@name="name" and @invisible="1"]'))
         self.assertTrue(arch.xpath('//field[@name="baseer_name_ar"]'))
         self.assertTrue(arch.xpath('//field[@name="baseer_name_en"]'))
         for xmlid, kind in (('base.view_company_tree', 'list'), ('base.view_res_company_kanban', 'kanban')):
             arch = etree.fromstring(Company.get_view(
                 view_id=self.env.ref(xmlid).id, view_type=kind)['arch'].encode())
-            self.assertTrue(arch.xpath('//field[@name="display_name"]'))
+            self.assertTrue(arch.xpath('//field[@name="baseer_display_name"]'))
             self.assertFalse(arch.xpath('//field[@name="name"]'))
         form = Form(Company, view='base.view_company_form')
         form.baseer_name_ar = 'شركة من النموذج'
         form.baseer_name_en = 'Created through form'
         created = form.save()
         self.assertEqual(created.name, 'شركة من النموذج | Created through form')
-        self.assertEqual(created.display_name, 'Created through form')
+        self.assertEqual(created.baseer_display_name, 'Created through form')
+        self.assertEqual(created.display_name, created.name)
         form = Form(created, view='base.view_company_form')
         form.baseer_name_en = 'Edited through form'
         form.save()
         self.assertEqual(created.name, 'شركة من النموذج | Edited through form')
-        self.assertEqual(created.display_name, 'Edited through form')
+        self.assertEqual(created.baseer_display_name, 'Edited through form')
+        self.assertEqual(created.display_name, created.name)
 
     def test_supplier_display_name_and_native_renames_keep_existing_partner_behavior(self):
         supplier = self.env['res.partner'].create({

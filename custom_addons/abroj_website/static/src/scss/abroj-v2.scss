@@ -7,10 +7,12 @@
   --abroj-paper: #f8f8f6;
   --abroj-stone: #ebeae6;
   --abroj-accent: #d8e7ea;
+  --abroj-orange: #f58220;
+  --abroj-cyan: #67c5d8;
   --abroj-ease-out: cubic-bezier(.23, 1, .32, 1);
   color: var(--abroj-ink);
   background: #fff;
-  font-family: Tajawal, 'Open Sans', Arial, sans-serif;
+  font-family: Cairo, Tajawal, 'Open Sans', Arial, sans-serif;
   overflow: clip;
 }
 .abroj-v2 *, .abroj-v2 *::before, .abroj-v2 *::after { box-sizing: border-box; }
@@ -27,10 +29,10 @@
 .abroj-v2__nav a { color: rgba(255, 255, 255, .9); font-size: .86rem; font-weight: 500; white-space: nowrap; }
 .abroj-v2__nav a:first-child { color: #fff; position: relative; }
 .abroj-v2__nav a:first-child::after { content: ''; position: absolute; height: 2px; background: #fff; inset-inline: 0; bottom: -11px; }
-.abroj-v2__header-actions { display: flex; align-items: center; gap: 22px; }
+.abroj-v2__header-actions { display: flex; align-items: center; gap: 22px; }.abroj-v2__phone { color: #fff; font-family: 'Open Sans', Arial, sans-serif; font-size: .78rem; letter-spacing: .04em; }.abroj-v2__phone:hover { color: var(--abroj-cyan); }
 .abroj-v2__language { color: rgba(255, 255, 255, .86); font-family: 'Open Sans', Tajawal, sans-serif; font-size: .77rem; letter-spacing: .08em; }
 .abroj-v2__header-cta, .abroj-v2__button { display: inline-flex; align-items: center; justify-content: center; gap: 13px; min-height: 46px; padding: 0 20px; font-weight: 700; transition: transform 160ms var(--abroj-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
-.abroj-v2__header-cta { color: #fff; background: rgba(10, 27, 39, .88); border: 1px solid rgba(255, 255, 255, .18); font-size: .86rem; }
+.abroj-v2__header-cta { color: #fff; background: rgba(10, 27, 39, .88); border: 1px solid rgba(255, 255, 255, .18); box-shadow: inset 0 -2px 0 var(--abroj-orange); font-size: .86rem; }
 .abroj-v2__button:active, .abroj-v2__header-cta:active { transform: scale(.98); }
 .abroj-v2__mobile-menu { display: none; }
 .abroj-v2__hero-content { width: calc(100% - 80px); max-width: 1420px; margin: auto auto 72px; padding-inline-start: 48%; }

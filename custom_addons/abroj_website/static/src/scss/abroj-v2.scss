@@ -7,10 +7,12 @@
   --abroj-paper: #f8f8f6;
   --abroj-stone: #ebeae6;
   --abroj-accent: #d8e7ea;
+  --abroj-orange: #E97027;
+  --abroj-cyan: #67c5d8;
   --abroj-ease-out: cubic-bezier(.23, 1, .32, 1);
   color: var(--abroj-ink);
   background: #fff;
-  font-family: Tajawal, 'Open Sans', Arial, sans-serif;
+  font-family: Cairo, Tajawal, 'Open Sans', Arial, sans-serif;
   overflow: clip;
 }
 .abroj-v2 *, .abroj-v2 *::before, .abroj-v2 *::after { box-sizing: border-box; }
@@ -27,10 +29,10 @@
 .abroj-v2__nav a { color: rgba(255, 255, 255, .9); font-size: .86rem; font-weight: 500; white-space: nowrap; }
 .abroj-v2__nav a:first-child { color: #fff; position: relative; }
 .abroj-v2__nav a:first-child::after { content: ''; position: absolute; height: 2px; background: #fff; inset-inline: 0; bottom: -11px; }
-.abroj-v2__header-actions { display: flex; align-items: center; gap: 22px; }
+.abroj-v2__header-actions { display: flex; align-items: center; gap: 22px; }.abroj-v2__phone { color: #fff; font-family: 'Open Sans', Arial, sans-serif; font-size: .78rem; letter-spacing: .04em; }.abroj-v2__phone:hover { color: var(--abroj-cyan); }
 .abroj-v2__language { color: rgba(255, 255, 255, .86); font-family: 'Open Sans', Tajawal, sans-serif; font-size: .77rem; letter-spacing: .08em; }
 .abroj-v2__header-cta, .abroj-v2__button { display: inline-flex; align-items: center; justify-content: center; gap: 13px; min-height: 46px; padding: 0 20px; font-weight: 700; transition: transform 160ms var(--abroj-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
-.abroj-v2__header-cta { color: #fff; background: rgba(10, 27, 39, .88); border: 1px solid rgba(255, 255, 255, .18); font-size: .86rem; }
+.abroj-v2__header-cta { color: #fff; background: rgba(10, 27, 39, .88); border: 1px solid rgba(255, 255, 255, .18); box-shadow: inset 0 -2px 0 var(--abroj-orange); font-size: .86rem; }
 .abroj-v2__button:active, .abroj-v2__header-cta:active { transform: scale(.98); }
 .abroj-v2__mobile-menu { display: none; }
 .abroj-v2__hero-content { width: calc(100% - 80px); max-width: 1420px; margin: auto auto 72px; padding-inline-start: 48%; }
@@ -60,6 +62,13 @@
 .abroj-v2__service-card--shop .abroj-v2__service-image { background-image: url('/abroj_website/static/src/img/visuals/shop-sketch-to-finish-v1.png'); }
 .abroj-v2__service-card--office .abroj-v2__service-image { background-image: url('/abroj_website/static/src/img/visuals/office-sketch-to-finish-v1.png'); }
 .abroj-v2__service-card > div:last-child { padding: 25px 29px 30px; }.abroj-v2__service-card span { color: #547a89; font-family: 'Open Sans', Tajawal, sans-serif; font-size: .72rem; font-weight: 600; letter-spacing: .12em; }.abroj-v2__service-card h3 { margin: 11px 0 9px; font-size: clamp(1.35rem, 2vw, 1.75rem); line-height: 1.3; }.abroj-v2__service-card p { margin: 0; color: var(--abroj-muted); font-size: .95rem; line-height: 1.85; }
+
+.abroj-v2__projects { padding-top: 36px; }
+.abroj-v2__project-grid { min-height: 300px; display: grid; place-items: center; padding: 24px; border: 1px dashed #aec0c5; background: linear-gradient(135deg, #f4f8f8, #fafaf8); }
+.abroj-v2__project-empty { max-width: 520px; text-align: center; }
+.abroj-v2__project-empty > span { width: 46px; height: 46px; display: grid; place-items: center; margin: 0 auto 18px; border: 1px solid #78909a; border-radius: 50%; color: #496875; font: 300 1.65rem/1 'Open Sans', Tajawal, sans-serif; }
+.abroj-v2__project-empty h3 { margin: 0; color: var(--abroj-ink); font-size: clamp(1.6rem, 2.8vw, 2.35rem); line-height: 1.25; }
+.abroj-v2__project-empty p { margin: 13px 0 0; color: var(--abroj-muted); font-size: 1rem; line-height: 1.85; }
 
 .abroj-v2__detail { width: calc(100% - 80px); max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 1.12fr .88fr; gap: clamp(50px, 9vw, 135px); align-items: center; padding: 0 0 118px; }
 .abroj-v2__detail-media { min-height: 440px; position: relative; overflow: hidden; background: var(--abroj-navy); }

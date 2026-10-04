@@ -18,26 +18,29 @@
             <nav class="abroj-v2__nav" aria-label="Primary navigation">
               <a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a>
               <a href="#services"><t t-if="is_ar">خدماتنا</t><t t-else="">Services</t></a>
+              <a href="#projects"><t t-if="is_ar">تصفح مشاريعنا</t><t t-else="">Browse our projects</t></a>
               <a href="#approach"><t t-if="is_ar">منهجنا</t><t t-else="">Approach</t></a>
               <a href="#contact"><t t-if="is_ar">تواصل معنا</t><t t-else="">Contact</t></a>
             </nav>
             <div class="abroj-v2__header-actions">
+              <a class="abroj-v2__phone" href="tel:+966552210049" dir="ltr">0552210049</a>
               <a class="abroj-v2__language" t-att-href="'/website/lang/en?r=/' if is_ar else '/website/lang/ar?r=/'" t-att-title="'Switch to English' if is_ar else 'التبديل إلى العربية'"><t t-if="is_ar">EN</t><t t-else="">العربية</t></a>
               <a class="abroj-v2__header-cta" href="#contact"><t t-if="is_ar">اطلب عرض سعر</t><t t-else="">Request a quote</t><span aria-hidden="true">←</span></a>
             </div>
             <details class="abroj-v2__mobile-menu">
               <summary><span><t t-if="is_ar">القائمة</t><t t-else="">Menu</t></span><i aria-hidden="true"/></summary>
               <nav aria-label="Mobile navigation">
-                <a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">خدماتنا</t><t t-else="">Services</t></a><a href="#approach"><t t-if="is_ar">منهجنا</t><t t-else="">Approach</t></a><a href="#contact"><t t-if="is_ar">تواصل معنا</t><t t-else="">Contact</t></a>
+                <a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">خدماتنا</t><t t-else="">Services</t></a><a href="#projects"><t t-if="is_ar">تصفح مشاريعنا</t><t t-else="">Browse our projects</t></a><a href="#approach"><t t-if="is_ar">منهجنا</t><t t-else="">Approach</t></a><a href="#contact"><t t-if="is_ar">تواصل معنا</t><t t-else="">Contact</t></a>
               </nav>
             </details>
           </header>
           <div class="abroj-v2__hero-content">
-            <p class="abroj-v2__eyebrow"><t t-if="is_ar">أبرج للإنشاءات المتكاملة · الخبر · منذ 2018</t><t t-else="">ABROJ INTEGRATED CONSTRUCTION · AL KHOBAR · EST. 2018</t></p>
-            <h1><t t-if="is_ar">من المخطط إلى<br/>تنفيذٍ واضح.</t><t t-else="">Clear execution,<br/>from drawing to delivery.</t></h1>
-            <p class="abroj-v2__hero-lead"><t t-if="is_ar">أبرج شركة تجهيزات تجارية في الخبر منذ 2018. ننفذ المقاهي والمطاعم والمتاجر والمكاتب ضمن نطاق واضح من الفكرة حتى الجاهزية للتشغيل.</t><t t-else="">Based in Al Khobar since 2018, Abroj delivers cafés, restaurants, retail spaces and offices through one clear scope from concept to operational readiness.</t></p>
+            <p class="abroj-v2__eyebrow"><t t-if="is_ar">الخبر والدمام وضواحيهما · تنفيذ وتجهيز المشاريع التجارية</t><t t-else="">AL KHOBAR, DAMMAM &amp; SURROUNDING AREAS · COMMERCIAL FIT-OUT</t></p>
+            <h1><t t-if="is_ar">تنفيذ وتجهيز واضحان<br/>لمساحتك التجارية.</t><t t-else="">Clear fit-out delivery<br/>for your commercial space.</t></h1>
+            <p class="abroj-v2__hero-lead"><t t-if="is_ar">جهة تنفيذ واحدة للمقاهي والمطاعم والمحلات والمكاتب، تتولى تفاصيل العمل في الموقع ضمن نطاق وجدول زمني متفق عليهما.</t><t t-else="">One delivery partner for cafés, restaurants, shops and offices, coordinating on-site work to an agreed scope and timeline.</t></p>
             <div class="abroj-v2__hero-actions">
               <a class="abroj-v2__button abroj-v2__button--light" href="#contact"><t t-if="is_ar">اطلب عرض سعر لمشروعك</t><t t-else="">Request a project quote</t><span aria-hidden="true">←</span></a>
+              <a class="abroj-v2__button abroj-v2__button--outline" href="#projects"><t t-if="is_ar">تصفح مشاريعنا</t><t t-else="">Browse our projects</t></a>
               <a class="abroj-v2__button abroj-v2__button--outline" href="#services"><t t-if="is_ar">استعرض الخدمات</t><t t-else="">Explore our services</t></a>
             </div>
           </div>
@@ -46,8 +49,8 @@
 
         <section id="services" class="abroj-v2__section abroj-v2__services">
           <div class="abroj-v2__section-heading">
-            <div><p class="abroj-v2__eyebrow abroj-v2__eyebrow--ink"><t t-if="is_ar">خدمات أبرج</t><t t-else="">ABROJ SERVICES</t></p><h2><t t-if="is_ar">مساحات تجارية جاهزة للتشغيل.</t><t t-else="">Commercial spaces ready to operate.</t></h2></div>
-            <p><t t-if="is_ar">نحوّل فكرة المكان إلى تجربة جاهزة للضيوف والموظفين، بتصميم وتنفيذ وتشطيب متكاملين وخطوات واضحة حتى الافتتاح.</t><t t-else="">We turn a space concept into a guest- and team-ready experience through integrated design, fit-out and finishing with clear steps through opening.</t></p>
+            <div><p class="abroj-v2__eyebrow abroj-v2__eyebrow--ink"><t t-if="is_ar">خدمات أبرج</t><t t-else="">ABROJ SERVICES</t></p><h2><t t-if="is_ar">مؤسسة واحدة لمسار تنفيذ أوضح.</t><t t-else="">One delivery partner. A clearer site process.</t></h2></div>
+            <p><t t-if="is_ar">نركز على التنفيذ والتجهيز وتفاصيل الموقع. يمكنك إحضار تصميمك، ونوفر التصميم عند الحاجة. أما التأثيث والمكائن والتجهيزات فتُحدد بحسب طلبك ونطاق الاتفاق.</t><t t-else="">We focus on fit-out delivery and site detail. Bring your own design, or ask for one when needed. Furniture, equipment and machinery are included only when requested and agreed.</t></p>
           </div>
           <div class="abroj-v2__service-grid">
             <article class="abroj-v2__service-card abroj-v2__service-card--cafe"><div class="abroj-v2__service-image" role="img" t-att-aria-label="'تصميم وتجهيز مقهى' if is_ar else 'Cafe fit-out'"/><div><span>01</span><h3><t t-if="is_ar">تجهيز المقاهي</t><t t-else="">Café fit-outs</t></h3><p><t t-if="is_ar">تحويل فكرة المقهى إلى مساحة دافئة وجاهزة لاستقبال الضيوف.</t><t t-else="">Turning a café concept into a warm, guest-ready space.</t></p></div></article>
@@ -57,34 +60,75 @@
           </div>
         </section>
 
+        <section id="projects" class="abroj-v2__section abroj-v2__projects" data-abroj-project-gallery="empty">
+          <div class="abroj-v2__section-heading">
+            <div><p class="abroj-v2__eyebrow abroj-v2__eyebrow--ink"><t t-if="is_ar">مشاريع أبرج</t><t t-else="">ABROJ PROJECTS</t></p><h2><t t-if="is_ar">تصفح مشاريعنا.</t><t t-else="">Browse our projects.</t></h2></div>
+            <p><t t-if="is_ar">سنضيف هنا مشاريعنا وصورها عند جاهزيتها.</t><t t-else="">Completed projects and their images will be added here when they are ready to share.</t></p>
+          </div>
+          <!-- Future project cards belong inside this grid. Do not use illustrative visuals as project work. -->
+          <div class="abroj-v2__project-grid" aria-live="polite">
+            <div class="abroj-v2__project-empty">
+              <span aria-hidden="true">+</span>
+              <h3><t t-if="is_ar">نعمل على تجهيز معرض مشاريعنا</t><t t-else="">We are preparing our project gallery</t></h3>
+              <p><t t-if="is_ar">قريبًا ستجد أمثلة حقيقية من أعمالنا هنا.</t><t t-else="">Real examples of our work will appear here soon.</t></p>
+            </div>
+          </div>
+        </section>
+
         <section id="approach" class="abroj-v2__detail">
           <div class="abroj-v2__detail-media">
             <video autoplay="autoplay" muted="muted" loop="loop" playsinline="playsinline" preload="metadata" aria-hidden="true"><source src="/abroj_website/static/src/video/abroj-foundation-to-handover.mp4" type="video/mp4"/></video>
             <span><t t-if="is_ar">من الأساس إلى التسليم</t><t t-else="">From foundation to handover</t></span>
           </div>
           <div class="abroj-v2__detail-copy">
-            <p class="abroj-v2__eyebrow abroj-v2__eyebrow--ink"><t t-if="is_ar">من التخطيط إلى التسليم</t><t t-else="">FROM PLAN TO HANDOVER</t></p>
-            <h2><t t-if="is_ar">الوضوح يسبق التنفيذ.</t><t t-else="">Clarity comes before construction.</t></h2>
-            <p><t t-if="is_ar">قبل بدء الأعمال، نراجع نطاق المشروع وتسلسل المهام ونقاط التنسيق بين التخصصات؛ حتى يبدأ الموقع بخطوة مناسبة وواضحة.</t><t t-else="">Before work begins, we review the scope, sequence and coordination points between trades—so the site starts with a considered, clear next step.</t></p>
+            <p class="abroj-v2__eyebrow abroj-v2__eyebrow--ink"><t t-if="is_ar">من النطاق إلى التسليم</t><t t-else="">FROM SCOPE TO HANDOVER</t></p>
+            <h2><t t-if="is_ar">تفاصيل التنفيذ تُدار في مكان واحد.</t><t t-else="">Execution details, coordinated in one place.</t></h2>
+            <p><t t-if="is_ar">نراجع نطاق العمل ومراحله والجدول الزمني المتفق عليه قبل البدء، ثم نتابع ما يلزم في الموقع حتى التسليم ضمن الاتفاق.</t><t t-else="">Before work starts, we review the agreed scope, milestones and timeline, then follow through on site to handover within that agreement.</t></p>
             <a class="abroj-v2__text-link" href="#contact"><t t-if="is_ar">ناقش نطاق مشروعك</t><t t-else="">Discuss your project scope</t><span aria-hidden="true">←</span></a>
           </div>
         </section>
 
         <section class="abroj-v2__reasons">
-          <div><span class="abroj-v2__reason-icon">01</span><h3><t t-if="is_ar">في الخبر منذ 2018</t><t t-else="">Established in Al Khobar in 2018</t></h3><p><t t-if="is_ar">شركة مقاولات محلية تخدم المشاريع من الخبر.</t><t t-else="">A local contractor serving projects from Al Khobar.</t></p></div>
-          <div><span class="abroj-v2__reason-icon">02</span><h3><t t-if="is_ar">تجهيز متكامل</t><t t-else="">Integrated fit-out</t></h3><p><t t-if="is_ar">ننسق التصميم والتشطيب والتجهيز ضمن نطاق واضح للمساحة التجارية.</t><t t-else="">We coordinate design, finishing and fit-out in one clear scope for commercial spaces.</t></p></div>
-          <div><span class="abroj-v2__reason-icon">03</span><h3><t t-if="is_ar">بداية واضحة</t><t t-else="">A clear starting point</t></h3><p><t t-if="is_ar">نبدأ بفهم احتياج المشروع قبل تحديد الخطوة التالية.</t><t t-else="">We begin by understanding the project need before defining the next step.</t></p></div>
+          <div><span class="abroj-v2__reason-icon">01</span><h3><t t-if="is_ar">فريق تنفيذ للموقع</t><t t-else="">A delivery team for the site</t></h3><p><t t-if="is_ar">نتابع تفاصيل التنفيذ والتنسيق بدل توزيع مسؤوليتك بين جهات متعددة.</t><t t-else="">We coordinate delivery details instead of leaving you to chase multiple trades.</t></p></div>
+          <div><span class="abroj-v2__reason-icon">02</span><h3><t t-if="is_ar">نطاق يتحدد معك</t><t t-else="">A scope agreed with you</t></h3><p><t t-if="is_ar">التصميم والتأثيث والتجهيزات والمكائن تُضاف عند طلبها وبحسب الاتفاق.</t><t t-else="">Design, furniture, equipment and machinery are added when requested and agreed.</t></p></div>
+          <div><span class="abroj-v2__reason-icon">03</span><h3><t t-if="is_ar">متابعة على مراحل</t><t t-else="">Progress by agreed milestones</t></h3><p><t t-if="is_ar">نرتب العمل وفق جدول متفق عليه ونراجع التقدم في مراحله.</t><t t-else="">We plan work to an agreed timeline and review progress at its milestones.</t></p></div>
         </section>
 
         <section id="contact" class="abroj-v2__contact">
           <div class="abroj-v2__contact-overlay"/>
-          <div class="abroj-v2__contact-content"><p class="abroj-v2__eyebrow"><t t-if="is_ar">لنبدأ من نطاق مشروعك</t><t t-else="">START WITH YOUR PROJECT SCOPE</t></p><h2><t t-if="is_ar">أخبرنا بما يحتاجه موقعك.</t><t t-else="">Tell us what your site needs.</t></h2><p><t t-if="is_ar">شاركنا نوع المشروع وموقعه وما يتوفر من مخططات أو متطلبات، لنبدأ بفهم نطاق العمل وتحديد الخطوة المناسبة.</t><t t-else="">Share the project type, location, and any available drawings or requirements. We will begin by understanding the scope and defining the next step.</t></p></div>
+          <div class="abroj-v2__contact-content"><p class="abroj-v2__eyebrow"><t t-if="is_ar">لنبدأ من نطاق مشروعك</t><t t-else="">START WITH YOUR PROJECT SCOPE</t></p><h2><t t-if="is_ar">أخبرنا بنوع مشروعك وموقعه.</t><t t-else="">Tell us your project type and location.</t></h2><p><t t-if="is_ar">نخدم الخبر والدمام وضواحيهما. شاركنا المساحة وحالة التصميم وما يتوفر لديك، لنقترح الخطوة المناسبة ضمن نطاق واضح.</t><t t-else="">We serve Al Khobar, Dammam and surrounding areas. Share the space, design status and what you have so we can agree the right next step.</t></p></div>
           <a class="abroj-v2__button abroj-v2__button--light" href="/contactus"><t t-if="is_ar">اطلب عرض سعر لمشروعك</t><t t-else="">Request a project quote</t><span aria-hidden="true">←</span></a>
         </section>
-        <footer class="abroj-v2__footer"><img src="/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg" alt="Abroj Integrated Construction"/><div><a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">الخدمات</t><t t-else="">Services</t></a><a href="#contact"><t t-if="is_ar">تواصل</t><t t-else="">Contact</t></a><a href="https://baseer.abroj.sa/web/login"><t t-if="is_ar">دخول بصير</t><t t-else="">Baseer login</t></a></div><small>© <t t-if="is_ar">أبرج للإنشاءات المتكاملة</t><t t-else="">Abroj Integrated Construction</t></small></footer>
+        <footer class="abroj-v2__footer"><img src="/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg" alt="Abroj Integrated Construction"/><div><a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">الخدمات</t><t t-else="">Services</t></a><a href="#projects"><t t-if="is_ar">تصفح مشاريعنا</t><t t-else="">Browse our projects</t></a><a href="#contact"><t t-if="is_ar">تواصل</t><t t-else="">Contact</t></a><a href="tel:+966552210049" dir="ltr">0552210049</a><a href="mailto:info@abroj.sa">info@abroj.sa</a><a href="https://wa.me/966552210049" target="_blank" rel="noopener" dir="ltr">WhatsApp</a></div><small>© <t t-if="is_ar">أبرج للإنشاءات المتكاملة</t><t t-else="">Abroj Integrated Construction</t></small></footer>
       </main>
     </xpath>
   </template>
+
+  <template id="core_logo_sources" inherit_id="abroj_website.home" name="Abroj approved core logo sources" priority="40">
+    <xpath expr="//img[@src='/abroj_website/static/src/img/abroj-logo-vector-white-20260928.svg']" position="attributes">
+      <attribute name="src">/abroj_website/static/src/img/abroj-logo-core-white-20261004.svg</attribute>
+    </xpath>
+    <xpath expr="//img[@src='/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg']" position="attributes">
+      <attribute name="src">/abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg</attribute>
+    </xpath>
+  </template>
+
+  <record id="contactus" model="ir.ui.view">
+    <field name="name">Abroj quote request</field><field name="inherit_id" ref="website.contactus"/><field name="website_id" ref="website.default_website"/><field name="priority">100</field>
+    <field name="arch" type="xml"><xpath expr="//div[@id='wrap']" position="replace"><t t-set="is_ar" t-value="request.env.lang.startswith('ar')"/><main id="wrap" class="container py-5" t-att-dir="'rtl' if is_ar else 'ltr'"><a href="/" class="d-inline-block mb-4"><img src="/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg" alt="أبرج للإنشاءات المتكاملة | Abroj Integrated Construction" style="width:180px"/></a><div class="row g-5"><section class="col-lg-8"><p class="text-uppercase text-info"><t t-if="is_ar">الخبر والدمام وضواحيهما</t><t t-else="">AL KHOBAR, DAMMAM &amp; SURROUNDING AREAS</t></p><h1><t t-if="is_ar">اطلب عرض سعر لمشروعك</t><t t-else="">Request a quote for your project</t></h1><p><t t-if="is_ar">اذكر تفاصيل مشروعك. يمكنك إحضار تصميمك أو طلبه عند الحاجة، وأخبرنا إن كانت لديك مخططات لننسق طريقة مشاركتها المناسبة.</t><t t-else="">Share your project details. Bring your own design or ask for one when needed, and tell us if you have drawings so we can arrange an appropriate way to share them.</t></p><form id="contactus_form" action="/website/form/" method="post" class="o_mark_required" data-mark="*" data-model_name="crm.lead" data-success-mode="redirect" data-success-page="/contactus"><input type="hidden" name="name" t-att-value="'طلب عرض سعر عبر موقع أبرج' if is_ar else 'Abroj website quote request'"/><div class="row g-3"><div class="col-md-6"><label class="form-label"><t t-if="is_ar">الاسم</t><t t-else="">Name</t> *</label><input class="form-control s_website_form_input" name="contact_name" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">الجوال</t><t t-else="">Mobile</t> *</label><input class="form-control s_website_form_input" name="phone" type="tel" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">البريد الإلكتروني</t><t t-else="">Email</t> *</label><input class="form-control s_website_form_input" name="email_from" type="email" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">نوع المشروع</t><t t-else="">Project type</t> *</label><input class="form-control s_website_form_input s_website_form_custom" name="project_type" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">الموقع</t><t t-else="">Location</t> *</label><input class="form-control s_website_form_input s_website_form_custom" name="project_location" required="" t-att-placeholder="'الخبر أو الدمام أو الضواحي' if is_ar else 'Al Khobar, Dammam or surrounding area'"/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">المساحة التقريبية</t><t t-else="">Approximate area</t></label><input class="form-control s_website_form_input s_website_form_custom" name="approximate_area"/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">حالة التصميم</t><t t-else="">Design status</t></label><select class="form-select s_website_form_input s_website_form_custom" name="design_status"><option><t t-if="is_ar">لدي تصميم جاهز</t><t t-else="">I have a design</t></option><option><t t-if="is_ar">أحتاج إلى تصميم</t><t t-else="">I need a design</t></option><option><t t-if="is_ar">أحتاج إلى مناقشة الخيارات</t><t t-else="">I need to discuss options</t></option></select></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">هل لديك مخططات؟</t><t t-else="">Do you have drawings?</t></label><select class="form-select s_website_form_input s_website_form_custom" name="drawings_available"><option><t t-if="is_ar">نعم</t><t t-else="">Yes</t></option><option><t t-if="is_ar">لا</t><t t-else="">No</t></option></select></div><div class="col-12"><label class="form-label"><t t-if="is_ar">تفاصيل إضافية</t><t t-else="">Additional details</t> *</label><textarea class="form-control s_website_form_input" name="description" required="" rows="6"/></div><div class="col-12"><a href="#" role="button" class="btn btn-primary s_website_form_send"><t t-if="is_ar">إرسال طلب عرض السعر</t><t t-else="">Send quote request</t></a><span id="s_website_form_result"/></div></div></form></section><aside class="col-lg-4"><h2 class="h4"><t t-if="is_ar">بيانات التواصل</t><t t-else="">Contact details</t></h2><p><a href="tel:+966552210049" dir="ltr">0552210049</a></p><p><a href="https://wa.me/966552210049" target="_blank" rel="noopener" dir="ltr">WhatsApp +966552210049</a></p><p><a href="mailto:info@abroj.sa">info@abroj.sa</a></p></aside></div></main></xpath></field>
+  </record>
+
+  <record id="contactus_core_logo" model="ir.ui.view">
+    <field name="name">Abroj quote request core logo</field>
+    <field name="inherit_id" ref="website.contactus"/>
+    <field name="website_id" ref="website.default_website"/>
+    <field name="priority">101</field>
+    <field name="arch" type="xml">
+      <xpath expr="//img[@src='/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg']" position="attributes">
+        <attribute name="src">/abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg</attribute>
+      </xpath>
+    </field>
+  </record>
 
   <!-- The default Website-editor footer contains placeholder company details.
        This website has a complete, branded footer in its home template. -->

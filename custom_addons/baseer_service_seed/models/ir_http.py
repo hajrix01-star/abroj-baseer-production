@@ -16,7 +16,7 @@ class IrHttp(models.AbstractModel):
                 or session_info.get('user_context', {}).get('lang') or self.env.lang)
         companies = self.env['res.company'].sudo().with_context(lang=lang).browse(
             [entry['id'] for entry in entries])
-        names = {company.id: company.display_name for company in companies}
+        names = {company.id: company.baseer_display_name for company in companies}
         for entry in entries:
             entry['name'] = names[entry['id']]
         return session_info

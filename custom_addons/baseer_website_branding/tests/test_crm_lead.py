@@ -44,5 +44,26 @@ class BaseerWebsiteBrandingLeadCase(TransactionCase):
             self.assertIn("abroj-contact-name", copied_page.view_id.arch_db)
             # The public interaction only binds to forms inside this wrapper.
             self.assertIn('class="s_website_form"', copied_page.view_id.arch_db)
+            self.assertIn(
+                "/abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg",
+                copied_page.view_id.arch_db,
+            )
+            self.assertNotIn(
+                "/abroj_website/static/src/img/abroj-logo.png",
+                copied_page.view_id.arch_db,
+            )
         finally:
             website.domain = original_domain
+
+    def test_legacy_contact_logo_references_are_upgraded_everywhere(self):
+        legacy_logo = "/abroj_website/static/src/img/abroj-logo.png"
+        core_logo = "/abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg"
+        self.env["website.page"]._replace_abroj_legacy_logo_sources()
+        legacy_views = self.env["ir.ui.view"].with_context(active_test=False).search([
+            ("arch_db", "like", legacy_logo),
+        ])
+        self.assertFalse(legacy_views)
+        contact_template = self.env.ref("baseer_website_branding.abroj_contactus_page")
+        thanks_page = self.env.ref("baseer_website_branding.abroj_contactus_thanks")
+        self.assertIn(core_logo, contact_template.arch_db)
+        self.assertIn(core_logo, thanks_page.view_id.arch_db)

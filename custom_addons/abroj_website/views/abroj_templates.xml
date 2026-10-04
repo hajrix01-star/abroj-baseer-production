@@ -104,9 +104,30 @@
     </xpath>
   </template>
 
+  <template id="core_logo_sources" inherit_id="abroj_website.home" name="Abroj approved core logo sources" priority="40">
+    <xpath expr="//img[@src='/abroj_website/static/src/img/abroj-logo-vector-white-20260928.svg']" position="attributes">
+      <attribute name="src">/abroj_website/static/src/img/abroj-logo-core-white-20261004.svg</attribute>
+    </xpath>
+    <xpath expr="//img[@src='/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg']" position="attributes">
+      <attribute name="src">/abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg</attribute>
+    </xpath>
+  </template>
+
   <record id="contactus" model="ir.ui.view">
     <field name="name">Abroj quote request</field><field name="inherit_id" ref="website.contactus"/><field name="website_id" ref="website.default_website"/><field name="priority">100</field>
     <field name="arch" type="xml"><xpath expr="//div[@id='wrap']" position="replace"><t t-set="is_ar" t-value="request.env.lang.startswith('ar')"/><main id="wrap" class="container py-5" t-att-dir="'rtl' if is_ar else 'ltr'"><a href="/" class="d-inline-block mb-4"><img src="/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg" alt="أبرج للإنشاءات المتكاملة | Abroj Integrated Construction" style="width:180px"/></a><div class="row g-5"><section class="col-lg-8"><p class="text-uppercase text-info"><t t-if="is_ar">الخبر والدمام وضواحيهما</t><t t-else="">AL KHOBAR, DAMMAM &amp; SURROUNDING AREAS</t></p><h1><t t-if="is_ar">اطلب عرض سعر لمشروعك</t><t t-else="">Request a quote for your project</t></h1><p><t t-if="is_ar">اذكر تفاصيل مشروعك. يمكنك إحضار تصميمك أو طلبه عند الحاجة، وأخبرنا إن كانت لديك مخططات لننسق طريقة مشاركتها المناسبة.</t><t t-else="">Share your project details. Bring your own design or ask for one when needed, and tell us if you have drawings so we can arrange an appropriate way to share them.</t></p><form id="contactus_form" action="/website/form/" method="post" class="o_mark_required" data-mark="*" data-model_name="crm.lead" data-success-mode="redirect" data-success-page="/contactus"><input type="hidden" name="name" t-att-value="'طلب عرض سعر عبر موقع أبرج' if is_ar else 'Abroj website quote request'"/><div class="row g-3"><div class="col-md-6"><label class="form-label"><t t-if="is_ar">الاسم</t><t t-else="">Name</t> *</label><input class="form-control s_website_form_input" name="contact_name" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">الجوال</t><t t-else="">Mobile</t> *</label><input class="form-control s_website_form_input" name="phone" type="tel" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">البريد الإلكتروني</t><t t-else="">Email</t> *</label><input class="form-control s_website_form_input" name="email_from" type="email" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">نوع المشروع</t><t t-else="">Project type</t> *</label><input class="form-control s_website_form_input s_website_form_custom" name="project_type" required=""/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">الموقع</t><t t-else="">Location</t> *</label><input class="form-control s_website_form_input s_website_form_custom" name="project_location" required="" t-att-placeholder="'الخبر أو الدمام أو الضواحي' if is_ar else 'Al Khobar, Dammam or surrounding area'"/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">المساحة التقريبية</t><t t-else="">Approximate area</t></label><input class="form-control s_website_form_input s_website_form_custom" name="approximate_area"/></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">حالة التصميم</t><t t-else="">Design status</t></label><select class="form-select s_website_form_input s_website_form_custom" name="design_status"><option><t t-if="is_ar">لدي تصميم جاهز</t><t t-else="">I have a design</t></option><option><t t-if="is_ar">أحتاج إلى تصميم</t><t t-else="">I need a design</t></option><option><t t-if="is_ar">أحتاج إلى مناقشة الخيارات</t><t t-else="">I need to discuss options</t></option></select></div><div class="col-md-6"><label class="form-label"><t t-if="is_ar">هل لديك مخططات؟</t><t t-else="">Do you have drawings?</t></label><select class="form-select s_website_form_input s_website_form_custom" name="drawings_available"><option><t t-if="is_ar">نعم</t><t t-else="">Yes</t></option><option><t t-if="is_ar">لا</t><t t-else="">No</t></option></select></div><div class="col-12"><label class="form-label"><t t-if="is_ar">تفاصيل إضافية</t><t t-else="">Additional details</t> *</label><textarea class="form-control s_website_form_input" name="description" required="" rows="6"/></div><div class="col-12"><a href="#" role="button" class="btn btn-primary s_website_form_send"><t t-if="is_ar">إرسال طلب عرض السعر</t><t t-else="">Send quote request</t></a><span id="s_website_form_result"/></div></div></form></section><aside class="col-lg-4"><h2 class="h4"><t t-if="is_ar">بيانات التواصل</t><t t-else="">Contact details</t></h2><p><a href="tel:+966552210049" dir="ltr">0552210049</a></p><p><a href="https://wa.me/966552210049" target="_blank" rel="noopener" dir="ltr">WhatsApp +966552210049</a></p><p><a href="mailto:info@abroj.sa">info@abroj.sa</a></p></aside></div></main></xpath></field>
+  </record>
+
+  <record id="contactus_core_logo" model="ir.ui.view">
+    <field name="name">Abroj quote request core logo</field>
+    <field name="inherit_id" ref="website.contactus"/>
+    <field name="website_id" ref="website.default_website"/>
+    <field name="priority">101</field>
+    <field name="arch" type="xml">
+      <xpath expr="//img[@src='/abroj_website/static/src/img/abroj-logo-vector-navy-20260928.svg']" position="attributes">
+        <attribute name="src">/abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg</attribute>
+      </xpath>
+    </field>
   </record>
 
   <!-- The default Website-editor footer contains placeholder company details.

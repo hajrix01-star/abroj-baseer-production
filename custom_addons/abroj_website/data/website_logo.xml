@@ -1,6 +1,6 @@
 <odoo>
-  <!-- Native Odoo uses the high-resolution export of the approved vector master. -->
+  <!-- Native Odoo uses the approved core vector: no optional services tagline. -->
   <record id="website.default_website" model="website" context="{'image_no_postprocess': True}">
-    <field name="logo" type="base64" file="abroj_website/static/src/img/abroj-logo-vector-6000-20260928.png"/>
+    <field name="logo" type="base64" file="abroj_website/static/src/img/abroj-logo-core-primary-20261004.svg"/>
   </record>
 </odoo>

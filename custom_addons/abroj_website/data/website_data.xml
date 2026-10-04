@@ -4,8 +4,9 @@
   </function>
   <function model="website" name="write">
     <value eval="[ref('website.default_website')]"/>
-    <value eval="{'name': 'Abroj', 'domain': 'https://abroj.sa', 'language_ids': [(6, 0, [ref('base.lang_ar'), ref('base.lang_en')])], 'default_lang_id': ref('base.lang_ar'), 'website_meta_title': 'أبرج | تنفيذ وتجهيز المشاريع التجارية في الخبر والدمام', 'website_meta_description': 'أبرج جهة تنفيذ وتجهيز للمقاهي والمطاعم والمحلات والمكاتب في الخبر والدمام وضواحيهما. التصميم والتأثيث والمكائن بحسب نطاق الاتفاق.', 'website_meta_keywords': 'تنفيذ وتجهيز, تجهيز مقاهي, تجهيز مطاعم, تجهيز محلات, تجهيز مكاتب, الخبر, الدمام'}"/>
+    <value eval="{'name': 'Abroj', 'domain': 'https://abroj.sa', 'language_ids': [(6, 0, [ref('base.lang_ar'), ref('base.lang_en')])], 'default_lang_id': ref('base.lang_ar')}"/>
   </function>
+  <function model="website.page" name="_set_abroj_homepage_seo"/>
   <record id="baseer_website" model="website">
     <field name="name">Baseer Login</field><field name="domain">https://baseer.abroj.sa</field>
     <field name="language_ids" eval="[(6, 0, [ref('base.lang_ar'), ref('base.lang_en')])]"/>

@@ -20,7 +20,7 @@ const context = {
     }),
     patch: (target, methods) => patches.set(target, methods),
 };
-vm.runInNewContext(source + '\nglobalThis.helpers = { pendingKey, readPending, substitutionLock, isSubstitutionOutputLine };', context);
+vm.runInNewContext(source + '\nglobalThis.helpers = { pendingKey, readPending, substitutionLock, isSubstitutionOutputLine, popupProductLabel, BaseerSubstitutionPopup };', context);
 const posMethods = patches.get(classes.PosStore.prototype);
 const orderMethods = patches.get(classes.PosOrder.prototype);
 const order = { id: 100, uuid: 'order-uuid', config_id: { id: 40 }, isSynced: true, baseer_protected_revision: 'revision-1', lines: [{ uuid: 'source' }] };
@@ -42,6 +42,22 @@ async function test(name, run) {
     console.log('PASS', name);
 }
 (async () => {
+    await test('substitution popup hides product codes but preserves variant labels and server payload IDs', () => {
+        const { popupProductLabel, BaseerSubstitutionPopup } = context.helpers;
+        const variant = { id: 5900, default_code: 'ARZ-PRD-026-55', display_name: '[ARZ-PRD-026-55] شيشة تفاحتين أرز (55 ريال)' };
+        assert.equal(popupProductLabel(variant), 'شيشة تفاحتين أرز (55 ريال)');
+        assert.equal(popupProductLabel({ display_name: '[ARZ-PRD-042] صحن شبس مع صوص' }), 'صحن شبس مع صوص');
+        assert.equal(popupProductLabel({ display_name: '[Special] Burger' }), '[Special] Burger');
+        const popup = new BaseerSubstitutionPopup();
+        popup.props = { line: { product_id: { default_code: 'ARZ-PRD-026-65' }, getFullProductName: () => '[ARZ-PRD-026-65] شيشة تفاحتين أرز (65 ريال)' } };
+        assert.equal(popup.sourceLabel, 'شيشة تفاحتين أرز (65 ريال)');
+        assert.equal(popup.productLabel(variant), 'شيشة تفاحتين أرز (55 ريال)');
+        assert.equal(variant.id, 5900);
+        const xml = fs.readFileSync(path.join(__dirname, '../src/app/substitution.xml'), 'utf8');
+        assert.doesNotMatch(xml, /choose allowed replacements only|Odoo validates the exact total/);
+        assert.match(xml, /t-esc="sourceLabel"/);
+        assert.match(xml, /t-esc="productLabel\(product\)"/);
+    });
     await test('printer recovery resumes without a repair dialog; unreachable server only warns', async () => {
         const pos = mockPos(); const notices = [];
         pos.dialog.add = () => { throw new Error('must not open a repair dialog'); };

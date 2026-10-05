@@ -113,7 +113,8 @@ class PosOrder(models.Model):
         products = self.env['product.product'].browse([item['product_id'] for item in requested]).exists()
         allowed = source.product_id.baseer_substitution_product_ids
         if len(products) != len(requested) or any(
-                product not in allowed or not product.active or not product.available_in_pos
+                product == source.product_id or product not in allowed
+                or not product.active or not product.available_in_pos
                 or product.company_id and product.company_id != self.company_id for product in products):
             raise AccessError(_('One or more replacement products are not allowed for this item.'))
         totals = []
@@ -357,7 +358,8 @@ class PosOrder(models.Model):
         allowed = source.product_id.baseer_substitution_product_ids
         requested_ids = {item['product_id'] for item in action['replacements']}
         products = self.env['product.product'].browse(list(requested_ids)).exists()
-        if len(products) != len(requested_ids) or any(product not in allowed for product in products):
+        if len(products) != len(requested_ids) or any(
+                product == source.product_id or product not in allowed for product in products):
             raise AccessError(_('One or more replacement products are not allowed for this item.'))
         return source.ensure_one(), self._baseer_substitution_source_snapshot(source)
 

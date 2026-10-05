@@ -102,6 +102,25 @@ class TestBaseerPosProductSubstitution(TransactionCase):
         config.write({'baseer_substitution_enabled': True})
         self.assertTrue(config.baseer_substitution_enabled)
 
+    def test_template_policy_allows_a_sibling_variant_but_server_rejects_self(self):
+        """Price variants may substitute one another; a source may not replace itself."""
+        config, order, _replacement = self._protected_order(enabled=True)
+        source = order.lines.product_id
+        # Template-owned policy is intentionally allowed to include a variant
+        # from that same template.  The runtime guard below is variant-exact.
+        source.product_tmpl_id.write({
+            'baseer_substitution_product_ids': [Command.set(source.ids)],
+        })
+        action = self.env['baseer.pos.substitution']._normalize_action({
+            'action_uuid': str(uuid4()),
+            'source_line_uuid': order.lines.uuid,
+            'replacements': [{
+                'product_id': source.id, 'quantity': 1, 'line_uuid': str(uuid4()),
+            }],
+        })
+        with self.assertRaises(AccessError):
+            self.env['pos.order']._baseer_substitution_validate_before_sync(order, action)
+
     def test_server_rejects_protected_substitution_when_register_is_disabled(self):
         _config, order, replacement = self._protected_order(enabled=False)
         action = self.env['baseer.pos.substitution']._normalize_action({

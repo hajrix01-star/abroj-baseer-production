@@ -13,6 +13,8 @@ import {
     ROW_HEIGHT,
     OVERSCAN,
     computeFilterKeepSet,
+    searchExpandedIds,
+    shouldFetchLazyFirstPage,
     sliceWindow,
     variantCellRole,
 } from "@eh_account_dynamic_reports/components/dynamic_report/report_table_logic";
@@ -166,6 +168,35 @@ describe("eh dynamic report - in-table search keep-set", () => {
     test("no match yields an empty keep set", () => {
         const keep = computeFilterKeepSet(lines, "zzz-nothing");
         expect(keep.size).toBe(0);
+    });
+
+    test("search reveals structural parents without starting a fake lazy load", () => {
+        const reportLines = [
+            { id: "group", name: "Liabilities" },
+            { id: "account-3976", name: "Tobacco fee", parent_id: "group", lazy: true },
+        ];
+        const keep = computeFilterKeepSet(reportLines, "tobacco");
+        const expanded = searchExpandedIds(reportLines, keep, []);
+        expect(expanded.has("group")).toBe(true);
+        expect(expanded.has("account-3976")).toBe(false);
+    });
+
+    test("search retains an explicitly opened or already-loaded lazy account", () => {
+        const account = { id: "account-3976", name: "Tobacco fee", lazy: true };
+        const keep = new Set([account.id]);
+        expect(searchExpandedIds([account], keep, [account.id]).has(account.id)).toBe(true);
+        expect(searchExpandedIds([account], keep, [], {
+            [account.id]: { lines: [{ id: "aml-1" }], loading: false },
+        }).has(account.id)).toBe(true);
+    });
+
+    test("failed first-page RPC retries only after re-expansion", () => {
+        const account = { lazy: true };
+        expect(shouldFetchLazyFirstPage(account, true, undefined)).toBe(true);
+        expect(shouldFetchLazyFirstPage(account, false, { error: true })).toBe(false);
+        expect(shouldFetchLazyFirstPage(account, true, { error: true, loading: false })).toBe(true);
+        expect(shouldFetchLazyFirstPage(account, true, { error: true, loading: true })).toBe(false);
+        expect(shouldFetchLazyFirstPage(account, true, { lines: [], error: false })).toBe(false);
     });
 });
 

@@ -349,6 +349,34 @@ class TestGeneralLedgerHandler(EhAccountIntegrationTestCase):
             self._column_value(opening_line, 'balance'), 500.0, places=2,
         )
 
+    def test_lazy_header_only_expands_with_period_journal_items(self):
+        self.post_balanced_move([
+            {'account': self.account_revenue, 'credit': 500.0},
+            {'account': self.account_cash, 'debit': 500.0},
+        ], date=fields.Date.from_string('2025-12-15'))
+        options = dict(self.options, lazy_expand=True)
+
+        opening_only = self.handler.compute(options)
+        header = self._line_by_kind(
+            self._lines_for_account(opening_only, self.account_cash.id),
+            'account_header',
+        )
+        self.assertIsNotNone(header)
+        self.assertFalse(header['unfoldable'])
+        self.assertFalse(header.get('lazy'))
+
+        self._post_in_period([
+            {'account': self.account_revenue, 'credit': 100.0},
+            {'account': self.account_cash, 'debit': 100.0},
+        ])
+        with_activity = self.handler.compute(options)
+        header = self._line_by_kind(
+            self._lines_for_account(with_activity, self.account_cash.id),
+            'account_header',
+        )
+        self.assertTrue(header['unfoldable'])
+        self.assertTrue(header['lazy'])
+
     def test_closing_balance_on_total_line(self):
         self._post_in_period([
             {'account': self.account_revenue, 'credit': 250.0},

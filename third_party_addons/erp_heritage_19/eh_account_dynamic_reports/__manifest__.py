@@ -37,7 +37,7 @@ This is the free anchor for the suite. For a custom report builder and scheduled
     'website': 'https://www.erpheritage.com.au/',
     'license': 'LGPL-3',
     'category': 'Accounting/Accounting',
-    'version': '19.0.1.8.1',
+    'version': '19.0.1.8.2',
     'depends': ['eh_account_base'],
     'data': [
         'security/ir.model.access.csv',

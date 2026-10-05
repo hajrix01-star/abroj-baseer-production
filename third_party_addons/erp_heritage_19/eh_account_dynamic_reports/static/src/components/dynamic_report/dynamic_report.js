@@ -59,6 +59,8 @@ import {
     OVERSCAN,
     DEFAULT_VIEWPORT_PX,
     computeFilterKeepSet,
+    searchExpandedIds,
+    shouldFetchLazyFirstPage,
     sliceWindow,
     variantCellRole,
 } from "./report_table_logic";
@@ -1913,11 +1915,10 @@ export class EhDynamicReportViewer extends Component {
                 (id) => id !== line.id,
             );
         }
-        // Lazy leaf: fetch the first page of children on first expand only.
-        // Collapse keeps the cached children, so a re-expand is instant and
-        // does NOT refetch (the windowed builder simply stops splicing them
-        // while collapsed). We fetch only when no page is cached yet.
-        if (line.lazy && newlyExpanded && !this.state.childLines[line.id]) {
+        // Retry an RPC failure on re-expand; keep successful pages cached.
+        if (shouldFetchLazyFirstPage(
+            line, newlyExpanded, this.state.childLines[line.id],
+        )) {
             this.loadChildren(line, 0);
         }
         // Fire-and-forget persistence: any failure leaves the local
@@ -1939,8 +1940,7 @@ export class EhDynamicReportViewer extends Component {
     async loadChildren(line, offset) {
         // Fetch one page of an account leaf's journal items via the
         // stateless expand_line RPC. Appends to any already-loaded page so
-        // load-more accumulates. Defensive: a failed expand leaves the row
-        // expanded-but-empty (or with its prior page), never throwing.
+        // load-more accumulates. A failed first page can retry on re-expand.
         if (!this.state.reportId || !line || !line.id) return;
         const existing = this.state.childLines[line.id] || {
             lines: [], hasMore: false, nextOffset: 0, totalCount: 0,
@@ -1949,7 +1949,7 @@ export class EhDynamicReportViewer extends Component {
         // object identity is unnecessary because state is reactive.
         this.state.childLines = {
             ...this.state.childLines,
-            [line.id]: { ...existing, loading: true },
+            [line.id]: { ...existing, loading: true, error: false },
         };
         try {
             const res = await this.orm.call(
@@ -1972,14 +1972,14 @@ export class EhDynamicReportViewer extends Component {
                     nextOffset: (res && res.next_offset) || merged.length,
                     totalCount: (res && res.total_count) || merged.length,
                     loading: false,
+                    error: false,
                 },
             };
         } catch (exc) {
-            // Keep whatever we had; clear the loading flag so the spinner
-            // stops and the user can retry by collapsing/re-expanding.
+            // Keep whatever we had; clear the spinner and allow a retry.
             this.state.childLines = {
                 ...this.state.childLines,
-                [line.id]: { ...existing, loading: false },
+                [line.id]: { ...existing, loading: false, error: true },
             };
             this.notification.add(
                 sprintf(
@@ -2036,17 +2036,13 @@ export class EhDynamicReportViewer extends Component {
         // (still-expanded) parent was collapsed: e.g. group -> subgroup ->
         // account, collapse the group and the account leaked through because
         // its parent subgroup was still in the expanded set.
-        const expanded = new Set(this.state.expandedLines);
-        // While a search is active, a matched row must actually surface even
-        // if the user had collapsed its parent group. Temporarily treat every
-        // kept (in-filter) line as expanded so the fold walk does not hide a
-        // match behind a collapsed ancestor; the user's real expandedLines is
-        // untouched, so clearing the search restores the prior fold shape.
-        if (keepIds) {
-            for (const id of keepIds) {
-                expanded.add(id);
-            }
-        }
+        // Search reveals structural ancestors only. Treating a matching lazy
+        // account as expanded without calling loadChildren creates a spinner
+        // that can never finish. Explicit user expansions remain in state.
+        const expanded = searchExpandedIds(
+            sourceLines, keepIds, this.state.expandedLines,
+            this.state.childLines,
+        );
         const byId = new Map();
         for (const line of sourceLines) {
             byId.set(line.id, line);
@@ -2088,11 +2084,6 @@ export class EhDynamicReportViewer extends Component {
                     }
                     if (entry && (entry.hasMore || entry.loading)) {
                         result.push(this._loadMoreSentinel(line, entry));
-                    } else if (!entry || entry.loading === undefined) {
-                        // Expanded but no page yet resolved: show a spinner.
-                        result.push(this._loadMoreSentinel(line, {
-                            loading: true, hasMore: false,
-                        }));
                     }
                 }
             }

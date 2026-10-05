@@ -75,6 +75,26 @@ export function computeFilterKeepSet(lines, rawQuery) {
     return keep;
 }
 
+// Search may reveal collapsed structural groups for context, but lazy account
+// leaves must only expand after an explicit click starts their detail RPC.
+export function searchExpandedIds(lines, keepIds, expandedIds, childLines = {}) {
+    const expanded = new Set(expandedIds || []);
+    if (keepIds) {
+        for (const line of lines || []) {
+            if (keepIds.has(line.id) && (
+                !line.lazy || Object.hasOwn(childLines, line.id)
+            )) {
+                expanded.add(line.id);
+            }
+        }
+    }
+    return expanded;
+}
+
+export function shouldFetchLazyFirstPage(line, newlyExpanded, entry) {
+    return !!(line.lazy && newlyExpanded && (!entry || (entry.error && !entry.loading)));
+}
+
 // ---- step 3: virtual-scroll window ----
 //
 // Slice the ordered visible array to the rows intersecting the viewport plus

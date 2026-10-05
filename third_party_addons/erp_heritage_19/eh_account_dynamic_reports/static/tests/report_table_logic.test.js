@@ -196,6 +196,7 @@ describe("eh dynamic report - in-table search keep-set", () => {
         expect(shouldFetchLazyFirstPage(account, false, { error: true })).toBe(false);
         expect(shouldFetchLazyFirstPage(account, true, { error: true, loading: false })).toBe(true);
         expect(shouldFetchLazyFirstPage(account, true, { error: true, loading: true })).toBe(false);
+        expect(shouldFetchLazyFirstPage(account, true, { lines: [{ id: "aml-1" }], error: true })).toBe(false);
         expect(shouldFetchLazyFirstPage(account, true, { lines: [], error: false })).toBe(false);
     });
 });

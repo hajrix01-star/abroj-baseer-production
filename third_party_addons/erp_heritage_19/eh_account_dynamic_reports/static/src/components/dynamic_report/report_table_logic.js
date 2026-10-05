@@ -92,7 +92,9 @@ export function searchExpandedIds(lines, keepIds, expandedIds, childLines = {}) 
 }
 
 export function shouldFetchLazyFirstPage(line, newlyExpanded, entry) {
-    return !!(line.lazy && newlyExpanded && (!entry || (entry.error && !entry.loading)));
+    return !!(line.lazy && newlyExpanded && (
+        !entry || (entry.error && !entry.loading && !(entry.lines || []).length)
+    ));
 }
 
 // ---- step 3: virtual-scroll window ----

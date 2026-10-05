@@ -230,7 +230,8 @@ class PosOrder(models.Model):
                     raise ValidationError(_('This action identifier was already used with different details.'))
                 return self._baseer_command_result(action['action_uuid'])
             source = self._baseer_validate_new_command(action, expected_revision)
-            snapshot = self._baseer_substitution_source_snapshot_for_quote(source)
+            snapshot = (self._baseer_substitution_source_snapshot_for_quote(source)
+                        if kind == 'edit' else self._baseer_substitution_source_snapshot(source))
             quote = []
             replacement_gross = difference_gross = tolerance_gross = 0.0
             if kind == 'edit':

@@ -341,6 +341,65 @@ class TestBaseerPosProductSubstitution(TransactionCase):
         })
         self.assertEqual(set(action), {'action_uuid', 'source_line_uuid', 'reason_note', 'replacements'})
 
+    def test_server_rejects_the_exact_source_variant_when_the_policy_lists_it(self):
+        _config, order, _replacement = self._protected_order(enabled=True)
+        source = order.lines.product_id
+        # Template policies may contain sibling variants.  At runtime, however,
+        # the exact source variant is never a legitimate replacement.
+        source.product_tmpl_id.write({
+            'baseer_substitution_product_ids': [Command.set(source.ids)],
+        })
+        action = self.env['baseer.pos.substitution']._normalize_action({
+            'action_uuid': str(uuid4()),
+            'source_line_uuid': order.lines.uuid,
+            'replacements': [{'product_id': source.id, 'quantity': 1, 'line_uuid': str(uuid4())}],
+        })
+        with self.assertRaises(AccessError):
+            self.env['pos.order']._baseer_substitution_validate_before_sync(order, action)
+
+    def test_substitution_accepts_the_approved_fifteen_halala_difference_and_audits_it(self):
+        _config, order, replacement = self._protected_order(enabled=True)
+        order.lines.product_id.product_tmpl_id.write({'taxes_id': [Command.clear()]})
+        replacement.product_tmpl_id.write({
+            'taxes_id': [Command.clear()],
+            'list_price': 10.15,
+        })
+        action = {
+            'action_uuid': str(uuid4()),
+            'source_line_uuid': order.lines.uuid,
+            'replacements': [{'product_id': replacement.id, 'quantity': 1, 'line_uuid': str(uuid4())}],
+        }
+        result = order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+        self.assertTrue(result['accepted'])
+        event = self.env['baseer.pos.substitution'].search([
+            ('order_id', '=', order.id), ('action_uuid', '=', action['action_uuid']),
+        ])
+        self.assertEqual(event.source_gross, 10)
+        self.assertEqual(event.source_synced_gross, 10)
+        self.assertEqual(event.replacement_gross, 10.15)
+        self.assertEqual(event.difference_gross, 0.15)
+        self.assertEqual(event.tolerance_gross, 0.15)
+
+    def test_substitution_rejects_a_difference_above_fifteen_halalas(self):
+        _config, order, replacement = self._protected_order(enabled=True)
+        source_product = order.lines.product_id
+        source_product.product_tmpl_id.write({'taxes_id': [Command.clear()]})
+        replacement.product_tmpl_id.write({
+            'taxes_id': [Command.clear()],
+            'list_price': 10.16,
+        })
+        action = {
+            'action_uuid': str(uuid4()),
+            'source_line_uuid': order.lines.uuid,
+            'replacements': [{'product_id': replacement.id, 'quantity': 1, 'line_uuid': str(uuid4())}],
+        }
+        with self.assertRaises(ValidationError):
+            order.baseer_apply_protected_action('edit', action, order._baseer_revision())
+        self.assertEqual(order.lines.product_id, source_product)
+        self.assertEqual(self.env['baseer.pos.substitution'].search_count([
+            ('order_id', '=', order.id), ('action_uuid', '=', action['action_uuid']),
+        ]), 0)
+
     def test_source_configuration_requires_allowed_pos_product(self):
         source = self.env['product.template'].create({
             'name': 'PPS protected source', 'available_in_pos': True,

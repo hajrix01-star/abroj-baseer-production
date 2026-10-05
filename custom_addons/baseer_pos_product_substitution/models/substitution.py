@@ -26,7 +26,10 @@ class BaseerPosSubstitution(models.Model):
     source_line_uuid = fields.Char(required=True, readonly=True, index=True)
     source_quantity = fields.Float(required=True, readonly=True)
     source_gross = fields.Monetary(required=True, readonly=True, currency_field='currency_id')
+    source_synced_gross = fields.Monetary(required=True, readonly=True, default=0.0, currency_field='currency_id')
     replacement_gross = fields.Monetary(required=True, readonly=True, currency_field='currency_id')
+    difference_gross = fields.Monetary(required=True, readonly=True, default=0.0, currency_field='currency_id')
+    tolerance_gross = fields.Monetary(required=True, readonly=True, default=0.0, currency_field='currency_id')
     currency_id = fields.Many2one('res.currency', required=True, ondelete='restrict', readonly=True)
     replacement_product_ids = fields.Many2many(
         'product.product', 'baseer_substitution_event_product_rel', 'event_id', 'product_id',

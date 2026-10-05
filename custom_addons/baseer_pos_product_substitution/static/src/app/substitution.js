@@ -39,6 +39,16 @@ function unsettledMessage() {
     return _t("The previous edit has not been confirmed. Reconnect and check its result before changing or paying this order.");
 }
 
+function popupProductLabel(product, fullName) {
+    const label = String(fullName ?? product?.display_name ?? product?.name ?? "");
+    const codePrefix = product?.default_code && `[${product.default_code}]`;
+    if (codePrefix && label.startsWith(codePrefix)) {
+        return label.slice(codePrefix.length).trimStart();
+    }
+    // POS can omit default_code from its cached product while keeping it in display_name.
+    return label.replace(/^\[(?=[^\]]*[\d/-])[A-Za-z0-9._/-]+\]\s+/, "");
+}
+
 export class BaseerSubstitutionPopup extends Component {
     static template = "baseer_pos_product_substitution.SubstitutionPopup";
     static components = { Dialog };
@@ -46,6 +56,12 @@ export class BaseerSubstitutionPopup extends Component {
 
     setup() {
         this.state = useState({ quantities: {}, note: "" });
+    }
+    get sourceLabel() {
+        return popupProductLabel(this.props.line.product_id, this.props.line.getFullProductName());
+    }
+    productLabel(product) {
+        return popupProductLabel(product);
     }
     get selectedProducts() {
         return this.props.products

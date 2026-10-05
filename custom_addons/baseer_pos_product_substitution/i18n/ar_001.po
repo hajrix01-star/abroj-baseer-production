@@ -160,14 +160,8 @@ msgstr "تم الإبقاء على الصنف المحمي. تحقق من تطا
 msgid "Substitute protected item"
 msgstr "استبدال الصنف المحمي"
 #. module: baseer_pos_product_substitution
-msgid "choose allowed replacements only"
-msgstr "اختر من الأصناف البديلة المسموح بها فقط"
-#. module: baseer_pos_product_substitution
 msgid "Reason / note (optional)"
 msgstr "السبب أو الملاحظة (اختياري)"
-#. module: baseer_pos_product_substitution
-msgid "Odoo validates the exact total using the active price list and taxes before saving."
-msgstr "يتحقق أودو من تطابق الإجمالي باستخدام قائمة الأسعار والضرائب المطبقة قبل الحفظ."
 #. module: baseer_pos_product_substitution
 msgid "Cancel"
 msgstr "إلغاء"

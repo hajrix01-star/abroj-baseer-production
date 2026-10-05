@@ -80,7 +80,7 @@ verify_source_identity() {
 }
 
 load_policy() {
-    local key value seen_release=0 seen_commit=0 seen_modules=0 seen_revision=0 seen_run=0
+    local key value seen_release=0 seen_commit=0 seen_modules=0 seen_third_party=0 seen_revision=0 seen_run=0
     policy="$POLICY_DIR/$release_id.env"
     require_safe_file "$policy" 600
     while IFS='=' read -r key value || [ -n "$key" ]; do
@@ -88,6 +88,7 @@ load_policy() {
             RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate RELEASE_ID'; policy_release_id=$value; seen_release=1 ;;
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate COMMIT'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules" -eq 0 ] || die 'duplicate MODULES'; policy_modules=$value; seen_modules=1 ;;
+            THIRD_PARTY_MODULES) [ "$seen_third_party" -eq 0 ] || die 'duplicate THIRD_PARTY_MODULES'; policy_third_party_modules=$value; seen_third_party=1 ;;
             POLICY_REVISION) [ "$seen_revision" -eq 0 ] || die 'duplicate POLICY_REVISION'; policy_revision=$value; seen_revision=1 ;;
             APPROVED_RUN_ID) [ "$seen_run" -eq 0 ] || die 'duplicate APPROVED_RUN_ID'; approved_run_id=$value; seen_run=1 ;;
             ''|'#'*) ;;
@@ -100,14 +101,20 @@ load_policy() {
     [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy revision'
     [[ "$approved_run_id" =~ ^[0-9]+$ ]] || die 'invalid approval run id'
     [ "$approved_run_id" = "$run_id" ] || die 'approval run does not match deployment request'
-    IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
-    [ "${#APPROVED_MODULES[@]}" -gt 0 ] || die 'policy has no modules'
+    APPROVED_MODULES=()
+    if [ -n "$policy_modules" ]; then
+        IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
+    fi
+    [ "${#APPROVED_MODULES[@]}" -gt 0 ] || [ "${policy_third_party_modules:-}" = eh_account_dynamic_reports ] || die 'policy has no modules'
     APPROVED_MODULE_SET=()
     for module in "${APPROVED_MODULES[@]}"; do
         [[ "$module" =~ ^(baseer|abroj)_[a-z0-9_]+$ ]] || die 'invalid module name'
         [ -z "${APPROVED_MODULE_SET[$module]+x}" ] || die 'duplicate module name'
         APPROVED_MODULE_SET[$module]=1
     done
+    if [ "$seen_third_party" -eq 1 ]; then
+        [ "$policy_third_party_modules" = eh_account_dynamic_reports ] || die 'invalid third-party module'
+    fi
 }
 
 compose=()
@@ -210,6 +217,14 @@ git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit" || die 'ca
 for module in "${APPROVED_MODULES[@]}"; do
     git -C "$stage.git" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "approved module absent from candidate: $module"
 done
+if [ -n "${policy_third_party_modules:-}" ]; then
+    grep -Fq "$QA_BASE/current/third_party_addons:/mnt/third-party-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount current third-party addons read-only'
+    third_party_path="third_party_addons/erp_heritage_19/$policy_third_party_modules"
+    git -C "$stage.git" cat-file -e "$commit:$third_party_path/__manifest__.py" || die 'approved third-party module absent from candidate'
+    if git -C "$stage.git" ls-tree -r "$commit" -- "$third_party_path" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
+        die 'approved third-party module contains a symlink'
+    fi
+fi
 
 # Release policies are module-scoped.  Retain the exact current QA tree and
 # overlay only the reviewed modules so unrelated commits in the candidate
@@ -222,6 +237,11 @@ for module in "${APPROVED_MODULES[@]}"; do
     git -C "$stage.git" archive --format=tar "$commit" "custom_addons/$module" | \
         tar -x -C "$stage" --no-same-owner --no-same-permissions
 done
+if [ -n "${policy_third_party_modules:-}" ]; then
+    rm -rf -- "$stage/$third_party_path"
+    git -C "$stage.git" archive --format=tar "$commit" "$third_party_path" | \
+        tar -x -C "$stage" --no-same-owner --no-same-permissions
+fi
 rm -rf -- "$stage.git"
 mv "$stage" "$release"
 printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"
@@ -229,7 +249,7 @@ chmod -R a+rX -- "$release"
 
 upgrade_modules=()
 install_modules=()
-for module in "${APPROVED_MODULES[@]}"; do
+for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_third_party_modules"}; do
     state="$(module_state "$module")"
     case "$state" in
         installed) upgrade_modules+=("$module") ;;
@@ -258,11 +278,11 @@ database_mutated=1
 compose_cmd run --rm --no-deps --entrypoint sh "$ODOO_SERVICE" -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
 compose_cmd up -d "$ODOO_SERVICE"
 wait_for_login
-for module in "${APPROVED_MODULES[@]}"; do
+for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_third_party_modules"}; do
     [ "$(module_state "$module")" = installed ] || die "module not installed after QA deployment: $module"
 done
 compose_cmd logs --no-color --tail=300 "$ODOO_SERVICE" > "$backup/odoo-smoke.log"
 ! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
-printf 'QA_DEPLOY=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\n' \
-    "$release_id" "$release" "$backup" "$commit" "$policy_modules" > "$backup/result.env"
+printf 'QA_DEPLOY=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nTHIRD_PARTY_MODULES=%s\n' \
+    "$release_id" "$release" "$backup" "$commit" "$policy_modules" "${policy_third_party_modules:-}" > "$backup/result.env"
 printf 'QA_DEPLOY=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

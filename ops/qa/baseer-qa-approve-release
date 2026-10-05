@@ -46,12 +46,13 @@ verify_source_identity() {
 }
 
 parse_policy() {
-    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules=0
+    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules=0 seen_third_party=0
     while IFS='=' read -r key value || [ -n "$key" ]; do
         case "$key" in
             RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate RELEASE_ID'; policy_release_id=$value; seen_release=1 ;;
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate COMMIT'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules" -eq 0 ] || die 'duplicate MODULES'; policy_modules=$value; seen_modules=1 ;;
+            THIRD_PARTY_MODULES) [ "$seen_third_party" -eq 0 ] || die 'duplicate THIRD_PARTY_MODULES'; policy_third_party_modules=$value; seen_third_party=1 ;;
             ''|'#'*) ;;
             *) die "unknown policy key: $key" ;;
         esac
@@ -59,14 +60,20 @@ parse_policy() {
     [ "$seen_release" -eq 1 ] && [ "$seen_commit" -eq 1 ] && [ "$seen_modules" -eq 1 ] || die 'incomplete policy'
     [ "$policy_release_id" = "$release_id" ] || die 'release id mismatch'
     [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy commit'
-    IFS=',' read -r -a modules <<< "$policy_modules"
-    [ "${#modules[@]}" -gt 0 ] || die 'policy has no modules'
+    modules=()
+    if [ -n "$policy_modules" ]; then
+        IFS=',' read -r -a modules <<< "$policy_modules"
+    fi
+    [ "${#modules[@]}" -gt 0 ] || [ "${policy_third_party_modules:-}" = eh_account_dynamic_reports ] || die 'policy has no modules'
     declare -A seen=()
     for module in "${modules[@]}"; do
         [[ "$module" =~ ^(baseer|abroj)_[a-z0-9_]+$ ]] || die 'invalid module name'
         [ -z "${seen[$module]+x}" ] || die 'duplicate module name'
         seen[$module]=1
     done
+    if [ "$seen_third_party" -eq 1 ]; then
+        [ "$policy_third_party_modules" = eh_account_dynamic_reports ] || die 'invalid third-party module'
+    fi
 }
 
 require_root
@@ -98,9 +105,15 @@ git -C "$fetch_repo" merge-base --is-ancestor "$commit" refs/heads/source-main |
 for module in "${modules[@]}"; do
     git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "module absent from candidate: $module"
 done
+if [ -n "${policy_third_party_modules:-}" ]; then
+    git -C "$fetch_repo" cat-file -e "$commit:third_party_addons/erp_heritage_19/$policy_third_party_modules/__manifest__.py" || die 'third-party module absent from candidate'
+fi
 
-printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\nPOLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' \
-    "$release_id" "$commit" "$policy_modules" "$policy_revision" "$run_id" > "$candidate.canonical"
+{
+    printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"
+    [ -z "${policy_third_party_modules:-}" ] || printf 'THIRD_PARTY_MODULES=%s\n' "$policy_third_party_modules"
+    printf 'POLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$policy_revision" "$run_id"
+} > "$candidate.canonical"
 mv "$candidate.canonical" "$candidate"
 chown root:root "$candidate"
 chmod 0600 "$candidate"
@@ -112,4 +125,4 @@ if [ -e "$policy" ]; then
     exit 0
 fi
 mv "$candidate" "$policy"
-printf 'QA_APPROVAL=GO\nRELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"
+printf 'QA_APPROVAL=GO\nRELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\nTHIRD_PARTY_MODULES=%s\n' "$release_id" "$commit" "$policy_modules" "${policy_third_party_modules:-}"

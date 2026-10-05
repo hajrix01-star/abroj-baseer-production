@@ -365,7 +365,7 @@ patch(PosStore.prototype, {
         if (readPending(line.order_id)) return this.baseerRetryProtectedAction(line.order_id);
         const source = productFromId(this, line.product_id);
         const ids = source?.baseer_substitution_product_ids_json || source?.product_tmpl_id?.baseer_substitution_product_ids_json || substitutionPolicy(line, this)?.replacement_product_ids || [];
-        const products = ids.map((id) => productFromId(this, id)).filter(Boolean);
+        const products = ids.map((id) => productFromId(this, id)).filter((product) => product && product.id !== source?.id);
         if (!products.length) {
             this.dialog.add(AlertDialog, { title: _t("No allowed alternatives"), body: _t("Ask a manager to configure allowed alternatives for this item.") });
             return false;

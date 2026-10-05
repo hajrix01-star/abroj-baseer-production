@@ -13,6 +13,9 @@ _PROTECTED_COMMAND_TOKEN = object()
 class PosOrder(models.Model):
     _inherit = 'pos.order'
 
+    # The tolerance is a business policy, not a browser-provided value.
+    _BASEER_SUBSTITUTION_GROSS_TOLERANCE = 0.15
+
     baseer_protected_revision = fields.Char(compute='_compute_baseer_protected_revision')
 
     @api.depends('write_date', 'state', 'lines.write_date', 'payment_ids.write_date')
@@ -132,7 +135,8 @@ class PosOrder(models.Model):
         products = self.env['product.product'].browse([item['product_id'] for item in requested]).exists()
         allowed = source.product_id.baseer_substitution_product_ids
         if len(products) != len(requested) or any(
-                product not in allowed or not product.active or not product.available_in_pos
+                product == source.product_id or product not in allowed
+                or not product.active or not product.available_in_pos
                 or product.company_id and product.company_id != self.company_id for product in products):
             raise AccessError(_('One or more replacement products are not allowed for this item.'))
         totals = []
@@ -142,15 +146,48 @@ class PosOrder(models.Model):
             totals.append((item, product, price, taxes, amount))
         return totals
 
+    def _baseer_substitution_source_snapshot_for_quote(self, source):
+        """Use Odoo's tax engine for a source line with a custom tax formula."""
+        snapshot = self._baseer_substitution_source_snapshot(source)
+        snapshot['synced_gross'] = snapshot['gross']
+        taxes = source.tax_ids_after_fiscal_position
+        if any(tax.amount_type == 'code' for tax in taxes):
+            _price, _mapped_taxes, totals = self._baseer_substitution_server_amount(
+                source.order_id, source.product_id, source.qty,
+            )
+            snapshot['gross'] = totals['total_included']
+            snapshot['server_tax_parity_applied'] = True
+        else:
+            snapshot['server_tax_parity_applied'] = False
+        return snapshot
+
+    def _baseer_substitution_financial_quote(self, source, action):
+        snapshot = self._baseer_substitution_source_snapshot_for_quote(source)
+        replacements = self._baseer_quote_replacements(source, action)
+        replacement_gross = sum(item[4]['total_included'] for item in replacements)
+        difference = replacement_gross - snapshot['gross']
+        tolerance = self._BASEER_SUBSTITUTION_GROSS_TOLERANCE
+        valid = source.order_id.currency_id.compare_amounts(abs(difference), tolerance) <= 0
+        return snapshot, replacements, replacement_gross, difference, tolerance, valid
+
     def baseer_quote_protected_action(self, kind, raw_action, expected_revision):
         self._baseer_command_access_and_lock()
         action = self._baseer_action_model(kind)._normalize_action(raw_action)
         source = self._baseer_validate_new_command(action, expected_revision)
-        quote = self._baseer_quote_replacements(source, action) if kind == 'edit' else []
-        replacement = sum(item[4]['total_included'] for item in quote)
-        return {'source_gross': source.price_subtotal_incl, 'replacement_gross': replacement,
-                'valid': kind == 'cancel' or self.currency_id.is_zero(replacement - source.price_subtotal_incl),
-                'revision': self._baseer_revision()}
+        if kind == 'cancel':
+            return {'valid': True, 'revision': self._baseer_revision()}
+        snapshot, _quote, replacement, difference, tolerance, valid = self._baseer_substitution_financial_quote(
+            source, action,
+        )
+        return {
+            'source_gross': snapshot['gross'],
+            'synced_source_gross': snapshot['synced_gross'],
+            'replacement_gross': replacement,
+            'difference_gross': difference,
+            'tolerance_gross': tolerance,
+            'valid': valid,
+            'revision': self._baseer_revision(),
+        }
 
     def _baseer_update_silent_baseline(self, source_uuid, replacements):
         try:
@@ -193,11 +230,22 @@ class PosOrder(models.Model):
                     raise ValidationError(_('This action identifier was already used with different details.'))
                 return self._baseer_command_result(action['action_uuid'])
             source = self._baseer_validate_new_command(action, expected_revision)
-            snapshot = self._baseer_substitution_source_snapshot(source)
-            quote = self._baseer_quote_replacements(source, action) if kind == 'edit' else []
-            if kind == 'edit' and not self.currency_id.is_zero(
-                    sum(row[4]['total_included'] for row in quote) - snapshot['gross']):
-                raise ValidationError(_('Replacement products must equal the protected item total exactly.'))
+            snapshot = self._baseer_substitution_source_snapshot_for_quote(source)
+            quote = []
+            replacement_gross = difference_gross = tolerance_gross = 0.0
+            if kind == 'edit':
+                snapshot, quote, replacement_gross, difference_gross, tolerance_gross, valid = (
+                    self._baseer_substitution_financial_quote(source, action)
+                )
+                if not valid:
+                    raise ValidationError(_(
+                        'Replacement products exceed the allowed difference. Source: %(source)s; '
+                        'replacements: %(replacement)s; difference: %(difference)s; allowed: %(allowed)s.',
+                        source=self.currency_id.format(snapshot['gross']),
+                        replacement=self.currency_id.format(replacement_gross),
+                        difference=self.currency_id.format(abs(difference_gross)),
+                        allowed=self.currency_id.format(tolerance_gross),
+                    ))
             if self.payment_ids:
                 snapshot['cleared_provisional_payments'] = [{
                     'id': payment.id, 'uuid': payment.uuid,
@@ -247,7 +295,10 @@ class PosOrder(models.Model):
                 'source_snapshot': snapshot,
             }
             if kind == 'edit':
-                values.update(replacement_gross=sum(row[4]['total_included'] for row in quote),
+                values.update(source_synced_gross=snapshot['synced_gross'],
+                              replacement_gross=replacement_gross,
+                              difference_gross=difference_gross,
+                              tolerance_gross=tolerance_gross,
                               replacement_product_ids=[(6, 0, replacements.product_id.ids)],
                               replacement_snapshot=[dict(self._baseer_substitution_source_snapshot(line),
                                                          tax_ids=line.tax_ids.ids)
@@ -326,9 +377,10 @@ class PosOrder(models.Model):
         allowed = source.product_id.baseer_substitution_product_ids
         requested_ids = {item['product_id'] for item in action['replacements']}
         products = self.env['product.product'].browse(list(requested_ids)).exists()
-        if len(products) != len(requested_ids) or any(product not in allowed for product in products):
+        if len(products) != len(requested_ids) or any(
+                product == source.product_id or product not in allowed for product in products):
             raise AccessError(_('One or more replacement products are not allowed for this item.'))
-        return source.ensure_one(), self._baseer_substitution_source_snapshot(source)
+        return source.ensure_one(), self._baseer_substitution_source_snapshot_for_quote(source)
 
     @api.model
     def _baseer_substitution_validate_after_sync(self, order, source, source_snapshot, action):
@@ -369,11 +421,16 @@ class PosOrder(models.Model):
                 'tax_ids': taxes.ids,
             })
         source_gross = source_snapshot['gross']
-        if not order.currency_id.is_zero(total_gross - source_gross):
+        difference_gross = total_gross - source_gross
+        if order.currency_id.compare_amounts(
+                abs(difference_gross), self._BASEER_SUBSTITUTION_GROSS_TOLERANCE) > 0:
             raise ValidationError(_(
-                'Replacement products must equal the protected item total exactly. Source: %(source)s; replacements: %(replacement)s.',
+                'Replacement products exceed the allowed difference. Source: %(source)s; '
+                'replacements: %(replacement)s; difference: %(difference)s; allowed: %(allowed)s.',
                 source=order.currency_id.format(source_gross),
                 replacement=order.currency_id.format(total_gross),
+                difference=order.currency_id.format(abs(difference_gross)),
+                allowed=order.currency_id.format(self._BASEER_SUBSTITUTION_GROSS_TOLERANCE),
             ))
         return replacement_lines, total_gross, snapshots
 

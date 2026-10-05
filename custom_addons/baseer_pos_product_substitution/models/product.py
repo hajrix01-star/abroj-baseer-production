@@ -29,8 +29,10 @@ class ProductTemplate(models.Model):
             replacements = template.baseer_substitution_product_ids
             if template.baseer_substitution_enabled and not replacements:
                 raise ValidationError(_('Choose at least one allowed substitution product.'))
-            if any(product.product_tmpl_id == template for product in replacements):
-                raise ValidationError(_('A product cannot be its own substitution product.'))
+            # The policy is template-owned, so a different variant of the same
+            # template is a legitimate alternative (for example 55 SAR instead
+            # of 65 SAR).  The order service rejects only the exact source
+            # variant, where that decision has the order context it needs.
             if any(not product.active or not product.available_in_pos for product in replacements):
                 raise ValidationError(_('Allowed substitution products must be active and available in Point of Sale.'))
 

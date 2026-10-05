@@ -14,7 +14,10 @@
                 <field name="source_product_id"/>
                 <field name="replacement_product_ids" widget="many2many_tags"/>
                 <field name="source_gross"/>
+                <field name="source_synced_gross" optional="hide"/>
                 <field name="replacement_gross"/>
+                <field name="difference_gross"/>
+                <field name="tolerance_gross" optional="hide"/>
                 <field name="currency_id" column_invisible="True"/>
             </list>
         </field>
@@ -37,7 +40,10 @@
                             <field name="source_product_id"/>
                             <field name="source_quantity"/>
                             <field name="source_gross"/>
+                            <field name="source_synced_gross"/>
                             <field name="replacement_gross"/>
+                            <field name="difference_gross"/>
+                            <field name="tolerance_gross"/>
                             <field name="currency_id"/>
                         </group>
                     </group>

@@ -1,0 +1,137 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Baseer POS Tobacco Fee Register 19.0\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+msgid "POS Tobacco Fee Register"
+msgstr "كشف رسوم التبغ من نقاط البيع"
+
+msgid "Operational POS Tobacco Fee Register"
+msgstr "كشف تشغيلي لرسوم التبغ من نقاط البيع"
+
+msgid "Operational report, not an accounting ledger."
+msgstr "كشف تشغيلي غير محاسبي، وليس دفتر أستاذ."
+
+msgid "Operational report, not an accounting ledger. Tobacco fees are recalculated from the current tax settings; the running total starts at zero for each period."
+msgstr "كشف تشغيلي غير محاسبي. تُحسب رسوم التبغ مجددًا من إعدادات الضريبة الحالية؛ ويبدأ التراكمي من صفر لكل فترة."
+
+msgid "Fees are recalculated from current tax settings. The running total starts at zero for this period."
+msgstr "تُحسب الرسوم مجددًا من إعدادات الضريبة الحالية. يبدأ التراكمي من صفر داخل هذه الفترة."
+
+msgid "Orders requiring review:"
+msgstr "طلبات تحتاج مراجعة:"
+
+msgid "This Month"
+msgstr "هذا الشهر"
+
+msgid "This Quarter"
+msgstr "هذا الربع"
+
+msgid "This Year"
+msgstr "هذه السنة"
+
+msgid "Custom Range"
+msgstr "فترة مخصصة"
+
+msgid "Period"
+msgstr "الفترة"
+
+msgid "From"
+msgstr "من"
+
+msgid "To"
+msgstr "إلى"
+
+msgid "From:"
+msgstr "من:"
+
+msgid "To:"
+msgstr "إلى:"
+
+msgid "Currency:"
+msgstr "العملة:"
+
+msgid "Company"
+msgstr "الشركة"
+
+msgid "Print PDF"
+msgstr "طباعة PDF"
+
+msgid "Close"
+msgstr "إغلاق"
+
+msgid "Requires both Accounting and POS read access."
+msgstr "يتطلب صلاحية قراءة المحاسبة ونقاط البيع معًا."
+
+msgid "Date"
+msgstr "التاريخ"
+
+msgid "POS Order"
+msgstr "طلب نقطة البيع"
+
+msgid "Product / Quantity"
+msgstr "الصنف / الكمية"
+
+msgid "Type"
+msgstr "النوع"
+
+msgid "Debit"
+msgstr "مدين"
+
+msgid "Credit"
+msgstr "دائن"
+
+msgid "Period Running Total"
+msgstr "التراكمي داخل الفترة"
+
+msgid "Opening within selected period"
+msgstr "البداية داخل الفترة المحددة"
+
+msgid "No completed POS tobacco-fee sales were found in this period."
+msgstr "لا توجد مبيعات نقاط بيع مكتملة برسم تبغ داخل هذه الفترة."
+
+msgid "Recalculated order totals differing from saved totals"
+msgstr "طلبات يختلف إجماليها المعاد حسابه عن المحفوظ"
+
+msgid "Recalculated Order Total"
+msgstr "إجمالي الطلب المعاد حسابه"
+
+msgid "Saved Order Total"
+msgstr "إجمالي الطلب المحفوظ"
+
+msgid "Recalculated total for selected period"
+msgstr "الإجمالي المعاد حسابه للفترة المحددة"
+
+msgid "Sale"
+msgstr "بيع"
+
+msgid "Refund"
+msgstr "مرتجع"
+
+msgid "The tobacco fee register requires both Accounting and POS read access."
+msgstr "يتطلب كشف رسوم التبغ صلاحية قراءة المحاسبة ونقاط البيع معًا."
+
+msgid "The selected company is not available to your user."
+msgstr "الشركة المحددة غير متاحة لحسابك."
+
+msgid "Enter a valid From and To date."
+msgstr "أدخل تاريخ بداية ونهاية صحيحين."
+
+msgid "Select at most 366 days. Split a longer period into separate reports."
+msgstr "اختر 366 يومًا كحد أقصى. قسّم الفترة الأطول إلى عدة تقارير."
+
+msgid "This period exceeds 5,000 POS lines. Split it into smaller reports."
+msgstr "تتجاوز هذه الفترة 5,000 سطر نقطة بيع. قسّمها إلى تقارير أصغر."
+
+msgid "This register requires a company currency of SAR with two decimal places."
+msgstr "يتطلب هذا الكشف عملة شركة بالريال السعودي ومنزلتين عشريتين."
+
+msgid "A POS order uses a different currency. Split or correct the source before reporting."
+msgstr "أحد طلبات نقاط البيع بعملة مختلفة. قسّم الفترة أو صحح المصدر قبل إعداد التقرير."
+
+msgid "Open the tobacco fee report from its period form."
+msgstr "افتح كشف رسوم التبغ من نموذج الفترة الخاص به."

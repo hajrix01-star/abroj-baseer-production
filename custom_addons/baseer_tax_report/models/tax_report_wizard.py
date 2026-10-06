@@ -15,6 +15,24 @@ MONTHS = [(str(index), name) for index, name in enumerate((
 QUARTERS = [('1', 'Q1'), ('2', 'Q2'), ('3', 'Q3'), ('4', 'Q4')]
 BOXES = [(str(index), str(index)) for index in range(1, 17)]
 TOKEN = re.compile(r'^(sa_\d+)\.(base|tax)$')
+ARABIC_BOX_LABELS = {
+    'sa_1': 'المبيعات الخاضعة للنسبة الأساسية',
+    'sa_2': 'الرعاية الصحية والتعليم الخاص والمسكن الأول للمواطنين',
+    'sa_3': 'المبيعات المحلية الخاضعة لنسبة الصفر',
+    'sa_4': 'الصادرات',
+    'sa_5': 'المبيعات المعفاة',
+    'sa_6': 'إجمالي المبيعات',
+    'sa_7': 'المشتريات المحلية الخاضعة للنسبة الأساسية',
+    'sa_8': 'الواردات المدفوعة ضريبتها للجمارك',
+    'sa_9': 'الواردات الخاضعة للاحتساب العكسي',
+    'sa_10': 'المشتريات الخاضعة لنسبة الصفر',
+    'sa_11': 'المشتريات المعفاة',
+    'sa_12': 'إجمالي المشتريات',
+    'sa_13': 'إجمالي ضريبة القيمة المضافة المستحقة للفترة',
+    'sa_14': 'تصحيحات الفترات السابقة ضمن ±5,000 ريال',
+    'sa_15': 'الرصيد الدائن المرحّل من الفترة السابقة',
+    'sa_16': 'صافي ضريبة القيمة المضافة المستحقة أو القابلة للاسترداد',
+}
 
 
 class BaseerTaxReportWizard(models.TransientModel):
@@ -149,6 +167,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         base_domain = self._base_domain()
         values = {}
         rows = []
+        is_rtl = (self.env.lang or '').startswith('ar')
         quantum = Decimal('1').scaleb(-self.company_id.currency_id.decimal_places)
         lines = report.line_ids.filtered(lambda line: line.code and re.fullmatch(r'sa_(?:[1-9]|1[0-6])', line.code))
         if len(lines) != 16:
@@ -170,7 +189,8 @@ class BaseerTaxReportWizard(models.TransientModel):
                 values[key] = amount.quantize(quantum, rounding=ROUND_HALF_UP)
                 cells[expression.label] = values[key]
             rows.append({
-                'number': line.code[3:], 'name': line.name,
+                'number': line.code[3:],
+                'name': ARABIC_BOX_LABELS[line.code] if is_rtl else line.name,
                 'base': cells.get('base'), 'tax': cells.get('tax'), 'direct': direct,
                 'base_text': f"{cells['base']:,.2f}" if 'base' in cells else '—',
                 'tax_text': f"{cells['tax']:,.2f}" if 'tax' in cells else '—',
@@ -183,7 +203,7 @@ class BaseerTaxReportWizard(models.TransientModel):
             'exception': exception, 'currency': self.company_id.currency_id,
             'exception_amount_text': f"{exception['amount']:,.2f}",
             'other_tax_amount_text': f"{exception['other_amount']:,.2f}",
-            'is_rtl': (self.env.lang or '').startswith('ar'),
+            'is_rtl': is_rtl,
         }
 
     @api.depends('company_id', 'period_type', 'year', 'month', 'quarter')

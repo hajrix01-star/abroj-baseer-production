@@ -224,6 +224,14 @@ class TestSaudiVatReport(TransactionCase):
         self.assertTrue(arch.xpath("//button[@name='action_view_entries']"))
         self.assertTrue(arch.xpath("//button[@name='action_view_untagged']"))
 
+    def test_arabic_box_labels_do_not_change_the_original_formulas(self):
+        arabic = self.wizard.with_context(lang='ar_001')._build_report()
+        self.assertTrue(arabic['is_rtl'])
+        self.assertEqual(arabic['rows'][0]['name'], 'المبيعات الخاضعة للنسبة الأساسية')
+        self.assertEqual(arabic['rows'][-1]['name'], 'صافي ضريبة القيمة المضافة المستحقة أو القابلة للاسترداد')
+        english = self.wizard.with_context(lang='en_US')._build_report()
+        self.assertEqual(english['rows'][0]['name'], '1. Standard rated sales')
+
     def test_company_scope_and_accounting_access(self):
         other = self.env['res.company'].create({
             'name': 'Other VAT report company', 'country_id': self.env.ref('base.sa').id,

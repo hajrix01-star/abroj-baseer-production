@@ -44,6 +44,8 @@ class BaseerTaxReportWizard(models.TransientModel):
     year = fields.Integer(string='Year', required=True, default=lambda self: fields.Date.context_today(self).year)
     month = fields.Selection(MONTHS, string='Month', required=True, default=lambda self: str(fields.Date.context_today(self).month))
     quarter = fields.Selection(QUARTERS, string='Quarter', required=True, default=lambda self: str((fields.Date.context_today(self).month - 1) // 3 + 1))
+    journal_ids = fields.Many2many('account.journal', string='Journals (optional)',
+                                   domain="[('company_id', '=', company_id)]")
     selected_box = fields.Selection(BOXES, string='View supporting entries')
     selected_component = fields.Selection([('base', 'Amount'), ('tax', 'VAT Amount')],
                                           string='Column', default='tax', required=True)
@@ -59,6 +61,8 @@ class BaseerTaxReportWizard(models.TransientModel):
             raise AccessError(_('The selected company is not allowed.'))
         if self.company_id.account_fiscal_country_id.code != 'SA':
             raise ValidationError(_('Select a Saudi company for the Saudi VAT report.'))
+        if any(journal.company_id != self.company_id for journal in self.journal_ids):
+            raise AccessError(_('The selected journals must belong to the report company.'))
 
     def _period_dates(self):
         self.ensure_one()
@@ -94,11 +98,14 @@ class BaseerTaxReportWizard(models.TransientModel):
         self.ensure_one()
         first, last = self._period_dates()
         aml = self.env['account.move.line']
-        return (Domain('company_id', '=', self.company_id.id)
+        domain = (Domain('company_id', '=', self.company_id.id)
                 & Domain('parent_state', '=', 'posted')
                 & Domain('date', '>=', first)
                 & Domain('date', '<=', last)
                 & aml._get_tax_exigible_domain())
+        if self.journal_ids:
+            domain &= Domain('journal_id', 'in', self.journal_ids.ids)
+        return domain
 
     def _tax_tag_expression(self, expression, base_domain):
         formula = expression.formula
@@ -201,12 +208,13 @@ class BaseerTaxReportWizard(models.TransientModel):
             'wizard': self, 'company': self.company_id,
             'date_from': first, 'date_to': last, 'rows': rows,
             'exception': exception, 'currency': self.company_id.currency_id,
+            'journal_names': ', '.join(self.journal_ids.mapped('display_name')),
             'exception_amount_text': f"{exception['amount']:,.2f}",
             'other_tax_amount_text': f"{exception['other_amount']:,.2f}",
             'is_rtl': is_rtl,
         }
 
-    @api.depends('company_id', 'period_type', 'year', 'month', 'quarter')
+    @api.depends('company_id', 'period_type', 'year', 'month', 'quarter', 'journal_ids')
     def _compute_preview(self):
         for wizard in self:
             wizard.preview_html = False

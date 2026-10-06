@@ -113,6 +113,14 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual(rows['7']['base'], Decimal('40.00'))
         self.assertEqual(rows['7']['tax'], Decimal('6.00'))
         self.assertEqual(rows['16']['tax'], Decimal('6.00'))
+        other_journal = self.env['account.journal'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('id', '!=', journal.id),
+        ], limit=1)
+        self.assertTrue(other_journal)
+        self.wizard.journal_ids = other_journal
+        filtered = {row['number']: row for row in self.wizard._build_report()['rows']}
+        self.assertEqual(filtered['1']['tax'], Decimal('0.00'))
+        self.assertTrue(self.wizard._build_report()['journal_names'])
 
     def test_cash_basis_is_excluded_until_reconciliation(self):
         """An unpaid CABA tax must not appear before Odoo creates its cash-basis entry."""

@@ -59,6 +59,10 @@
                     <span dir="ltr" t-esc="report_data['date_to']"/> —
                     <span t-esc="report_data['currency'].name"/>
                 </p>
+                <div t-if="report_data['journal_names']" class="alert alert-info" role="status">
+                    تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر / Selected journals — analytical view, not the full VAT return:
+                    <span t-esc="report_data['journal_names']"/>
+                </div>
                 <div class="table-responsive"><t t-call="baseer_tax_report.tax_table"/></div>
             </div>
         </div>
@@ -93,6 +97,10 @@
                         <span dir="ltr" t-esc="report_data['date_from']"/> —
                         <span dir="ltr" t-esc="report_data['date_to']"/>
                         <span t-esc="report_data['currency'].name"/>
+                    </div>
+                    <div t-if="report_data['journal_names']" class="btr-warning">
+                        تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر / Selected journals — analytical view, not the full VAT return:
+                        <span t-esc="report_data['journal_names']"/>
                     </div>
                     <t t-call="baseer_tax_report.tax_table"/>
                 </main>

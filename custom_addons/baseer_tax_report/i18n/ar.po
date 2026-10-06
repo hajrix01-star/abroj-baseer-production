@@ -65,6 +65,11 @@ msgid "Column"
 msgstr "العمود"
 
 #. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__journal_ids
+msgid "Journals (optional)"
+msgstr "الدفاتر اليومية (اختياري)"
+
+#. module: baseer_tax_report
 #: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__period_type__month
 msgid "Monthly"
 msgstr "شهري"

@@ -29,7 +29,7 @@ def _format_money(value):
 
 class BaseerPosTobaccoReport(models.AbstractModel):
     _name = 'report.baseer_pos_tobacco_report.report_pos_tobacco_fees'
-    _description = 'Operational POS Tobacco Fee Register'
+    _description = 'Tobacco Fee Report'
 
     def _date_bounds_utc(self, wizard):
         start_local = datetime.combine(wizard.date_from, time.min, tzinfo=RIYADH)
@@ -112,7 +112,7 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                 rows.append({
                     'date': date_text,
                     'order': order_text,
-                    'products': f'{_western(line.product_id.display_name)} × {qty}',
+                    'products': f'{_western(line.product_id.with_context(display_default_code=False).display_name)} × {qty}',
                     'type': _('Refund') if fee < 0 else _('Sale'),
                     'debit': _format_money(debit),
                     'credit': _format_money(credit),
@@ -159,6 +159,7 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             'from_text': _western(wizard.date_from.strftime('%d-%m-%Y')),
             'to_text': _western(wizard.date_to.strftime('%d-%m-%Y')),
             'rows': rows,
+            'show_products': wizard.show_products,
             'exceptions': exceptions,
             'opening': _format_money(Decimal('0')),
             'debit_total': _format_money(debit_total),
@@ -169,13 +170,10 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             'currency': _western(currency.name),
             'is_rtl': (self.env.user.lang or '').startswith('ar'),
             'labels': {
-                'title': _('Operational POS Tobacco Fee Register'),
+                'title': _('Tobacco Fee Report'),
                 'from': _('From:'),
                 'to': _('To:'),
                 'currency': _('Currency:'),
-                'disclaimer': _('Operational report, not an accounting ledger.'),
-                'method': _('Fees are recalculated from current tax settings. The running total starts at zero for this period.'),
-                'exceptions': _('Orders requiring review:'),
                 'date': _('Date'),
                 'order': _('POS Order'),
                 'product': _('Product / Quantity'),

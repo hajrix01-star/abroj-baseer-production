@@ -48,6 +48,7 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
         string='Month',
     )
     year = fields.Integer(required=True, default=lambda self: datetime.now(RIYADH).year, string='Year')
+    show_products = fields.Boolean(string='Show products')
     preview_page = fields.Integer(default=1, string='Page')
     preview_total_pages = fields.Integer(compute='_compute_preview', string='Pages')
     preview_total_rows = fields.Integer(compute='_compute_preview', string='Fee rows')
@@ -70,7 +71,7 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
         if self.month and self.year and 2000 <= self.year <= 2100:
             self.date_from, self.date_to = self._month_range()
 
-    @api.depends('month', 'year', 'company_id', 'preview_page')
+    @api.depends('month', 'year', 'company_id', 'preview_page', 'show_products')
     def _compute_preview(self):
         for wizard in self:
             wizard.preview_total_pages = 1
@@ -91,6 +92,7 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
                 'date_to': date_to,
                 'month': wizard.month,
                 'year': wizard.year,
+                'show_products': wizard.show_products,
             })
             report = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees'].with_company(
                 wizard.company_id,
@@ -145,6 +147,7 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
             'default_period': 'custom',
             'default_date_from': fields.Date.to_string(date_from),
             'default_date_to': fields.Date.to_string(date_to),
+            'default_show_products': self.show_products,
         }
         return action
 

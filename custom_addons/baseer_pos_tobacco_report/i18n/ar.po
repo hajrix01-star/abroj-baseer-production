@@ -314,3 +314,150 @@ msgstr "إلى:"
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
 msgid "Type"
 msgstr "النوع"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__month
+msgid "Month"
+msgstr "الشهر"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__year
+msgid "Year"
+msgstr "السنة"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__1
+msgid "January"
+msgstr "يناير"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__2
+msgid "February"
+msgstr "فبراير"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__3
+msgid "March"
+msgstr "مارس"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__4
+msgid "April"
+msgstr "أبريل"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__5
+msgid "May"
+msgstr "مايو"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__6
+msgid "June"
+msgstr "يونيو"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__7
+msgid "July"
+msgstr "يوليو"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__8
+msgid "August"
+msgstr "أغسطس"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__9
+msgid "September"
+msgstr "سبتمبر"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__10
+msgid "October"
+msgstr "أكتوبر"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__11
+msgid "November"
+msgstr "نوفمبر"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__month__12
+msgid "December"
+msgstr "ديسمبر"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__preview_page
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Page"
+msgstr "الصفحة"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__preview_total_pages
+msgid "Pages"
+msgstr "الصفحات"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__preview_total_rows
+msgid "Fee rows"
+msgstr "سطور الرسم"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__preview_html
+msgid "Report preview"
+msgstr "معاينة التقرير"
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "Print monthly PDF"
+msgstr "طباعة تقرير الشهر"
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "Split period"
+msgstr "تقسيم الفترة"
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "Previous page"
+msgstr "الصفحة السابقة"
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "Next page"
+msgstr "الصفحة التالية"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Rows"
+msgstr "السطور"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "of"
+msgstr "من"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "More differences are listed in the PDF."
+msgstr "تظهر بقية الفروقات في ملف PDF."
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report_wizard.py:0
+msgid "Select a year from 2000 to 2100 and a month."
+msgstr "اختر سنة بين 2000 و2100 وشهرًا."
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "This month exceeds the safe report size. Split it into shorter periods to see every operation."
+msgstr "يتجاوز هذا الشهر حد التقرير الآمن. قسّم الفترة لعرض جميع العمليات."
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.actions.act_window,name:baseer_pos_tobacco_report.action_pos_tobacco_report_custom_range
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_custom_range_form
+msgid "POS Tobacco Fee Register: Split Period"
+msgstr "كشف رسوم التبغ: تقسيم الفترة"

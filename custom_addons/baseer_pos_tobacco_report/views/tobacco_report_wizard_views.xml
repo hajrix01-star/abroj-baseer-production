@@ -5,6 +5,12 @@
         <field name="model">baseer.pos.tobacco.report.wizard</field>
         <field name="arch" type="xml">
             <form string="POS Tobacco Fee Register">
+                <header>
+                    <button name="action_print_monthly" type="object" string="Print monthly PDF"
+                            class="btn-primary" invisible="preview_overflow"/>
+                    <button name="action_open_custom_range" type="object" string="Split period"
+                            class="btn-secondary" invisible="not preview_overflow"/>
+                </header>
                 <sheet>
                     <div class="alert alert-warning" role="alert">
                         Operational report, not an accounting ledger. Tobacco fees are recalculated from the current tax settings; the running total starts at zero for each period.
@@ -14,17 +20,58 @@
                     </div>
                     <group>
                         <field name="company_id" options="{'no_create': True}"/>
-                        <field name="period"/>
+                        <field name="year"/>
+                        <field name="month"/>
+                    </group>
+                    <field name="preview_overflow" invisible="1"/>
+                    <div class="alert alert-warning" role="alert" invisible="not preview_overflow">
+                        This month exceeds the safe report size. Split it into shorter periods to see every operation.
+                    </div>
+                    <field name="preview_html" readonly="1" nolabel="1" invisible="preview_overflow"/>
+                    <group invisible="preview_overflow or preview_total_pages &lt;= 1">
+                        <field name="preview_page" readonly="1"/>
+                        <field name="preview_total_pages" readonly="1"/>
+                        <field name="preview_total_rows" readonly="1"/>
+                    </group>
+                    <div class="d-flex flex-wrap gap-2" invisible="preview_overflow or preview_total_pages &lt;= 1">
+                        <button name="action_previous_page" type="object" string="Previous page"
+                                class="btn btn-secondary" invisible="preview_page &lt;= 1"/>
+                        <button name="action_next_page" type="object" string="Next page"
+                                class="btn btn-secondary" invisible="preview_page &gt;= preview_total_pages"/>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_tobacco_report_custom_range_form" model="ir.ui.view">
+        <field name="name">baseer.pos.tobacco.report.custom.range.form</field>
+        <field name="model">baseer.pos.tobacco.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="POS Tobacco Fee Register: Split Period">
+                <header>
+                    <button name="action_print_report" type="object" string="Print PDF" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        Operational report, not an accounting ledger. Tobacco fees are recalculated from the current tax settings; the running total starts at zero for each period.
+                    </div>
+                    <group>
+                        <field name="company_id" options="{'no_create': True}"/>
                         <field name="date_from"/>
                         <field name="date_to"/>
                     </group>
                 </sheet>
-                <footer>
-                    <button name="action_print_report" type="object" string="Print PDF" class="btn-primary"/>
-                    <button string="Close" special="cancel" class="btn-secondary"/>
-                </footer>
             </form>
         </field>
+    </record>
+
+    <record id="action_pos_tobacco_report_custom_range" model="ir.actions.act_window">
+        <field name="name">POS Tobacco Fee Register: Split Period</field>
+        <field name="res_model">baseer.pos.tobacco.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_pos_tobacco_report_custom_range_form"/>
+        <field name="target">current</field>
     </record>
 
     <record id="action_pos_tobacco_report_wizard" model="ir.actions.act_window">

@@ -145,4 +145,107 @@
             </t>
         </t>
     </template>
+    <template id="preview_pos_tobacco_fees">
+        <div class="card mt-3" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <img t-if="report_data['company'].logo"
+                         t-att-src="'/web/image/res.company/%s/logo' % report_data['company'].id"
+                         alt="Company logo" style="max-height: 64px; max-width: 160px;"/>
+                    <div t-else="" t-esc="report_data['company'].name"/>
+                    <h2 class="h4 mt-2" t-esc="report_data['labels']['title']"/>
+                    <p class="text-muted mb-0">
+                        <span t-esc="report_data['labels']['from']"/>
+                        <b dir="ltr" t-esc="report_data['from_text']"/>
+                        <span t-esc="report_data['labels']['to']"/>
+                        <b dir="ltr" t-esc="report_data['to_text']"/>
+                    </p>
+                </div>
+                <div class="alert alert-warning" role="note">
+                    <strong t-esc="report_data['labels']['disclaimer']"/>
+                    <span t-esc="report_data['labels']['method']"/>
+                    <span t-esc="report_data['labels']['exceptions']"/>
+                    <b dir="ltr" t-esc="report_data['exception_count']"/>
+                </div>
+                <div class="row row-cols-2 row-cols-lg-4 g-2 mb-3">
+                    <div class="col"><div class="border rounded p-2 h-100">
+                        <small class="text-muted d-block" t-esc="report_data['labels']['opening']"/>
+                        <strong dir="ltr" t-esc="report_data['opening']"/>
+                    </div></div>
+                    <div class="col"><div class="border rounded p-2 h-100">
+                        <small class="text-muted d-block" t-esc="report_data['labels']['debit']"/>
+                        <strong dir="ltr" t-esc="report_data['debit_total']"/>
+                    </div></div>
+                    <div class="col"><div class="border rounded p-2 h-100">
+                        <small class="text-muted d-block" t-esc="report_data['labels']['credit']"/>
+                        <strong dir="ltr" t-esc="report_data['credit_total']"/>
+                    </div></div>
+                    <div class="col"><div class="border rounded p-2 h-100">
+                        <small class="text-muted d-block" t-esc="report_data['labels']['total']"/>
+                        <strong dir="ltr" t-esc="report_data['closing']"/>
+                    </div></div>
+                </div>
+                <p class="text-muted small">
+                    <span t-esc="report_data['labels']['rows']"/>
+                    <b dir="ltr" t-esc="first_row"/>–<b dir="ltr" t-esc="last_row"/>
+                    <span t-esc="report_data['labels']['of']"/>
+                    <b dir="ltr" t-esc="report_data['order_count']"/>
+                    <span t-esc="report_data['labels']['page']"/>
+                    <b dir="ltr" t-esc="page"/>/<b dir="ltr" t-esc="pages"/>
+                </p>
+                <p t-if="not report_data['rows']" class="text-muted" t-esc="report_data['labels']['empty']"/>
+                <div t-if="report_data['rows']" class="d-none d-lg-block">
+                    <table class="table table-sm table-striped align-middle">
+                        <thead><tr>
+                            <th t-esc="report_data['labels']['date']"/>
+                            <th t-esc="report_data['labels']['order']"/>
+                            <th t-esc="report_data['labels']['product']"/>
+                            <th t-esc="report_data['labels']['type']"/>
+                            <th t-esc="report_data['labels']['debit']"/>
+                            <th t-esc="report_data['labels']['credit']"/>
+                            <th t-esc="report_data['labels']['running']"/>
+                        </tr></thead>
+                        <tbody><tr t-foreach="report_data['rows']" t-as="row">
+                            <td dir="ltr" t-esc="row['date']"/>
+                            <td dir="ltr" t-esc="row['order']"/>
+                            <td t-esc="row['products']"/>
+                            <td t-esc="row['type']"/>
+                            <td dir="ltr" t-esc="row['debit']"/>
+                            <td dir="ltr" t-esc="row['credit']"/>
+                            <td dir="ltr" t-esc="row['running']"/>
+                        </tr></tbody>
+                    </table>
+                </div>
+                <div t-if="report_data['rows']" class="d-lg-none">
+                    <article t-foreach="report_data['rows']" t-as="row" class="card mb-2">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between gap-2 flex-wrap">
+                                <strong dir="ltr" t-esc="row['order']"/>
+                                <span dir="ltr" t-esc="row['date']"/>
+                            </div>
+                            <p class="mb-1" t-esc="row['products']"/>
+                            <small t-esc="row['type']"/>
+                            <div class="d-flex justify-content-between gap-2 flex-wrap mt-1">
+                                <span><span t-esc="report_data['labels']['debit']"/>: <b dir="ltr" t-esc="row['debit']"/></span>
+                                <span><span t-esc="report_data['labels']['credit']"/>: <b dir="ltr" t-esc="row['credit']"/></span>
+                                <span><span t-esc="report_data['labels']['running']"/>: <b dir="ltr" t-esc="row['running']"/></span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                <div t-if="report_data['exceptions']" class="alert alert-warning mt-3" role="note">
+                    <h3 class="h6" t-esc="report_data['labels']['mismatch']"/>
+                    <div t-foreach="report_data['exceptions']" t-as="exception" class="small">
+                        <b dir="ltr" t-esc="exception['order']"/>
+                        <span t-esc="report_data['labels']['computed_total']"/>
+                        <b dir="ltr" t-esc="exception['computed_total']"/>
+                        <span t-esc="report_data['labels']['saved_total']"/>
+                        <b dir="ltr" t-esc="exception['saved_total']"/>
+                    </div>
+                    <p t-if="len(report_data['exceptions']) &lt; int(report_data['exception_count'])"
+                       class="mb-0 small" t-esc="report_data['labels']['more_differences']"/>
+                </div>
+            </div>
+        </div>
+    </template>
 </odoo>

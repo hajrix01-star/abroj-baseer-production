@@ -4,11 +4,15 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
 
+from lxml import etree
+
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
-from ..models.tobacco_report import BaseerPosTobaccoReport, _format_money, _western
+from ..models.tobacco_report import (
+    BaseerPosTobaccoReport, TobaccoReportTooLarge, _format_money, _western,
+)
 
 
 class FakeAccount:
@@ -32,6 +36,82 @@ class TestTobaccoReport(TransactionCase):
     def setUp(self):
         super().setUp()
         self.report = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees']
+
+    def test_print_button_is_visible_in_full_page_wizard(self):
+        action = self.env.ref('baseer_pos_tobacco_report.action_pos_tobacco_report_wizard')
+        view = self.env.ref('baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form')
+        arch = etree.fromstring(view.arch_db.encode())
+
+        self.assertEqual(action.target, 'current')
+        self.assertEqual(
+            len(arch.xpath("./header/button[@name='action_print_monthly'][@type='object']")),
+            1,
+        )
+        self.assertTrue(arch.xpath("./sheet/field[@name='preview_html']"))
+        self.assertFalse(arch.xpath('./footer/button'))
+
+    def test_month_selection_uses_full_riyadh_month(self):
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].new({
+            'month': '2', 'year': 2028,
+        })
+        self.assertEqual(wizard._month_range(), (date(2028, 2, 1), date(2028, 2, 29)))
+        wizard.year = 2101
+        with self.assertRaises(ValidationError):
+            wizard._month_range()
+
+    def test_monthly_pdf_uses_the_selected_full_month(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
+            'company_id': user.company_id.id,
+            'month': '2', 'year': 2028,
+        })
+        action = wizard.action_print_monthly()
+        self.assertEqual((wizard.date_from, wizard.date_to), (date(2028, 2, 1), date(2028, 2, 29)))
+        self.assertEqual(action['type'], 'ir.actions.report')
+
+    def test_monthly_preview_is_paged_without_losing_month_total(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': user.company_id.id,
+            'month': '9', 'year': 2026, 'preview_page': 1,
+        })
+        source = self.report.with_user(user)._build_report(
+            self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+                'company_id': user.company_id.id,
+                'date_from': date(2026, 9, 1), 'date_to': date(2026, 9, 30),
+            }),
+        )
+        rows = [dict(
+            date='01-09-2026 00:00', order=f'ORDER-{index:03d}', products='Shisha × 1',
+            type='Sale', debit='0.00', credit='1.00', running=f'{index}.00',
+        ) for index in range(1, 102)]
+        data = dict(source, rows=rows, order_count='101', closing='101.00')
+        with patch.object(BaseerPosTobaccoReport, '_build_report', return_value=data):
+            wizard._compute_preview()
+            first_page = str(wizard.preview_html)
+            self.assertEqual((wizard.preview_total_rows, wizard.preview_total_pages), (101, 2))
+            self.assertIn('ORDER-001', first_page)
+            self.assertIn('101.00', first_page)
+            self.assertNotIn('ORDER-101', first_page)
+            wizard.preview_page = 2
+            wizard._compute_preview()
+            self.assertIn('ORDER-101', str(wizard.preview_html))
+            self.assertNotIn('ORDER-001', str(wizard.preview_html))
+
+    def test_oversized_month_shows_split_action(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
+            'company_id': user.company_id.id, 'month': '9', 'year': 2026,
+        })
+        with patch.object(BaseerPosTobaccoReport, '_build_report',
+                          side_effect=TobaccoReportTooLarge('too many')):
+            wizard._compute_preview()
+        self.assertTrue(wizard.preview_overflow)
+        self.assertFalse(wizard.preview_html)
+        action = wizard.action_open_custom_range()
+        self.assertEqual(action['res_model'], wizard._name)
+        self.assertEqual(action['context']['default_date_from'], '2026-09-01')
+        self.assertEqual(action['context']['default_date_to'], '2026-09-30')
 
     def test_riyadh_period_includes_both_full_days(self):
         wizard = self.env['baseer.pos.tobacco.report.wizard'].create({
@@ -265,6 +345,11 @@ class TestTobaccoReport(TransactionCase):
         })
         with self.assertRaises(AccessError):
             wizard.with_user(user)._check_report_access()
+        monthly = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': self.env.company.id, 'month': '9', 'year': 2026,
+        })
+        with self.assertRaises(AccessError):
+            monthly.preview_html
 
     def test_report_requires_allowed_company_even_with_both_groups(self):
         other_company = self.env['res.company'].search([

@@ -1,6 +1,7 @@
 .o_baseer_report_preview {
     --baseer-preview-ink: #24303d;
     --baseer-preview-muted: #8b949e;
+    --baseer-preview-zero: #b7c0c8;
     --baseer-preview-line: #dfe3e7;
     --baseer-preview-negative: #c72c35;
     --baseer-preview-surface: #f6f7f9;
@@ -120,7 +121,7 @@
     .o_baseer_preview_amount b, .o_baseer_preview_items_table td b { font-weight: inherit; font-variant-numeric: tabular-nums; }
     .o_baseer_preview_amount.is-negative, .o_baseer_preview_items_table .is-negative,
     .o_baseer_preview_amount.is-outflow, .o_baseer_preview_items_table .is-outflow { color: var(--baseer-preview-negative); }
-    .o_baseer_preview_amount.is-zero, .o_baseer_preview_items_table .is-zero { color: var(--baseer-preview-muted); }
+    .o_baseer_preview_amount.is-zero, .o_baseer_preview_items_table .is-zero { color: var(--baseer-preview-zero); }
 
     .o_baseer_preview_items_toolbar { min-height: 3.6rem; }
     .o_baseer_preview_breadcrumb { gap: 0.55rem; white-space: nowrap; }

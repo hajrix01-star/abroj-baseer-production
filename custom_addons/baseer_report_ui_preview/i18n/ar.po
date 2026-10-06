@@ -1,0 +1,12 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: baseer_report_ui_preview
+#: model:ir.actions.client,name:baseer_report_ui_preview.action_report_ui_preview
+#: model:ir.ui.menu,name:baseer_report_ui_preview.menu_report_ui_preview
+msgid "Report design preview — sample data"
+msgstr "معاينة تصميم التقارير — بيانات تجريبية"

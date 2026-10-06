@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_report_ui_preview.Report">
+        <main class="o_baseer_report_preview" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <t t-if="state.screen === 'report'">
+                <header class="o_baseer_preview_toolbar">
+                    <div class="o_baseer_preview_title_tools">
+                        <div class="o_baseer_preview_exports">
+                            <button type="button" class="btn btn-primary" disabled="disabled" t-att-title="labels.exportLater" t-esc="labels.pdf"/>
+                            <button type="button" class="btn btn-light" disabled="disabled" t-att-title="labels.exportLater" t-esc="labels.xlsx"/>
+                        </div>
+                        <Dropdown>
+                            <button type="button" class="o_baseer_preview_title_button" t-att-aria-label="labels.chooseReport">
+                                <span t-esc="report.title[lang]"/><i class="fa fa-caret-down" aria-hidden="true"/>
+                            </button>
+                            <t t-set-slot="content">
+                                <DropdownItem t-foreach="reportOptions" t-as="option" t-key="option.key" onSelected="() => this.selectReport(option.key)">
+                                    <t t-esc="option.label"/>
+                                </DropdownItem>
+                            </t>
+                        </Dropdown>
+                    </div>
+                    <nav class="o_baseer_preview_filters" t-att-aria-label="labels.period">
+                        <Dropdown>
+                            <button type="button" class="o_baseer_preview_chip" t-att-aria-label="labels.period">
+                                <i class="fa fa-calendar" aria-hidden="true"/><span t-esc="periodLabel"/><i class="fa fa-caret-down" aria-hidden="true"/>
+                            </button>
+                            <t t-set-slot="content">
+                                <DropdownItem onSelected="() => this.selectPeriod('month')"><t t-esc="labels.month"/> · <t t-esc="labels.monthValue"/></DropdownItem>
+                                <DropdownItem onSelected="() => this.selectPeriod('quarter')"><t t-esc="labels.quarter"/> · <t t-esc="labels.quarterValue"/></DropdownItem>
+                                <DropdownItem onSelected="() => this.selectPeriod('year')"><t t-esc="labels.year"/> · <t t-esc="labels.yearValue"/></DropdownItem>
+                                <DropdownItem onSelected="() => this.selectPeriod('custom')"><t t-esc="labels.custom"/></DropdownItem>
+                            </t>
+                        </Dropdown>
+                        <button type="button" t-att-class="'o_baseer_preview_chip ' + (state.comparison ? 'is-active' : '')" t-att-title="labels.simulated" t-att-aria-pressed="state.comparison ? 'true' : 'false'" t-on-click="() => state.comparison = !state.comparison"><i class="fa fa-percent" aria-hidden="true"/><t t-esc="labels.comparison"/><small t-esc="labels.demo"/></button>
+                        <button type="button" t-att-class="'o_baseer_preview_chip ' + (state.journals ? 'is-active' : '')" t-att-title="labels.simulated" t-att-aria-pressed="state.journals ? 'true' : 'false'" t-on-click="() => state.journals = !state.journals"><i class="fa fa-book" aria-hidden="true"/><t t-esc="labels.journals"/><small t-esc="labels.demo"/></button>
+                        <button type="button" t-att-class="'o_baseer_preview_chip ' + (state.analytic ? 'is-active' : '')" t-att-title="labels.simulated" t-att-aria-pressed="state.analytic ? 'true' : 'false'" t-on-click="() => state.analytic = !state.analytic"><i class="fa fa-cubes" aria-hidden="true"/><t t-esc="labels.analytic"/><small t-esc="labels.demo"/></button>
+                        <button type="button" t-att-class="'o_baseer_preview_chip ' + (state.posted ? 'is-active' : '')" t-att-title="labels.simulated" t-att-aria-pressed="state.posted ? 'true' : 'false'" t-on-click="() => state.posted = !state.posted"><i class="fa fa-sliders" aria-hidden="true"/><t t-esc="labels.posted"/><small t-esc="labels.demo"/></button>
+                        <span class="o_baseer_preview_chip is-static" t-esc="labels.currency"/>
+                    </nav>
+                </header>
+                <t t-call="baseer_report_ui_preview.Banner"/>
+                <div class="o_baseer_preview_canvas">
+                    <section class="o_baseer_preview_paper" t-att-aria-label="report.title[lang]" t-att-style="'--amount-count: ' + (report.columns.length - 1)">
+                        <div class="o_baseer_preview_paper_heading"><h1 t-esc="report.title[lang]"/><span t-esc="periodLabel"/></div>
+                        <div class="o_baseer_preview_grid o_baseer_preview_columns" aria-hidden="true">
+                            <span t-foreach="report.columns" t-as="column" t-key="column_index" t-esc="column[lang]"/>
+                        </div>
+                        <t t-foreach="visibleRows" t-as="item" t-key="item.id">
+                            <div t-att-class="'o_baseer_preview_grid o_baseer_preview_row is-' + item.kind + (item.depth ? ' is-child' : '')" t-att-style="'--row-depth: ' + item.depth">
+                                <div class="o_baseer_preview_row_label">
+                                    <button t-if="item.children.length" type="button" class="o_baseer_preview_expand" t-att-aria-expanded="state.expanded[item.id] ? 'true' : 'false'" t-att-aria-label="(state.expanded[item.id] ? labels.collapse : labels.expand) + ': ' + item.title[lang]" t-on-click="() => this.toggleRow(item.id)">
+                                        <i t-att-class="state.expanded[item.id] ? 'fa fa-caret-down' : (lang === 'ar' ? 'fa fa-caret-left' : 'fa fa-caret-right')" aria-hidden="true"/>
+                                        <span t-esc="item.title[lang]"/>
+                                    </button>
+                                    <span t-else="" class="o_baseer_preview_plain_label" t-esc="item.title[lang]"/>
+                                    <button t-if="item.kind === 'line'" type="button" class="o_baseer_preview_details" t-on-click="() => this.openItems()" t-esc="labels.details"/>
+                                </div>
+                                <span t-foreach="item.amounts" t-as="amount" t-key="amount_index" t-att-class="'o_baseer_preview_amount is-' + amount.tone" t-att-data-label="report.columns[amount_index + 1][lang]"><b dir="ltr" t-esc="amount.text"/></span>
+                            </div>
+                        </t>
+                    </section>
+                </div>
+            </t>
+            <t t-else="">
+                <header class="o_baseer_preview_items_toolbar">
+                    <div class="o_baseer_preview_breadcrumb"><button type="button" t-on-click="() => this.back()" t-esc="report.title[lang]"/><span aria-hidden="true">/</span><strong t-esc="labels.entries"/></div>
+                    <label class="o_baseer_preview_search"><i class="fa fa-search" aria-hidden="true"/><input type="search" t-att-placeholder="labels.search" t-att-aria-label="labels.search" t-att-value="state.query" t-on-input="(ev) => this.search(ev)"/></label>
+                    <div class="o_baseer_preview_pager" dir="ltr"><button type="button" t-att-disabled="state.page === 0" t-on-click="() => this.previousPage()" t-esc="labels.previous"/><span><t t-esc="matchingItems.length ? state.page * 5 + 1 : 0"/>–<t t-esc="pageEnd"/> <t t-esc="labels.of"/> <t t-esc="matchingItems.length"/></span><button type="button" t-att-disabled="pageEnd >= matchingItems.length" t-on-click="() => this.nextPage()" t-esc="labels.next"/></div>
+                </header>
+                <t t-call="baseer_report_ui_preview.Banner"/>
+                <div class="o_baseer_preview_items_layout">
+                    <section class="o_baseer_preview_items_main" t-att-aria-label="labels.entries">
+                        <div class="o_baseer_preview_items_table_wrap">
+                            <table class="o_baseer_preview_items_table">
+                                <thead><tr><th t-esc="labels.date"/><th t-esc="labels.reference"/><th t-esc="labels.account"/><th t-esc="labels.description"/><th t-esc="labels.debit"/><th t-esc="labels.credit"/></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="pageItems" t-as="line" t-key="line.id" t-att-class="state.selected === line.id ? 'is-selected' : ''">
+                                        <td t-att-data-label="labels.date"><b dir="ltr" t-esc="line.date"/></td>
+                                        <td t-att-data-label="labels.reference"><button type="button" class="o_baseer_preview_ref" t-on-click="() => state.selected = line.id" t-esc="line.ref"/></td>
+                                        <td t-att-data-label="labels.account" t-esc="line.account[lang]"/>
+                                        <td t-att-data-label="labels.description" t-esc="line.label[lang]"/>
+                                        <td t-att-data-label="labels.debit" t-att-class="'is-' + line.debit.tone"><b dir="ltr" t-esc="line.debit.text"/></td>
+                                        <td t-att-data-label="labels.credit" t-att-class="'is-' + line.credit.tone"><b dir="ltr" t-esc="line.credit.text"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p t-if="!matchingItems.length" class="o_baseer_preview_empty" t-esc="labels.noRows"/>
+                        </div>
+                    </section>
+                    <aside class="o_baseer_preview_attachments"><h2 t-esc="labels.attachments"/><p t-esc="labels.attachmentsEmpty"/></aside>
+                </div>
+            </t>
+        </main>
+    </t>
+    <t t-name="baseer_report_ui_preview.Banner">
+        <div class="o_baseer_preview_banner" role="note"><i class="fa fa-info-circle" aria-hidden="true"/><strong t-esc="labels.preview"/><span t-esc="labels.sampleNote"/></div>
+    </t>
+</templates>

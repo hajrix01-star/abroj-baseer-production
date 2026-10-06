@@ -164,6 +164,7 @@ class TestSaudiVatReport(TransactionCase):
         invoice._post(soft=False)
         self.assertFalse(invoice.always_tax_exigible)
         before = {row['number']: row for row in self.wizard._build_report()['rows']}
+        self.assertEqual(before['1']['base'], Decimal('0.00'))
         self.assertEqual(before['1']['tax'], Decimal('0.00'))
         payment = self.env['account.move'].with_company(self.company).create({
             'move_type': 'entry', 'date': date(2033, 9, 15), 'journal_id': journal.id,
@@ -179,6 +180,7 @@ class TestSaudiVatReport(TransactionCase):
                                                  ('company_id', '=', self.company.id)])
         self.assertTrue(caba)
         after = {row['number']: row for row in self.wizard._build_report()['rows']}
+        self.assertEqual(after['1']['base'], Decimal('100.00'))
         self.assertEqual(after['1']['tax'], Decimal('15.00'))
 
     def test_untagged_vat_is_visible_but_not_in_official_boxes(self):

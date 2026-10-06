@@ -1,7 +1,7 @@
 {
     "name": "Baseer Reports Menu",
-    "summary": "Shared Accounting menu for Baseer-owned financial reports",
-    "version": "19.0.1.0.0",
+    "summary": "Top-level navigation for Baseer-owned financial reports",
+    "version": "19.0.1.0.1",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

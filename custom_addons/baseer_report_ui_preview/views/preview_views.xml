@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_ui_preview" model="ir.actions.client">
+        <field name="name">Report design preview — sample data</field>
+        <field name="tag">baseer_report_ui_preview</field>
+    </record>
+    <menuitem id="menu_report_ui_preview" name="Report design preview — sample data"
+        parent="account.menu_finance_reports" action="action_report_ui_preview"
+        sequence="98"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+</odoo>

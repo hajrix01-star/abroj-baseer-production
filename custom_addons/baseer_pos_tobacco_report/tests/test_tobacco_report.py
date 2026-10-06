@@ -31,6 +31,15 @@ class FakeTaxModel:
         return {'total_amount_currency': self.order_total}
 
 
+class FakeProduct:
+    def __init__(self, display_name, name=None):
+        self.display_name = display_name
+        self.name = name or display_name
+
+    def with_context(self, **kwargs):
+        return SimpleNamespace(display_name=self.name)
+
+
 @tagged('post_install', '-at_install')
 class TestTobaccoReport(TransactionCase):
     def setUp(self):
@@ -48,7 +57,34 @@ class TestTobaccoReport(TransactionCase):
             1,
         )
         self.assertTrue(arch.xpath("./sheet/field[@name='preview_html']"))
+        self.assertTrue(arch.xpath("./sheet/group/field[@name='show_products']"))
+        self.assertNotIn('Operational report, not an accounting ledger.', view.arch_db)
         self.assertFalse(arch.xpath('./footer/button'))
+
+    def test_product_column_is_optional_in_preview_and_pdf(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': user.company_id.id, 'month': '9', 'year': 2026,
+        })
+        source = self.report.with_user(user)._build_report(wizard)
+        self.assertFalse(source['show_products'])
+        sample = dict(
+            date='01-09-2026 00:00', order='ORDER-1', products='Visible Shisha × 1',
+            type='Sale', debit='0.00', credit='25.00', running='25.00',
+        )
+        source.update(rows=[sample], order_count='1')
+        with patch.object(BaseerPosTobaccoReport, '_build_report',
+                          side_effect=lambda record: dict(source, show_products=record.show_products)):
+            wizard._compute_preview()
+            self.assertNotIn('Visible Shisha', str(wizard.preview_html))
+            wizard.show_products = True
+            wizard._compute_preview()
+            self.assertIn('Visible Shisha', str(wizard.preview_html))
+
+        template = self.env.ref('baseer_pos_tobacco_report.report_pos_tobacco_fees')
+        pdf_arch = etree.fromstring(template.arch_db.encode())
+        self.assertTrue(pdf_arch.xpath(".//th[@t-if=\"report_data['show_products']\"]"))
+        self.assertFalse(pdf_arch.xpath(".//div[contains(@class, 'btf-note')]"))
 
     def test_month_selection_uses_full_riyadh_month(self):
         wizard = self.env['baseer.pos.tobacco.report.wizard'].new({
@@ -136,7 +172,7 @@ class TestTobaccoReport(TransactionCase):
         for rep_amount in rep_amounts:
             line = SimpleNamespace(
                 qty=1.0,
-                product_id=SimpleNamespace(display_name='Shisha'),
+                product_id=FakeProduct('Shisha'),
             )
             base_lines.append({
                 'record': line,
@@ -168,7 +204,7 @@ class TestTobaccoReport(TransactionCase):
         self.assertFalse(any(case[1] for case in (sale, refund, negative_line)))
 
     def test_unassigned_tax_repartition_is_ignored(self):
-        line = SimpleNamespace(qty=1, product_id=SimpleNamespace(display_name='Shisha'))
+        line = SimpleNamespace(qty=1, product_id=FakeProduct('Shisha'))
         order = SimpleNamespace(
             is_refund=False, amount_total=220.0, company_id=self.env.company,
             config_id=SimpleNamespace(cash_rounding=False),
@@ -202,8 +238,8 @@ class TestTobaccoReport(TransactionCase):
         order = SimpleNamespace(
             name='١٢', date_order=datetime(2026, 9, 1, 0), currency_id=currency,
         )
-        sale = SimpleNamespace(qty=4, product_id=SimpleNamespace(display_name='شيشة ٥٥'))
-        refund = SimpleNamespace(qty=-1, product_id=SimpleNamespace(display_name='شيشة ٥٥'))
+        sale = SimpleNamespace(qty=4, product_id=FakeProduct('[ARZ-PRD-026-65] شيشة ٥٥', 'شيشة ٥٥'))
+        refund = SimpleNamespace(qty=-1, product_id=FakeProduct('[ARZ-PRD-026-65] شيشة ٥٥', 'شيشة ٥٥'))
         with patch.object(BaseerPosTobaccoReport, '_order_fee_data', return_value=(
             [(sale, Decimal('100.00')), (refund, Decimal('-25.00'))],
             False, Decimal('220.00'), Decimal('220.00'),
@@ -215,6 +251,7 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual([row['credit'] for row in rows], ['100.00', '0.00'])
         self.assertEqual([row['running'] for row in rows], ['100.00', '75.00'])
         self.assertIn('55', rows[0]['products'])
+        self.assertNotIn('ARZ-PRD-026-65', rows[0]['products'])
         self.assertEqual((debit, credit, running), (
             Decimal('25.00'), Decimal('100.00'), Decimal('75.00'),
         ))

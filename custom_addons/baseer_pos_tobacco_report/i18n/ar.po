@@ -91,14 +91,6 @@ msgid "Enter a valid From and To date."
 msgstr "أدخل تاريخ بداية ونهاية صحيحين."
 
 #. module: baseer_pos_tobacco_report
-#. odoo-python
-#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid ""
-"Fees are recalculated from current tax settings. The running total starts at"
-" zero for this period."
-msgstr "تُحسب الرسوم مجددًا من إعدادات الضريبة الحالية. يبدأ التراكمي من صفر داخل هذه الفترة."
-
-#. module: baseer_pos_tobacco_report
 #: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__date_from
 msgid "From"
 msgstr "من"
@@ -147,28 +139,8 @@ msgstr "البداية داخل الفترة المحددة"
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
 #: model:ir.model,name:baseer_pos_tobacco_report.model_report_baseer_pos_tobacco_report_report_pos_tobacco_fees
-msgid "Operational POS Tobacco Fee Register"
-msgstr "كشف تشغيلي لرسوم التبغ من نقاط البيع"
-
-#. module: baseer_pos_tobacco_report
-#. odoo-python
-#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Operational report, not an accounting ledger."
-msgstr "كشف تشغيلي غير محاسبي، وليس دفتر أستاذ."
-
-#. module: baseer_pos_tobacco_report
-#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
-msgid ""
-"Operational report, not an accounting ledger. Tobacco fees are recalculated "
-"from the current tax settings; the running total starts at zero for each "
-"period."
-msgstr "كشف تشغيلي غير محاسبي. تُحسب رسوم التبغ مجددًا من إعدادات الضريبة الحالية؛ ويبدأ التراكمي من صفر لكل فترة."
-
-#. module: baseer_pos_tobacco_report
-#. odoo-python
-#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Orders requiring review:"
-msgstr "طلبات تحتاج مراجعة:"
+msgid "Tobacco Fee Report"
+msgstr "تقرير رسوم التبغ"
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python
@@ -234,11 +206,6 @@ msgstr "الإجمالي المعاد حسابه للفترة المحددة"
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
 msgid "Refund"
 msgstr "مرتجع"
-
-#. module: baseer_pos_tobacco_report
-#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
-msgid "Requires both Accounting and POS read access."
-msgstr "يتطلب صلاحية قراءة المحاسبة ونقاط البيع معًا."
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python
@@ -406,6 +373,11 @@ msgstr "سطور الرسم"
 #: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__preview_html
 msgid "Report preview"
 msgstr "معاينة التقرير"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__show_products
+msgid "Show products"
+msgstr "إظهار الأصناف"
 
 #. module: baseer_pos_tobacco_report
 #: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form

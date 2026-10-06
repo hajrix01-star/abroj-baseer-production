@@ -35,7 +35,6 @@
                         .btf-report .btf-brand {text-align: center; margin-bottom: 8px;}
                         .btf-report .btf-brand img {max-height: 72px; max-width: 180px;}
                         .btf-report .btf-period {text-align: center; margin-bottom: 12px;}
-                        .btf-report .btf-note {padding: 8px; border: 1px solid #d8c28a; background: #fffaf0; margin: 8px 0;}
                         .btf-report table {width: 100%; border-collapse: collapse; table-layout: fixed;}
                         .btf-report thead {display: table-header-group;}
                         .btf-report th, .btf-report td {border: 1px solid #d9dfe2; padding: 5px; vertical-align: top; overflow-wrap: anywhere;}
@@ -60,36 +59,31 @@
                             <strong t-esc="report_data['labels']['to']"/> <span class="btf-id" t-esc="report_data['to_text']"/>
                             <strong t-esc="report_data['labels']['currency']"/> <span class="btf-id" t-esc="report_data['currency']"/>
                         </div>
-                        <div class="btf-note">
-                            <strong t-esc="report_data['labels']['disclaimer']"/>
-                            <span t-esc="report_data['labels']['method']"/>
-                            <strong t-esc="report_data['labels']['exceptions']"/> <span class="btf-id" t-esc="report_data['exception_count']"/>.
-                        </div>
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 15%;" t-esc="report_data['labels']['date']"/>
-                                    <th style="width: 16%;" t-esc="report_data['labels']['order']"/>
-                                    <th style="width: 25%;" t-esc="report_data['labels']['product']"/>
-                                    <th style="width: 10%;" t-esc="report_data['labels']['type']"/>
-                                    <th style="width: 11%;" t-esc="report_data['labels']['debit']"/>
-                                    <th style="width: 11%;" t-esc="report_data['labels']['credit']"/>
-                                    <th style="width: 12%;" t-esc="report_data['labels']['running']"/>
+                                    <th t-att-style="'width: 15%;' if report_data['show_products'] else 'width: 18%;'" t-esc="report_data['labels']['date']"/>
+                                    <th t-att-style="'width: 16%;' if report_data['show_products'] else 'width: 18%;'" t-esc="report_data['labels']['order']"/>
+                                    <th t-if="report_data['show_products']" style="width: 25%;" t-esc="report_data['labels']['product']"/>
+                                    <th t-att-style="'width: 10%;' if report_data['show_products'] else 'width: 14%;'" t-esc="report_data['labels']['type']"/>
+                                    <th t-att-style="'width: 11%;' if report_data['show_products'] else 'width: 15%;'" t-esc="report_data['labels']['debit']"/>
+                                    <th t-att-style="'width: 11%;' if report_data['show_products'] else 'width: 15%;'" t-esc="report_data['labels']['credit']"/>
+                                    <th t-att-style="'width: 12%;' if report_data['show_products'] else 'width: 20%;'" t-esc="report_data['labels']['running']"/>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="6" class="btf-muted" t-esc="report_data['labels']['opening']"/>
+                                    <td t-att-colspan="6 if report_data['show_products'] else 5" class="btf-muted" t-esc="report_data['labels']['opening']"/>
                                     <td class="btf-number" t-esc="report_data['opening']"/>
                                 </tr>
                                 <t t-if="not report_data['rows']">
-                                    <tr><td colspan="7" t-esc="report_data['labels']['empty']"/></tr>
+                                    <tr><td t-att-colspan="7 if report_data['show_products'] else 6" t-esc="report_data['labels']['empty']"/></tr>
                                 </t>
                                 <t t-foreach="report_data['rows'][:-4]" t-as="row">
                                     <tr>
                                         <td class="btf-id" t-esc="row['date']"/>
                                         <td class="btf-id" t-esc="row['order']"/>
-                                        <td t-esc="row['products']"/>
+                                        <td t-if="report_data['show_products']" t-esc="row['products']"/>
                                         <td t-esc="row['type']"/>
                                         <td class="btf-number" t-esc="row['debit']"/>
                                         <td class="btf-number" t-esc="row['credit']"/>
@@ -102,7 +96,7 @@
                                     <tr>
                                         <td class="btf-id" t-esc="row['date']"/>
                                         <td class="btf-id" t-esc="row['order']"/>
-                                        <td t-esc="row['products']"/>
+                                        <td t-if="report_data['show_products']" t-esc="row['products']"/>
                                         <td t-esc="row['type']"/>
                                         <td class="btf-number" t-esc="row['debit']"/>
                                         <td class="btf-number" t-esc="row['credit']"/>
@@ -110,7 +104,7 @@
                                     </tr>
                                 </t>
                                 <tr class="btf-total">
-                                    <td colspan="4" t-esc="report_data['labels']['total']"/>
+                                    <td t-att-colspan="4 if report_data['show_products'] else 3" t-esc="report_data['labels']['total']"/>
                                     <td class="btf-number" t-esc="report_data['debit_total']"/>
                                     <td class="btf-number" t-esc="report_data['credit_total']"/>
                                     <td class="btf-number" t-esc="report_data['closing']"/>
@@ -161,12 +155,6 @@
                         <b dir="ltr" t-esc="report_data['to_text']"/>
                     </p>
                 </div>
-                <div class="alert alert-warning" role="note">
-                    <strong t-esc="report_data['labels']['disclaimer']"/>
-                    <span t-esc="report_data['labels']['method']"/>
-                    <span t-esc="report_data['labels']['exceptions']"/>
-                    <b dir="ltr" t-esc="report_data['exception_count']"/>
-                </div>
                 <div class="row row-cols-2 row-cols-lg-4 g-2 mb-3">
                     <div class="col"><div class="border rounded p-2 h-100">
                         <small class="text-muted d-block" t-esc="report_data['labels']['opening']"/>
@@ -199,7 +187,7 @@
                         <thead><tr>
                             <th t-esc="report_data['labels']['date']"/>
                             <th t-esc="report_data['labels']['order']"/>
-                            <th t-esc="report_data['labels']['product']"/>
+                            <th t-if="report_data['show_products']" t-esc="report_data['labels']['product']"/>
                             <th t-esc="report_data['labels']['type']"/>
                             <th t-esc="report_data['labels']['debit']"/>
                             <th t-esc="report_data['labels']['credit']"/>
@@ -208,7 +196,7 @@
                         <tbody><tr t-foreach="report_data['rows']" t-as="row">
                             <td dir="ltr" t-esc="row['date']"/>
                             <td dir="ltr" t-esc="row['order']"/>
-                            <td t-esc="row['products']"/>
+                            <td t-if="report_data['show_products']" t-esc="row['products']"/>
                             <td t-esc="row['type']"/>
                             <td dir="ltr" t-esc="row['debit']"/>
                             <td dir="ltr" t-esc="row['credit']"/>
@@ -223,7 +211,7 @@
                                 <strong dir="ltr" t-esc="row['order']"/>
                                 <span dir="ltr" t-esc="row['date']"/>
                             </div>
-                            <p class="mb-1" t-esc="row['products']"/>
+                            <p t-if="report_data['show_products']" class="mb-1" t-esc="row['products']"/>
                             <small t-esc="row['type']"/>
                             <div class="d-flex justify-content-between gap-2 flex-wrap mt-1">
                                 <span><span t-esc="report_data['labels']['debit']"/>: <b dir="ltr" t-esc="row['debit']"/></span>

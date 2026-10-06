@@ -12,16 +12,11 @@
                             class="btn-secondary" invisible="not preview_overflow"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-warning" role="alert">
-                        Operational report, not an accounting ledger. Tobacco fees are recalculated from the current tax settings; the running total starts at zero for each period.
-                    </div>
-                    <div class="text-muted">
-                        Requires both Accounting and POS read access.
-                    </div>
                     <group>
                         <field name="company_id" options="{'no_create': True}"/>
                         <field name="year"/>
                         <field name="month"/>
+                        <field name="show_products"/>
                     </group>
                     <field name="preview_overflow" invisible="1"/>
                     <div class="alert alert-warning" role="alert" invisible="not preview_overflow">
@@ -53,13 +48,11 @@
                     <button name="action_print_report" type="object" string="Print PDF" class="btn-primary"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-warning" role="alert">
-                        Operational report, not an accounting ledger. Tobacco fees are recalculated from the current tax settings; the running total starts at zero for each period.
-                    </div>
                     <group>
                         <field name="company_id" options="{'no_create': True}"/>
                         <field name="date_from"/>
                         <field name="date_to"/>
+                        <field name="show_products"/>
                     </group>
                 </sheet>
             </form>

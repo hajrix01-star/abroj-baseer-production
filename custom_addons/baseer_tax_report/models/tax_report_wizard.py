@@ -27,6 +27,8 @@ class BaseerTaxReportWizard(models.TransientModel):
     month = fields.Selection(MONTHS, required=True, default=lambda self: str(fields.Date.context_today(self).month))
     quarter = fields.Selection(QUARTERS, required=True, default=lambda self: str((fields.Date.context_today(self).month - 1) // 3 + 1))
     selected_box = fields.Selection(BOXES, string='View supporting entries')
+    selected_component = fields.Selection([('base', 'Amount'), ('tax', 'VAT Amount')],
+                                          string='Column', default='tax', required=True)
     date_from = fields.Date(compute='_compute_dates')
     date_to = fields.Date(compute='_compute_dates')
     preview_html = fields.Html(compute='_compute_preview', sanitize=True, string='VAT report')
@@ -91,7 +93,7 @@ class BaseerTaxReportWizard(models.TransientModel):
             raise UserError(_('Missing Saudi VAT tax tag: %s') % formula)
         domain = base_domain & Domain('tax_tag_ids', 'in', tags.ids)
         grouped = self.env['account.move.line']._read_group(domain, [], ['balance:sum'])
-        balance = Decimal(str(grouped[0][0])) if grouped else Decimal('0')
+        balance = Decimal(str(grouped[0][0])) if grouped and grouped[0][0] is not None else Decimal('0')
         return -balance if formula.startswith('-') else balance
 
     def _aggregation_expression(self, expression, values):
@@ -132,10 +134,10 @@ class BaseerTaxReportWizard(models.TransientModel):
         other_grouped = aml._read_group(other_domain, [], ['balance:sum'])
         return {
             'count': aml.search_count(domain),
-            'amount': Decimal(str(grouped[0][0])) if grouped else Decimal('0'),
+            'amount': Decimal(str(grouped[0][0])) if grouped and grouped[0][0] is not None else Decimal('0'),
             'domain': domain,
             'other_count': aml.search_count(other_domain),
-            'other_amount': Decimal(str(other_grouped[0][0])) if other_grouped else Decimal('0'),
+            'other_amount': Decimal(str(other_grouped[0][0])) if other_grouped and other_grouped[0][0] is not None else Decimal('0'),
             'other_domain': other_domain,
         }
 
@@ -209,16 +211,17 @@ class BaseerTaxReportWizard(models.TransientModel):
             raise ValidationError(_('Select a box first.'))
         data = self._build_report()
         row = next(row for row in data['rows'] if row['number'] == self.selected_box)
-        formulas = row['direct']
-        if not formulas:
+        formula = row['direct'].get(self.selected_component)
+        if not formula:
             raise ValidationError(_('This total is calculated from other boxes; open a component box to see its entries.'))
-        tags = self.env['account.account.tag']
-        for formula in formulas.values():
-            tags |= tags._get_tax_tags(formula, self.company_id.account_fiscal_country_id.id)
+        tags = self.env['account.account.tag']._get_tax_tags(
+            formula, self.company_id.account_fiscal_country_id.id,
+        )
         domain = self._base_domain() & Domain('tax_tag_ids', 'in', tags.ids)
         return {
             'type': 'ir.actions.act_window',
-            'name': _('VAT box %s — supporting entries') % self.selected_box,
+            'name': _('VAT box %(box)s — %(column)s entries',
+                      box=self.selected_box, column=self.selected_component),
             'res_model': 'account.move.line', 'view_mode': 'list,form',
             'domain': list(domain),
             'context': {'search_default_group_by_move': 0, 'allowed_company_ids': [self.company_id.id]},

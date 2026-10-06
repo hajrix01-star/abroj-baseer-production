@@ -25,6 +25,7 @@
                     <field name="preview_html" readonly="1" nolabel="1"/>
                     <group>
                         <field name="selected_box"/>
+                        <field name="selected_component"/>
                         <button name="action_view_entries" type="object" string="View supporting entries" class="btn-secondary"/>
                         <button name="action_view_untagged" type="object" string="Review untagged VAT" class="btn-secondary"/>
                         <button name="action_view_other_untagged" type="object" string="Review other untagged taxes" class="btn-secondary"/>

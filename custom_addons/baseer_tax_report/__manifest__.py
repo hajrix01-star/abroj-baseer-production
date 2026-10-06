@@ -1,11 +1,11 @@
 {
     'name': 'Baseer Saudi VAT Report',
     'summary': 'Monthly and quarterly Saudi VAT grid from posted accounting entries',
-    'version': '19.0.1.0.3',
+    'version': '19.0.1.0.4',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',
-    'depends': ['account', 'l10n_sa'],
+    'depends': ['account', 'l10n_sa', 'baseer_reports_menu'],
     'data': [
         'security/ir.model.access.csv',
         'views/tax_report_views.xml',

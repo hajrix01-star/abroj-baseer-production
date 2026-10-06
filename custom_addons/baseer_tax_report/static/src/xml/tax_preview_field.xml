@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_tax_report.TaxPreviewField">
+        <t t-if="props.readonly">
+            <span class="btr-preview-field" t-on-click="onPreviewClick"
+                  t-out="props.record.data[props.name] or ''"/>
+        </t>
+        <t t-else="" t-call="web.TextField"/>
+    </t>
+</templates>

@@ -29,11 +29,70 @@
                 <th style="width: 17.5%" class="btr-money text-end">الضريبة / VAT</th>
             </tr></thead>
             <tbody>
-                <tr t-foreach="report_data['rows']" t-as="row" t-att-class="'btr-total fw-bold' if row['number'] in ('6', '12', '13', '16') else ''">
-                    <td><span class="btr-number" t-esc="row['number']"/>. <span t-esc="row['name'].split('. ', 1)[-1]"/></td>
-                    <td class="btr-money text-end" dir="ltr" t-esc="row['base_text']"/>
-                    <td class="btr-money text-end" dir="ltr" t-esc="row['tax_text']"/>
+                <t t-foreach="report_data['visible_rows']" t-as="row">
+                <tr t-att-class="('btr-total fw-bold ' if row['number'] in ('6', '12', '13', '16') else '') + ('btr-row' if report_data['interactive'] else '')"
+                    t-att-data-id="row['number'] if report_data['interactive'] else None">
+                    <td>
+                        <a t-if="report_data['interactive']" href="#" class="btr-row-link text-decoration-underline"
+                            t-att-data-id="row['number']" title="عرض تفاصيل البند">
+                            <span class="btr-number" t-esc="row['number']"/>. <span t-esc="row['name'].split('. ', 1)[-1]"/>
+                        </a>
+                        <t t-else=""><span class="btr-number" t-esc="row['number']"/>. <span t-esc="row['name'].split('. ', 1)[-1]"/></t>
+                    </td>
+                    <td class="btr-money text-end" dir="ltr">
+                        <a t-if="report_data['interactive'] and row['direct'].get('base')"
+                                href="#" class="btr-open text-decoration-underline"
+                                t-att-data-id="row['number'] + ':base'" title="عرض القيود الداعمة"
+                                t-esc="row['base_text']"/>
+                        <a t-elif="report_data['interactive'] and row['components'].get('base')"
+                                href="#" class="btr-expand text-decoration-underline"
+                                t-att-data-id="row['number'] + ':base'" title="عرض البنود المكوّنة"
+                                t-esc="row['base_text']"/>
+                        <span t-else="" t-esc="row['base_text']"/>
+                    </td>
+                    <td class="btr-money text-end" dir="ltr">
+                        <a t-if="report_data['interactive'] and row['direct'].get('tax')"
+                                href="#" class="btr-open text-decoration-underline"
+                                t-att-data-id="row['number'] + ':tax'" title="عرض القيود الداعمة"
+                                t-esc="row['tax_text']"/>
+                        <a t-elif="report_data['interactive'] and row['components'].get('tax')"
+                                href="#" class="btr-expand text-decoration-underline"
+                                t-att-data-id="row['number'] + ':tax'" title="عرض البنود المكوّنة"
+                                t-esc="row['tax_text']"/>
+                        <span t-else="" t-esc="row['tax_text']"/>
+                    </td>
                 </tr>
+                <tr t-if="report_data['interactive']" class="btr-row-actions d-none" t-att-data-id="row['number']">
+                    <td colspan="3">
+                        <t t-foreach="('base', 'tax')" t-as="column">
+                            <a t-if="row['direct'].get(column)" href="#" class="btr-open d-inline-block me-3 text-decoration-underline"
+                                t-att-data-id="row['number'] + ':' + column">
+                                <t t-esc="'قيود الأساس / Base entries' if column == 'base' else 'قيود الضريبة / VAT entries'"/>
+                            </a>
+                            <a t-elif="row['components'].get(column)" href="#" class="btr-expand d-inline-block me-3 text-decoration-underline"
+                                t-att-data-id="row['number'] + ':' + column">
+                                <t t-esc="'تفصيل الأساس / Base details' if column == 'base' else 'تفصيل الضريبة / VAT details'"/>
+                            </a>
+                        </t>
+                    </td>
+                </tr>
+                <t t-if="report_data['interactive']" t-foreach="('base', 'tax')" t-as="column">
+                    <tr t-if="row['components'].get(column)" class="btr-components d-none"
+                        t-att-data-id="row['number'] + ':' + column">
+                        <td colspan="3">
+                            <span>البنود المكوّنة / Component boxes:</span>
+                            <a t-foreach="row['components'][column]" t-as="component"
+                                    href="#" class="btr-open d-inline-block me-3 text-decoration-underline"
+                                    t-att-data-id="component['number'] + ':' + component['column']"
+                                    title="عرض القيود الداعمة">
+                                <span t-esc="component['number']"/>. <span t-esc="component['name'].split('. ', 1)[-1]"/>
+                                <span dir="ltr" t-esc="component['amount_text']"/>
+                            </a>
+                        </td>
+                    </tr>
+                </t>
+                </t>
+                <tr t-if="not report_data['visible_rows']"><td colspan="3">لا توجد مبالغ في الفترة المحددة / No non-zero boxes for this period.</td></tr>
             </tbody>
         </table>
         <div t-if="report_data['exception']['count']" class="btr-warning">

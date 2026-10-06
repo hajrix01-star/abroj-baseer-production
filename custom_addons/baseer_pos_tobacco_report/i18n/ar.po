@@ -18,8 +18,8 @@ msgstr ""
 
 #. module: baseer_pos_tobacco_report
 #: model:ir.actions.report,print_report_name:baseer_pos_tobacco_report.action_report_pos_tobacco_fees
-msgid "'POS Tobacco Fee Register'"
-msgstr "'كشف رسوم التبغ من نقاط البيع'"
+msgid "'رسوم التبغ لـ %s-%s' % (object.month, object.year) if object.date_from == object._month_range()[0] and object.date_to == object._month_range()[1] else 'رسوم التبغ من %s إلى %s' % (object.date_from.strftime('%d-%m-%Y'), object.date_to.strftime('%d-%m-%Y'))"
+msgstr "'رسوم التبغ لـ %s-%s' % (object.month, object.year) if object.date_from == object._month_range()[0] and object.date_to == object._month_range()[1] else 'رسوم التبغ من %s إلى %s' % (object.date_from.strftime('%d-%m-%Y'), object.date_to.strftime('%d-%m-%Y'))"
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python

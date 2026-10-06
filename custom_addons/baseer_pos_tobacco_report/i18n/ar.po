@@ -1,137 +1,316 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* baseer_pos_tobacco_report
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: Baseer POS Tobacco Fee Register 19.0\n"
-"Language: ar\n"
+"Project-Id-Version: Odoo Server 19.0-20260817\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-06 12:09+0000\n"
+"PO-Revision-Date: 2026-10-06 12:09+0000\n"
+"Last-Translator: Baseer\n"
+"Language-Team: Arabic\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+"Language: ar_001\n"
 
-msgid "POS Tobacco Fee Register"
-msgstr "كشف رسوم التبغ من نقاط البيع"
+#. module: baseer_pos_tobacco_report
+#: model:ir.actions.report,print_report_name:baseer_pos_tobacco_report.action_report_pos_tobacco_fees
+msgid "'POS Tobacco Fee Register'"
+msgstr "'كشف رسوم التبغ من نقاط البيع'"
 
-msgid "Operational POS Tobacco Fee Register"
-msgstr "كشف تشغيلي لرسوم التبغ من نقاط البيع"
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid ""
+"A POS order uses a different currency. Split or correct the source before "
+"reporting."
+msgstr "أحد طلبات نقاط البيع بعملة مختلفة. قسّم الفترة أو صحح المصدر قبل إعداد التقرير."
 
-msgid "Operational report, not an accounting ledger."
-msgstr "كشف تشغيلي غير محاسبي، وليس دفتر أستاذ."
-
-msgid "Operational report, not an accounting ledger. Tobacco fees are recalculated from the current tax settings; the running total starts at zero for each period."
-msgstr "كشف تشغيلي غير محاسبي. تُحسب رسوم التبغ مجددًا من إعدادات الضريبة الحالية؛ ويبدأ التراكمي من صفر لكل فترة."
-
-msgid "Fees are recalculated from current tax settings. The running total starts at zero for this period."
-msgstr "تُحسب الرسوم مجددًا من إعدادات الضريبة الحالية. يبدأ التراكمي من صفر داخل هذه الفترة."
-
-msgid "Orders requiring review:"
-msgstr "طلبات تحتاج مراجعة:"
-
-msgid "This Month"
-msgstr "هذا الشهر"
-
-msgid "This Quarter"
-msgstr "هذا الربع"
-
-msgid "This Year"
-msgstr "هذه السنة"
-
-msgid "Custom Range"
-msgstr "فترة مخصصة"
-
-msgid "Period"
-msgstr "الفترة"
-
-msgid "From"
-msgstr "من"
-
-msgid "To"
-msgstr "إلى"
-
-msgid "From:"
-msgstr "من:"
-
-msgid "To:"
-msgstr "إلى:"
-
-msgid "Currency:"
-msgstr "العملة:"
-
-msgid "Company"
-msgstr "الشركة"
-
-msgid "Print PDF"
-msgstr "طباعة PDF"
-
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
 msgid "Close"
 msgstr "إغلاق"
 
-msgid "Requires both Accounting and POS read access."
-msgstr "يتطلب صلاحية قراءة المحاسبة ونقاط البيع معًا."
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__company_id
+msgid "Company"
+msgstr "الشركة"
 
-msgid "Date"
-msgstr "التاريخ"
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__create_uid
+msgid "Created by"
+msgstr ""
 
-msgid "POS Order"
-msgstr "طلب نقطة البيع"
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__create_date
+msgid "Created on"
+msgstr ""
 
-msgid "Product / Quantity"
-msgstr "الصنف / الكمية"
-
-msgid "Type"
-msgstr "النوع"
-
-msgid "Debit"
-msgstr "مدين"
-
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
 msgid "Credit"
 msgstr "دائن"
 
-msgid "Period Running Total"
-msgstr "التراكمي داخل الفترة"
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Currency:"
+msgstr "العملة:"
 
-msgid "Opening within selected period"
-msgstr "البداية داخل الفترة المحددة"
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__period__custom
+msgid "Custom Range"
+msgstr "فترة مخصصة"
 
-msgid "No completed POS tobacco-fee sales were found in this period."
-msgstr "لا توجد مبيعات نقاط بيع مكتملة برسم تبغ داخل هذه الفترة."
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Date"
+msgstr "التاريخ"
 
-msgid "Recalculated order totals differing from saved totals"
-msgstr "طلبات يختلف إجماليها المعاد حسابه عن المحفوظ"
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Debit"
+msgstr "مدين"
 
-msgid "Recalculated Order Total"
-msgstr "إجمالي الطلب المعاد حسابه"
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__display_name
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_report_baseer_pos_tobacco_report_report_pos_tobacco_fees__display_name
+msgid "Display Name"
+msgstr ""
 
-msgid "Saved Order Total"
-msgstr "إجمالي الطلب المحفوظ"
-
-msgid "Recalculated total for selected period"
-msgstr "الإجمالي المعاد حسابه للفترة المحددة"
-
-msgid "Sale"
-msgstr "بيع"
-
-msgid "Refund"
-msgstr "مرتجع"
-
-msgid "The tobacco fee register requires both Accounting and POS read access."
-msgstr "يتطلب كشف رسوم التبغ صلاحية قراءة المحاسبة ونقاط البيع معًا."
-
-msgid "The selected company is not available to your user."
-msgstr "الشركة المحددة غير متاحة لحسابك."
-
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report_wizard.py:0
 msgid "Enter a valid From and To date."
 msgstr "أدخل تاريخ بداية ونهاية صحيحين."
 
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid ""
+"Fees are recalculated from current tax settings. The running total starts at"
+" zero for this period."
+msgstr "تُحسب الرسوم مجددًا من إعدادات الضريبة الحالية. يبدأ التراكمي من صفر داخل هذه الفترة."
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__date_from
+msgid "From"
+msgstr "من"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "From:"
+msgstr "من:"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__id
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_report_baseer_pos_tobacco_report_report_pos_tobacco_fees__id
+msgid "ID"
+msgstr ""
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "No completed POS tobacco-fee sales were found in this period."
+msgstr "لا توجد مبيعات نقاط بيع مكتملة برسم تبغ داخل هذه الفترة."
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Open the tobacco fee report from its period form."
+msgstr "افتح كشف رسوم التبغ من نموذج الفترة الخاص به."
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Opening within selected period"
+msgstr "البداية داخل الفترة المحددة"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+#: model:ir.model,name:baseer_pos_tobacco_report.model_report_baseer_pos_tobacco_report_report_pos_tobacco_fees
+msgid "Operational POS Tobacco Fee Register"
+msgstr "كشف تشغيلي لرسوم التبغ من نقاط البيع"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Operational report, not an accounting ledger."
+msgstr "كشف تشغيلي غير محاسبي، وليس دفتر أستاذ."
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid ""
+"Operational report, not an accounting ledger. Tobacco fees are recalculated "
+"from the current tax settings; the running total starts at zero for each "
+"period."
+msgstr "كشف تشغيلي غير محاسبي. تُحسب رسوم التبغ مجددًا من إعدادات الضريبة الحالية؛ ويبدأ التراكمي من صفر لكل فترة."
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Orders requiring review:"
+msgstr "طلبات تحتاج مراجعة:"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "POS Order"
+msgstr "طلب نقطة البيع"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.actions.act_window,name:baseer_pos_tobacco_report.action_pos_tobacco_report_wizard
+#: model:ir.actions.report,name:baseer_pos_tobacco_report.action_report_pos_tobacco_fees
+#: model:ir.ui.menu,name:baseer_pos_tobacco_report.menu_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "POS Tobacco Fee Register"
+msgstr "كشف رسوم التبغ من نقاط البيع"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model,name:baseer_pos_tobacco_report.model_baseer_pos_tobacco_report_wizard
+msgid "POS Tobacco Fee Register Period"
+msgstr "فترة كشف رسوم التبغ من نقاط البيع"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__period
+msgid "Period"
+msgstr "الفترة"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Period Running Total"
+msgstr "التراكمي داخل الفترة"
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "Print PDF"
+msgstr "طباعة PDF"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Product / Quantity"
+msgstr "الصنف / الكمية"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Recalculated Order Total"
+msgstr "إجمالي الطلب المعاد حسابه"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Recalculated order totals differing from saved totals"
+msgstr "طلبات يختلف إجماليها المعاد حسابه عن المحفوظ"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Recalculated total for selected period"
+msgstr "الإجمالي المعاد حسابه للفترة المحددة"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Refund"
+msgstr "مرتجع"
+
+#. module: baseer_pos_tobacco_report
+#: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
+msgid "Requires both Accounting and POS read access."
+msgstr "يتطلب صلاحية قراءة المحاسبة ونقاط البيع معًا."
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Sale"
+msgstr "بيع"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Saved Order Total"
+msgstr "إجمالي الطلب المحفوظ"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report_wizard.py:0
 msgid "Select at most 366 days. Split a longer period into separate reports."
 msgstr "اختر 366 يومًا كحد أقصى. قسّم الفترة الأطول إلى عدة تقارير."
 
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report_wizard.py:0
+msgid "The selected company is not available to your user."
+msgstr "الشركة المحددة غير متاحة لحسابك."
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report_wizard.py:0
+msgid "The tobacco fee register requires both Accounting and POS read access."
+msgstr "يتطلب كشف رسوم التبغ صلاحية قراءة المحاسبة ونقاط البيع معًا."
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__period__month
+msgid "This Month"
+msgstr "هذا الشهر"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__period__quarter
+msgid "This Quarter"
+msgstr "هذا الربع"
+
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__period__year
+msgid "This Year"
+msgstr "هذه السنة"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
 msgid "This period exceeds 5,000 POS lines. Split it into smaller reports."
 msgstr "تتجاوز هذه الفترة 5,000 سطر نقطة بيع. قسّمها إلى تقارير أصغر."
 
-msgid "This register requires a company currency of SAR with two decimal places."
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid ""
+"This register requires a company currency of SAR with two decimal places."
 msgstr "يتطلب هذا الكشف عملة شركة بالريال السعودي ومنزلتين عشريتين."
 
-msgid "A POS order uses a different currency. Split or correct the source before reporting."
-msgstr "أحد طلبات نقاط البيع بعملة مختلفة. قسّم الفترة أو صحح المصدر قبل إعداد التقرير."
+#. module: baseer_pos_tobacco_report
+#: model:ir.model.fields,field_description:baseer_pos_tobacco_report.field_baseer_pos_tobacco_report_wizard__date_to
+msgid "To"
+msgstr "إلى"
 
-msgid "Open the tobacco fee report from its period form."
-msgstr "افتح كشف رسوم التبغ من نموذج الفترة الخاص به."
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "To:"
+msgstr "إلى:"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Type"
+msgstr "النوع"

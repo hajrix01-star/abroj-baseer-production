@@ -52,8 +52,8 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             has_tobacco_repartition = False
             for tax_data in base_line['tax_details']['taxes_data']:
                 for rep_data in tax_data.get('tax_reps_data', []):
-                    account = rep_data['account'].with_company(order.company_id)
-                    if account.code == '201021':
+                    account = rep_data.get('account')
+                    if account and account.with_company(order.company_id).code == '201021':
                         has_tobacco_repartition = True
                         line_fee += _money(rep_data['tax_amount_currency'], quantum)
             if has_tobacco_repartition:

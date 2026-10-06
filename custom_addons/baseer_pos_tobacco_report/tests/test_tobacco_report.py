@@ -87,6 +87,27 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual(negative_line[0][0][1], Decimal('-95.65'))
         self.assertFalse(any(case[1] for case in (sale, refund, negative_line)))
 
+    def test_unassigned_tax_repartition_is_ignored(self):
+        line = SimpleNamespace(qty=1, product_id=SimpleNamespace(display_name='Shisha'))
+        order = SimpleNamespace(
+            is_refund=False, amount_total=220.0, company_id=self.env.company,
+            config_id=SimpleNamespace(cash_rounding=False),
+            currency_id=self.env.company.currency_id,
+        )
+        base_lines = [{'record': line, 'tax_details': {'taxes_data': [
+            {'tax_reps_data': [
+                {'account': False, 'tax_amount_currency': 28.70},
+                {'account': FakeAccount('201021'), 'tax_amount_currency': 100.0},
+            ]},
+        ]}}]
+        with patch.object(BaseerPosTobaccoReport, '_order_tax_base_lines',
+                          return_value=(FakeTaxModel(220.0), base_lines)):
+            fee_lines, mismatch, _, _ = self.report._order_fee_data(
+                order, Decimal('0.01'),
+            )
+        self.assertEqual(fee_lines, [(line, Decimal('100.00'))])
+        self.assertFalse(mismatch)
+
     def test_mixed_order_keeps_debit_and_credit_lines_separate(self):
         fee_lines, mismatch, _, _ = self._fee_case(
             [100.0, -25.0], 100.0, 100.0,

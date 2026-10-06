@@ -1,11 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="paperformat_pos_tobacco_fees" model="report.paperformat">
+        <field name="name">POS Tobacco Fee Register A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">14</field>
+        <field name="margin_bottom">30</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
     <record id="action_report_pos_tobacco_fees" model="ir.actions.report">
         <field name="name">POS Tobacco Fee Register</field>
         <field name="model">baseer.pos.tobacco.report.wizard</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">baseer_pos_tobacco_report.report_pos_tobacco_fees</field>
         <field name="report_file">baseer_pos_tobacco_report.report_pos_tobacco_fees</field>
+        <field name="paperformat_id" ref="paperformat_pos_tobacco_fees"/>
         <field name="print_report_name">'POS Tobacco Fee Register'</field>
     </record>
 
@@ -18,6 +32,8 @@
                     <style>
                         .btf-report {font-family: DejaVu Sans, Arial, sans-serif; color: #26343d; font-size: 10px;}
                         .btf-report h2 {font-size: 18px; margin: 0 0 8px; text-align: center;}
+                        .btf-report .btf-brand {text-align: center; margin-bottom: 8px;}
+                        .btf-report .btf-brand img {max-height: 72px; max-width: 180px;}
                         .btf-report .btf-period {text-align: center; margin-bottom: 12px;}
                         .btf-report .btf-note {padding: 8px; border: 1px solid #d8c28a; background: #fffaf0; margin: 8px 0;}
                         .btf-report table {width: 100%; border-collapse: collapse; table-layout: fixed;}
@@ -27,10 +43,17 @@
                         .btf-report .btf-number {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap;}
                         .btf-report .btf-id {direction: ltr; unicode-bidi: isolate;}
                         .btf-report .btf-total {font-weight: bold; background: #f2f5f4;}
+                        .btf-report .btf-final-group {page-break-inside: avoid; break-inside: avoid;}
                         .btf-report .btf-exception {color: #9a4b20; font-weight: bold;}
                         .btf-report .btf-muted {color: #66747a;}
                     </style>
                     <main class="btf-report">
+                        <div class="btf-brand">
+                            <img t-if="report_data['company'].logo"
+                                 t-att-src="image_data_uri(report_data['company'].logo)"
+                                 alt="Company logo"/>
+                            <div t-else="" t-esc="report_data['company'].name"/>
+                        </div>
                         <h2 t-esc="report_data['labels']['title']"/>
                         <div class="btf-period">
                             <strong t-esc="report_data['labels']['from']"/> <span class="btf-id" t-esc="report_data['from_text']"/>
@@ -62,7 +85,20 @@
                                 <t t-if="not report_data['rows']">
                                     <tr><td colspan="7" t-esc="report_data['labels']['empty']"/></tr>
                                 </t>
-                                <t t-foreach="report_data['rows']" t-as="row">
+                                <t t-foreach="report_data['rows'][:-4]" t-as="row">
+                                    <tr>
+                                        <td class="btf-id" t-esc="row['date']"/>
+                                        <td class="btf-id" t-esc="row['order']"/>
+                                        <td t-esc="row['products']"/>
+                                        <td t-esc="row['type']"/>
+                                        <td class="btf-number" t-esc="row['debit']"/>
+                                        <td class="btf-number" t-esc="row['credit']"/>
+                                        <td class="btf-number" t-esc="row['running']"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tbody class="btf-final-group">
+                                <t t-foreach="report_data['rows'][-4:]" t-as="row">
                                     <tr>
                                         <td class="btf-id" t-esc="row['date']"/>
                                         <td class="btf-id" t-esc="row['order']"/>

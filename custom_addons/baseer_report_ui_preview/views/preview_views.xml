@@ -5,7 +5,7 @@
         <field name="tag">baseer_report_ui_preview</field>
     </record>
     <menuitem id="menu_report_ui_preview" name="Report design preview — sample data"
-        parent="account.menu_finance_reports" action="action_report_ui_preview"
+        parent="baseer_reports_menu.menu_baseer_reports" action="action_report_ui_preview"
         sequence="98"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

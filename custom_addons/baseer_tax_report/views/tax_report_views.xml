@@ -43,7 +43,7 @@
         <field name="target">current</field>
     </record>
     <menuitem id="menu_tax_report" name="Saudi VAT Report"
-              parent="account.menu_finance_reports" action="action_tax_report_wizard"
+              parent="baseer_reports_menu.menu_baseer_reports" action="action_tax_report_wizard"
               sequence="-20"
               groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

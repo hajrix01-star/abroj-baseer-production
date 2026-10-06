@@ -77,7 +77,7 @@
 
     <menuitem id="menu_pos_tobacco_report"
               name="POS Tobacco Fee Register"
-              parent="account.menu_finance_reports"
+              parent="baseer_reports_menu.menu_baseer_reports"
               action="action_pos_tobacco_report_wizard"
               sequence="-10"
               groups="account.group_account_readonly,account.group_account_invoice,account.group_account_user,account.group_account_manager"/>

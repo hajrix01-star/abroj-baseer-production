@@ -1,0 +1,11 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: baseer_reports_menu
+#: model:ir.ui.menu,name:baseer_reports_menu.menu_baseer_reports
+msgid "Baseer Reports"
+msgstr "تقارير بصير"

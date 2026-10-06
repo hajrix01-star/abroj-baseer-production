@@ -20,7 +20,7 @@
         <field name="report_name">baseer_pos_tobacco_report.report_pos_tobacco_fees</field>
         <field name="report_file">baseer_pos_tobacco_report.report_pos_tobacco_fees</field>
         <field name="paperformat_id" ref="paperformat_pos_tobacco_fees"/>
-        <field name="print_report_name">'رسوم التبغ لـ %s-%s' % (object.month, object.year)</field>
+        <field name="print_report_name">'رسوم التبغ لـ %s-%s' % (object.month, object.year) if object.date_from == object._month_range()[0] and object.date_to == object._month_range()[1] else 'رسوم التبغ من %s إلى %s' % (object.date_from.strftime('%d-%m-%Y'), object.date_to.strftime('%d-%m-%Y'))</field>
     </record>
 
     <template id="report_pos_tobacco_fees">

@@ -119,6 +119,7 @@ class TestTobaccoReport(TransactionCase):
             'company_id': user.company_id.id,
             'month': '8', 'year': 2026,
         })
+        wizard.action_print_monthly()
 
         self.assertEqual(
             report.print_report_name,
@@ -127,6 +128,16 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual(
             safe_eval(report.print_report_name, {'object': wizard, 'time': time}),
             'رسوم التبغ لـ 8-2026',
+        )
+        custom_wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
+            'company_id': user.company_id.id,
+            'month': '8', 'year': 2026,
+            'date_from': date(2026, 8, 3),
+            'date_to': date(2026, 8, 19),
+        })
+        self.assertEqual(
+            safe_eval(report.print_report_name, {'object': custom_wizard, 'time': time}),
+            'رسوم التبغ من 03-08-2026 إلى 19-08-2026',
         )
         self.assertEqual(paperformat.format, 'A4')
         self.assertEqual(paperformat.orientation, 'Portrait')

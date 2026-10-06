@@ -29,6 +29,21 @@ msgid "Period"
 msgstr "الفترة"
 
 #. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__display_mode
+msgid "Display"
+msgstr "طريقة العرض"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__display_mode__simple
+msgid "Summary"
+msgstr "مبسّط"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__display_mode__detailed
+msgid "Detailed"
+msgstr "مفصّل"
+
+#. module: baseer_tax_report
 #: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__year
 msgid "Year"
 msgstr "السنة"

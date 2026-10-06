@@ -23,6 +23,7 @@ class TestSaudiVatReport(TransactionCase):
         })
 
     def test_month_and_quarter_ranges(self):
+        self.assertEqual(self.wizard.display_mode, 'simple')
         self.assertEqual(self.wizard._period_dates(), (date(2026, 9, 1), date(2026, 9, 30)))
         self.wizard.write({'period_type': 'quarter', 'quarter': '3'})
         self.assertEqual(self.wizard._period_dates(), (date(2026, 7, 1), date(2026, 9, 30)))
@@ -54,6 +55,29 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual(rows['13']['tax'], Decimal('5850.10'))
         self.assertEqual(rows['16']['tax'], Decimal('5835.10'))
         self.assertEqual(rows['16']['base_text'], '—')
+
+    def test_simple_hides_zero_boxes_and_aggregates_reveal_signed_components(self):
+        balances = {
+            '-1(B)': Decimal('100'), '-1(T)': Decimal('15'),
+            '7(B)': Decimal('40'), '7(T)': Decimal('6'),
+        }
+        exception = {'count': 0, 'amount': Decimal('0'), 'domain': Domain.FALSE,
+                     'other_count': 0, 'other_amount': Decimal('0'),
+                     'other_domain': Domain.FALSE}
+        with patch.object(BaseerTaxReportWizard, '_base_domain', return_value=Domain.TRUE), \
+                patch.object(BaseerTaxReportWizard, '_tax_tag_expression',
+                             side_effect=lambda expression, domain: balances.get(expression.formula, Decimal('0'))), \
+                patch.object(BaseerTaxReportWizard, '_untagged_vat', return_value=exception):
+            simple = self.wizard._build_report()
+            self.assertEqual([row['number'] for row in simple['visible_rows']],
+                             ['1', '6', '7', '12', '13', '16'])
+            box_13 = next(row for row in simple['rows'] if row['number'] == '13')
+            self.assertEqual([(item['number'], item['amount_text']) for item in box_13['components']['tax']],
+                             [('1', '+15.00'), ('7', '-6.00')])
+            self.wizard.display_mode = 'detailed'
+            detailed = self.wizard._build_report()
+        self.assertEqual(len(detailed['visible_rows']), 16)
+        self.assertEqual(detailed['rows'][-1]['tax'], simple['rows'][-1]['tax'])
 
     def test_aggregation_rejects_unexpected_formula(self):
         expression = type('Expression', (), {'formula': 'sa_1.tax;drop'})()
@@ -113,6 +137,13 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual(rows['7']['base'], Decimal('40.00'))
         self.assertEqual(rows['7']['tax'], Decimal('6.00'))
         self.assertEqual(rows['16']['tax'], Decimal('6.00'))
+        action = self.wizard.action_open_cell('1', 'tax')
+        self.assertEqual(action['res_model'], 'account.move.line')
+        self.assertEqual(len(self.env['account.move.line'].search(action['domain'])), 2)
+        with self.assertRaises(ValidationError):
+            self.wizard.action_open_cell('6', 'tax')
+        with self.assertRaises(ValidationError):
+            self.wizard.action_open_cell('99', 'tax')
         other_journal = self.env['account.journal'].with_company(self.company).search([
             ('company_id', '=', self.company.id), ('id', '!=', journal.id),
         ], limit=1)
@@ -228,9 +259,18 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual((paper.format, paper.orientation), ('A4', 'Portrait'))
         view = self.env.ref('baseer_tax_report.view_tax_report_wizard_form')
         arch = etree.fromstring(view.arch_db.encode())
-        self.assertTrue(arch.xpath("//field[@name='preview_html']"))
-        self.assertTrue(arch.xpath("//button[@name='action_view_entries']"))
+        self.assertTrue(arch.xpath("//field[@name='preview_html'][@widget='baseer_tax_preview']"))
+        self.assertTrue(arch.xpath("//field[@name='display_mode']"))
+        self.assertFalse(arch.xpath("//button[@name='action_view_entries']"))
         self.assertTrue(arch.xpath("//button[@name='action_view_untagged']"))
+        self.wizard.display_mode = 'detailed'
+        self.assertIn('data-id="1:base"', self.wizard.preview_html)
+        self.assertIn('btr-row-link', self.wizard.preview_html)
+        self.assertIn('btr-row-actions', self.wizard.preview_html)
+        self.assertIn('btr-expand', self.wizard.preview_html)
+        print_values = self.env['report.baseer_tax_report.report_tax']._get_report_values(self.wizard.ids)
+        self.assertEqual(len(print_values['report_data']['visible_rows']), 16)
+        self.assertFalse(print_values['report_data']['interactive'])
 
     def test_arabic_box_labels_do_not_change_the_original_formulas(self):
         arabic = self.wizard.with_context(lang='ar_001')._build_report()

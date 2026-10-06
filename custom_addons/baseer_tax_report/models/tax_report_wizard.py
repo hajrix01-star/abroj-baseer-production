@@ -44,6 +44,8 @@ class BaseerTaxReportWizard(models.TransientModel):
     year = fields.Integer(string='Year', required=True, default=lambda self: fields.Date.context_today(self).year)
     month = fields.Selection(MONTHS, string='Month', required=True, default=lambda self: str(fields.Date.context_today(self).month))
     quarter = fields.Selection(QUARTERS, string='Quarter', required=True, default=lambda self: str((fields.Date.context_today(self).month - 1) // 3 + 1))
+    display_mode = fields.Selection([('simple', 'Summary'), ('detailed', 'Detailed')],
+                                    string='Display', required=True, default='simple')
     journal_ids = fields.Many2many('account.journal', string='Journals (optional)',
                                    domain="[('company_id', '=', company_id)]")
     selected_box = fields.Selection(BOXES, string='View supporting entries')
@@ -173,6 +175,7 @@ class BaseerTaxReportWizard(models.TransientModel):
             raise UserError(_('The original Saudi VAT report definition is not installed.'))
         base_domain = self._base_domain()
         values = {}
+        source_components = {}
         rows = []
         is_rtl = (self.env.lang or '').startswith('ar')
         quantum = Decimal('1').scaleb(-self.company_id.currency_id.decimal_places)
@@ -189,8 +192,15 @@ class BaseerTaxReportWizard(models.TransientModel):
                 if expression.engine == 'tax_tags':
                     amount = self._tax_tag_expression(expression, base_domain)
                     direct[expression.label] = expression.formula
+                    source_components[key] = [(key, 1)]
                 elif expression.engine == 'aggregation':
                     amount = self._aggregation_expression(expression, values)
+                    parts = re.findall(r'[+-]?sa_\d+\.(?:base|tax)', expression.formula.replace(' ', ''))
+                    source_components[key] = [
+                        (source_key, (-1 if part.startswith('-') else 1) * source_sign)
+                        for part in parts
+                        for source_key, source_sign in source_components[part.lstrip('+-')]
+                    ]
                 else:
                     raise UserError(_('Unsupported Saudi VAT expression engine: %s') % expression.engine)
                 values[key] = amount.quantize(quantum, rounding=ROUND_HALF_UP)
@@ -199,14 +209,39 @@ class BaseerTaxReportWizard(models.TransientModel):
                 'number': line.code[3:],
                 'name': ARABIC_BOX_LABELS[line.code] if is_rtl else line.name,
                 'base': cells.get('base'), 'tax': cells.get('tax'), 'direct': direct,
+                'components': {},
                 'base_text': f"{cells['base']:,.2f}" if 'base' in cells else '—',
                 'tax_text': f"{cells['tax']:,.2f}" if 'tax' in cells else '—',
             })
+        rows_by_number = {row['number']: row for row in rows}
+        for row in rows:
+            for column in ('base', 'tax'):
+                key = f"sa_{row['number']}.{column}"
+                if key not in values or column in row['direct']:
+                    continue
+                components = []
+                for source_key, sign in source_components[key]:
+                    amount = (values[source_key] * sign).quantize(quantum, rounding=ROUND_HALF_UP)
+                    if self.display_mode != 'detailed' and not amount:
+                        continue
+                    source_number, source_column = source_key[3:].split('.')
+                    components.append({
+                        'number': source_number,
+                        'column': source_column,
+                        'name': rows_by_number[source_number]['name'],
+                        'amount_text': f'{amount:+,.2f}',
+                    })
+                row['components'][column] = components
         exception = self._untagged_vat(base_domain)
         first, last = self._period_dates()
         return {
             'wizard': self, 'company': self.company_id,
             'date_from': first, 'date_to': last, 'rows': rows,
+            'visible_rows': rows if self.display_mode == 'detailed' else [
+                row for row in rows if (row['base'] is not None and row['base'] != 0)
+                or (row['tax'] is not None and row['tax'] != 0)
+            ],
+            'display_mode': self.display_mode,
             'exception': exception, 'currency': self.company_id.currency_id,
             'journal_names': ', '.join(self.journal_ids.mapped('display_name')),
             'exception_amount_text': f"{exception['amount']:,.2f}",
@@ -214,7 +249,7 @@ class BaseerTaxReportWizard(models.TransientModel):
             'is_rtl': is_rtl,
         }
 
-    @api.depends('company_id', 'period_type', 'year', 'month', 'quarter', 'journal_ids')
+    @api.depends('company_id', 'period_type', 'year', 'month', 'quarter', 'journal_ids', 'display_mode')
     def _compute_preview(self):
         for wizard in self:
             wizard.preview_html = False
@@ -224,6 +259,7 @@ class BaseerTaxReportWizard(models.TransientModel):
                 data = wizard._build_report()
             except (ValidationError, ValueError):
                 continue
+            data['interactive'] = True
             wizard.preview_html = self.env['ir.qweb']._render(
                 'baseer_tax_report.preview_tax_report', {'report_data': data},
             )
@@ -237,9 +273,15 @@ class BaseerTaxReportWizard(models.TransientModel):
         self._check_report_access()
         if not self.selected_box:
             raise ValidationError(_('Select a box first.'))
+        return self.action_open_cell(self.selected_box, self.selected_component)
+
+    def action_open_cell(self, box, component):
+        self._check_report_access()
+        if box not in dict(BOXES) or component not in ('base', 'tax'):
+            raise ValidationError(_('Select a valid VAT box and column.'))
         data = self._build_report()
-        row = next(row for row in data['rows'] if row['number'] == self.selected_box)
-        formula = row['direct'].get(self.selected_component)
+        row = next(row for row in data['rows'] if row['number'] == box)
+        formula = row['direct'].get(component)
         if not formula:
             raise ValidationError(_('This total is calculated from other boxes; open a component box to see its entries.'))
         tags = self.env['account.account.tag']._get_tax_tags(
@@ -249,7 +291,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         return {
             'type': 'ir.actions.act_window',
             'name': _('VAT box %(box)s — %(column)s entries',
-                      box=self.selected_box, column=self.selected_component),
+                      box=box, column=component),
             'res_model': 'account.move.line', 'view_mode': 'list,form',
             'domain': list(domain),
             'context': {'search_default_group_by_move': 0, 'allowed_company_ids': [self.company_id.id]},

@@ -11,6 +11,10 @@ MAX_REPORT_LINES = 5000
 WESTERN_DIGITS = str.maketrans('٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹', '01234567890123456789')
 
 
+class TobaccoReportTooLarge(ValidationError):
+    """The selected period exceeds the bounded operational report size."""
+
+
 def _western(value):
     return str(value).translate(WESTERN_DIGITS)
 
@@ -136,13 +140,13 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             ('date_order', '<', fields.Datetime.to_string(end_utc)),
         ], order='date_order,id', limit=MAX_REPORT_LINES + 1)
         if len(orders) > MAX_REPORT_LINES:
-            raise ValidationError(_('This period exceeds 5,000 POS lines. Split it into smaller reports.'))
+            raise TobaccoReportTooLarge(_('This period exceeds 5,000 POS lines. Split it into smaller reports.'))
         orders.check_access('read')
         lines = self.env['pos.order.line'].search(
             [('order_id', 'in', orders.ids)], limit=MAX_REPORT_LINES + 1,
         ) if orders else self.env['pos.order.line']
         if len(lines) > MAX_REPORT_LINES:
-            raise ValidationError(_('This period exceeds 5,000 POS lines. Split it into smaller reports.'))
+            raise TobaccoReportTooLarge(_('This period exceeds 5,000 POS lines. Split it into smaller reports.'))
         lines.check_access('read')
 
         rows, exceptions, debit_total, credit_total, running = self._collect_rows(
@@ -185,6 +189,10 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                 'computed_total': _('Recalculated Order Total'),
                 'saved_total': _('Saved Order Total'),
                 'total': _('Recalculated total for selected period'),
+                'rows': _('Rows'),
+                'of': _('of'),
+                'page': _('Page'),
+                'more_differences': _('More differences are listed in the PDF.'),
             },
         }
 

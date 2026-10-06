@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Tobacco Fee Register',
     'summary': 'Operational tobacco fee register from completed POS sales',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',

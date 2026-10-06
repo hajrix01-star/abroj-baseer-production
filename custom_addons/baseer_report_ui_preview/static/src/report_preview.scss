@@ -66,7 +66,7 @@
 
     .o_baseer_preview_canvas { padding: clamp(1.25rem, 3vw, 2rem) 1rem 3rem; }
     .o_baseer_preview_paper {
-        width: min(100%, 900px); min-height: 21rem; margin-inline: auto;
+        width: 100%; max-width: 900px; min-height: 21rem; margin-inline: auto;
         padding: clamp(1rem, 2.2vw, 1.8rem);
         border: 1px solid #d5d9de; border-radius: 4px; background: #fff;
     }
@@ -131,7 +131,7 @@
     .o_baseer_preview_breadcrumb strong { font-size: 0.87rem; }
     .o_baseer_preview_search {
         display: flex; align-items: center; gap: 0.5rem;
-        width: min(100%, 18rem); padding: 0.36rem 0.6rem;
+        width: 100%; max-width: 18rem; padding: 0.36rem 0.6rem;
         border: 1px solid #ccd6db; border-radius: 4px; background: #fff;
     }
     .o_baseer_preview_search:focus-within { border-color: var(--baseer-preview-accent); }

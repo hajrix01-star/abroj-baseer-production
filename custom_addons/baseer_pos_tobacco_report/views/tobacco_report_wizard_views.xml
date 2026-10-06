@@ -79,6 +79,6 @@
               name="POS Tobacco Fee Register"
               parent="account.menu_finance_reports"
               action="action_pos_tobacco_report_wizard"
-              sequence="65"
+              sequence="-10"
               groups="account.group_account_readonly,account.group_account_invoice,account.group_account_user,account.group_account_manager"/>
 </odoo>

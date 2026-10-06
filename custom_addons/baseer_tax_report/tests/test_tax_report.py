@@ -5,7 +5,7 @@ from unittest.mock import patch
 from lxml import etree
 
 from odoo import Command
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.fields import Domain
 from odoo.tests.common import TransactionCase, tagged
 
@@ -114,6 +114,105 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual(rows['7']['tax'], Decimal('6.00'))
         self.assertEqual(rows['16']['tax'], Decimal('6.00'))
 
+    def test_cash_basis_is_excluded_until_reconciliation(self):
+        """An unpaid CABA tax must not appear before Odoo creates its cash-basis entry."""
+        self.wizard.write({'year': 2033, 'month': '9'})
+        account = self.env['account.account'].with_company(self.company)
+        income = account.search([('company_ids', 'in', self.company.id), ('account_type', '=', 'income')], limit=1)
+        receivable = account.search([('company_ids', 'in', self.company.id), ('account_type', '=', 'asset_receivable')], limit=1)
+        cash = account.search([('company_ids', 'in', self.company.id), ('account_type', '=', 'asset_cash')], limit=1)
+        journal = self.env['account.journal'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('type', '=', 'general'),
+        ], limit=1)
+        standard_tax = self.env['account.tax'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 15), ('tax_exigibility', '=', 'on_invoice'),
+        ], limit=1)
+        self.assertTrue(income and receivable and cash and journal and standard_tax)
+        waiting = account.create({
+            'name': 'VAT cash-basis waiting test', 'code': 'BVATWAIT33',
+            'account_type': 'liability_current', 'reconcile': True,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        base_account = account.create({
+            'name': 'VAT cash-basis base test', 'code': 'BVATBASE33',
+            'account_type': 'asset_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        self.company.write({'tax_exigibility': True, 'account_cash_basis_base_account_id': base_account.id})
+        tax = standard_tax.copy({
+            'name': 'VAT cash-basis report test', 'tax_exigibility': 'on_payment',
+            'cash_basis_transition_account_id': waiting.id,
+        })
+        tax_line = tax.invoice_repartition_line_ids.filtered(lambda line: line.repartition_type == 'tax')[:1]
+        self.assertTrue(tax_line)
+        tags = self.env['account.account.tag']
+        base_tag = tags._get_tax_tags('1(B)', self.env.ref('base.sa').id)
+        tax_tag = tags._get_tax_tags('1(T)', self.env.ref('base.sa').id)
+        invoice = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'date': date(2033, 9, 15), 'journal_id': journal.id,
+            'line_ids': [
+                Command.create({'name': 'CABA sale', 'account_id': income.id, 'credit': 100,
+                                'tax_ids': [Command.set(tax.ids)],
+                                'tax_tag_ids': [Command.set(base_tag.ids)]}),
+                Command.create({'name': 'CABA VAT', 'account_id': waiting.id, 'credit': 15,
+                                'tax_repartition_line_id': tax_line.id,
+                                'tax_tag_ids': [Command.set(tax_tag.ids)]}),
+                Command.create({'name': 'CABA receivable', 'account_id': receivable.id, 'debit': 115}),
+            ],
+        })
+        invoice._post(soft=False)
+        self.assertFalse(invoice.always_tax_exigible)
+        before = {row['number']: row for row in self.wizard._build_report()['rows']}
+        self.assertEqual(before['1']['tax'], Decimal('0.00'))
+        payment = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'date': date(2033, 9, 15), 'journal_id': journal.id,
+            'line_ids': [
+                Command.create({'name': 'CABA cash', 'account_id': cash.id, 'debit': 115}),
+                Command.create({'name': 'CABA payment', 'account_id': receivable.id, 'credit': 115}),
+            ],
+        })
+        payment._post(soft=False)
+        (invoice.line_ids + payment.line_ids).filtered(lambda line: line.account_id == receivable).reconcile()
+        caba = self.env['account.move'].search([('tax_cash_basis_rec_id', '!=', False),
+                                                 ('date', '=', date(2033, 9, 15)),
+                                                 ('company_id', '=', self.company.id)])
+        self.assertTrue(caba)
+        after = {row['number']: row for row in self.wizard._build_report()['rows']}
+        self.assertEqual(after['1']['tax'], Decimal('15.00'))
+
+    def test_untagged_vat_is_visible_but_not_in_official_boxes(self):
+        self.wizard.write({'year': 2035, 'month': '9'})
+        account = self.env['account.account'].with_company(self.company)
+        income = account.search([('company_ids', 'in', self.company.id), ('account_type', '=', 'income')], limit=1)
+        clearing = account.search([('company_ids', 'in', self.company.id), ('account_type', '=', 'asset_current')], limit=1)
+        journal = self.env['account.journal'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('type', '=', 'general'),
+        ], limit=1)
+        standard_tax = self.env['account.tax'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 15), ('tax_exigibility', '=', 'on_invoice'),
+        ], limit=1)
+        self.assertTrue(income and clearing and journal and standard_tax)
+        tax = standard_tax.copy({'name': 'Untagged VAT report test'})
+        (tax.invoice_repartition_line_ids + tax.refund_repartition_line_ids).write({
+            'tag_ids': [Command.clear()],
+        })
+        tax_line = tax.invoice_repartition_line_ids.filtered(lambda line: line.repartition_type == 'tax')[:1]
+        move = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'date': date(2035, 9, 15), 'journal_id': journal.id,
+            'line_ids': [
+                Command.create({'name': 'Untagged VAT', 'account_id': income.id,
+                                'credit': 15, 'tax_repartition_line_id': tax_line.id}),
+                Command.create({'name': 'Counterpart', 'account_id': clearing.id, 'debit': 15}),
+            ],
+        })
+        move._post(soft=False)
+        data = self.wizard._build_report()
+        self.assertEqual(data['exception']['count'], 1)
+        self.assertEqual(data['exception']['amount'], Decimal('-15.0'))
+        self.assertEqual(data['rows'][0]['tax'], Decimal('0.00'))
+
     def test_report_paper_and_preview(self):
         paper = self.env.ref('baseer_tax_report.paperformat_tax')
         self.assertEqual((paper.format, paper.orientation), ('A4', 'Portrait'))
@@ -122,3 +221,22 @@ class TestSaudiVatReport(TransactionCase):
         self.assertTrue(arch.xpath("//field[@name='preview_html']"))
         self.assertTrue(arch.xpath("//button[@name='action_view_entries']"))
         self.assertTrue(arch.xpath("//button[@name='action_view_untagged']"))
+
+    def test_company_scope_and_accounting_access(self):
+        other = self.env['res.company'].create({
+            'name': 'Other VAT report company', 'country_id': self.env.ref('base.sa').id,
+            'account_fiscal_country_id': self.env.ref('base.sa').id,
+        })
+        groups = self.env.ref('base.group_user') | self.env.ref('account.group_account_readonly')
+        user = self.env['res.users'].create({
+            'name': 'VAT report scoped reader', 'login': 'vat-report-scoped-reader',
+            'group_ids': [Command.set(groups.ids)],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        allowed = self.wizard.with_user(user).with_context(allowed_company_ids=[self.company.id])
+        allowed._check_report_access()
+        foreign = self.env['baseer.tax.report.wizard'].with_company(other).create({
+            'company_id': other.id, 'year': 2026, 'month': '9',
+        })
+        with self.assertRaises(AccessError):
+            foreign.with_user(user).with_context(allowed_company_ids=[self.company.id])._check_report_access()

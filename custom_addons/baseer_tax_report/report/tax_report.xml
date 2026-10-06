@@ -22,17 +22,17 @@
         <field name="print_report_name">'تقرير الضريبة %s-%s' % ((object.month if object.period_type == 'month' else 'Q' + object.quarter), object.year)</field>
     </record>
     <template id="tax_table">
-        <table class="btr-table">
+        <table class="btr-table table table-sm table-striped align-middle">
             <thead><tr>
                 <th style="width: 65%">البند / VAT return box</th>
-                <th style="width: 17.5%" class="btr-money">الأساس / Amount</th>
-                <th style="width: 17.5%" class="btr-money">الضريبة / VAT</th>
+                <th style="width: 17.5%" class="btr-money text-end">الأساس / Amount</th>
+                <th style="width: 17.5%" class="btr-money text-end">الضريبة / VAT</th>
             </tr></thead>
             <tbody>
-                <tr t-foreach="report_data['rows']" t-as="row" t-att-class="'btr-total' if row['number'] in ('6', '12', '13', '16') else ''">
+                <tr t-foreach="report_data['rows']" t-as="row" t-att-class="'btr-total fw-bold' if row['number'] in ('6', '12', '13', '16') else ''">
                     <td><span class="btr-number" t-esc="row['number']"/>. <span t-esc="row['name'].split('. ', 1)[-1]"/></td>
-                    <td class="btr-money" t-esc="row['base_text']"/>
-                    <td class="btr-money" t-esc="row['tax_text']"/>
+                    <td class="btr-money text-end" dir="ltr" t-esc="row['base_text']"/>
+                    <td class="btr-money text-end" dir="ltr" t-esc="row['tax_text']"/>
                 </tr>
             </tbody>
         </table>
@@ -59,7 +59,7 @@
                     <span dir="ltr" t-esc="report_data['date_to']"/> —
                     <span t-esc="report_data['currency'].name"/>
                 </p>
-                <t t-call="baseer_tax_report.tax_table"/>
+                <div class="table-responsive"><t t-call="baseer_tax_report.tax_table"/></div>
             </div>
         </div>
     </template>

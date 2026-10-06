@@ -21,19 +21,19 @@ class BaseerTaxReportWizard(models.TransientModel):
     _name = 'baseer.tax.report.wizard'
     _description = 'Saudi VAT Report Period'
 
-    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
-    period_type = fields.Selection([('month', 'Monthly'), ('quarter', 'Quarterly')], required=True, default='month')
-    year = fields.Integer(required=True, default=lambda self: fields.Date.context_today(self).year)
-    month = fields.Selection(MONTHS, required=True, default=lambda self: str(fields.Date.context_today(self).month))
-    quarter = fields.Selection(QUARTERS, required=True, default=lambda self: str((fields.Date.context_today(self).month - 1) // 3 + 1))
+    company_id = fields.Many2one('res.company', string='Company', required=True, default=lambda self: self.env.company)
+    period_type = fields.Selection([('month', 'Monthly'), ('quarter', 'Quarterly')], string='Period', required=True, default='month')
+    year = fields.Integer(string='Year', required=True, default=lambda self: fields.Date.context_today(self).year)
+    month = fields.Selection(MONTHS, string='Month', required=True, default=lambda self: str(fields.Date.context_today(self).month))
+    quarter = fields.Selection(QUARTERS, string='Quarter', required=True, default=lambda self: str((fields.Date.context_today(self).month - 1) // 3 + 1))
     selected_box = fields.Selection(BOXES, string='View supporting entries')
     selected_component = fields.Selection([('base', 'Amount'), ('tax', 'VAT Amount')],
                                           string='Column', default='tax', required=True)
-    date_from = fields.Date(compute='_compute_dates')
-    date_to = fields.Date(compute='_compute_dates')
+    date_from = fields.Date(string='From', compute='_compute_dates')
+    date_to = fields.Date(string='To', compute='_compute_dates')
     preview_html = fields.Html(compute='_compute_preview', sanitize=True, string='VAT report')
 
-    def _check_access(self):
+    def _check_report_access(self):
         self.ensure_one()
         if not self.env.user.has_group('account.group_account_readonly') and not self.env.user.has_group('account.group_account_user') and not self.env.user.has_group('account.group_account_manager'):
             raise AccessError(_('Accounting access is required.'))
@@ -93,7 +93,7 @@ class BaseerTaxReportWizard(models.TransientModel):
             raise UserError(_('Missing Saudi VAT tax tag: %s') % formula)
         domain = base_domain & Domain('tax_tag_ids', 'in', tags.ids)
         grouped = self.env['account.move.line']._read_group(domain, [], ['balance:sum'])
-        balance = Decimal(str(grouped[0][0])) if grouped and grouped[0][0] is not None else Decimal('0')
+        balance = Decimal(str((grouped[0][0] if grouped else 0) or 0))
         return -balance if formula.startswith('-') else balance
 
     def _aggregation_expression(self, expression, values):
@@ -134,15 +134,15 @@ class BaseerTaxReportWizard(models.TransientModel):
         other_grouped = aml._read_group(other_domain, [], ['balance:sum'])
         return {
             'count': aml.search_count(domain),
-            'amount': Decimal(str(grouped[0][0])) if grouped and grouped[0][0] is not None else Decimal('0'),
+            'amount': Decimal(str((grouped[0][0] if grouped else 0) or 0)),
             'domain': domain,
             'other_count': aml.search_count(other_domain),
-            'other_amount': Decimal(str(other_grouped[0][0])) if other_grouped and other_grouped[0][0] is not None else Decimal('0'),
+            'other_amount': Decimal(str((other_grouped[0][0] if other_grouped else 0) or 0)),
             'other_domain': other_domain,
         }
 
     def _build_report(self):
-        self._check_access()
+        self._check_report_access()
         report = self.env.ref('l10n_sa.tax_report_vat_filing', raise_if_not_found=False)
         if not report:
             raise UserError(_('The original Saudi VAT report definition is not installed.'))
@@ -201,12 +201,12 @@ class BaseerTaxReportWizard(models.TransientModel):
             )
 
     def action_print(self):
-        self._check_access()
+        self._check_report_access()
         self._build_report()
         return self.env.ref('baseer_tax_report.action_report_tax').report_action(self)
 
     def action_view_entries(self):
-        self._check_access()
+        self._check_report_access()
         if not self.selected_box:
             raise ValidationError(_('Select a box first.'))
         data = self._build_report()
@@ -228,7 +228,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         }
 
     def action_view_untagged(self):
-        self._check_access()
+        self._check_report_access()
         exception = self._untagged_vat(self._base_domain())
         return {
             'type': 'ir.actions.act_window', 'name': _('Untagged VAT entries'),
@@ -238,7 +238,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         }
 
     def action_view_other_untagged(self):
-        self._check_access()
+        self._check_report_access()
         exception = self._untagged_vat(self._base_domain())
         return {
             'type': 'ir.actions.act_window', 'name': _('Other untagged tax entries'),

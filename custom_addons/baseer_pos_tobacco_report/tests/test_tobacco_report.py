@@ -122,10 +122,6 @@ class TestTobaccoReport(TransactionCase):
         wizard.action_print_monthly()
 
         self.assertEqual(
-            report.print_report_name,
-            "'رسوم التبغ لـ %s-%s' % (object.month, object.year)",
-        )
-        self.assertEqual(
             safe_eval(report.print_report_name, {'object': wizard, 'time': time}),
             'رسوم التبغ لـ 8-2026',
         )

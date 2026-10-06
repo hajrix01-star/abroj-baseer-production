@@ -14,6 +14,10 @@ export class TaxPreviewField extends HtmlField {
     }
 
     async onPreviewClick(event) {
+        if (event.target.closest("a.btr-help")) {
+            event.preventDefault();
+            return;
+        }
         const link = event.target.closest("a.btr-open, a.btr-expand, a.btr-row-link");
         const row = event.target.closest("tr.btr-row");
         if ((!link && !row) || !event.currentTarget.contains(link || row)) {

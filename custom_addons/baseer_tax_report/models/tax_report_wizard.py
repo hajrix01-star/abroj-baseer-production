@@ -35,15 +35,23 @@ ARABIC_BOX_LABELS = {
 }
 
 
+def _previous_quarter(today):
+    """Return the last completed calendar quarter in the user's timezone."""
+    current_quarter = (today.month - 1) // 3 + 1
+    return (today.year - (current_quarter == 1), str((current_quarter - 2) % 4 + 1))
+
+
 class BaseerTaxReportWizard(models.TransientModel):
     _name = 'baseer.tax.report.wizard'
     _description = 'Saudi VAT Report Period'
 
     company_id = fields.Many2one('res.company', string='Company', required=True, default=lambda self: self.env.company)
-    period_type = fields.Selection([('month', 'Monthly'), ('quarter', 'Quarterly')], string='Period', required=True, default='month')
-    year = fields.Integer(string='Year', required=True, default=lambda self: fields.Date.context_today(self).year)
+    period_type = fields.Selection([('month', 'Monthly'), ('quarter', 'Quarterly')], string='Period', required=True, default='quarter')
+    year = fields.Integer(string='Year', required=True,
+                          default=lambda self: _previous_quarter(fields.Date.context_today(self))[0])
     month = fields.Selection(MONTHS, string='Month', required=True, default=lambda self: str(fields.Date.context_today(self).month))
-    quarter = fields.Selection(QUARTERS, string='Quarter', required=True, default=lambda self: str((fields.Date.context_today(self).month - 1) // 3 + 1))
+    quarter = fields.Selection(QUARTERS, string='Quarter', required=True,
+                               default=lambda self: _previous_quarter(fields.Date.context_today(self))[1])
     display_mode = fields.Selection([('simple', 'Summary'), ('detailed', 'Detailed')],
                                     string='Display', required=True, default='simple')
     journal_ids = fields.Many2many('account.journal', string='Journals (optional)',

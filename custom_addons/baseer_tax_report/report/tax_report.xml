@@ -96,20 +96,48 @@
             </tbody>
         </table>
         <div t-if="report_data['exception']['count']" class="btr-warning">
-            <strong>مراجعة لازمة / Review required:</strong>
-            <span t-esc="report_data['exception']['count']"/> VAT journal items have no tax-grid tag;
-            their signed journal balance is <span class="btr-money" t-esc="report_data['exception_amount_text']"/>.
-            They are excluded from the 16 official boxes.
+            <t t-if="report_data['is_rtl']">
+                <strong>قيود ضريبة القيمة المضافة غير المصنفة:</strong>
+                عدد القيود: <span t-esc="report_data['exception']['count']"/>؛ الرصيد:
+                <span class="btr-money" dir="ltr" t-esc="report_data['exception_amount_text']"/>.
+                <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
+                    title="هذه القيود لا تدخل ضمن خانات التقرير الضريبي الست عشرة. راجع وسومها الضريبية قبل اعتماد التقرير."
+                    aria-label="معلومات عن قيود القيمة المضافة غير المصنفة">؟</a>
+                <span t-else="">هذه القيود لا تدخل ضمن خانات التقرير الضريبي الست عشرة. راجع وسومها الضريبية قبل اعتماد التقرير.</span>
+            </t>
+            <t t-else="">
+                <strong>Unclassified VAT entries:</strong>
+                Entries: <span t-esc="report_data['exception']['count']"/>; signed balance:
+                <span class="btr-money" dir="ltr" t-esc="report_data['exception_amount_text']"/>.
+                <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
+                    title="These entries are excluded from the 16 VAT return boxes. Review their tax-grid tags before approving the report."
+                    aria-label="About unclassified VAT entries">?</a>
+                <span t-else="">These entries are excluded from the 16 VAT return boxes. Review their tax-grid tags before approving the report.</span>
+            </t>
         </div>
         <div t-if="report_data['exception']['other_count']" class="btr-warning">
-            <strong>ضرائب أخرى خارج خانات VAT / Other taxes outside VAT boxes:</strong>
-            <span t-esc="report_data['exception']['other_count']"/> untagged tax journal items;
-            signed balance <span class="btr-money" t-esc="report_data['other_tax_amount_text']"/>.
-            Review their tax groups before classifying them as VAT.
+            <t t-if="report_data['is_rtl']">
+                <strong>قيود ضرائب أخرى غير مصنفة:</strong>
+                عدد القيود: <span t-esc="report_data['exception']['other_count']"/>؛ الرصيد:
+                <span class="btr-money" dir="ltr" t-esc="report_data['other_tax_amount_text']"/>.
+                <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
+                    title="راجع مجموعات هذه الضرائب قبل تصنيفها ضمن ضريبة القيمة المضافة. لا تُدرج هذه القيود في خانات الإقرار."
+                    aria-label="معلومات عن قيود الضرائب الأخرى غير المصنفة">؟</a>
+                <span t-else="">راجع مجموعات هذه الضرائب قبل تصنيفها ضمن ضريبة القيمة المضافة. لا تُدرج هذه القيود في خانات الإقرار.</span>
+            </t>
+            <t t-else="">
+                <strong>Other unclassified tax entries:</strong>
+                Entries: <span t-esc="report_data['exception']['other_count']"/>; signed balance:
+                <span class="btr-money" dir="ltr" t-esc="report_data['other_tax_amount_text']"/>.
+                <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
+                    title="Review these tax groups before classifying them as VAT. These entries are excluded from the VAT return boxes."
+                    aria-label="About other unclassified tax entries">?</a>
+                <span t-else="">Review these tax groups before classifying them as VAT. These entries are excluded from the VAT return boxes.</span>
+            </t>
         </div>
     </template>
     <template id="preview_tax_report">
-        <div class="card mt-3" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+        <div class="card mt-3 btr-report-card w-100" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
             <div class="card-body">
                 <h2 class="h4 text-center">تقرير ضريبة القيمة المضافة / Saudi VAT Report</h2>
                 <p class="text-center">

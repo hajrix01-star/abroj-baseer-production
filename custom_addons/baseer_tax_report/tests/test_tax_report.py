@@ -5,12 +5,12 @@ from unittest.mock import patch
 
 from lxml import etree
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.exceptions import AccessError, ValidationError
 from odoo.fields import Domain
 from odoo.tests.common import TransactionCase, tagged
 
-from ..models.tax_report_wizard import BaseerTaxReportWizard
+from ..models.tax_report_wizard import BaseerTaxReportWizard, _previous_quarter
 
 
 @tagged('post_install', '-at_install')
@@ -25,6 +25,8 @@ class TestSaudiVatReport(TransactionCase):
 
     def test_month_and_quarter_ranges(self):
         self.assertEqual(self.wizard.display_mode, 'simple')
+        self.assertEqual(self.wizard.period_type, 'quarter')
+        self.wizard.period_type = 'month'
         self.assertEqual(self.wizard._period_dates(), (date(2026, 9, 1), date(2026, 9, 30)))
         self.wizard.write({'period_type': 'quarter', 'quarter': '3'})
         self.assertEqual(self.wizard._period_dates(), (date(2026, 7, 1), date(2026, 9, 30)))
@@ -33,6 +35,20 @@ class TestSaudiVatReport(TransactionCase):
         self.wizard.write({'year': 1999})
         with self.assertRaises(ValidationError):
             self.wizard._period_dates()
+
+    def test_previous_completed_quarter_defaults_cross_year_boundary(self):
+        for today, expected in (
+            (date(2027, 1, 1), (2026, '4')),
+            (date(2027, 4, 1), (2027, '1')),
+            (date(2027, 7, 1), (2027, '2')),
+            (date(2027, 10, 1), (2027, '3')),
+        ):
+            self.assertEqual(_previous_quarter(today), expected)
+            with patch.object(fields.Date, 'context_today', return_value=today):
+                defaults = self.env['baseer.tax.report.wizard'].default_get(
+                    ['period_type', 'year', 'quarter'])
+            self.assertEqual((defaults['period_type'], defaults['year'], defaults['quarter']),
+                             ('quarter', *expected))
 
     def test_official_aggregation_and_tag_signs(self):
         balances = {
@@ -262,7 +278,8 @@ class TestSaudiVatReport(TransactionCase):
         view = self.env.ref('baseer_tax_report.view_tax_report_wizard_form')
         arch = etree.fromstring(view.arch_db.encode())
         self.assertTrue(arch.xpath("//field[@name='preview_html'][@widget='baseer_tax_preview']"))
-        self.assertTrue(arch.xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' w-100 ')]/field[@name='preview_html']"))
+        self.assertTrue(arch.xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' btr-report-preview ')]/field[@name='preview_html']"))
+        self.assertTrue(arch.xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' btr-review-actions ')]/button[@name='action_view_untagged']"))
         widget_template = etree.parse(str(Path(__file__).resolve().parents[1] / 'static/src/xml/tax_preview_field.xml'))
         self.assertTrue(widget_template.xpath("//t[@t-name='baseer_tax_report.TaxPreviewField']//div[@t-on-click='onPreviewClick'][contains(concat(' ', normalize-space(@class), ' '), ' w-100 ')]"))
         self.assertTrue(arch.xpath("//field[@name='display_mode']"))
@@ -275,9 +292,30 @@ class TestSaudiVatReport(TransactionCase):
         self.assertIn('btr-row-link', self.wizard.preview_html)
         self.assertIn('btr-row-actions', self.wizard.preview_html)
         self.assertIn('btr-expand', self.wizard.preview_html)
+        self.assertIn('btr-report-card', self.wizard.preview_html)
+        report_template = etree.parse(str(Path(__file__).resolve().parents[1] / 'report/tax_report.xml'))
+        self.assertTrue(report_template.xpath("//a[contains(concat(' ', normalize-space(@class), ' '), ' btr-help ')][@title][@aria-label]"))
         print_values = self.env['report.baseer_tax_report.report_tax']._get_report_values(self.wizard.ids)
         self.assertEqual(len(print_values['report_data']['visible_rows']), 16)
         self.assertFalse(print_values['report_data']['interactive'])
+
+    def test_exception_help_is_compact_in_preview_and_explicit_in_pdf(self):
+        data = self.wizard.with_context(lang='ar_001')._build_report()
+        data['exception']['count'] = 3
+        data['exception']['other_count'] = 2
+        data['interactive'] = True
+        preview = self.env['ir.qweb']._render(
+            'baseer_tax_report.preview_tax_report', {'report_data': data})
+        self.assertIn('قيود ضريبة القيمة المضافة غير المصنفة', preview)
+        self.assertIn('قيود ضرائب أخرى غير مصنفة', preview)
+        self.assertIn('class="btr-help', preview)
+        self.assertIn('title="هذه القيود لا تدخل', preview)
+        self.assertNotIn('Review required', preview)
+        data['interactive'] = False
+        printed = self.env['ir.qweb']._render(
+            'baseer_tax_report.tax_table', {'report_data': data})
+        self.assertNotIn('class="btr-help', printed)
+        self.assertIn('راجع وسومها الضريبية قبل اعتماد التقرير', printed)
 
     def test_arabic_box_labels_do_not_change_the_original_formulas(self):
         arabic = self.wizard.with_context(lang='ar_001')._build_report()

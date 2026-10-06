@@ -111,13 +111,13 @@ msgstr "تنزيل PDF"
 
 #. module: baseer_tax_report
 #: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
-msgid "Review untagged VAT"
-msgstr "مراجعة ضريبة القيمة المضافة غير المصنفة"
+msgid "Unclassified VAT entries"
+msgstr "قيود ضريبة القيمة المضافة غير المصنفة"
 
 #. module: baseer_tax_report
 #: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
-msgid "Review other untagged taxes"
-msgstr "مراجعة الضرائب الأخرى غير المصنفة"
+msgid "Other unclassified tax entries"
+msgstr "قيود ضرائب أخرى غير مصنفة"
 
 #. module: baseer_tax_report
 #: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__1

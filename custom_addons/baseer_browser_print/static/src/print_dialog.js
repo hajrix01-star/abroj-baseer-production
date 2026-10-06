@@ -18,7 +18,11 @@ export class BrowserPrintDialog extends Component {
     setup() {
         this.frame = useRef("pdf");
         this.url = URL.createObjectURL(this.props.blob);
-        this.state = useState({ ready: false, warning: "", compatible: false, src: this.url });
+        this.viewerUrl = `/web/static/lib/pdfjs/web/viewer.html?file=${encodeURIComponent(this.url)}#zoom=page-fit`;
+        // Do not expose the browser's native Blob viewer: it invents a UUID as
+        // the download name. The bundled viewer keeps downloads on our named
+        // button, which receives the server Content-Disposition filename.
+        this.state = useState({ ready: false, warning: "", compatible: true, src: this.viewerUrl });
         this.destroyed = false;
         this.labels = {
             title: _t("Print report"), print: _t("Print"), download: _t("Download PDF"),
@@ -28,15 +32,11 @@ export class BrowserPrintDialog extends Component {
         };
         onMounted(() => {
             hidePDFJSButtons(this.frame.el, { hideDownload: true });
-            if (navigator.pdfViewerEnabled === false) {
-                this.useCompatible();
-                return;
-            }
-            this.timer = browser.setTimeout(() => {
-                if (!this.state.ready) {
-                    this.useCompatible();
+            this.loadTimer = browser.setTimeout(() => {
+                if (!this.destroyed && !this.state.ready) {
+                    this.state.warning = this.labels.help;
                 }
-            }, 5000);
+            }, 30000);
         });
         onWillDestroy(() => {
             this.destroyed = true;
@@ -106,6 +106,7 @@ export class BrowserPrintDialog extends Component {
             try {
                 await app.pdfViewer.pagesPromise;
                 if (!this.destroyed && app.pdfViewer.pageViewsReady) {
+                    hidePDFJSButtons(this.frame.el, { hideDownload: true });
                     app.pdfSidebar?.close();
                     this.state.ready = true;
                     this.print();

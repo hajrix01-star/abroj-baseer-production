@@ -5,7 +5,7 @@ Classification: architectural dependency boundary. Base: `9393b31ebd9410a80dbd11
 
 ## Decision
 
-- Every new Baseer financial report owns its computation, access controls, UI and exports in Baseer source. It may use supported Odoo Community `account`, `point_of_sale` and `web` models/services, but must not depend on, import, inherit a template from, or call `eh_account_base` or `eh_account_dynamic_reports` (ERP Heritage).
+- Every new Baseer report, financial or operational, owns its computation, access controls, UI and exports in Baseer source. It may use supported Odoo Community models/services relevant to its domain, but must not depend on, import, inherit a template from, or call `eh_account_base` or `eh_account_dynamic_reports` (ERP Heritage).
 - The Baseer reports navigation owner remains `baseer_reports_menu`, with only `account` as a dependency. The current Saudi VAT, POS tobacco and design-preview addons already depend on this owner without depending on ERP Heritage.
 - Real P&L, General Ledger and cash-in/out reports are not created by moving menus or by the synthetic preview. Each needs an explicit source-of-truth, period, company and permissions contract plus independent reconciliation tests before it is shown as a live report.
 
@@ -15,4 +15,4 @@ Classification: architectural dependency boundary. Base: `9393b31ebd9410a80dbd11
 
 ## Current navigation phase
 
-Move only the existing `baseer_reports_menu.menu_baseer_reports` to a top-level Odoo section, preserving its XML ID, child actions, and groups. Operational POS, procurement and payroll report placement is a separate scope decision. Reversal restores the root menu's previous `account.menu_finance_reports` parent; it does not migrate report data.
+Move only the existing `baseer_reports_menu.menu_baseer_reports` to a top-level Odoo section, preserving its XML ID, child actions, and groups. The independence rule applies to all newly built reports, while placement of existing operational POS, procurement and payroll reports is a separate scope decision. Reversal restores the root menu's previous `account.menu_finance_reports` parent; it does not migrate report data.

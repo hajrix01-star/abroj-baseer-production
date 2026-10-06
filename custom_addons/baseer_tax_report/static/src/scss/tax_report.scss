@@ -1,0 +1,48 @@
+.o_form_view .btr-report-preview {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    clear: both;
+
+    .o_field_widget,
+    .btr-preview-field,
+    .btr-report-card {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .btr-warning {
+        margin-top: .75rem;
+        padding: .625rem .75rem;
+        border: 1px solid #e8d5a6;
+        border-radius: .375rem;
+        background: #fffaf0;
+        color: #5e4722;
+        line-height: 1.7;
+    }
+}
+
+.btr-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: .8rem;
+    font-weight: 700;
+    text-decoration: none;
+    vertical-align: middle;
+
+    &:hover,
+    &:focus-visible {
+        background: #5e4722;
+        color: #fff;
+        outline-offset: 2px;
+        text-decoration: none;
+    }
+}

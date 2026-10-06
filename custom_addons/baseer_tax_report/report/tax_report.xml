@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_tax" model="report.paperformat">
+        <field name="name">Saudi VAT Report A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">14</field>
+        <field name="margin_bottom">16</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+    </record>
+    <record id="action_report_tax" model="ir.actions.report">
+        <field name="name">Saudi VAT Report</field>
+        <field name="model">baseer.tax.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_tax_report.report_tax</field>
+        <field name="report_file">baseer_tax_report.report_tax</field>
+        <field name="paperformat_id" ref="paperformat_tax"/>
+        <field name="print_report_name">'تقرير الضريبة %s-%s' % ((object.month if object.period_type == 'month' else 'Q' + object.quarter), object.year)</field>
+    </record>
+    <template id="tax_table">
+        <table class="btr-table table table-sm table-striped align-middle">
+            <thead><tr>
+                <th style="width: 65%">البند / VAT return box</th>
+                <th style="width: 17.5%" class="btr-money text-end">الأساس / Amount</th>
+                <th style="width: 17.5%" class="btr-money text-end">الضريبة / VAT</th>
+            </tr></thead>
+            <tbody>
+                <tr t-foreach="report_data['rows']" t-as="row" t-att-class="'btr-total fw-bold' if row['number'] in ('6', '12', '13', '16') else ''">
+                    <td><span class="btr-number" t-esc="row['number']"/>. <span t-esc="row['name'].split('. ', 1)[-1]"/></td>
+                    <td class="btr-money text-end" dir="ltr" t-esc="row['base_text']"/>
+                    <td class="btr-money text-end" dir="ltr" t-esc="row['tax_text']"/>
+                </tr>
+            </tbody>
+        </table>
+        <div t-if="report_data['exception']['count']" class="btr-warning">
+            <strong>مراجعة لازمة / Review required:</strong>
+            <span t-esc="report_data['exception']['count']"/> VAT journal items have no tax-grid tag;
+            their signed journal balance is <span class="btr-money" t-esc="report_data['exception_amount_text']"/>.
+            They are excluded from the 16 official boxes.
+        </div>
+        <div t-if="report_data['exception']['other_count']" class="btr-warning">
+            <strong>ضرائب أخرى خارج خانات VAT / Other taxes outside VAT boxes:</strong>
+            <span t-esc="report_data['exception']['other_count']"/> untagged tax journal items;
+            signed balance <span class="btr-money" t-esc="report_data['other_tax_amount_text']"/>.
+            Review their tax groups before classifying them as VAT.
+        </div>
+    </template>
+    <template id="preview_tax_report">
+        <div class="card mt-3" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+            <div class="card-body">
+                <h2 class="h4 text-center">تقرير ضريبة القيمة المضافة / Saudi VAT Report</h2>
+                <p class="text-center">
+                    <span t-esc="report_data['company'].name"/> —
+                    <span dir="ltr" t-esc="report_data['date_from']"/> إلى
+                    <span dir="ltr" t-esc="report_data['date_to']"/> —
+                    <span t-esc="report_data['currency'].name"/>
+                </p>
+                <div t-if="report_data['journal_names']" class="alert alert-info" role="status">
+                    تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر / Selected journals — analytical view, not the full VAT return:
+                    <span t-esc="report_data['journal_names']"/>
+                </div>
+                <div class="table-responsive"><t t-call="baseer_tax_report.tax_table"/></div>
+            </div>
+        </div>
+    </template>
+    <template id="report_tax">
+        <t t-call="web.basic_layout">
+            <t t-set="company" t-value="report_data['company']"/>
+            <div class="page" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+                <style>
+                    @page {size: A4 portrait; margin: 14mm 10mm 16mm 10mm;}
+                    .page {width: 190mm; max-width: 190mm; margin: 0 auto;}
+                    .btr {font-family: DejaVu Sans, Arial, sans-serif; color: #26343d; font-size: 10px;}
+                    .btr-header {text-align: center; margin-bottom: 12px;}
+                    .btr-header img {display: block; max-height: 60px; max-width: 160px; margin: 0 auto 4px;}
+                    .btr h2 {font-size: 17px; margin: 5px 0;}
+                    .btr-table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .btr-table thead {display: table-header-group;}
+                    .btr-table tr {page-break-inside: avoid;}
+                    .btr-table th, .btr-table td {border: 1px solid #d9dfe2; padding: 5px; vertical-align: middle;}
+                    .btr-table th {background: #edf3f2;}
+                    .btr-total {font-weight: bold; background: #f2f5f4;}
+                    .btr-money {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap;}
+                    .btr-number {direction: ltr; unicode-bidi: isolate;}
+                    .btr-warning {margin-top: 12px; padding: 7px; border: 1px solid #d99053; color: #8b4a22;}
+                </style>
+                <main class="btr">
+                    <div class="btr-header">
+                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company logo"/>
+                        <strong t-esc="company.name"/><br/>
+                        <span t-if="company.vat">الرقم الضريبي: <span dir="ltr" t-esc="company.vat"/></span>
+                        <h2>تقرير ضريبة القيمة المضافة / Saudi VAT Report</h2>
+                        <span dir="ltr" t-esc="report_data['date_from']"/> —
+                        <span dir="ltr" t-esc="report_data['date_to']"/>
+                        <span t-esc="report_data['currency'].name"/>
+                    </div>
+                    <div t-if="report_data['journal_names']" class="btr-warning">
+                        تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر / Selected journals — analytical view, not the full VAT return:
+                        <span t-esc="report_data['journal_names']"/>
+                    </div>
+                    <t t-call="baseer_tax_report.tax_table"/>
+                </main>
+            </div>
+        </t>
+    </template>
+</odoo>

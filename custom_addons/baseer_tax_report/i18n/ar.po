@@ -1,0 +1,185 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# * baseer_tax_report
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_tax_report
+#: model:ir.actions.act_window,name:baseer_tax_report.action_tax_report_wizard
+#: model:ir.actions.report,name:baseer_tax_report.action_report_tax
+#: model:ir.ui.menu,name:baseer_tax_report.menu_tax_report
+#: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
+msgid "Saudi VAT Report"
+msgstr "تقرير ضريبة القيمة المضافة"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__period_type
+msgid "Period"
+msgstr "الفترة"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__year
+msgid "Year"
+msgstr "السنة"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__month
+msgid "Month"
+msgstr "الشهر"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__quarter
+msgid "Quarter"
+msgstr "الربع"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__date_from
+msgid "From"
+msgstr "من"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__date_to
+msgid "To"
+msgstr "إلى"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__selected_box
+#: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
+msgid "View supporting entries"
+msgstr "عرض القيود الداعمة"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__selected_component
+msgid "Column"
+msgstr "العمود"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields,field_description:baseer_tax_report.field_baseer_tax_report_wizard__journal_ids
+msgid "Journals (optional)"
+msgstr "الدفاتر اليومية (اختياري)"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__period_type__month
+msgid "Monthly"
+msgstr "شهري"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__period_type__quarter
+msgid "Quarterly"
+msgstr "ربع سنوي"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__selected_component__base
+msgid "Amount"
+msgstr "الأساس"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__selected_component__tax
+msgid "VAT Amount"
+msgstr "مبلغ الضريبة"
+
+#. module: baseer_tax_report
+#: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
+msgid "Download PDF"
+msgstr "تنزيل PDF"
+
+#. module: baseer_tax_report
+#: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
+msgid "Review untagged VAT"
+msgstr "مراجعة ضريبة القيمة المضافة غير المصنفة"
+
+#. module: baseer_tax_report
+#: model_terms:ir.ui.view,arch_db:baseer_tax_report.view_tax_report_wizard_form
+msgid "Review other untagged taxes"
+msgstr "مراجعة الضرائب الأخرى غير المصنفة"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__1
+msgid "January"
+msgstr "يناير"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__2
+msgid "February"
+msgstr "فبراير"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__3
+msgid "March"
+msgstr "مارس"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__4
+msgid "April"
+msgstr "أبريل"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__5
+msgid "May"
+msgstr "مايو"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__6
+msgid "June"
+msgstr "يونيو"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__7
+msgid "July"
+msgstr "يوليو"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__8
+msgid "August"
+msgstr "أغسطس"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__9
+msgid "September"
+msgstr "سبتمبر"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__10
+msgid "October"
+msgstr "أكتوبر"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__11
+msgid "November"
+msgstr "نوفمبر"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__month__12
+msgid "December"
+msgstr "ديسمبر"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__quarter__1
+msgid "Q1"
+msgstr "الربع الأول"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__quarter__2
+msgid "Q2"
+msgstr "الربع الثاني"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__quarter__3
+msgid "Q3"
+msgstr "الربع الثالث"
+
+#. module: baseer_tax_report
+#: model:ir.model.fields.selection,name:baseer_tax_report.selection__baseer_tax_report_wizard__quarter__4
+msgid "Q4"
+msgstr "الربع الرابع"

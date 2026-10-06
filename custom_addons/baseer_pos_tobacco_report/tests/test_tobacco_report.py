@@ -85,6 +85,11 @@ class TestTobaccoReport(TransactionCase):
         pdf_arch = etree.fromstring(template.arch_db.encode())
         self.assertTrue(pdf_arch.xpath(".//th[@t-if=\"report_data['show_products']\"]"))
         self.assertFalse(pdf_arch.xpath(".//div[contains(@class, 'btf-note')]"))
+        self.assertEqual(len(pdf_arch.xpath(".//*[@t-call='web.basic_layout']")), 1)
+        self.assertFalse(pdf_arch.xpath(".//div[contains(@class, 'btf-brand')]"))
+        self.assertEqual(len(pdf_arch.xpath(".//img[@alt='Company logo']")), 1)
+        self.assertEqual(len(pdf_arch.xpath(".//th[@class='btf-number']")), 5)
+        self.assertEqual(len(pdf_arch.xpath(".//th[@class='btf-id']")), 4)
 
     def test_month_selection_uses_full_riyadh_month(self):
         wizard = self.env['baseer.pos.tobacco.report.wizard'].new({

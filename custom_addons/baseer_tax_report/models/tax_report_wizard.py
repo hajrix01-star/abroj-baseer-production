@@ -293,6 +293,7 @@ class BaseerTaxReportWizard(models.TransientModel):
             'name': _('VAT box %(box)s — %(column)s entries',
                       box=box, column=component),
             'res_model': 'account.move.line', 'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],
             'domain': list(domain),
             'context': {'search_default_group_by_move': 0, 'allowed_company_ids': [self.company_id.id]},
         }
@@ -303,6 +304,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         return {
             'type': 'ir.actions.act_window', 'name': _('Untagged VAT entries'),
             'res_model': 'account.move.line', 'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],
             'domain': list(exception['domain']),
             'context': {'allowed_company_ids': [self.company_id.id]},
         }
@@ -313,6 +315,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         return {
             'type': 'ir.actions.act_window', 'name': _('Other untagged tax entries'),
             'res_model': 'account.move.line', 'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],
             'domain': list(exception['other_domain']),
             'context': {'allowed_company_ids': [self.company_id.id]},
         }

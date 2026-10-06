@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="baseer_tax_report.TaxPreviewField">
         <t t-if="props.readonly">
-            <span class="btr-preview-field" t-on-click="onPreviewClick"
+            <div class="btr-preview-field w-100" t-on-click="onPreviewClick"
                   t-out="props.record.data[props.name] or ''"/>
         </t>
         <t t-else="" t-call="web.TextField"/>

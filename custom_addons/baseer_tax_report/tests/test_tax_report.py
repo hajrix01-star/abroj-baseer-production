@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 from unittest.mock import patch
 
 from lxml import etree
@@ -139,6 +140,7 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual(rows['16']['tax'], Decimal('6.00'))
         action = self.wizard.action_open_cell('1', 'tax')
         self.assertEqual(action['res_model'], 'account.move.line')
+        self.assertEqual(action['views'], [(False, 'list'), (False, 'form')])
         self.assertEqual(len(self.env['account.move.line'].search(action['domain'])), 2)
         with self.assertRaises(ValidationError):
             self.wizard.action_open_cell('6', 'tax')
@@ -260,9 +262,14 @@ class TestSaudiVatReport(TransactionCase):
         view = self.env.ref('baseer_tax_report.view_tax_report_wizard_form')
         arch = etree.fromstring(view.arch_db.encode())
         self.assertTrue(arch.xpath("//field[@name='preview_html'][@widget='baseer_tax_preview']"))
+        self.assertTrue(arch.xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' w-100 ')]/field[@name='preview_html']"))
+        widget_template = etree.parse(str(Path(__file__).resolve().parents[1] / 'static/src/xml/tax_preview_field.xml'))
+        self.assertTrue(widget_template.xpath("//t[@t-name='baseer_tax_report.TaxPreviewField']//div[@t-on-click='onPreviewClick'][contains(concat(' ', normalize-space(@class), ' '), ' w-100 ')]"))
         self.assertTrue(arch.xpath("//field[@name='display_mode']"))
         self.assertFalse(arch.xpath("//button[@name='action_view_entries']"))
         self.assertTrue(arch.xpath("//button[@name='action_view_untagged']"))
+        for action in (self.wizard.action_view_untagged(), self.wizard.action_view_other_untagged()):
+            self.assertEqual(action['views'], [(False, 'list'), (False, 'form')])
         self.wizard.display_mode = 'detailed'
         self.assertIn('data-id="1:base"', self.wizard.preview_html)
         self.assertIn('btr-row-link', self.wizard.preview_html)

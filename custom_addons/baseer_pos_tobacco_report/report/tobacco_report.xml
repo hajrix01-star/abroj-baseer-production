@@ -6,7 +6,7 @@
         <field name="format">A4</field>
         <field name="orientation">Portrait</field>
         <field name="margin_top">14</field>
-        <field name="margin_bottom">30</field>
+        <field name="margin_bottom">20</field>
         <field name="margin_left">10</field>
         <field name="margin_right">10</field>
         <field name="header_line" eval="False"/>
@@ -24,51 +24,62 @@
     </record>
 
     <template id="report_pos_tobacco_fees">
-        <t t-call="web.html_container">
+        <t t-call="web.basic_layout">
             <t t-set="company" t-value="report_data['company']"/>
             <t t-set="o" t-value="report_data['wizard']"/>
-            <t t-call="web.external_layout">
                 <div class="page" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
                     <style>
                         .btf-report {font-family: DejaVu Sans, Arial, sans-serif; color: #26343d; font-size: 10px;}
                         .btf-report h2 {font-size: 18px; margin: 0 0 8px; text-align: center;}
-                        .btf-report .btf-brand {text-align: center; margin-bottom: 8px;}
-                        .btf-report .btf-brand img {max-height: 72px; max-width: 180px;}
-                        .btf-report .btf-period {text-align: center; margin-bottom: 12px;}
+                        .btf-report .btf-header {text-align: center; margin-bottom: 10px; page-break-inside: avoid;}
+                        .btf-report .btf-header img {display: block; max-height: 64px; max-width: 180px; width: auto; height: auto; margin: 0 auto 4px;}
+                        .btf-report .btf-company {font-weight: bold; font-size: 12px;}
+                        .btf-report .btf-company-details {font-size: 10px;}
+                        .btf-report .btf-company-details p {margin: 0;}
+                        .btf-report .btf-vat {color: #66747a; font-size: 9px;}
+                        .btf-report .btf-period {width: auto; margin: 0 auto 12px; table-layout: auto;}
+                        .btf-report .btf-period td {border: 0; padding: 0 7px; white-space: nowrap;}
                         .btf-report table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                        .btf-report.btf-rtl table {direction: rtl;}
+                        .btf-report.btf-ltr table {direction: ltr;}
                         .btf-report thead {display: table-header-group;}
                         .btf-report th, .btf-report td {border: 1px solid #d9dfe2; padding: 5px; vertical-align: top; overflow-wrap: anywhere;}
                         .btf-report th {background: #edf3f2; font-weight: bold;}
-                        .btf-report .btf-number {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap;}
-                        .btf-report .btf-id {direction: ltr; unicode-bidi: isolate;}
+                        .btf-report.btf-rtl th, .btf-report.btf-rtl td {text-align: right;}
+                        .btf-report.btf-ltr th, .btf-report.btf-ltr td {text-align: left;}
+                        .btf-report.btf-rtl .btf-number, .btf-report.btf-ltr .btf-number {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap;}
+                        .btf-report.btf-rtl .btf-id, .btf-report.btf-ltr .btf-id {direction: ltr; unicode-bidi: isolate; text-align: center;}
                         .btf-report .btf-total {font-weight: bold; background: #f2f5f4;}
                         .btf-report .btf-final-group {page-break-inside: avoid; break-inside: avoid;}
                         .btf-report .btf-exception {color: #9a4b20; font-weight: bold;}
                         .btf-report .btf-muted {color: #66747a;}
                     </style>
-                    <main class="btf-report">
-                        <div class="btf-brand">
-                            <img t-if="report_data['company'].logo"
-                                 t-att-src="image_data_uri(report_data['company'].logo)"
-                                 alt="Company logo"/>
-                            <div t-else="" t-esc="report_data['company'].name"/>
+                    <main t-att-class="'btf-report btf-rtl' if report_data['is_rtl'] else 'btf-report btf-ltr'">
+                        <div class="btf-header">
+                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company logo"/>
+                            <div t-if="company.company_details" class="btf-company-details" t-field="company.company_details"/>
+                            <div t-else="" class="btf-company" t-esc="company.name"/>
+                            <div t-if="company.vat" class="btf-vat">
+                                <span t-esc="report_data['labels']['tax_number']"/>
+                                <span dir="ltr" t-esc="company.vat"/>
+                            </div>
                         </div>
                         <h2 t-esc="report_data['labels']['title']"/>
-                        <div class="btf-period">
-                            <strong t-esc="report_data['labels']['from']"/> <span class="btf-id" t-esc="report_data['from_text']"/>
-                            <strong t-esc="report_data['labels']['to']"/> <span class="btf-id" t-esc="report_data['to_text']"/>
-                            <strong t-esc="report_data['labels']['currency']"/> <span class="btf-id" t-esc="report_data['currency']"/>
-                        </div>
+                        <table class="btf-period" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'"><tr>
+                            <td><strong t-esc="report_data['labels']['from']"/> <span dir="ltr" t-esc="report_data['from_text']"/></td>
+                            <td><strong t-esc="report_data['labels']['to']"/> <span dir="ltr" t-esc="report_data['to_text']"/></td>
+                            <td><strong t-esc="report_data['labels']['currency']"/> <span dir="ltr" t-esc="report_data['currency']"/></td>
+                        </tr></table>
                         <table>
                             <thead>
                                 <tr>
-                                    <th t-att-style="'width: 15%;' if report_data['show_products'] else 'width: 18%;'" t-esc="report_data['labels']['date']"/>
-                                    <th t-att-style="'width: 16%;' if report_data['show_products'] else 'width: 18%;'" t-esc="report_data['labels']['order']"/>
+                                    <th class="btf-id" t-att-style="'width: 15%;' if report_data['show_products'] else 'width: 18%;'" t-esc="report_data['labels']['date']"/>
+                                    <th class="btf-id" t-att-style="'width: 16%;' if report_data['show_products'] else 'width: 18%;'" t-esc="report_data['labels']['order']"/>
                                     <th t-if="report_data['show_products']" style="width: 25%;" t-esc="report_data['labels']['product']"/>
                                     <th t-att-style="'width: 10%;' if report_data['show_products'] else 'width: 14%;'" t-esc="report_data['labels']['type']"/>
-                                    <th t-att-style="'width: 11%;' if report_data['show_products'] else 'width: 15%;'" t-esc="report_data['labels']['debit']"/>
-                                    <th t-att-style="'width: 11%;' if report_data['show_products'] else 'width: 15%;'" t-esc="report_data['labels']['credit']"/>
-                                    <th t-att-style="'width: 12%;' if report_data['show_products'] else 'width: 20%;'" t-esc="report_data['labels']['running']"/>
+                                    <th class="btf-number" t-att-style="'width: 11%;' if report_data['show_products'] else 'width: 15%;'" t-esc="report_data['labels']['debit']"/>
+                                    <th class="btf-number" t-att-style="'width: 11%;' if report_data['show_products'] else 'width: 15%;'" t-esc="report_data['labels']['credit']"/>
+                                    <th class="btf-number" t-att-style="'width: 12%;' if report_data['show_products'] else 'width: 20%;'" t-esc="report_data['labels']['running']"/>
                                 </tr>
                             </thead>
                             <tbody>
@@ -116,10 +127,10 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th t-esc="report_data['labels']['date']"/>
-                                        <th t-esc="report_data['labels']['order']"/>
-                                        <th t-esc="report_data['labels']['computed_total']"/>
-                                        <th t-esc="report_data['labels']['saved_total']"/>
+                                        <th class="btf-id" t-esc="report_data['labels']['date']"/>
+                                        <th class="btf-id" t-esc="report_data['labels']['order']"/>
+                                        <th class="btf-number" t-esc="report_data['labels']['computed_total']"/>
+                                        <th class="btf-number" t-esc="report_data['labels']['saved_total']"/>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -136,7 +147,9 @@
                         </t>
                     </main>
                 </div>
-            </t>
+                <div class="footer" style="font-family: DejaVu Sans, Arial, sans-serif; color: #66747a; font-size: 9px; text-align: center;">
+                    <span t-esc="report_data['labels']['page']"/> <span class="page"/> / <span class="topage"/>
+                </div>
         </t>
     </template>
     <template id="preview_pos_tobacco_fees">
@@ -185,22 +198,22 @@
                 <div t-if="report_data['rows']" class="d-none d-lg-block">
                     <table class="table table-sm table-striped align-middle">
                         <thead><tr>
-                            <th t-esc="report_data['labels']['date']"/>
-                            <th t-esc="report_data['labels']['order']"/>
+                            <th class="text-center" t-esc="report_data['labels']['date']"/>
+                            <th class="text-center" t-esc="report_data['labels']['order']"/>
                             <th t-if="report_data['show_products']" t-esc="report_data['labels']['product']"/>
                             <th t-esc="report_data['labels']['type']"/>
-                            <th t-esc="report_data['labels']['debit']"/>
-                            <th t-esc="report_data['labels']['credit']"/>
-                            <th t-esc="report_data['labels']['running']"/>
+                            <th class="text-end" t-esc="report_data['labels']['debit']"/>
+                            <th class="text-end" t-esc="report_data['labels']['credit']"/>
+                            <th class="text-end" t-esc="report_data['labels']['running']"/>
                         </tr></thead>
                         <tbody><tr t-foreach="report_data['rows']" t-as="row">
-                            <td dir="ltr" t-esc="row['date']"/>
-                            <td dir="ltr" t-esc="row['order']"/>
+                            <td class="text-center" dir="ltr" t-esc="row['date']"/>
+                            <td class="text-center" dir="ltr" t-esc="row['order']"/>
                             <td t-if="report_data['show_products']" t-esc="row['products']"/>
                             <td t-esc="row['type']"/>
-                            <td dir="ltr" t-esc="row['debit']"/>
-                            <td dir="ltr" t-esc="row['credit']"/>
-                            <td dir="ltr" t-esc="row['running']"/>
+                            <td class="text-end" dir="ltr" t-esc="row['debit']"/>
+                            <td class="text-end" dir="ltr" t-esc="row['credit']"/>
+                            <td class="text-end" dir="ltr" t-esc="row['running']"/>
                         </tr></tbody>
                     </table>
                 </div>

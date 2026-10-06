@@ -62,6 +62,12 @@ msgid "Currency:"
 msgstr "العملة:"
 
 #. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
+msgid "Tax Registration Number:"
+msgstr "الرقم الضريبي:"
+
+#. module: baseer_pos_tobacco_report
 #: model:ir.model.fields.selection,name:baseer_pos_tobacco_report.selection__baseer_pos_tobacco_report_wizard__period__custom
 msgid "Custom Range"
 msgstr "فترة مخصصة"
@@ -69,8 +75,8 @@ msgstr "فترة مخصصة"
 #. module: baseer_pos_tobacco_report
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Date"
-msgstr "التاريخ"
+msgid "Date and Time"
+msgstr "التاريخ والوقت"
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python
@@ -132,8 +138,8 @@ msgstr "افتح كشف رسوم التبغ من نموذج الفترة الخ�
 #. module: baseer_pos_tobacco_report
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Opening within selected period"
-msgstr "البداية داخل الفترة المحددة"
+msgid "Period Cumulative Total at Start"
+msgstr "بداية التراكمي للفترة"
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python
@@ -145,8 +151,8 @@ msgstr "تقرير رسوم التبغ"
 #. module: baseer_pos_tobacco_report
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "POS Order"
-msgstr "طلب نقطة البيع"
+msgid "POS Order Number"
+msgstr "رقم طلب نقطة البيع"
 
 #. module: baseer_pos_tobacco_report
 #: model:ir.actions.act_window,name:baseer_pos_tobacco_report.action_pos_tobacco_report_wizard
@@ -169,8 +175,8 @@ msgstr "الفترة"
 #. module: baseer_pos_tobacco_report
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Period Running Total"
-msgstr "التراكمي داخل الفترة"
+msgid "Cumulative Total"
+msgstr "الإجمالي التراكمي"
 
 #. module: baseer_pos_tobacco_report
 #: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form
@@ -180,8 +186,8 @@ msgstr "طباعة PDF"
 #. module: baseer_pos_tobacco_report
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Product / Quantity"
-msgstr "الصنف / الكمية"
+msgid "Product and Quantity"
+msgstr "الصنف والكمية"
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python
@@ -198,8 +204,8 @@ msgstr "طلبات يختلف إجماليها المعاد حسابه عن ال
 #. module: baseer_pos_tobacco_report
 #. odoo-python
 #: code:addons/baseer_pos_tobacco_report/models/tobacco_report.py:0
-msgid "Recalculated total for selected period"
-msgstr "الإجمالي المعاد حسابه للفترة المحددة"
+msgid "Recalculated Net Tobacco Fees for Period"
+msgstr "صافي رسوم التبغ المعاد حسابها للفترة"
 
 #. module: baseer_pos_tobacco_report
 #. odoo-python

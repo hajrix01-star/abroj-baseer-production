@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_baseer_reports" name="Baseer Reports"
-        parent="account.menu_finance_reports" sequence="-30"
+    <menuitem id="menu_baseer_reports" name="Baseer Reports" sequence="45"
         groups="account.group_account_readonly,account.group_account_invoice,account.group_account_user,account.group_account_manager"/>
+    <!-- An upgrade must clear the former Accounting/Reporting parent explicitly. -->
+    <record id="menu_baseer_reports" model="ir.ui.menu">
+        <field name="parent_id" eval="False"/>
+    </record>
 </odoo>

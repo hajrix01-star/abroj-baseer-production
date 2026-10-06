@@ -9,6 +9,7 @@ from lxml import etree
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools.safe_eval import safe_eval, time
 
 from ..models.tobacco_report import (
     BaseerPosTobaccoReport, TobaccoReportTooLarge, _format_money, _western,
@@ -109,6 +110,38 @@ class TestTobaccoReport(TransactionCase):
         action = wizard.action_print_monthly()
         self.assertEqual((wizard.date_from, wizard.date_to), (date(2028, 2, 1), date(2028, 2, 29)))
         self.assertEqual(action['type'], 'ir.actions.report')
+
+    def test_monthly_pdf_uses_selected_month_in_filename_and_a4_layout(self):
+        report = self.env.ref('baseer_pos_tobacco_report.action_report_pos_tobacco_fees')
+        paperformat = self.env.ref('baseer_pos_tobacco_report.paperformat_pos_tobacco_fees')
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
+            'company_id': user.company_id.id,
+            'month': '8', 'year': 2026,
+        })
+        wizard.action_print_monthly()
+
+        self.assertEqual(
+            safe_eval(report.print_report_name, {'object': wizard, 'time': time}),
+            'رسوم التبغ لـ 8-2026',
+        )
+        custom_wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
+            'company_id': user.company_id.id,
+            'month': '8', 'year': 2026,
+            'date_from': date(2026, 8, 3),
+            'date_to': date(2026, 8, 19),
+        })
+        self.assertEqual(
+            safe_eval(report.print_report_name, {'object': custom_wizard, 'time': time}),
+            'رسوم التبغ من 03-08-2026 إلى 19-08-2026',
+        )
+        self.assertEqual(paperformat.format, 'A4')
+        self.assertEqual(paperformat.orientation, 'Portrait')
+        self.assertEqual((paperformat.margin_top, paperformat.margin_right,
+                          paperformat.margin_bottom, paperformat.margin_left),
+                         (14, 10, 20, 10))
+        template = self.env.ref('baseer_pos_tobacco_report.report_pos_tobacco_fees')
+        self.assertIn('@page {size: A4 portrait;', template.arch_db)
 
     def test_monthly_preview_is_paged_without_losing_month_total(self):
         user = self.env.ref('base.user_admin')

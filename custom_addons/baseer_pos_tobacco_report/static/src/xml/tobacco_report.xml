@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_tobacco_report.HubReport">
+        <main class="o_baseer_tobacco_hub" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <div class="o_baseer_report_toolbar">
+                <div class="o_baseer_report_filters" role="group" t-att-aria-label="labels.title">
+                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>
+                        <select name="company_id" t-att-aria-label="labels.company" t-on-change="updateFilter">
+                            <option t-foreach="state.companies" t-as="company" t-key="company.id" t-att-value="company.id" t-att-selected="company.id === state.filters.company_id" t-esc="company.name"/>
+                        </select>
+                    </label>
+                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.period"/>
+                        <select name="period" t-att-aria-label="labels.period" t-on-change="updateFilter">
+                            <option value="month" t-att-selected="state.filters.period === 'month'" t-esc="labels.month"/>
+                            <option value="custom" t-att-selected="state.filters.period === 'custom'" t-esc="labels.custom"/>
+                        </select>
+                    </label>
+                    <t t-if="state.filters.period === 'month'">
+                        <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.month"/>
+                            <select name="month" t-att-aria-label="labels.month" t-on-change="updateFilter">
+                                <option t-foreach="monthOptions" t-as="month" t-key="month.value" t-att-value="month.value" t-att-selected="month.value === state.filters.month" t-esc="month.name"/>
+                            </select>
+                        </label>
+                        <label class="o_baseer_tobacco_year"><span class="visually-hidden" t-esc="labels.year"/>
+                            <input name="year" type="number" min="2000" max="2100" t-att-aria-label="labels.year" t-att-value="state.filters.year" t-on-change="updateFilter"/>
+                        </label>
+                    </t>
+                    <t t-else="">
+                        <label class="o_baseer_report_date_filter"><span t-esc="labels.from"/><input name="date_from" type="date" t-att-value="state.filters.date_from" t-on-change="updateFilter"/></label>
+                        <label class="o_baseer_report_date_filter"><span t-esc="labels.to"/><input name="date_to" type="date" t-att-value="state.filters.date_to" t-on-change="updateFilter"/></label>
+                    </t>
+                    <label class="o_baseer_tobacco_products"><input name="show_products" type="checkbox" t-att-checked="state.filters.show_products" t-on-change="updateFilter"/><span t-esc="labels.products"/></label>
+                    <button type="button" class="btn btn-secondary o_baseer_report_apply" t-att-disabled="state.loading" t-on-click="() => this.load(1)" t-esc="labels.apply"/>
+                </div>
+                <button type="button" class="btn btn-primary o_baseer_report_apply" t-att-disabled="state.loading || state.printing || !state.data || state.data.overflow" t-on-click="printPdf" t-esc="labels.pdf"/>
+            </div>
+            <div t-if="state.error" class="alert alert-danger o_baseer_tobacco_message" role="alert" t-esc="state.error"/>
+            <div t-if="state.loading" class="o_baseer_tobacco_message" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/> <t t-esc="labels.loading"/></div>
+            <p t-if="!state.loading &amp;&amp; !state.data &amp;&amp; !state.error" class="o_baseer_tobacco_message" t-esc="labels.applyHint"/>
+            <div t-if="!state.loading &amp;&amp; state.data &amp;&amp; state.data.overflow" class="o_baseer_tobacco_message alert alert-warning" role="alert" t-esc="labels.overflow"/>
+            <div t-if="!state.loading &amp;&amp; state.data &amp;&amp; !state.data.overflow" class="o_baseer_report_canvas">
+                <section class="o_baseer_report" t-att-aria-label="labels.title">
+                    <header class="o_baseer_report_head">
+                        <div><h1 class="o_baseer_report_title" t-esc="labels.title"/><p class="o_baseer_report_period" t-esc="state.data.company_name"/></div>
+                        <p class="o_baseer_report_period"><span t-esc="labels.from"/> <b dir="ltr" t-esc="state.data.from_text"/> <span t-esc="labels.to"/> <b dir="ltr" t-esc="state.data.to_text"/></p>
+                    </header>
+                    <div class="o_baseer_report_totals">
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.opening"/><strong t-att-class="amountClass(state.data.opening)" t-esc="state.data.opening"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.debit"/><strong t-att-class="amountClass(state.data.debit_total, true)" t-esc="state.data.debit_total"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.credit"/><strong t-att-class="amountClass(state.data.credit_total)" t-esc="state.data.credit_total"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.closing"/><strong t-att-class="amountClass(state.data.closing)" t-esc="state.data.closing"/></div>
+                    </div>
+                    <div class="o_baseer_report_meta"><span><t t-esc="labels.rows"/> <b dir="ltr" t-esc="state.data.first_row"/>–<b dir="ltr" t-esc="state.data.last_row"/> <t t-esc="labels.of"/> <b dir="ltr" t-esc="state.data.row_count"/></span><span><t t-esc="labels.currency"/> <b dir="ltr" t-esc="state.data.currency"/></span></div>
+                    <p t-if="!state.data.rows.length" class="o_baseer_report_empty" t-esc="labels.empty"/>
+                    <div t-if="state.data.rows.length" class="o_baseer_report_desktop">
+                        <table class="o_baseer_report_table"><thead><tr>
+                            <th t-esc="labels.date"/><th t-esc="labels.order"/><th t-if="state.data.show_products" t-esc="labels.product"/><th t-esc="labels.type"/><th class="is-number" t-esc="labels.debit"/><th class="is-number" t-esc="labels.credit"/><th class="is-number" t-esc="labels.running"/>
+                        </tr></thead><tbody><tr t-foreach="state.data.rows" t-as="row" t-key="row_index">
+                            <td dir="ltr" t-esc="row.date"/><td class="is-reference" dir="ltr" t-esc="row.order"/><td t-if="state.data.show_products" t-esc="row.products"/><td t-esc="row.type"/>
+                            <td class="is-number"><span t-att-class="amountClass(row.debit, true)" t-esc="row.debit"/></td><td class="is-number"><span t-att-class="amountClass(row.credit)" t-esc="row.credit"/></td><td class="is-number"><span t-att-class="amountClass(row.running)" t-esc="row.running"/></td>
+                        </tr></tbody></table>
+                    </div>
+                    <div t-if="state.data.rows.length" class="o_baseer_report_mobile">
+                        <article t-foreach="state.data.rows" t-as="row" t-key="row_index" class="o_baseer_report_entry">
+                            <div class="o_baseer_report_entry_head"><strong dir="ltr" t-esc="row.order"/><span dir="ltr" class="o_baseer_report_entry_details" t-esc="row.date"/></div>
+                            <div t-if="state.data.show_products" class="o_baseer_report_entry_details" t-esc="row.products"/><div class="o_baseer_report_entry_details" t-esc="row.type"/>
+                            <div class="o_baseer_report_entry_value"><span t-esc="labels.debit"/><b t-att-class="amountClass(row.debit, true)" t-esc="row.debit"/></div>
+                            <div class="o_baseer_report_entry_value"><span t-esc="labels.credit"/><b t-att-class="amountClass(row.credit)" t-esc="row.credit"/></div>
+                            <div class="o_baseer_report_entry_value"><span t-esc="labels.running"/><b t-att-class="amountClass(row.running)" t-esc="row.running"/></div>
+                        </article>
+                    </div>
+                    <nav t-if="state.data.pages > 1" class="o_baseer_tobacco_pager" t-att-aria-label="labels.page">
+                        <button type="button" class="btn btn-light" t-att-disabled="state.data.page &lt;= 1" t-on-click="() => this.load(state.data.page - 1)" t-esc="labels.previous"/>
+                        <span><t t-esc="labels.page"/> <b dir="ltr" t-esc="state.data.page"/> / <b dir="ltr" t-esc="state.data.pages"/></span>
+                        <button type="button" class="btn btn-light" t-att-disabled="state.data.page &gt;= state.data.pages" t-on-click="() => this.load(state.data.page + 1)" t-esc="labels.next"/>
+                    </nav>
+                    <div t-if="state.data.exception_count !== '0'" class="o_baseer_report_warning" role="note">
+                        <h2><t t-esc="labels.mismatch"/> <span class="o_baseer_report_warning_count" dir="ltr" t-esc="state.data.exception_count"/></h2>
+                        <div t-foreach="state.data.exceptions" t-as="exception" t-key="exception_index" class="o_baseer_report_warning_line"><b dir="ltr" t-esc="exception.order"/> · <t t-esc="labels.computed"/> <b dir="ltr" t-esc="exception.computed_total"/> · <t t-esc="labels.saved"/> <b dir="ltr" t-esc="exception.saved_total"/></div>
+                        <p t-if="state.data.exceptions.length &lt; state.data.exception_count" t-esc="labels.moreExceptions"/>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </t>
+</templates>

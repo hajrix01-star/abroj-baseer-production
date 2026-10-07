@@ -387,3 +387,88 @@ class TestSaudiVatReport(TransactionCase):
         })
         with self.assertRaises(AccessError):
             foreign.with_user(user).with_context(allowed_company_ids=[self.company.id])._check_report_access()
+
+    def _hub_options(self, **changes):
+        return {
+            'company_id': self.company.id, 'period_type': 'quarter',
+            'year': 2026, 'month': '9', 'quarter': '3',
+            'display_mode': 'simple', 'journal_ids': [],
+            **changes,
+        }
+
+    def test_hub_report_is_primitive_and_matches_existing_calculator(self):
+        model = self.env['baseer.tax.report.wizard']
+        options = model.get_hub_options()
+        self.assertIn(self.company.id, [company['id'] for company in options['companies']])
+        self.assertTrue(all(journal['company_id'] in self.env.companies.ids
+                            for journal in options['journals']))
+        report = model.get_hub_report(self._hub_options(display_mode='detailed'))
+        original = self.wizard._build_report()
+        self.assertEqual((report['date_from'], report['date_to']), ('2026-07-01', '2026-09-30'))
+        self.assertEqual(len(report['rows']), 16)
+        self.assertEqual(report['rows'][0]['base_text'], original['rows'][0]['base_text'])
+        self.assertEqual(report['rows'][-1]['tax_text'], original['rows'][-1]['tax_text'])
+        self.assertEqual(report['exception']['count'], original['exception']['count'])
+        self.assertEqual(report['exception']['other_count'], original['exception']['other_count'])
+        self.assertIsInstance(report['rows'][0]['components'], dict)
+        self.assertNotIn('domain', str(report))
+
+    def test_hub_options_are_validated_before_read_or_print(self):
+        model = self.env['baseer.tax.report.wizard']
+        bad_options = (
+            (self._hub_options(year=True), AccessError),
+            (self._hub_options(year=1999), AccessError),
+            (self._hub_options(period_type='year'), ValidationError),
+            (self._hub_options(month='13'), ValidationError),
+            (self._hub_options(quarter='5'), ValidationError),
+            (self._hub_options(journal_ids=['1']), ValidationError),
+            (self._hub_options(journal_ids=[1] * 101), ValidationError),
+            (self._hub_options(company_id=999999999), AccessError),
+            ({**self._hub_options(), 'unexpected': 1}, ValidationError),
+        )
+        for options, exception in bad_options:
+            with self.subTest(options=options), self.assertRaises(exception):
+                model.get_hub_report(options)
+        with self.assertRaises(ValidationError):
+            model.open_hub_cell(self._hub_options(), '99', 'tax')
+        with self.assertRaises(ValidationError):
+            model.open_hub_exception(self._hub_options(), 'invented')
+
+    def test_hub_pdf_and_drilldown_use_existing_actions(self):
+        model = self.env['baseer.tax.report.wizard']
+        options = self._hub_options()
+        direct = model.open_hub_cell(options, '1', 'tax')
+        self.assertEqual(direct['res_model'], 'account.move.line')
+        self.assertEqual(direct['context']['allowed_company_ids'], [self.company.id])
+        exception = model.open_hub_exception(options, 'vat')
+        self.assertEqual(exception['res_model'], 'account.move.line')
+        self.assertEqual(exception['context']['allowed_company_ids'], [self.company.id])
+        before = model.search_count([])
+        # Odoo redirects an admin without a configured external layout to its
+        # layout setup window. Bypass only that standard prompt for this action test.
+        pdf = model.with_context(discard_logo_check=True).print_hub_report(options)
+        self.assertEqual(pdf['type'], 'ir.actions.report')
+        self.assertEqual(pdf['report_name'], 'baseer_tax_report.report_tax')
+        self.assertEqual(model.search_count([]), before + 1)
+
+    def test_hub_rejects_unauthorized_company_and_journal(self):
+        model = self.env['baseer.tax.report.wizard']
+        other = self.env['res.company'].create({
+            'name': 'Other VAT hub company', 'country_id': self.env.ref('base.sa').id,
+            'account_fiscal_country_id': self.env.ref('base.sa').id,
+        })
+        journal = self.env['account.journal'].with_company(other).search([
+            ('company_id', '=', other.id),
+        ], limit=1)
+        if journal:
+            with self.assertRaises(AccessError):
+                model.get_hub_report(self._hub_options(journal_ids=[journal.id]))
+        groups = self.env.ref('base.group_user') | self.env.ref('account.group_account_readonly')
+        user = self.env['res.users'].create({
+            'name': 'VAT hub scoped reader', 'login': 'vat-hub-scoped-reader',
+            'group_ids': [Command.set(groups.ids)],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        restricted = model.with_user(user).with_context(allowed_company_ids=[self.company.id])
+        with self.assertRaises(AccessError):
+            restricted.get_hub_report(self._hub_options(company_id=other.id))

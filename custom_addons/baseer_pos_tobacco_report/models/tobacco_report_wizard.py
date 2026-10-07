@@ -55,6 +55,135 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
     preview_overflow = fields.Boolean(compute='_compute_preview')
     preview_html = fields.Html(compute='_compute_preview', sanitize=True, string='Report preview')
 
+    @api.model
+    def _hub_wizard_values(self, options):
+        """Validate the small, public report contract before making a virtual wizard."""
+        if not isinstance(options, dict) or set(options) != {
+            'company_id', 'period', 'month', 'year', 'date_from', 'date_to',
+            'show_products', 'page',
+        }:
+            raise ValidationError(_('Invalid report options.'))
+        company_id = options['company_id']
+        month = options['month']
+        year = options['year']
+        page = options['page']
+        period = options['period']
+        if (
+            type(company_id) is not int or company_id <= 0
+            or type(month) is not int or not 1 <= month <= 12
+            or type(year) is not int or not 2000 <= year <= 2100
+            or type(page) is not int or not 1 <= page <= 50
+            or type(options['show_products']) is not bool
+            or period not in ('month', 'custom')
+        ):
+            raise ValidationError(_('Invalid report options.'))
+        company = self.env['res.company'].browse(company_id).exists()
+        if not company or company not in self.env.companies:
+            raise AccessError(_('The selected company is not available to your user.'))
+        values = {
+            'company_id': company.id,
+            'period': period,
+            'month': str(month),
+            'year': year,
+            'show_products': options['show_products'],
+        }
+        if period == 'month':
+            start = date(year, month, 1)
+            values['date_from'] = start
+            values['date_to'] = date(year, month, monthrange(year, month)[1])
+        else:
+            dates = []
+            for key in ('date_from', 'date_to'):
+                raw = options[key]
+                if not isinstance(raw, str) or len(raw) != 10:
+                    raise ValidationError(_('Enter a valid From and To date.'))
+                try:
+                    parsed = date.fromisoformat(raw)
+                except ValueError as error:
+                    raise ValidationError(_('Enter a valid From and To date.')) from error
+                if parsed.isoformat() != raw or not 2000 <= parsed.year <= 2100:
+                    raise ValidationError(_('Enter a valid From and To date.'))
+                dates.append(parsed)
+            values['date_from'], values['date_to'] = dates
+        return company, values
+
+    @api.model
+    def get_hub_context(self):
+        now = datetime.now(RIYADH).date()
+        virtual = self.new({'company_id': self.env.company.id})
+        virtual.check_access('read')
+        virtual._check_report_access()
+        companies = []
+        for company in self.env.companies:
+            if company.currency_id.name != 'SAR' or company.currency_id.decimal_places != 2:
+                continue
+            scoped = self.with_company(company).new({'company_id': company.id})
+            try:
+                scoped._check_report_access()
+            except AccessError:
+                continue
+            companies.append({'id': company.id, 'name': company.name})
+        if not companies:
+            raise ValidationError(_('No SAR company is available for this report.'))
+        selected = next((item['id'] for item in companies if item['id'] == self.env.company.id), companies[0]['id'])
+        return {
+            'company_id': selected,
+            'companies': companies,
+            'month': now.month,
+            'year': now.year,
+            'date_from': now.replace(day=1).isoformat(),
+            'date_to': now.isoformat(),
+        }
+
+    @api.model
+    def get_hub_report(self, options):
+        company, values = self._hub_wizard_values(options)
+        page = options['page']
+        wizard = self.with_company(company).new(values)
+        report_model = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees'].with_company(company)
+        try:
+            data = report_model._build_report(wizard)
+        except TobaccoReportTooLarge:
+            return {'overflow': True, 'rows': [], 'exceptions': [], 'page': 1}
+        count = len(data['rows'])
+        pages = max(1, (count + PREVIEW_PAGE_SIZE - 1) // PREVIEW_PAGE_SIZE)
+        page = min(page, pages)
+        start = (page - 1) * PREVIEW_PAGE_SIZE
+        return {
+            'overflow': False,
+            'company_name': company.name,
+            'from_text': data['from_text'],
+            'to_text': data['to_text'],
+            'currency': data['currency'],
+            'show_products': data['show_products'],
+            'rows': [dict(row) for row in data['rows'][start:start + PREVIEW_PAGE_SIZE]],
+            'exceptions': [dict(row) for row in data['exceptions'][:PREVIEW_PAGE_SIZE]],
+            'opening': data['opening'],
+            'debit_total': data['debit_total'],
+            'credit_total': data['credit_total'],
+            'closing': data['closing'],
+            'exception_count': data['exception_count'],
+            'row_count': count,
+            'page': page,
+            'pages': pages,
+            'first_row': start + 1 if count else 0,
+            'last_row': min(start + PREVIEW_PAGE_SIZE, count),
+        }
+
+    @api.model
+    def action_hub_pdf(self, options):
+        company, values = self._hub_wizard_values(options)
+        virtual = self.with_company(company).new(values)
+        virtual.check_access('read')
+        virtual._check_report_access()
+        virtual._check_period()
+        # The report engine also enforces SAR and the 5,000-line safety limit.
+        self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees'].with_company(
+            company,
+        )._build_report(virtual)
+        wizard = self.with_company(company).create(values)
+        return wizard.action_print_report()
+
     def _month_range(self):
         self.ensure_one()
         if not self.month or not self.year or not 2000 <= self.year <= 2100:

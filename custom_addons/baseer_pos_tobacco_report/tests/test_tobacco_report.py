@@ -179,6 +179,61 @@ class TestTobaccoReport(TransactionCase):
             self.assertIn('ORDER-101', str(wizard.preview_html))
             self.assertNotIn('ORDER-001', str(wizard.preview_html))
 
+    def test_preview_shell_marks_zero_refund_and_exception(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': user.company_id.id, 'month': '9', 'year': 2026,
+        })
+        source = self.report.with_user(user)._build_report(wizard)
+        source.update({
+            'rows': [{
+                'date': '01-09-2026 00:00', 'order': 'REFUND-1',
+                'products': 'Shisha × -1', 'type': 'Refund',
+                'debit': '25.00', 'credit': '0.00', 'running': '-25.00',
+            }],
+            'order_count': '1', 'debit_total': '25.00',
+            'credit_total': '0.00', 'closing': '-25.00',
+            'exceptions': [{
+                'order': 'REFUND-1', 'computed_total': '-25.00',
+                'saved_total': '-24.00',
+            }],
+            'exception_count': '1',
+        })
+        with patch.object(BaseerPosTobaccoReport, '_build_report', return_value=source):
+            wizard._compute_preview()
+        preview = str(wizard.preview_html)
+        self.assertIn('o_baseer_report', preview)
+        self.assertIn('o_baseer_report_amount is-outflow', preview)
+        self.assertIn('o_baseer_report_amount is-negative', preview)
+        self.assertIn('o_baseer_report_amount is-zero', preview)
+        self.assertIn('o_baseer_report_warning', preview)
+        self.assertIn('REFUND-1', preview)
+
+    def test_preview_shows_total_exception_count_and_pdf_overflow_notice(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': user.company_id.id, 'month': '9', 'year': 2026,
+        })
+        source = self.report.with_user(user)._build_report(wizard)
+        source.update({
+            'exceptions': [{
+                'order': f'ORDER-{index:03d}',
+                'computed_total': '25.00', 'saved_total': '24.00',
+            } for index in range(101)],
+            'exception_count': '101',
+        })
+        with patch.object(BaseerPosTobaccoReport, '_build_report', return_value=source):
+            wizard._compute_preview()
+        preview = str(wizard.preview_html)
+        html = etree.HTML(preview)
+        self.assertEqual(
+            html.xpath('//span[@class="o_baseer_report_warning_count"]/text()'),
+            ['101'],
+        )
+        self.assertIn('ORDER-099', preview)
+        self.assertNotIn('ORDER-100', preview)
+        self.assertIn(source['labels']['more_differences'], preview)
+
     def test_oversized_month_shows_split_action(self):
         user = self.env.ref('base.user_admin')
         wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({

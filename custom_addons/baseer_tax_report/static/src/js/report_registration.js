@@ -1,13 +1,14 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { SaudiVatReport } from "./saudi_vat_report";
 
 registry.category("baseer_reports").add("vat", {
     key: "vat",
     label: { ar: "تقرير ضريبة القيمة المضافة", en: "Saudi VAT Report" },
     sequence: 10,
-    kind: "form",
-    actionXmlId: "baseer_tax_report.action_tax_report_wizard",
+    kind: "component",
+    component: SaudiVatReport,
     groups: [
         "account.group_account_readonly",
         "account.group_account_user",

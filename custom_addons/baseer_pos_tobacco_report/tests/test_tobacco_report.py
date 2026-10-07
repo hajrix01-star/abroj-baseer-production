@@ -49,6 +49,131 @@ class TestTobaccoReport(TransactionCase):
         self.env.company.currency_id = self.env.ref('base.SAR')
         self.report = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees']
 
+    def _hub_options(self, **changes):
+        options = {
+            'company_id': self.env.company.id,
+            'period': 'month',
+            'month': 9,
+            'year': 2026,
+            'date_from': '2026-09-01',
+            'date_to': '2026-09-30',
+            'show_products': False,
+            'page': 1,
+        }
+        options.update(changes)
+        return options
+
+    def test_hub_contract_uses_virtual_wizard_and_bounded_rows(self):
+        user = self.env.ref('base.user_admin')
+        model = self.env['baseer.pos.tobacco.report.wizard'].with_user(user)
+        source = self.report.with_user(user)._build_report(model.new({
+            'company_id': user.company_id.id, 'date_from': date(2026, 9, 1),
+            'date_to': date(2026, 9, 30),
+        }))
+        source.update({
+            'rows': [{
+                'date': '01-09-2026 00:00', 'order': f'ORDER-{index:03d}',
+                'products': 'Shisha × 1', 'type': 'Sale', 'debit': '0.00',
+                'credit': '1.00', 'running': f'{index}.00',
+            } for index in range(1, 102)],
+            'closing': '101.00',
+            'exceptions': [{
+                'date': '01-09-2026 00:00', 'order': f'MISMATCH-{index:03d}',
+                'computed_total': '1.00', 'saved_total': '0.99',
+            } for index in range(101)],
+            'exception_count': '101',
+        })
+        with patch.object(BaseerPosTobaccoReport, '_build_report', return_value=source) as build:
+            first = model.get_hub_report(self._hub_options())
+            second = model.get_hub_report(self._hub_options(page=2))
+        self.assertFalse(build.call_args_list[0].args[0].id)
+        self.assertEqual((first['row_count'], first['pages'], len(first['rows'])), (101, 2, 100))
+        self.assertEqual((second['page'], len(second['rows'])), (2, 1))
+        self.assertEqual(first['rows'][0]['order'], 'ORDER-001')
+        self.assertEqual(second['rows'][0]['order'], 'ORDER-101')
+        self.assertEqual(len(first['exceptions']), 100)
+        self.assertEqual(first['closing'], '101.00')
+        self.assertNotIn('wizard', first)
+        self.assertNotIn('company', first)
+
+    def test_hub_contract_rejects_invalid_options_and_company(self):
+        model = self.env['baseer.pos.tobacco.report.wizard']
+        for options in (
+            self._hub_options(extra='unsafe'),
+            self._hub_options(page=0),
+            self._hub_options(page=51),
+            self._hub_options(page=True),
+            self._hub_options(year=1999),
+            self._hub_options(month=13),
+            self._hub_options(show_products='yes'),
+            self._hub_options(period='year'),
+            self._hub_options(period='custom', date_from='2026-09-40'),
+            self._hub_options(period='custom', date_to='2027-10-01'),
+        ):
+            with self.subTest(options=options), self.assertRaises(ValidationError):
+                model.get_hub_report(options)
+        with self.assertRaises(AccessError):
+            model.get_hub_report(self._hub_options(company_id=999999999))
+
+    def test_hub_pdf_uses_existing_report_action_and_selected_dates(self):
+        user = self.env.ref('base.user_admin')
+        model = self.env['baseer.pos.tobacco.report.wizard'].with_user(user)
+        action = model.action_hub_pdf(self._hub_options(
+            period='custom', date_from='2026-08-03', date_to='2026-08-19',
+            show_products=True,
+        ))
+        report_action = action.get('context', {}).get('report_action', action)
+        self.assertEqual(report_action['type'], 'ir.actions.report')
+        wizard = model.browse(report_action['res_ids'][0]) if report_action.get('res_ids') else model.search([], order='id desc', limit=1)
+        self.assertEqual((wizard.date_from, wizard.date_to, wizard.show_products),
+                         (date(2026, 8, 3), date(2026, 8, 19), True))
+
+    def test_hub_pdf_rejects_before_creating_transient(self):
+        model = self.env['baseer.pos.tobacco.report.wizard'].with_user(
+            self.env.ref('base.user_admin'),
+        )
+        before = model.search_count([])
+        with self.assertRaises(ValidationError):
+            model.action_hub_pdf(self._hub_options(
+                period='custom', date_from='2026-01-01', date_to='2027-01-02',
+            ))
+        self.assertEqual(model.search_count([]), before)
+        with patch.object(BaseerPosTobaccoReport, '_build_report',
+                          side_effect=TobaccoReportTooLarge('too many')):
+            with self.assertRaises(TobaccoReportTooLarge):
+                model.action_hub_pdf(self._hub_options())
+        self.assertEqual(model.search_count([]), before)
+
+    def test_hub_context_lists_only_available_sar_companies(self):
+        usd_company = self.env['res.company'].create({
+            'name': 'Tobacco report USD company',
+            'currency_id': self.env.ref('base.USD').id,
+        })
+        user = self.env.ref('base.user_admin')
+        # A context flag alone does not authorize a company in Odoo.
+        unauthorized = self.env['baseer.pos.tobacco.report.wizard'].with_user(
+            user,
+        ).with_context(allowed_company_ids=[self.env.company.id, usd_company.id])
+        with self.assertRaises(AccessError):
+            unauthorized.get_hub_context()
+        user.write({'company_ids': [Command.link(usd_company.id)]})
+        model = self.env['baseer.pos.tobacco.report.wizard'].with_user(
+            user,
+        ).with_context(allowed_company_ids=[self.env.company.id, usd_company.id])
+        context = model.get_hub_context()
+        self.assertEqual(context['company_id'], self.env.company.id)
+        self.assertIn(self.env.company.id, [item['id'] for item in context['companies']])
+        self.assertNotIn(usd_company.id, [item['id'] for item in context['companies']])
+
+    def test_hub_overflow_keeps_existing_5000_limit(self):
+        model = self.env['baseer.pos.tobacco.report.wizard'].with_user(
+            self.env.ref('base.user_admin'),
+        )
+        with patch.object(BaseerPosTobaccoReport, '_build_report',
+                          side_effect=TobaccoReportTooLarge('too many')):
+            result = model.get_hub_report(self._hub_options())
+        self.assertEqual(result, {'overflow': True, 'rows': [], 'exceptions': [], 'page': 1})
+
     def test_print_button_is_visible_in_full_page_wizard(self):
         action = self.env.ref('baseer_pos_tobacco_report.action_pos_tobacco_report_wizard')
         view = self.env.ref('baseer_pos_tobacco_report.view_pos_tobacco_report_wizard_form')
@@ -521,6 +646,12 @@ class TestTobaccoReport(TransactionCase):
         })
         with self.assertRaises(AccessError):
             monthly.preview_html
+        with self.assertRaises(AccessError):
+            self.env['baseer.pos.tobacco.report.wizard'].with_user(user).get_hub_context()
+        with self.assertRaises(AccessError):
+            self.env['baseer.pos.tobacco.report.wizard'].with_user(user).get_hub_report(
+                self._hub_options(),
+            )
 
     def test_report_requires_allowed_company_even_with_both_groups(self):
         other_company = self.env['res.company'].create({

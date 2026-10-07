@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_tax_report.SaudiVatReport">
+        <div class="o_baseer_vat_report" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <div class="o_baseer_report_toolbar">
+                <div class="o_baseer_report_filters" role="group" t-att-aria-label="labels.title">
+                    <label class="o_baseer_report_select_filter">
+                        <span class="visually-hidden" t-esc="labels.company"/>
+                        <select t-att-aria-label="labels.company" t-on-change="onCompanyChange">
+                            <option t-foreach="state.companies" t-as="company" t-key="company.id"
+                                t-att-value="company.id" t-att-selected="company.id === state.companyId"
+                                t-esc="company.name"/>
+                        </select>
+                    </label>
+                    <label class="o_baseer_report_select_filter">
+                        <span class="visually-hidden" t-esc="labels.period"/>
+                        <select t-att-aria-label="labels.period" t-on-change="onPeriodChange">
+                            <option value="quarter" t-att-selected="state.periodType === 'quarter'" t-esc="labels.quarter"/>
+                            <option value="month" t-att-selected="state.periodType === 'month'" t-esc="labels.month"/>
+                        </select>
+                    </label>
+                    <label class="o_baseer_vat_year">
+                        <span class="visually-hidden" t-esc="labels.year"/>
+                        <input type="number" min="2000" max="2100" step="1"
+                            t-att-aria-label="labels.year" t-att-value="state.year"
+                            t-on-change="onYearChange"/>
+                    </label>
+                    <label t-if="state.periodType === 'quarter'" class="o_baseer_report_select_filter">
+                        <span class="visually-hidden" t-esc="labels.quarterValue"/>
+                        <select t-att-aria-label="labels.quarterValue" t-on-change="onQuarterChange">
+                            <option t-foreach="quarterNumbers" t-as="number" t-key="number"
+                                t-att-value="number" t-att-selected="number === state.quarter">
+                                <t t-esc="labels.quarterValue"/> <t t-esc="number"/>
+                            </option>
+                        </select>
+                    </label>
+                    <label t-else="" class="o_baseer_report_select_filter">
+                        <span class="visually-hidden" t-esc="labels.monthValue"/>
+                        <select t-att-aria-label="labels.monthValue" t-on-change="onMonthChange">
+                            <option t-foreach="months" t-as="month" t-key="month.value"
+                                t-att-value="month.value" t-att-selected="month.value === state.month"
+                                t-esc="month.label"/>
+                        </select>
+                    </label>
+                    <label class="o_baseer_report_select_filter">
+                        <span class="visually-hidden" t-esc="labels.display"/>
+                        <select t-att-aria-label="labels.display" t-on-change="onDisplayChange">
+                            <option value="simple" t-att-selected="state.displayMode === 'simple'" t-esc="labels.simple"/>
+                            <option value="detailed" t-att-selected="state.displayMode === 'detailed'" t-esc="labels.detailed"/>
+                        </select>
+                    </label>
+                    <details class="o_baseer_vat_journals">
+                        <summary t-att-aria-label="labels.journals" t-esc="journalLabel"/>
+                        <div class="o_baseer_vat_journal_list">
+                            <label t-foreach="companyJournals" t-as="journal" t-key="journal.id">
+                                <input type="checkbox" t-att-value="journal.id"
+                                    t-att-checked="state.journalIds.includes(journal.id)"
+                                    t-on-change="onJournalChange"/>
+                                <span t-esc="journal.name"/>
+                            </label>
+                        </div>
+                    </details>
+                    <button class="btn btn-primary o_baseer_report_apply" type="button"
+                        t-att-disabled="state.loading || !state.companyId" t-on-click="apply"
+                        t-esc="labels.apply"/>
+                    <button class="btn btn-secondary o_baseer_report_apply" type="button"
+                        t-att-disabled="!state.data || state.printing" t-on-click="printPdf"
+                        t-esc="labels.pdf"/>
+                </div>
+            </div>
+            <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
+            <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
+            <div t-if="!state.loading &amp;&amp; !state.companyId &amp;&amp; !state.error"
+                class="o_baseer_reports_hub_status" t-esc="labels.noCompany"/>
+            <div t-if="state.data" class="o_baseer_report_canvas">
+                <section class="o_baseer_report o_baseer_vat_paper" t-att-aria-label="labels.title">
+                    <header class="o_baseer_report_head">
+                        <div>
+                            <h2 class="o_baseer_report_title" t-esc="labels.title"/>
+                            <p class="o_baseer_report_period">
+                                <span t-esc="state.data.company"/> ·
+                                <span dir="ltr" t-esc="state.data.date_from"/> —
+                                <span dir="ltr" t-esc="state.data.date_to"/>
+                            </p>
+                        </div>
+                        <span class="o_baseer_report_period" t-esc="state.data.currency"/>
+                    </header>
+                    <div t-if="state.data.journal_names" class="o_baseer_report_warning" role="status">
+                        <span t-esc="labels.selectedWarning"/> <span t-esc="state.data.journal_names"/>
+                    </div>
+                    <table class="o_baseer_vat_table">
+                        <thead><tr>
+                            <th scope="col" t-esc="labels.item"/>
+                            <th scope="col" t-esc="labels.base"/>
+                            <th scope="col" t-esc="labels.tax"/>
+                        </tr></thead>
+                        <tbody>
+                            <t t-foreach="state.data.rows" t-as="row" t-key="row.number">
+                                <tr t-att-class="isTotal(row.number) ? 'o_baseer_vat_total' : ''">
+                                    <th scope="row" class="o_baseer_vat_name">
+                                        <span t-esc="row.number"/>. <span t-esc="row.name"/>
+                                    </th>
+                                    <t t-foreach="['base', 'tax']" t-as="column" t-key="column">
+                                        <td class="o_baseer_vat_value">
+                                            <span class="o_baseer_vat_column_label" t-esc="labels[column]"/>
+                                            <button t-if="row.direct[column]" type="button"
+                                                class="o_baseer_vat_cell_button"
+                                                t-att-class="amountClass(row[column + '_state'])"
+                                                t-att-aria-label="labels.source + ' ' + row.number + ' ' + labels[column]"
+                                                t-on-click="() => this.openCell(row.number, column)"
+                                                t-esc="row[column + '_text']"/>
+                                            <button t-elif="row.components[column].length" type="button"
+                                                class="o_baseer_vat_cell_button"
+                                                t-att-class="amountClass(row[column + '_state'])"
+                                                t-att-aria-expanded="isExpanded(row.number, column)"
+                                                t-att-aria-label="(isExpanded(row.number, column) ? labels.collapse : labels.expand) + ' ' + row.number + ' ' + labels[column]"
+                                                t-on-click="() => this.toggleComponents(row.number, column)"
+                                                t-esc="row[column + '_text']"/>
+                                            <span t-else="" class="o_baseer_report_amount"
+                                                t-att-class="amountClass(row[column + '_state'])"
+                                                t-esc="row[column + '_text']"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <t t-foreach="['base', 'tax']" t-as="column" t-key="column">
+                                    <tr t-if="isExpanded(row.number, column)" class="o_baseer_vat_components">
+                                        <td colspan="3">
+                                            <span class="o_baseer_vat_component_heading" t-esc="labels[column]"/>
+                                            <div t-foreach="row.components[column]" t-as="part" t-key="part.number + ':' + part.column"
+                                                class="o_baseer_vat_component">
+                                                <span><span t-esc="part.number"/>. <span t-esc="part.name"/></span>
+                                                <button type="button" class="o_baseer_vat_cell_button"
+                                                    t-att-class="part.state === 'negative' ? 'is-negative' : ''"
+                                                    t-att-aria-label="labels.source + ' ' + part.number + ' ' + labels[part.column]"
+                                                    t-on-click="() => this.openCell(part.number, part.column)"
+                                                    t-esc="part.amount_text"/>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <tr t-if="!state.data.rows.length"><td colspan="3" class="o_baseer_report_empty" t-esc="labels.empty"/></tr>
+                        </tbody>
+                    </table>
+                    <div t-if="state.data.exception.count" class="o_baseer_report_warning" role="status">
+                        <strong t-esc="labels.untaggedVat"/>
+                        <span class="o_baseer_report_warning_count" t-esc="state.data.exception.count"/>
+                        <span t-esc="labels.entries"/> · <span t-esc="labels.signedBalance"/>
+                        <span class="o_baseer_report_amount" dir="ltr"
+                            t-att-class="amountClass(state.data.exception.amount_state)"
+                            t-esc="state.data.exception.amount_text"/>
+                        <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.review"
+                            t-att-aria-label="labels.review">?</button>
+                        <button type="button" class="o_baseer_vat_warning_link" t-on-click="() => this.openException('vat')"
+                            t-esc="labels.viewEntries"/>
+                    </div>
+                    <div t-if="state.data.exception.other_count" class="o_baseer_report_warning" role="status">
+                        <strong t-esc="labels.untaggedOther"/>
+                        <span class="o_baseer_report_warning_count" t-esc="state.data.exception.other_count"/>
+                        <span t-esc="labels.entries"/> · <span t-esc="labels.signedBalance"/>
+                        <span class="o_baseer_report_amount" dir="ltr"
+                            t-att-class="amountClass(state.data.exception.other_amount_state)"
+                            t-esc="state.data.exception.other_amount_text"/>
+                        <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.review"
+                            t-att-aria-label="labels.review">?</button>
+                        <button type="button" class="o_baseer_vat_warning_link" t-on-click="() => this.openException('other')"
+                            t-esc="labels.viewEntries"/>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,30 @@
+.o_baseer_tobacco_hub {
+    .o_baseer_tobacco_year input {
+        width: 5.5rem;
+        min-height: 2rem;
+        padding: 0.3rem 0.55rem;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: #e9ebee;
+        color: #24303d;
+        font-size: 0.8rem;
+        font-weight: 600;
+        direction: ltr;
+    }
+    .o_baseer_tobacco_products { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.55rem; font-size: 0.8rem; }
+    .o_baseer_tobacco_message { max-width: 900px; margin: 1.5rem auto; padding: 0.8rem 1rem; text-align: center; }
+    .o_baseer_tobacco_pager { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; font-size: 0.8rem; }
+    .o_baseer_report_table { min-width: 0; }
+    .o_baseer_report_table th, .o_baseer_report_table td { overflow-wrap: anywhere; }
+    .o_baseer_report_warning h2 { font-size: 0.86rem; font-weight: 700; }
+    @media (max-width: 900px) {
+        .o_baseer_report_desktop { display: none; }
+        .o_baseer_report_mobile { display: block; }
+    }
+    @media (max-width: 560px) {
+        .o_baseer_report_toolbar { align-items: stretch; }
+        .o_baseer_report_filters { width: 100%; }
+        .o_baseer_tobacco_products { flex: 1 1 auto; }
+        .o_baseer_tobacco_message { margin-inline: 0.5rem; }
+    }
+}

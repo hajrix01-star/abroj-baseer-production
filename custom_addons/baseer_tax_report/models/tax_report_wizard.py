@@ -272,6 +272,125 @@ class BaseerTaxReportWizard(models.TransientModel):
                 'baseer_tax_report.preview_tax_report', {'report_data': data},
             )
 
+    @api.model
+    def get_hub_options(self):
+        """Only expose choices that the current accounting user can actually use."""
+        if not any(self.env.user.has_group(group) for group in (
+            'account.group_account_readonly', 'account.group_account_user',
+            'account.group_account_manager',
+        )):
+            raise AccessError(_('Accounting access is required.'))
+        companies = self.env.companies.filtered(
+            lambda company: company.account_fiscal_country_id.code == 'SA')
+        journals = self.env['account.journal'].search([
+            ('company_id', 'in', companies.ids),
+        ], order='name, id') if companies else self.env['account.journal']
+        year, quarter = _previous_quarter(fields.Date.context_today(self))
+        return {
+            'companies': [{'id': company.id, 'name': company.name} for company in companies],
+            'journals': [{'id': journal.id, 'name': journal.display_name,
+                          'company_id': journal.company_id.id} for journal in journals],
+            'default_company_id': self.env.company.id if self.env.company in companies else (
+                companies[0].id if companies else False),
+            'default_year': year, 'default_quarter': quarter,
+        }
+
+    @api.model
+    def _hub_wizard(self, options):
+        """Validate primitive RPC input before reading any financial data."""
+        keys = {'company_id', 'period_type', 'year', 'month', 'quarter',
+                'display_mode', 'journal_ids'}
+        if not isinstance(options, dict) or set(options) != keys:
+            raise ValidationError(_('Invalid VAT report options.'))
+        company_id, year = options['company_id'], options['year']
+        if (type(company_id) is not int or company_id not in self.env.companies.ids
+                or type(year) is not int or not 2000 <= year <= 2100):
+            raise AccessError(_('The selected company or period is not allowed.'))
+        if (options['period_type'] not in ('month', 'quarter')
+                or options['display_mode'] not in ('simple', 'detailed')
+                or type(options['month']) is not str or options['month'] not in dict(MONTHS)
+                or type(options['quarter']) is not str or options['quarter'] not in dict(QUARTERS)):
+            raise ValidationError(_('Invalid VAT report period or display.'))
+        journal_ids = options['journal_ids']
+        if (not isinstance(journal_ids, list) or len(journal_ids) > 100
+                or any(type(journal_id) is not int or journal_id <= 0 for journal_id in journal_ids)
+                or len(set(journal_ids)) != len(journal_ids)):
+            raise ValidationError(_('Invalid VAT report journals.'))
+        journals = self.env['account.journal'].search([
+            ('id', 'in', journal_ids), ('company_id', '=', company_id),
+        ]) if journal_ids else self.env['account.journal']
+        if set(journals.ids) != set(journal_ids):
+            raise AccessError(_('The selected journals must belong to the report company.'))
+        wizard = self.new({
+            'company_id': company_id, 'period_type': options['period_type'],
+            'year': year, 'month': options['month'], 'quarter': options['quarter'],
+            'display_mode': options['display_mode'], 'journal_ids': [(6, 0, journal_ids)],
+        })
+        wizard._check_report_access()
+        wizard._period_dates()
+        return wizard
+
+    @api.model
+    def get_hub_report(self, options):
+        data = self._hub_wizard(options)._build_report()
+        return {
+            'company': data['company'].name,
+            'currency': data['currency'].name,
+            'date_from': data['date_from'].isoformat(),
+            'date_to': data['date_to'].isoformat(),
+            'journal_names': data['journal_names'],
+            'rows': [{
+                'number': row['number'], 'name': row['name'].split('. ', 1)[-1],
+                'base_text': row['base_text'], 'tax_text': row['tax_text'],
+                'base_state': self._hub_amount_state(row['base']),
+                'tax_state': self._hub_amount_state(row['tax']),
+                'direct': {column: bool(row['direct'].get(column)) for column in ('base', 'tax')},
+                'components': {column: [
+                    {'number': item['number'], 'column': item['column'],
+                     'name': item['name'].split('. ', 1)[-1], 'amount_text': item['amount_text'],
+                     'state': 'negative' if item['amount_text'].startswith('-') else 'normal'}
+                    for item in row['components'].get(column, [])
+                ] for column in ('base', 'tax')},
+            } for row in data['visible_rows']],
+            'exception': {
+                'count': data['exception']['count'],
+                'amount_text': data['exception_amount_text'],
+                'amount_state': self._hub_amount_state(data['exception']['amount']),
+                'other_count': data['exception']['other_count'],
+                'other_amount_text': data['other_tax_amount_text'],
+                'other_amount_state': self._hub_amount_state(data['exception']['other_amount']),
+            },
+        }
+
+    @api.model
+    def _hub_amount_state(self, amount):
+        return 'empty' if amount is None else 'zero' if not amount else 'negative' if amount < 0 else 'normal'
+
+    @api.model
+    def print_hub_report(self, options):
+        wizard = self._hub_wizard(options)
+        # Reports require a persisted TransientModel record, unlike the read-only preview.
+        saved = self.create({
+            'company_id': wizard.company_id.id, 'period_type': wizard.period_type,
+            'year': wizard.year, 'month': wizard.month, 'quarter': wizard.quarter,
+            'display_mode': wizard.display_mode,
+            'journal_ids': [(6, 0, wizard.journal_ids.ids)],
+        })
+        return saved.action_print()
+
+    @api.model
+    def open_hub_cell(self, options, box, component):
+        if type(box) is not str or type(component) is not str:
+            raise ValidationError(_('Select a valid VAT box and column.'))
+        return self._hub_wizard(options).action_open_cell(box, component)
+
+    @api.model
+    def open_hub_exception(self, options, kind):
+        if kind not in ('vat', 'other') or type(kind) is not str:
+            raise ValidationError(_('Select a valid exception type.'))
+        wizard = self._hub_wizard(options)
+        return wizard.action_view_untagged() if kind == 'vat' else wizard.action_view_other_untagged()
+
     def action_print(self):
         self._check_report_access()
         self._build_report()

@@ -19,20 +19,15 @@
                 </div>
                 <span class="o_baseer_reports_hub_brand" t-esc="labels.title"/>
             </header>
-            <div t-if="!state.ready || state.loading" class="o_baseer_reports_hub_status" role="status">
+            <div t-if="!state.ready" class="o_baseer_reports_hub_status" role="status">
                 <i class="fa fa-spinner fa-spin" aria-hidden="true"/> <span t-esc="labels.loading"/>
             </div>
             <div t-if="state.ready &amp;&amp; !options.length &amp;&amp; !state.error"
                 class="o_baseer_reports_hub_status" t-esc="labels.empty"/>
             <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
-            <div t-if="state.ready &amp;&amp; !state.loading &amp;&amp; !state.error &amp;&amp; selectedReport"
+            <div t-if="state.ready &amp;&amp; !state.error &amp;&amp; selectedReport"
                 class="o_baseer_reports_hub_body">
-                <t t-if="selectedReport.kind === 'component'">
-                    <t t-component="selectedComponent" t-key="state.selectedKey" embedded="true"/>
-                </t>
-                <t t-elif="viewProps">
-                    <View t-key="state.selectedKey" t-props="viewProps"/>
-                </t>
+                <t t-component="selectedComponent" t-key="state.selectedKey" embedded="true"/>
             </div>
         </div>
     </t>

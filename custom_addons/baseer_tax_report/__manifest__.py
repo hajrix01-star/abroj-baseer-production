@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Saudi VAT Report',
     'summary': 'Monthly and quarterly Saudi VAT grid from posted accounting entries',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.6',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',
@@ -14,9 +14,15 @@
     'assets': {
         'web.assets_backend': [
             'baseer_tax_report/static/src/js/report_registration.js',
+            'baseer_tax_report/static/src/js/saudi_vat_report.js',
             'baseer_tax_report/static/src/js/tax_preview_field.js',
             'baseer_tax_report/static/src/xml/tax_preview_field.xml',
+            'baseer_tax_report/static/src/xml/saudi_vat_report.xml',
             'baseer_tax_report/static/src/scss/tax_report.scss',
+            'baseer_tax_report/static/src/scss/saudi_vat_report.scss',
+        ],
+        'web.assets_unit_tests': [
+            'baseer_tax_report/static/tests/saudi_vat_report.test.js',
         ],
     },
     'installable': True,

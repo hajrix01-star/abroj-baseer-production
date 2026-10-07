@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Tobacco Fee Register',
     'summary': 'Operational tobacco fee register from completed POS sales',
-    'version': '19.0.1.4.5',
+    'version': '19.0.1.4.6',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',
@@ -13,7 +13,13 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'baseer_pos_tobacco_report/static/src/js/tobacco_report.js',
             'baseer_pos_tobacco_report/static/src/js/report_registration.js',
+            'baseer_pos_tobacco_report/static/src/xml/tobacco_report.xml',
+            'baseer_pos_tobacco_report/static/src/scss/tobacco_report.scss',
+        ],
+        'web.assets_unit_tests': [
+            'baseer_pos_tobacco_report/static/tests/tobacco_report.test.js',
         ],
     },
     'application': False,

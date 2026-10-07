@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Also protects the generic /web/content route, not just the custom route. -->
+    <record id="rule_vat_xlsx_owner_company" model="ir.rule">
+        <field name="name">VAT XLSX: owner and active company</field>
+        <field name="model_id" ref="model_baseer_tax_report_xlsx"/>
+        <field name="domain_force">[('create_uid', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+</odoo>

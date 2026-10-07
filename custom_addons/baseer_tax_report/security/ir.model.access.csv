@@ -2,3 +2,6 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_baseer_tax_wizard_readonly,baseer.tax.report.wizard.readonly,model_baseer_tax_report_wizard,account.group_account_readonly,1,1,1,1
 access_baseer_tax_wizard_user,baseer.tax.report.wizard.user,model_baseer_tax_report_wizard,account.group_account_user,1,1,1,1
 access_baseer_tax_wizard_manager,baseer.tax.report.wizard.manager,model_baseer_tax_report_wizard,account.group_account_manager,1,1,1,1
+access_baseer_tax_xlsx_readonly,baseer.tax.report.xlsx.readonly,model_baseer_tax_report_xlsx,account.group_account_readonly,1,0,1,0
+access_baseer_tax_xlsx_user,baseer.tax.report.xlsx.user,model_baseer_tax_report_xlsx,account.group_account_user,1,0,1,0
+access_baseer_tax_xlsx_manager,baseer.tax.report.xlsx.manager,model_baseer_tax_report_xlsx,account.group_account_manager,1,0,1,0

@@ -24,13 +24,13 @@
     <template id="tax_table">
         <table class="btr-table table table-sm table-striped align-middle">
             <thead><tr>
-                <th style="width: 65%">البند / VAT return box</th>
-                <th style="width: 17.5%" class="btr-money text-end">الأساس / Amount</th>
-                <th style="width: 17.5%" class="btr-money text-end">الضريبة / VAT</th>
+                <th style="width: 62%">البند / VAT return box</th>
+                <th style="width: 19%" class="btr-money text-end">الأساس / Amount</th>
+                <th style="width: 19%" class="btr-money text-end">الضريبة / VAT</th>
             </tr></thead>
             <tbody>
                 <t t-foreach="report_data['visible_rows']" t-as="row">
-                <tr t-att-class="('btr-total fw-bold ' if row['number'] in ('6', '12', '13', '16') else '') + ('btr-row' if report_data['interactive'] else '')"
+                <tr t-att-class="('btr-total fw-bold ' if row['number'] in ('6', '12', '13', '16') else '') + ('btr-section-start ' if row['number'] == '7' else '') + ('btr-row' if report_data['interactive'] else '')"
                     t-att-data-id="row['number'] if report_data['interactive'] else None">
                     <td>
                         <a t-if="report_data['interactive']" href="#" class="btr-row-link text-decoration-underline"
@@ -167,33 +167,44 @@
     <template id="report_tax">
         <t t-call="web.basic_layout">
             <t t-set="company" t-value="report_data['company']"/>
-            <div class="page" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+            <div class="page btr-pdf" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
                 <style>
                     @page {size: A4 portrait; margin: 14mm 10mm 16mm 10mm;}
-                    .page {width: 190mm; max-width: 190mm; margin: 0 auto;}
-                    .btr {font-family: DejaVu Sans, Arial, sans-serif; color: #26343d; font-size: 10px;}
-                    .btr-header {text-align: center; margin-bottom: 12px;}
-                    .btr-header img {display: block; max-height: 60px; max-width: 160px; margin: 0 auto 4px;}
-                    .btr h2 {font-size: 17px; margin: 5px 0;}
-                    .btr-table {width: 100%; border-collapse: collapse; table-layout: fixed;}
-                    .btr-table thead {display: table-header-group;}
-                    .btr-table tr {page-break-inside: avoid;}
-                    .btr-table th, .btr-table td {border: 1px solid #d9dfe2; padding: 5px; vertical-align: middle;}
-                    .btr-table th {background: #edf3f2;}
-                    .btr-total {font-weight: bold; background: #f2f5f4;}
-                    .btr-money {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap;}
-                    .btr-number {direction: ltr; unicode-bidi: isolate;}
-                    .btr-warning {margin-top: 12px; padding: 7px; border: 1px solid #d99053; color: #8b4a22;}
+                    .btr-pdf {width: 190mm; max-width: 190mm; margin: 0 auto;}
+                    .btr-pdf .btr {font-family: DejaVu Sans, Arial, sans-serif; color: #243248; font-size: 9.5px;}
+                    .btr-pdf .btr-header {display: table; width: 100%; margin: 0 0 13px; padding: 0 0 9px; border-bottom: 1px solid #cbd3d9;}
+                    .btr-pdf .btr-heading, .btr-pdf .btr-period {display: table-cell; vertical-align: bottom;}
+                    .btr-pdf .btr-heading {width: 70%;}
+                    .btr-pdf .btr-period {width: 30%; color: #657486; font-size: 9px; text-align: end;}
+                    .btr-pdf .btr-company {margin: 0 0 3px; color: #657486; font-size: 9px;}
+                    .btr-pdf h2 {margin: 0 0 3px; font-size: 15px; font-weight: 700; line-height: 1.4;}
+                    .btr-pdf .btr-subtitle {color: #657486; font-size: 9px;}
+                    .btr-pdf .btr-currency {margin: 0 0 5px; color: #657486; font-size: 9px;}
+                    .btr-pdf .btr-table {width: 100%; border-collapse: collapse; table-layout: fixed; --bs-table-striped-bg: transparent;}
+                    .btr-pdf .btr-table thead {display: table-header-group;}
+                    .btr-pdf .btr-table tr {page-break-inside: avoid;}
+                    .btr-pdf .btr-table th, .btr-pdf .btr-table td {padding: 6px 5px; border: 0; border-bottom: 1px solid #e1e5e9; vertical-align: middle; line-height: 1.5;}
+                    .btr-pdf .btr-table th {background: #fff; color: #35445a; border-bottom: 1px solid #bdc7d0; font-size: 9px; font-weight: 600;}
+                    .btr-pdf .btr-table .btr-section-start td {border-top: 2px solid #cbd3d9;}
+                    .btr-pdf .btr-table .btr-total td {background: #dce0e3; color: #243248; font-weight: 700;}
+                    .btr-pdf .btr-money {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .btr-pdf .btr-number {direction: ltr; unicode-bidi: isolate;}
+                    .btr-pdf .btr-table td.is-zero {color: #b4bec7;}
+                    .btr-pdf .btr-table td.is-negative {color: #d3262e;}
+                    .btr-pdf .btr-warning {margin-top: 11px; padding: 7px 9px; border: 1px solid #e7cf9e; border-right: 3px solid #cc9b39; background: #fff8e9; color: #604820; page-break-inside: avoid;}
                 </style>
                 <main class="btr">
                     <div class="btr-header">
-                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company logo"/>
-                        <strong t-esc="company.name"/><br/>
-                        <span t-if="company.vat">الرقم الضريبي: <span dir="ltr" t-esc="company.vat"/></span>
-                        <h2>تقرير ضريبة القيمة المضافة / Saudi VAT Report</h2>
-                        <span dir="ltr" t-esc="report_data['date_from']"/> —
-                        <span dir="ltr" t-esc="report_data['date_to']"/>
-                        <span t-esc="report_data['currency'].name"/>
+                        <div class="btr-heading">
+                            <h2>تقرير ضريبة القيمة المضافة / Saudi VAT Report</h2>
+                            <div class="btr-company"><span t-esc="company.name"/><span t-if="company.vat"> · الرقم الضريبي / VAT No.: <span dir="ltr" t-esc="company.vat"/></span></div>
+                            <div class="btr-subtitle"><span dir="ltr" t-esc="report_data['date_from']"/> — <span dir="ltr" t-esc="report_data['date_to']"/></div>
+                        </div>
+                        <div class="btr-period">
+                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Company logo" style="display: block; max-width: 85px; max-height: 28px; margin: 0 0 4px auto;"/>
+                            <div class="btr-currency" t-esc="report_data['currency'].name"/>
+                            <span t-if="report_data['is_rtl']">جميع الخانات الست عشرة</span><span t-else="">All 16 return boxes</span>
+                        </div>
                     </div>
                     <div t-if="report_data['journal_names']" class="btr-warning">
                         تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر / Selected journals — analytical view, not the full VAT return:
@@ -201,6 +212,10 @@
                     </div>
                     <t t-call="baseer_tax_report.tax_table"/>
                 </main>
+            </div>
+            <div class="footer" style="font-family: DejaVu Sans, Arial, sans-serif; color: #657486; font-size: 8px; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                <span t-esc="company.name"/> · <span dir="ltr" t-esc="report_data['date_from']"/> — <span dir="ltr" t-esc="report_data['date_to']"/>
+                <span style="float: right;">صفحة / Page <span class="page"/> / <span class="topage"/></span>
             </div>
         </t>
     </template>

@@ -29,3 +29,37 @@ test("VAT visual amount states preserve muted zero and red negative", () => {
     expect(SaudiVatReport.prototype.amountClass("negative")).toBe("is-negative");
     expect(SaudiVatReport.prototype.amountClass("empty")).toBe("");
 });
+
+test("VAT Excel export sends current filters and opens the private download action", async () => {
+    const calls = [];
+    const instance = {
+        state: { data: {}, exporting: false, error: "" },
+        labels: { error: "Export failed" },
+        payload: () => ({ company_id: 3, period_type: "quarter", year: 2026 }),
+        orm: { call: async (...args) => {
+            calls.push(args);
+            return { type: "ir.actions.act_url", url: "/baseer/tax/vat/export/1?company_id=3", target: "download" };
+        } },
+        action: { doAction: async (action) => calls.push(action) },
+    };
+    await SaudiVatReport.prototype.exportXlsx.call(instance);
+    expect(calls[0]).toEqual([
+        "baseer.tax.report.wizard", "export_hub_xlsx",
+        [{ company_id: 3, period_type: "quarter", year: 2026 }],
+    ]);
+    expect(calls[1].target).toBe("download");
+    expect(instance.state.exporting).toBe(false);
+});
+
+test("VAT Excel export gives an export-specific failure and clears busy state", async () => {
+    const instance = {
+        state: { data: {}, exporting: false, error: "" },
+        labels: { exportError: "Excel export failed" },
+        payload: () => ({}),
+        orm: { call: async () => { throw new Error("server failure"); } },
+        action: { doAction: async () => {} },
+    };
+    await SaudiVatReport.prototype.exportXlsx.call(instance);
+    expect(instance.state.error).toBe("Excel export failed");
+    expect(instance.state.exporting).toBe(false);
+});

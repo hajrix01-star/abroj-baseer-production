@@ -439,3 +439,9 @@ msgstr "يتجاوز هذا الشهر حد التقرير الآمن. قسّم 
 #: model_terms:ir.ui.view,arch_db:baseer_pos_tobacco_report.view_pos_tobacco_report_custom_range_form
 msgid "POS Tobacco Fee Register: Split Period"
 msgstr "كشف رسوم التبغ: تقسيم الفترة"
+
+#. module: baseer_pos_tobacco_report
+#. odoo-python
+#: code:addons/baseer_pos_tobacco_report/models/tobacco_report_wizard.py:0
+msgid "Tobacco report export is running for this company. Please retry."
+msgstr "تصدير تقرير رسوم التبغ لهذه الشركة قيد التنفيذ. أعد المحاولة بعد قليل."

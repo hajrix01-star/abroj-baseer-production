@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ORM-level isolation also covers JSON-RPC and generic content routes. -->
+    <record id="rule_tobacco_xlsx_owner_company" model="ir.rule">
+        <field name="name">Tobacco XLSX: owner and active company</field>
+        <field name="model_id" ref="model_baseer_pos_tobacco_xlsx"/>
+        <field name="domain_force">[('create_uid', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+</odoo>

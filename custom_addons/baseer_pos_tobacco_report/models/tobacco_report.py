@@ -82,7 +82,7 @@ class BaseerPosTobaccoReport(models.AbstractModel):
         mismatch = abs(computed_total - saved_total) > quantum / 2
         return fee_lines, mismatch, computed_total, saved_total
 
-    def _collect_rows(self, orders, currency, quantum):
+    def _collect_rows(self, orders, currency, quantum, export_data=None):
         rows = []
         exceptions = []
         running = debit_total = credit_total = Decimal('0')
@@ -102,6 +102,12 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                     'computed_total': _format_money(_money(computed_total, quantum)),
                     'saved_total': _format_money(_money(saved_total, quantum)),
                 })
+                if export_data is not None:
+                    export_data['exceptions'].append({
+                        'date': local_date.replace(tzinfo=None), 'order': order_text,
+                        'computed_total': _money(computed_total, quantum),
+                        'saved_total': _money(saved_total, quantum),
+                    })
             for line, fee in fee_lines:
                 debit = max(-fee, Decimal('0'))
                 credit = max(fee, Decimal('0'))
@@ -118,9 +124,15 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                     'credit': _format_money(credit),
                     'running': _format_money(running),
                 })
+                if export_data is not None:
+                    export_data['rows'].append({
+                        'date': local_date.replace(tzinfo=None), 'order': order_text,
+                        'products': rows[-1]['products'], 'type': rows[-1]['type'],
+                        'debit': debit, 'credit': credit, 'running': running,
+                    })
         return rows, exceptions, debit_total, credit_total, running
 
-    def _build_report(self, wizard):
+    def _build_report(self, wizard, *, for_export=False):
         wizard.check_access('read')
         wizard._check_report_access()
         wizard._check_period()
@@ -149,11 +161,12 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             raise TobaccoReportTooLarge(_('This period exceeds 5,000 POS lines. Split it into smaller reports.'))
         lines.check_access('read')
 
+        export_data = {'rows': [], 'exceptions': []} if for_export else None
         rows, exceptions, debit_total, credit_total, running = self._collect_rows(
-            orders, currency, quantum,
+            orders, currency, quantum, export_data=export_data,
         )
 
-        return {
+        result = {
             'wizard': wizard,
             'company': company,
             'from_text': _western(wizard.date_from.strftime('%d-%m-%Y')),
@@ -194,6 +207,13 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                 'more_differences': _('More differences are listed in the PDF.'),
             },
         }
+        if export_data is not None:
+            export_data.update({
+                'opening': Decimal('0.00'), 'debit_total': debit_total,
+                'credit_total': credit_total, 'closing': running,
+            })
+            result['_export'] = export_data
+        return result
 
     def _get_report_values(self, docids, data=None):
         wizards = self.env['baseer.pos.tobacco.report.wizard'].browse(docids).exists()

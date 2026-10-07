@@ -22,6 +22,18 @@
 }
 .o_baseer_report_pdf:hover:not(:disabled) { background: #5f3f57; color: #fff; }
 .o_baseer_report_pdf:disabled { opacity: 0.55; }
+.o_baseer_report_xlsx {
+    min-height: 2rem;
+    padding: 0.3rem 0.65rem;
+    border: 0;
+    border-radius: 3px;
+    background: #e9ebee;
+    color: #24303d;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.o_baseer_report_xlsx:hover:not(:disabled) { background: #dfe5e7; color: #24303d; }
+.o_baseer_report_xlsx:disabled { opacity: 0.55; }
 .o_baseer_report_switcher {
     display: inline-flex;
     align-items: center;

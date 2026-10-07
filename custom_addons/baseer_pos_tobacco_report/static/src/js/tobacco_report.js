@@ -10,8 +10,9 @@ const copy = {
     ar: {
         title: "كشف رسوم التبغ من نقاط البيع", company: "الشركة", period: "الفترة",
         month: "شهر", custom: "فترة مخصصة", monthName: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
-        year: "السنة", from: "من", to: "إلى", products: "إظهار المنتجات", apply: "عرض التقرير", pdf: "PDF",
+        year: "السنة", from: "من", to: "إلى", products: "إظهار المنتجات", apply: "عرض التقرير", pdf: "PDF", xlsx: "XLSX",
         loading: "جارٍ تحميل التقرير…", error: "تعذر عرض التقرير. تحقق من الخيارات أو الصلاحيات ثم أعد المحاولة.",
+        exportError: "تعذر تصدير Excel. تحقق من الصلاحيات والفترة، أو أعد المحاولة بعد اكتمال التصدير الجاري.",
         applyHint: "اضغط «عرض التقرير» لتطبيق الخيارات.",
         empty: "لا توجد عمليات رسوم تبغ مكتملة في هذه الفترة.", overflow: "تجاوزت الفترة الحد الآمن البالغ 5,000 سطر من نقاط البيع. قسّمها إلى فترات أقصر.",
         opening: "المجموع في بداية الفترة", debit: "خارج / مردود", credit: "داخل / بيع", closing: "صافي رسوم الفترة",
@@ -23,8 +24,9 @@ const copy = {
     en: {
         title: "POS Tobacco Fee Register", company: "Company", period: "Period",
         month: "Month", custom: "Custom dates", monthName: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-        year: "Year", from: "From", to: "To", products: "Show products", apply: "Show report", pdf: "PDF",
+        year: "Year", from: "From", to: "To", products: "Show products", apply: "Show report", pdf: "PDF", xlsx: "XLSX",
         loading: "Loading report…", error: "Could not load the report. Check the options or your access rights and retry.",
+        exportError: "Could not export Excel. Check access and period, or retry after the current export finishes.",
         applyHint: "Select Show report to apply the options.",
         empty: "No completed POS tobacco-fee sales were found in this period.", overflow: "This period exceeds the safe limit of 5,000 POS lines. Split it into shorter periods.",
         opening: "Period cumulative total at start", debit: "Out / refunds", credit: "In / sales", closing: "Net fees for period",
@@ -44,7 +46,7 @@ export class BaseerTobaccoReport extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
-        this.state = useState({ loading: true, printing: false, error: "", data: null, companies: [],
+        this.state = useState({ loading: true, printing: false, exporting: false, error: "", data: null, companies: [],
             filters: { company_id: 0, period: "month", month: 1, year: 2026,
                 date_from: "", date_to: "", show_products: false, page: 1 } });
         this.requestToken = 0;
@@ -107,6 +109,19 @@ export class BaseerTobaccoReport extends Component {
             this.state.error = error?.data?.message || this.labels.error;
         } finally {
             this.state.printing = false;
+        }
+    }
+    async exportXlsx() {
+        if (this.state.exporting || this.state.loading || !this.state.data || this.state.data.overflow) { return; }
+        this.state.exporting = true;
+        this.state.error = "";
+        try {
+            const action = await this.orm.call(MODEL, "export_hub_xlsx", [{ ...this.state.filters }]);
+            await this.action.doAction(action);
+        } catch (error) {
+            this.state.error = error?.data?.message || this.labels.exportError;
+        } finally {
+            this.state.exporting = false;
         }
     }
 }

@@ -1,7 +1,7 @@
 {
     "name": "Baseer Report Design Preview",
     "summary": "Isolated sample interface for reviewing financial report design",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.3",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

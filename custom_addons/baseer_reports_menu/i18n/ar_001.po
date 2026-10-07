@@ -6,6 +6,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #. module: baseer_reports_menu
+#: model:ir.actions.client,name:baseer_reports_menu.action_baseer_reports_hub
 #: model:ir.ui.menu,name:baseer_reports_menu.menu_baseer_reports
 msgid "Baseer Reports"
 msgstr "تقارير بصير"

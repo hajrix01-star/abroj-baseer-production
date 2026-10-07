@@ -1,7 +1,7 @@
 {
     "name": "Baseer Account Activity",
     "summary": "Posted journal activity for one account with opening and running balances",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

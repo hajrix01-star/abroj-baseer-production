@@ -46,4 +46,7 @@
               parent="baseer_reports_menu.menu_baseer_reports" action="action_tax_report_wizard"
               sequence="-20"
               groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="menu_tax_report" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 </odoo>

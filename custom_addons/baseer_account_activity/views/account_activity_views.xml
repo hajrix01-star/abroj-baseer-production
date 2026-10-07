@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_account_activity" model="ir.actions.client">
+        <field name="name">Account Activity</field>
+        <field name="tag">baseer_account_activity</field>
+    </record>
+    <menuitem id="menu_account_activity" name="Account Activity"
+        parent="baseer_reports_menu.menu_baseer_reports" action="action_account_activity"
+        sequence="10"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+</odoo>

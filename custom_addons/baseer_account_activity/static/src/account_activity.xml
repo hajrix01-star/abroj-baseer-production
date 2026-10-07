@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_account_activity.Report">
+        <main class="o_baseer_account_activity" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <header class="o_baseer_activity_toolbar">
+                <div class="o_baseer_activity_identity">
+                    <h1 t-esc="labels.title"/>
+                    <small t-esc="labels.scope"/>
+                </div>
+                <div class="o_baseer_activity_filters">
+                    <label><span t-esc="labels.company"/>
+                        <select class="form-select" t-att-value="state.companyId" t-on-change="onCompanyChange">
+                            <option t-foreach="state.companies" t-as="company" t-key="company.id" t-att-value="company.id" t-att-selected="company.id === state.companyId" t-esc="company.name"/>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.account"/>
+                        <select class="form-select" t-att-value="state.accountId" t-on-change="onAccountChange">
+                            <option t-foreach="state.accounts" t-as="account" t-key="account.id" t-att-value="account.id" t-att-selected="account.id === state.accountId" t-esc="account.display_name"/>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.period"/>
+                        <select class="form-select" t-att-value="state.period" t-on-change="onPeriodChange">
+                            <option value="month" t-att-selected="state.period === 'month'" t-esc="labels.month"/>
+                            <option value="quarter" t-att-selected="state.period === 'quarter'" t-esc="labels.quarter"/>
+                            <option value="custom" t-att-selected="state.period === 'custom'" t-esc="labels.custom"/>
+                        </select>
+                    </label>
+                    <label><span t-esc="labels.from"/><input class="form-control" type="date" name="dateFrom" t-att-value="state.dateFrom" t-on-change="onDateChange"/></label>
+                    <label><span t-esc="labels.to"/><input class="form-control" type="date" name="dateTo" t-att-value="state.dateTo" t-on-change="onDateChange"/></label>
+                    <button class="btn btn-primary" type="button" t-att-disabled="state.loading || state.accountsLoading || !state.accountId" t-on-click="apply" t-esc="labels.apply"/>
+                </div>
+            </header>
+            <div t-if="state.error" class="alert alert-danger o_baseer_activity_alert" role="alert" t-esc="state.error"/>
+            <div t-if="!state.accounts.length &amp;&amp; !state.error" class="o_baseer_activity_notice" t-esc="labels.noAccounts"/>
+            <div t-if="state.loading" class="o_baseer_activity_notice" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/><span t-esc="labels.apply"/></div>
+            <div t-if="!state.data &amp;&amp; !state.loading &amp;&amp; !state.error &amp;&amp; state.accounts.length" class="o_baseer_activity_notice" t-esc="labels.choose"/>
+            <section t-if="state.data" class="o_baseer_report o_baseer_activity_paper" t-att-aria-label="labels.title">
+                <div class="o_baseer_report_head">
+                    <div class="o_baseer_report_identity"><div><h2 class="o_baseer_report_title" t-esc="labels.title"/><p class="o_baseer_report_period"><t t-esc="state.data.company_name"/> · <t t-esc="state.data.account_name"/> · <b dir="ltr"><t t-esc="state.dateFrom"/> — <t t-esc="state.dateTo"/></b></p></div></div>
+                    <span class="o_baseer_report_meta" t-esc="state.data.currency_symbol"/>
+                </div>
+                <div class="o_baseer_report_totals">
+                    <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.opening"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.opening)" dir="ltr" t-esc="formatAmount(state.data.opening)"/></div>
+                    <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.debit"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.debit)" dir="ltr" t-esc="formatAmount(state.data.debit)"/></div>
+                    <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.credit"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.credit)" dir="ltr" t-esc="formatAmount(state.data.credit)"/></div>
+                    <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.closing"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.closing)" dir="ltr" t-esc="formatAmount(state.data.closing)"/></div>
+                </div>
+                <div class="o_baseer_report_desktop"><table class="o_baseer_report_table">
+                    <thead><tr><th t-esc="labels.date"/><th t-esc="labels.entry"/><th t-esc="labels.label"/><th class="is-number" t-esc="labels.debit"/><th class="is-number" t-esc="labels.credit"/><th class="is-number" t-esc="labels.running"/></tr></thead>
+                    <tbody><tr t-foreach="state.data.lines" t-as="line" t-key="line.id">
+                        <td dir="ltr" t-esc="line.date"/>
+                        <td><button class="o_baseer_activity_link" type="button" t-att-title="labels.source" t-on-click="() => this.openMove(line)" t-esc="line.move_name"/></td>
+                        <td t-esc="line.label"/>
+                        <td class="is-number"><span t-att-class="'o_baseer_report_amount ' + amountClass(line.debit)" t-esc="formatAmount(line.debit)"/></td>
+                        <td class="is-number"><span t-att-class="'o_baseer_report_amount ' + amountClass(line.credit)" t-esc="formatAmount(line.credit)"/></td>
+                        <td class="is-number"><b t-att-class="'o_baseer_report_amount ' + amountClass(line.running)" t-esc="formatAmount(line.running)"/></td>
+                    </tr></tbody>
+                </table></div>
+                <div class="o_baseer_report_mobile">
+                    <article t-foreach="state.data.lines" t-as="line" t-key="line.id" class="o_baseer_report_entry">
+                        <div class="o_baseer_report_entry_head"><button class="o_baseer_activity_link" type="button" t-on-click="() => this.openMove(line)" t-esc="line.move_name"/><time dir="ltr" t-esc="line.date"/></div>
+                        <div class="o_baseer_report_entry_details" t-esc="line.label"/>
+                        <div class="o_baseer_report_entry_value"><span t-esc="labels.debit"/><span t-att-class="'o_baseer_report_amount ' + amountClass(line.debit)" t-esc="formatAmount(line.debit)"/></div>
+                        <div class="o_baseer_report_entry_value"><span t-esc="labels.credit"/><span t-att-class="'o_baseer_report_amount ' + amountClass(line.credit)" t-esc="formatAmount(line.credit)"/></div>
+                        <div class="o_baseer_report_entry_value"><strong t-esc="labels.running"/><strong t-att-class="'o_baseer_report_amount ' + amountClass(line.running)" t-esc="formatAmount(line.running)"/></div>
+                    </article>
+                </div>
+                <p t-if="!state.data.lines.length" class="o_baseer_report_empty" t-esc="labels.empty"/>
+                <nav class="o_baseer_activity_pager" t-att-aria-label="labels.page">
+                    <button class="btn btn-light" type="button" t-att-disabled="state.page === 0 || state.loading" t-on-click="() => this.loadPage(state.page - 1)" t-esc="labels.previous"/>
+                    <span><t t-esc="labels.page"/> <t t-esc="state.page + 1"/></span>
+                    <button class="btn btn-light" type="button" t-att-disabled="!state.data.next_cursor || state.loading" t-on-click="() => this.loadPage(state.page + 1)" t-esc="labels.next"/>
+                </nav>
+            </section>
+        </main>
+    </t>
+</templates>

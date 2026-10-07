@@ -51,17 +51,18 @@
     }
     .o_baseer_vat_table {
         width: 100%;
-        margin-top: 1rem;
+        margin-top: 0.7rem;
         border-collapse: collapse;
         table-layout: fixed;
-        font-size: 0.82rem;
+        font-size: 0.8rem;
 
-        th, td { padding: 0.55rem 0.4rem; border-bottom: 1px solid var(--baseer-report-line); }
-        thead th { color: #4d5b67; font-weight: 600; }
+        th, td { padding: 0.4rem 0.4rem; border-bottom: 1px solid var(--baseer-report-line); }
+        thead th { color: #24303d; font-weight: 600; }
         thead th:first-child { width: 58%; text-align: start; }
         thead th:not(:first-child) { width: 21%; text-align: end; }
-        tbody tr:not(.o_baseer_vat_components):hover { background: #e9f1f1; }
-        .o_baseer_vat_total { background: #dfe3e7; font-weight: 700; }
+        tbody tr:has(.o_baseer_vat_cell_button):not(.o_baseer_vat_components):hover { background: #f5f8f8; }
+        .o_baseer_vat_total { font-weight: 700; }
+        .o_baseer_vat_total th, .o_baseer_vat_total td { border-top: 1px solid #c6cdd3; }
     }
     .o_baseer_vat_name { text-align: start; font-weight: inherit; overflow-wrap: anywhere; }
     .o_baseer_vat_value { text-align: end; font-variant-numeric: tabular-nums; }
@@ -72,13 +73,13 @@
         padding: 0.1rem 0;
         background: transparent;
         color: var(--baseer-report-accent);
-        text-decoration: underline;
-        text-underline-offset: 2px;
+        text-decoration: none;
         cursor: pointer;
     }
     .o_baseer_vat_cell_button { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
     .o_baseer_vat_cell_button.is-zero { color: var(--baseer-report-zero); }
     .o_baseer_vat_cell_button.is-negative { color: var(--baseer-report-negative); }
+    .o_baseer_vat_cell_button:hover { text-decoration: underline; text-underline-offset: 2px; }
     .o_baseer_vat_cell_button:active,
     .o_baseer_vat_warning_link:active { transform: scale(0.97); }
     .o_baseer_vat_cell_button:focus-visible,

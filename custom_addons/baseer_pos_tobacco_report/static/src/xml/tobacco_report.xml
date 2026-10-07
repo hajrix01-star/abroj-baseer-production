@@ -3,6 +3,12 @@
     <t t-name="baseer_pos_tobacco_report.HubReport">
         <main class="o_baseer_tobacco_hub" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <div class="o_baseer_report_toolbar">
+                <button type="button" class="btn o_baseer_report_pdf"
+                    t-att-disabled="state.loading || state.printing || !state.data || state.data.overflow"
+                    t-on-click="printPdf" t-esc="labels.pdf"/>
+                <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
+                    selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
+                    lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" role="group" t-att-aria-label="labels.title">
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>
                         <select name="company_id" t-att-aria-label="labels.company" t-on-change="updateFilter">
@@ -32,7 +38,6 @@
                     <label class="o_baseer_tobacco_products"><input name="show_products" type="checkbox" t-att-checked="state.filters.show_products" t-on-change="updateFilter"/><span t-esc="labels.products"/></label>
                     <button type="button" class="btn btn-secondary o_baseer_report_apply" t-att-disabled="state.loading" t-on-click="() => this.load(1)" t-esc="labels.apply"/>
                 </div>
-                <button type="button" class="btn btn-primary o_baseer_report_apply" t-att-disabled="state.loading || state.printing || !state.data || state.data.overflow" t-on-click="printPdf" t-esc="labels.pdf"/>
             </div>
             <div t-if="state.error" class="alert alert-danger o_baseer_tobacco_message" role="alert" t-esc="state.error"/>
             <div t-if="state.loading" class="o_baseer_tobacco_message" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/> <t t-esc="labels.loading"/></div>

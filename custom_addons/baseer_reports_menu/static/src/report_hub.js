@@ -1,10 +1,9 @@
 /** @odoo-module **/
 
 import { Component, onWillStart, useState } from "@odoo/owl";
-import { Dropdown } from "@web/core/dropdown/dropdown";
-import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
+import { ReportSelector } from "@baseer_reports_menu/report_selector";
 
 const copy = {
     ar: {
@@ -41,7 +40,7 @@ export async function allowedReports(definitions, hasGroup) {
 
 export class BaseerReportsHub extends Component {
     static template = "baseer_reports_menu.Hub";
-    static components = { Dropdown, DropdownItem };
+    static components = { ReportSelector };
     static props = ["*"];
 
     setup() {
@@ -64,8 +63,6 @@ export class BaseerReportsHub extends Component {
     get labels() { return copy[this.lang]; }
     get selectedReport() { return this.options.find((option) => option.key === this.state.selectedKey); }
     get selectedComponent() { return this.selectedReport?.component; }
-    reportName(option) { return option.label[this.lang] || option.label.en; }
-
     selectReport(key) {
         const option = this.options.find((item) => item.key === key);
         if (!option) { return; }

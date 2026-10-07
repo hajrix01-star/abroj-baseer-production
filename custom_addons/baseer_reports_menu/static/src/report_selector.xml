@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_reports_menu.ReportSelector">
+        <Dropdown>
+            <button class="o_baseer_report_switcher" type="button"
+                t-att-aria-label="props.label" t-att-disabled="!props.options.length">
+                <span t-esc="selectedName"/>
+                <i class="fa fa-caret-down" aria-hidden="true"/>
+            </button>
+            <t t-set-slot="content">
+                <DropdownItem t-foreach="props.options" t-as="option" t-key="option.key"
+                    onSelected="() => this.selectReport(option.key)">
+                    <t t-esc="reportName(option)"/>
+                </DropdownItem>
+            </t>
+        </Dropdown>
+    </t>
+</templates>

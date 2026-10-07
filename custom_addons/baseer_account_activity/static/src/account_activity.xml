@@ -3,6 +3,9 @@
     <t t-name="baseer_account_activity.Report">
         <main class="o_baseer_account_activity" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <header class="o_baseer_report_toolbar">
+                <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
+                    selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
+                    lang="lang" onSelect="props.onReportSelect"/>
                 <div t-if="!props.embedded" class="o_baseer_report_toolbar_identity">
                     <button class="o_baseer_report_switcher" type="button" t-on-click="goToReports" t-esc="labels.backToReports"/>
                 </div>
@@ -29,7 +32,6 @@
                     <button class="btn btn-primary o_baseer_report_apply" type="button" t-att-disabled="state.loading || state.accountsLoading || !state.accountId" t-on-click="apply" t-esc="labels.apply"/>
                 </div>
             </header>
-            <div class="o_baseer_report_notice" role="note"><i class="fa fa-info-circle" aria-hidden="true"/><span t-esc="labels.scope"/></div>
             <div t-if="state.error" class="alert alert-danger o_baseer_activity_alert" role="alert" t-esc="state.error"/>
             <div t-if="!state.accounts.length &amp;&amp; !state.error" class="o_baseer_activity_notice" t-esc="labels.noAccounts"/>
             <div t-if="state.loading" class="o_baseer_activity_notice" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/><span t-esc="labels.apply"/></div>
@@ -41,6 +43,7 @@
                     <span dir="ltr"><t t-esc="state.dateFrom"/> — <t t-esc="state.dateTo"/></span>
                 </div>
                 <div class="o_baseer_activity_currency" t-esc="state.data.currency_symbol"/>
+                <p class="o_baseer_activity_scope" t-esc="labels.scope"/>
                 <div class="o_baseer_activity_period_summary" t-att-aria-label="labels.periodTotals">
                     <div class="o_baseer_activity_summary_title" t-esc="labels.periodTotals"/>
                     <div class="o_baseer_activity_period_totals">

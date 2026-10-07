@@ -45,6 +45,8 @@ class FakeProduct:
 class TestTobaccoReport(TransactionCase):
     def setUp(self):
         super().setUp()
+        # The register is SAR-only; a fresh Odoo database defaults to USD.
+        self.env.company.currency_id = self.env.ref('base.SAR')
         self.report = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees']
 
     def test_print_button_is_visible_in_full_page_wizard(self):
@@ -109,7 +111,9 @@ class TestTobaccoReport(TransactionCase):
         })
         action = wizard.action_print_monthly()
         self.assertEqual((wizard.date_from, wizard.date_to), (date(2028, 2, 1), date(2028, 2, 29)))
-        self.assertEqual(action['type'], 'ir.actions.report')
+        # A fresh database may first open Odoo's document-layout configurator.
+        report_action = action.get('context', {}).get('report_action', action)
+        self.assertEqual(report_action['type'], 'ir.actions.report')
 
     def test_monthly_pdf_uses_selected_month_in_filename_and_a4_layout(self):
         report = self.env.ref('baseer_pos_tobacco_report.action_report_pos_tobacco_fees')
@@ -125,13 +129,14 @@ class TestTobaccoReport(TransactionCase):
             safe_eval(report.print_report_name, {'object': wizard, 'time': time}),
             'رسوم التبغ لـ 8-2026',
         )
-        self.assertEqual(
-            safe_eval(
-                report.with_context(lang='ar_001').print_report_name,
-                {'object': wizard, 'time': time},
-            ),
-            'رسوم التبغ لـ 8-2026',
-        )
+        if self.env['res.lang'].search([('code', '=', 'ar_001')], limit=1):
+            self.assertEqual(
+                safe_eval(
+                    report.with_context(lang='ar_001').print_report_name,
+                    {'object': wizard, 'time': time},
+                ),
+                'رسوم التبغ لـ 8-2026',
+            )
         custom_wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
             'company_id': user.company_id.id,
             'month': '8', 'year': 2026,

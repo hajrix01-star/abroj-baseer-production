@@ -1,7 +1,7 @@
 {
     "name": "Baseer Account Activity",
     "summary": "Posted journal activity for one account with opening and running balances",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",
@@ -12,6 +12,9 @@
             "baseer_account_activity/static/src/account_activity.js",
             "baseer_account_activity/static/src/account_activity.xml",
             "baseer_account_activity/static/src/account_activity.scss",
+        ],
+        "web.assets_unit_tests": [
+            "baseer_account_activity/static/tests/account_activity.test.js",
         ],
     },
     "application": False,

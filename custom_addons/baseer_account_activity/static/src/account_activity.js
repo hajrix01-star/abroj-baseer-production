@@ -1,6 +1,8 @@
 /** @odoo-module **/
 
 import { Component, onWillStart, useState } from "@odoo/owl";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
@@ -16,6 +18,7 @@ const copy = {
         choose: "اختر الشركة والحساب ثم اعرض التقرير.", next: "التالي", previous: "السابق",
         page: "صفحة", loadError: "تعذر تحميل التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
         noAccounts: "لا توجد حسابات متاحة لهذه الشركة.", source: "افتح القيد الأصلي",
+        chooseReport: "اختر تقريرًا من تقارير بصير", periodTotals: "ملخص الفترة كاملة",
     },
     en: {
         title: "Account Activity", scope: "Posted entries · one company · one fiscal year",
@@ -27,6 +30,7 @@ const copy = {
         choose: "Choose a company and account, then view the report.", next: "Next", previous: "Previous",
         page: "Page", loadError: "Could not load the report. Check the dates and access, then retry.",
         noAccounts: "No accounts available for this company.", source: "Open source entry",
+        chooseReport: "Choose a Baseer report", periodTotals: "Full-period summary",
     },
 };
 
@@ -47,11 +51,13 @@ function completedPeriod(kind) {
 
 export class AccountActivity extends Component {
     static template = "baseer_account_activity.Report";
+    static components = { Dropdown, DropdownItem };
     static props = ["*"];
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.menu = useService("menu");
         this.requestEpoch = 0;
         this.accountEpoch = 0;
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
@@ -65,6 +71,26 @@ export class AccountActivity extends Component {
     }
 
     get labels() { return copy[this.lang]; }
+
+    get reportOptions() {
+        const app = this.menu.getApps().find((item) => item.xmlid === "baseer_reports_menu.menu_baseer_reports");
+        if (!app) { return []; }
+        const options = [];
+        const visit = (item) => {
+            if (item.actionID && item.xmlid !== "baseer_report_ui_preview.menu_report_ui_preview") {
+                options.push(item);
+            }
+            for (const child of item.childrenTree || []) { visit(child); }
+        };
+        visit(this.menu.getMenuAsTree(app.id));
+        return options;
+    }
+
+    openReport(option) {
+        if (option.xmlid !== "baseer_account_activity.menu_account_activity") {
+            this.menu.selectMenu(option);
+        }
+    }
 
     invalidateReport() {
         this.requestEpoch += 1;

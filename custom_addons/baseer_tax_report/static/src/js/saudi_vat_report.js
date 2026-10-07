@@ -11,9 +11,10 @@ const copy = {
         quarter: "ربع سنوي", month: "شهري", year: "السنة", monthValue: "الشهر",
         quarterValue: "الربع", display: "العرض", simple: "مبسط", detailed: "مفصل",
         journals: "الدفاتر", allJournals: "جميع الدفاتر", selectedJournals: "دفاتر مختارة",
-        apply: "عرض التقرير", pdf: "PDF", item: "البند", base: "الأساس", tax: "الضريبة",
+        apply: "عرض التقرير", pdf: "PDF", xlsx: "XLSX", item: "البند", base: "الأساس", tax: "الضريبة",
         empty: "لا توجد مبالغ في الفترة المحددة.", noCompany: "لا توجد شركة سعودية متاحة لصلاحياتك.",
         loading: "جارٍ تحميل تقرير الضريبة…", error: "تعذر تحميل التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
+        exportError: "تعذر تصدير Excel. تحقق من الصلاحيات والفترة ودقة العملة؛ قد يكون الملف تجاوز حد الحجم أو الوقت.",
         source: "عرض القيود الداعمة", expand: "عرض البنود المكوّنة", collapse: "إخفاء البنود المكوّنة",
         selectedWarning: "تحليل الدفاتر المختارة، وليس إجمالي الإقرار لجميع الدفاتر.",
         untaggedVat: "قيود ضريبة القيمة المضافة غير المصنفة", untaggedOther: "قيود ضرائب أخرى غير مصنفة",
@@ -26,9 +27,10 @@ const copy = {
         quarter: "Quarterly", month: "Monthly", year: "Year", monthValue: "Month",
         quarterValue: "Quarter", display: "Display", simple: "Summary", detailed: "Detailed",
         journals: "Journals", allJournals: "All journals", selectedJournals: "Selected journals",
-        apply: "View report", pdf: "PDF", item: "VAT return box", base: "Amount", tax: "VAT",
+        apply: "View report", pdf: "PDF", xlsx: "XLSX", item: "VAT return box", base: "Amount", tax: "VAT",
         empty: "No non-zero boxes for this period.", noCompany: "No Saudi company is available to your access rights.",
         loading: "Loading VAT report…", error: "Could not load the report. Check the period and access, then retry.",
+        exportError: "Could not export Excel. Check access, period and currency precision; the file may have exceeded its size or time limit.",
         source: "Open supporting entries", expand: "Show component boxes", collapse: "Hide component boxes",
         selectedWarning: "Selected journals are an analytical view, not the full VAT return.",
         untaggedVat: "Unclassified VAT entries", untaggedOther: "Other unclassified tax entries",
@@ -51,7 +53,7 @@ export class SaudiVatReport extends Component {
         this.state = useState({
             companies: [], journals: [], companyId: 0, periodType: "quarter", year: 0,
             month: "1", quarter: "1", displayMode: "simple", journalIds: [],
-            data: null, expanded: {}, loading: true, printing: false, error: "",
+            data: null, expanded: {}, loading: true, printing: false, exporting: false, error: "",
         });
         onWillStart(() => this.loadOptions());
     }
@@ -140,6 +142,20 @@ export class SaudiVatReport extends Component {
             this.state.error = this.labels.error;
         } finally {
             this.state.printing = false;
+        }
+    }
+
+    async exportXlsx() {
+        if (!this.state.data || this.state.exporting) { return; }
+        this.state.exporting = true;
+        this.state.error = "";
+        try {
+            const action = await this.orm.call("baseer.tax.report.wizard", "export_hub_xlsx", [this.payload()]);
+            await this.action.doAction(action);
+        } catch (error) {
+            this.state.error = this.labels.exportError;
+        } finally {
+            this.state.exporting = false;
         }
     }
 

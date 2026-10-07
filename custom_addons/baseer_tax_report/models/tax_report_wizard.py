@@ -1,7 +1,9 @@
 from calendar import monthrange
+import base64
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 import re
+from time import monotonic
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -186,7 +188,8 @@ class BaseerTaxReportWizard(models.TransientModel):
         source_components = {}
         rows = []
         is_rtl = (self.env.lang or '').startswith('ar')
-        quantum = Decimal('1').scaleb(-self.company_id.currency_id.decimal_places)
+        decimals = self.company_id.currency_id.decimal_places
+        quantum = Decimal('1').scaleb(-decimals)
         lines = report.line_ids.filtered(lambda line: line.code and re.fullmatch(r'sa_(?:[1-9]|1[0-6])', line.code))
         if len(lines) != 16:
             raise UserError(_('The Saudi VAT report must define all 16 boxes.'))
@@ -218,8 +221,8 @@ class BaseerTaxReportWizard(models.TransientModel):
                 'name': ARABIC_BOX_LABELS[line.code] if is_rtl else line.name,
                 'base': cells.get('base'), 'tax': cells.get('tax'), 'direct': direct,
                 'components': {},
-                'base_text': f"{cells['base']:,.2f}" if 'base' in cells else '—',
-                'tax_text': f"{cells['tax']:,.2f}" if 'tax' in cells else '—',
+                'base_text': f"{cells['base']:,.{decimals}f}" if 'base' in cells else '—',
+                'tax_text': f"{cells['tax']:,.{decimals}f}" if 'tax' in cells else '—',
             })
         rows_by_number = {row['number']: row for row in rows}
         for row in rows:
@@ -237,7 +240,7 @@ class BaseerTaxReportWizard(models.TransientModel):
                         'number': source_number,
                         'column': source_column,
                         'name': rows_by_number[source_number]['name'],
-                        'amount_text': f'{amount:+,.2f}',
+                        'amount_text': f'{amount:+,.{decimals}f}',
                     })
                 row['components'][column] = components
         exception = self._untagged_vat(base_domain)
@@ -252,8 +255,8 @@ class BaseerTaxReportWizard(models.TransientModel):
             'display_mode': self.display_mode,
             'exception': exception, 'currency': self.company_id.currency_id,
             'journal_names': ', '.join(self.journal_ids.mapped('display_name')),
-            'exception_amount_text': f"{exception['amount']:,.2f}",
-            'other_tax_amount_text': f"{exception['other_amount']:,.2f}",
+            'exception_amount_text': f"{exception['amount']:,.{decimals}f}",
+            'other_tax_amount_text': f"{exception['other_amount']:,.{decimals}f}",
             'is_rtl': is_rtl,
         }
 
@@ -377,6 +380,38 @@ class BaseerTaxReportWizard(models.TransientModel):
             'journal_ids': [(6, 0, wizard.journal_ids.ids)],
         })
         return saved.action_print()
+
+    @api.model
+    def export_hub_xlsx(self, options):
+        """Build one complete, authorized VAT workbook before exposing a download URL."""
+        started_at = monotonic()
+        wizard = self._hub_wizard(options)
+        report = wizard._build_report()
+        export_model = self.env['baseer.tax.report.xlsx']
+        payload = export_model._render_workbook(report, started_at=started_at)
+        export = export_model.create({
+            'company_id': wizard.company_id.id,
+            'period_type': wizard.period_type,
+            'year': wizard.year,
+            'month': wizard.month,
+            'quarter': wizard.quarter,
+            'display_mode': wizard.display_mode,
+            'journal_ids': [(6, 0, wizard.journal_ids.ids)],
+            'file_data': base64.b64encode(payload).decode('ascii'),
+            'file_name': 'baseer_vat_%s_%s%s.xlsx' % (
+                wizard.year, 'Q' if wizard.period_type == 'quarter' else 'M',
+                wizard.quarter if wizard.period_type == 'quarter' else wizard.month,
+            ),
+        })
+        if monotonic() - started_at > 3:
+            raise UserError(_('VAT Excel export exceeded its safe time limit. Please retry.'))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/baseer/tax/vat/export/%s?company_id=%s' % (
+                export.id, wizard.company_id.id,
+            ),
+            'target': 'download',
+        }
 
     @api.model
     def open_hub_cell(self, options, box, component):

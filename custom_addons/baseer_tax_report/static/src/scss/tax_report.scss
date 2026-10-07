@@ -68,8 +68,18 @@
 
     @media (max-width: 560px) {
         .btr-report-card.o_baseer_report {
-            .btr-table { font-size: .75rem; }
-            .btr-table th, .btr-table td { padding: .45rem .35rem; }
+            .btr-table {
+                min-width: 0;
+                font-size: .75rem;
+            }
+            .btr-table th, .btr-table td {
+                padding: .45rem .35rem;
+                overflow-wrap: anywhere;
+            }
+            .btr-table th {
+                font-size: .68rem;
+                overflow-wrap: normal;
+            }
         }
     }
 }

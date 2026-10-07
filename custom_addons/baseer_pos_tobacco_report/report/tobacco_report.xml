@@ -23,10 +23,6 @@
         <field name="print_report_name">'رسوم التبغ لـ %s-%s' % (object.month, object.year) if object.date_from == object._month_range()[0] and object.date_to == object._month_range()[1] else 'رسوم التبغ من %s إلى %s' % (object.date_from.strftime('%d-%m-%Y'), object.date_to.strftime('%d-%m-%Y'))</field>
     </record>
 
-    <record id="action_report_pos_tobacco_fees" model="ir.actions.report" context="{'lang': 'ar_001'}">
-        <field name="print_report_name">'رسوم التبغ لـ %s-%s' % (object.month, object.year) if object.date_from == object._month_range()[0] and object.date_to == object._month_range()[1] else 'رسوم التبغ من %s إلى %s' % (object.date_from.strftime('%d-%m-%Y'), object.date_to.strftime('%d-%m-%Y'))</field>
-    </record>
-
     <template id="report_pos_tobacco_fees">
         <t t-call="web.basic_layout">
             <t t-set="company" t-value="report_data['company']"/>
@@ -159,90 +155,104 @@
         </t>
     </template>
     <template id="preview_pos_tobacco_fees">
-        <div class="card mt-3" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <img t-if="report_data['company'].logo"
-                         t-att-src="'/web/image/res.company/%s/logo' % report_data['company'].id"
-                         alt="Company logo" style="max-height: 64px; max-width: 160px;"/>
-                    <div t-else="" t-esc="report_data['company'].name"/>
-                    <h2 class="h4 mt-2" t-esc="report_data['labels']['title']"/>
-                    <p class="text-muted mb-0">
+        <section class="o_baseer_report" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+                <header class="o_baseer_report_head">
+                    <div class="o_baseer_report_identity">
+                        <img t-if="report_data['company'].logo"
+                             t-att-src="'/web/image/res.company/%s/logo' % report_data['company'].id"
+                             alt="Company logo" class="o_baseer_report_logo"/>
+                        <div>
+                            <h2 class="o_baseer_report_title" t-esc="report_data['labels']['title']"/>
+                            <div t-esc="report_data['company'].name" class="o_baseer_report_period"/>
+                        </div>
+                    </div>
+                    <p class="o_baseer_report_period">
                         <span t-esc="report_data['labels']['from']"/>
                         <b dir="ltr" t-esc="report_data['from_text']"/>
                         <span t-esc="report_data['labels']['to']"/>
                         <b dir="ltr" t-esc="report_data['to_text']"/>
                     </p>
+                </header>
+                <div class="o_baseer_report_totals">
+                    <div class="o_baseer_report_total">
+                        <span class="o_baseer_report_total_label" t-esc="report_data['labels']['opening']"/>
+                        <strong t-att-class="'o_baseer_report_amount is-zero' if report_data['opening'] == '0.00' else 'o_baseer_report_amount'" t-esc="report_data['opening']"/>
+                    </div>
+                    <div class="o_baseer_report_total">
+                        <span class="o_baseer_report_total_label" t-esc="report_data['labels']['debit']"/>
+                        <strong t-att-class="'o_baseer_report_amount is-zero' if report_data['debit_total'] == '0.00' else 'o_baseer_report_amount is-outflow'" t-esc="report_data['debit_total']"/>
+                    </div>
+                    <div class="o_baseer_report_total">
+                        <span class="o_baseer_report_total_label" t-esc="report_data['labels']['credit']"/>
+                        <strong t-att-class="'o_baseer_report_amount is-zero' if report_data['credit_total'] == '0.00' else 'o_baseer_report_amount'" t-esc="report_data['credit_total']"/>
+                    </div>
+                    <div class="o_baseer_report_total">
+                        <span class="o_baseer_report_total_label" t-esc="report_data['labels']['total']"/>
+                        <strong t-att-class="'o_baseer_report_amount is-negative' if report_data['closing'].startswith('-') else ('o_baseer_report_amount is-zero' if report_data['closing'] == '0.00' else 'o_baseer_report_amount')" t-esc="report_data['closing']"/>
+                    </div>
                 </div>
-                <div class="row row-cols-2 row-cols-lg-4 g-2 mb-3">
-                    <div class="col"><div class="border rounded p-2 h-100">
-                        <small class="text-muted d-block" t-esc="report_data['labels']['opening']"/>
-                        <strong dir="ltr" t-esc="report_data['opening']"/>
-                    </div></div>
-                    <div class="col"><div class="border rounded p-2 h-100">
-                        <small class="text-muted d-block" t-esc="report_data['labels']['debit']"/>
-                        <strong dir="ltr" t-esc="report_data['debit_total']"/>
-                    </div></div>
-                    <div class="col"><div class="border rounded p-2 h-100">
-                        <small class="text-muted d-block" t-esc="report_data['labels']['credit']"/>
-                        <strong dir="ltr" t-esc="report_data['credit_total']"/>
-                    </div></div>
-                    <div class="col"><div class="border rounded p-2 h-100">
-                        <small class="text-muted d-block" t-esc="report_data['labels']['total']"/>
-                        <strong dir="ltr" t-esc="report_data['closing']"/>
-                    </div></div>
+                <div class="o_baseer_report_meta">
+                    <span>
+                        <span t-esc="report_data['labels']['rows']"/>
+                        <b dir="ltr" t-esc="first_row"/>–<b dir="ltr" t-esc="last_row"/>
+                        <span t-esc="report_data['labels']['of']"/>
+                        <b dir="ltr" t-esc="report_data['order_count']"/>
+                        <span t-esc="report_data['labels']['page']"/>
+                        <b dir="ltr" t-esc="page"/>/<b dir="ltr" t-esc="pages"/>
+                    </span>
+                    <span><span t-esc="report_data['labels']['currency']"/> <b dir="ltr" t-esc="report_data['currency']"/></span>
                 </div>
-                <p class="text-muted small">
-                    <span t-esc="report_data['labels']['rows']"/>
-                    <b dir="ltr" t-esc="first_row"/>–<b dir="ltr" t-esc="last_row"/>
-                    <span t-esc="report_data['labels']['of']"/>
-                    <b dir="ltr" t-esc="report_data['order_count']"/>
-                    <span t-esc="report_data['labels']['page']"/>
-                    <b dir="ltr" t-esc="page"/>/<b dir="ltr" t-esc="pages"/>
-                </p>
-                <p t-if="not report_data['rows']" class="text-muted" t-esc="report_data['labels']['empty']"/>
-                <div t-if="report_data['rows']" class="d-none d-lg-block">
-                    <table class="table table-sm table-striped align-middle">
+                <p t-if="not report_data['rows']" class="o_baseer_report_empty" t-esc="report_data['labels']['empty']"/>
+                <div t-if="report_data['rows']" class="o_baseer_report_desktop">
+                    <table class="o_baseer_report_table">
                         <thead><tr>
-                            <th class="text-center" t-esc="report_data['labels']['date']"/>
-                            <th class="text-center" t-esc="report_data['labels']['order']"/>
+                            <th t-esc="report_data['labels']['date']"/>
+                            <th t-esc="report_data['labels']['order']"/>
                             <th t-if="report_data['show_products']" t-esc="report_data['labels']['product']"/>
                             <th t-esc="report_data['labels']['type']"/>
-                            <th class="text-end" t-esc="report_data['labels']['debit']"/>
-                            <th class="text-end" t-esc="report_data['labels']['credit']"/>
-                            <th class="text-end" t-esc="report_data['labels']['running']"/>
+                            <th class="is-number" t-esc="report_data['labels']['debit']"/>
+                            <th class="is-number" t-esc="report_data['labels']['credit']"/>
+                            <th class="is-number" t-esc="report_data['labels']['running']"/>
                         </tr></thead>
                         <tbody><tr t-foreach="report_data['rows']" t-as="row">
-                            <td class="text-center" dir="ltr" t-esc="row['date']"/>
-                            <td class="text-center" dir="ltr" t-esc="row['order']"/>
+                            <td><span dir="ltr" t-esc="row['date']"/></td>
+                            <td class="is-reference"><span dir="ltr" t-esc="row['order']"/></td>
                             <td t-if="report_data['show_products']" t-esc="row['products']"/>
                             <td t-esc="row['type']"/>
-                            <td class="text-end" dir="ltr" t-esc="row['debit']"/>
-                            <td class="text-end" dir="ltr" t-esc="row['credit']"/>
-                            <td class="text-end" dir="ltr" t-esc="row['running']"/>
+                            <td class="is-number"><span t-att-class="'o_baseer_report_amount is-zero' if row['debit'] == '0.00' else 'o_baseer_report_amount is-outflow'" t-esc="row['debit']"/></td>
+                            <td class="is-number"><span t-att-class="'o_baseer_report_amount is-zero' if row['credit'] == '0.00' else 'o_baseer_report_amount'" t-esc="row['credit']"/></td>
+                            <td class="is-number"><span t-att-class="'o_baseer_report_amount is-negative' if row['running'].startswith('-') else ('o_baseer_report_amount is-zero' if row['running'] == '0.00' else 'o_baseer_report_amount')" t-esc="row['running']"/></td>
                         </tr></tbody>
                     </table>
                 </div>
-                <div t-if="report_data['rows']" class="d-lg-none">
-                    <article t-foreach="report_data['rows']" t-as="row" class="card mb-2">
-                        <div class="card-body py-2">
-                            <div class="d-flex justify-content-between gap-2 flex-wrap">
+                <div t-if="report_data['rows']" class="o_baseer_report_mobile">
+                    <article t-foreach="report_data['rows']" t-as="row" class="o_baseer_report_entry">
+                            <div class="o_baseer_report_entry_head">
                                 <strong dir="ltr" t-esc="row['order']"/>
-                                <span dir="ltr" t-esc="row['date']"/>
+                                <span class="o_baseer_report_entry_details" dir="ltr" t-esc="row['date']"/>
                             </div>
-                            <p t-if="report_data['show_products']" class="mb-1" t-esc="row['products']"/>
-                            <small t-esc="row['type']"/>
-                            <div class="d-flex justify-content-between gap-2 flex-wrap mt-1">
-                                <span><span t-esc="report_data['labels']['debit']"/>: <b dir="ltr" t-esc="row['debit']"/></span>
-                                <span><span t-esc="report_data['labels']['credit']"/>: <b dir="ltr" t-esc="row['credit']"/></span>
-                                <span><span t-esc="report_data['labels']['running']"/>: <b dir="ltr" t-esc="row['running']"/></span>
+                            <div t-if="report_data['show_products']" class="o_baseer_report_entry_details" t-esc="row['products']"/>
+                            <div class="o_baseer_report_entry_details" t-esc="row['type']"/>
+                            <div class="o_baseer_report_entry_value">
+                                <span t-esc="report_data['labels']['debit']"/>
+                                <b t-att-class="'o_baseer_report_amount is-zero' if row['debit'] == '0.00' else 'o_baseer_report_amount is-outflow'" t-esc="row['debit']"/>
                             </div>
-                        </div>
+                            <div class="o_baseer_report_entry_value">
+                                <span t-esc="report_data['labels']['credit']"/>
+                                <b t-att-class="'o_baseer_report_amount is-zero' if row['credit'] == '0.00' else 'o_baseer_report_amount'" t-esc="row['credit']"/>
+                            </div>
+                            <div class="o_baseer_report_entry_value">
+                                <span t-esc="report_data['labels']['running']"/>
+                                <b t-att-class="'o_baseer_report_amount is-negative' if row['running'].startswith('-') else ('o_baseer_report_amount is-zero' if row['running'] == '0.00' else 'o_baseer_report_amount')" t-esc="row['running']"/>
+                            </div>
                     </article>
                 </div>
-                <div t-if="report_data['exceptions']" class="alert alert-warning mt-3" role="note">
-                    <h3 class="h6" t-esc="report_data['labels']['mismatch']"/>
-                    <div t-foreach="report_data['exceptions']" t-as="exception" class="small">
+                <div t-if="report_data['exceptions']" class="o_baseer_report_warning" role="note">
+                    <h3>
+                        <span t-esc="report_data['labels']['mismatch']"/>
+                        <span class="o_baseer_report_warning_count" dir="ltr" t-esc="report_data['exception_count']"/>
+                    </h3>
+                    <div t-foreach="report_data['exceptions']" t-as="exception" class="o_baseer_report_warning_line">
                         <b dir="ltr" t-esc="exception['order']"/>
                         <span t-esc="report_data['labels']['computed_total']"/>
                         <b dir="ltr" t-esc="exception['computed_total']"/>
@@ -250,9 +260,8 @@
                         <b dir="ltr" t-esc="exception['saved_total']"/>
                     </div>
                     <p t-if="len(report_data['exceptions']) &lt; int(report_data['exception_count'])"
-                       class="mb-0 small" t-esc="report_data['labels']['more_differences']"/>
+                       class="mb-0 mt-2" t-esc="report_data['labels']['more_differences']"/>
                 </div>
-            </div>
-        </div>
+        </section>
     </template>
 </odoo>

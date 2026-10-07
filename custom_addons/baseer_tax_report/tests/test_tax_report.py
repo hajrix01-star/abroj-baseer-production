@@ -23,6 +23,16 @@ class TestSaudiVatReport(TransactionCase):
             'company_id': self.company.id, 'year': 2026, 'month': '9', 'quarter': '3',
         })
 
+    def _copy_sa_tax(self, source, values):
+        """Keep synthetic tax lines in the report's Saudi fiscal country."""
+        sa = self.env.ref('base.sa')
+        group = self.env['account.tax.group'].with_company(self.company).create({
+            'name': 'Saudi VAT report test group',
+            'company_id': self.company.id,
+            'country_id': sa.id,
+        })
+        return source.copy({**values, 'tax_group_id': group.id, 'country_id': sa.id})
+
     def test_month_and_quarter_ranges(self):
         self.assertEqual(self.wizard.display_mode, 'simple')
         self.assertEqual(self.wizard.period_type, 'quarter')
@@ -197,7 +207,7 @@ class TestSaudiVatReport(TransactionCase):
             'company_ids': [Command.set(self.company.ids)],
         })
         self.company.write({'tax_exigibility': True, 'account_cash_basis_base_account_id': base_account.id})
-        tax = standard_tax.copy({
+        tax = self._copy_sa_tax(standard_tax, {
             'name': 'VAT cash-basis report test', 'tax_exigibility': 'on_payment',
             'cash_basis_transition_account_id': waiting.id,
         })
@@ -206,6 +216,12 @@ class TestSaudiVatReport(TransactionCase):
         tags = self.env['account.account.tag']
         base_tag = tags._get_tax_tags('1(B)', self.env.ref('base.sa').id)
         tax_tag = tags._get_tax_tags('1(T)', self.env.ref('base.sa').id)
+        tax.invoice_repartition_line_ids.filtered(
+            lambda line: line.repartition_type == 'base',
+        ).write({'tag_ids': [Command.set(base_tag.ids)]})
+        tax.invoice_repartition_line_ids.filtered(
+            lambda line: line.repartition_type == 'tax',
+        ).write({'tag_ids': [Command.set(tax_tag.ids)]})
         invoice = self.env['account.move'].with_company(self.company).create({
             'move_type': 'entry', 'date': date(2033, 9, 15), 'journal_id': journal.id,
             'line_ids': [
@@ -253,7 +269,7 @@ class TestSaudiVatReport(TransactionCase):
             ('amount', '=', 15), ('tax_exigibility', '=', 'on_invoice'),
         ], limit=1)
         self.assertTrue(income and clearing and journal and standard_tax)
-        tax = standard_tax.copy({'name': 'Untagged VAT report test'})
+        tax = self._copy_sa_tax(standard_tax, {'name': 'Untagged VAT report test'})
         (tax.invoice_repartition_line_ids + tax.refund_repartition_line_ids).write({
             'tag_ids': [Command.clear()],
         })
@@ -298,6 +314,34 @@ class TestSaudiVatReport(TransactionCase):
         print_values = self.env['report.baseer_tax_report.report_tax']._get_report_values(self.wizard.ids)
         self.assertEqual(len(print_values['report_data']['visible_rows']), 16)
         self.assertFalse(print_values['report_data']['interactive'])
+
+    def test_shared_preview_shell_and_amount_states(self):
+        data = self.wizard.with_context(lang='ar_001')._build_report()
+        data['interactive'] = True
+        data['visible_rows'] = data['rows'][:4]
+        samples = (
+            (Decimal('15.00'), Decimal('0.00'), '15.00', '0.00'),
+            (Decimal('0.00'), Decimal('-2.50'), '0.00', '-2.50'),
+            (Decimal('-3.00'), None, '-3.00', '—'),
+            (None, Decimal('4.00'), '—', '4.00'),
+        )
+        for row, (base, tax, base_text, tax_text) in zip(data['visible_rows'], samples):
+            row.update(base=base, tax=tax, base_text=base_text, tax_text=tax_text)
+        preview = self.env['ir.qweb']._render(
+            'baseer_tax_report.preview_tax_report', {'report_data': data})
+        html = etree.HTML(preview)
+        self.assertTrue(html.xpath("//div[contains(@class, 'o_baseer_report')][@dir='rtl']"))
+        rows = html.xpath("//table[contains(@class, 'btr-table')]/tbody/tr[contains(@class, 'btr-row') and not(contains(@class, 'btr-row-actions'))]")
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(
+            [[cell.get('class', ''), ''.join(cell.itertext()).strip()] for row in rows for cell in row.xpath('./td')[1:]],
+            [
+                ['btr-money text-end', '15.00'], ['btr-money text-end is-zero', '0.00'],
+                ['btr-money text-end is-zero', '0.00'], ['btr-money text-end is-negative', '-2.50'],
+                ['btr-money text-end is-negative', '-3.00'], ['btr-money text-end', '—'],
+                ['btr-money text-end', '—'], ['btr-money text-end', '4.00'],
+            ],
+        )
 
     def test_exception_help_is_compact_in_preview_and_explicit_in_pdf(self):
         data = self.wizard.with_context(lang='ar_001')._build_report()

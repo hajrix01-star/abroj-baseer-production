@@ -39,7 +39,8 @@
                         </a>
                         <t t-else=""><span class="btr-number" t-esc="row['number']"/>. <span t-esc="row['name'].split('. ', 1)[-1]"/></t>
                     </td>
-                    <td class="btr-money text-end" dir="ltr">
+                    <td dir="ltr"
+                        t-att-class="'btr-money text-end' + (' is-zero' if row['base'] is not None and row['base'] == 0 else (' is-negative' if row['base'] is not None and row['base'] &lt; 0 else ''))">
                         <a t-if="report_data['interactive'] and row['direct'].get('base')"
                                 href="#" class="btr-open text-decoration-underline"
                                 t-att-data-id="row['number'] + ':base'" title="عرض القيود الداعمة"
@@ -50,7 +51,8 @@
                                 t-esc="row['base_text']"/>
                         <span t-else="" t-esc="row['base_text']"/>
                     </td>
-                    <td class="btr-money text-end" dir="ltr">
+                    <td dir="ltr"
+                        t-att-class="'btr-money text-end' + (' is-zero' if row['tax'] is not None and row['tax'] == 0 else (' is-negative' if row['tax'] is not None and row['tax'] &lt; 0 else ''))">
                         <a t-if="report_data['interactive'] and row['direct'].get('tax')"
                                 href="#" class="btr-open text-decoration-underline"
                                 t-att-data-id="row['number'] + ':tax'" title="عرض القيود الداعمة"
@@ -137,21 +139,29 @@
         </div>
     </template>
     <template id="preview_tax_report">
-        <div class="card mt-3 btr-report-card w-100" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
-            <div class="card-body">
-                <h2 class="h4 text-center">تقرير ضريبة القيمة المضافة / Saudi VAT Report</h2>
-                <p class="text-center">
-                    <span t-esc="report_data['company'].name"/> —
-                    <span dir="ltr" t-esc="report_data['date_from']"/> إلى
-                    <span dir="ltr" t-esc="report_data['date_to']"/> —
-                    <span t-esc="report_data['currency'].name"/>
-                </p>
-                <div t-if="report_data['journal_names']" class="alert alert-info" role="status">
-                    تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر / Selected journals — analytical view, not the full VAT return:
-                    <span t-esc="report_data['journal_names']"/>
+        <div class="btr-report-card o_baseer_report" t-att-dir="'rtl' if report_data['is_rtl'] else 'ltr'">
+            <header class="o_baseer_report_head">
+                <div class="o_baseer_report_identity">
+                    <div>
+                        <h2 class="o_baseer_report_title">
+                            <t t-if="report_data['is_rtl']">تقرير ضريبة القيمة المضافة</t>
+                            <t t-else="">Saudi VAT Report</t>
+                        </h2>
+                        <p class="o_baseer_report_period">
+                            <span t-esc="report_data['company'].name"/> ·
+                            <span dir="ltr" t-esc="report_data['date_from']"/> —
+                            <span dir="ltr" t-esc="report_data['date_to']"/>
+                        </p>
+                    </div>
                 </div>
-                <div class="table-responsive"><t t-call="baseer_tax_report.tax_table"/></div>
+                <span class="o_baseer_report_meta" t-esc="report_data['currency'].name"/>
+            </header>
+            <div t-if="report_data['journal_names']" class="o_baseer_report_warning" role="status">
+                <t t-if="report_data['is_rtl']">تحليل حسب الدفاتر المختارة؛ ليس إجمالي الإقرار لجميع الدفاتر:</t>
+                <t t-else="">Selected journals — analytical view, not the full VAT return:</t>
+                <span t-esc="report_data['journal_names']"/>
             </div>
+            <div class="btr-table-scroll"><t t-call="baseer_tax_report.tax_table"/></div>
         </div>
     </template>
     <template id="report_tax">

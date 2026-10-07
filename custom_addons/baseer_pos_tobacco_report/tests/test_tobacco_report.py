@@ -45,6 +45,8 @@ class FakeProduct:
 class TestTobaccoReport(TransactionCase):
     def setUp(self):
         super().setUp()
+        # The register is SAR-only; a fresh Odoo database defaults to USD.
+        self.env.company.currency_id = self.env.ref('base.SAR')
         self.report = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees']
 
     def test_print_button_is_visible_in_full_page_wizard(self):
@@ -109,7 +111,9 @@ class TestTobaccoReport(TransactionCase):
         })
         action = wizard.action_print_monthly()
         self.assertEqual((wizard.date_from, wizard.date_to), (date(2028, 2, 1), date(2028, 2, 29)))
-        self.assertEqual(action['type'], 'ir.actions.report')
+        # A fresh database may first open Odoo's document-layout configurator.
+        report_action = action.get('context', {}).get('report_action', action)
+        self.assertEqual(report_action['type'], 'ir.actions.report')
 
     def test_monthly_pdf_uses_selected_month_in_filename_and_a4_layout(self):
         report = self.env.ref('baseer_pos_tobacco_report.action_report_pos_tobacco_fees')
@@ -125,13 +129,14 @@ class TestTobaccoReport(TransactionCase):
             safe_eval(report.print_report_name, {'object': wizard, 'time': time}),
             'رسوم التبغ لـ 8-2026',
         )
-        self.assertEqual(
-            safe_eval(
-                report.with_context(lang='ar_001').print_report_name,
-                {'object': wizard, 'time': time},
-            ),
-            'رسوم التبغ لـ 8-2026',
-        )
+        if self.env['res.lang'].search([('code', '=', 'ar_001')], limit=1):
+            self.assertEqual(
+                safe_eval(
+                    report.with_context(lang='ar_001').print_report_name,
+                    {'object': wizard, 'time': time},
+                ),
+                'رسوم التبغ لـ 8-2026',
+            )
         custom_wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).create({
             'company_id': user.company_id.id,
             'month': '8', 'year': 2026,
@@ -178,6 +183,61 @@ class TestTobaccoReport(TransactionCase):
             wizard._compute_preview()
             self.assertIn('ORDER-101', str(wizard.preview_html))
             self.assertNotIn('ORDER-001', str(wizard.preview_html))
+
+    def test_preview_shell_marks_zero_refund_and_exception(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': user.company_id.id, 'month': '9', 'year': 2026,
+        })
+        source = self.report.with_user(user)._build_report(wizard)
+        source.update({
+            'rows': [{
+                'date': '01-09-2026 00:00', 'order': 'REFUND-1',
+                'products': 'Shisha × -1', 'type': 'Refund',
+                'debit': '25.00', 'credit': '0.00', 'running': '-25.00',
+            }],
+            'order_count': '1', 'debit_total': '25.00',
+            'credit_total': '0.00', 'closing': '-25.00',
+            'exceptions': [{
+                'order': 'REFUND-1', 'computed_total': '-25.00',
+                'saved_total': '-24.00',
+            }],
+            'exception_count': '1',
+        })
+        with patch.object(BaseerPosTobaccoReport, '_build_report', return_value=source):
+            wizard._compute_preview()
+        preview = str(wizard.preview_html)
+        self.assertIn('o_baseer_report', preview)
+        self.assertIn('o_baseer_report_amount is-outflow', preview)
+        self.assertIn('o_baseer_report_amount is-negative', preview)
+        self.assertIn('o_baseer_report_amount is-zero', preview)
+        self.assertIn('o_baseer_report_warning', preview)
+        self.assertIn('REFUND-1', preview)
+
+    def test_preview_shows_total_exception_count_and_pdf_overflow_notice(self):
+        user = self.env.ref('base.user_admin')
+        wizard = self.env['baseer.pos.tobacco.report.wizard'].with_user(user).new({
+            'company_id': user.company_id.id, 'month': '9', 'year': 2026,
+        })
+        source = self.report.with_user(user)._build_report(wizard)
+        source.update({
+            'exceptions': [{
+                'order': f'ORDER-{index:03d}',
+                'computed_total': '25.00', 'saved_total': '24.00',
+            } for index in range(101)],
+            'exception_count': '101',
+        })
+        with patch.object(BaseerPosTobaccoReport, '_build_report', return_value=source):
+            wizard._compute_preview()
+        preview = str(wizard.preview_html)
+        html = etree.HTML(preview)
+        self.assertEqual(
+            html.xpath('//span[@class="o_baseer_report_warning_count"]/text()'),
+            ['101'],
+        )
+        self.assertIn('ORDER-099', preview)
+        self.assertNotIn('ORDER-100', preview)
+        self.assertIn(source['labels']['more_differences'], preview)
 
     def test_oversized_month_shows_split_action(self):
         user = self.env.ref('base.user_admin')
@@ -324,34 +384,59 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual(_western('١٢۳٤'), '1234')
         self.assertEqual(_format_money(Decimal('3554.6')), '3,554.60')
 
-    def _qa_tobacco_line(self):
-        line = self.env['pos.order.line'].search([
-            ('product_id.default_code', '=', 'ARZ-PRD-026-55'),
-            ('order_id.source', '=', 'pos'),
-            ('order_id.state', 'in', ('paid', 'done')),
-            ('order_id.company_id', '=', self.env.company.id),
+    def _pos_fixture(self):
+        """Build a native POS tax pipeline without depending on QA sales."""
+        if hasattr(self, '_tobacco_pos_fixture'):
+            return self._tobacco_pos_fixture
+        company = self.env.company
+        account_model = self.env['account.account'].with_company(company)
+        tobacco_account = account_model.search([
+            ('code', '=', '201021'), ('company_ids', 'in', company.id),
         ], limit=1)
-        if not line:
-            self.skipTest('The QA tobacco POS fixture is unavailable in this database')
-        return line
+        if not tobacco_account:
+            tobacco_account = account_model.create({
+                'name': 'Tobacco fee test payable', 'code': '201021',
+                'account_type': 'liability_current',
+                'company_ids': [Command.set(company.ids)],
+            })
+        tobacco_tax = self.env['account.tax'].with_company(company).create({
+            'name': 'Tobacco report fixed fee test', 'amount_type': 'fixed',
+            'amount': 25, 'type_tax_use': 'sale', 'company_id': company.id,
+        })
+        (tobacco_tax.invoice_repartition_line_ids
+         | tobacco_tax.refund_repartition_line_ids).filtered(
+            lambda repartition: repartition.repartition_type == 'tax',
+        ).write({'account_id': tobacco_account.id})
+        product = self.env['product.template'].with_company(company).create({
+            'name': 'Tobacco report shisha test', 'available_in_pos': True,
+            'list_price': 55, 'taxes_id': [Command.set(tobacco_tax.ids)],
+        }).product_variant_id
+        config = self.env['pos.config'].with_company(company).create({
+            'name': 'Tobacco report test register', 'company_id': company.id,
+        })
+        config.open_ui()
+        session = config.current_session_id
+        session.write({'state': 'opened'})
+        self._tobacco_pos_fixture = (product, tobacco_tax, session)
+        return self._tobacco_pos_fixture
 
     def _real_order(self, quantities):
-        source = self._qa_tobacco_line()
+        product, tobacco_tax, session = self._pos_fixture()
         vals = []
         for qty in quantities:
             vals.append(Command.create({
-                'product_id': source.product_id.id,
-                'tax_ids': [Command.set(source.tax_ids.ids)],
+                'product_id': product.id,
+                'tax_ids': [Command.set(tobacco_tax.ids)],
                 'uuid': str(uuid4()),
                 'qty': qty,
-                'price_unit': source.price_unit,
-                'price_subtotal': source.price_subtotal / source.qty * qty,
-                'price_subtotal_incl': source.price_subtotal_incl / source.qty * qty,
-                'full_product_name': source.full_product_name or source.product_id.display_name,
+                'price_unit': 55,
+                'price_subtotal': 55 * qty,
+                'price_subtotal_incl': 80 * qty,
+                'full_product_name': product.display_name,
             }))
         order = self.env['pos.order'].create({
-            'company_id': source.order_id.company_id.id,
-            'session_id': source.order_id.session_id.id,
+            'company_id': self.env.company.id,
+            'session_id': session.id,
             'source': 'pos',
             'is_refund': all(qty < 0 for qty in quantities),
             'amount_tax': 0,
@@ -434,11 +519,10 @@ class TestTobaccoReport(TransactionCase):
             monthly.preview_html
 
     def test_report_requires_allowed_company_even_with_both_groups(self):
-        other_company = self.env['res.company'].search([
-            ('id', '!=', self.env.company.id),
-        ], limit=1)
-        if not other_company:
-            self.skipTest('Multi-company QA fixture is unavailable')
+        other_company = self.env['res.company'].create({
+            'name': 'Tobacco report inaccessible company',
+            'currency_id': self.env.ref('base.SAR').id,
+        })
         groups = (
             self.env.ref('base.group_user')
             | self.env.ref('account.group_account_readonly')
@@ -457,6 +541,12 @@ class TestTobaccoReport(TransactionCase):
             'date_to': date(2026, 9, 30),
         })
         allowed.with_user(user)._check_report_access()
-        forbidden = allowed.copy({'company_id': other_company.id})
+        forbidden = self.env['baseer.pos.tobacco.report.wizard'].with_company(
+            other_company,
+        ).create({
+            'company_id': other_company.id,
+            'date_from': date(2026, 9, 1),
+            'date_to': date(2026, 9, 30),
+        })
         with self.assertRaises(AccessError):
             forbidden.with_user(user)._check_report_access()

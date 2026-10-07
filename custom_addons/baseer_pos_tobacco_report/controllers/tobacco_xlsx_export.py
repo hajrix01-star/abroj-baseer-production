@@ -7,8 +7,10 @@ from odoo.http import content_disposition, request
 
 
 class BaseerTobaccoXlsxExport(http.Controller):
+    # Keep the immediate follow-up GET on primary: the transient was just created
+    # by a POST and may not yet exist on an optional read replica.
     @http.route('/baseer/pos/tobacco/export/<int:export_id>', type='http', auth='user',
-                methods=['GET'], readonly=True)
+                methods=['GET'])
     def download(self, export_id, company_id=None, **kwargs):
         try:
             if type(company_id) is not str or not company_id.isdecimal():

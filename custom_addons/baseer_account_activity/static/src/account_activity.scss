@@ -19,10 +19,11 @@
     .o_baseer_activity_paper_heading p { margin: 0.2rem 0 0; color: #697783; font-size: 0.79rem; }
     .o_baseer_activity_paper_heading > span { color: #697783; font-size: 0.79rem; white-space: nowrap; }
     .o_baseer_activity_currency { margin-bottom: 0.45rem; color: #697783; font-size: 0.77rem; text-align: end; }
-    .o_baseer_activity_period_summary { margin-bottom: 1rem; border-block: 1px solid #dfe3e7; }
+    .o_baseer_activity_scope { margin: 0 0 0.5rem; color: #697783; font-size: 0.75rem; }
+    .o_baseer_activity_period_summary { margin-bottom: 0.75rem; border-block: 1px solid #dfe3e7; }
     .o_baseer_activity_summary_title { padding: 0.45rem 0.65rem 0; color: #697783; font-size: 0.74rem; }
     .o_baseer_activity_period_totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .o_baseer_activity_period_totals > div { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.45rem 0.65rem 0.65rem; }
+    .o_baseer_activity_period_totals > div { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.4rem 0.65rem 0.55rem; }
     .o_baseer_activity_period_totals span { color: #697783; font-size: 0.74rem; }
     .o_baseer_activity_period_totals b { font-size: 0.85rem; }
 
@@ -32,7 +33,8 @@
     .o_baseer_activity_paper .o_baseer_report_table th:nth-child(3) { width: 29%; }
     .o_baseer_activity_paper .o_baseer_report_table th:nth-child(n+4) { width: 14%; }
     .o_baseer_activity_paper .o_baseer_report_table th,
-    .o_baseer_activity_paper .o_baseer_report_table td { padding: 0.45rem 0.4rem; }
+    .o_baseer_activity_paper .o_baseer_report_table td { padding: 0.38rem 0.4rem; }
+    .o_baseer_activity_paper .o_baseer_report_table tbody tr:hover { background: #f5f8f8; }
     .o_baseer_activity_paper .o_baseer_report_table thead th { background: #fff; color: #24303d; }
     .o_baseer_activity_link {
         border: 0; padding: 0; background: transparent; color: #087d84;
@@ -58,9 +60,6 @@
 }
 .o_baseer_reports_hub .o_baseer_account_activity .o_baseer_report_toolbar {
     justify-content: flex-start;
-    padding: 0 0 0.75rem;
-    background: transparent;
-    border-bottom: 0;
 }
 .o_baseer_reports_hub .o_baseer_account_activity .o_baseer_report_canvas { padding: 0; }
 .o_baseer_reports_hub .o_baseer_account_activity .o_baseer_activity_notice { margin: 1rem auto; }

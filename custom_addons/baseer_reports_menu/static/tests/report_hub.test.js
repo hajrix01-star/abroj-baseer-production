@@ -2,8 +2,26 @@
 
 import { expect, test } from "@odoo/hoot";
 import { allowedReports } from "@baseer_reports_menu/report_hub";
+import { ReportSelector } from "@baseer_reports_menu/report_selector";
 
 class ReportComponent {}
+
+test("the shared selector uses the permitted report title in the current language", () => {
+    const context = {
+        props: { options: [{ key: "vat", label: { ar: "ضريبة القيمة المضافة", en: "VAT" } }],
+            selectedKey: "vat", label: "اختر تقريرًا", lang: "ar" },
+        reportName: ReportSelector.prototype.reportName,
+    };
+    expect(ReportSelector.prototype.selectedName.call(context)).toBe("ضريبة القيمة المضافة");
+    context.props.selectedKey = "missing";
+    expect(ReportSelector.prototype.selectedName.call(context)).toBe("اختر تقريرًا");
+});
+
+test("the shared selector forwards the selected report key to the hub", () => {
+    const selected = [];
+    ReportSelector.prototype.selectReport.call({ props: { onSelect: (key) => selected.push(key) } }, "tobacco");
+    expect(selected).toEqual(["tobacco"]);
+});
 
 test("the report selector shows only allowed real registrations in a stable order", async () => {
     const reports = [

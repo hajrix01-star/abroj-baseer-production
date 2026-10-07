@@ -2,20 +2,10 @@
 <templates xml:space="preserve">
     <t t-name="baseer_reports_menu.Hub">
         <div class="o_baseer_reports_hub" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
-            <header class="o_baseer_report_toolbar">
+            <header t-if="!selectedReport" class="o_baseer_report_toolbar">
                 <div class="o_baseer_report_toolbar_identity">
-                    <Dropdown>
-                        <button class="o_baseer_report_switcher" type="button" t-att-aria-label="labels.choose">
-                            <span t-esc="selectedReport ? reportName(selectedReport) : labels.title"/>
-                            <i class="fa fa-caret-down" aria-hidden="true"/>
-                        </button>
-                        <t t-set-slot="content">
-                            <DropdownItem t-foreach="options" t-as="option" t-key="option.key"
-                                onSelected="() => this.selectReport(option.key)">
-                                <t t-esc="reportName(option)"/>
-                            </DropdownItem>
-                        </t>
-                    </Dropdown>
+                    <ReportSelector options="options" selectedKey="state.selectedKey"
+                        label="labels.choose" lang="lang" onSelect="(key) => this.selectReport(key)"/>
                 </div>
                 <span class="o_baseer_reports_hub_brand" t-esc="labels.title"/>
             </header>
@@ -27,7 +17,9 @@
             <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
             <div t-if="state.ready &amp;&amp; !state.error &amp;&amp; selectedReport"
                 class="o_baseer_reports_hub_body">
-                <t t-component="selectedComponent" t-key="state.selectedKey" embedded="true"/>
+                <t t-component="selectedComponent" t-key="state.selectedKey" embedded="true"
+                    reportOptions="options" selectedReportKey="state.selectedKey"
+                    reportSelectorLabel="labels.choose" onReportSelect="(key) => this.selectReport(key)"/>
             </div>
         </div>
     </t>

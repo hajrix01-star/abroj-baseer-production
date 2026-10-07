@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { Component, onWillStart, useState } from "@odoo/owl";
+import { ReportSelector } from "@baseer_reports_menu/report_selector";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
 
@@ -38,6 +39,7 @@ const copy = {
 };
 
 export class SaudiVatReport extends Component {
+    static components = { ReportSelector };
     static template = "baseer_tax_report.SaudiVatReport";
     static props = ["*"];
 

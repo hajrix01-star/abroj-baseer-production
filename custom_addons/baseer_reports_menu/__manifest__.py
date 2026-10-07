@@ -9,6 +9,8 @@
     "data": ["views/reports_menu.xml"],
     "assets": {
         "web.assets_backend": [
+            "baseer_reports_menu/static/src/report_selector.js",
+            "baseer_reports_menu/static/src/report_selector.xml",
             "baseer_reports_menu/static/src/report_hub.js",
             "baseer_reports_menu/static/src/report_hub.xml",
             "baseer_reports_menu/static/src/report_shell.scss",

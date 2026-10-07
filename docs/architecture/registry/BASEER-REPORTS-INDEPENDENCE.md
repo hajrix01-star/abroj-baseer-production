@@ -16,3 +16,7 @@ Classification: architectural dependency boundary. Base: `9393b31ebd9410a80dbd11
 ## Current navigation phase
 
 Move only the existing `baseer_reports_menu.menu_baseer_reports` to a top-level Odoo section, preserving its XML ID, child actions, and groups. The independence rule applies to all newly built reports, while placement of existing operational POS, procurement and payroll reports is a separate scope decision. Reversal restores the root menu's previous `account.menu_finance_reports` parent; it does not migrate report data.
+
+## 2026-10-07 owner amendment — one entry under Invoicing / Reporting
+
+The owner superseded the top-level placement after reviewing QA: the intended journey is **Invoicing → Reporting → Baseer Reports → select a real report inside one report page**. Keep the existing report modules and financial computations independent; moving navigation does not move source code into `account` or ERP Heritage. Preserve the root menu XML ID but restore its parent to `account.menu_finance_reports` and make it the sole visible Baseer report entry. Preserve individual report action XML IDs for existing deep links and rollback, while suppressing their duplicate navigation items. Keep the synthetic design-preview action separate from the real report selector and unavailable in ordinary report navigation. Only installed, permitted, real reports may appear. This is a CONTROLLED multi-module navigation/UX change, not approval to build the remaining financial calculators or retire Heritage.

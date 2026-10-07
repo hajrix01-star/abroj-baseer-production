@@ -3,17 +3,8 @@
     <t t-name="baseer_account_activity.Report">
         <main class="o_baseer_account_activity" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <header class="o_baseer_report_toolbar">
-                <div class="o_baseer_report_toolbar_identity">
-                    <Dropdown>
-                        <button class="o_baseer_report_switcher" type="button" t-att-aria-label="labels.chooseReport">
-                            <span t-esc="labels.title"/><i class="fa fa-caret-down" aria-hidden="true"/>
-                        </button>
-                        <t t-set-slot="content">
-                            <DropdownItem t-foreach="reportOptions" t-as="option" t-key="option.id" onSelected="() => this.openReport(option)">
-                                <t t-esc="option.name"/>
-                            </DropdownItem>
-                        </t>
-                    </Dropdown>
+                <div t-if="!props.embedded" class="o_baseer_report_toolbar_identity">
+                    <button class="o_baseer_report_switcher" type="button" t-on-click="goToReports" t-esc="labels.backToReports"/>
                 </div>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.scope">
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>

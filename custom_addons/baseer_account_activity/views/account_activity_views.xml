@@ -8,4 +8,7 @@
         parent="baseer_reports_menu.menu_baseer_reports" action="action_account_activity"
         sequence="10"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="menu_account_activity" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 </odoo>

@@ -399,9 +399,13 @@ class TestTobaccoReport(TransactionCase):
                 'account_type': 'liability_current',
                 'company_ids': [Command.set(company.ids)],
             })
+        tax_group = self.env['account.tax.group'].with_company(company).create({
+            'name': 'Tobacco report test group', 'company_id': company.id,
+        })
         tobacco_tax = self.env['account.tax'].with_company(company).create({
             'name': 'Tobacco report fixed fee test', 'amount_type': 'fixed',
             'amount': 25, 'type_tax_use': 'sale', 'company_id': company.id,
+            'tax_group_id': tax_group.id,
         })
         (tobacco_tax.invoice_repartition_line_ids
          | tobacco_tax.refund_repartition_line_ids).filtered(

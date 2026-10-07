@@ -51,3 +51,16 @@
         .o_baseer_activity_period_totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 }
+
+.o_baseer_reports_hub .o_baseer_account_activity {
+    min-height: 0;
+    background: transparent;
+}
+.o_baseer_reports_hub .o_baseer_account_activity .o_baseer_report_toolbar {
+    justify-content: flex-start;
+    padding: 0 0 0.75rem;
+    background: transparent;
+    border-bottom: 0;
+}
+.o_baseer_reports_hub .o_baseer_account_activity .o_baseer_report_canvas { padding: 0; }
+.o_baseer_reports_hub .o_baseer_account_activity .o_baseer_activity_notice { margin: 1rem auto; }

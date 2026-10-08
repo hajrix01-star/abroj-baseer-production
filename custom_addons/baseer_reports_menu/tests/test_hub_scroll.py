@@ -42,6 +42,10 @@ class TestHubScroll(HttpCase):
         )
 
 
+@tagged('post_install', '-at_install')
 class TestHubScrollMobile(TestHubScroll):
     browser_size = '375x812'
     touch_enabled = True
+
+    def test_real_client_action_owns_vertical_scroll(self):
+        super().test_real_client_action_owns_vertical_scroll()

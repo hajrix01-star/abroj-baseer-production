@@ -97,6 +97,7 @@ class TestProfitLoss(TransactionCase):
         self._entry('income_other', '10')
         self._entry('expense_direct_cost', '60')
         self._entry('expense', '30')
+        self._entry('expense_other', '4')
         self._entry('expense_depreciation', '5')
         self._entry('income', '999', posted=False)
         self._entry('income', '999', day='2040-12-31')
@@ -107,9 +108,10 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self._section(result, 'income_other')['amount'], '10.00')
         self.assertEqual(self._section(result, 'expense_direct_cost')['amount'], '-60.00')
         self.assertEqual(self._section(result, 'expense')['amount'], '-30.00')
+        self.assertEqual(self._section(result, 'expense_other')['amount'], '-4.00')
         self.assertEqual(self._section(result, 'expense_depreciation')['amount'], '-5.00')
         self.assertEqual(result['gross_profit']['amount'], '120.00')
-        self.assertEqual(result['net_profit']['amount'], '95.00')
+        self.assertEqual(result['net_profit']['amount'], '91.00')
         sources = self.env['account.move.line'].search([
             ('company_id', '=', self.company.id),
             ('parent_state', '=', 'posted'),
@@ -124,6 +126,7 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(Decimal(result['net_profit']['amount']),
                          expected['income'] + expected['income_other']
                          - expected['expense_direct_cost'] - expected['expense']
+                         - expected['expense_other']
                          - expected['expense_depreciation'])
         self.assertFalse(result['is_partial_journals'])
         self.assertEqual(self.report.get_accounts(self.filters, 'income')['total_amount'], '180.00')
@@ -179,6 +182,32 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self.report.get_lines(self.filters, original.id)['total_amount'], '7.00')
         with self.assertRaises(ValidationError):
             self.report.get_lines(self.filters, original.id, 0)
+
+    def test_other_expense_refund_archived_and_journal_scope(self):
+        account = self.accounts['expense_other']
+        self._entry('expense_other', '10')
+        self._entry('expense_other', '-2')
+        account.active = False
+        selected = {**self.filters, 'journal_ids': [self.journal.id]}
+        result = self.report.get_report(selected)
+        self.assertEqual(self._section(result, 'expense_other')['amount'], '-8.00')
+        self.assertEqual(result['net_profit']['amount'], '-8.00')
+        page = self.report.get_accounts(selected, 'expense_other')
+        self.assertEqual(page['total_amount'], '-8.00')
+        self.assertEqual(page['accounts'][0]['id'], account.id)
+        lines = self.report.get_lines(selected, account.id)
+        self.assertEqual(lines['total_count'], 2)
+        self.assertEqual(lines['total_amount'], '-8.00')
+        source = self.env['account.move.line'].with_context(active_test=False).search([
+            ('company_id', '=', self.company.id),
+            ('parent_state', '=', 'posted'),
+            ('account_id', '=', account.id),
+            ('journal_id', '=', self.journal.id),
+            ('date', '>=', selected['date_from']),
+            ('date', '<=', selected['date_to']),
+        ])
+        raw = sum((Decimal(str(row.debit)) - Decimal(str(row.credit)) for row in source), Decimal('0'))
+        self.assertEqual(raw, Decimal('8'))
 
     def test_account_pages_do_not_change_section_total(self):
         extra = self.env['account.account'].with_company(self.company).create({

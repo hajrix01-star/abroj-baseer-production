@@ -12,9 +12,11 @@ from odoo.fields import Domain
 
 SECTION_KEYS = (
     'income', 'income_other', 'expense_direct_cost',
-    'expense', 'expense_depreciation',
+    'expense', 'expense_other', 'expense_depreciation',
 )
-EXPENSE_KEYS = frozenset(('expense_direct_cost', 'expense', 'expense_depreciation'))
+EXPENSE_KEYS = frozenset((
+    'expense_direct_cost', 'expense', 'expense_other', 'expense_depreciation',
+))
 
 
 class BaseerProfitLossReport(models.AbstractModel):
@@ -198,7 +200,7 @@ class BaseerProfitLossReport(models.AbstractModel):
                       for key in SECTION_KEYS}
         gross = raw_totals['income'] - raw_totals['expense_direct_cost']
         net = (gross + raw_totals['income_other'] - raw_totals['expense']
-               - raw_totals['expense_depreciation'])
+               - raw_totals['expense_other'] - raw_totals['expense_depreciation'])
         currency = company.currency_id
         sections = []
         for key in SECTION_KEYS:

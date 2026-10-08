@@ -2,6 +2,11 @@ name: Benchmark Baseer general ledger capacity
 
 on:
   workflow_dispatch:
+    inputs:
+      diagnostic_ten:
+        description: Measure ten readers even when latency gates fail (never G6 GO)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -57,10 +62,13 @@ jobs:
             < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_capacity.py"
       - name: Measure report reads as non-superuser in fresh process
         shell: bash
+        env:
+          BASEER_GL_DIAG_TEN: ${{ inputs.diagnostic_ten }}
         run: |
           set -Eeuo pipefail
           docker run --rm -i --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_GL_BENCH_PHASE=measure \
+            -e BASEER_GL_DIAG_TEN="$BASEER_GL_DIAG_TEN" \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \

@@ -28,6 +28,7 @@ LINES_PER_MOVE = 100
 BATCH_MOVES = 20
 PERIOD = {"date_from": "2041-01-01", "date_to": "2041-12-31"}
 PHASE = os.environ.get("BASEER_GL_BENCH_PHASE")
+DIAG_TEN = os.environ.get("BASEER_GL_DIAG_TEN") == "true"
 READONLY_LOGIN = "baseer_gl_capacity_readonly"
 READONLY_NAME = "Baseer GL capacity read-only accountant"
 READONLY_ID_PARAM = "baseer_gl_capacity_readonly_user_id"
@@ -72,6 +73,22 @@ def memory_snapshot():
         "address_space_hard_limit_mb": None if hard_limit == resource.RLIM_INFINITY else hard_limit // 1048576,
         "effective_headroom_mb": max(0, available_mb),
     }
+
+
+def cpu_snapshot():
+    times = process.cpu_times()
+    snapshot = {"process_cpu_seconds": round(times.user + times.system, 4)}
+    try:
+        with open("/sys/fs/cgroup/cpu.max", encoding="ascii") as source:
+            snapshot["cgroup_cpu_max"] = source.read().strip()
+        with open("/sys/fs/cgroup/cpu.stat", encoding="ascii") as source:
+            for line in source:
+                key, value = line.split()
+                if key in ("usage_usec", "nr_throttled", "throttled_usec"):
+                    snapshot[f"cgroup_{key}"] = int(value)
+    except (OSError, ValueError):
+        snapshot["cgroup_cpu_stat"] = "unavailable"
+    return snapshot
 
 
 def seed():
@@ -189,6 +206,7 @@ def measure_capacity():
                 raise RuntimeError("Benchmark report escaped the read-only accountant identity")
             before_queries = cursor.sql_log_count
             started = time.perf_counter()
+            started_thread_cpu = time.thread_time()
             try:
                 result = getattr(report, method)(filters, *args)
             except Exception as error:
@@ -198,10 +216,12 @@ def measure_capacity():
                 }), flush=True)
                 raise
             seconds = time.perf_counter() - started
+            thread_cpu = time.thread_time() - started_thread_cpu
             queries = cursor.sql_log_count - before_queries
         after = memory_snapshot()
         return {
             "seconds": round(seconds, 4),
+            "thread_cpu_seconds": round(thread_cpu, 4),
             "sql_queries": queries,
             "rss_delta_mb": round(after["process_rss_mb"] - before["process_rss_mb"], 2),
             "peak_rss_delta_mb": round(after["process_peak_rss_mb"] - before["process_peak_rss_mb"], 2),
@@ -240,26 +260,44 @@ def measure_capacity():
     print("BASEER_GL_BENCHMARK_SINGLE=" + json.dumps(single, sort_keys=True), flush=True)
     gc.collect()
 
-    def concurrent_sample(readers):
+    def concurrent_sample(readers, profile_sql=False):
         barrier = Barrier(readers)
 
         def one_read(_index):
             barrier.wait(timeout=30)
-            sample = measure("get_report", 1)
-            return sample["seconds"], sample["sql_queries"]
+            if profile_sql:
+                with Profiler(collectors=["sql"], db=None,
+                              description="Baseer GL concurrent SQL diagnostic") as profile:
+                    sample = measure("get_report", 1)
+                sample["sql_wall_seconds"] = round(
+                    sum(entry["time"] for entry in profile.collectors[0].entries), 4,
+                )
+            else:
+                sample = measure("get_report", 1)
+            return sample
 
+        cpu_before = cpu_snapshot()
         started = time.perf_counter()
         with ThreadPoolExecutor(max_workers=readers) as pool:
             values = list(pool.map(one_read, range(readers)))
-        durations = [item[0] for item in values]
-        return {
+        cpu_after = cpu_snapshot()
+        durations = [item["seconds"] for item in values]
+        result = {
             "readers": readers,
             "wall_seconds": round(time.perf_counter() - started, 4),
             "p50_seconds": round(statistics.median(durations), 4),
             "p95_seconds": round(sorted(durations)[math.ceil(0.95 * len(durations)) - 1], 4),
             "max_seconds": max(durations),
-            "sql_queries_per_reader": [item[1] for item in values],
+            "sql_queries_per_reader": [item["sql_queries"] for item in values],
+            "thread_cpu_seconds_per_reader": [item["thread_cpu_seconds"] for item in values],
+            "cpu_before": cpu_before, "cpu_after": cpu_after,
         }
+        if profile_sql:
+            result["sql_wall_seconds_per_reader"] = [
+                item["sql_wall_seconds"] for item in values
+            ]
+            result["diagnostic_profiler_overhead"] = True
+        return result
 
     growth_mb = max(
         *(sample[key] for sample in (first, page50, lines, action)
@@ -287,9 +325,12 @@ def measure_capacity():
     print("BASEER_GL_BENCHMARK_TWO_READERS=" + json.dumps(two_readers), flush=True)
 
     ten_safe, ten_memory, ten_required = safe_for(10)
-    if (first["seconds"] <= 3.0 and two_readers.get("max_seconds", 999) <= 5.0
-            and ten_safe):
+    if (ten_safe and first["seconds"] <= 15.0
+            and (DIAG_TEN or (first["seconds"] <= 3.0
+                              and two_readers.get("max_seconds", 999) <= 5.0))):
         ten_readers = concurrent_sample(10)
+        if DIAG_TEN:
+            ten_readers["diagnostic_only"] = True
     else:
         ten_readers = {
             "status": "SKIPPED_SAFETY_GUARD",
@@ -307,6 +348,16 @@ def measure_capacity():
             "CI runner is not deployment capacity; independent G6 review is required",
         ],
     }, sort_keys=True), flush=True)
+    if DIAG_TEN and ten_readers.get("readers") == 10 and ten_readers["max_seconds"] <= 30:
+        profile_safe, _, _ = safe_for(10)
+        if profile_safe:
+            try:
+                profiled_ten = concurrent_sample(10, profile_sql=True)
+                print("BASEER_GL_DIAG_TEN_SQL=" + json.dumps(profiled_ten), flush=True)
+            except Exception as error:
+                print("BASEER_GL_DIAG_TEN_SQL=" + json.dumps({
+                    "status": "UNAVAILABLE", "error": type(error).__name__,
+                }), flush=True)
     final_memory = memory_snapshot()
     vms_limit = final_memory['address_space_soft_limit_mb']
     cgroup_limit = final_memory['cgroup_limit_mb']
@@ -321,7 +372,7 @@ def measure_capacity():
     }
     print('BASEER_GL_MEMORY_LIMITS=' + json.dumps(memory_limits), flush=True)
     capacity_failed = (
-        "status" in two_readers or "status" in ten_readers
+        DIAG_TEN or "status" in two_readers or "status" in ten_readers
         or first["seconds"] > 3.0 or page50["seconds"] > 3.0
         or two_readers.get("max_seconds", float("inf")) > 5.0
         or ten_readers.get("max_seconds", float("inf")) > 5.0

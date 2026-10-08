@@ -47,7 +47,7 @@ export class BaseerGeneralLedgerReport extends Component {
             loading: true, error: "", companies: [], journals: [], report: null,
             filters: { company_id: 0, date_from: "", date_to: "", journal_ids: [] },
             rbfOpen: false, rbfLoading: false, rbfAccounts: null,
-            expanded: {}, accountOpening: {},
+            accountOpening: {},
         });
         this.appliedFilters = null;
         this.requestToken = 0;
@@ -84,7 +84,6 @@ export class BaseerGeneralLedgerReport extends Component {
         this.state.rbfOpen = false;
         this.state.rbfLoading = false;
         this.state.rbfAccounts = null;
-        this.state.expanded = {};
         this.state.accountOpening = {};
     }
     async onCompanyChange(event) {
@@ -142,7 +141,6 @@ export class BaseerGeneralLedgerReport extends Component {
             const report = await this.orm.call(MODEL, "get_report", [this.appliedFilters, page]);
             if (token === this.requestToken) {
                 this.state.report = report;
-                this.state.expanded = {};
                 this.state.accountOpening = {};
             }
         } catch (error) {
@@ -163,7 +161,6 @@ export class BaseerGeneralLedgerReport extends Component {
             const rows = await this.orm.call(MODEL, "get_rbf_accounts", [this.appliedFilters, page]);
             if (token === this.requestToken) {
                 this.state.rbfAccounts = rows;
-                this.state.expanded = {};
                 this.state.accountOpening = {};
             }
         } catch (error) {

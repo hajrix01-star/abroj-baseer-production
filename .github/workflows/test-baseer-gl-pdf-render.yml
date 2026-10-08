@@ -1,21 +1,25 @@
-name: Test Baseer general ledger
+name: Render Baseer general ledger PDF
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - custom_addons/baseer_general_ledger_report/**
-      - .github/workflows/test-baseer-general-ledger.yml
+      - custom_addons/baseer_general_ledger_report/models/general_ledger.py
+      - custom_addons/baseer_general_ledger_report/report/**
+      - custom_addons/baseer_general_ledger_report/__manifest__.py
+      - custom_addons/baseer_general_ledger_report/tests/test_general_ledger_pdf_http.py
+      - custom_addons/baseer_general_ledger_report/tests/__init__.py
+      - .github/workflows/test-baseer-gl-pdf-render.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  odoo-report-tests:
-    name: Odoo 19 general ledger tests
+  render-pdf:
+    name: Real GL PDF A4 render
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
@@ -32,16 +36,27 @@ jobs:
           --health-retries 12
     steps:
       - uses: actions/checkout@v4
-      - name: Install module and run its Odoo tests in an isolated database
+      - name: Render a 101-account multipage PDF with an HTTP-enabled Odoo test
         shell: bash
+        env:
+          BASEER_GL_PDF_ARTIFACT_DIR: /mnt/artifacts
         run: |
           set -Eeuo pipefail
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e BASEER_GL_PDF_ARTIFACT_DIR=/mnt/artifacts \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$RUNNER_TEMP",dst=/mnt/artifacts \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d baseer_gl_ci -i baseer_general_ledger_report --without-demo=all \
-            --test-enable --test-tags=/baseer_general_ledger_report,-gl_pdf_http \
+            -d baseer_gl_pdf_ci -i baseer_general_ledger_report --without-demo=all \
+            --test-enable --test-tags=/baseer_general_ledger_report:TestGeneralLedgerPdfHttp \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+      - name: Keep PDFs for independent visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-gl-pdf-render
+          path: ${{ runner.temp }}/gl-*.pdf
+          if-no-files-found: error

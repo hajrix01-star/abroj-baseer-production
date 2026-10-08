@@ -13,6 +13,7 @@ class TestHubScroll(HttpCase):
             if (!hub) { throw new Error('The real report action was not mounted'); }
             const filler = document.createElement('div');
             filler.style.height = '2200px';
+            filler.style.flex = '0 0 2200px';
             const marker = document.createElement('div');
             marker.textContent = 'Last report row';
             hub.append(filler, marker);

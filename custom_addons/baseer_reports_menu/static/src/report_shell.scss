@@ -72,7 +72,7 @@
 
 .o_baseer_reports_hub { min-height: 100%; background: #f6f7f9; color: #24303d; font-family: inherit; }
 // The action manager clips client actions; the hub itself owns vertical scrolling.
-.o_baseer_reports_hub.o_action {
+.o_web_client > .o_action_manager > .o_baseer_reports_hub.o_action {
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;

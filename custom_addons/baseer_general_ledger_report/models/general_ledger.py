@@ -15,7 +15,7 @@ class BaseerGeneralLedger(models.AbstractModel):
     _description = 'Baseer Posted General Ledger'
 
     PAGE_SIZE = 100
-    SECURITY_BATCH = 2500
+    SECURITY_BATCH = 1000
 
     @staticmethod
     def _decimal(value):
@@ -155,15 +155,16 @@ class BaseerGeneralLedger(models.AbstractModel):
 
     @api.model
     def _group_verified(self, domain):
-        """Aggregate verified batches, never caching all journal items in Python.
+        """Verify bounded readable batches before one ORM aggregate of the domain.
 
-        AML search applies its record rules. The linked records are checked on
-        each bounded batch before its exact IDs are sent to the ORM aggregate.
+        The ORM search and aggregate both apply AML record rules. Per-account
+        source counts must match, and linked records are checked before any
+        amount is returned. Only account counts, not AML rows, span batches.
         """
         AML = self.env['account.move.line'].with_context(
             active_test=False, prefetch_fields=False,
         )
-        totals = {}
+        verified_counts = Counter()
         cursor = 0
         while True:
             lines = AML.search(domain & Domain('id', '>', cursor),
@@ -171,27 +172,23 @@ class BaseerGeneralLedger(models.AbstractModel):
             if not lines:
                 break
             self._verify_links(lines)
-            counts = Counter(line.account_id.id for line in lines)
-            grouped_counts = {}
-            grouped = AML._read_group(
-                domain & Domain('id', 'in', lines.ids), ['account_id'],
-                ['debit:sum', 'credit:sum', '__count'],
-            )
-            for account, debit, credit, count in grouped:
-                if account.id not in counts:
-                    raise AccessError(_('The report source changed while reading. Retry.'))
-                item = totals.setdefault(account.id, {
-                    'debit': Decimal('0'), 'credit': Decimal('0'), 'count': 0,
-                })
-                item['debit'] += self._decimal(debit)
-                item['credit'] += self._decimal(credit)
-                item['count'] += count
-                grouped_counts[account.id] = count
-            if grouped_counts != counts:
-                raise AccessError(_('The report source changed while reading. Retry.'))
+            verified_counts.update(line.account_id.id for line in lines)
             cursor = lines[-1].id
             if len(lines) < self.SECURITY_BATCH:
                 break
+        totals = {}
+        grouped_counts = Counter()
+        for account, debit, credit, count in AML._read_group(
+            domain, ['account_id'], ['debit:sum', 'credit:sum', '__count'],
+        ):
+            totals[account.id] = {
+                'debit': self._decimal(debit),
+                'credit': self._decimal(credit),
+                'count': count,
+            }
+            grouped_counts[account.id] = count
+        if grouped_counts != verified_counts:
+            raise AccessError(_('The report source changed while reading. Retry.'))
         return totals
 
     @staticmethod

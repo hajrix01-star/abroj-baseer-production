@@ -42,7 +42,7 @@ export class BaseerProfitLossReport extends Component {
     setup() {
         this.orm = useService("orm");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
-        this.state = useState({ loading: true, error: "", journals: [], report: null,
+        this.state = useState({ loading: true, printing: false, error: "", journals: [], report: null,
             filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} });
         this.appliedFilters = null;
         this.requestToken = 0;
@@ -104,6 +104,7 @@ export class BaseerProfitLossReport extends Component {
     invalidate() {
         this.requestToken += 1;
         this.state.loading = false;
+        this.state.printing = false;
         this.state.report = null;
         this.state.error = "";
         this.state.expanded = {};
@@ -247,6 +248,26 @@ export class BaseerProfitLossReport extends Component {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
             if (token === this.requestToken) { this.state.accountOpening[key] = false; }
+        }
+    }
+
+    async printReport() {
+        if (!this.appliedFilters || !this.state.report || this.state.loading || this.state.printing) { return; }
+        const token = this.requestToken;
+        const generation = this.companyGeneration;
+        const companyId = this.activeCompanyId;
+        this.state.printing = true;
+        try {
+            const action = await this.orm.call(MODEL, "action_print", [{ ...this.appliedFilters, company_id: companyId }]);
+            if (token === this.requestToken && generation === this.companyGeneration && companyId === this.activeCompanyId) {
+                await this.env.services.action.doAction(action);
+            }
+        } catch (error) {
+            if (token === this.requestToken && generation === this.companyGeneration) {
+                this.state.error = error?.data?.message || this.labels.error;
+            }
+        } finally {
+            if (token === this.requestToken && generation === this.companyGeneration) { this.state.printing = false; }
         }
     }
 }

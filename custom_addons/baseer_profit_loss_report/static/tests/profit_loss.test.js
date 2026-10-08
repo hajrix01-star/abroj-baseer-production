@@ -194,6 +194,52 @@ test("mounted report displays comparison columns without inline journal entries"
     expect(document.querySelector(".o_baseer_pl_lines_row")).toBe(null);
 });
 
+test("PDF prints applied filters and rejects a late action after company change", async () => {
+    let active = 1;
+    const calls = [];
+    const actions = [];
+    let finish;
+    const report = Object.create(BaseerProfitLossReport.prototype);
+    Object.defineProperty(report, "activeCompanyId", { get: () => active });
+    Object.assign(report, {
+        appliedFilters: structuredClone(filters), requestToken: 4, companyGeneration: 2, lang: "en",
+        state: { report: {}, loading: false, printing: false, error: "" },
+        orm: { call: (...args) => { calls.push(args); return new Promise((resolve) => { finish = resolve; }); } },
+        env: { services: { action: { doAction: async (action) => actions.push(action) } } },
+    });
+    const pending = report.printReport();
+    expect(calls[0][1]).toBe("action_print");
+    expect(calls[0][2][0].company_id).toBe(1);
+    active = 2;
+    report.requestToken += 1;
+    report.companyGeneration += 1;
+    active = 1;
+    report.requestToken += 1;
+    report.companyGeneration += 1;
+    finish({ type: "ir.actions.report", report_name: "baseer_profit_loss_report.profit_loss_pdf_portrait" });
+    await pending;
+    expect(actions).toEqual([]);
+});
+
+test("PDF opens the server action only for the current report generation", async () => {
+    const actions = [];
+    const report = Object.create(BaseerProfitLossReport.prototype);
+    Object.defineProperty(report, "activeCompanyId", { get: () => 1 });
+    Object.assign(report, {
+        appliedFilters: structuredClone(filters), requestToken: 7, companyGeneration: 3, lang: "en",
+        state: { report: {}, loading: false, printing: false, error: "" },
+        orm: { call: async (_model, method, args) => {
+            expect(method).toBe("action_print");
+            expect(args[0].company_id).toBe(1);
+            return { type: "ir.actions.report", report_name: "baseer_profit_loss_report.profit_loss_pdf_portrait" };
+        } },
+        env: { services: { action: { doAction: async (action) => actions.push(action) } } },
+    });
+    await report.printReport();
+    expect(actions.length).toBe(1);
+    expect(report.state.printing).toBe(false);
+});
+
 test("monthly paper caption keeps explicit dates for a partial month", () => {
     const context = {
         primaryPeriod: { date_from: "2026-10-07", date_to: "2026-10-31", display_label: "Oct 2026", label: "2026-10-07 — 2026-10-31" },

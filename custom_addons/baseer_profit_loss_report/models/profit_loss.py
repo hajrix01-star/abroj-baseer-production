@@ -591,6 +591,18 @@ class BaseerProfitLossReport(models.AbstractModel):
         }
 
     @api.model
+    def action_print(self, filters):
+        """Choose A4 orientation without doing a second financial aggregation."""
+        if not isinstance(filters, dict) or filters.get('company_id') != self.env.company.id:
+            raise AccessError(_('Print the report for the active company only.'))
+        _company, _journals, periods, _period_control, _comparison_control = self._scope(filters)
+        report_id = ('action_profit_loss_pdf_landscape' if len(periods) > 1
+                     else 'action_profit_loss_pdf_portrait')
+        return self.env.ref(f'baseer_profit_loss_report.{report_id}').report_action(
+            [], data={'filters': filters}, config=False,
+        )
+
+    @api.model
     def get_accounts(self, filters, section, page=1):
         if section not in SECTION_KEYS:
             raise ValidationError(_('Select a profit and loss section.'))

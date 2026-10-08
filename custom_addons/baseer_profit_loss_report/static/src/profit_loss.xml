@@ -4,6 +4,7 @@
         <main class="o_baseer_pl_report" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <header class="o_baseer_report_toolbar o_baseer_pl_toolbar">
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions" selectedKey="props.selectedReportKey" label="props.reportSelectorLabel" lang="lang" onSelect="props.onReportSelect"/>
+                <button type="button" class="btn btn-primary o_baseer_pl_pdf" t-att-disabled="!state.report || state.loading || state.printing" t-on-click="printReport">PDF</button>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
                     <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_period_menu'">
                         <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></button>

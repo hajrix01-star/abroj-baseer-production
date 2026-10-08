@@ -268,9 +268,12 @@ class BaseerProfitLossReport(models.AbstractModel):
                 anchor = company.compute_fiscalyear_dates(anchor)['date_from'] - timedelta(days=1)
             fiscal = company.compute_fiscalyear_dates(anchor)
             return fiscal['date_from'], fiscal['date_to']
-        length = (end - start).days
-        previous_end = start - timedelta(days=1 + length * (ordinal - 1))
-        return previous_end - timedelta(days=length), previous_end
+        # Both boundaries are inclusive.  Use the number of calendar days,
+        # rather than the date delta, so a one-day period still advances for
+        # every comparison and adjacent periods never share a date.
+        span = (end - start).days + 1
+        previous_end = start - timedelta(days=1 + span * (ordinal - 1))
+        return previous_end - timedelta(days=span - 1), previous_end
 
     @api.model
     def _period_label(self, start, end):

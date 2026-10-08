@@ -532,6 +532,37 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(net_income['amounts']['current']['amount'], '31.00')
         self.assertEqual(net_income['amounts']['custom']['amount'], '29.00')
 
+    def test_custom_previous_periods_use_inclusive_non_overlapping_boundaries(self):
+        def periods(date_from, date_to):
+            result = self.report.get_report({
+                'company_id': self.company.id,
+                'journal_ids': [],
+                'period': {'kind': 'custom', 'date_from': date_from, 'date_to': date_to},
+                'comparison': {
+                    'kind': 'previous_periods', 'count': 3, 'order': 'descending',
+                },
+            })
+            return [(period['date_from'], period['date_to']) for period in result['periods']]
+
+        self.assertEqual(periods('2041-01-10', '2041-01-10'), [
+            ('2041-01-10', '2041-01-10'),
+            ('2041-01-09', '2041-01-09'),
+            ('2041-01-08', '2041-01-08'),
+            ('2041-01-07', '2041-01-07'),
+        ])
+        multi_day = periods('2041-01-10', '2041-01-12')
+        self.assertEqual(multi_day, [
+            ('2041-01-10', '2041-01-12'),
+            ('2041-01-07', '2041-01-09'),
+            ('2041-01-04', '2041-01-06'),
+            ('2041-01-01', '2041-01-03'),
+        ])
+        parsed = [(date.fromisoformat(start), date.fromisoformat(end))
+                  for start, end in multi_day]
+        self.assertTrue(all(next_end < previous_start for
+                            (_next_start, next_end), (previous_start, _previous_end)
+                            in zip(parsed[1:], parsed)))
+
     def test_expense_row_accounts_and_details_include_depreciation_naturally(self):
         depreciation = self.accounts['expense_depreciation']
         self._entry('expense', '30')

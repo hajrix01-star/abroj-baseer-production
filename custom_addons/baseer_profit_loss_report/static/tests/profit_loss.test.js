@@ -2,12 +2,14 @@
 
 import { expect, globals, test, withFetch } from "@odoo/hoot";
 import { click, waitUntil } from "@odoo/hoot-dom";
+import { defineMailModels } from "@mail/../tests/mail_test_helpers";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
 import { mockService, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
 
 const MODEL = "baseer.profit.loss.report";
+defineMailModels();
 const filters = {
     company_id: 1,
     period: { kind: "month", anchor_date: "2026-10-15", direction: 0, date_from: "", date_to: "" },

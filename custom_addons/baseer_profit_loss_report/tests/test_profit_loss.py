@@ -153,6 +153,10 @@ class TestProfitLoss(TransactionCase):
         action = self.report.get_account_action(selected, self.accounts['income'].id)
         self.assertEqual(action['res_model'], 'account.move.line')
         self.assertEqual(action['target'], 'current')
+        self.assertIn(('company_id', '=', self.company.id), action['domain'])
+        self.assertIn(('parent_state', '=', 'posted'), action['domain'])
+        self.assertIn(('date', '>=', '2041-01-01'), action['domain'])
+        self.assertIn(('date', '<=', '2041-01-31'), action['domain'])
         self.assertIn(('account_id', '=', self.accounts['income'].id), action['domain'])
         self.assertIn(('journal_id', 'in', [other.id]), action['domain'])
         with self.assertRaises(AccessError):
@@ -351,6 +355,12 @@ class TestProfitLoss(TransactionCase):
         with self.assertRaises(AccessError):
             report.get_context(other.id)
         with self.assertRaises(AccessError):
+            report.get_account_action({**self.filters, 'company_id': other.id},
+                                      self.accounts['income'].id)
+        with self.assertRaises(AccessError):
+            report.get_account_action(self.filters, self.accounts['income'].id,
+                                      period_key='not-a-period')
+        with self.assertRaises(AccessError):
             self.report.get_report({**self.filters, 'journal_ids': [999999999]})
         for invalid in (
             {**self.filters, 'date_from': '2041-12-31', 'date_to': '2041-01-01'},
@@ -390,6 +400,8 @@ class TestProfitLoss(TransactionCase):
         with self.assertRaises(AccessError):
             report.get_lines(self.filters, self.accounts['income'].id)
         with self.assertRaises(AccessError):
+            report.get_account_action(self.filters, self.accounts['income'].id)
+        with self.assertRaises(AccessError):
             report.get_source_line(self.filters, 1)
 
     def test_linked_record_rules_fail_closed_for_totals_and_accounts(self):
@@ -413,6 +425,8 @@ class TestProfitLoss(TransactionCase):
                     report.get_accounts(self.filters, 'income')
                 with self.assertRaises(AccessError):
                     report.get_lines(self.filters, self.accounts['income'].id)
+                with self.assertRaises(AccessError):
+                    report.get_account_action(self.filters, self.accounts['income'].id)
                 with self.assertRaises(AccessError):
                     report.get_source_line(self.filters, source_line.id)
             finally:

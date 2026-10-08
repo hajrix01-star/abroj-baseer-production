@@ -294,6 +294,16 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(cash['period_line_count'], 1001)
         self.assertEqual(self._row(result, self.income)['credit'], '10.01')
         self.assertEqual(result['total']['closing'], '0.00')
+        # The balancing account appears after the first 1,000 AML IDs.
+        rule = self._hide('account.account', self.income)
+        try:
+            readonly = self.report.with_user(self._accountant()).with_context(
+                allowed_company_ids=self.company.ids,
+            )
+            with self.assertRaises(AccessError):
+                readonly.get_report(self.filters)
+        finally:
+            rule.unlink()
 
     def test_verified_group_handles_5001_lines_across_batches(self):
         commands = [Command.create({
@@ -315,6 +325,20 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(cash['period_line_count'], 5001)
         self.assertEqual(self._row(result, self.income)['credit'], '50.01')
         self.assertEqual(result['total']['closing'], '0.00')
+        later_journal = self.env['account.journal'].with_company(self.company).create({
+            'name': 'GL later batch', 'code': 'GLY', 'type': 'general',
+            'company_id': self.company.id,
+        })
+        self._entry('2041-03-09', self.cash, 1, 0, self.income, journal=later_journal)
+        rule = self._hide('account.journal', later_journal)
+        try:
+            readonly = self.report.with_user(self._accountant()).with_context(
+                allowed_company_ids=self.company.ids,
+            )
+            with self.assertRaises(AccessError):
+                readonly.get_report(self.filters)
+        finally:
+            rule.unlink()
 
     def test_company_dates_and_non_accountant_denied(self):
         other = self.env['res.company'].create({'name': 'GL other company'})
@@ -371,6 +395,9 @@ class TestGeneralLedger(TransactionCase):
             try:
                 with self.assertRaises(AccessError):
                     readonly.get_report(self.filters)
+                if model == 'account.account':
+                    with self.assertRaises(AccessError):
+                        readonly.with_context(lang='en_US').get_report(self.filters)
                 with self.assertRaises(AccessError):
                     readonly.get_lines(self.filters, self.cash.id)
                 with self.assertRaises(AccessError):

@@ -147,12 +147,22 @@ class BaseerGeneralLedger(models.AbstractModel):
         return company, start, end, fiscal['date_from'], journal_ids, base
 
     @api.model
-    def _verify_links(self, lines):
+    def _verify_links(self, lines, verified_accounts=None, verified_journals=None):
         lines.check_access('read')
         lines.fetch(['company_id', 'move_id', 'account_id', 'journal_id'])
         lines.mapped('move_id').check_access('read')
-        lines.mapped('account_id').check_access('read')
-        lines.mapped('journal_id').check_access('read')
+        for records, verified_ids in (
+            (lines.mapped('account_id'), verified_accounts),
+            (lines.mapped('journal_id'), verified_journals),
+        ):
+            if verified_ids is None:
+                records.check_access('read')
+                continue
+            unseen = records.filtered(lambda record: record.id not in verified_ids)
+            if len(unseen.exists()) != len(unseen):
+                raise AccessError(_('The report source changed while reading. Retry.'))
+            unseen.check_access('read')
+            verified_ids.update(unseen.ids)
 
     @staticmethod
     def _merge_verified_batch(totals, verified_counts, grouped):
@@ -192,6 +202,9 @@ class BaseerGeneralLedger(models.AbstractModel):
         ])
         totals = {}
         cursor = 0
+        # These IDs are valid only for this call's env, user, context and transaction.
+        verified_accounts = set()
+        verified_journals = set()
         while True:
             lines = AML.search_fetch(
                 domain & Domain('id', '>', cursor),
@@ -200,7 +213,7 @@ class BaseerGeneralLedger(models.AbstractModel):
             )
             if not lines:
                 break
-            self._verify_links(lines)
+            self._verify_links(lines, verified_accounts, verified_journals)
             verified_counts = Counter(line.account_id.id for line in lines)
             self.env.cr.execute(
                 "SELECT account_id, SUM(debit)::text, SUM(credit)::text, COUNT(*) "

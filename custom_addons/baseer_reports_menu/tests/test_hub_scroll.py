@@ -37,7 +37,7 @@ class TestHubScroll(HttpCase):
                 console.log('test successful');
             });
             """,
-            ready="document.querySelector('.o_baseer_reports_hub.o_action')",
+            ready="!!document.querySelector('.o_baseer_reports_hub.o_action')",
             login='admin',
         )
 

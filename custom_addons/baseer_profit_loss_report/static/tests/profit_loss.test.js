@@ -58,13 +58,9 @@ function mockReportRequests(calls) {
         return { accounts: [{ id: 7, code: "400000", name: "Sales", move_line_counts: { current: 1, previous_1: 0 },
             amounts: { current: { amount: "1,150.00", negative: false }, previous_1: { amount: "0.00", negative: false } } }], page: 1, page_size: 100, total_count: 1 };
     });
-    onRequest("get_lines", ({ args }) => {
-        calls.push(["get_lines", args]);
-        return { lines: [{ id: 42, date: "2026-10-07", move_name: "INV/42", label: "Sale", debit: "0.00", credit: "1,150.00", amount: "1,150.00", negative: false }], page: 1, page_size: 100, total_count: 1 };
-    });
-    onRequest("get_source_line", ({ args }) => {
-        calls.push(["get_source_line", args]);
-        return { line_id: 42, move_id: 9 };
+    onRequest("get_account_action", ({ args }) => {
+        calls.push(["get_account_action", args]);
+        return { type: "ir.actions.act_window", name: "Journal Items", res_model: "account.move.line", target: "current", domain: [["account_id", "=", 7]] };
     });
     return { async call(model, method, args) {
         if (model !== MODEL || !handlers[method]) { throw new Error(`Unexpected report RPC: ${model}.${method}`); }
@@ -100,7 +96,7 @@ test("period navigation delegates calendar movement to the server", async () => 
     const calls = [];
     const instance = Object.create(BaseerProfitLossReport.prototype);
     Object.assign(instance, {
-        state: { filters: structuredClone(filters), loading: false, error: "", report: null, expanded: {}, pages: {}, accountLoading: {}, expandedAccounts: {}, linePages: {}, lineLoading: {}, lineOpening: {} },
+        state: { filters: structuredClone(filters), loading: false, error: "", report: null, expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} },
         requestToken: 0, appliedFilters: null, lang: "en", orm: { call: async (_model, method, args) => {
             calls.push([method, args]);
             return { company: { name: "Baseer", currency_code: "SAR" }, periods, rows: [], period_controls: { anchor_date: "2026-09-15" } };
@@ -168,17 +164,18 @@ test("a period-menu arrow changes its own server period kind before navigating",
     expect(directions).toEqual([-1]);
 });
 
-test("source click carries the selected server period key", async () => {
+test("account click opens the native journal-items page for its selected period", async () => {
     const calls = [];
     const actions = [];
-    const context = { appliedFilters: structuredClone(filters), requestToken: 0, state: { lineOpening: {}, error: "" }, labels: { source: "View entries", error: "Could not open" }, orm: { call: async (...args) => { calls.push(args); return { line_id: 42, move_id: 9 }; } }, action: { doAction: async (action) => actions.push(action) } };
-    await BaseerProfitLossReport.prototype.openLine.call(context, { id: 42, move_name: "MISC/42" }, "previous_1");
-    expect(calls[0][1]).toBe("get_source_line");
+    const context = { appliedFilters: structuredClone(filters), requestToken: 0, state: { accountOpening: {}, error: "" }, labels: { error: "Could not open" }, orm: { call: async (...args) => { calls.push(args); return { type: "ir.actions.act_window", res_model: "account.move.line", target: "current", domain: [["account_id", "=", 7]] }; } }, action: { doAction: async (action) => actions.push(action) }, accountKey: BaseerProfitLossReport.prototype.accountKey };
+    await BaseerProfitLossReport.prototype.openAccount.call(context, { id: 7, code: "400000" }, "previous_1");
+    expect(calls[0][1]).toBe("get_account_action");
     expect(calls[0][2][2]).toBe("previous_1");
-    expect(actions[0].domain).toEqual([["id", "=", 42]]);
+    expect(actions[0].target).toBe("current");
+    expect(actions[0].domain).toEqual([["account_id", "=", 7]]);
 });
 
-test("mounted report displays comparison columns and opens detail only for its chosen period", async () => {
+test("mounted report displays comparison columns and opens a native list instead of inline entries", async () => {
     patchWithCleanup(user, { lang: "en_US" });
     const calls = [];
     const actions = [];
@@ -189,13 +186,13 @@ test("mounted report displays comparison columns and opens detail only for its c
     expect(document.querySelector(".o_baseer_pl_table td").getAttribute("data-label")).toBe("Oct 2026");
     await click('.o_baseer_pl_section button[aria-label="Income"]');
     await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
-    await click('.o_baseer_pl_account_amount[aria-label="View entries Oct 2026 400000 Sales"]');
-    await waitUntil(() => document.querySelector('.o_baseer_pl_source[aria-label="View entries INV/42"]'));
-    await click('.o_baseer_pl_source[aria-label="View entries INV/42"]');
-    expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts", "get_lines", "get_source_line"]);
+    await click('.o_baseer_pl_account_amount[aria-label="View journal items Oct 2026 400000 Sales"]');
+    await waitUntil(() => actions.length === 1);
+    expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts", "get_account_action"]);
     expect(calls[2][1][2]).toBe(1);
     expect(calls[2][1][3]).toBe("current");
     expect(actions[0].res_model).toBe("account.move.line");
+    expect(document.querySelector(".o_baseer_pl_lines_row")).toBe(null);
 });
 
 test("native period and comparison controls open Odoo popovers", async () => {

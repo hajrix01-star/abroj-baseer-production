@@ -189,16 +189,6 @@
     .o_baseer_pl_account_amount:not(:disabled) { color: var(--baseer-report-accent); cursor: pointer; }
     .o_baseer_pl_account_amount:not(:disabled):hover { text-decoration: underline; }
     .o_baseer_pl_account_amount:disabled { cursor: default; }
-    .o_baseer_pl_lines_row td { padding-block: 0.15rem 0.65rem; padding-inline: 2rem 0.6rem; }
-    .o_baseer_pl_lines { border-inline-start: 2px solid #dfe3e7; padding-inline-start: 0.75rem; }
-    .o_baseer_pl_lines::before { content: attr(data-period); display: block; margin-bottom: 0.35rem; color: var(--baseer-report-muted); font-size: 0.76rem; font-weight: 600; }
-    .o_baseer_pl_line { display: grid; grid-template-columns: 6.5rem minmax(7rem, 1fr) minmax(8rem, 1.8fr) minmax(14rem, 1.6fr); align-items: center; gap: 0.5rem; padding: 0.42rem 0.2rem; border-bottom: 1px solid var(--baseer-report-line); font-size: 0.76rem; }
-    .o_baseer_pl_line time { color: var(--baseer-report-muted); }
-    .o_baseer_pl_source { padding: 0; border: 0; background: transparent; color: var(--baseer-report-accent); text-align: start; overflow-wrap: anywhere; }
-    .o_baseer_pl_source:hover { text-decoration: underline; }
-    .o_baseer_pl_line_label { overflow-wrap: anywhere; }
-    .o_baseer_pl_line_amounts { display: flex; justify-content: space-between; gap: 0.4rem; font-variant-numeric: tabular-nums; }
-    .o_baseer_pl_line_amounts small { color: var(--baseer-report-muted); }
     .o_baseer_pl_status { color: var(--baseer-report-muted); text-align: center; }
     .o_baseer_pl_pager { text-align: center; }
     .o_baseer_pl_pager button { margin-inline: 0.5rem; padding: 0.2rem 0.4rem; border: 0; background: transparent; color: var(--baseer-report-accent); }
@@ -228,9 +218,5 @@
         .o_baseer_pl_section th,
         .o_baseer_pl_net_income th { border-bottom: 0; }
         .o_baseer_pl_account th { padding-inline-start: 1.15rem; }
-        .o_baseer_pl_lines_row td { padding-inline-start: 1rem; }
-        .o_baseer_pl_line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-        .o_baseer_pl_line_label,
-        .o_baseer_pl_line_amounts { grid-column: 1 / -1; }
     }
 }

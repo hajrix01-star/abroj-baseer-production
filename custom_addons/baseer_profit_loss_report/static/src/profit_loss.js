@@ -17,7 +17,7 @@ const copy = {
         error: "تعذر عرض التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.", account: "الحساب", balance: "الرصيد",
         income: "الإيرادات", income_other: "إيرادات أخرى", expense_direct_cost: "تكلفة المبيعات", expense: "المصروفات", expense_other: "مصروفات أخرى", expense_depreciation: "الاستهلاك",
         gross: "إجمالي الربح", totalIncome: "إجمالي الإيرادات", totalExpense: "إجمالي المصروفات", operating: "صافي الربح التشغيلي", otherNet: "صافي الإيرادات الأخرى", net: "صافي الربح",
-        source: "عرض القيود", previous: "السابق", next: "التالي", page: "صفحة", noAccounts: "لا توجد حسابات في هذا القسم.", debit: "مدين", credit: "دائن", linesLoading: "جارٍ تحميل القيود…", noLines: "لا توجد قيود لهذا الحساب في الفترة.",
+        source: "عرض قيود اليومية", previous: "السابق", next: "التالي", page: "صفحة", noAccounts: "لا توجد حسابات في هذا القسم.", debit: "مدين", credit: "دائن",
         period: "الفترة", comparison: "المقارنة", month: "شهر", quarter: "ربع سنة", fiscalYear: "سنة مالية", customDates: "تواريخ مخصصة", noComparison: "دون مقارنة", previousPeriods: "الفترات السابقة", samePeriodLastYear: "الفترة نفسها العام الماضي", periods: "فترات", periodOrder: "ترتيب الفترات", descending: "تنازلي", ascending: "تصاعدي", from: "من", to: "إلى", current: "الحالية",
     },
     en: {
@@ -26,7 +26,7 @@ const copy = {
         error: "Could not load the report. Check the period and your access rights, then retry.", account: "Account", balance: "Balance",
         income: "Income", income_other: "Other income", expense_direct_cost: "Cost of sales", expense: "Expenses", expense_other: "Other expenses", expense_depreciation: "Depreciation",
         gross: "Gross profit", totalIncome: "Total income", totalExpense: "Total expense", operating: "Net operating income", otherNet: "Net other income", net: "Net income",
-        source: "View entries", previous: "Previous", next: "Next", page: "Page", noAccounts: "No accounts in this section.", debit: "Debit", credit: "Credit", linesLoading: "Loading entries…", noLines: "No entries for this account in the period.",
+        source: "View journal items", previous: "Previous", next: "Next", page: "Page", noAccounts: "No accounts in this section.", debit: "Debit", credit: "Credit",
         period: "Period", comparison: "Comparison", month: "Month", quarter: "Quarter", fiscalYear: "Fiscal year", customDates: "Custom dates", noComparison: "No comparison", previousPeriods: "Previous periods", samePeriodLastYear: "Same period last year", periods: "Periods", periodOrder: "Period order", descending: "Descending", ascending: "Ascending", from: "From", to: "To", current: "Current",
     },
 };
@@ -44,7 +44,7 @@ export class BaseerProfitLossReport extends Component {
         this.action = useService("action");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
         this.state = useState({ loading: true, error: "", companies: [], journals: [], report: null,
-            filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, expandedAccounts: {}, linePages: {}, lineLoading: {}, lineOpening: {} });
+            filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} });
         this.appliedFilters = null;
         this.requestToken = 0;
         onWillStart(async () => {
@@ -105,10 +105,7 @@ export class BaseerProfitLossReport extends Component {
         this.state.expanded = {};
         this.state.pages = {};
         this.state.accountLoading = {};
-        this.state.expandedAccounts = {};
-        this.state.linePages = {};
-        this.state.lineLoading = {};
-        this.state.lineOpening = {};
+        this.state.accountOpening = {};
         this.appliedFilters = null;
     }
     async onCompanyChange(event) {
@@ -218,39 +215,18 @@ export class BaseerProfitLossReport extends Component {
             if (token === this.requestToken) { this.state.accountLoading[section] = false; }
         }
     }
-    async toggleAccount(account, periodKey) {
+    async openAccount(account, periodKey) {
         const key = this.accountKey(account, periodKey);
-        if (this.state.expandedAccounts[key]) { this.state.expandedAccounts[key] = false; return; }
-        this.state.expandedAccounts[key] = true;
-        if (!this.state.linePages[key]) { await this.loadLines(account.id, periodKey, 1); }
-    }
-    async loadLines(accountId, periodKey, page) {
-        const key = `${accountId}:${periodKey}`;
-        if (!this.appliedFilters || this.state.lineLoading[key]) { return; }
+        if (!this.appliedFilters || this.state.accountOpening[key]) { return; }
         const token = this.requestToken;
-        this.state.lineLoading[key] = true;
+        this.state.accountOpening[key] = true;
         try {
-            const result = await this.orm.call(MODEL, "get_lines", [this.appliedFilters, accountId, page, periodKey]);
-            if (token === this.requestToken) { this.state.linePages[key] = result; }
+            const action = await this.orm.call(MODEL, "get_account_action", [this.appliedFilters, account.id, periodKey]);
+            if (token === this.requestToken) { await this.action.doAction(action); }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
-            if (token === this.requestToken) { this.state.lineLoading[key] = false; }
-        }
-    }
-    async openLine(line, periodKey) {
-        const key = `${line.id}:${periodKey}`;
-        if (!this.appliedFilters || this.state.lineOpening[key]) { return; }
-        const token = this.requestToken;
-        this.state.lineOpening[key] = true;
-        try {
-            const source = await this.orm.call(MODEL, "get_source_line", [this.appliedFilters, line.id, periodKey]);
-            if (token !== this.requestToken || source.line_id !== line.id) { return; }
-            await this.action.doAction({ type: "ir.actions.act_window", name: this.labels.source, res_model: "account.move.line", views: [[false, "list"], [false, "form"]], target: "current", domain: [["id", "=", source.line_id]] });
-        } catch (error) {
-            if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
-        } finally {
-            if (token === this.requestToken) { this.state.lineOpening[key] = false; }
+            if (token === this.requestToken) { this.state.accountOpening[key] = false; }
         }
     }
 }

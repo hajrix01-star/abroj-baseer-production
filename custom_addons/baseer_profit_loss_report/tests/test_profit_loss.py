@@ -150,6 +150,11 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self.report.get_source_line(selected, lines['lines'][0]['id']), {
             'line_id': lines['lines'][0]['id'], 'move_id': lines['lines'][0]['move_id'],
         })
+        action = self.report.get_account_action(selected, self.accounts['income'].id)
+        self.assertEqual(action['res_model'], 'account.move.line')
+        self.assertEqual(action['target'], 'current')
+        self.assertIn(('account_id', '=', self.accounts['income'].id), action['domain'])
+        self.assertIn(('journal_id', 'in', [other.id]), action['domain'])
         with self.assertRaises(AccessError):
             self.report.get_source_line(selected, sale.line_ids.filtered(
                 lambda line: line.account_id == self.accounts['income'],

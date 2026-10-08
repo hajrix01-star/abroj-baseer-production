@@ -700,6 +700,43 @@ class BaseerProfitLossReport(models.AbstractModel):
         }
 
     @api.model
+    def get_account_action(self, filters, account_id, period_key='current'):
+        """Return the native Journal Items action for one verified report account.
+
+        The report stays a compact summary.  Odoo's list view owns searching,
+        paging and large result sets instead of inserting them below the report.
+        """
+        if type(account_id) is not int or account_id <= 0:
+            raise ValidationError(_('Select a profit and loss account.'))
+        company, start, end, journal_ids, domain = self._filters(filters, period_key)
+        account = self.env['account.account'].with_context(active_test=False).browse(account_id)
+        if not account.exists():
+            raise AccessError(_('The selected account is not available.'))
+        account.check_access('read')
+        if company not in account.company_ids or account.account_type not in SECTION_KEYS:
+            raise AccessError(_('The selected account is not available for this company.'))
+        if account.id not in self._verified_groups(domain & Domain('account_id', '=', account.id)):
+            raise AccessError(_('The selected account is not available for this period.'))
+
+        action_domain = [
+            ('company_id', '=', company.id),
+            ('parent_state', '=', 'posted'),
+            ('date', '>=', fields.Date.to_string(start)),
+            ('date', '<=', fields.Date.to_string(end)),
+            ('account_id', '=', account.id),
+        ]
+        if journal_ids:
+            action_domain.append(('journal_id', 'in', journal_ids))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Journal Items'),
+            'res_model': 'account.move.line',
+            'views': [[False, 'list'], [False, 'form']],
+            'target': 'current',
+            'domain': action_domain,
+        }
+
+    @api.model
     def get_source_line(self, filters, line_id, period_key='current'):
         """Recheck one source immediately before opening its AML form."""
         if type(line_id) is not int or line_id <= 0:

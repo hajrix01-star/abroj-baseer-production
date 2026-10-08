@@ -7,36 +7,30 @@ import { useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
 
 const MODEL = "baseer.profit.loss.report";
+const ZERO = Object.freeze({ amount: "0.00", negative: false });
 const copy = {
     ar: {
-        title: "الربح والخسارة", company: "الشركة", from: "من", to: "إلى",
-        journals: "الدفاتر", allJournals: "جميع الدفاتر", selectedJournals: "نتيجة الدفاتر المختارة",
-        posted: "قيود مرحلة · حسب التاريخ المحاسبي · ليست لقطة تاريخية مجمدة",
-        apply: "عرض التقرير", loading: "جارٍ تحميل التقرير…", accountsLoading: "جارٍ تحميل الحسابات…",
-        error: "تعذر عرض التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
-        noData: "لا توجد حركة مرحلة لهذه الفترة.", account: "الحساب", balance: "الرصيد",
-        income: "الإيرادات", income_other: "إيرادات أخرى", expense_direct_cost: "تكلفة المبيعات",
-        expense: "المصروفات", expense_other: "مصروفات أخرى", expense_depreciation: "الاستهلاك", gross: "إجمالي الربح",
-        net: "صافي الربح", source: "عرض القيود", previous: "السابق", next: "التالي",
-        page: "صفحة", of: "من", noAccounts: "لا توجد حسابات في هذا القسم.",
-        date: "التاريخ", entry: "القيد", label: "البيان", debit: "مدين", credit: "دائن",
-        linesLoading: "جارٍ تحميل القيود…", noLines: "لا توجد قيود لهذا الحساب في الفترة.",
+        title: "الربح والخسارة", company: "الشركة", journals: "الدفاتر", allJournals: "جميع الدفاتر", selectedJournals: "الدفاتر المختارة",
+        posted: "قيود مرحلة · حسب التاريخ المحاسبي · ليست لقطة تاريخية مجمدة", loading: "جارٍ تحميل التقرير…", accountsLoading: "جارٍ تحميل الحسابات…",
+        error: "تعذر عرض التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.", account: "الحساب", balance: "الرصيد",
+        income: "الإيرادات", income_other: "إيرادات أخرى", expense_direct_cost: "تكلفة المبيعات", expense: "المصروفات", expense_other: "مصروفات أخرى", expense_depreciation: "الاستهلاك",
+        gross: "إجمالي الربح", totalIncome: "إجمالي الإيرادات", totalExpense: "إجمالي المصروفات", operating: "صافي الربح التشغيلي", otherNet: "صافي الإيرادات الأخرى", net: "صافي الربح",
+        source: "عرض القيود", previous: "السابق", next: "التالي", page: "صفحة", noAccounts: "لا توجد حسابات في هذا القسم.", debit: "مدين", credit: "دائن", linesLoading: "جارٍ تحميل القيود…", noLines: "لا توجد قيود لهذا الحساب في الفترة.",
+        period: "الفترة", comparison: "المقارنة", month: "شهر", quarter: "ربع سنة", fiscalYear: "سنة مالية", customDates: "تواريخ مخصصة", noComparison: "دون مقارنة", previousPeriods: "الفترات السابقة", samePeriodLastYear: "الفترة نفسها العام الماضي", periods: "فترات", periodOrder: "ترتيب الفترات", descending: "تنازلي", ascending: "تصاعدي", from: "من", to: "إلى", current: "الحالية",
     },
     en: {
-        title: "Profit and Loss", company: "Company", from: "From", to: "To",
-        journals: "Journals", allJournals: "All journals", selectedJournals: "Selected journals only",
-        posted: "Posted entries · accounting date · not a frozen historical snapshot",
-        apply: "Show report", loading: "Loading report…", accountsLoading: "Loading accounts…",
-        error: "Could not load the report. Check the period and your access rights, then retry.",
-        noData: "No posted activity was found for this period.", account: "Account", balance: "Balance",
-        income: "Revenue", income_other: "Other income", expense_direct_cost: "Cost of sales",
-        expense: "Expenses", expense_other: "Other expenses", expense_depreciation: "Depreciation", gross: "Gross profit",
-        net: "Net profit", source: "View entries", previous: "Previous", next: "Next",
-        page: "Page", of: "of", noAccounts: "No accounts in this section.",
-        date: "Date", entry: "Entry", label: "Label", debit: "Debit", credit: "Credit",
-        linesLoading: "Loading entries…", noLines: "No entries for this account in the period.",
+        title: "Profit and Loss", company: "Company", journals: "Journals", allJournals: "All journals", selectedJournals: "Selected journals only",
+        posted: "Posted entries · accounting date · not a frozen historical snapshot", loading: "Loading report…", accountsLoading: "Loading accounts…",
+        error: "Could not load the report. Check the period and your access rights, then retry.", account: "Account", balance: "Balance",
+        income: "Income", income_other: "Other income", expense_direct_cost: "Cost of sales", expense: "Expenses", expense_other: "Other expenses", expense_depreciation: "Depreciation",
+        gross: "Gross profit", totalIncome: "Total income", totalExpense: "Total expense", operating: "Net operating income", otherNet: "Net other income", net: "Net income",
+        source: "View entries", previous: "Previous", next: "Next", page: "Page", noAccounts: "No accounts in this section.", debit: "Debit", credit: "Credit", linesLoading: "Loading entries…", noLines: "No entries for this account in the period.",
+        period: "Period", comparison: "Comparison", month: "Month", quarter: "Quarter", fiscalYear: "Fiscal year", customDates: "Custom dates", noComparison: "No comparison", previousPeriods: "Previous periods", samePeriodLastYear: "Same period last year", periods: "Periods", periodOrder: "Period order", descending: "Descending", ascending: "Ascending", from: "From", to: "To", current: "Current",
     },
 };
+
+const PERIOD_KINDS = ["month", "quarter", "fiscal_year", "custom"];
+const COMPARISON_KINDS = ["none", "previous_period", "same_period_last_year", "custom"];
 
 export class BaseerProfitLossReport extends Component {
     static template = "baseer_profit_loss_report.Report";
@@ -47,24 +41,13 @@ export class BaseerProfitLossReport extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
-        this.state = useState({
-            loading: true, error: "", companies: [], journals: [], report: null,
-            filters: { company_id: 0, date_from: "", date_to: "", journal_ids: [] },
-            expanded: {}, pages: {}, accountLoading: {}, expandedAccounts: {},
-            linePages: {}, lineLoading: {}, lineOpening: {},
-        });
+        this.state = useState({ loading: true, error: "", companies: [], journals: [], report: null,
+            filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, expandedAccounts: {}, linePages: {}, lineLoading: {}, lineOpening: {} });
         this.appliedFilters = null;
         this.requestToken = 0;
         onWillStart(async () => {
             try {
-                const context = await this.orm.call(MODEL, "get_context", []);
-                this.state.companies = context.companies;
-                this.state.journals = context.journals;
-                Object.assign(this.state.filters, {
-                    company_id: context.default_company_id,
-                    date_from: context.default_date_from,
-                    date_to: context.default_date_to,
-                });
+                this.installContext(await this.orm.call(MODEL, "get_context", []));
                 await this.apply();
             } catch (error) {
                 this.state.error = error?.data?.message || this.labels.error;
@@ -73,11 +56,35 @@ export class BaseerProfitLossReport extends Component {
         });
     }
 
+    emptyFilters() { return { company_id: 0, period: { kind: "month", anchor_date: "", direction: 0, date_from: "", date_to: "" }, comparison: { kind: "none", order: "descending", count: 1, date_from: "", date_to: "" }, journal_ids: [] }; }
     get labels() { return copy[this.lang]; }
-    sectionLabel(key) { return this.labels[key] || key; }
-    amountClass(negative, amount) {
+    get reportPeriods() { return this.state.report?.periods || []; }
+    get primaryPeriod() { return this.reportPeriods.find((period) => period.role === "primary") || this.reportPeriods[0]; }
+    get periodSummary() { return this.primaryPeriod?.label || this.periodKindLabel(this.state.filters.period.kind); }
+    get comparisonSummary() { return this.comparisonKindLabel(this.state.filters.comparison.kind); }
+    periodKindLabel(kind) { return { month: this.labels.month, quarter: this.labels.quarter, fiscal_year: this.labels.fiscalYear, custom: this.labels.customDates }[kind] || kind; }
+    comparisonKindLabel(kind) { return { none: this.labels.noComparison, previous_period: this.labels.previousPeriods, same_period_last_year: this.labels.samePeriodLastYear, custom: this.labels.customDates }[kind] || kind; }
+    amountClass(value) {
+        const amount = value?.amount || ZERO.amount;
         if (/^-?0(?:\.0+)?$/.test(String(amount).replace(/,/g, ""))) { return "is-zero"; }
-        return negative ? "is-negative" : "";
+        return value?.negative ? "is-negative" : "";
+    }
+    amountFor(entity, periodKey) { return entity?.amounts?.[periodKey] || ZERO; }
+    rowClass(row) { return `o_baseer_pl_${row.kind || "detail"} o_baseer_pl_${row.key}`; }
+    sectionLabel(key) { return this.labels[key] || key; }
+    accountKey(account, periodKey) { return `${account.id}:${periodKey}`; }
+    rowColspan() { return Math.max(2, this.reportPeriods.length + 1); }
+    cloneFilters(direction = 0) {
+        const { period, comparison } = this.state.filters;
+        return { company_id: this.state.filters.company_id, period: { ...period, direction }, comparison: { ...comparison }, journal_ids: [...this.state.filters.journal_ids] };
+    }
+    installContext(context) {
+        this.state.companies = context.companies || [];
+        this.state.journals = context.journals || [];
+        const defaults = context.default_filters || {};
+        const period = defaults.period || { kind: "month", anchor_date: context.default_date_to || "", date_from: context.default_date_from || "", date_to: context.default_date_to || "" };
+        const comparison = defaults.comparison || { kind: "none", order: "descending" };
+        Object.assign(this.state.filters, this.emptyFilters(), { company_id: defaults.company_id || context.default_company_id || 0, period: { ...this.emptyFilters().period, ...period, direction: 0 }, comparison: { ...this.emptyFilters().comparison, ...comparison }, journal_ids: [...(defaults.journal_ids || [])] });
     }
     invalidate() {
         this.requestToken += 1;
@@ -94,45 +101,70 @@ export class BaseerProfitLossReport extends Component {
         this.appliedFilters = null;
     }
     async onCompanyChange(event) {
-        const companyId = Number(event.target.value);
-        this.state.filters.company_id = companyId;
-        this.state.filters.journal_ids = [];
-        this.state.journals = [];
         this.invalidate();
         const token = this.requestToken;
         try {
-            const context = await this.orm.call(MODEL, "get_context", [companyId]);
-            if (token === this.requestToken) { this.state.journals = context.journals; }
+            const context = await this.orm.call(MODEL, "get_context", [Number(event.target.value)]);
+            if (token === this.requestToken) { this.installContext(context); await this.apply(); }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         }
     }
-    onDateChange(event) {
-        this.state.filters[event.target.name] = event.target.value;
-        this.invalidate();
+    async setPeriodKind(kind) {
+        if (!PERIOD_KINDS.includes(kind) || this.state.filters.period.kind === kind) { return; }
+        this.state.filters.period.kind = kind;
+        this.state.filters.period.direction = 0;
+        await this.apply();
+    }
+    async navigatePeriod(direction) { if ([-1, 1].includes(direction) && this.state.filters.period.kind !== "custom") { await this.apply(direction); } }
+    async onPeriodDateChange(event) {
+        this.state.filters.period[event.target.name] = event.target.value;
+        if (this.state.filters.period.date_from && this.state.filters.period.date_to) { await this.apply(); }
+    }
+    async setComparisonKind(kind) {
+        if (!COMPARISON_KINDS.includes(kind) || this.state.filters.comparison.kind === kind) { return; }
+        this.state.filters.comparison.kind = kind;
+        await this.apply();
+    }
+    async onComparisonChange(event) {
+        const { name, value } = event.target;
+        this.state.filters.comparison[name] = name === "count" ? Number(value) : value;
+        const comparison = this.state.filters.comparison;
+        if (comparison.kind !== "custom" || (comparison.date_from && comparison.date_to)) { await this.apply(); }
     }
     onJournalChange(event) {
         const id = Number(event.target.value);
         const next = new Set(this.state.filters.journal_ids);
         if (event.target.checked) { next.add(id); } else { next.delete(id); }
         this.state.filters.journal_ids = [...next];
-        this.invalidate();
+        this.apply();
     }
-    async apply() {
-        const filters = {
-            company_id: this.state.filters.company_id,
-            date_from: this.state.filters.date_from,
-            date_to: this.state.filters.date_to,
-            journal_ids: [...this.state.filters.journal_ids],
-        };
+    legacyReport(report) {
+        if (report.rows) { return report; }
+        const current = "current";
+        const rows = [];
+        for (const section of report.sections || []) {
+            rows.push({ key: section.key, kind: "section", level: 0, section: section.key, label: this.sectionLabel(section.key), expandable: true, amounts: { [current]: section } });
+            if (section.key === "income") { rows.push({ key: "total_income", kind: "subtotal", label: this.labels.totalIncome, amounts: { [current]: section } }); }
+            if (section.key === "expense_direct_cost") { rows.push({ key: "gross_profit", kind: "subtotal", label: this.labels.gross, amounts: { [current]: report.gross_profit || ZERO } }); }
+            if (section.key === "expense") { rows.push({ key: "total_expense", kind: "subtotal", label: this.labels.totalExpense, amounts: { [current]: section } }); }
+        }
+        rows.push({ key: "net_profit", kind: "result", level: 0, label: this.labels.net, amounts: { [current]: report.net_profit || ZERO } });
+        return { ...report, periods: [{ key: current, role: "primary", label: this.labels.current, date_from: report.period?.date_from, date_to: report.period?.date_to }], rows };
+    }
+    async apply(direction = 0) {
+        const filters = this.cloneFilters(direction);
         this.invalidate();
         const token = this.requestToken;
         this.state.loading = true;
         try {
-            const report = await this.orm.call(MODEL, "get_report", [filters]);
+            const response = await this.orm.call(MODEL, "get_report", [filters]);
             if (token === this.requestToken) {
-                this.appliedFilters = filters;
+                const report = this.legacyReport(response);
                 this.state.report = report;
+                if (report.period_controls?.anchor_date) { this.state.filters.period.anchor_date = report.period_controls.anchor_date; }
+                this.state.filters.period.direction = 0;
+                this.appliedFilters = this.cloneFilters();
             }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
@@ -140,74 +172,61 @@ export class BaseerProfitLossReport extends Component {
             if (token === this.requestToken) { this.state.loading = false; }
         }
     }
-    async toggleSection(key) {
-        if (this.state.expanded[key]) {
-            this.state.expanded[key] = false;
-            return;
-        }
-        this.state.expanded[key] = true;
-        if (!this.state.pages[key]) { await this.loadAccounts(key, 1); }
+    async toggleSection(row) {
+        const section = row.section || row.key;
+        if (!row.expandable || !section) { return; }
+        if (this.state.expanded[section]) { this.state.expanded[section] = false; return; }
+        this.state.expanded[section] = true;
+        if (!this.state.pages[section]) { await this.loadAccounts(section, 1); }
     }
-    async loadAccounts(key, page) {
-        if (!this.appliedFilters || this.state.accountLoading[key]) { return; }
+    async loadAccounts(section, page) {
+        if (!this.appliedFilters || this.state.accountLoading[section]) { return; }
         const token = this.requestToken;
-        this.state.accountLoading[key] = true;
+        this.state.accountLoading[section] = true;
         try {
-            const result = await this.orm.call(MODEL, "get_accounts", [this.appliedFilters, key, page]);
-            if (token === this.requestToken) { this.state.pages[key] = result; }
+            const result = await this.orm.call(MODEL, "get_accounts", [this.appliedFilters, section, page]);
+            if (token === this.requestToken) { this.state.pages[section] = result; }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
-            if (token === this.requestToken) { this.state.accountLoading[key] = false; }
+            if (token === this.requestToken) { this.state.accountLoading[section] = false; }
         }
     }
-    async toggleAccount(account) {
-        const id = account.id;
-        if (this.state.expandedAccounts[id]) {
-            this.state.expandedAccounts[id] = false;
-            return;
-        }
-        this.state.expandedAccounts[id] = true;
-        if (!this.state.linePages[id]) { await this.loadLines(id, 1); }
+    async toggleAccount(account, periodKey) {
+        const key = this.accountKey(account, periodKey);
+        if (this.state.expandedAccounts[key]) { this.state.expandedAccounts[key] = false; return; }
+        this.state.expandedAccounts[key] = true;
+        if (!this.state.linePages[key]) { await this.loadLines(account.id, periodKey, 1); }
     }
-    async loadLines(accountId, page) {
-        if (!this.appliedFilters || this.state.lineLoading[accountId]) { return; }
+    async loadLines(accountId, periodKey, page) {
+        const key = `${accountId}:${periodKey}`;
+        if (!this.appliedFilters || this.state.lineLoading[key]) { return; }
         const token = this.requestToken;
-        this.state.lineLoading[accountId] = true;
+        this.state.lineLoading[key] = true;
         try {
-            const result = await this.orm.call(MODEL, "get_lines", [this.appliedFilters, accountId, page]);
-            if (token === this.requestToken) { this.state.linePages[accountId] = result; }
+            const result = await this.orm.call(MODEL, "get_lines", [this.appliedFilters, accountId, page, periodKey]);
+            if (token === this.requestToken) { this.state.linePages[key] = result; }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
-            if (token === this.requestToken) { this.state.lineLoading[accountId] = false; }
+            if (token === this.requestToken) { this.state.lineLoading[key] = false; }
         }
     }
-    async openLine(line) {
-        if (!this.appliedFilters || this.state.lineOpening[line.id]) { return; }
+    async openLine(line, periodKey) {
+        const key = `${line.id}:${periodKey}`;
+        if (!this.appliedFilters || this.state.lineOpening[key]) { return; }
         const token = this.requestToken;
-        this.state.lineOpening[line.id] = true;
+        this.state.lineOpening[key] = true;
         try {
-            const source = await this.orm.call(MODEL, "get_source_line", [this.appliedFilters, line.id]);
+            const source = await this.orm.call(MODEL, "get_source_line", [this.appliedFilters, line.id, periodKey]);
             if (token !== this.requestToken || source.line_id !== line.id) { return; }
-            await this.action.doAction({
-                type: "ir.actions.act_window", name: this.labels.source,
-                res_model: "account.move.line", views: [[false, "list"], [false, "form"]],
-                target: "current", domain: [["id", "=", source.line_id]],
-            });
+            await this.action.doAction({ type: "ir.actions.act_window", name: this.labels.source, res_model: "account.move.line", views: [[false, "list"], [false, "form"]], target: "current", domain: [["id", "=", source.line_id]] });
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
-            if (token === this.requestToken) { this.state.lineOpening[line.id] = false; }
+            if (token === this.requestToken) { this.state.lineOpening[key] = false; }
         }
     }
 }
 
-registry.category("baseer_reports").add("profit_loss", {
-    key: "profit_loss",
-    label: { ar: "الربح والخسارة", en: "Profit and Loss" },
-    sequence: 40,
-    kind: "component",
-    component: BaseerProfitLossReport,
-    groups: ["account.group_account_readonly", "account.group_account_user", "account.group_account_manager"],
-});
+registry.category("baseer_reports").add("profit_loss", { key: "profit_loss", label: { ar: "الربح والخسارة", en: "Profit and Loss" }, sequence: 40, kind: "component", component: BaseerProfitLossReport, groups: ["account.group_account_readonly", "account.group_account_user", "account.group_account_manager"] });

@@ -302,12 +302,14 @@ class TestProfitLoss(TransactionCase):
         result = self.report.get_report(selected)
         self.assertEqual(self._section(result, 'expense_other')['amount'], '-8.00')
         self.assertEqual(result['net_profit']['amount'], '-8.00')
+        self.assertEqual(next(row for row in result['rows'] if row['key'] == 'other_expense')
+                         ['amounts']['current']['amount'], '8.00')
         page = self.report.get_accounts(selected, 'expense_other')
-        self.assertEqual(page['total_amount'], '-8.00')
+        self.assertEqual(page['total_amount'], '8.00')
         self.assertEqual(page['accounts'][0]['id'], account.id)
         lines = self.report.get_lines(selected, account.id)
         self.assertEqual(lines['total_count'], 2)
-        self.assertEqual(lines['total_amount'], '-8.00')
+        self.assertEqual(lines['total_amount'], '8.00')
         source = self.env['account.move.line'].with_context(active_test=False).search([
             ('company_id', '=', self.company.id),
             ('parent_state', '=', 'posted'),
@@ -415,13 +417,12 @@ class TestProfitLoss(TransactionCase):
         self._entry('income', '0.10')
         self._entry('income', '0.20')
         self._entry('income', '1234567890123.45')
-        expected = Decimal('1234567890123.75')
         report = self.report.get_report(self.filters)
         accounts = self.report.get_accounts(self.filters, 'income')
         lines = self.report.get_lines(self.filters, self.accounts['income'].id)
-        self.assertEqual(Decimal(self._section(report, 'income')['amount']), expected)
-        self.assertEqual(Decimal(accounts['total_amount']), expected)
-        self.assertEqual(Decimal(lines['total_amount']), expected)
+        self.assertEqual(self._section(report, 'income')['amount'], '1,234,567,890,123.75')
+        self.assertEqual(accounts['total_amount'], '1,234,567,890,123.75')
+        self.assertEqual(lines['total_amount'], '1,234,567,890,123.75')
         self.assertEqual(lines['total_count'], 3)
 
     def test_unrounded_source_and_currency_precision(self):
@@ -434,3 +435,125 @@ class TestProfitLoss(TransactionCase):
         })
         self.assertEqual(BaseerProfitLossReport._format_money(Decimal('1.2345'),
                           three_place), '1.235')
+
+    def test_server_resolves_month_quarter_fiscal_and_previous_periods(self):
+        self._entry('income', '10', day='2041-01-10')
+        self._entry('income', '7', day='2040-12-10')
+        month = {
+            'company_id': self.company.id,
+            'journal_ids': [],
+            'period': {'kind': 'month', 'anchor_date': '2041-01-15', 'direction': 0},
+            'comparison': {'kind': 'previous_period', 'count': 1, 'order': 'descending'},
+        }
+        result = self.report.get_report(month)
+        self.assertEqual([(period['key'], period['date_from'], period['date_to'])
+                          for period in result['periods']], [
+            ('current', '2041-01-01', '2041-01-31'),
+            ('previous_1', '2040-12-01', '2040-12-31'),
+        ])
+        net_income = next(row for row in result['rows'] if row['key'] == 'net_income')
+        self.assertEqual(net_income['amounts']['current']['amount'], '10.00')
+        self.assertEqual(net_income['amounts']['previous_1']['amount'], '7.00')
+        self.assertEqual(result['period_controls']['anchor_date'], '2041-01-15')
+        previous = self.report.get_report({
+            **month, 'period': {**month['period'], 'direction': -1},
+        })
+        self.assertEqual(previous['period']['date_from'], '2040-12-01')
+        quarter = self.report.get_report({
+            **month, 'period': {'kind': 'quarter', 'anchor_date': '2041-05-15', 'direction': 0},
+            'comparison': {'kind': 'none', 'order': 'descending'},
+        })
+        self.assertEqual(quarter['period'], {'date_from': '2041-04-01', 'date_to': '2041-06-30'})
+        fiscal = self.report.get_report({
+            **month, 'period': {'kind': 'fiscal_year', 'anchor_date': '2041-05-15', 'direction': 0},
+            'comparison': {'kind': 'none', 'order': 'descending'},
+        })
+        expected_fiscal = self.company.compute_fiscalyear_dates(date(2041, 5, 15))
+        self.assertEqual(fiscal['period'], {
+            'date_from': str(expected_fiscal['date_from']),
+            'date_to': str(expected_fiscal['date_to']),
+        })
+
+    def test_comparison_accounts_are_a_union_and_details_are_period_scoped(self):
+        previous_account = self.env['account.account'].with_company(self.company).create({
+            'code': '959199', 'name': 'P&L comparison-only income',
+            'account_type': 'income', 'company_ids': [Command.set(self.company.ids)],
+        })
+        self._entry('income', '11', day='2041-01-10')
+        previous_move = self._entry('income', '7', day='2040-12-10', account=previous_account)
+        filters = {
+            'company_id': self.company.id,
+            'journal_ids': [],
+            'period': {'kind': 'month', 'anchor_date': '2041-01-15', 'direction': 0},
+            'comparison': {'kind': 'previous_period', 'count': 1, 'order': 'descending'},
+        }
+        accounts = self.report.get_accounts(filters, 'income')
+        by_id = {account['id']: account for account in accounts['accounts']}
+        self.assertEqual(set(by_id), {self.accounts['income'].id, previous_account.id})
+        self.assertEqual(by_id[self.accounts['income'].id]['amounts']['current']['amount'], '11.00')
+        self.assertEqual(by_id[self.accounts['income'].id]['amounts']['previous_1']['amount'], '0.00')
+        self.assertEqual(by_id[previous_account.id]['amounts']['current']['amount'], '0.00')
+        self.assertEqual(by_id[previous_account.id]['amounts']['previous_1']['amount'], '7.00')
+        source_line = previous_move.line_ids.filtered(
+            lambda line: line.account_id == previous_account,
+        )
+        lines = self.report.get_lines(filters, previous_account.id, period_key='previous_1')
+        self.assertEqual(lines['period_key'], 'previous_1')
+        self.assertEqual((lines['total_count'], lines['total_amount']), (1, '7.00'))
+        self.assertEqual(self.report.get_source_line(filters, source_line.id, 'previous_1'), {
+            'line_id': source_line.id, 'move_id': previous_move.id,
+        })
+        with self.assertRaises(AccessError):
+            self.report.get_lines(filters, previous_account.id, period_key='unknown')
+        with self.assertRaises(AccessError):
+            self.report.get_source_line(filters, source_line.id, 'current')
+
+    def test_last_year_and_custom_comparisons_are_calculated_on_the_server(self):
+        self._entry('income', '29', day='2040-02-29')
+        self._entry('income', '31', day='2041-02-28')
+        last_year = self.report.get_report({
+            'company_id': self.company.id,
+            'journal_ids': [],
+            'period': {'kind': 'custom', 'date_from': '2041-02-28', 'date_to': '2041-02-28'},
+            'comparison': {'kind': 'same_period_last_year', 'order': 'descending'},
+        })
+        self.assertEqual(last_year['periods'][1]['date_from'], '2040-02-28')
+        self.assertEqual(last_year['periods'][1]['date_to'], '2040-02-28')
+        custom = self.report.get_report({
+            'company_id': self.company.id,
+            'journal_ids': [],
+            'period': {'kind': 'custom', 'date_from': '2041-02-28', 'date_to': '2041-02-28'},
+            'comparison': {
+                'kind': 'custom', 'date_from': '2040-02-29', 'date_to': '2040-02-29',
+                'order': 'descending',
+            },
+        })
+        net_income = next(row for row in custom['rows'] if row['key'] == 'net_income')
+        self.assertEqual(net_income['amounts']['current']['amount'], '31.00')
+        self.assertEqual(net_income['amounts']['custom']['amount'], '29.00')
+
+    def test_expense_row_accounts_and_details_include_depreciation_naturally(self):
+        depreciation = self.accounts['expense_depreciation']
+        self._entry('expense', '30')
+        depreciation_move = self._entry('expense_depreciation', '5')
+        filters = {
+            'company_id': self.company.id,
+            'journal_ids': [],
+            'period': {'kind': 'month', 'anchor_date': '2041-05-15', 'direction': 0},
+            'comparison': {'kind': 'none', 'order': 'descending'},
+        }
+        result = self.report.get_report(filters)
+        expense = next(row for row in result['rows'] if row['key'] == 'expense')
+        self.assertEqual(result['periods'][0]['role'], 'primary')
+        self.assertEqual(expense['amounts']['current']['amount'], '35.00')
+        accounts = self.report.get_accounts(filters, 'expense')
+        by_id = {account['id']: account for account in accounts['accounts']}
+        self.assertEqual(by_id[depreciation.id]['amounts']['current']['amount'], '5.00')
+        self.assertEqual(by_id[depreciation.id]['move_line_counts']['current'], 1)
+        lines = self.report.get_lines(filters, depreciation.id)
+        self.assertEqual(lines['total_amount'], '5.00')
+        self.assertEqual(lines['lines'][0]['amount'], '5.00')
+        source = depreciation_move.line_ids.filtered(lambda line: line.account_id == depreciation)
+        self.assertEqual(self.report.get_source_line(filters, source.id), {
+            'line_id': source.id, 'move_id': depreciation_move.id,
+        })

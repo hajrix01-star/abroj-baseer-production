@@ -43,12 +43,24 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
             -d baseer_pl_capacity_ci -i baseer_profit_loss_report --without-demo=all \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=warn
-      - name: Seed and measure report reads
+      - name: Seed 100k posted lines in ephemeral database
         shell: bash
         run: |
           set -Eeuo pipefail
           docker run --rm -i --network host \
-            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_PL_BENCH_PHASE=seed \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_pl_capacity_ci \
+            < "$GITHUB_WORKSPACE/custom_addons/baseer_profit_loss_report/tests/bench_profit_loss_capacity.py"
+      - name: Measure report reads in fresh process
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_PL_BENCH_PHASE=measure \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \

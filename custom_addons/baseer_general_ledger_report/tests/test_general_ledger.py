@@ -274,14 +274,14 @@ class TestGeneralLedger(TransactionCase):
                          Decimal('99000000000000.99'))
         self.assertEqual(totals[self.cash.id]['count'], 99)
 
-    def test_verified_group_crosses_1000_line_boundary(self):
+    def test_verified_group_crosses_5000_line_boundary(self):
         commands = [Command.create({
             'name': 'GL batch debit', 'account_id': self.cash.id,
             'debit': 0.01, 'credit': 0,
-        }) for _ in range(1001)]
+        }) for _ in range(5001)]
         commands.append(Command.create({
             'name': 'GL batch credit', 'account_id': self.income.id,
-            'debit': 0, 'credit': 10.01,
+            'debit': 0, 'credit': 50.01,
         }))
         move = self.env['account.move'].with_company(self.company).create({
             'date': '2041-03-07', 'journal_id': self.journal.id,
@@ -290,9 +290,9 @@ class TestGeneralLedger(TransactionCase):
         move._post(soft=False)
         result = self.report.get_report(self.filters)
         cash = self._row(result, self.cash)
-        self.assertEqual(cash['debit'], '10.01')
-        self.assertEqual(cash['period_line_count'], 1001)
-        self.assertEqual(self._row(result, self.income)['credit'], '10.01')
+        self.assertEqual(cash['debit'], '50.01')
+        self.assertEqual(cash['period_line_count'], 5001)
+        self.assertEqual(self._row(result, self.income)['credit'], '50.01')
         self.assertEqual(result['total']['closing'], '0.00')
 
     def test_company_dates_and_non_accountant_denied(self):

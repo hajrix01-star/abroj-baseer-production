@@ -11,12 +11,14 @@ import os
 import resource
 import statistics
 import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
 import psutil
 
 from odoo import Command, api
+from odoo.tools.profiler import Profiler
 
 
 EXPECTED_DATABASE = "baseer_gl_capacity_ci"
@@ -306,6 +308,38 @@ def measure_capacity():
         ],
     }, sort_keys=True), flush=True)
     if "status" in two_readers or "status" in ten_readers:
+        # Only a failed diagnostic receives profiler overhead. Never treat
+        # the profiled repeat as a capacity measurement or persist its trace.
+        with Profiler(collectors=['sql'], db=None,
+                      description='Baseer GL isolated SQL diagnostic') as profile:
+            profiled = measure('get_report', 1)
+        patterns = defaultdict(lambda: {'count': 0, 'seconds': 0.0})
+        callers = defaultdict(lambda: {'count': 0, 'seconds': 0.0})
+        entries = profile.collectors[0].entries
+        for entry in entries:
+            duration = entry['time']
+            pattern = ' '.join(entry['query'].split())[:140]
+            patterns[pattern]['count'] += 1
+            patterns[pattern]['seconds'] += duration
+            source = next((frame[2] for frame in reversed(entry['stack'])
+                           if 'baseer_general_ledger_report' in frame[0]), 'Odoo core')
+            callers[source]['count'] += 1
+            callers[source]['seconds'] += duration
+        def top_groups(groups):
+            return [
+                {'name': name, 'count': item['count'],
+                 'sql_seconds': round(item['seconds'], 4)}
+                for name, item in sorted(groups.items(),
+                                         key=lambda pair: pair[1]['seconds'],
+                                         reverse=True)[:10]
+            ]
+        print('BASEER_GL_SQL_PROFILE=' + json.dumps({
+            'diagnostic_only': True, 'profiled_seconds': profiled['seconds'],
+            'profiler_seconds': round(profile.duration, 4),
+            'total_sql_seconds': round(sum(e['time'] for e in entries), 4),
+            'sql_count': len(entries), 'top_patterns': top_groups(patterns),
+            'top_callers': top_groups(callers),
+        }), flush=True)
         raise RuntimeError("Capacity stages were skipped: diagnostic incomplete, not G6 GO")
 
 

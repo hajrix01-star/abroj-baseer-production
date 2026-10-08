@@ -1,7 +1,10 @@
 from collections import Counter
 from datetime import date
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
+
+from lxml import html as lxml_html
 
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
@@ -103,6 +106,100 @@ class TestGeneralLedger(TransactionCase):
             'anchor_date': anchor, 'direction': direction,
             'date_from': start, 'date_to': end,
         })
+
+    def test_pdf_summary_is_complete_while_screen_stays_paged(self):
+        def snapshot(count):
+            accounts = {index: SimpleNamespace(
+                id=index, code=f'{index:06}', name=f'Account {index}',
+                include_initial_balance=True,
+            ) for index in range(1, count + 1)}
+            return (self.company, date(2041, 3, 1), date(2041, 3, 31),
+                    date(2041, 1, 1), [], {}, {}, {}, accounts)
+
+        with patch.object(BaseerGeneralLedger, '_snapshot', return_value=snapshot(101)), \
+                patch.object(BaseerGeneralLedger, '_assert_complete_source'):
+            screen = self.report.get_report(self.filters)
+            pdf = self.report._build_report(self.filters, full=True)
+            html, _output_type = self.env['ir.actions.report']._render_qweb_html(
+                'baseer_general_ledger_report.general_ledger_pdf', docids=[],
+                data={'filters': self.filters},
+            )
+        self.assertEqual((len(screen['accounts']), screen['page_count']), (100, 2))
+        self.assertEqual((len(pdf['accounts']), pdf['account_count']), (101, 101))
+        self.assertEqual(pdf['accounts'][-1]['code'], '000101')
+        self.assertEqual(pdf['total'], screen['total'])
+        document = lxml_html.fromstring(html)
+        printed = document.xpath("//div[contains(@class, 'bgl-pdf')]//table/tbody/tr")
+        self.assertEqual(len(printed), 102)
+        self.assertIn(b'Account 101', html)
+        bodies, _ids, _header, footer, _paperformat = self.env['ir.actions.report']._prepare_html(
+            html, report_model='baseer.general.ledger.report',
+        )
+        self.assertEqual(len(bodies), 1)
+        self.assertIn('class="page"', footer)
+
+        with patch.object(BaseerGeneralLedger, '_snapshot', return_value=snapshot(5000)), \
+                patch.object(BaseerGeneralLedger, '_assert_complete_source'):
+            at_limit = self.report._build_report(self.filters, full=True)
+        self.assertEqual(len(at_limit['accounts']), 5000)
+
+        with patch.object(BaseerGeneralLedger, '_snapshot', return_value=snapshot(5001)), \
+                patch.object(BaseerGeneralLedger, '_assert_complete_source'):
+            with self.assertRaises(ValidationError):
+                self.report._build_report(self.filters, full=True)
+
+    def test_pdf_direct_render_rechecks_company_rights_and_filters(self):
+        move = self._entry('2041-03-07', self.cash, 50, 0, self.income)
+        pdf = self.env['report.baseer_general_ledger_report.general_ledger_pdf']
+        with patch.object(BaseerGeneralLedger, '_build_report', side_effect=AssertionError('early financial read')):
+            action = self.report.action_print(self.filters)
+        self.assertEqual(action['data'], {'filters': self.filters})
+        self.assertEqual(self.env.ref(
+            'baseer_general_ledger_report.action_general_ledger_pdf',
+        ).paperformat_id.orientation, 'Landscape')
+        values = pdf._get_report_values([], action['data'])
+        self.assertEqual(values['report']['account_count'], 2)
+        self.assertEqual(len(values['accounts']), 2)
+        self.assertEqual(values['report']['total']['debit'], '50.00')
+        html, _output_type = self.env['ir.actions.report']._render_qweb_html(
+            'baseer_general_ledger_report.general_ledger_pdf', docids=[],
+            data=action['data'],
+        )
+        document = lxml_html.fromstring(html)
+        printed = document.xpath("//div[contains(@class, 'bgl-pdf')]//table/tbody/tr")
+        self.assertEqual(len(printed), 3)
+        self.assertIn(b'2041-03-01', html)
+        self.assertIn(b'2041-03-31', html)
+        self.assertIn(b'50.00', html)
+        selected = {**self.filters, 'journal_ids': [self.journal.id]}
+        selected_html, _output_type = self.env['ir.actions.report']._render_qweb_html(
+            'baseer_general_ledger_report.general_ledger_pdf', docids=[],
+            data={'filters': selected},
+        )
+        self.assertIn(self.journal.code.encode(), selected_html)
+
+        other = self.env['res.company'].create({'name': 'GL PDF other company'})
+        accountant = self._accountant()
+        accountant.company_ids = [Command.link(other.id)]
+        wrong = {**self.filters, 'company_id': other.id}
+        with self.assertRaises(AccessError):
+            pdf.with_user(accountant).with_context(
+                allowed_company_ids=[self.company.id, other.id],
+            )._get_report_values([], {'filters': wrong})
+        internal = self.env['res.users'].create({
+            'name': 'GL PDF internal', 'login': 'gl_pdf_internal',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        with self.assertRaises(AccessError):
+            pdf.with_user(internal)._get_report_values([], action['data'])
+        rule = self._hide('account.move', move)
+        try:
+            with self.assertRaises(AccessError):
+                pdf.with_user(accountant)._get_report_values([], action['data'])
+        finally:
+            rule.unlink()
 
     def test_period_resolver_full_month_quarter_fiscal_and_leap_day(self):
         month = self._period('month', '2040-02-15')

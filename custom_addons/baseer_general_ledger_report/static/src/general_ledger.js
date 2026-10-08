@@ -14,6 +14,7 @@ const copy = {
         journals: "الدفاتر", allJournals: "جميع الدفاتر", partial: "نتيجة الدفاتر المختارة فقط",
         posted: "قيود مرحلة · حسب التاريخ المحاسبي · ليست لقطة تاريخية مجمدة",
         apply: "عرض التقرير", loading: "جارٍ تحميل التقرير…", error: "تعذر عرض التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
+        print: "PDF",
         account: "الحساب", opening: "الرصيد الافتتاحي", debit: "مدين", credit: "دائن", closing: "الرصيد الختامي",
         rbf: "نتيجة مرحلة من السنة السابقة", rbfSources: "مصادر نتيجة السنوات السابقة", total: "إجمالي دفتر الأستاذ",
         date: "التاريخ", entry: "القيد", label: "البيان", running: "الرصيد الجاري",
@@ -27,6 +28,7 @@ const copy = {
         journals: "Journals", allJournals: "All journals", partial: "Selected journals only",
         posted: "Posted entries · accounting date · not a frozen historical snapshot",
         apply: "Show report", loading: "Loading report…", error: "Could not load the report. Check the period and your access rights, then retry.",
+        print: "PDF",
         account: "Account", opening: "Opening Balance", debit: "Debit", credit: "Credit", closing: "Closing Balance",
         rbf: "Result Brought Forward", rbfSources: "Prior-year result sources", total: "Total General Ledger",
         date: "Date", entry: "Entry", label: "Label", running: "Running Balance",
@@ -46,7 +48,7 @@ export class BaseerGeneralLedgerReport extends Component {
         this.action = useService("action");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
         this.state = useState({
-            loading: true, error: "", journals: [], report: null, period: null,
+            loading: true, printing: false, error: "", journals: [], report: null, period: null,
             filters: { company_id: 0, date_from: "", date_to: "", journal_ids: [] },
             periodKind: "month", customFrom: "", customTo: "",
             rbfOpen: false, rbfLoading: false, rbfAccounts: null,
@@ -77,6 +79,7 @@ export class BaseerGeneralLedgerReport extends Component {
         this.requestToken++;
         this.appliedFilters = null;
         this.state.loading = false;
+        this.state.printing = false;
         this.state.report = null;
         this.state.error = "";
         this.state.rbfOpen = false;
@@ -213,6 +216,28 @@ export class BaseerGeneralLedgerReport extends Component {
             if (token === this.requestToken && this.appliedFilters?.company_id === this.activeCompanyId) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
             if (token === this.requestToken && this.appliedFilters?.company_id === this.activeCompanyId) { this.state.loading = false; }
+        }
+    }
+    async printReport() {
+        if (!this.appliedFilters || !this.state.report || this.state.loading || this.state.printing ||
+            this.appliedFilters.company_id !== this.activeCompanyId) { return; }
+        const token = this.requestToken;
+        const companyId = this.activeCompanyId;
+        const filters = { ...this.appliedFilters, journal_ids: [...this.appliedFilters.journal_ids] };
+        this.state.printing = true;
+        try {
+            const action = await this.orm.call(MODEL, "action_print", [filters]);
+            if (token === this.requestToken && companyId === this.activeCompanyId) {
+                await this.action.doAction(action);
+            }
+        } catch (error) {
+            if (token === this.requestToken && companyId === this.activeCompanyId) {
+                this.state.error = error?.data?.message || this.labels.error;
+            }
+        } finally {
+            if (token === this.requestToken && companyId === this.activeCompanyId) {
+                this.state.printing = false;
+            }
         }
     }
     async toggleRbf() {

@@ -7,6 +7,7 @@
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
+                    <button type="button" class="btn o_baseer_gl_pdf" t-att-disabled="!state.report || state.loading || state.printing" t-on-click="printReport" t-esc="labels.print"/>
                     <details class="o_baseer_gl_period">
                         <summary t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></summary>
                         <div class="o_baseer_gl_period_list">

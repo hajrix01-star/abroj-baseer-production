@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
@@ -232,6 +233,67 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(result['total']['closing'], '0.00')
         self.assertEqual(BaseerGeneralLedger._money(
             Decimal('0.005') + Decimal('0.005'), self.company.currency_id), '0.01')
+
+    def test_large_decimal_sum_preserves_cents(self):
+        amount = 1_000_000_000_000.01
+        line_commands = []
+        for _ in range(99):
+            line_commands.extend([
+                Command.create({'name': 'GL large debit', 'account_id': self.cash.id,
+                                'debit': amount, 'credit': 0}),
+                Command.create({'name': 'GL large credit', 'account_id': self.income.id,
+                                'debit': 0, 'credit': amount}),
+            ])
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-03-06', 'journal_id': self.journal.id,
+            'move_type': 'entry', 'line_ids': line_commands,
+        })
+        move._post(soft=False)
+        result = self.report.get_report(self.filters)
+        self.assertEqual(self._row(result, self.cash)['debit'],
+                         '99,000,000,000,000.99')
+        self.assertEqual(self._row(result, self.income)['credit'],
+                         '99,000,000,000,000.99')
+        self.assertEqual(result['total']['closing'], '0.00')
+
+    def test_exact_batches_reject_missing_account_count(self):
+        totals = {}
+        with self.assertRaises(AccessError):
+            BaseerGeneralLedger._merge_verified_batch(
+                totals, Counter({self.cash.id: 2}),
+                [(self.cash.id, '2.00', '0.00', 1)],
+            )
+        self.assertFalse(totals)
+        expected = Counter({self.cash.id: 1})
+        for _ in range(99):
+            BaseerGeneralLedger._merge_verified_batch(
+                totals, expected,
+                [(self.cash.id, '1000000000000.01', '0.00', 1)],
+            )
+        self.assertEqual(totals[self.cash.id]['debit'],
+                         Decimal('99000000000000.99'))
+        self.assertEqual(totals[self.cash.id]['count'], 99)
+
+    def test_verified_group_crosses_1000_line_boundary(self):
+        commands = [Command.create({
+            'name': 'GL batch debit', 'account_id': self.cash.id,
+            'debit': 0.01, 'credit': 0,
+        }) for _ in range(1001)]
+        commands.append(Command.create({
+            'name': 'GL batch credit', 'account_id': self.income.id,
+            'debit': 0, 'credit': 10.01,
+        }))
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-03-07', 'journal_id': self.journal.id,
+            'move_type': 'entry', 'line_ids': commands,
+        })
+        move._post(soft=False)
+        result = self.report.get_report(self.filters)
+        cash = self._row(result, self.cash)
+        self.assertEqual(cash['debit'], '10.01')
+        self.assertEqual(cash['period_line_count'], 1001)
+        self.assertEqual(self._row(result, self.income)['credit'], '10.01')
+        self.assertEqual(result['total']['closing'], '0.00')
 
     def test_company_dates_and_non_accountant_denied(self):
         other = self.env['res.company'].create({'name': 'GL other company'})

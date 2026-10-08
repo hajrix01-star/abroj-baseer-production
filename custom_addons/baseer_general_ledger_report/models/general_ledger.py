@@ -74,9 +74,9 @@ class BaseerGeneralLedger(models.AbstractModel):
             domain &= Domain('journal_id', 'in', journal_ids)
             query += ' AND journal_id = ANY(%s)'
             params.append(journal_ids)
-        readable_count = self.env['account.move.line'].with_context(
-            active_test=False,
-        ).search_count(domain)
+        AML = self.env['account.move.line'].with_context(active_test=False)
+        AML.flush_model(['company_id', 'parent_state', 'date', 'journal_id'])
+        readable_count = AML.search_count(domain)
         self.env.cr.execute(query, params)
         if readable_count != self.env.cr.fetchone()[0]:
             raise AccessError(_(
@@ -153,18 +153,43 @@ class BaseerGeneralLedger(models.AbstractModel):
         lines.mapped('account_id').check_access('read')
         lines.mapped('journal_id').check_access('read')
 
+    @staticmethod
+    def _merge_verified_batch(totals, verified_counts, grouped):
+        grouped_counts = Counter()
+        for account_id, _debit, _credit, count in grouped:
+            grouped_counts[account_id] += count
+        if grouped_counts != verified_counts:
+            raise AccessError(_('The report source changed while reading. Retry.'))
+        with localcontext() as context:
+            context.prec = 60
+            for account_id, debit, credit, count in grouped:
+                item = totals.setdefault(account_id, {
+                    'debit': Decimal('0'), 'credit': Decimal('0'), 'count': 0,
+                })
+                item['debit'] += Decimal(debit)
+                item['credit'] += Decimal(credit)
+                item['count'] += count
+
     @api.model
     def _group_verified(self, domain):
-        """Verify bounded readable batches before one ORM aggregate of the domain.
+        """Sum exact NUMERIC values only for each ORM-verified AML batch.
 
-        The ORM search and aggregate both apply AML record rules. Per-account
-        source counts must match, and linked records are checked before any
-        amount is returned. Only account counts, not AML rows, span batches.
+        Odoo's NUMERIC-to-float converter can lose cents on a large SQL SUM.
+        SQL therefore receives only IDs already permitted by the ORM, and
+        returns decimal text. The record-rule search, link checks, and SQL
+        share one transaction snapshot; no writes or commits occur between them.
         """
         AML = self.env['account.move.line'].with_context(
             active_test=False, prefetch_fields=False,
         )
-        verified_counts = Counter()
+        amount_fields = {'account_id', 'debit', 'credit'}
+        if amount_fields - AML.fields_get(list(amount_fields)).keys():
+            raise AccessError(_('The report amount fields are not available.'))
+        AML.flush_model([
+            'company_id', 'parent_state', 'date', 'journal_id',
+            'account_id', 'debit', 'credit',
+        ])
+        totals = {}
         cursor = 0
         while True:
             lines = AML.search(domain & Domain('id', '>', cursor),
@@ -172,23 +197,16 @@ class BaseerGeneralLedger(models.AbstractModel):
             if not lines:
                 break
             self._verify_links(lines)
-            verified_counts.update(line.account_id.id for line in lines)
+            verified_counts = Counter(line.account_id.id for line in lines)
+            self.env.cr.execute(
+                "SELECT account_id, SUM(debit)::text, SUM(credit)::text, COUNT(*) "
+                "FROM account_move_line WHERE id = ANY(%s) GROUP BY account_id",
+                [lines.ids],
+            )
+            self._merge_verified_batch(totals, verified_counts, self.env.cr.fetchall())
             cursor = lines[-1].id
             if len(lines) < self.SECURITY_BATCH:
                 break
-        totals = {}
-        grouped_counts = Counter()
-        for account, debit, credit, count in AML._read_group(
-            domain, ['account_id'], ['debit:sum', 'credit:sum', '__count'],
-        ):
-            totals[account.id] = {
-                'debit': self._decimal(debit),
-                'credit': self._decimal(credit),
-                'count': count,
-            }
-            grouped_counts[account.id] = count
-        if grouped_counts != verified_counts:
-            raise AccessError(_('The report source changed while reading. Retry.'))
         return totals
 
     @staticmethod

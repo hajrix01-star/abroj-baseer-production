@@ -102,6 +102,21 @@ def docker_processes(container):
     return result
 
 
+def docker_process_tree(container):
+    output = subprocess.check_output(
+        ["docker", "top", container, "-eo", "pid,ppid,args"],
+        text=True, timeout=15,
+    )
+    rows = {}
+    for line in output.splitlines()[1:]:
+        parts = line.split(maxsplit=2)
+        if len(parts) == 3 and parts[0].isdecimal() and parts[1].isdecimal():
+            rows[int(parts[0])] = {"ppid": int(parts[1]), "args": parts[2]}
+    if not rows:
+        raise RuntimeError(f"No process tree visible in isolated {container} container")
+    return rows
+
+
 def process_stats(pid):
     try:
         stat = Path(f"/proc/{pid}/stat").read_text(encoding="ascii")
@@ -155,6 +170,7 @@ def inspect_container(container):
         "oom_killed": item["State"]["OOMKilled"],
         "restarting": item["State"]["Restarting"],
         "restart_count": item["RestartCount"],
+        "main_pid": item["State"]["Pid"],
         "memory_limit_mb": item["HostConfig"]["Memory"] // 1048576,
         "cpuset_cpus": item["HostConfig"]["CpusetCpus"],
     }
@@ -266,10 +282,26 @@ def client():
         raise RuntimeError("The ten authenticated sessions are incomplete")
 
     def worker_pids():
-        rows = docker_processes("baseer-gl-http")
-        workers = {pid for pid, args in rows.items() if "odoo: WorkerHTTP" in args}
+        rows = docker_process_tree("baseer-gl-http")
+        workers = {pid for pid, row in rows.items()
+                   if "odoo: WorkerHTTP" in row["args"]}
+        if not workers:
+            # Some container/ps combinations show the original command line
+            # even after Odoo sets worker titles. Odoo forks HTTP workers as
+            # direct master children; its separate gevent child has "gevent"
+            # in the command line. Keep the count and parent check fail-closed.
+            master = inspect_container("baseer-gl-http")["main_pid"]
+            workers = {pid for pid, row in rows.items()
+                       if row["ppid"] == master
+                       and "gevent" not in row["args"].lower()}
         if len(workers) != 2:
-            raise RuntimeError(f"Expected two WorkerHTTP processes, found {len(workers)}")
+            master = inspect_container("baseer-gl-http")["main_pid"]
+            children = [(pid, "gevent" in row["args"].lower())
+                        for pid, row in rows.items() if row["ppid"] == master]
+            raise RuntimeError(
+                f"Expected two HTTP worker children, found {len(workers)}; "
+                f"master={master}, direct_children={children}"
+            )
         for pid in workers:
             if os.sched_getaffinity(pid) != cpuset:
                 raise RuntimeError("An HTTP worker escaped the two-CPU affinity")

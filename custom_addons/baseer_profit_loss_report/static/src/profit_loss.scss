@@ -34,9 +34,9 @@
         top: 100%;
         display: grid;
         gap: 0.4rem;
-        width: max-content;
         min-width: 13rem;
-        max-width: min(22rem, 90vw);
+        width: 22rem;
+        max-width: 90vw;
         max-height: 16rem;
         padding: 0.7rem;
         overflow: auto;

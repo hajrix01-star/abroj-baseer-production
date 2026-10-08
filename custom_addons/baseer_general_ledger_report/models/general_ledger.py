@@ -149,6 +149,7 @@ class BaseerGeneralLedger(models.AbstractModel):
     @api.model
     def _verify_links(self, lines):
         lines.check_access('read')
+        lines.fetch(['company_id', 'move_id', 'account_id', 'journal_id'])
         lines.mapped('move_id').check_access('read')
         lines.mapped('account_id').check_access('read')
         lines.mapped('journal_id').check_access('read')

@@ -25,9 +25,11 @@ READONLY_ID_PARAM = "baseer_gl_capacity_readonly_user_id"
 READONLY_LOGIN = "baseer_gl_capacity_readonly"
 DENIED_LOGIN = "baseer_gl_capacity_denied"
 PERIOD = {"date_from": "2041-01-01", "date_to": "2041-12-31"}
-EXPECTED_ACCOUNTS = 5000
-EXPECTED_LINES = 100000
-SESSIONS = 10
+QA_PILOT = os.environ.get("BASEER_GL_QA_PILOT") == "true"
+EXPECTED_ACCOUNTS = 2000 if QA_PILOT else 5000
+EXPECTED_LINES = 30000 if QA_PILOT else 100000
+EXPECTED_LAST_PAGE = EXPECTED_ACCOUNTS // 100
+SESSIONS = 2 if QA_PILOT else 10
 
 
 def prepare():
@@ -45,7 +47,7 @@ def prepare():
         ("name", "=like", "GL Capacity %"),
     ]).ids
     if len(account_ids) != EXPECTED_ACCOUNTS:
-        raise RuntimeError("The 5000-account seed is incomplete")
+        raise RuntimeError("The account seed is incomplete")
     line_count = env["account.move.line"].search_count([
         ("company_id", "=", company.id),
         ("parent_state", "=", "posted"),
@@ -54,7 +56,7 @@ def prepare():
         ("account_id", "in", account_ids),
     ])
     if line_count != EXPECTED_LINES:
-        raise RuntimeError("The 100000 posted-line seed is incomplete")
+        raise RuntimeError("The posted-line seed is incomplete")
     stored_id = env["ir.config_parameter"].get_param(READONLY_ID_PARAM)
     if not stored_id or not stored_id.isdecimal():
         raise RuntimeError("The seed read-only accountant is missing")
@@ -217,16 +219,16 @@ def assert_denied(opener, route, params):
         raise RuntimeError(f"Denied-user probe did not raise AccessError: {error_name[:100]}")
 
 
-def report_digest(report):
+def report_digest(report, expected_page):
     if (report.get("account_count") != EXPECTED_ACCOUNTS
-            or report.get("page_count") != 50
+            or report.get("page_count") != EXPECTED_LAST_PAGE
             or len(report.get("accounts", [])) != 100
-            or report.get("page") not in (1, 50)):
+            or report.get("page") != expected_page):
         raise RuntimeError("GL report count or page size changed")
     total = report.get("total", {})
     money = lambda key: Decimal(str(total[key]).replace(",", ""))
-    if (money("opening") != 0 or money("debit") != 50000
-            or money("credit") != 50000 or money("closing") != 0):
+    if (money("opening") != 0 or money("debit") != Decimal(EXPECTED_LINES // 2)
+            or money("credit") != Decimal(EXPECTED_LINES // 2) or money("closing") != 0):
         raise RuntimeError("GL report totals do not match the balanced synthetic seed")
     canonical = json.dumps(report, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -252,7 +254,7 @@ def client():
     if inspect_container(postgres)["cpuset_cpus"] != ",".join(map(str, sorted(cpuset))):
         raise RuntimeError("Postgres is not pinned to the same two CPUs")
 
-    # Server readiness and all ten independent logins are outside the report clock.
+    # Server readiness and independent logins are outside the report clock.
     for attempt in range(90):
         try:
             with urllib.request.urlopen(BASE_URL + f"/web/login?db={DATABASE}", timeout=3) as response:
@@ -275,11 +277,11 @@ def client():
             raise RuntimeError("HTTP session is not the intended non-superuser accountant")
         cookies = [cookie.value for cookie in jar if cookie.name == "session_id"]
         if len(cookies) != 1 or cookies[0] in session_ids:
-            raise RuntimeError("The ten HTTP sessions are not independent")
+            raise RuntimeError("The HTTP sessions are not independent")
         session_ids.add(cookies[0])
         sessions.append(opener)
     if len(sessions) != SESSIONS or len(session_ids) != SESSIONS:
-        raise RuntimeError("The ten authenticated sessions are incomplete")
+        raise RuntimeError("The authenticated sessions are incomplete")
 
     def worker_pids():
         rows = docker_process_tree("baseer-gl-http")
@@ -334,7 +336,7 @@ def client():
             "kwargs": {"context": {"allowed_company_ids": [company_id]}},
         })
         seconds = time.perf_counter() - started
-        return {"seconds": round(seconds, 4), "digest": report_digest(report)}
+        return {"seconds": round(seconds, 4), "digest": report_digest(report, page)}
 
     def parallel(readers):
         barrier = threading.Barrier(readers + 1)
@@ -362,8 +364,37 @@ def client():
     pg_pids = set(docker_processes(postgres))
     baseline_cpu = process_group_stats(workers | pg_pids)
     first = one_read(sessions[0])
-    page50 = one_read(sessions[0], 50)
+    last_page = one_read(sessions[0], EXPECTED_LAST_PAGE)
     two, two_wall = parallel(2)
+    if QA_PILOT:
+        state = inspect_container("baseer-gl-http")
+        if (any(sample["digest"] != first["digest"] for sample in two)
+                or workers != worker_pids() or state["oom_killed"]
+                or state["restarting"] or state["restart_count"] != 0):
+            raise RuntimeError("QA pilot response mismatch or worker failure")
+        result = {
+            "status": "QA_PILOT_DIAGNOSTIC_NOT_RELEASE_GO",
+            "posted_lines": prepared["posted_lines"],
+            "account_count": prepared["accounts"],
+            "last_page": EXPECTED_LAST_PAGE,
+            "authenticated_sessions": len(session_ids),
+            "denied_user_access_error": True,
+            "first_page": first,
+            "last_page_read": last_page,
+            "two_readers": {"wall_seconds": two_wall,
+                            "max_seconds": max(sample["seconds"] for sample in two),
+                            "samples": two},
+            "worker_pids_unchanged": sorted(workers),
+            "memory_mb": process_group_stats(workers | pg_pids),
+            "container_state": state,
+            "limitations": ["Synthetic seed differs from actual QA distribution",
+                            "CI runner is not QA; independent G6 review required"],
+        }
+        print("BASEER_GL_QA_PILOT=" + json.dumps(result, sort_keys=True), flush=True)
+        if (first["seconds"] > 3 or last_page["seconds"] > 3
+                or result["two_readers"]["max_seconds"] > 5):
+            raise RuntimeError("QA pilot misses its predeclared G1 latency gate")
+        return
     # Freeze monitored PIDs before the ten-reader clock; no Docker polling inside it.
     pg_pids = set(docker_processes(postgres))
     monitored = workers | pg_pids
@@ -439,7 +470,7 @@ def client():
         "worker_pids_unchanged": sorted(workers),
         "cpu_affinity": sorted(cpuset),
         "first_page": first,
-        "page_50": page50,
+        "page_50": last_page,
         "two_readers": {"wall_seconds": two_wall, "max_seconds": max(two_times),
                         "samples": two},
         "ten_http_readers": {"wall_seconds": ten_wall,
@@ -465,7 +496,7 @@ def client():
         ],
     }
     print("BASEER_GL_HTTP_BENCHMARK=" + json.dumps(result, sort_keys=True), flush=True)
-    if (first["seconds"] > 3 or page50["seconds"] > 3 or max(two_times) > 5
+    if (first["seconds"] > 3 or last_page["seconds"] > 3 or max(two_times) > 5
             or statistics.median(ten_times) > 5 or max(ten_times) > 8):
         raise RuntimeError("HTTP result misses the predeclared GL-27 G1 latency gate")
 

@@ -22,8 +22,9 @@ from odoo.tools.profiler import Profiler
 
 
 EXPECTED_DATABASE = "baseer_gl_capacity_ci"
-TARGET_LINES = 100000
-ACCOUNT_COUNT = 5000
+QA_PILOT = os.environ.get("BASEER_GL_QA_PILOT") == "true"
+TARGET_LINES = 30000 if QA_PILOT else 100000
+ACCOUNT_COUNT = 2000 if QA_PILOT else 5000
 LINES_PER_MOVE = 100
 BATCH_MOVES = 20
 PERIOD = {"date_from": "2041-01-01", "date_to": "2041-12-31"}
@@ -234,13 +235,14 @@ def measure_capacity():
         "memory": memory_snapshot(),
     }), flush=True)
     last_page = first["result"]["page_count"]
-    if first["result"]["account_count"] != ACCOUNT_COUNT or last_page != 50:
-        raise RuntimeError("The GL account count or page count is not 5000 / 50")
-    page50 = measure("get_report", last_page)
+    if first["result"]["account_count"] != ACCOUNT_COUNT or last_page != ACCOUNT_COUNT // 100:
+        raise RuntimeError("The GL account count or page count is incomplete")
+    last = measure("get_report", last_page)
     lines = measure("get_lines", first_account_id)
     action = measure("get_account_action", first_account_id)
     if (len(first["result"]["accounts"]) != 100
-            or len(page50["result"]["accounts"]) != 100
+            or last["result"]["page"] != last_page
+            or len(last["result"]["accounts"]) != 100
             or len(lines["result"]["lines"]) != 20
             or action["result"]["res_model"] != "account.move.line"):
         raise RuntimeError("A GL page, detail or source action was incomplete")
@@ -252,7 +254,7 @@ def measure_capacity():
         "read_only_accountant_id": uid,
         "read_only_accountant_su": False,
         "first_report_fresh_orm_warm_db": {k: v for k, v in first.items() if k != "result"},
-        "account_page_50_fresh_orm": {k: v for k, v in page50.items() if k != "result"},
+        "account_last_page_fresh_orm": {k: v for k, v in last.items() if k != "result"},
         "account_detail_fresh_orm": {k: v for k, v in lines.items() if k != "result"},
         "source_action_fresh_orm": {k: v for k, v in action.items() if k != "result"},
         "memory_after_single_reads": memory_snapshot(),
@@ -300,7 +302,7 @@ def measure_capacity():
         return result
 
     growth_mb = max(
-        *(sample[key] for sample in (first, page50, lines, action)
+        *(sample[key] for sample in (first, last, lines, action)
           for key in ("rss_delta_mb", "peak_rss_delta_mb")),
         64,
     )
@@ -373,7 +375,7 @@ def measure_capacity():
     print('BASEER_GL_MEMORY_LIMITS=' + json.dumps(memory_limits), flush=True)
     capacity_failed = (
         DIAG_TEN or "status" in two_readers or "status" in ten_readers
-        or first["seconds"] > 3.0 or page50["seconds"] > 3.0
+        or first["seconds"] > 3.0 or last["seconds"] > 3.0
         or two_readers.get("max_seconds", float("inf")) > 5.0
         or ten_readers.get("max_seconds", float("inf")) > 5.0
         or any(value is False for value in memory_limits.values())

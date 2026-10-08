@@ -189,8 +189,8 @@ test("mounted report displays comparison columns and opens a native list instead
     await click('.o_baseer_pl_account_amount[aria-label="View journal items Oct 2026 400000 Sales"]');
     await waitUntil(() => actions.length === 1);
     expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts", "get_account_action"]);
-    expect(calls[2][1][2]).toBe(1);
-    expect(calls[2][1][3]).toBe("current");
+    expect(calls[2][1][1]).toBe(7);
+    expect(calls[2][1][2]).toBe("current");
     expect(actions[0].res_model).toBe("account.move.line");
     expect(document.querySelector(".o_baseer_pl_lines_row")).toBe(null);
 });

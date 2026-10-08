@@ -5,11 +5,6 @@
             <header class="o_baseer_report_toolbar o_baseer_pl_toolbar">
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions" selectedKey="props.selectedReportKey" label="props.reportSelectorLabel" lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
-                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>
-                        <select t-att-aria-label="labels.company" t-att-value="state.filters.company_id" t-on-change="onCompanyChange">
-                            <option t-foreach="state.companies" t-as="company" t-key="company.id" t-att-value="company.id" t-att-selected="company.id === state.filters.company_id" t-esc="company.name"/>
-                        </select>
-                    </label>
                     <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_period_menu'">
                         <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></button>
                         <t t-set-slot="content"><div class="o_baseer_pl_native_menu o_baseer_pl_period_popover">
@@ -43,7 +38,7 @@
             <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
             <div t-if="state.report" class="o_baseer_report_canvas">
                 <section class="o_baseer_report o_baseer_pl_paper" t-att-aria-label="labels.title">
-                    <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-if="primaryPeriod" dir="ltr" t-esc="primaryPeriod.date_from"/> — <span t-if="primaryPeriod" dir="ltr" t-esc="primaryPeriod.date_to"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
+                    <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-if="primaryPeriod" t-esc="reportPeriodCaption"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
                     <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
                     <div class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table">
                         <thead><tr><th scope="col" rowspan="2" t-esc="labels.account"/><th t-foreach="reportPeriods" t-as="period" t-key="period.key" scope="col" class="is-number"><span t-att-title="period.label" t-att-aria-label="period.label" t-esc="period.display_label || period.label"/></th></tr><tr><th t-foreach="reportPeriods" t-as="period" t-key="period.key" scope="col" class="is-number"><small t-esc="labels.balance"/></th></tr></thead>

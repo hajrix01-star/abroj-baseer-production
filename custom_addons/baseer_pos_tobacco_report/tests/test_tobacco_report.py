@@ -93,6 +93,8 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual(second['rows'][0]['order'], 'ORDER-101')
         self.assertEqual(len(first['exceptions']), 100)
         self.assertEqual(first['closing'], '101.00')
+        self.assertEqual((first['period_kind'], first['date_from'], first['date_to']),
+                         ('month', '2026-09-01', '2026-09-30'))
         self.assertNotIn('wizard', first)
         self.assertNotIn('company', first)
 
@@ -164,6 +166,8 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual(context['company_id'], self.env.company.id)
         self.assertIn(self.env.company.id, [item['id'] for item in context['companies']])
         self.assertNotIn(usd_company.id, [item['id'] for item in context['companies']])
+        usd_active = model.with_context(allowed_company_ids=[usd_company.id, self.env.company.id])
+        self.assertFalse(usd_active.get_hub_context()['company_id'])
 
     def test_hub_overflow_keeps_existing_5000_limit(self):
         model = self.env['baseer.pos.tobacco.report.wizard'].with_user(

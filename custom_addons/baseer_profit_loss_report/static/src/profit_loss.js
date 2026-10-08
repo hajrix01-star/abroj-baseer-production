@@ -4,8 +4,8 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
-import { user } from "@web/core/user";
-import { useService } from "@web/core/utils/hooks";
+import { user, userBus } from "@web/core/user";
+import { useBus, useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
 
 const MODEL = "baseer.profit.loss.report";
@@ -42,26 +42,32 @@ export class BaseerProfitLossReport extends Component {
     setup() {
         this.orm = useService("orm");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
-        this.state = useState({ loading: true, error: "", companies: [], journals: [], report: null,
+        this.state = useState({ loading: true, error: "", journals: [], report: null,
             filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} });
         this.appliedFilters = null;
         this.requestToken = 0;
-        onWillStart(async () => {
-            try {
-                this.installContext(await this.orm.call(MODEL, "get_context", []));
-                await this.apply();
-            } catch (error) {
-                this.state.error = error?.data?.message || this.labels.error;
-                this.state.loading = false;
-            }
-        });
+        this.companyGeneration = 0;
+        useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshActiveCompany());
+        onWillStart(() => this.refreshActiveCompany());
     }
 
     emptyFilters() { return { company_id: 0, period: { kind: "month", anchor_date: "", direction: 0, date_from: "", date_to: "" }, comparison: { kind: "none", order: "descending", count: 1, date_from: "", date_to: "" }, journal_ids: [] }; }
     get labels() { return copy[this.lang]; }
     get reportPeriods() { return this.state.report?.periods || []; }
     get primaryPeriod() { return this.reportPeriods.find((period) => period.role === "primary") || this.reportPeriods[0]; }
-    get periodSummary() { return this.primaryPeriod?.display_label || this.primaryPeriod?.label || this.periodKindLabel(this.state.filters.period.kind); }
+    get periodSummary() { return this.primaryPeriod ? this.reportPeriodCaption : this.periodKindLabel(this.state.filters.period.kind); }
+    get activeCompanyId() { return Number(user.activeCompany?.id) || 0; }
+    get reportPeriodCaption() {
+        const period = this.primaryPeriod;
+        if (!period) { return ""; }
+        if (this.appliedFilters?.period.kind === "month") {
+            const match = /^(\d{4})-(\d{2})-01$/.exec(period.date_from || "");
+            if (!match || period.date_to !== `${match[1]}-${match[2]}-${String(new Date(Date.UTC(Number(match[1]), Number(match[2]), 0)).getUTCDate()).padStart(2, "0")}`) {
+                return period.label || `${period.date_from} — ${period.date_to}`;
+            }
+        }
+        return period.display_label || period.label || `${period.date_from} — ${period.date_to}`;
+    }
     get periodOptions() {
         return this.state.report?.period_controls?.options || PERIOD_KINDS.map((kind) => ({ kind, display_label: this.periodKindLabel(kind) }));
     }
@@ -86,10 +92,9 @@ export class BaseerProfitLossReport extends Component {
     rowColspan() { return Math.max(2, this.reportPeriods.length + 1); }
     cloneFilters(direction = 0) {
         const { period, comparison } = this.state.filters;
-        return { company_id: this.state.filters.company_id, period: { ...period, direction }, comparison: { ...comparison }, journal_ids: [...this.state.filters.journal_ids] };
+        return { company_id: this.activeCompanyId, period: { ...period, direction }, comparison: { ...comparison }, journal_ids: [...this.state.filters.journal_ids] };
     }
     installContext(context) {
-        this.state.companies = context.companies || [];
         this.state.journals = context.journals || [];
         const defaults = context.default_filters || {};
         const period = defaults.period || { kind: "month", anchor_date: context.default_date_to || "", date_from: context.default_date_from || "", date_to: context.default_date_to || "" };
@@ -107,14 +112,26 @@ export class BaseerProfitLossReport extends Component {
         this.state.accountOpening = {};
         this.appliedFilters = null;
     }
-    async onCompanyChange(event) {
+    async refreshActiveCompany() {
         this.invalidate();
-        const token = this.requestToken;
+        const generation = ++this.companyGeneration;
+        const companyId = this.activeCompanyId;
+        this.state.filters.company_id = 0;
+        this.state.journals = [];
+        if (!companyId) { this.state.error = this.labels.error; return; }
+        this.state.loading = true;
         try {
-            const context = await this.orm.call(MODEL, "get_context", [Number(event.target.value)]);
-            if (token === this.requestToken) { this.installContext(context); await this.apply(); }
+            const context = await this.orm.call(MODEL, "get_context", [companyId]);
+            if (generation !== this.companyGeneration || companyId !== this.activeCompanyId) { return; }
+            if (companyId && (context.default_company_id || context.default_filters?.company_id) !== companyId) {
+                throw new Error("Active company mismatch");
+            }
+            this.installContext(context);
+            await this.apply();
         } catch (error) {
-            if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
+            if (generation === this.companyGeneration) { this.state.error = error?.data?.message || this.labels.error; }
+        } finally {
+            if (generation === this.companyGeneration) { this.state.loading = false; }
         }
     }
     async setPeriodKind(kind) {
@@ -178,10 +195,12 @@ export class BaseerProfitLossReport extends Component {
         const filters = this.cloneFilters(direction);
         this.invalidate();
         const token = this.requestToken;
+        const generation = this.companyGeneration;
+        const companyId = this.activeCompanyId;
         this.state.loading = true;
         try {
             const response = await this.orm.call(MODEL, "get_report", [filters]);
-            if (token === this.requestToken) {
+            if (token === this.requestToken && generation === this.companyGeneration && companyId === this.activeCompanyId) {
                 const report = this.legacyReport(response);
                 this.state.report = report;
                 if (report.period_controls?.anchor_date) { this.state.filters.period.anchor_date = report.period_controls.anchor_date; }
@@ -189,9 +208,9 @@ export class BaseerProfitLossReport extends Component {
                 this.appliedFilters = this.cloneFilters();
             }
         } catch (error) {
-            if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
+            if (token === this.requestToken && generation === this.companyGeneration) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
-            if (token === this.requestToken) { this.state.loading = false; }
+            if (token === this.requestToken && generation === this.companyGeneration) { this.state.loading = false; }
         }
     }
     async toggleSection(row) {
@@ -204,10 +223,11 @@ export class BaseerProfitLossReport extends Component {
     async loadAccounts(section, page) {
         if (!this.appliedFilters || this.state.accountLoading[section]) { return; }
         const token = this.requestToken;
+        const companyId = this.activeCompanyId;
         this.state.accountLoading[section] = true;
         try {
             const result = await this.orm.call(MODEL, "get_accounts", [this.appliedFilters, section, page]);
-            if (token === this.requestToken) { this.state.pages[section] = result; }
+            if (token === this.requestToken && companyId === this.activeCompanyId) { this.state.pages[section] = result; }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
@@ -218,10 +238,11 @@ export class BaseerProfitLossReport extends Component {
         const key = this.accountKey(account, periodKey);
         if (!this.appliedFilters || this.state.accountOpening[key]) { return; }
         const token = this.requestToken;
+        const companyId = this.activeCompanyId;
         this.state.accountOpening[key] = true;
         try {
             const action = await this.orm.call(MODEL, "get_account_action", [this.appliedFilters, account.id, periodKey]);
-            if (token === this.requestToken) { await this.env.services.action.doAction(action); }
+            if (token === this.requestToken && companyId === this.activeCompanyId) { await this.env.services.action.doAction(action); }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {

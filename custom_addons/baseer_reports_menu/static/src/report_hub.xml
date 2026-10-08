@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="baseer_reports_menu.Hub">
-        <div class="o_baseer_reports_hub" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+        <div class="o_baseer_reports_hub" tabindex="0" role="region" t-att-aria-label="labels.title" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <header t-if="!selectedReport" class="o_baseer_report_toolbar">
                 <div class="o_baseer_report_toolbar_identity">
                     <ReportSelector options="options" selectedKey="state.selectedKey"

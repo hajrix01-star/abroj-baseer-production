@@ -14,14 +14,6 @@
                     lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" role="group" t-att-aria-label="labels.title">
                     <label class="o_baseer_report_select_filter">
-                        <span class="visually-hidden" t-esc="labels.company"/>
-                        <select t-att-aria-label="labels.company" t-on-change="onCompanyChange">
-                            <option t-foreach="state.companies" t-as="company" t-key="company.id"
-                                t-att-value="company.id" t-att-selected="company.id === state.companyId"
-                                t-esc="company.name"/>
-                        </select>
-                    </label>
-                    <label class="o_baseer_report_select_filter">
                         <span class="visually-hidden" t-esc="labels.period"/>
                         <select t-att-aria-label="labels.period" t-on-change="onPeriodChange">
                             <option value="quarter" t-att-selected="state.periodType === 'quarter'" t-esc="labels.quarter"/>
@@ -85,8 +77,7 @@
                             <h2 class="o_baseer_report_title" t-esc="labels.title"/>
                             <p class="o_baseer_report_period">
                                 <span t-esc="state.data.company"/> ·
-                                <span dir="ltr" t-esc="state.data.date_from"/> —
-                                <span dir="ltr" t-esc="state.data.date_to"/>
+                                <span t-esc="periodCaption"/>
                             </p>
                         </div>
                         <span class="o_baseer_report_period o_baseer_vat_currency" t-esc="state.data.currency"/>

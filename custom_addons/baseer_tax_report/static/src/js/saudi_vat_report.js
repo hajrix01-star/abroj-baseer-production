@@ -2,8 +2,8 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
-import { useService } from "@web/core/utils/hooks";
-import { user } from "@web/core/user";
+import { useBus, useService } from "@web/core/utils/hooks";
+import { user, userBus } from "@web/core/user";
 
 const copy = {
     ar: {
@@ -12,7 +12,7 @@ const copy = {
         quarterValue: "الربع", display: "العرض", simple: "مبسط", detailed: "مفصل",
         journals: "الدفاتر", allJournals: "جميع الدفاتر", selectedJournals: "دفاتر مختارة",
         apply: "عرض التقرير", pdf: "PDF", xlsx: "XLSX", item: "البند", base: "الأساس", tax: "الضريبة",
-        empty: "لا توجد مبالغ في الفترة المحددة.", noCompany: "لا توجد شركة سعودية متاحة لصلاحياتك.",
+        empty: "لا توجد مبالغ في الفترة المحددة.", noCompany: "الشركة النشطة غير مؤهلة لتقرير الضريبة السعودية.",
         loading: "جارٍ تحميل تقرير الضريبة…", error: "تعذر تحميل التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
         exportError: "تعذر تصدير Excel. تحقق من الصلاحيات والفترة ودقة العملة؛ قد يكون الملف تجاوز حد الحجم أو الوقت.",
         source: "عرض القيود الداعمة", expand: "عرض البنود المكوّنة", collapse: "إخفاء البنود المكوّنة",
@@ -28,7 +28,7 @@ const copy = {
         quarterValue: "Quarter", display: "Display", simple: "Summary", detailed: "Detailed",
         journals: "Journals", allJournals: "All journals", selectedJournals: "Selected journals",
         apply: "View report", pdf: "PDF", xlsx: "XLSX", item: "VAT return box", base: "Amount", tax: "VAT",
-        empty: "No non-zero boxes for this period.", noCompany: "No Saudi company is available to your access rights.",
+        empty: "No non-zero boxes for this period.", noCompany: "The active company is not eligible for the Saudi VAT report.",
         loading: "Loading VAT report…", error: "Could not load the report. Check the period and access, then retry.",
         exportError: "Could not export Excel. Check access, period and currency precision; the file may have exceeded its size or time limit.",
         source: "Open supporting entries", expand: "Show component boxes", collapse: "Hide component boxes",
@@ -51,14 +51,27 @@ export class SaudiVatReport extends Component {
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
         this.epoch = 0;
         this.state = useState({
-            companies: [], journals: [], companyId: 0, periodType: "quarter", year: 0,
+            journals: [], companyId: 0, periodType: "quarter", year: 0,
             month: "1", quarter: "1", displayMode: "simple", journalIds: [],
             data: null, expanded: {}, loading: true, printing: false, exporting: false, error: "",
         });
+        this.companyGeneration = 0;
+        useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.loadOptions());
         onWillStart(() => this.loadOptions());
     }
 
     get labels() { return copy[this.lang]; }
+    get activeCompanyId() { return Number(user.activeCompany?.id) || 0; }
+    get periodCaption() {
+        const data = this.state.data;
+        if (!data) { return ""; }
+        const match = /^(\d{4})-(\d{2})-01$/.exec(data.date_from || "");
+        if (data.period_type === "month" && match &&
+            data.date_to === `${match[1]}-${match[2]}-${String(new Date(Date.UTC(Number(match[1]), Number(match[2]), 0)).getUTCDate()).padStart(2, "0")}`) {
+            return `${this.labels.months[Number(match[2]) - 1]} ${match[1]}`;
+        }
+        return `${data.date_from} — ${data.date_to}`;
+    }
     get months() { return this.labels.months.map((label, index) => ({ value: String(index + 1), label })); }
     get quarterNumbers() { return ["1", "2", "3", "4"]; }
     get companyJournals() { return this.state.journals.filter((journal) => journal.company_id === this.state.companyId); }
@@ -81,11 +94,6 @@ export class SaudiVatReport extends Component {
         this.state.error = "";
         this.state.loading = false;
     }
-    onCompanyChange(event) {
-        this.state.companyId = Number(event.target.value);
-        this.state.journalIds = [];
-        this.invalidate();
-    }
     onPeriodChange(event) { this.state.periodType = event.target.value; this.invalidate(); }
     onYearChange(event) { this.state.year = Number(event.target.value); this.invalidate(); }
     onMonthChange(event) { this.state.month = event.target.value; this.invalidate(); }
@@ -100,46 +108,58 @@ export class SaudiVatReport extends Component {
     }
 
     async loadOptions() {
+        const generation = ++this.companyGeneration;
+        const activeCompanyId = this.activeCompanyId;
+        this.invalidate();
+        this.state.companyId = 0;
+        this.state.journals = [];
+        this.state.journalIds = [];
+        if (!activeCompanyId) { this.state.error = this.labels.noCompany; return; }
+        this.state.loading = true;
         try {
             const options = await this.orm.call("baseer.tax.report.wizard", "get_hub_options", []);
-            this.state.companies = options.companies;
+            if (generation !== this.companyGeneration || activeCompanyId !== this.activeCompanyId) { return; }
             this.state.journals = options.journals;
-            this.state.companyId = options.default_company_id || 0;
+            this.state.companyId = options.default_company_id === activeCompanyId ? activeCompanyId : 0;
             this.state.year = options.default_year;
             this.state.quarter = options.default_quarter;
             if (this.state.companyId) { await this.apply(); }
         } catch (error) {
-            this.state.error = this.labels.error;
+            if (generation === this.companyGeneration) { this.state.error = this.labels.error; }
         } finally {
-            this.state.loading = false;
+            if (generation === this.companyGeneration) { this.state.loading = false; }
         }
     }
 
     async apply() {
-        if (!this.state.companyId) { return; }
+        if (!this.state.companyId || this.state.companyId !== this.activeCompanyId) { return; }
         const epoch = ++this.epoch;
+        const generation = this.companyGeneration;
+        const companyId = this.activeCompanyId;
         this.state.loading = true;
         this.state.error = "";
         this.state.data = null;
         this.state.expanded = {};
         try {
             const data = await this.orm.call("baseer.tax.report.wizard", "get_hub_report", [this.payload()]);
-            if (epoch === this.epoch) { this.state.data = data; }
+            if (epoch === this.epoch && generation === this.companyGeneration && companyId === this.activeCompanyId) { this.state.data = data; }
         } catch (error) {
-            if (epoch === this.epoch) { this.state.error = this.labels.error; }
+            if (epoch === this.epoch && generation === this.companyGeneration) { this.state.error = this.labels.error; }
         } finally {
-            if (epoch === this.epoch) { this.state.loading = false; }
+            if (epoch === this.epoch && generation === this.companyGeneration) { this.state.loading = false; }
         }
     }
 
     async printPdf() {
         if (!this.state.data || this.state.printing) { return; }
+        const epoch = this.epoch;
+        const companyId = this.activeCompanyId;
         this.state.printing = true;
         try {
             const action = await this.orm.call("baseer.tax.report.wizard", "print_hub_report", [this.payload()]);
-            await this.action.doAction(action);
+            if (epoch === this.epoch && companyId === this.activeCompanyId) { await this.action.doAction(action); }
         } catch (error) {
-            this.state.error = this.labels.error;
+            if (epoch === this.epoch) { this.state.error = this.labels.error; }
         } finally {
             this.state.printing = false;
         }
@@ -147,30 +167,38 @@ export class SaudiVatReport extends Component {
 
     async exportXlsx() {
         if (!this.state.data || this.state.exporting) { return; }
+        const epoch = this.epoch;
+        const companyId = this.activeCompanyId;
         this.state.exporting = true;
         this.state.error = "";
         try {
             const action = await this.orm.call("baseer.tax.report.wizard", "export_hub_xlsx", [this.payload()]);
-            await this.action.doAction(action);
+            if (epoch === this.epoch && companyId === this.activeCompanyId) { await this.action.doAction(action); }
         } catch (error) {
-            this.state.error = this.labels.exportError;
+            if (epoch === this.epoch) { this.state.error = this.labels.exportError; }
         } finally {
             this.state.exporting = false;
         }
     }
 
     async openCell(box, column) {
+        if (!this.state.data) { return; }
+        const epoch = this.epoch;
+        const companyId = this.activeCompanyId;
         try {
             const action = await this.orm.call("baseer.tax.report.wizard", "open_hub_cell", [this.payload(), box, column]);
-            await this.action.doAction(action);
-        } catch (error) { this.state.error = this.labels.error; }
+            if (epoch === this.epoch && companyId === this.activeCompanyId) { await this.action.doAction(action); }
+        } catch (error) { if (epoch === this.epoch) { this.state.error = this.labels.error; } }
     }
 
     async openException(kind) {
+        if (!this.state.data) { return; }
+        const epoch = this.epoch;
+        const companyId = this.activeCompanyId;
         try {
             const action = await this.orm.call("baseer.tax.report.wizard", "open_hub_exception", [this.payload(), kind]);
-            await this.action.doAction(action);
-        } catch (error) { this.state.error = this.labels.error; }
+            if (epoch === this.epoch && companyId === this.activeCompanyId) { await this.action.doAction(action); }
+        } catch (error) { if (epoch === this.epoch) { this.state.error = this.labels.error; } }
     }
 
     toggleComponents(box, column) {

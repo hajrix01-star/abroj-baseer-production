@@ -10,11 +10,6 @@
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" role="group" t-att-aria-label="labels.title">
-                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>
-                        <select name="company_id" t-att-aria-label="labels.company" t-on-change="updateFilter">
-                            <option t-foreach="state.companies" t-as="company" t-key="company.id" t-att-value="company.id" t-att-selected="company.id === state.filters.company_id" t-esc="company.name"/>
-                        </select>
-                    </label>
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.period"/>
                         <select name="period" t-att-aria-label="labels.period" t-on-change="updateFilter">
                             <option value="month" t-att-selected="state.filters.period === 'month'" t-esc="labels.month"/>
@@ -47,7 +42,7 @@
                 <section class="o_baseer_report" t-att-aria-label="labels.title">
                     <header class="o_baseer_report_head">
                         <div><h1 class="o_baseer_report_title" t-esc="labels.title"/><p class="o_baseer_report_period" t-esc="state.data.company_name"/></div>
-                        <p class="o_baseer_report_period"><span t-esc="labels.from"/> <b dir="ltr" t-esc="state.data.from_text"/> <span t-esc="labels.to"/> <b dir="ltr" t-esc="state.data.to_text"/></p>
+                        <p class="o_baseer_report_period" t-esc="periodCaption"/>
                     </header>
                     <div class="o_baseer_report_totals">
                         <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.opening"/><strong t-att-class="amountClass(state.data.opening)" t-esc="state.data.opening"/></div>

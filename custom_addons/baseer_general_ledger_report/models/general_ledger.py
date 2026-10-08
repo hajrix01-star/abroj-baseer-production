@@ -2,8 +2,9 @@
 
 from collections import Counter
 from calendar import monthrange
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP, localcontext
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
@@ -16,6 +17,14 @@ class BaseerGeneralLedger(models.AbstractModel):
 
     PAGE_SIZE = 100
     SECURITY_BATCH = 1000
+    _MONTHS_AR = (
+        'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+        'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    )
+    _MONTHS_EN = (
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+    )
 
     @staticmethod
     def _decimal(value):
@@ -95,20 +104,94 @@ class BaseerGeneralLedger(models.AbstractModel):
             ('company_id', '=', company.id),
         ], order='code, id')
         journals.check_access('read')
-        today = fields.Date.context_today(self)
-        first = date(today.year, today.month, 1)
-        last = date(today.year, today.month, monthrange(today.year, today.month)[1])
-        fiscal = company.compute_fiscalyear_dates(today)
-        first = max(first, fiscal['date_from'])
-        last = min(last, fiscal['date_to'])
+        default_period = self._period_for(company, 'month', fields.Date.context_today(self))
         return {
             'companies': [{'id': row.id, 'name': row.display_name} for row in companies],
             'journals': [{'id': row.id, 'code': row.code, 'name': row.name}
                          for row in journals],
             'default_company_id': company.id,
-            'default_date_from': fields.Date.to_string(first),
-            'default_date_to': fields.Date.to_string(last),
+            'default_date_from': default_period['date_from'],
+            'default_date_to': default_period['date_to'],
+            'default_period': default_period,
         }
+
+    @api.model
+    def _period_for(self, company, kind, anchor, start=None, end=None):
+        fiscal = company.compute_fiscalyear_dates(anchor)
+        if kind == 'month':
+            calendar_start = date(anchor.year, anchor.month, 1)
+            calendar_end = date(anchor.year, anchor.month, monthrange(anchor.year, anchor.month)[1])
+        elif kind == 'quarter':
+            quarter_month = 1 + 3 * ((anchor.month - 1) // 3)
+            calendar_start = date(anchor.year, quarter_month, 1)
+            last_month = quarter_month + 2
+            calendar_end = date(anchor.year, last_month, monthrange(anchor.year, last_month)[1])
+        elif kind == 'fiscal_year':
+            calendar_start, calendar_end = fiscal['date_from'], fiscal['date_to']
+        else:
+            calendar_start, calendar_end = start, end
+        effective_start = max(calendar_start, fiscal['date_from'])
+        effective_end = min(calendar_end, fiscal['date_to'])
+        if effective_start > effective_end or (kind == 'custom' and (start != effective_start or end != effective_end)):
+            raise ValidationError(_('The period must stay within one fiscal year.'))
+        is_full_month = (kind == 'month' and effective_start == calendar_start
+                         and effective_end == calendar_end)
+        is_arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
+        if is_full_month:
+            month_name = (self._MONTHS_AR if is_arabic else self._MONTHS_EN)[anchor.month - 1]
+            display_label = f'{month_name} {anchor.year}'
+        elif kind == 'quarter' and effective_start == calendar_start and effective_end == calendar_end:
+            quarter = (anchor.month - 1) // 3 + 1
+            display_label = f'الربع {quarter} {anchor.year}' if is_arabic else f'Q{quarter} {anchor.year}'
+        elif kind == 'fiscal_year' and effective_start == date(anchor.year, 1, 1) and effective_end == date(anchor.year, 12, 31):
+            display_label = str(anchor.year)
+        else:
+            display_label = f'{effective_start.isoformat()} — {effective_end.isoformat()}'
+        return {
+            'kind': kind,
+            'anchor_date': anchor.isoformat(),
+            'date_from': effective_start.isoformat(),
+            'date_to': effective_end.isoformat(),
+            'display_label': display_label,
+            'is_full_calendar_month': is_full_month,
+        }
+
+    @api.model
+    def resolve_period(self, options):
+        """Resolve only report dates; financial rows remain owned by get_report."""
+        self._check_accounting_access()
+        if not isinstance(options, dict) or set(options) != {'company_id', 'kind', 'anchor_date', 'direction', 'date_from', 'date_to'}:
+            raise ValidationError(_('Select a valid period.'))
+        company = self._company(options['company_id'])
+        kind = options['kind']
+        direction = options['direction']
+        if kind not in ('month', 'quarter', 'fiscal_year', 'custom') or type(direction) is not int or direction not in (-1, 0, 1):
+            raise ValidationError(_('Select a valid period.'))
+
+        def strict_date(value):
+            if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value):
+                raise ValidationError(_('Select valid start and end dates.'))
+            try:
+                return date.fromisoformat(value)
+            except ValueError:
+                raise ValidationError(_('Select valid start and end dates.')) from None
+
+        anchor = strict_date(options['anchor_date'])
+        if kind == 'custom':
+            if direction:
+                raise ValidationError(_('Custom dates cannot be navigated.'))
+            start, end = strict_date(options['date_from']), strict_date(options['date_to'])
+            if start > end:
+                raise ValidationError(_('Select a valid period.'))
+            return self._period_for(company, kind, start, start, end)
+        if options['date_from'] or options['date_to']:
+            raise ValidationError(_('Select a valid period.'))
+        if direction:
+            try:
+                anchor += timedelta(days=direction)
+            except OverflowError:
+                raise ValidationError(_('Select a valid period.')) from None
+        return self._period_for(company, kind, anchor)
 
     @api.model
     def _filters(self, filters):

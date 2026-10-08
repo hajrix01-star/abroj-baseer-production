@@ -3,8 +3,8 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
 import { registry } from "@web/core/registry";
-import { useService } from "@web/core/utils/hooks";
-import { user } from "@web/core/user";
+import { useBus, useService } from "@web/core/utils/hooks";
+import { user, userBus } from "@web/core/user";
 
 const copy = {
     ar: {
@@ -14,7 +14,7 @@ const copy = {
         apply: "عرض التقرير", opening: "الرصيد الافتتاحي", debit: "مدين",
         credit: "دائن", closing: "الرصيد الختامي", date: "التاريخ", entry: "القيد",
         label: "البيان", running: "الرصيد الجاري", empty: "لا توجد قيود مرحلة في هذه الفترة.",
-        choose: "اختر الشركة والحساب ثم اعرض التقرير.", next: "التالي", previous: "السابق",
+        choose: "اختر الحساب ثم اعرض التقرير.", next: "التالي", previous: "السابق",
         page: "صفحة", loadError: "تعذر تحميل التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
         noAccounts: "لا توجد حسابات متاحة لهذه الشركة.", source: "افتح القيد الأصلي",
         backToReports: "تقارير بصير", periodTotals: "ملخص الفترة كاملة",
@@ -26,7 +26,7 @@ const copy = {
         apply: "View report", opening: "Opening balance", debit: "Debit",
         credit: "Credit", closing: "Closing balance", date: "Date", entry: "Journal entry",
         label: "Label", running: "Running balance", empty: "No posted entries in this period.",
-        choose: "Choose a company and account, then view the report.", next: "Next", previous: "Previous",
+        choose: "Choose an account, then view the report.", next: "Next", previous: "Previous",
         page: "Page", loadError: "Could not load the report. Check the dates and access, then retry.",
         noAccounts: "No accounts available for this company.", source: "Open source entry",
         backToReports: "Baseer Reports", periodTotals: "Full-period summary",
@@ -58,17 +58,32 @@ export class AccountActivity extends Component {
         this.action = useService("action");
         this.requestEpoch = 0;
         this.accountEpoch = 0;
+        this.companyGeneration = 0;
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
         const [dateFrom, dateTo] = completedPeriod("month");
         this.state = useState({
-            companies: [], accounts: [], companyId: 0, accountId: 0, accountsLoading: false,
+            accounts: [], companyId: 0, accountId: 0, accountsLoading: false,
             period: "month", dateFrom, dateTo, data: null, loading: false,
-            error: "", cursors: [null], page: 0,
+            error: "", cursors: [null], page: 0, appliedPeriod: null,
         });
+        useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.loadOptions());
         onWillStart(() => this.loadOptions());
     }
 
     get labels() { return copy[this.lang]; }
+    get activeCompanyId() { return Number(user.activeCompany?.id) || 0; }
+    get periodCaption() {
+        const period = this.state.appliedPeriod;
+        if (!period) { return ""; }
+        const match = /^(\d{4})-(\d{2})-01$/.exec(period.dateFrom);
+        if (period.kind === "month" && match &&
+            period.dateTo === `${match[1]}-${match[2]}-${String(new Date(Date.UTC(Number(match[1]), Number(match[2]), 0)).getUTCDate()).padStart(2, "0")}`) {
+            return new Intl.DateTimeFormat(this.lang === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : "en-US", {
+                month: "long", year: "numeric", timeZone: "UTC",
+            }).format(new Date(`${period.dateFrom}T00:00:00Z`));
+        }
+        return `${period.dateFrom} — ${period.dateTo}`;
+    }
 
     goToReports() { return this.action.doAction("baseer_reports_menu.action_baseer_reports_hub"); }
 
@@ -78,30 +93,32 @@ export class AccountActivity extends Component {
         this.state.loading = false;
         this.state.cursors = [null];
         this.state.page = 0;
+        this.state.appliedPeriod = null;
     }
 
     async loadOptions() {
-        try {
-            const allowed = user.context?.allowed_company_ids || [];
-            if (!allowed.length) {
-                this.state.error = this.labels.loadError;
-                return;
-            }
-            this.state.companies = await this.orm.searchRead(
-                "res.company", [["id", "in", allowed]], ["name"], { order: "name, id" }
-            );
-            if (this.state.companies.length) {
-                this.state.companyId = this.state.companies.find((company) => company.id === allowed[0])?.id || this.state.companies[0].id;
-                await this.loadAccounts();
-            }
-        } catch (error) {
+        const generation = ++this.companyGeneration;
+        this.accountEpoch += 1;
+        this.invalidateReport();
+        this.state.accounts = [];
+        this.state.accountId = 0;
+        this.state.companyId = this.activeCompanyId;
+        this.state.error = "";
+        if (!this.state.companyId) {
             this.state.error = this.labels.loadError;
+            return;
+        }
+        try {
+            await this.loadAccounts();
+        } catch (error) {
+            if (generation === this.companyGeneration) { this.state.error = this.labels.loadError; }
         }
     }
 
     async loadAccounts() {
         const companyId = this.state.companyId;
         const epoch = ++this.accountEpoch;
+        const generation = this.companyGeneration;
         this.state.accounts = [];
         this.state.accountId = 0;
         this.state.accountsLoading = true;
@@ -111,21 +128,12 @@ export class AccountActivity extends Component {
                 "account.account", [["company_ids", "in", companyId]],
                 ["display_name", "code"], { order: "code, id" }
             );
-            if (epoch !== this.accountEpoch || companyId !== this.state.companyId) { return; }
+            if (epoch !== this.accountEpoch || generation !== this.companyGeneration ||
+                companyId !== this.state.companyId || companyId !== this.activeCompanyId) { return; }
             this.state.accounts = accounts;
             this.state.accountId = accounts[0]?.id || 0;
         } finally {
             if (epoch === this.accountEpoch) { this.state.accountsLoading = false; }
-        }
-    }
-
-    async onCompanyChange(event) {
-        this.state.companyId = Number(event.target.value);
-        const requestedEpoch = this.accountEpoch + 1;
-        this.state.error = "";
-        try { await this.loadAccounts(); }
-        catch (error) {
-            if (requestedEpoch === this.accountEpoch) { this.state.error = this.labels.loadError; }
         }
     }
 
@@ -149,8 +157,10 @@ export class AccountActivity extends Component {
     }
 
     async loadPage(page = 0) {
-        if (this.state.accountsLoading || !this.state.companyId || !this.state.accountId || !this.state.dateFrom || !this.state.dateTo) { return; }
+        if (this.state.accountsLoading || !this.state.companyId || this.state.companyId !== this.activeCompanyId ||
+            !this.state.accountId || !this.state.dateFrom || !this.state.dateTo) { return; }
         const epoch = ++this.requestEpoch;
+        const generation = this.companyGeneration;
         const companyId = this.state.companyId;
         const accountId = this.state.accountId;
         const dateFrom = this.state.dateFrom;
@@ -163,19 +173,21 @@ export class AccountActivity extends Component {
                 companyId, accountId, dateFrom, dateTo,
                 cursor?.date || null, cursor?.id || null,
             ]);
-            if (epoch !== this.requestEpoch || companyId !== this.state.companyId ||
+            if (epoch !== this.requestEpoch || generation !== this.companyGeneration ||
+                companyId !== this.activeCompanyId || companyId !== this.state.companyId ||
                 accountId !== this.state.accountId || dateFrom !== this.state.dateFrom ||
                 dateTo !== this.state.dateTo) { return; }
             this.state.data = data;
+            this.state.appliedPeriod = { kind: this.state.period, dateFrom, dateTo };
             this.state.page = page;
             if (data.next_cursor) { this.state.cursors[page + 1] = data.next_cursor; }
             else { this.state.cursors.splice(page + 1); }
         } catch (error) {
-            if (epoch !== this.requestEpoch) { return; }
+            if (epoch !== this.requestEpoch || generation !== this.companyGeneration) { return; }
             this.state.data = null;
             this.state.error = error?.data?.message || error?.message || this.labels.loadError;
         } finally {
-            if (epoch === this.requestEpoch) { this.state.loading = false; }
+            if (epoch === this.requestEpoch && generation === this.companyGeneration) { this.state.loading = false; }
         }
     }
 

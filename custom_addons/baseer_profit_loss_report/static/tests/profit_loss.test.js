@@ -132,7 +132,7 @@ test("mounted report expands real QWeb rows and opens only the verified source l
     await click('.o_baseer_pl_section button[aria-label="Revenue"]');
     await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
     expect(document.querySelector('.o_baseer_pl_section button[aria-label="Revenue"]').getAttribute("aria-expanded")).toBe("true");
-    expect(document.querySelector(".o_baseer_pl_account").textContent).toContain("400000");
+    expect(document.querySelector(".o_baseer_pl_account").textContent.includes("400000")).toBe(true);
     await click('.o_baseer_pl_account button[aria-label="View entries 400000 Sales"]');
     await waitUntil(() => document.querySelector('.o_baseer_pl_source[aria-label="View entries INV/42"]'));
     expect(document.querySelector('.o_baseer_pl_source[aria-label="View entries INV/42"]')).not.toBe(null);
@@ -153,4 +153,33 @@ test("mounted Arabic report uses RTL labels without changing server-provided amo
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("الربح والخسارة");
     expect(document.querySelector('.o_baseer_pl_section button[aria-label="الإيرادات"]')).not.toBe(null);
     expect(document.querySelector(".o_baseer_pl_net .o_baseer_report_amount").textContent).toBe("-50.00");
+});
+
+test("changing filters during detail requests allows new requests and ignores stale responses", async () => {
+    for (const [method, key, busyMap, pageMap] of [
+        ["loadAccounts", "income", "accountLoading", "pages"],
+        ["loadLines", 7, "lineLoading", "linePages"],
+    ]) {
+        const instance = Object.create(BaseerProfitLossReport.prototype);
+        const resolvers = [];
+        Object.assign(instance, {
+            requestToken: 0, lang: "en", appliedFilters: { company_id: 1 },
+            state: { accountLoading: {}, lineLoading: {}, pages: {}, linePages: {} },
+            orm: { call: () => new Promise((resolve) => resolvers.push(resolve)) },
+        });
+        const oldRequest = instance[method](key, 1);
+        expect(instance.state[busyMap][key]).toBe(true);
+        instance.invalidate();
+        instance.appliedFilters = { company_id: 2 };
+        const newRequest = instance[method](key, 1);
+        expect(resolvers.length).toBe(2);
+        resolvers[0]({ stale: true });
+        await oldRequest;
+        expect(instance.state[busyMap][key]).toBe(true);
+        expect(instance.state[pageMap][key]).toBe(undefined);
+        resolvers[1]({ current: true });
+        await newRequest;
+        expect(instance.state[pageMap][key]).toEqual({ current: true });
+        expect(instance.state[busyMap][key]).toBe(false);
+    }
 });

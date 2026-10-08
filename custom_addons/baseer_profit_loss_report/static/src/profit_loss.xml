@@ -60,7 +60,7 @@
                                 <tr class="o_baseer_pl_section">
                                     <th scope="row">
                                         <button type="button" class="o_baseer_pl_toggle"
-                                            t-att-aria-expanded="!!state.expanded[section.key]"
+                                            t-att-aria-expanded="state.expanded[section.key] ? 'true' : 'false'"
                                             t-att-aria-label="sectionLabel(section.key)"
                                             t-on-click="() => this.toggleSection(section.key)">
                                             <i t-att-class="state.expanded[section.key] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
@@ -79,7 +79,7 @@
                                     <tr class="o_baseer_pl_account">
                                         <th scope="row">
                                             <button type="button" class="o_baseer_pl_toggle"
-                                                t-att-aria-expanded="!!state.expandedAccounts[account.id]"
+                                                t-att-aria-expanded="state.expandedAccounts[account.id] ? 'true' : 'false'"
                                                 t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name"
                                                 t-on-click="() => this.toggleAccount(account)">
                                                 <i t-att-class="state.expandedAccounts[account.id] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>

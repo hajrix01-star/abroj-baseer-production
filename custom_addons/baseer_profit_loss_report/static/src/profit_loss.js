@@ -86,8 +86,10 @@ export class BaseerProfitLossReport extends Component {
         this.state.error = "";
         this.state.expanded = {};
         this.state.pages = {};
+        this.state.accountLoading = {};
         this.state.expandedAccounts = {};
         this.state.linePages = {};
+        this.state.lineLoading = {};
         this.state.lineOpening = {};
         this.appliedFilters = null;
     }

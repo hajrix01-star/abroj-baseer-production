@@ -228,10 +228,11 @@ class TestProfitLoss(TransactionCase):
 
     def test_company_journal_and_input_boundaries(self):
         other = self.env['res.company'].create({'name': 'P&L other company'})
+        report = self.report.with_user(self._accountant())
         with self.assertRaises(AccessError):
-            self.report.get_report({**self.filters, 'company_id': other.id})
+            report.get_report({**self.filters, 'company_id': other.id})
         with self.assertRaises(AccessError):
-            self.report.get_context(other.id)
+            report.get_context(other.id)
         with self.assertRaises(AccessError):
             self.report.get_report({**self.filters, 'journal_ids': [999999999]})
         for invalid in (

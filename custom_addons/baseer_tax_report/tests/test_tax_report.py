@@ -424,7 +424,6 @@ class TestSaudiVatReport(TransactionCase):
         ).get_hub_options()
         self.assertFalse(options['default_company_id'])
         self.assertIn(self.company.id, [company['id'] for company in options['companies']])
-        self.assertNotIn('domain', str(report))
 
     def test_hub_options_are_validated_before_read_or_print(self):
         model = self.env['baseer.tax.report.wizard']

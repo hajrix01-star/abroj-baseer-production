@@ -186,8 +186,8 @@ test("mounted report displays comparison columns without inline journal entries"
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
     expect(document.querySelector(".o_baseer_pl_table td").getAttribute("data-label")).toBe("Oct 2026");
     expect(document.querySelector('select[aria-label="Company"]')).toBe(null);
-    expect(document.querySelector(".o_baseer_report_period").textContent).toContain("Baseer");
-    expect(document.querySelector(".o_baseer_report_period").textContent).toContain("Oct 2026");
+    expect(document.querySelector(".o_baseer_report_period").textContent.includes("Baseer")).toBe(true);
+    expect(document.querySelector(".o_baseer_report_period").textContent.includes("Oct 2026")).toBe(true);
     await click('.o_baseer_pl_section button[aria-label="Income"]');
     await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
     expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts"]);

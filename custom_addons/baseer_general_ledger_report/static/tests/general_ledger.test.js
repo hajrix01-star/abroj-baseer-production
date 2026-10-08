@@ -154,6 +154,7 @@ test("a journal change with custom dates first resolves those dates", async () =
     expect(calls.at(-2)[0]).toBe("resolve_period");
     expect(calls.at(-2)[1][0].kind).toBe("custom");
     expect(calls.at(-1)[1][0].journal_ids).toEqual([11]);
+    await waitUntil(() => document.querySelector(".o_baseer_report_period").textContent.includes("2026-10-01 — 2026-10-31"));
     expect(document.querySelector(".o_baseer_report_period").textContent.includes("2026-10-01 — 2026-10-31")).toBe(true);
 });
 

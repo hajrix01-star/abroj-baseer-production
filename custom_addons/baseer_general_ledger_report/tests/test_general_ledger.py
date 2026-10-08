@@ -295,6 +295,27 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(self._row(result, self.income)['credit'], '10.01')
         self.assertEqual(result['total']['closing'], '0.00')
 
+    def test_verified_group_crosses_5000_security_boundary(self):
+        commands = [Command.create({
+            'name': 'GL security window debit', 'account_id': self.cash.id,
+            'debit': 0.01, 'credit': 0,
+        }) for _ in range(5001)]
+        commands.append(Command.create({
+            'name': 'GL security window credit', 'account_id': self.income.id,
+            'debit': 0, 'credit': 50.01,
+        }))
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-03-08', 'journal_id': self.journal.id,
+            'move_type': 'entry', 'line_ids': commands,
+        })
+        move._post(soft=False)
+        result = self.report.get_report(self.filters)
+        cash = self._row(result, self.cash)
+        self.assertEqual(cash['debit'], '50.01')
+        self.assertEqual(cash['period_line_count'], 5001)
+        self.assertEqual(self._row(result, self.income)['credit'], '50.01')
+        self.assertEqual(result['total']['closing'], '0.00')
+
     def test_company_dates_and_non_accountant_denied(self):
         other = self.env['res.company'].create({'name': 'GL other company'})
         readonly = self.report.with_user(self._accountant()).with_context(

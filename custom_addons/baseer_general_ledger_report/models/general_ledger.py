@@ -15,7 +15,8 @@ class BaseerGeneralLedger(models.AbstractModel):
     _description = 'Baseer Posted General Ledger'
 
     PAGE_SIZE = 100
-    SECURITY_BATCH = 1000
+    SECURITY_BATCH = 5000
+    AGGREGATE_BATCH = 1000
 
     @staticmethod
     def _decimal(value):
@@ -198,13 +199,23 @@ class BaseerGeneralLedger(models.AbstractModel):
             if not lines:
                 break
             self._verify_links(lines)
-            verified_counts = Counter(line.account_id.id for line in lines)
-            self.env.cr.execute(
-                "SELECT account_id, SUM(debit)::text, SUM(credit)::text, COUNT(*) "
-                "FROM account_move_line WHERE id = ANY(%s) GROUP BY account_id",
-                [lines.ids],
-            )
-            self._merge_verified_batch(totals, verified_counts, self.env.cr.fetchall())
+            window_counts = Counter(line.account_id.id for line in lines)
+            chunks = []
+            recombined_counts = Counter()
+            for offset in range(0, len(lines), self.AGGREGATE_BATCH):
+                chunk = lines[offset:offset + self.AGGREGATE_BATCH]
+                counts = Counter(line.account_id.id for line in chunk)
+                chunks.append((chunk, counts))
+                recombined_counts.update(counts)
+            if recombined_counts != window_counts:
+                raise AccessError(_('The report source changed while reading. Retry.'))
+            for chunk, counts in chunks:
+                self.env.cr.execute(
+                    "SELECT account_id, SUM(debit)::text, SUM(credit)::text, COUNT(*) "
+                    "FROM account_move_line WHERE id = ANY(%s) GROUP BY account_id",
+                    [chunk.ids],
+                )
+                self._merge_verified_batch(totals, counts, self.env.cr.fetchall())
             cursor = lines[-1].id
             if len(lines) < self.SECURITY_BATCH:
                 break

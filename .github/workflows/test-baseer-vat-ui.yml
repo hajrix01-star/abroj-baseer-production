@@ -1,0 +1,81 @@
+name: Test Baseer VAT UI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_tax_report/static/src/xml/saudi_vat_report.xml
+      - custom_addons/baseer_tax_report/static/src/scss/saudi_vat_report.scss
+      - custom_addons/baseer_tax_report/static/tests/saudi_vat_report.test.js
+      - .github/workflows/test-baseer-vat-ui.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hoot-vat-ui-tests:
+    name: Odoo 19 Hoot VAT UI tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the runner's headless Chrome
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v google-chrome
+          google-chrome --version
+      - name: Install the pinned Odoo 19 package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --silent --show-error \
+            https://nightly.odoo.com/19.0/nightly/deb/odoo_19.0.20260926_all.deb \
+            --output "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          printf '%s  %s\n' \
+            cb9d876779edc8d5f0394ddd3936a387e349077c \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" | sha1sum --check
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          sudo apt-get install -y --no-install-recommends python3-websocket
+          /usr/bin/python3 -c 'import websocket; print(websocket.__version__)'
+          odoo --version
+      - name: Run Baseer VAT Hoot tests at desktop and mobile widths
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          odoo --db_host=127.0.0.1 --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons" \
+            -d baseer_vat_ui_ci -i baseer_tax_report --without-demo=all \
+            '--test-tags=/web:WebSuite.test_unit_desktop[@baseer_tax_report/saudi_vat_report],/web:MobileWebSuite.test_unit_mobile[@baseer_tax_report/saudi_vat_report]' \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-vat-hoot.log"
+          test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-vat-hoot.log")" -ge 2
+          grep -Fq '[HOOT] Running test "@baseer_tax_report/saudi_vat_report/' "$RUNNER_TEMP/baseer-vat-hoot.log"
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-vat-ui-diagnostics
+          path: |
+            ${{ runner.temp }}/baseer-vat-hoot.log
+            /tmp/odoo_tests/baseer_vat_ui_ci/screenshots/
+          retention-days: 7

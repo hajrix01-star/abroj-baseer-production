@@ -4,7 +4,66 @@ import { after, expect, getFixture, globals, test, withFetch } from "@odoo/hoot"
 import { click, queryOne, waitUntil } from "@odoo/hoot-dom";
 import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { user } from "@web/core/user";
+import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { SaudiVatReport } from "@baseer_tax_report/js/saudi_vat_report";
+
+async function mountVisualReport(lang) {
+    patchWithCleanup(user, { lang });
+    const orm = {
+        async call(model, method) {
+            if (model !== "baseer.tax.report.wizard") {
+                throw new Error(`Unexpected model: ${model}`);
+            }
+            if (method === "get_hub_options") {
+                return {
+                    companies: [{ id: 3, name: "Test Company" }], journals: [],
+                    default_company_id: 3, default_year: 2026, default_quarter: "3",
+                };
+            }
+            if (method === "get_hub_report") {
+                return {
+                    company: "Test Company", date_from: "2026-07-01", date_to: "2026-09-30",
+                    currency: "SAR", exception: { count: 0, other_count: 0 },
+                    rows: [
+                        {
+                            number: "1", name: "Taxed sales", base_text: "1,150.00", base_state: "",
+                            tax_text: "0.00", tax_state: "zero",
+                            direct: { base: true, tax: true }, components: { base: [], tax: [] },
+                        },
+                        {
+                            number: "6", name: "Sales adjustment", base_text: "-15.00",
+                            base_state: "negative", tax_text: "0.00", tax_state: "zero",
+                            direct: { base: true, tax: true }, components: { base: [], tax: [] },
+                        },
+                        {
+                            number: "13", name: "Net VAT", base_text: "0.00", base_state: "zero",
+                            tax_text: "0.00", tax_state: "zero",
+                            direct: { base: false, tax: false },
+                            components: {
+                                base: [{ number: "1", column: "tax", name: "Zero component",
+                                    amount_text: "0.00", state: "zero" }],
+                                tax: [],
+                            },
+                        },
+                    ],
+                };
+            }
+            throw new Error(`Unexpected RPC: ${model}.${method}`);
+        },
+    };
+    const response = await withFetch(globals.fetch, () =>
+        fetch("/baseer_tax_report/static/src/xml/saudi_vat_report.xml")
+    );
+    expect(response.ok).toBe(true);
+    const app = new App(SaudiVatReport, {
+        env: { services: { orm, action: { doAction: async () => {} } } },
+        templates: await response.text(), props: {}, test: true,
+    });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    await waitUntil(() => Boolean(queryOne(".o_baseer_vat_table")));
+}
 
 test("clicking VAT XLSX exports the selected quarter, detailed view, and journals once", async () => {
     const calls = [];
@@ -104,6 +163,45 @@ test("VAT visual amount states preserve muted zero and red negative", () => {
     expect(SaudiVatReport.prototype.amountClass("zero")).toBe("is-zero");
     expect(SaudiVatReport.prototype.amountClass("negative")).toBe("is-negative");
     expect(SaudiVatReport.prototype.amountClass("empty")).toBe("");
+});
+
+test("Arabic VAT paper renders RTL, isolated numbers, and a faint zero in expanded components", async () => {
+    await mountVisualReport("ar_001");
+    const root = queryOne(".o_baseer_vat_report");
+    const paper = queryOne(".o_baseer_vat_paper");
+    const canvas = queryOne(".o_baseer_report_canvas");
+    expect(root.getAttribute("dir")).toBe("rtl");
+    expect(queryOne(".o_baseer_vat_table caption").textContent).toBe("تقرير ضريبة القيمة المضافة");
+    expect(window.getComputedStyle(paper).maxWidth).toBe("840px");
+    const paperBox = paper.getBoundingClientRect();
+    const canvasBox = canvas.getBoundingClientRect();
+    expect(paperBox.width <= canvasBox.width + 1).toBe(true);
+    expect(Math.abs((paperBox.left + paperBox.right) - (canvasBox.left + canvasBox.right)) <= 2).toBe(true);
+
+    const zero = queryOne(".o_baseer_vat_table tbody tr:first-child .o_baseer_vat_cell_button.is-zero");
+    const negative = queryOne(".o_baseer_vat_total .o_baseer_vat_cell_button.is-negative");
+    expect(zero.getAttribute("dir")).toBe("ltr");
+    expect(negative.textContent).toBe("-15.00");
+    expect(window.getComputedStyle(zero).color).not.toBe(window.getComputedStyle(negative).color);
+
+    await click('.o_baseer_vat_total .o_baseer_vat_cell_button[aria-expanded="false"]');
+    await waitUntil(() => document.querySelector(
+        '.o_baseer_vat_total .o_baseer_vat_cell_button[aria-expanded="true"]'
+    ));
+    await waitUntil(() => document.querySelector(
+        ".o_baseer_vat_components .o_baseer_vat_cell_button.is-zero"
+    ));
+    const componentZero = queryOne(".o_baseer_vat_components .o_baseer_vat_cell_button.is-zero");
+    expect(componentZero.textContent).toBe("0.00");
+    expect(componentZero.getAttribute("dir")).toBe("ltr");
+});
+
+test("English VAT paper renders LTR and keeps the same server-provided amounts", async () => {
+    await mountVisualReport("en_US");
+    expect(queryOne(".o_baseer_vat_report").getAttribute("dir")).toBe("ltr");
+    expect(queryOne(".o_baseer_vat_table caption").textContent).toBe("Saudi VAT Report");
+    expect(queryOne(".o_baseer_vat_table tbody tr:first-child td:nth-child(2) .o_baseer_vat_cell_button").textContent).toBe("1,150.00");
+    expect(queryOne(".o_baseer_vat_total .o_baseer_vat_cell_button.is-negative").textContent).toBe("-15.00");
 });
 
 test("VAT Excel export sends current filters and opens the private download action", async () => {

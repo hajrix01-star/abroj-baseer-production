@@ -215,35 +215,38 @@ verify_smoke_log() {
 
 restore_pair() (
     set -Eeuo pipefail
-    sha256sum -c "$backup/recovery.sha256"
-    compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || true
-    docker exec "$QA_DB_CONTAINER" sh -lc "dropdb -U \"\$POSTGRES_USER\" --if-exists '$QA_DATABASE'"
-    docker exec "$QA_DB_CONTAINER" sh -lc "createdb -U \"\$POSTGRES_USER\" '$QA_DATABASE'"
-    docker exec -i "$QA_DB_CONTAINER" sh -lc "pg_restore -U \"\$POSTGRES_USER\" --no-owner --no-privileges -d '$QA_DATABASE'" < "$backup/database.dump"
+    # rollback() invokes this in an OR-list, where Bash ignores errexit even
+    # inside this subshell. Explicit guards are required before each DB write.
+    sha256sum -c "$backup/recovery.sha256" || return 1
+    compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || return 1
+    docker exec "$QA_DB_CONTAINER" sh -lc "dropdb -U \"\$POSTGRES_USER\" --if-exists '$QA_DATABASE'" || return 1
+    docker exec "$QA_DB_CONTAINER" sh -lc "createdb -U \"\$POSTGRES_USER\" '$QA_DATABASE'" || return 1
+    docker exec -i "$QA_DB_CONTAINER" sh -lc "pg_restore -U \"\$POSTGRES_USER\" --no-owner --no-privileges -d '$QA_DATABASE'" < "$backup/database.dump" || return 1
     docker run --rm --network none -v "$QA_ODOO_VOLUME":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
         set -eu
         rm -rf -- "/target/filestore/'"$QA_DATABASE"'"
         mkdir -p /target/filestore
         tar -xf /backup/filestore.tar -C /target
         test -d "/target/filestore/'"$QA_DATABASE"'"
-    '
+    ' || return 1
 )
 
 rollback() {
-    local status=${1:-$?} rollback_failed=0
+    local status=${1:-$?} rollback_failed=0 stop_failed=0
     [ "$status" -ne 0 ] || status=1
     trap - ERR HUP INT TERM
     set +e
     if [ "${release_switched:-0}" -eq 1 ]; then
-        compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
+        compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || { rollback_failed=1; stop_failed=1; }
     fi
-    if [ "${database_mutated:-0}" -eq 1 ]; then
+    if [ "${database_mutated:-0}" -eq 1 ] && [ "$rollback_failed" -eq 0 ]; then
         restore_pair >/dev/null 2>&1 || rollback_failed=1
     fi
-    if [ "${release_switched:-0}" -eq 1 ]; then
+    if [ "${release_switched:-0}" -eq 1 ] && [ "$stop_failed" -eq 0 ]; then
         ln -sfn "$old_release" "$QA_BASE/current" || rollback_failed=1
     fi
-    if [ "${service_quiesced:-0}" -eq 1 ]; then
+    # A failed restore must never restart Odoo against an incomplete database.
+    if [ "${service_quiesced:-0}" -eq 1 ] && [ "$rollback_failed" -eq 0 ]; then
         compose_cmd up -d "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
         wait_for_login >/dev/null 2>&1 || rollback_failed=1
     fi
@@ -254,6 +257,7 @@ rollback() {
             printf 'QA_DEPLOY=ROLLBACK_FAILED\nPREVIOUS_RELEASE=%s\n' "$old_release" > "$backup/result.env"
         fi
     fi
+    [ "$rollback_failed" -eq 0 ] || printf 'QA_DEPLOY=ROLLBACK_FAILED\n' >&2
     [ "$rollback_failed" -eq 0 ] || exit 70
     exit "$status"
 }
@@ -351,12 +355,13 @@ fi
 odoo_command+=' --stop-after-init --workers=0 --max-cron-threads=0'
 database_mutated=1
 compose_cmd run --rm --no-deps --entrypoint sh "$ODOO_SERVICE" -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
+smoke_since="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || die 'cannot timestamp QA smoke attempt'
 compose_cmd up -d "$ODOO_SERVICE"
 wait_for_login
 for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_third_party_modules"}; do
     [ "$(module_state "$module")" = installed ] || die "module not installed after QA deployment: $module"
 done
-compose_cmd logs --no-color --tail=300 "$ODOO_SERVICE" > "$backup/odoo-smoke.log"
+compose_cmd logs --since "$smoke_since" --no-color --tail=300 "$ODOO_SERVICE" > "$backup/odoo-smoke.log"
 verify_smoke_log
 printf 'QA_DEPLOY=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nTHIRD_PARTY_MODULES=%s\n' \
     "$release_id" "$release" "$backup" "$commit" "$policy_modules" "${policy_third_party_modules:-}" > "$backup/result.env"

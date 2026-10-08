@@ -194,7 +194,7 @@ test("English VAT paper renders LTR and keeps the same server-provided amounts",
     await mountVisualReport("en_US");
     expect(queryOne(".o_baseer_vat_report").getAttribute("dir")).toBe("ltr");
     expect(queryOne(".o_baseer_vat_table caption").textContent).toBe("Saudi VAT Report");
-    expect(queryOne(".o_baseer_vat_table tbody tr:first-child .o_baseer_vat_cell_button").textContent).toBe("1,150.00");
+    expect(queryOne(".o_baseer_vat_table tbody tr:first-child td:nth-child(2) .o_baseer_vat_cell_button").textContent).toBe("1,150.00");
     expect(queryOne(".o_baseer_vat_total .o_baseer_vat_cell_button.is-negative").textContent).toBe("-15.00");
 });
 

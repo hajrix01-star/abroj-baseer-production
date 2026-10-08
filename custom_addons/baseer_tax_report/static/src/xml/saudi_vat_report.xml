@@ -119,7 +119,7 @@
                                             <button t-elif="row.components[column].length" type="button" dir="ltr"
                                                 class="o_baseer_vat_cell_button"
                                                 t-att-class="amountClass(row[column + '_state'])"
-                                                t-att-aria-expanded="isExpanded(row.number, column)"
+                                                t-att-aria-expanded="isExpanded(row.number, column) ? 'true' : 'false'"
                                                 t-att-aria-label="(isExpanded(row.number, column) ? labels.collapse : labels.expand) + ' ' + row.number + ' ' + labels[column]"
                                                 t-on-click="() => this.toggleComponents(row.number, column)"
                                                 t-esc="row[column + '_text']"/>

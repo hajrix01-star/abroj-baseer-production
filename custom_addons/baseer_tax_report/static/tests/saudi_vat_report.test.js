@@ -185,6 +185,12 @@ test("Arabic VAT paper renders RTL, isolated numbers, and a faint zero in expand
     expect(window.getComputedStyle(zero).color).not.toBe(window.getComputedStyle(negative).color);
 
     await click('.o_baseer_vat_total .o_baseer_vat_cell_button[aria-expanded="false"]');
+    await waitUntil(() => document.querySelector(
+        '.o_baseer_vat_total .o_baseer_vat_cell_button[aria-expanded="true"]'
+    ));
+    await waitUntil(() => document.querySelector(
+        ".o_baseer_vat_components .o_baseer_vat_cell_button.is-zero"
+    ));
     const componentZero = queryOne(".o_baseer_vat_components .o_baseer_vat_cell_button.is-zero");
     expect(componentZero.textContent).toBe("0.00");
     expect(componentZero.getAttribute("dir")).toBe("ltr");

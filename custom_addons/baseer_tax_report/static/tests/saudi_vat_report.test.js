@@ -9,7 +9,7 @@ import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { SaudiVatReport } from "@baseer_tax_report/js/saudi_vat_report";
 
 async function mountVisualReport(lang) {
-    patchWithCleanup(user, { lang });
+    patchWithCleanup(user, { lang, activeCompany: { id: 3 } });
     const orm = {
         async call(model, method) {
             if (model !== "baseer.tax.report.wizard") {
@@ -66,6 +66,7 @@ async function mountVisualReport(lang) {
 }
 
 test("clicking VAT XLSX exports the selected quarter, detailed view, and journals once", async () => {
+    patchWithCleanup(user, { activeCompany: { id: 3 } });
     const calls = [];
     const downloads = [];
     let resolveExport;
@@ -137,6 +138,42 @@ test("clicking VAT XLSX exports the selected quarter, detailed view, and journal
     await waitUntil(() => !queryOne(".o_baseer_report_xlsx").disabled);
     expect(downloads).toEqual([download]);
     expect(queryOne(".o_baseer_report_xlsx").disabled).toBe(false);
+    expect(document.querySelector('select[aria-label="Company"]')).toBe(null);
+});
+
+test("VAT month caption is based on applied report dates and not pending filters", () => {
+    const context = { lang: "ar", labels: { months: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"] },
+        state: { data: { period_type: "month", date_from: "2026-10-01", date_to: "2026-10-31" } } };
+    const caption = Object.getOwnPropertyDescriptor(SaudiVatReport.prototype, "periodCaption").get;
+    expect(caption.call(context)).toBe("أكتوبر 2026");
+    context.state.data.date_to = "2026-10-20";
+    expect(caption.call(context)).toBe("2026-10-01 — 2026-10-20");
+});
+
+test("VAT A-to-B-to-A company changes ignore late option responses", async () => {
+    let active = 1;
+    const pending = [];
+    const report = Object.create(SaudiVatReport.prototype);
+    Object.defineProperty(report, "activeCompanyId", { get: () => active });
+    Object.assign(report, {
+        companyGeneration: 0, epoch: 0, lang: "en",
+        state: { companyId: 0, journals: [], journalIds: [], data: null, expanded: {}, loading: false, error: "" },
+        orm: { call: () => new Promise((resolve) => pending.push(resolve)) },
+        apply: async () => { report.state.data = { company_id: report.state.companyId }; },
+    });
+    const firstA = report.loadOptions();
+    active = 2;
+    const B = report.loadOptions();
+    active = 1;
+    const secondA = report.loadOptions();
+    pending[2]({ default_company_id: 1, journals: [{ id: 30 }], default_year: 2026, default_quarter: "3" });
+    await secondA;
+    pending[0]({ default_company_id: 1, journals: [{ id: 10 }] });
+    pending[1]({ default_company_id: 2, journals: [{ id: 20 }] });
+    await Promise.all([firstA, B]);
+    expect(report.state.companyId).toBe(1);
+    expect(report.state.journals).toEqual([{ id: 30 }]);
+    expect(report.state.data.company_id).toBe(1);
 });
 
 test("VAT registers its real report component, not the legacy wizard form", () => {

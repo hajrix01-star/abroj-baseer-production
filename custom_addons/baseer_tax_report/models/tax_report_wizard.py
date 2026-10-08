@@ -293,8 +293,9 @@ class BaseerTaxReportWizard(models.TransientModel):
             'companies': [{'id': company.id, 'name': company.name} for company in companies],
             'journals': [{'id': journal.id, 'name': journal.display_name,
                           'company_id': journal.company_id.id} for journal in journals],
-            'default_company_id': self.env.company.id if self.env.company in companies else (
-                companies[0].id if companies else False),
+            # The report follows Odoo's active company.  Never silently switch a
+            # non-Saudi active company to another Saudi company in the toolbar.
+            'default_company_id': self.env.company.id if self.env.company in companies else False,
             'default_year': year, 'default_quarter': quarter,
         }
 
@@ -339,6 +340,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         return {
             'company': data['company'].name,
             'currency': data['currency'].name,
+            'period_type': data['wizard'].period_type,
             'date_from': data['date_from'].isoformat(),
             'date_to': data['date_to'].isoformat(),
             'journal_names': data['journal_names'],

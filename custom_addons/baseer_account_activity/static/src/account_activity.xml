@@ -10,11 +10,6 @@
                     <button class="o_baseer_report_switcher" type="button" t-on-click="goToReports" t-esc="labels.backToReports"/>
                 </div>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.scope">
-                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>
-                        <select t-att-aria-label="labels.company" t-att-value="state.companyId" t-on-change="onCompanyChange">
-                            <option t-foreach="state.companies" t-as="company" t-key="company.id" t-att-value="company.id" t-att-selected="company.id === state.companyId" t-esc="company.name"/>
-                        </select>
-                    </label>
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.account"/>
                         <select t-att-aria-label="labels.account" t-att-value="state.accountId" t-on-change="onAccountChange">
                             <option t-foreach="state.accounts" t-as="account" t-key="account.id" t-att-value="account.id" t-att-selected="account.id === state.accountId" t-esc="account.display_name"/>
@@ -33,14 +28,14 @@
                 </div>
             </header>
             <div t-if="state.error" class="alert alert-danger o_baseer_activity_alert" role="alert" t-esc="state.error"/>
-            <div t-if="!state.accounts.length &amp;&amp; !state.error" class="o_baseer_activity_notice" t-esc="labels.noAccounts"/>
+            <div t-if="!state.accounts.length &amp;&amp; !state.accountsLoading &amp;&amp; !state.error" class="o_baseer_activity_notice" t-esc="labels.noAccounts"/>
             <div t-if="state.loading" class="o_baseer_activity_notice" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/><span t-esc="labels.apply"/></div>
             <div t-if="!state.data &amp;&amp; !state.loading &amp;&amp; !state.error &amp;&amp; state.accounts.length" class="o_baseer_activity_notice" t-esc="labels.choose"/>
             <div t-if="state.data" class="o_baseer_report_canvas">
               <section class="o_baseer_report o_baseer_activity_paper" t-att-aria-label="labels.title">
                 <div class="o_baseer_activity_paper_heading">
                     <div><h1 t-esc="labels.title"/><p><t t-esc="state.data.company_name"/> · <t t-esc="state.data.account_name"/></p></div>
-                    <span dir="ltr"><t t-esc="state.dateFrom"/> — <t t-esc="state.dateTo"/></span>
+                    <span t-esc="periodCaption"/>
                 </div>
                 <div class="o_baseer_activity_currency" t-esc="state.data.currency_symbol"/>
                 <p class="o_baseer_activity_scope" t-esc="labels.scope"/>

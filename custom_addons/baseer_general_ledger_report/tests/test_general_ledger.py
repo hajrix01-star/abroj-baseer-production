@@ -97,6 +97,60 @@ class TestGeneralLedger(TransactionCase):
             'domain_force': f"[('id', '!=', {record.id})]",
         })
 
+    def _period(self, kind, anchor, direction=0, start='', end=''):
+        return self.report.resolve_period({
+            'company_id': self.company.id, 'kind': kind,
+            'anchor_date': anchor, 'direction': direction,
+            'date_from': start, 'date_to': end,
+        })
+
+    def test_period_resolver_full_month_quarter_fiscal_and_leap_day(self):
+        month = self._period('month', '2040-02-15')
+        self.assertEqual((month['date_from'], month['date_to']), ('2040-02-01', '2040-02-29'))
+        self.assertTrue(month['is_full_calendar_month'])
+        self.assertNotIn('2040-02-01', month['display_label'])
+        quarter = self._period('quarter', '2041-10-08')
+        self.assertEqual((quarter['date_from'], quarter['date_to']),
+                         ('2041-10-01', '2041-12-31'))
+        fiscal = self._period('fiscal_year', '2041-10-08')
+        self.assertEqual((fiscal['date_from'], fiscal['date_to']),
+                         ('2041-01-01', '2041-12-31'))
+
+    def test_period_navigation_respects_mid_month_fiscal_boundary(self):
+        self.company.write({'fiscalyear_last_day': 20, 'fiscalyear_last_month': '12'})
+        before = self._period('month', '2041-12-20')
+        self.assertEqual((before['date_from'], before['date_to']),
+                         ('2041-12-01', '2041-12-20'))
+        self.assertFalse(before['is_full_calendar_month'])
+        self.assertIn('2041-12-01', before['display_label'])
+        after = self._period('month', before['date_to'], 1)
+        self.assertEqual((after['date_from'], after['date_to']),
+                         ('2041-12-21', '2041-12-31'))
+        self.assertEqual(self._period('month', after['date_from'], -1)['date_to'],
+                         before['date_to'])
+        quarter_before = self._period('quarter', '2041-12-20')
+        quarter_after = self._period('quarter', quarter_before['date_to'], 1)
+        self.assertEqual((quarter_after['date_from'], quarter_after['date_to']),
+                         ('2041-12-21', '2041-12-31'))
+
+    def test_period_resolver_rejects_invalid_dates_direction_company_and_custom_crossing(self):
+        for invalid in (
+            {'kind': 'week'}, {'direction': 2}, {'direction': True},
+            {'anchor_date': '2041-02-30'}, {'date_from': '2041-03-01'},
+        ):
+            options = {'company_id': self.company.id, 'kind': 'month',
+                       'anchor_date': '2041-03-15', 'direction': 0,
+                       'date_from': '', 'date_to': ''}
+            with self.subTest(invalid=invalid), self.assertRaises(ValidationError):
+                self.report.resolve_period({**options, **invalid})
+        with self.assertRaises(AccessError):
+            self.report.resolve_period({
+                'company_id': -1, 'kind': 'month', 'anchor_date': '2041-03-15',
+                'direction': 0, 'date_from': '', 'date_to': '',
+            })
+        with self.assertRaises(ValidationError):
+            self._period('custom', '2041-12-30', start='2041-12-30', end='2042-01-02')
+
     def test_opening_period_closing_and_result_brought_forward(self):
         prior = self._entry('2040-12-31', self.cash, 100, 0, self.income)
         self._entry('2041-02-28', self.cash, 40, 0, self.income)
@@ -349,6 +403,11 @@ class TestGeneralLedger(TransactionCase):
             readonly.get_report({**self.filters, 'company_id': other.id})
         with self.assertRaises(AccessError):
             readonly.get_context(other.id)
+        with self.assertRaises(AccessError):
+            readonly.resolve_period({
+                'company_id': other.id, 'kind': 'month', 'anchor_date': '2041-03-15',
+                'direction': 0, 'date_from': '', 'date_to': '',
+            })
         for invalid in (
             {**self.filters, 'date_from': '2040-12-31'},
             {**self.filters, 'date_to': '2042-01-01'},
@@ -371,6 +430,9 @@ class TestGeneralLedger(TransactionCase):
         )
         for method, args in (
             ('get_context', ()), ('get_report', (self.filters,)),
+            ('resolve_period', ({'company_id': self.company.id, 'kind': 'month',
+                                 'anchor_date': '2041-03-15', 'direction': 0,
+                                 'date_from': '', 'date_to': ''},)),
             ('get_rbf_accounts', (self.filters,)),
             ('get_lines', (self.filters, self.cash.id)),
             ('get_account_action', (self.filters, self.cash.id)),

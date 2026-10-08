@@ -1,7 +1,7 @@
 {
     "name": "Baseer General Ledger",
     "summary": "Posted all-account general ledger inside Baseer Reports",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

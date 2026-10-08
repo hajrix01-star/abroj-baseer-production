@@ -71,6 +71,7 @@ function mockReportRequests(calls) {
 }
 
 async function mountReport(calls) {
+    patchWithCleanup(user, { activeCompany: { id: 1 } });
     const response = await withFetch(globals.fetch, () => fetch("/baseer_profit_loss_report/static/src/profit_loss.xml"));
     expect(response.ok).toBe(true);
     mockService("orm", mockReportRequests(calls));
@@ -184,10 +185,48 @@ test("mounted report displays comparison columns without inline journal entries"
     expect(document.querySelectorAll(".o_baseer_pl_table thead .is-number").length).toBe(4);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
     expect(document.querySelector(".o_baseer_pl_table td").getAttribute("data-label")).toBe("Oct 2026");
+    expect(document.querySelector('select[aria-label="Company"]')).toBe(null);
+    expect(document.querySelector(".o_baseer_report_period").textContent.includes("Baseer")).toBe(true);
+    expect(document.querySelector(".o_baseer_report_period").textContent.includes("Oct 2026")).toBe(true);
     await click('.o_baseer_pl_section button[aria-label="Income"]');
     await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
     expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts"]);
     expect(document.querySelector(".o_baseer_pl_lines_row")).toBe(null);
+});
+
+test("monthly paper caption keeps explicit dates for a partial month", () => {
+    const context = {
+        primaryPeriod: { date_from: "2026-10-07", date_to: "2026-10-31", display_label: "Oct 2026", label: "2026-10-07 — 2026-10-31" },
+        appliedFilters: { period: { kind: "month" } },
+    };
+    expect(Object.getOwnPropertyDescriptor(BaseerProfitLossReport.prototype, "reportPeriodCaption").get.call(context)).toBe("2026-10-07 — 2026-10-31");
+});
+
+test("profit and loss A-to-B-to-A ignores stale contexts", async () => {
+    let active = 1;
+    const pending = [];
+    const report = Object.create(BaseerProfitLossReport.prototype);
+    Object.defineProperty(report, "activeCompanyId", { get: () => active });
+    Object.assign(report, {
+        companyGeneration: 0, requestToken: 0, appliedFilters: null, lang: "en",
+        state: { filters: structuredClone(filters), journals: [], report: null, error: "", loading: false,
+            expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} },
+        orm: { call: () => new Promise((resolve) => pending.push(resolve)) },
+        apply: async () => { report.state.report = { company_id: report.state.filters.company_id }; },
+    });
+    const firstA = report.refreshActiveCompany();
+    active = 2;
+    const B = report.refreshActiveCompany();
+    active = 1;
+    const secondA = report.refreshActiveCompany();
+    pending[2]({ default_company_id: 1, journals: [{ id: 30 }] });
+    await secondA;
+    pending[0]({ default_company_id: 1, journals: [{ id: 10 }] });
+    pending[1]({ default_company_id: 2, journals: [{ id: 20 }] });
+    await Promise.all([firstA, B]);
+    expect(report.state.filters.company_id).toBe(1);
+    expect(report.state.journals).toEqual([{ id: 30 }]);
+    expect(report.state.report.company_id).toBe(1);
 });
 
 test("native period and comparison controls open Odoo popovers", async () => {

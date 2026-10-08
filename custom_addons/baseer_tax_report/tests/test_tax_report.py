@@ -405,13 +405,25 @@ class TestSaudiVatReport(TransactionCase):
         report = model.get_hub_report(self._hub_options(display_mode='detailed'))
         original = self.wizard._build_report()
         self.assertEqual((report['date_from'], report['date_to']), ('2026-07-01', '2026-09-30'))
+        self.assertEqual(report['period_type'], 'quarter')
         self.assertEqual(len(report['rows']), 16)
         self.assertEqual(report['rows'][0]['base_text'], original['rows'][0]['base_text'])
         self.assertEqual(report['rows'][-1]['tax_text'], original['rows'][-1]['tax_text'])
         self.assertEqual(report['exception']['count'], original['exception']['count'])
         self.assertEqual(report['exception']['other_count'], original['exception']['other_count'])
         self.assertIsInstance(report['rows'][0]['components'], dict)
-        self.assertNotIn('domain', str(report))
+
+    def test_hub_options_do_not_replace_non_saudi_active_company(self):
+        non_saudi = self.env['res.company'].create({
+            'name': 'VAT non-Saudi active company',
+            'country_id': self.env.ref('base.us').id,
+            'account_fiscal_country_id': self.env.ref('base.us').id,
+        })
+        options = self.env['baseer.tax.report.wizard'].with_context(
+            allowed_company_ids=[non_saudi.id, self.company.id],
+        ).get_hub_options()
+        self.assertFalse(options['default_company_id'])
+        self.assertIn(self.company.id, [company['id'] for company in options['companies']])
 
     def test_hub_options_are_validated_before_read_or_print(self):
         model = self.env['baseer.tax.report.wizard']

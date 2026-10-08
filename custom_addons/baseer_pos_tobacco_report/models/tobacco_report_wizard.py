@@ -125,7 +125,9 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
             companies.append({'id': company.id, 'name': company.name})
         if not companies:
             raise ValidationError(_('No SAR company is available for this report.'))
-        selected = next((item['id'] for item in companies if item['id'] == self.env.company.id), companies[0]['id'])
+        selected = self.env.company.id if any(
+            item['id'] == self.env.company.id for item in companies
+        ) else False
         return {
             'company_id': selected,
             'companies': companies,
@@ -152,6 +154,9 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
         return {
             'overflow': False,
             'company_name': company.name,
+            'period_kind': values['period'],
+            'date_from': values['date_from'].isoformat(),
+            'date_to': values['date_to'].isoformat(),
             'from_text': data['from_text'],
             'to_text': data['to_text'],
             'currency': data['currency'],

@@ -388,7 +388,7 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(len(values['periods']), 1)
         self.assertEqual(self.env.ref('baseer_profit_loss_report.action_profit_loss_pdf_portrait').paperformat_id.orientation, 'Portrait')
         html, _output_type = self.env['ir.actions.report']._render_qweb_html(
-            'baseer_profit_loss_report.profit_loss_pdf_portrait', res_ids=[],
+            'baseer_profit_loss_report.profit_loss_pdf_portrait', docids=[],
             data={'filters': self.filters},
         )
         self.assertIn(b'56.00', html)
@@ -410,7 +410,7 @@ class TestProfitLoss(TransactionCase):
         self.assertTrue(values['journal_names'])
         self.assertEqual(self.env.ref('baseer_profit_loss_report.action_profit_loss_pdf_landscape').paperformat_id.orientation, 'Landscape')
         html, _output_type = self.env['ir.actions.report']._render_qweb_html(
-            'baseer_profit_loss_report.profit_loss_pdf_landscape', res_ids=[],
+            'baseer_profit_loss_report.profit_loss_pdf_landscape', docids=[],
             data={'filters': compared},
         )
         document = lxml_html.fromstring(html)
@@ -421,9 +421,11 @@ class TestProfitLoss(TransactionCase):
 
     def test_pdf_direct_render_rechecks_active_company_and_accounting_rights(self):
         portrait = self.env['report.baseer_profit_loss_report.profit_loss_pdf_portrait']
-        for data in (None, {}, {'filters': []}, {'filters': {'company_id': True}}):
-            with self.assertRaises((AccessError, ValidationError)):
+        for data in (None, {}, {'filters': []}):
+            with self.assertRaises(ValidationError):
                 portrait._get_report_values([], data)
+        with self.assertRaises(AccessError):
+            portrait._get_report_values([], {'filters': {'company_id': True}})
         other = self.env['res.company'].create({'name': 'P&L PDF other company'})
         accountant = self._accountant()
         accountant.company_ids = [Command.link(other.id)]
@@ -434,7 +436,7 @@ class TestProfitLoss(TransactionCase):
             self.env['ir.actions.report'].with_user(accountant).with_context(
                 allowed_company_ids=[self.company.id, other.id],
             )._render_qweb_html('baseer_profit_loss_report.profit_loss_pdf_portrait',
-                                res_ids=[], data={'filters': {**self.filters, 'company_id': other.id}})
+                docids=[], data={'filters': {**self.filters, 'company_id': other.id}})
         other_context = allowed.with_context(allowed_company_ids=[other.id, self.company.id])
         other_filters = {**self.filters, 'company_id': other.id}
         self.assertEqual(other_context._get_report_values([], {'filters': other_filters})['report']['company']['id'], other.id)
@@ -447,7 +449,7 @@ class TestProfitLoss(TransactionCase):
             portrait.with_user(internal)._get_report_values([], {'filters': self.filters})
         with self.assertRaises(AccessError):
             self.env['ir.actions.report'].with_user(internal)._render_qweb_html(
-                'baseer_profit_loss_report.profit_loss_pdf_portrait', res_ids=[],
+                'baseer_profit_loss_report.profit_loss_pdf_portrait', docids=[],
                 data={'filters': self.filters},
             )
         move = self._entry('income', '25')

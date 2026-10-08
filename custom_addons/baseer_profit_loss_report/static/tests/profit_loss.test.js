@@ -202,9 +202,8 @@ test("PDF prints applied filters and rejects a late action after company change"
     const report = Object.create(BaseerProfitLossReport.prototype);
     Object.defineProperty(report, "activeCompanyId", { get: () => active });
     Object.assign(report, {
-        appliedFilters: structuredClone(filters), requestToken: 4, companyGeneration: 2,
+        appliedFilters: structuredClone(filters), requestToken: 4, companyGeneration: 2, lang: "en",
         state: { report: {}, loading: false, printing: false, error: "" },
-        labels: { error: "Print failed" },
         orm: { call: (...args) => { calls.push(args); return new Promise((resolve) => { finish = resolve; }); } },
         env: { services: { action: { doAction: async (action) => actions.push(action) } } },
     });
@@ -220,6 +219,25 @@ test("PDF prints applied filters and rejects a late action after company change"
     finish({ type: "ir.actions.report", report_name: "baseer_profit_loss_report.profit_loss_pdf_portrait" });
     await pending;
     expect(actions).toEqual([]);
+});
+
+test("PDF opens the server action only for the current report generation", async () => {
+    const actions = [];
+    const report = Object.create(BaseerProfitLossReport.prototype);
+    Object.defineProperty(report, "activeCompanyId", { get: () => 1 });
+    Object.assign(report, {
+        appliedFilters: structuredClone(filters), requestToken: 7, companyGeneration: 3, lang: "en",
+        state: { report: {}, loading: false, printing: false, error: "" },
+        orm: { call: async (_model, method, args) => {
+            expect(method).toBe("action_print");
+            expect(args[0].company_id).toBe(1);
+            return { type: "ir.actions.report", report_name: "baseer_profit_loss_report.profit_loss_pdf_portrait" };
+        } },
+        env: { services: { action: { doAction: async (action) => actions.push(action) } } },
+    });
+    await report.printReport();
+    expect(actions.length).toBe(1);
+    expect(report.state.printing).toBe(false);
 });
 
 test("monthly paper caption keeps explicit dates for a partial month", () => {

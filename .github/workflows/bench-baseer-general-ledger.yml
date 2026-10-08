@@ -11,6 +11,10 @@ on:
         description: Measure ten authenticated HTTP sessions on two pinned Odoo workers
         type: boolean
         default: false
+      stage_profile:
+        description: Profile one authenticated Odoo report read in a fresh shell
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,6 +44,9 @@ jobs:
           --health-retries 12
     steps:
       - uses: actions/checkout@v4
+      - name: Require one capacity diagnostic mode
+        if: ${{ inputs.http_two_workers && inputs.stage_profile }}
+        run: exit 1
       - name: Install report in throwaway database
         shell: bash
         run: |
@@ -65,7 +72,7 @@ jobs:
             -d baseer_gl_capacity_ci \
             < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_capacity.py"
       - name: Measure report reads as non-superuser in fresh process
-        if: ${{ !inputs.http_two_workers }}
+        if: ${{ !inputs.http_two_workers && !inputs.stage_profile }}
         shell: bash
         env:
           BASEER_GL_DIAG_TEN: ${{ inputs.diagnostic_ten }}
@@ -80,6 +87,19 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
             -d baseer_gl_capacity_ci \
             < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_capacity.py"
+      - name: Profile one read by a non-superuser in a fresh process
+        if: ${{ inputs.stage_profile }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_GL_PROFILE_PHASE=profile \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci \
+            < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_profile.py"
       - name: Measure authenticated HTTP reads on two pinned workers
         if: ${{ inputs.http_two_workers }}
         shell: bash

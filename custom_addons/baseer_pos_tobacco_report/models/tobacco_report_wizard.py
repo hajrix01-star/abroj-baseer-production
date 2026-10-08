@@ -1,9 +1,11 @@
 from calendar import monthrange
 from datetime import date, datetime
+import base64
+from time import monotonic
 from zoneinfo import ZoneInfo
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 from .tobacco_report import TobaccoReportTooLarge
 
@@ -17,6 +19,8 @@ ACCOUNT_GROUPS = (
 POS_GROUPS = ('point_of_sale.group_pos_user', 'point_of_sale.group_pos_manager')
 RIYADH = ZoneInfo('Asia/Riyadh')
 PREVIEW_PAGE_SIZE = 100
+# Stable PostgreSQL int32 namespace, separate from other application advisory locks.
+TOBACCO_EXPORT_LOCK_NAMESPACE = 0x42544258
 MONTHS = [
     ('1', 'January'), ('2', 'February'), ('3', 'March'),
     ('4', 'April'), ('5', 'May'), ('6', 'June'),
@@ -183,6 +187,47 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
         )._build_report(virtual)
         wizard = self.with_company(company).create(values)
         return wizard.action_print_report()
+
+    @api.model
+    def export_hub_xlsx(self, options):
+        """Export the whole authorized period regardless of the preview page."""
+        started_at = monotonic()
+        company, values = self._hub_wizard_values(options)
+        wizard = self.with_company(company).new(values)
+        wizard.check_access('read')
+        wizard._check_report_access()
+        wizard._check_period()
+        # Transaction-scoped and non-blocking across all Odoo workers. The caller's
+        # commit/rollback releases the company slot, including on export failure.
+        self.env.cr.execute('SELECT pg_try_advisory_xact_lock(%s, %s)', (
+            TOBACCO_EXPORT_LOCK_NAMESPACE, company.id,
+        ))
+        if not self.env.cr.fetchone()[0]:
+            raise UserError(_('Tobacco report export is running for this company. Please retry.'))
+        report = self.env['report.baseer_pos_tobacco_report.report_pos_tobacco_fees'].with_company(
+            company,
+        )._build_report(wizard, for_export=True)
+        export_model = self.env['baseer.pos.tobacco.xlsx']
+        payload = export_model._render_workbook(report, started_at=started_at)
+        encoded = base64.b64encode(payload).decode('ascii')
+        if monotonic() - started_at > 10:
+            raise UserError(_('Tobacco Excel export exceeded its safe time limit. Split the period.'))
+        export = export_model.create({
+            'company_id': company.id,
+            'period': values['period'],
+            'month': int(values['month']), 'year': values['year'],
+            'date_from': values['date_from'], 'date_to': values['date_to'],
+            'show_products': values['show_products'],
+            'file_data': encoded,
+            'file_name': 'baseer_tobacco_%s_%s.xlsx' % (
+                values['date_from'].isoformat(), values['date_to'].isoformat(),
+            ),
+        })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/baseer/pos/tobacco/export/%s?company_id=%s' % (export.id, company.id),
+            'target': 'download',
+        }
 
     def _month_range(self):
         self.ensure_one()

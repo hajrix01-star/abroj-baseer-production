@@ -3,6 +3,87 @@
 
     .o_baseer_pl_paper { min-height: 22rem; }
     .o_baseer_report_head { margin-bottom: 0.8rem; }
+    .o_baseer_pl_toolbar { align-items: center; }
+
+    .o_baseer_pl_filter_menu { position: relative; font-size: 0.82rem; }
+    .o_baseer_pl_filter_menu summary,
+    .o_baseer_pl_navigation button {
+        min-height: 2rem;
+        padding: 0.4rem 0.65rem;
+        border: 0;
+        border-radius: 4px;
+        background: #e9ebee;
+        color: #24303d;
+        font-weight: 600;
+        cursor: pointer;
+        list-style: none;
+    }
+    .o_baseer_pl_filter_menu summary::-webkit-details-marker { display: none; }
+    .o_baseer_pl_filter_menu summary i { margin-inline-end: 0.32rem; }
+    .o_baseer_pl_filter_menu[open] summary { box-shadow: inset 0 0 0 1px var(--baseer-report-accent); }
+    .o_baseer_pl_popover {
+        position: absolute;
+        z-index: 10;
+        inset-inline-start: 0;
+        top: calc(100% + 0.3rem);
+        display: grid;
+        width: 24rem;
+        min-width: 15rem;
+        max-width: 92vw;
+        padding: 0.35rem;
+        border: 1px solid #dfe3e7;
+        border-radius: 4px;
+        background: #fff;
+        box-shadow: 0 8px 24px #24303d1a;
+    }
+    .o_baseer_pl_popover > button {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        min-height: 2.2rem;
+        padding: 0.45rem 0.55rem;
+        border: 0;
+        border-radius: 3px;
+        background: transparent;
+        color: #24303d;
+        text-align: start;
+    }
+    .o_baseer_pl_popover > button:hover,
+    .o_baseer_pl_popover > button.is-selected { background: #f1f3f5; }
+    .o_baseer_pl_popover > button .fa { width: 0.8rem; color: var(--baseer-report-accent); }
+    .o_baseer_pl_navigation { display: inline-flex; gap: 0.15rem; }
+    .o_baseer_pl_navigation button { min-width: 2rem; padding-inline: 0.5rem; }
+    .o_baseer_pl_navigation button:disabled { cursor: default; opacity: 0.45; }
+    .o_baseer_pl_date_range,
+    .o_baseer_pl_control_row {
+        display: grid;
+        gap: 0.5rem;
+        margin: 0.45rem 0.2rem 0.15rem;
+        padding-top: 0.55rem;
+        border-top: 1px solid var(--baseer-report-line);
+    }
+    .o_baseer_pl_date_range label,
+    .o_baseer_pl_control_row label {
+        display: grid;
+        grid-template-columns: minmax(5rem, 1fr) minmax(0, 1.4fr);
+        gap: 0.45rem;
+        align-items: center;
+        margin: 0;
+        color: var(--baseer-report-muted);
+        font-size: 0.78rem;
+    }
+    .o_baseer_pl_date_range input,
+    .o_baseer_pl_control_row input,
+    .o_baseer_pl_control_row select { min-width: 0; }
+.o_baseer_pl_journal_list {
+    // Keep the published bounded journal menu contract: Odoo's LibSass
+    // accepts this syntax, and the menu stays inside a narrow viewport.
+    width: 22rem;
+        max-width: 90vw;
+    max-height: 16rem;
+    overflow: auto;
+}
+    .o_baseer_pl_journal_list label { display: flex; gap: 0.4rem; align-items: center; min-height: 2rem; margin: 0; padding: 0.2rem; cursor: pointer; }
 
     .o_baseer_pl_partial {
         margin: 0 0 0.8rem;
@@ -12,63 +93,24 @@
         color: #614a22;
         font-size: 0.79rem;
     }
-
-    .o_baseer_pl_journals {
-        position: relative;
-        min-width: 8rem;
-        font-size: 0.8rem;
-    }
-    .o_baseer_pl_journals summary {
-        min-height: 2rem;
-        padding: 0.4rem 0.65rem;
-        border-radius: 4px;
-        background: #e9ebee;
-        color: #24303d;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    .o_baseer_pl_journal_list {
-        position: absolute;
-        z-index: 5;
-        inset-inline-start: 0;
-        top: 100%;
-        display: grid;
-        gap: 0.4rem;
-        min-width: 13rem;
-        width: 22rem;
-        max-width: 90vw;
-        max-height: 16rem;
-        padding: 0.7rem;
-        overflow: auto;
-        border: 1px solid #dfe3e7;
-        border-radius: 4px;
-        background: #fff;
-        box-shadow: 0 8px 24px #24303d1a;
-    }
-    .o_baseer_pl_journal_list label {
-        display: flex;
-        gap: 0.4rem;
-        align-items: center;
-        margin: 0;
-        cursor: pointer;
-    }
-
-    .o_baseer_pl_table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
-    .o_baseer_pl_table th, .o_baseer_pl_table td {
-        padding: 0.55rem 0.65rem;
-        border-bottom: 1px solid var(--baseer-report-line);
-        vertical-align: middle;
-    }
-    .o_baseer_pl_table th { text-align: start; font-weight: 400; }
-    .o_baseer_pl_table .is-number { width: 26%; text-align: end; }
-    .o_baseer_pl_table thead th { color: var(--baseer-report-muted); font-size: 0.77rem; }
+    .o_baseer_pl_table_wrap { width: 100%; overflow: auto; }
+    .o_baseer_pl_table { width: 100%; min-width: 34rem; border-collapse: collapse; table-layout: fixed; }
+    .o_baseer_pl_table th,
+    .o_baseer_pl_table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--baseer-report-line); vertical-align: middle; }
+    .o_baseer_pl_table th { width: 46%; text-align: start; font-weight: 400; }
+    .o_baseer_pl_table .is-number { width: auto; text-align: end; font-variant-numeric: tabular-nums; }
+    .o_baseer_pl_table thead th { color: var(--baseer-report-muted); font-size: 0.77rem; font-weight: 600; vertical-align: bottom; }
+    .o_baseer_pl_table thead .is-number small { display: block; color: var(--baseer-report-muted); font-weight: 400; }
     .o_baseer_pl_section { background: #d8dcdf; font-weight: 700; }
-    .o_baseer_pl_section th { font-weight: 700; }
+    .o_baseer_pl_section th,
     .o_baseer_pl_section td strong { font-weight: 700; }
+    .o_baseer_pl_subtotal { font-weight: 700; }
+    .o_baseer_pl_subtotal th,
+    .o_baseer_pl_subtotal td strong { font-weight: 700; }
+    .o_baseer_pl_result { font-weight: 700; }
+    .o_baseer_pl_result th,
+    .o_baseer_pl_result td strong { font-weight: 700; }
+    .o_baseer_pl_net_income { border-top: 2px solid #abb5bd; background: #d8dcdf; }
     .o_baseer_pl_toggle {
         display: inline-flex;
         align-items: center;
@@ -84,59 +126,66 @@
     }
     .o_baseer_pl_toggle i { width: 0.6rem; color: var(--baseer-report-accent); }
     .o_baseer_pl_toggle:focus-visible,
-    .o_baseer_pl_pager button:focus-visible,
-    .o_baseer_pl_journals summary:focus-visible {
-        outline: 2px solid var(--baseer-report-accent);
-        outline-offset: 3px;
-    }
+    .o_baseer_pl_filter_menu summary:focus-visible,
+    .o_baseer_pl_navigation button:focus-visible,
+    .o_baseer_pl_popover button:focus-visible,
+    .o_baseer_pl_account_amount:focus-visible,
+    .o_baseer_pl_source:focus-visible { outline: 2px solid var(--baseer-report-accent); outline-offset: 3px; }
     .o_baseer_pl_account th { padding-inline-start: 2rem; overflow-wrap: anywhere; }
-    .o_baseer_pl_lines_row td { padding-block: 0.15rem 0.65rem; padding-inline: 2rem 0.6rem; }
-    .o_baseer_pl_lines { border-inline-start: 2px solid #dfe3e7; padding-inline-start: 0.75rem; }
-    .o_baseer_pl_line {
-        display: grid;
-        grid-template-columns: 6.5rem minmax(7rem, 1fr) minmax(8rem, 1.8fr) minmax(14rem, 1.6fr);
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.42rem 0.2rem;
-        border-bottom: 1px solid var(--baseer-report-line);
-        font-size: 0.76rem;
-    }
-    .o_baseer_pl_line time { color: var(--baseer-report-muted); }
-    .o_baseer_pl_source {
+    .o_baseer_pl_account_amount {
+        width: 100%;
         padding: 0;
         border: 0;
         background: transparent;
-        color: var(--baseer-report-accent);
-        text-align: start;
-        overflow-wrap: anywhere;
+        color: inherit;
+        text-align: inherit;
+        font: inherit;
+        font-variant-numeric: tabular-nums;
     }
+    .o_baseer_pl_account_amount:not(:disabled) { color: var(--baseer-report-accent); cursor: pointer; }
+    .o_baseer_pl_account_amount:not(:disabled):hover { text-decoration: underline; }
+    .o_baseer_pl_account_amount:disabled { cursor: default; }
+    .o_baseer_pl_lines_row td { padding-block: 0.15rem 0.65rem; padding-inline: 2rem 0.6rem; }
+    .o_baseer_pl_lines { border-inline-start: 2px solid #dfe3e7; padding-inline-start: 0.75rem; }
+    .o_baseer_pl_lines::before { content: attr(data-period); display: block; margin-bottom: 0.35rem; color: var(--baseer-report-muted); font-size: 0.76rem; font-weight: 600; }
+    .o_baseer_pl_line { display: grid; grid-template-columns: 6.5rem minmax(7rem, 1fr) minmax(8rem, 1.8fr) minmax(14rem, 1.6fr); align-items: center; gap: 0.5rem; padding: 0.42rem 0.2rem; border-bottom: 1px solid var(--baseer-report-line); font-size: 0.76rem; }
+    .o_baseer_pl_line time { color: var(--baseer-report-muted); }
+    .o_baseer_pl_source { padding: 0; border: 0; background: transparent; color: var(--baseer-report-accent); text-align: start; overflow-wrap: anywhere; }
     .o_baseer_pl_source:hover { text-decoration: underline; }
-    .o_baseer_pl_source:focus-visible { outline: 2px solid var(--baseer-report-accent); outline-offset: 2px; }
     .o_baseer_pl_line_label { overflow-wrap: anywhere; }
-    .o_baseer_pl_line_amounts { display: flex; justify-content: space-between; gap: 0.4rem; }
+    .o_baseer_pl_line_amounts { display: flex; justify-content: space-between; gap: 0.4rem; font-variant-numeric: tabular-nums; }
     .o_baseer_pl_line_amounts small { color: var(--baseer-report-muted); }
-    .o_baseer_pl_result { font-weight: 700; }
-    .o_baseer_pl_result th { font-weight: 700; }
-    .o_baseer_pl_net { border-top: 2px solid #abb5bd; }
     .o_baseer_pl_status { color: var(--baseer-report-muted); text-align: center; }
-    .o_baseer_pl_pager td { text-align: center; }
-    .o_baseer_pl_pager button {
-        margin-inline: 0.5rem;
-        padding: 0.2rem 0.4rem;
-        border: 0;
-        background: transparent;
-        color: var(--baseer-report-accent);
-    }
+    .o_baseer_pl_pager { text-align: center; }
+    .o_baseer_pl_pager button { margin-inline: 0.5rem; padding: 0.2rem 0.4rem; border: 0; background: transparent; color: var(--baseer-report-accent); }
 }
 
 @media (max-width: 560px) {
-    .o_baseer_pl_report .o_baseer_report_filters { width: 100%; }
-    .o_baseer_pl_report .o_baseer_report_date_filter { flex: 1 1 8rem; }
-    .o_baseer_pl_report .o_baseer_report_date_filter input { width: 100%; }
-    .o_baseer_pl_report .o_baseer_pl_table .is-number { width: 38%; }
-    .o_baseer_pl_report .o_baseer_pl_account th { padding-inline-start: 1.15rem; }
-    .o_baseer_pl_report .o_baseer_pl_lines_row td { padding-inline-start: 1rem; }
-    .o_baseer_pl_report .o_baseer_pl_line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    .o_baseer_pl_report .o_baseer_pl_line_label,
-    .o_baseer_pl_report .o_baseer_pl_line_amounts { grid-column: 1 / -1; }
+    .o_baseer_pl_report {
+        .o_baseer_report_filters { width: 100%; }
+        .o_baseer_pl_filter_menu { flex: 1 1 auto; }
+        .o_baseer_pl_filter_menu summary { display: flex; align-items: center; justify-content: center; }
+        .o_baseer_pl_popover { inset-inline-start: 0; min-width: 0; width: 18rem; max-width: 92vw; }
+        .o_baseer_pl_table_wrap { overflow: visible; }
+        .o_baseer_pl_table,
+        .o_baseer_pl_table tbody,
+        .o_baseer_pl_table tr,
+        .o_baseer_pl_table th,
+        .o_baseer_pl_table td { display: block; width: 100%; min-width: 0; }
+        .o_baseer_pl_table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+        .o_baseer_pl_table tr { padding: 0.25rem 0; }
+        .o_baseer_pl_table th,
+        .o_baseer_pl_table td { box-sizing: border-box; padding: 0.4rem 0.7rem; }
+        .o_baseer_pl_table td.is-number { display: grid; grid-template-columns: minmax(7rem, 1fr) auto; gap: 0.75rem; align-items: center; text-align: end; }
+        .o_baseer_pl_table td.is-number::before { content: attr(data-label); color: var(--baseer-report-muted); font-size: 0.76rem; font-weight: 400; text-align: start; }
+        .o_baseer_pl_section,
+        .o_baseer_pl_net_income { margin-top: 0.45rem; }
+        .o_baseer_pl_section th,
+        .o_baseer_pl_net_income th { border-bottom: 0; }
+        .o_baseer_pl_account th { padding-inline-start: 1.15rem; }
+        .o_baseer_pl_lines_row td { padding-inline-start: 1rem; }
+        .o_baseer_pl_line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .o_baseer_pl_line_label,
+        .o_baseer_pl_line_amounts { grid-column: 1 / -1; }
+    }
 }

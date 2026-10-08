@@ -1,11 +1,10 @@
 /** @odoo-module **/
 
-import { after, expect, getFixture, globals, test, withFetch } from "@odoo/hoot";
+import { expect, globals, test, withFetch } from "@odoo/hoot";
 import { click, waitUntil } from "@odoo/hoot-dom";
-import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
-import { patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { mockService, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
 
 const MODEL = "baseer.profit.loss.report";
@@ -76,9 +75,9 @@ function mockReportRequests(calls) {
 async function mountReport(calls, actions = []) {
     const response = await withFetch(globals.fetch, () => fetch("/baseer_profit_loss_report/static/src/profit_loss.xml"));
     expect(response.ok).toBe(true);
-    const app = new App(BaseerProfitLossReport, { env: { services: { orm: mockReportRequests(calls), action: { doAction: async (action) => actions.push(action) } } }, templates: await response.text(), props: {}, test: true });
-    after(() => app.destroy());
-    await app.mount(getFixture());
+    mockService("orm", mockReportRequests(calls));
+    mockService("action", { doAction: async (action) => actions.push(action) });
+    await mountWithCleanup(BaseerProfitLossReport, { templates: await response.text(), props: {} });
     await waitUntil(() => document.querySelector(".o_baseer_report_title"));
 }
 
@@ -199,7 +198,7 @@ test("mounted report displays comparison columns and opens detail only for its c
     expect(actions[0].res_model).toBe("account.move.line");
 });
 
-test("native period and comparison menus open from real toolbar controls", async () => {
+test("native period and comparison controls open Odoo popovers", async () => {
     patchWithCleanup(user, { lang: "en_US" });
     const calls = [];
     await mountReport(calls);

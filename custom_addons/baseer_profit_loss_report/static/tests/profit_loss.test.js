@@ -214,6 +214,9 @@ test("PDF prints applied filters and rejects a late action after company change"
     active = 2;
     report.requestToken += 1;
     report.companyGeneration += 1;
+    active = 1;
+    report.requestToken += 1;
+    report.companyGeneration += 1;
     finish({ type: "ir.actions.report", report_name: "baseer_profit_loss_report.profit_loss_pdf_portrait" });
     await pending;
     expect(actions).toEqual([]);

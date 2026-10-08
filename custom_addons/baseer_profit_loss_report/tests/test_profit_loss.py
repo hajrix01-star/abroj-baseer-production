@@ -2,6 +2,8 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
+from lxml import html as lxml_html
+
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
@@ -390,6 +392,10 @@ class TestProfitLoss(TransactionCase):
             data={'filters': self.filters},
         )
         self.assertIn(b'56.00', html)
+        document = lxml_html.fromstring(html)
+        printed_rows = document.xpath("//div[contains(@class, 'bpl-pdf')]//table/tbody/tr")
+        self.assertEqual(len(printed_rows), 9)
+        self.assertTrue(all(len(row.xpath('./td')) == 1 for row in printed_rows))
 
         compared = {
             'company_id': self.company.id, 'journal_ids': [self.journal.id],
@@ -403,6 +409,15 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(values['rows'][-1]['amounts']['current']['amount'], '56.00')
         self.assertTrue(values['journal_names'])
         self.assertEqual(self.env.ref('baseer_profit_loss_report.action_profit_loss_pdf_landscape').paperformat_id.orientation, 'Landscape')
+        html, _output_type = self.env['ir.actions.report']._render_qweb_html(
+            'baseer_profit_loss_report.profit_loss_pdf_landscape', res_ids=[],
+            data={'filters': compared},
+        )
+        document = lxml_html.fromstring(html)
+        printed_rows = document.xpath("//div[contains(@class, 'bpl-pdf')]//table/tbody/tr")
+        self.assertEqual(len(printed_rows), 9)
+        self.assertTrue(all(len(row.xpath('./td')) == 4 for row in printed_rows))
+        self.assertIn(b'56.00', html)
 
     def test_pdf_direct_render_rechecks_active_company_and_accounting_rights(self):
         portrait = self.env['report.baseer_profit_loss_report.profit_loss_pdf_portrait']
@@ -415,6 +430,11 @@ class TestProfitLoss(TransactionCase):
         allowed = portrait.with_user(accountant).with_context(allowed_company_ids=[self.company.id, other.id])
         with self.assertRaises(AccessError):
             allowed._get_report_values([], {'filters': {**self.filters, 'company_id': other.id}})
+        with self.assertRaises(AccessError):
+            self.env['ir.actions.report'].with_user(accountant).with_context(
+                allowed_company_ids=[self.company.id, other.id],
+            )._render_qweb_html('baseer_profit_loss_report.profit_loss_pdf_portrait',
+                                res_ids=[], data={'filters': {**self.filters, 'company_id': other.id}})
         other_context = allowed.with_context(allowed_company_ids=[other.id, self.company.id])
         other_filters = {**self.filters, 'company_id': other.id}
         self.assertEqual(other_context._get_report_values([], {'filters': other_filters})['report']['company']['id'], other.id)
@@ -425,6 +445,11 @@ class TestProfitLoss(TransactionCase):
         })
         with self.assertRaises(AccessError):
             portrait.with_user(internal)._get_report_values([], {'filters': self.filters})
+        with self.assertRaises(AccessError):
+            self.env['ir.actions.report'].with_user(internal)._render_qweb_html(
+                'baseer_profit_loss_report.profit_loss_pdf_portrait', res_ids=[],
+                data={'filters': self.filters},
+            )
         move = self._entry('income', '25')
         rule = self._hide_record('account.move', move)
         try:

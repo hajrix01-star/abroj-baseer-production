@@ -61,7 +61,7 @@
                 <div class="meta">
                     <div><span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/></div>
                     <div><span t-esc="'أُنشئ في' if arabic else 'Generated at'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
-                    <div><span t-esc="'الدفاتر' if arabic else 'Journals'"/>: <span t-esc="journal_names or ('جميع الدفاتر' if arabic else 'All journals')"/></div>
+                    <div><span t-esc="'الدفاتر المختارة — تقرير جزئي' if arabic else 'Selected journals — partial report'" t-if="report['is_partial_journals']"/><span t-else="" t-esc="'جميع الدفاتر' if arabic else 'All journals'"/><span t-if="report['is_partial_journals']">: <span t-esc="journal_names"/></span></div>
                 </div>
                 <div class="notice" t-esc="'قيود مرحلة حسب التاريخ المحاسبي؛ التقرير يعاد حسابه عند الطباعة وليس لقطة تاريخية مجمدة.' if arabic else 'Posted entries by accounting date; recalculated at print time, not a frozen historical snapshot.'"/>
                 <table>

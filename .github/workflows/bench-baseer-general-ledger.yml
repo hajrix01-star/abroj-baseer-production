@@ -2,6 +2,10 @@ name: Benchmark Baseer general ledger capacity
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/bench-baseer-general-ledger.yml
+      - custom_addons/baseer_general_ledger_report/**
 
 permissions:
   contents: read

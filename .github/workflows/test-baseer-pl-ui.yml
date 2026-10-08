@@ -54,6 +54,23 @@ jobs:
           sudo apt-get install -y --no-install-recommends python3-websocket
           /usr/bin/python3 -c 'import websocket; print(websocket.__version__)'
           odoo --version
+      - name: Compile the shipped profit and loss SCSS with Odoo LibSass
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          /usr/bin/python3 - "$GITHUB_WORKSPACE/custom_addons/baseer_profit_loss_report/static/src/profit_loss.scss" <<'PY'
+          from pathlib import Path
+          import sass
+          import sys
+
+          source_path = Path(sys.argv[1])
+          source = source_path.read_text(encoding='utf-8')
+          assert 'width: 22rem;\n        max-width: 90vw;' in source
+          assert 'max-width: min(22rem, 90vw)' not in source
+          compiled = sass.compile(filename=str(source_path))
+          assert '.o_baseer_pl_journal_list' in compiled
+          print('BASEER_PL_SCSS_COMPILE=PASS')
+          PY
       - name: Run only Baseer profit and loss Hoot tests at desktop and 375px
         shell: bash
         run: |

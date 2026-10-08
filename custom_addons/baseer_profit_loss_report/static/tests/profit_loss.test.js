@@ -68,11 +68,10 @@ function mockReportRequests(calls) {
     } };
 }
 
-async function mountReport(calls, actions = []) {
+async function mountReport(calls) {
     const response = await withFetch(globals.fetch, () => fetch("/baseer_profit_loss_report/static/src/profit_loss.xml"));
     expect(response.ok).toBe(true);
     mockService("orm", mockReportRequests(calls));
-    mockService("action", { doAction: async (action) => actions.push(action) });
     await mountWithCleanup(BaseerProfitLossReport, { templates: await response.text(), props: {} });
     await waitUntil(() => document.querySelector(".o_baseer_report_title"));
 }
@@ -175,23 +174,17 @@ test("account click opens the native journal-items page for its selected period"
     expect(actions[0].domain).toEqual([["account_id", "=", 7]]);
 });
 
-test("mounted report displays comparison columns and opens a native list instead of inline entries", async () => {
+test("mounted report displays comparison columns without inline journal entries", async () => {
     patchWithCleanup(user, { lang: "en_US" });
     const calls = [];
-    const actions = [];
-    await mountReport(calls, actions);
+    await mountReport(calls);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("ltr");
     expect(document.querySelectorAll(".o_baseer_pl_table thead .is-number").length).toBe(4);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
     expect(document.querySelector(".o_baseer_pl_table td").getAttribute("data-label")).toBe("Oct 2026");
     await click('.o_baseer_pl_section button[aria-label="Income"]');
     await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
-    await click('.o_baseer_pl_account_amount[aria-label="View journal items Oct 2026 400000 Sales"]');
-    await waitUntil(() => actions.length === 1);
-    expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts", "get_account_action"]);
-    expect(calls[2][1][1]).toBe(7);
-    expect(calls[2][1][2]).toBe("current");
-    expect(actions[0].res_model).toBe("account.move.line");
+    expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts"]);
     expect(document.querySelector(".o_baseer_pl_lines_row")).toBe(null);
 });
 

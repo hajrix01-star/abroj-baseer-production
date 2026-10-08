@@ -51,6 +51,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          sudo apt-get install -y --no-install-recommends python3-websocket
+          /usr/bin/python3 -c 'import websocket; print(websocket.__version__)'
           odoo --version
       - name: Run only Baseer profit and loss Hoot tests at desktop and 375px
         shell: bash

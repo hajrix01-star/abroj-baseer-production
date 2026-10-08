@@ -396,6 +396,35 @@ class BaseerGeneralLedger(models.AbstractModel):
                                 'id': last.id} if last else None}
 
     @api.model
+    def get_account_action(self, filters, account_id, scope='period'):
+        """Open the verified account source in Odoo's paginated Journal Items view."""
+        company, account, domain = self._line_domain(filters, account_id, scope)
+        _company, start, end, fiscal_start, journal_ids, _base = self._filters(filters)
+        if account.id not in self._group_verified(domain):
+            raise AccessError(_('The selected account is not available for this period.'))
+        action_domain = [
+            ('company_id', '=', company.id),
+            ('parent_state', '=', 'posted'),
+            ('account_id', '=', account.id),
+        ]
+        if scope == 'rbf':
+            action_domain.append(('date', '<', fields.Date.to_string(fiscal_start)))
+        else:
+            action_domain.extend((
+                ('date', '>=', fields.Date.to_string(start)),
+                ('date', '<=', fields.Date.to_string(end)),
+            ))
+        if journal_ids:
+            action_domain.append(('journal_id', 'in', journal_ids))
+        self._assert_complete_source(company, end, journal_ids)
+        return {
+            'type': 'ir.actions.act_window', 'name': _('Journal Items'),
+            'res_model': 'account.move.line',
+            'views': [[False, 'list'], [False, 'form']], 'target': 'current',
+            'domain': action_domain,
+        }
+
+    @api.model
     def get_source_line(self, filters, line_id, scope='period'):
         if type(line_id) is not int or line_id <= 0:
             raise ValidationError(_('Select a valid source entry.'))

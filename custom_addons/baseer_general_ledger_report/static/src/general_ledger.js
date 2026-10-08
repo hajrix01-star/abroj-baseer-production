@@ -47,7 +47,7 @@ export class BaseerGeneralLedgerReport extends Component {
             loading: true, error: "", companies: [], journals: [], report: null,
             filters: { company_id: 0, date_from: "", date_to: "", journal_ids: [] },
             rbfOpen: false, rbfLoading: false, rbfAccounts: null,
-            expanded: {}, lineLoading: {}, linePages: {}, lineOpening: {},
+            expanded: {}, accountOpening: {},
         });
         this.appliedFilters = null;
         this.requestToken = 0;
@@ -85,9 +85,7 @@ export class BaseerGeneralLedgerReport extends Component {
         this.state.rbfLoading = false;
         this.state.rbfAccounts = null;
         this.state.expanded = {};
-        this.state.lineLoading = {};
-        this.state.linePages = {};
-        this.state.lineOpening = {};
+        this.state.accountOpening = {};
     }
     async onCompanyChange(event) {
         const id = Number(event.target.value);
@@ -145,7 +143,7 @@ export class BaseerGeneralLedgerReport extends Component {
             if (token === this.requestToken) {
                 this.state.report = report;
                 this.state.expanded = {};
-                this.state.linePages = {};
+                this.state.accountOpening = {};
             }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
@@ -166,7 +164,7 @@ export class BaseerGeneralLedgerReport extends Component {
             if (token === this.requestToken) {
                 this.state.rbfAccounts = rows;
                 this.state.expanded = {};
-                this.state.linePages = {};
+                this.state.accountOpening = {};
             }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
@@ -174,56 +172,20 @@ export class BaseerGeneralLedgerReport extends Component {
             if (token === this.requestToken) { this.state.rbfLoading = false; }
         }
     }
-    async toggleAccount(accountId, scope) {
+    async openAccount(accountId, scope) {
         const key = this.lineKey(accountId, scope);
-        this.state.expanded[key] = !this.state.expanded[key];
-        if (this.state.expanded[key] && !this.state.linePages[key]) {
-            await this.loadLines(accountId, scope);
-        }
-    }
-    async loadLines(accountId, scope) {
-        const key = this.lineKey(accountId, scope);
-        if (!this.appliedFilters || this.state.lineLoading[key]) { return; }
-        const previous = this.state.linePages[key];
-        const cursor = previous?.next_cursor;
-        if (previous && !cursor) { return; }
+        if (!this.appliedFilters || this.state.accountOpening[key]) { return; }
         const token = this.requestToken;
-        this.state.lineLoading[key] = true;
+        this.state.accountOpening[key] = true;
         try {
-            const page = await this.orm.call(MODEL, "get_lines", [
+            const action = await this.orm.call(MODEL, "get_account_action", [
                 this.appliedFilters, accountId, scope,
-                cursor?.date || null, cursor?.id || null,
             ]);
-            if (token === this.requestToken) {
-                this.state.linePages[key] = {
-                    lines: [...(previous?.lines || []), ...page.lines],
-                    next_cursor: page.next_cursor,
-                };
-            }
+            if (token === this.requestToken) { await this.action.doAction(action); }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {
-            if (token === this.requestToken) { this.state.lineLoading[key] = false; }
-        }
-    }
-    async openLine(line, scope) {
-        if (!this.appliedFilters || this.state.lineOpening[line.id]) { return; }
-        const token = this.requestToken;
-        this.state.lineOpening[line.id] = true;
-        try {
-            const source = await this.orm.call(MODEL, "get_source_line", [
-                this.appliedFilters, line.id, scope,
-            ]);
-            if (token !== this.requestToken || source.line_id !== line.id) { return; }
-            await this.action.doAction({
-                type: "ir.actions.act_window", name: this.labels.source,
-                res_model: "account.move.line", views: [[false, "list"], [false, "form"]],
-                target: "current", domain: [["id", "=", source.line_id]],
-            });
-        } catch (error) {
-            if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
-        } finally {
-            if (token === this.requestToken) { this.state.lineOpening[line.id] = false; }
+            if (token === this.requestToken) { this.state.accountOpening[key] = false; }
         }
     }
 }

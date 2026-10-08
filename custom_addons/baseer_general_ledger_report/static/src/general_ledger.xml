@@ -82,11 +82,10 @@
                                     <t t-if="state.rbfOpen &amp;&amp; state.rbfAccounts">
                                         <t t-foreach="state.rbfAccounts.accounts" t-as="account" t-key="account.id">
                                             <tr class="o_baseer_gl_rbf_account">
-                                                <th scope="row"><button type="button" class="o_baseer_gl_toggle"
-                                                    t-att-aria-expanded="!!state.expanded[lineKey(account.id, 'rbf')]"
+                                                <th scope="row"><button type="button" class="o_baseer_gl_source"
+                                                    t-att-disabled="!!state.accountOpening[lineKey(account.id, 'rbf')]"
                                                     t-att-aria-label="labels.rbfSources + ' ' + account.code + ' ' + account.name"
-                                                    t-on-click="() => this.toggleAccount(account.id, 'rbf')">
-                                                    <i t-att-class="state.expanded[lineKey(account.id, 'rbf')] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
+                                                    t-on-click="() => this.openAccount(account.id, 'rbf')">
                                                     <span t-esc="account.code"/> <span t-esc="account.name"/>
                                                 </button></th>
                                                 <td class="is-number" t-att-data-label="labels.opening"><span class="o_baseer_report_amount"
@@ -95,11 +94,6 @@
                                                 <td class="is-number" t-att-data-label="labels.closing"><span class="o_baseer_report_amount"
                                                     t-att-class="amountClass(account.negative, account.amount)" t-esc="account.amount"/></td>
                                             </tr>
-                                            <t t-if="state.expanded[lineKey(account.id, 'rbf')]">
-                                                <t t-call="baseer_general_ledger_report.SourceLines">
-                                                    <t t-set="scope" t-value="'rbf'"/>
-                                                </t>
-                                            </t>
                                         </t>
                                         <tr t-if="state.rbfAccounts.account_count > state.rbfAccounts.page_size" class="o_baseer_gl_pager"><td colspan="5">
                                             <button type="button" t-att-disabled="state.rbfAccounts.page &lt;= 1"
@@ -112,11 +106,10 @@
                                 </t>
                                 <t t-foreach="state.report.accounts" t-as="account" t-key="account.id">
                                     <tr class="o_baseer_gl_account">
-                                        <th scope="row"><button type="button" class="o_baseer_gl_toggle"
-                                            t-att-aria-expanded="!!state.expanded[lineKey(account.id, 'period')]"
+                                        <th scope="row"><button type="button" class="o_baseer_gl_source"
+                                            t-att-disabled="!!state.accountOpening[lineKey(account.id, 'period')]"
                                             t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name"
-                                            t-on-click="() => this.toggleAccount(account.id, 'period')">
-                                            <i t-att-class="state.expanded[lineKey(account.id, 'period')] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
+                                            t-on-click="() => this.openAccount(account.id, 'period')">
                                             <span t-esc="account.code"/> <span t-esc="account.name"/>
                                         </button></th>
                                         <td class="is-number" t-att-data-label="labels.opening"><span class="o_baseer_report_amount"
@@ -128,11 +121,6 @@
                                         <td class="is-number" t-att-data-label="labels.closing"><span class="o_baseer_report_amount"
                                             t-att-class="amountClass(account.closing_negative, account.closing)" t-esc="account.closing"/></td>
                                     </tr>
-                                    <t t-if="state.expanded[lineKey(account.id, 'period')]">
-                                        <t t-call="baseer_general_ledger_report.SourceLines">
-                                            <t t-set="scope" t-value="'period'"/>
-                                        </t>
-                                    </t>
                                 </t>
                                 <tr t-if="!state.report.account_count" class="o_baseer_gl_status"><td colspan="5" t-esc="labels.noAccounts"/></tr>
                                 <tr class="o_baseer_gl_total">
@@ -160,30 +148,5 @@
                 </section>
             </div>
         </main>
-    </t>
-
-    <t t-name="baseer_general_ledger_report.SourceLines">
-        <tr t-if="state.lineLoading[lineKey(account.id, scope)]" class="o_baseer_gl_status"><td colspan="5" role="status" t-esc="labels.linesLoading"/></tr>
-        <tr t-if="state.linePages[lineKey(account.id, scope)]" class="o_baseer_gl_details"><td colspan="5">
-            <div class="o_baseer_gl_details_scroll"><table>
-                <thead><tr><th t-esc="labels.date"/><th t-esc="labels.entry"/><th t-esc="labels.label"/>
-                    <th class="is-number" t-esc="labels.debit"/><th class="is-number" t-esc="labels.credit"/>
-                    <th class="is-number" t-esc="labels.running"/></tr></thead>
-                <tbody><tr t-foreach="state.linePages[lineKey(account.id, scope)].lines" t-as="line" t-key="line.id">
-                    <td dir="ltr" t-att-data-label="labels.date" t-esc="line.date"/>
-                    <td t-att-data-label="labels.entry"><button type="button" class="o_baseer_gl_source" t-att-disabled="!!state.lineOpening[line.id]"
-                        t-att-aria-label="labels.source + ' ' + line.move_name"
-                        t-on-click="() => this.openLine(line, scope)" t-esc="line.move_name"/></td>
-                    <td t-att-data-label="labels.label" t-esc="line.label"/>
-                    <td class="is-number" t-att-data-label="labels.debit"><span class="o_baseer_report_amount" t-att-class="amountClass(false, line.debit)" t-esc="line.debit"/></td>
-                    <td class="is-number" t-att-data-label="labels.credit"><span class="o_baseer_report_amount" t-att-class="amountClass(false, line.credit)" t-esc="line.credit"/></td>
-                    <td class="is-number" t-att-data-label="labels.running"><span class="o_baseer_report_amount" t-att-class="amountClass(line.running_negative, line.running)" t-esc="line.running"/></td>
-                </tr></tbody>
-            </table></div>
-            <p t-if="!state.linePages[lineKey(account.id, scope)].lines.length" class="o_baseer_gl_status" t-esc="labels.noLines"/>
-            <button t-if="state.linePages[lineKey(account.id, scope)].next_cursor" type="button" class="o_baseer_gl_more"
-                t-att-disabled="!!state.lineLoading[lineKey(account.id, scope)]"
-                t-on-click="() => this.loadLines(account.id, scope)" t-esc="labels.more"/>
-        </td></tr>
     </t>
 </templates>

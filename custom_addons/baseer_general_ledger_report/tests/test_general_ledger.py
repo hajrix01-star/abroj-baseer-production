@@ -128,6 +128,16 @@ class TestGeneralLedger(TransactionCase):
             lambda line: line.account_id == self.cash,
         ).id)
         self.assertEqual(period_lines['lines'][0]['running'], '160.00')
+        action = self.report.get_account_action(self.filters, self.cash.id)
+        self.assertEqual(action['res_model'], 'account.move.line')
+        self.assertEqual(action['target'], 'current')
+        self.assertIn(('company_id', '=', self.company.id), action['domain'])
+        self.assertIn(('parent_state', '=', 'posted'), action['domain'])
+        self.assertIn(('account_id', '=', self.cash.id), action['domain'])
+        self.assertIn(('date', '>=', self.filters['date_from']), action['domain'])
+        self.assertIn(('date', '<=', self.filters['date_to']), action['domain'])
+        rbf_action = self.report.get_account_action(self.filters, self.income.id, 'rbf')
+        self.assertIn(('date', '<', '2041-01-01'), rbf_action['domain'])
 
     def test_explicit_allocation_neutralizes_virtual_result(self):
         self._entry('2040-12-30', self.cash, 100, 0, self.income)
@@ -231,6 +241,7 @@ class TestGeneralLedger(TransactionCase):
             ('get_context', ()), ('get_report', (self.filters,)),
             ('get_rbf_accounts', (self.filters,)),
             ('get_lines', (self.filters, self.cash.id)),
+            ('get_account_action', (self.filters, self.cash.id)),
             ('get_source_line', (self.filters, 1)),
         ):
             with self.assertRaises(AccessError):
@@ -255,6 +266,8 @@ class TestGeneralLedger(TransactionCase):
                 with self.assertRaises(AccessError):
                     readonly.get_lines(self.filters, self.cash.id)
                 with self.assertRaises(AccessError):
+                    readonly.get_account_action(self.filters, self.cash.id)
+                with self.assertRaises(AccessError):
                     readonly.get_source_line(self.filters, source.id)
             finally:
                 rule.unlink()
@@ -266,6 +279,8 @@ class TestGeneralLedger(TransactionCase):
                 readonly.get_rbf_accounts(self.filters)
             with self.assertRaises(AccessError):
                 readonly.get_lines(self.filters, self.income.id)
+            with self.assertRaises(AccessError):
+                readonly.get_account_action(self.filters, self.income.id)
             with self.assertRaises(AccessError):
                 readonly.get_source_line(self.filters, source.id)
         finally:
@@ -282,6 +297,8 @@ class TestGeneralLedger(TransactionCase):
                 readonly.get_rbf_accounts(self.filters)
             with self.assertRaises(AccessError):
                 readonly.get_lines(self.filters, self.cash.id)
+            with self.assertRaises(AccessError):
+                readonly.get_account_action(self.filters, self.cash.id)
             with self.assertRaises(AccessError):
                 readonly.get_source_line(self.filters, source.id)
         finally:

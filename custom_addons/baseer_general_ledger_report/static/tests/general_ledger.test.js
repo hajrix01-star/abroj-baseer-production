@@ -31,12 +31,11 @@ function mockOrm(calls) {
                     default_date_to: "2026-10-31" };
             }
             if (method === "get_report") { return result; }
-            if (method === "get_lines") {
-                return { lines: [{ id: 42, date: "2026-10-07", move_name: "BNK/42",
-                    label: "Bank payment", debit: "0.00", credit: "1,200.00",
-                    running: "-50.00", running_negative: true }], next_cursor: null };
+            if (method === "get_account_action") {
+                return { type: "ir.actions.act_window", name: "Journal Items",
+                    res_model: "account.move.line", target: "current",
+                    domain: [["account_id", "=", 7]] };
             }
-            if (method === "get_source_line") { return { line_id: 42, move_id: 9 }; }
             throw new Error(`Unexpected ${method}`);
         },
     };
@@ -69,7 +68,7 @@ test("ledger is accounting-only and never exposes a placeholder PDF or XLSX", ()
     expect(amountClass(true, "-1,200.00")).toBe("is-negative");
 });
 
-test("ledger opens the exact verified source in a drilldown", async () => {
+test("ledger opens a native journal-items page instead of inserting entries", async () => {
     patchWithCleanup(user, { lang: "en_US" });
     const calls = [], actions = [];
     await mount(calls, actions);
@@ -80,13 +79,14 @@ test("ledger opens the exact verified source in a drilldown", async () => {
     expect(document.querySelector(".o_baseer_gl_report .o_baseer_report_pdf")).toBe(null);
     expect(document.querySelector(".o_baseer_gl_report .o_baseer_report_xlsx")).toBe(null);
     await click('.o_baseer_gl_account button[aria-label="View entry 101000 Bank"]');
-    await waitUntil(() => document.querySelector('.o_baseer_gl_source[aria-label="View entry BNK/42"]'));
-    await click('.o_baseer_gl_source[aria-label="View entry BNK/42"]');
+    await waitUntil(() => actions.length === 1);
     expect(calls.map(([method]) => method)).toEqual([
-        "get_context", "get_report", "get_lines", "get_source_line",
+        "get_context", "get_report", "get_account_action",
     ]);
     expect(actions[0].res_model).toBe("account.move.line");
-    expect(actions[0].domain).toEqual([["id", "=", 42]]);
+    expect(actions[0].target).toBe("current");
+    expect(actions[0].domain).toEqual([["account_id", "=", 7]]);
+    expect(document.querySelector(".o_baseer_gl_details")).toBe(null);
 });
 
 test("Arabic ledger is RTL while source amounts keep western digits", async () => {

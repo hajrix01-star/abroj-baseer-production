@@ -1,13 +1,6 @@
 name: Benchmark Baseer profit and loss capacity
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - .github/workflows/bench-baseer-profit-loss.yml
-      - custom_addons/baseer_profit_loss_report/tests/bench_profit_loss_capacity.py
-      - custom_addons/baseer_profit_loss_report/models/**
-      - custom_addons/baseer_profit_loss_report/__manifest__.py
   workflow_dispatch:
 
 permissions:

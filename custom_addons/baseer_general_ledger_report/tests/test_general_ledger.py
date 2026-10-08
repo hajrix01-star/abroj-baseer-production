@@ -391,6 +391,26 @@ class TestGeneralLedger(TransactionCase):
         finally:
             rule.unlink()
 
+    def test_explicit_link_fetch_rejects_field_without_read_access(self):
+        self._entry('2041-03-05', self.cash, 25, 0, self.income)
+        accountant = self._accountant()
+        readonly = self.report.with_user(accountant).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        aml_class = type(self.env['account.move.line'])
+        original = aml_class._has_field_access
+
+        def guarded(records, field, operation):
+            if (records._name == 'account.move.line'
+                    and records.env.uid == accountant.id
+                    and field.name == 'journal_id' and operation == 'read'):
+                return False
+            return original(records, field, operation)
+
+        with patch.object(aml_class, '_has_field_access', guarded):
+            with self.assertRaises(AccessError):
+                readonly.get_report(self.filters)
+
     def test_source_rejects_draft_outside_period_and_wrong_scope(self):
         draft = self._entry('2041-03-06', self.cash, 9, 0, self.income, posted=False)
         prior = self._entry('2040-12-31', self.cash, 8, 0, self.income)

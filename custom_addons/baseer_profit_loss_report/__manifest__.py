@@ -6,6 +6,7 @@
     "license": "LGPL-3",
     "category": "Accounting/Reporting",
     "depends": ["account", "baseer_reports_menu"],
+    "data": ["report/profit_loss_report.xml"],
     "assets": {
         "web.assets_backend": [
             "baseer_profit_loss_report/static/src/profit_loss.js",

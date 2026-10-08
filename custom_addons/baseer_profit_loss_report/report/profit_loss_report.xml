@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_profit_loss_portrait" model="report.paperformat">
+        <field name="name">Baseer Profit and Loss A4 Portrait</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">14</field><field name="margin_bottom">16</field>
+        <field name="margin_left">12</field><field name="margin_right">12</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="paperformat_profit_loss_landscape" model="report.paperformat">
+        <field name="name">Baseer Profit and Loss A4 Landscape</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field><field name="margin_bottom">15</field>
+        <field name="margin_left">11</field><field name="margin_right">11</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="action_profit_loss_pdf_portrait" model="ir.actions.report">
+        <field name="name">Profit and Loss / الربح والخسارة</field>
+        <field name="model">baseer.profit.loss.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_profit_loss_report.profit_loss_pdf_portrait</field>
+        <field name="report_file">baseer_profit_loss_report.profit_loss_pdf_portrait</field>
+        <field name="paperformat_id" ref="paperformat_profit_loss_portrait"/>
+    </record>
+    <record id="action_profit_loss_pdf_landscape" model="ir.actions.report">
+        <field name="name">Profit and Loss / الربح والخسارة</field>
+        <field name="model">baseer.profit.loss.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_profit_loss_report.profit_loss_pdf_landscape</field>
+        <field name="report_file">baseer_profit_loss_report.profit_loss_pdf_landscape</field>
+        <field name="paperformat_id" ref="paperformat_profit_loss_landscape"/>
+    </record>
+
+    <template id="profit_loss_pdf_body">
+        <t t-set="o" t-value="company_record"/>
+        <t t-call="web.basic_layout">
+            <div class="page bpl-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .bpl-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 9px;}
+                    .bpl-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
+                    .bpl-pdf .meta {color: #657487; line-height: 1.6; margin-bottom: 12px; border-bottom: 1px solid #d7dde2; padding-bottom: 9px;}
+                    .bpl-pdf .notice {color: #566a75; background: #d9eef2; padding: 6px 8px; margin: 8px 0 12px;}
+                    .bpl-pdf table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .bpl-pdf thead {display: table-header-group;}
+                    .bpl-pdf tr {page-break-inside: avoid;}
+                    .bpl-pdf th, .bpl-pdf td {padding: 6px 8px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                    .bpl-pdf th {font-weight: 600;}
+                    .bpl-pdf .period {font-size: 8px; color: #566a75; font-weight: 400;}
+                    .bpl-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .bpl-pdf .section th, .bpl-pdf .section td, .bpl-pdf .net_income th, .bpl-pdf .net_income td {background: #d9dde0; font-weight: 700;}
+                    .bpl-pdf .net_income th, .bpl-pdf .net_income td {border-top: 1px solid #b6bfc7;}
+                    .bpl-pdf .result th, .bpl-pdf .result td {font-weight: 600;}
+                    .bpl-pdf .negative {color: #cf2732;}
+                    .bpl-pdf .zero {color: #b8c1ca;}
+                </style>
+                <h1 t-esc="'الربح والخسارة' if arabic else 'Profit and Loss'"/>
+                <div class="meta">
+                    <div><span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/></div>
+                    <div><span t-esc="'أُنشئ في' if arabic else 'Generated at'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
+                    <div><span t-esc="'الدفاتر' if arabic else 'Journals'"/>: <span t-esc="journal_names or ('جميع الدفاتر' if arabic else 'All journals')"/></div>
+                </div>
+                <div class="notice" t-esc="'قيود مرحلة حسب التاريخ المحاسبي؛ التقرير يعاد حسابه عند الطباعة وليس لقطة تاريخية مجمدة.' if arabic else 'Posted entries by accounting date; recalculated at print time, not a frozen historical snapshot.'"/>
+                <table>
+                    <thead><tr>
+                        <th t-att-style="'width: 42%;' if len(periods) == 1 else 'width: 30%;'" t-esc="'الحساب' if arabic else 'Account'"/>
+                        <th t-foreach="periods" t-as="period" t-att-style="'width: 58%;' if len(periods) == 1 else ''" class="numeric">
+                            <div t-esc="period.get('display_label') or period['label']"/>
+                            <div class="period"><span t-esc="period['date_from']"/> — <span t-esc="period['date_to']"/></div>
+                            <div class="period" t-esc="'الرصيد' if arabic else 'Balance'"/>
+                        </th>
+                    </tr></thead>
+                    <tbody>
+                        <tr t-foreach="rows" t-as="row" t-att-class="row['kind'] + ' ' + row['key']">
+                            <th scope="row" t-esc="labels[row['key']]"/>
+                            <td t-foreach="periods" t-as="period" t-att-class="'numeric ' + ('negative' if row['amounts'][period['key']]['negative'] else ('zero' if not row['amounts'][period['key']]['amount'].replace(',', '').replace('.', '').replace('0', '') else ''))" t-esc="row['amounts'][period['key']]['amount']"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="footer" style="font-size: 8px; color: #657487; margin-top: 10px; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                    <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
+                    <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
+                </div>
+            </div>
+        </t>
+    </template>
+    <template id="profit_loss_pdf_portrait"><t t-call="baseer_profit_loss_report.profit_loss_pdf_body"/></template>
+    <template id="profit_loss_pdf_landscape"><t t-call="baseer_profit_loss_report.profit_loss_pdf_body"/></template>
+</odoo>

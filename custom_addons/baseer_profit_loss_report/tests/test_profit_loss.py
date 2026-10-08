@@ -371,6 +371,68 @@ class TestProfitLoss(TransactionCase):
             with self.assertRaises(ValidationError):
                 self.report.get_report(invalid)
 
+    def test_pdf_uses_one_live_server_report_and_expected_a4_orientation(self):
+        self._entry('income', '60')
+        self._entry('expense_other', '4')
+        portrait = self.env['report.baseer_profit_loss_report.profit_loss_pdf_portrait']
+        with patch.object(BaseerProfitLossReport, 'get_report', side_effect=AssertionError('early financial read')):
+            action = self.report.action_print(self.filters)
+        self.assertEqual(action['report_name'], 'baseer_profit_loss_report.profit_loss_pdf_portrait')
+        self.assertEqual(action['data'], {'filters': self.filters})
+        values = portrait._get_report_values([], action['data'])
+        expected = self.report.get_report(self.filters)
+        self.assertEqual([row['key'] for row in values['rows']], [row['key'] for row in expected['rows']])
+        self.assertEqual(values['rows'][-1]['amounts']['current']['amount'], '56.00')
+        self.assertEqual(len(values['periods']), 1)
+        self.assertEqual(self.env.ref('baseer_profit_loss_report.action_profit_loss_pdf_portrait').paperformat_id.orientation, 'Portrait')
+        html, _output_type = self.env['ir.actions.report']._render_qweb_html(
+            'baseer_profit_loss_report.profit_loss_pdf_portrait', res_ids=[],
+            data={'filters': self.filters},
+        )
+        self.assertIn(b'56.00', html)
+
+        compared = {
+            'company_id': self.company.id, 'journal_ids': [self.journal.id],
+            'period': {'kind': 'month', 'anchor_date': '2041-05-15', 'direction': 0},
+            'comparison': {'kind': 'previous_periods', 'count': 3, 'order': 'descending'},
+        }
+        action = self.report.action_print(compared)
+        self.assertEqual(action['report_name'], 'baseer_profit_loss_report.profit_loss_pdf_landscape')
+        values = self.env['report.baseer_profit_loss_report.profit_loss_pdf_landscape']._get_report_values([], action['data'])
+        self.assertEqual(len(values['periods']), 4)
+        self.assertEqual(values['rows'][-1]['amounts']['current']['amount'], '56.00')
+        self.assertTrue(values['journal_names'])
+        self.assertEqual(self.env.ref('baseer_profit_loss_report.action_profit_loss_pdf_landscape').paperformat_id.orientation, 'Landscape')
+
+    def test_pdf_direct_render_rechecks_active_company_and_accounting_rights(self):
+        portrait = self.env['report.baseer_profit_loss_report.profit_loss_pdf_portrait']
+        for data in (None, {}, {'filters': []}, {'filters': {'company_id': True}}):
+            with self.assertRaises((AccessError, ValidationError)):
+                portrait._get_report_values([], data)
+        other = self.env['res.company'].create({'name': 'P&L PDF other company'})
+        accountant = self._accountant()
+        accountant.company_ids = [Command.link(other.id)]
+        allowed = portrait.with_user(accountant).with_context(allowed_company_ids=[self.company.id, other.id])
+        with self.assertRaises(AccessError):
+            allowed._get_report_values([], {'filters': {**self.filters, 'company_id': other.id}})
+        other_context = allowed.with_context(allowed_company_ids=[other.id, self.company.id])
+        other_filters = {**self.filters, 'company_id': other.id}
+        self.assertEqual(other_context._get_report_values([], {'filters': other_filters})['report']['company']['id'], other.id)
+        internal = self.env['res.users'].create({
+            'name': 'P&L PDF internal', 'login': 'pl_pdf_internal',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        with self.assertRaises(AccessError):
+            portrait.with_user(internal)._get_report_values([], {'filters': self.filters})
+        move = self._entry('income', '25')
+        rule = self._hide_record('account.move', move)
+        try:
+            with self.assertRaises(AccessError):
+                portrait.with_user(accountant)._get_report_values([], {'filters': self.filters})
+        finally:
+            rule.unlink()
+
     def test_source_line_rejects_draft_and_outside_period(self):
         draft = self._entry('income', '9', posted=False)
         outside = self._entry('income', '11', day='2040-12-31')

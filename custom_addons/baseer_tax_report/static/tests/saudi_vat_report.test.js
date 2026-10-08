@@ -1,8 +1,84 @@
 /** @odoo-module **/
 
-import { expect, test } from "@odoo/hoot";
+import { after, expect, getFixture, globals, test, withFetch } from "@odoo/hoot";
+import { click, queryOne, waitUntil } from "@odoo/hoot-dom";
+import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { SaudiVatReport } from "@baseer_tax_report/js/saudi_vat_report";
+
+test("clicking VAT XLSX exports the selected quarter, detailed view, and journals once", async () => {
+    const calls = [];
+    const downloads = [];
+    let resolveExport;
+    const orm = {
+        async call(model, method, args) {
+            calls.push({ model, method, args });
+            if (model !== "baseer.tax.report.wizard") {
+                throw new Error(`Unexpected model: ${model}`);
+            }
+            if (method === "get_hub_options") {
+                return {
+                    companies: [{ id: 3, name: "Test Company" }],
+                    journals: [
+                        { id: 5, name: "Sales", company_id: 3 },
+                        { id: 7, name: "Purchases", company_id: 3 },
+                    ],
+                    default_company_id: 3, default_year: 2026, default_quarter: "3",
+                };
+            }
+            if (method === "get_hub_report") {
+                return {
+                    company: "Test Company", date_from: "2026-07-01", date_to: "2026-09-30",
+                    currency: "SAR", rows: [], exception: { count: 0, other_count: 0 },
+                };
+            }
+            if (method === "export_hub_xlsx") {
+                return new Promise((resolve) => { resolveExport = resolve; });
+            }
+            throw new Error(`Unexpected RPC: ${model}.${method}`);
+        },
+    };
+    const response = await withFetch(globals.fetch, () =>
+        fetch("/baseer_tax_report/static/src/xml/saudi_vat_report.xml")
+    );
+    expect(response.ok).toBe(true);
+    const app = new App(SaudiVatReport, {
+        env: { services: { orm, action: { doAction: async (action) => downloads.push(action) } } },
+        templates: await response.text(), props: {}, test: true,
+    });
+    after(() => app.destroy());
+
+    await app.mount(getFixture());
+    await waitUntil(() => !queryOne(".o_baseer_report_apply").disabled);
+    const display = queryOne('select:has(option[value="detailed"])');
+    display.value = "detailed";
+    display.dispatchEvent(new Event("change", { bubbles: true }));
+    await waitUntil(() => queryOne(".o_baseer_report_xlsx").disabled);
+    await click(".o_baseer_vat_journals summary");
+    await click('.o_baseer_vat_journals input[value="5"]');
+    await click('.o_baseer_vat_journals input[value="7"]');
+    await click(".o_baseer_report_apply");
+    await waitUntil(() => !queryOne(".o_baseer_report_xlsx").disabled);
+
+    const button = queryOne(".o_baseer_report_xlsx");
+    expect(button.textContent.trim()).toBe("XLSX");
+    await click(".o_baseer_report_xlsx");
+    const exports = calls.filter((call) => call.method === "export_hub_xlsx");
+    expect(exports.length).toBe(1);
+    expect(exports[0].args[0]).toEqual({
+        company_id: 3, period_type: "quarter", year: 2026, month: "1", quarter: "3",
+        display_mode: "detailed", journal_ids: [5, 7],
+    });
+    await waitUntil(() => queryOne(".o_baseer_report_xlsx").disabled);
+    button.click();
+    expect(calls.filter((call) => call.method === "export_hub_xlsx").length).toBe(1);
+
+    const download = { type: "ir.actions.act_url", target: "download", url: "/baseer/tax/vat/export/1" };
+    resolveExport(download);
+    await waitUntil(() => !queryOne(".o_baseer_report_xlsx").disabled);
+    expect(downloads).toEqual([download]);
+    expect(queryOne(".o_baseer_report_xlsx").disabled).toBe(false);
+});
 
 test("VAT registers its real report component, not the legacy wizard form", () => {
     const descriptor = registry.category("baseer_reports").get("vat");

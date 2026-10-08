@@ -6,6 +6,7 @@
     "license": "LGPL-3",
     "category": "Accounting/Reporting",
     "depends": ["account", "baseer_reports_menu"],
+    "data": ["report/general_ledger_report.xml"],
     "assets": {
         "web.assets_backend": [
             "baseer_general_ledger_report/static/src/general_ledger.js",

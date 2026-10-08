@@ -51,6 +51,9 @@ function mockOrm(calls, accountOverrides = {}) {
                 return { ...result, period: { ...result.period,
                     date_from: args[0].date_from, date_to: args[0].date_to } };
             }
+            if (method === "action_print") {
+                return { type: "ir.actions.report", report_name: "baseer_general_ledger_report.general_ledger_pdf" };
+            }
             if (method === "get_account_action") {
                 return { type: "ir.actions.act_window", name: "Journal Items",
                     res_model: "account.move.line", target: "current",
@@ -78,7 +81,7 @@ async function mount(calls, actions, accountOverrides = {}) {
     await waitUntil(() => document.querySelector(".o_baseer_gl_account"));
 }
 
-test("ledger is accounting-only and never exposes a placeholder PDF or XLSX", () => {
+test("ledger remains accounting-only and exposes a real PDF, not placeholder XLSX", () => {
     const descriptor = registry.category("baseer_reports").get("general_ledger");
     expect(descriptor.component).toBe(BaseerGeneralLedgerReport);
     expect(descriptor.groups).toEqual([
@@ -87,6 +90,40 @@ test("ledger is accounting-only and never exposes a placeholder PDF or XLSX", ()
     const amountClass = BaseerGeneralLedgerReport.prototype.amountClass;
     expect(amountClass(false, "0.00")).toBe("is-zero");
     expect(amountClass(true, "-1,200.00")).toBe("is-negative");
+});
+
+test("PDF uses applied filters and opens the server action", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    const calls = [], actions = [];
+    await mount(calls, actions);
+    await click(".o_baseer_gl_pdf");
+    await waitUntil(() => actions.length === 1);
+    expect(calls.at(-1)[0]).toBe("action_print");
+    expect(calls.at(-1)[1][0].date_from).toBe("2026-10-01");
+    expect(actions[0].report_name).toBe("baseer_general_ledger_report.general_ledger_pdf");
+});
+
+test("PDF ignores a stale A action after A-to-B-to-A company switch", async () => {
+    let active = 1;
+    let release;
+    const actions = [];
+    const instance = Object.create(BaseerGeneralLedgerReport.prototype);
+    Object.defineProperty(instance, "activeCompanyId", { get: () => active });
+    Object.assign(instance, {
+        lang: "en", requestToken: 4,
+        appliedFilters: { company_id: 1, date_from: "2026-10-01", date_to: "2026-10-31", journal_ids: [] },
+        state: { report: {}, loading: false, printing: false, error: "" },
+        orm: { call: () => new Promise((resolve) => { release = resolve; }) },
+        action: { doAction: async (action) => actions.push(action) },
+    });
+    const pending = instance.printReport();
+    active = 2;
+    instance.requestToken++;
+    active = 1;
+    instance.requestToken++;
+    release({ type: "ir.actions.report", report_name: "baseer_general_ledger_report.general_ledger_pdf" });
+    await pending;
+    expect(actions).toEqual([]);
 });
 
 test("ledger opens a native journal-items page instead of inserting entries", async () => {

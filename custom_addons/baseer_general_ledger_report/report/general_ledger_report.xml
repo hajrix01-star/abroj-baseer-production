@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_general_ledger" model="report.paperformat">
+        <field name="name">Baseer General Ledger A4 Landscape</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field><field name="margin_bottom">15</field>
+        <field name="margin_left">11</field><field name="margin_right">11</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="action_general_ledger_pdf" model="ir.actions.report">
+        <field name="name">General Ledger / دفتر الأستاذ العام</field>
+        <field name="model">baseer.general.ledger.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_general_ledger_report.general_ledger_pdf</field>
+        <field name="report_file">baseer_general_ledger_report.general_ledger_pdf</field>
+        <field name="paperformat_id" ref="paperformat_general_ledger"/>
+    </record>
+    <template id="general_ledger_pdf">
+        <t t-set="o" t-value="company_record"/>
+        <t t-call="web.basic_layout">
+            <div class="page bgl-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .bgl-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 9px;}
+                    .bgl-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
+                    .bgl-pdf .meta {color: #657487; line-height: 1.5; margin-bottom: 10px; border-bottom: 1px solid #d7dde2; padding-bottom: 8px;}
+                    .bgl-pdf .notice {color: #566a75; background: #d9eef2; padding: 6px 8px; margin: 7px 0 10px;}
+                    .bgl-pdf table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .bgl-pdf thead {display: table-header-group;}
+                    .bgl-pdf tr {page-break-inside: avoid;}
+                    .bgl-pdf th, .bgl-pdf td {padding: 5px 7px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                    .bgl-pdf th {font-weight: 600;}
+                    .bgl-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .bgl-pdf .negative {color: #cf2732;}
+                    .bgl-pdf .zero {color: #b8c1ca;}
+                    .bgl-pdf .rbf th, .bgl-pdf .rbf td, .bgl-pdf .total th, .bgl-pdf .total td {background: #d9dde0; font-weight: 700;}
+                </style>
+                <h1 t-esc="'دفتر الأستاذ العام' if arabic else 'General Ledger'"/>
+                <div class="meta">
+                    <div><span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/></div>
+                    <div><span t-esc="'الفترة' if arabic else 'Period'"/>: <span dir="ltr" t-esc="report['period']['date_from']"/> — <span dir="ltr" t-esc="report['period']['date_to']"/></div>
+                    <div><span t-esc="'الدفاتر' if arabic else 'Journals'"/>: <span t-esc="journals if report['is_partial_journals'] else ('جميع الدفاتر' if arabic else 'All journals')"/></div>
+                    <div><span t-esc="'أُعيد حسابه عند الطباعة' if arabic else 'Recalculated at print time'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
+                </div>
+                <div class="notice" t-esc="'قيود مرحلة حسب التاريخ المحاسبي؛ ليست لقطة تاريخية مجمدة.' if arabic else 'Posted entries by accounting date; not a frozen historical snapshot.'"/>
+                <table>
+                    <thead><tr>
+                        <th style="width: 44%;" t-esc="'الحساب' if arabic else 'Account'"/>
+                        <th class="numeric" t-esc="'الرصيد الافتتاحي' if arabic else 'Opening Balance'"/>
+                        <th class="numeric" t-esc="'مدين' if arabic else 'Debit'"/>
+                        <th class="numeric" t-esc="'دائن' if arabic else 'Credit'"/>
+                        <th class="numeric" t-esc="'الرصيد الختامي' if arabic else 'Closing Balance'"/>
+                    </tr></thead>
+                    <tbody>
+                        <tr t-if="report['rbf']['source_line_count']" class="rbf">
+                            <th t-esc="'نتيجة مرحلة من السنة السابقة' if arabic else 'Result Brought Forward'"/>
+                            <td class="numeric" t-att-class="'numeric negative' if report['rbf']['negative'] else 'numeric'" t-esc="report['rbf']['amount']"/>
+                            <td/><td/>
+                            <td class="numeric" t-att-class="'numeric negative' if report['rbf']['negative'] else 'numeric'" t-esc="report['rbf']['amount']"/>
+                        </tr>
+                        <tr t-foreach="accounts" t-as="account">
+                            <th><span t-esc="account['code']"/> <span t-esc="account['name']"/></th>
+                            <td t-att-class="'numeric negative' if account['opening_negative'] else 'numeric'" t-esc="account['opening']"/>
+                            <td class="numeric" t-esc="account['debit']"/>
+                            <td class="numeric" t-esc="account['credit']"/>
+                            <td t-att-class="'numeric negative' if account['closing_negative'] else 'numeric'" t-esc="account['closing']"/>
+                        </tr>
+                        <tr class="total">
+                            <th t-esc="'إجمالي دفتر الأستاذ' if arabic else 'Total General Ledger'"/>
+                            <td class="numeric" t-esc="report['total']['opening']"/>
+                            <td class="numeric" t-esc="report['total']['debit']"/>
+                            <td class="numeric" t-esc="report['total']['credit']"/>
+                            <td class="numeric" t-esc="report['total']['closing']"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="footer" style="font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                    <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
+                    <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

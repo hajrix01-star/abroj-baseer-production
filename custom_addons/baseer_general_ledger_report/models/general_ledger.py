@@ -343,6 +343,10 @@ class BaseerGeneralLedger(models.AbstractModel):
     def get_report(self, filters, page=1):
         if type(page) is not int or page < 1:
             raise ValidationError(_('Select a valid page.'))
+        return self._build_report(filters, page=page)
+
+    def _build_report(self, filters, page=1, full=False):
+        """One secured snapshot for the paged screen or the complete PDF summary."""
         (company, start, end, fiscal_start, journal_ids, prior,
          current_open, period, accounts) = self._snapshot(filters)
         currency = company.currency_id
@@ -382,7 +386,9 @@ class BaseerGeneralLedger(models.AbstractModel):
             })
         rows.sort(key=lambda row: (row['code'], row['id']))
         count = len(rows)
-        selected = rows[(page - 1) * self.PAGE_SIZE:page * self.PAGE_SIZE]
+        if full and count > 5000:
+            raise ValidationError(_('The PDF is limited to 5,000 accounts. Narrow the period or selected journals.'))
+        selected = rows if full else rows[(page - 1) * self.PAGE_SIZE:page * self.PAGE_SIZE]
         total_opening += rbf
         total_closing = total_opening + total_debit - total_credit
         zero = self._money(Decimal('0'), currency)
@@ -415,6 +421,16 @@ class BaseerGeneralLedger(models.AbstractModel):
                 'closing_negative': total_closing < 0,
             },
         }
+
+    @api.model
+    def action_print(self, filters):
+        if not isinstance(filters, dict) or filters.get('company_id') != self.env.company.id:
+            raise AccessError(_('Print the report for the active company only.'))
+        # Validate scope and source access without a duplicate financial aggregation.
+        self._filters(filters)
+        return self.env.ref('baseer_general_ledger_report.action_general_ledger_pdf').report_action(
+            [], data={'filters': filters}, config=False,
+        )
 
     @api.model
     def get_rbf_accounts(self, filters, page=1):

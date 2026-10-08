@@ -262,12 +262,15 @@ def measure_capacity():
     growth_mb = max(
         *(sample[key] for sample in (first, page50, lines, action)
           for key in ("rss_delta_mb", "peak_rss_delta_mb")),
-        256,
+        64,
     )
 
     def safe_for(readers):
         memory = memory_snapshot()
-        required_mb = math.ceil(readers * growth_mb * 1.5 + 1024)
+        # Two times the largest measured read allocation, plus 512 MiB for
+        # runtime/ORM overhead. The prior fixed 256 MiB per reader exceeded
+        # Odoo's own 2.5 GiB address-space limit before any ten-reader run.
+        required_mb = math.ceil(readers * growth_mb * 2 + 512)
         return memory["effective_headroom_mb"] >= required_mb, memory, required_mb
 
     two_safe, two_memory, two_required = safe_for(2)

@@ -261,6 +261,9 @@ class BaseerGeneralLedger(models.AbstractModel):
                 'opening_negative': opening < 0,
                 'closing_negative': closing < 0,
                 'period_line_count': entry.get('count', 0),
+                'opening_source_count': current_open.get(account.id, {}).get('count', 0)
+                + (prior.get(account.id, {}).get('count', 0)
+                   if account.include_initial_balance else 0),
             })
         rows.sort(key=lambda row: (row['code'], row['id']))
         count = len(rows)
@@ -398,17 +401,40 @@ class BaseerGeneralLedger(models.AbstractModel):
     @api.model
     def get_account_action(self, filters, account_id, scope='period'):
         """Open the verified account source in Odoo's paginated Journal Items view."""
-        company, account, domain = self._line_domain(filters, account_id, scope)
-        _company, start, end, fiscal_start, journal_ids, _base = self._filters(filters)
+        _company, start, end, fiscal_start, journal_ids, base = self._filters(filters)
+        if scope == 'opening':
+            if type(account_id) is not int or account_id <= 0:
+                raise ValidationError(_('Select a valid account and source.'))
+            company = _company
+            account = self._accounts({account_id}, company)[account_id]
+            domain = (base & Domain('account_id', '=', account.id)
+                      & Domain('date', '<', start))
+            if not account.include_initial_balance:
+                domain &= Domain('date', '>=', fiscal_start)
+        else:
+            company, account, domain = self._line_domain(filters, account_id, scope)
+        source_scope = scope
         if account.id not in self._group_verified(domain):
-            raise AccessError(_('The selected account is not available for this period.'))
+            if scope != 'period':
+                raise AccessError(_('The selected account is not available for this period.'))
+            opening_domain = (base & Domain('account_id', '=', account.id)
+                              & Domain('date', '<', start))
+            if not account.include_initial_balance:
+                opening_domain &= Domain('date', '>=', fiscal_start)
+            if account.id not in self._group_verified(opening_domain):
+                raise AccessError(_('The selected account has no visible source entries.'))
+            source_scope = 'opening'
         action_domain = [
             ('company_id', '=', company.id),
             ('parent_state', '=', 'posted'),
             ('account_id', '=', account.id),
         ]
-        if scope == 'rbf':
+        if source_scope == 'rbf':
             action_domain.append(('date', '<', fields.Date.to_string(fiscal_start)))
+        elif source_scope == 'opening':
+            action_domain.append(('date', '<', fields.Date.to_string(start)))
+            if not account.include_initial_balance:
+                action_domain.append(('date', '>=', fields.Date.to_string(fiscal_start)))
         else:
             action_domain.extend((
                 ('date', '>=', fields.Date.to_string(start)),
@@ -418,7 +444,9 @@ class BaseerGeneralLedger(models.AbstractModel):
             action_domain.append(('journal_id', 'in', journal_ids))
         self._assert_complete_source(company, end, journal_ids)
         return {
-            'type': 'ir.actions.act_window', 'name': _('Journal Items'),
+            'type': 'ir.actions.act_window',
+            'name': (_('Opening Balance Journal Items') if source_scope == 'opening'
+                     else _('Journal Items')),
             'res_model': 'account.move.line',
             'views': [[False, 'list'], [False, 'form']], 'target': 'current',
             'domain': action_domain,

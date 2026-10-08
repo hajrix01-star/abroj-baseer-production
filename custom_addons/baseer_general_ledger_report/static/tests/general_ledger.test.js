@@ -8,7 +8,7 @@ import { user } from "@web/core/user";
 import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerGeneralLedgerReport } from "@baseer_general_ledger_report/general_ledger";
 
-function mockOrm(calls) {
+function mockOrm(calls, accountOverrides = {}) {
     const result = {
         company: { id: 1, name: "Baseer", currency_code: "SAR" },
         period: { date_from: "2026-10-01", date_to: "2026-10-31", fiscal_start: "2026-01-01" },
@@ -16,7 +16,8 @@ function mockOrm(calls) {
         account_count: 1,
         accounts: [{ id: 7, code: "101000", name: "Bank", opening: "0.00",
             debit: "1,150.00", credit: "1,200.00", closing: "-50.00",
-            opening_negative: false, closing_negative: true }],
+            opening_negative: false, closing_negative: true,
+            period_line_count: 2, opening_source_count: 0, ...accountOverrides }],
         rbf: { amount: "0.00", negative: false, source_line_count: 0 },
         total: { opening: "0.00", debit: "1,150.00", credit: "1,200.00",
             closing: "-50.00", opening_negative: false, closing_negative: true },
@@ -41,14 +42,14 @@ function mockOrm(calls) {
     };
 }
 
-async function mount(calls, actions) {
+async function mount(calls, actions, accountOverrides = {}) {
     const response = await withFetch(globals.fetch, () =>
         fetch("/baseer_general_ledger_report/static/src/general_ledger.xml")
     );
     expect(response.ok).toBe(true);
     const app = new App(BaseerGeneralLedgerReport, {
         env: { services: {
-            orm: mockOrm(calls), action: { doAction: async (action) => actions.push(action) },
+            orm: mockOrm(calls, accountOverrides), action: { doAction: async (action) => actions.push(action) },
         } },
         templates: await response.text(), props: {}, test: true,
     });
@@ -95,4 +96,15 @@ test("Arabic ledger is RTL while source amounts keep western digits", async () =
     expect(document.querySelector(".o_baseer_gl_report").getAttribute("dir")).toBe("rtl");
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("دفتر الأستاذ العام");
     expect(document.querySelector(".o_baseer_gl_account").textContent.includes("1,150.00")).toBe(true);
+});
+
+test("opening balance opens its own native source even with period movements", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    const calls = [], actions = [];
+    await mount(calls, actions, { opening: "140.00", opening_source_count: 2 });
+    await click('.o_baseer_gl_account button[aria-label="View opening balance source 101000 Bank"]');
+    await waitUntil(() => actions.length === 1);
+    expect(calls.at(-1)[0]).toBe("get_account_action");
+    expect(calls.at(-1)[1][2]).toBe("opening");
+    expect(actions[0].res_model).toBe("account.move.line");
 });

@@ -107,13 +107,20 @@
                                 <t t-foreach="state.report.accounts" t-as="account" t-key="account.id">
                                     <tr class="o_baseer_gl_account">
                                         <th scope="row"><button type="button" class="o_baseer_gl_source"
-                                            t-att-disabled="!!state.accountOpening[lineKey(account.id, 'period')]"
+                                            t-att-disabled="!(account.period_line_count || account.opening_source_count) || !!state.accountOpening[lineKey(account.id, 'period')]"
                                             t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name"
                                             t-on-click="() => this.openAccount(account.id, 'period')">
                                             <span t-esc="account.code"/> <span t-esc="account.name"/>
                                         </button></th>
-                                        <td class="is-number" t-att-data-label="labels.opening"><span class="o_baseer_report_amount"
-                                            t-att-class="amountClass(account.opening_negative, account.opening)" t-esc="account.opening"/></td>
+                                        <td class="is-number" t-att-data-label="labels.opening">
+                                            <button t-if="account.opening_source_count" type="button" class="o_baseer_gl_source o_baseer_report_amount"
+                                                t-att-class="amountClass(account.opening_negative, account.opening)"
+                                                t-att-disabled="!!state.accountOpening[lineKey(account.id, 'opening')]"
+                                                t-att-aria-label="labels.openingSource + ' ' + account.code + ' ' + account.name"
+                                                t-on-click="() => this.openAccount(account.id, 'opening')" t-esc="account.opening"/>
+                                            <span t-else="" class="o_baseer_report_amount"
+                                                t-att-class="amountClass(account.opening_negative, account.opening)" t-esc="account.opening"/>
+                                        </td>
                                         <td class="is-number" t-att-data-label="labels.debit"><span class="o_baseer_report_amount"
                                             t-att-class="amountClass(false, account.debit)" t-esc="account.debit"/></td>
                                         <td class="is-number" t-att-data-label="labels.credit"><span class="o_baseer_report_amount"

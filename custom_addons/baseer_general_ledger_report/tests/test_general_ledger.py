@@ -136,6 +136,13 @@ class TestGeneralLedger(TransactionCase):
         self.assertIn(('account_id', '=', self.cash.id), action['domain'])
         self.assertIn(('date', '>=', self.filters['date_from']), action['domain'])
         self.assertIn(('date', '<=', self.filters['date_to']), action['domain'])
+        opening_action = self.report.get_account_action(self.filters, self.cash.id, 'opening')
+        self.assertIn(('date', '<', self.filters['date_from']), opening_action['domain'])
+        self.assertNotIn(('date', '>=', self.filters['date_from']), opening_action['domain'])
+        income_opening_action = self.report.get_account_action(
+            self.filters, self.income.id, 'opening',
+        )
+        self.assertIn(('date', '>=', '2041-01-01'), income_opening_action['domain'])
         rbf_action = self.report.get_account_action(self.filters, self.income.id, 'rbf')
         self.assertIn(('date', '<', '2041-01-01'), rbf_action['domain'])
 
@@ -149,6 +156,24 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(self._row(after, self.equity)['opening'], '-100.00')
         self.assertEqual(after['total']['opening'], '0.00')
         self.assertEqual(after['total']['closing'], '0.00')
+
+    def test_opening_only_account_opens_its_posted_source(self):
+        self._entry('2040-12-31', self.cash, 100, 0, self.income)
+        self._entry('2041-02-28', self.cash, 40, 0, self.income)
+        result = self.report.get_report(self.filters)
+        cash = self._row(result, self.cash)
+        income = self._row(result, self.income)
+        self.assertEqual((cash['period_line_count'], cash['opening_source_count']), (0, 2))
+        self.assertEqual((income['period_line_count'], income['opening_source_count']), (0, 1))
+        cash_action = self.report.get_account_action(self.filters, self.cash.id)
+        self.assertEqual(cash_action['res_model'], 'account.move.line')
+        self.assertIn(('date', '<', '2041-03-01'), cash_action['domain'])
+        self.assertNotIn(('date', '>=', '2041-01-01'), cash_action['domain'])
+        income_action = self.report.get_account_action(self.filters, self.income.id)
+        self.assertIn(('date', '>=', '2041-01-01'), income_action['domain'])
+        self.assertIn(('date', '<', '2041-03-01'), income_action['domain'])
+        with self.assertRaises(AccessError):
+            self.report.get_account_action(self.filters, self.equity.id)
 
     def test_archived_account_reversal_and_journal_scope(self):
         self._entry('2041-03-02', self.cash, 12, 0, self.income)

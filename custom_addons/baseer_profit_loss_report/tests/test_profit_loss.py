@@ -156,6 +156,67 @@ class TestProfitLoss(TransactionCase):
             ).id)
         self.assertEqual(sale.date, date(2041, 1, 1))
 
+    def test_posted_sale_and_purchase_invoices_exclude_vat_from_profit(self):
+        Account = self.env['account.account'].with_company(self.company)
+        receivable = Account.create({
+            'code': '959101', 'name': 'P&L invoice receivable',
+            'account_type': 'asset_receivable', 'reconcile': True,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        payable = Account.create({
+            'code': '959102', 'name': 'P&L bill payable',
+            'account_type': 'liability_payable', 'reconcile': True,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        vat_due = Account.create({
+            'code': '959103', 'name': 'P&L output VAT',
+            'account_type': 'liability_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        vat_paid = Account.create({
+            'code': '959104', 'name': 'P&L input VAT',
+            'account_type': 'asset_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        partner = self.env['res.partner'].with_company(self.company).create({
+            'name': 'P&L invoice counterparty',
+            'property_account_receivable_id': receivable.id,
+            'property_account_payable_id': payable.id,
+        })
+        for move_type, journal_type, section, tax_use, vat_account in (
+            ('out_invoice', 'sale', 'income', 'sale', vat_due),
+            ('in_invoice', 'purchase', 'expense', 'purchase', vat_paid),
+        ):
+            journal = self.env['account.journal'].with_company(self.company).create({
+                'name': f'P&L {journal_type} invoices',
+                'code': 'PLI' if journal_type == 'sale' else 'PLB',
+                'type': journal_type, 'company_id': self.company.id,
+            })
+            tax = self.env['account.tax'].with_company(self.company).create({
+                'name': f'P&L {tax_use} VAT 15%', 'amount': 15,
+                'amount_type': 'percent', 'type_tax_use': tax_use,
+                'company_id': self.company.id,
+            })
+            tax.invoice_repartition_line_ids.filtered(
+                lambda line: line.repartition_type == 'tax',
+            ).write({'account_id': vat_account.id})
+            move = self.env['account.move'].with_company(self.company).create({
+                'move_type': move_type, 'partner_id': partner.id,
+                'journal_id': journal.id, 'invoice_date': '2041-05-10',
+                'invoice_line_ids': [Command.create({
+                    'name': 'P&L taxable invoice line', 'quantity': 1,
+                    'price_unit': 100, 'account_id': self.accounts[section].id,
+                    'tax_ids': [Command.set(tax.ids)],
+                })],
+            })
+            move.action_post()
+            self.assertEqual(move.state, 'posted')
+            self.assertEqual(Decimal(str(move.amount_total)), Decimal('115'))
+        result = self.report.get_report(self.filters)
+        self.assertEqual(self._section(result, 'income')['amount'], '100.00')
+        self.assertEqual(self._section(result, 'expense')['amount'], '-100.00')
+        self.assertEqual(result['net_profit']['amount'], '0.00')
+
     def test_empty_reversal_and_late_posting_changes_rerun(self):
         empty = self.report.get_report(self.filters)
         self.assertEqual(empty['net_profit']['amount'], '0.00')

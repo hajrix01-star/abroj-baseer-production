@@ -1,10 +1,12 @@
 from collections import Counter
 from datetime import date
 from decimal import Decimal
+from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from lxml import html as lxml_html
+from PyPDF2 import PdfReader
 
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
@@ -124,6 +126,10 @@ class TestGeneralLedger(TransactionCase):
                 'baseer_general_ledger_report.general_ledger_pdf', docids=[],
                 data={'filters': self.filters},
             )
+            pdf_bytes, output_type = self.env['ir.actions.report'].with_context(
+                force_report_rendering=True,
+            )._render_qweb_pdf('baseer_general_ledger_report.general_ledger_pdf',
+                               res_ids=[], data={'filters': self.filters})
         self.assertEqual((len(screen['accounts']), screen['page_count']), (100, 2))
         self.assertEqual((len(pdf['accounts']), pdf['account_count']), (101, 101))
         self.assertEqual(pdf['accounts'][-1]['code'], '000101')
@@ -132,6 +138,13 @@ class TestGeneralLedger(TransactionCase):
         printed = document.xpath("//div[contains(@class, 'bgl-pdf')]//table/tbody/tr")
         self.assertEqual(len(printed), 102)
         self.assertIn(b'Account 101', html)
+        self.assertEqual(output_type, 'pdf')
+        reader = PdfReader(BytesIO(pdf_bytes))
+        self.assertGreater(len(reader.pages), 1)
+        self.assertAlmostEqual(float(reader.pages[0].mediabox.width), 842, delta=3)
+        self.assertAlmostEqual(float(reader.pages[0].mediabox.height), 595, delta=3)
+        footer_label = 'صفحة' if (self.env.user.lang or '').startswith('ar') else 'Page'
+        self.assertTrue(all(footer_label in (page.extract_text() or '') for page in reader.pages))
         bodies, _ids, _header, footer, _paperformat = self.env['ir.actions.report']._prepare_html(
             html, report_model='baseer.general.ledger.report',
         )

@@ -193,8 +193,11 @@ class BaseerGeneralLedger(models.AbstractModel):
         totals = {}
         cursor = 0
         while True:
-            lines = AML.search(domain & Domain('id', '>', cursor),
-                               order='id', limit=self.SECURITY_BATCH)
+            lines = AML.search_fetch(
+                domain & Domain('id', '>', cursor),
+                ['company_id', 'move_id', 'account_id', 'journal_id'],
+                order='id', limit=self.SECURITY_BATCH,
+            )
             if not lines:
                 break
             self._verify_links(lines)

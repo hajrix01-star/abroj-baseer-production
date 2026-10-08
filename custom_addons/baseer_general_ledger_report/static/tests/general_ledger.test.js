@@ -94,5 +94,5 @@ test("Arabic ledger is RTL while source amounts keep western digits", async () =
     await mount([], []);
     expect(document.querySelector(".o_baseer_gl_report").getAttribute("dir")).toBe("rtl");
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("دفتر الأستاذ العام");
-    expect(document.querySelector(".o_baseer_gl_account").textContent).toContain("1,150.00");
+    expect(document.querySelector(".o_baseer_gl_account").textContent.includes("1,150.00")).toBe(true);
 });

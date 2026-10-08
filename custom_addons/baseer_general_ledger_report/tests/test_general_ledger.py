@@ -143,6 +143,11 @@ class TestGeneralLedger(TransactionCase):
     def test_archived_account_reversal_and_journal_scope(self):
         self._entry('2041-03-02', self.cash, 12, 0, self.income)
         self._entry('2041-03-03', self.cash, 0, 2, self.income)
+        other = self.env['account.journal'].with_company(self.company).create({
+            'name': 'GL other', 'code': 'GLX', 'type': 'general',
+            'company_id': self.company.id,
+        })
+        self._entry('2041-03-04', self.cash, 50, 0, self.income, journal=other)
         self.income.active = False
         selected = {**self.filters, 'journal_ids': [self.journal.id]}
         result = self.report.get_report(selected)
@@ -150,11 +155,6 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(self._row(result, self.income)['closing'], '-10.00')
         self.assertEqual(self.report.get_lines(selected, self.income.id)['lines'][0]['credit'],
                          '12.00')
-        other = self.env['account.journal'].with_company(self.company).create({
-            'name': 'GL other', 'code': 'GLX', 'type': 'general',
-            'company_id': self.company.id,
-        })
-        self._entry('2041-03-04', self.cash, 50, 0, self.income, journal=other)
         self.assertEqual(self._row(self.report.get_report(selected), self.income)['closing'],
                          '-10.00')
 

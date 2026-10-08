@@ -60,6 +60,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends python3-websocket
           /usr/bin/python3 -c 'import websocket; print(websocket.__version__)'
           odoo --version
+      - name: Warm headless Chrome before Odoo browser tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          timeout 30s google-chrome --headless --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage --no-first-run --dump-dom about:blank \
+            >"$RUNNER_TEMP/baseer-chrome-prewarm.html" \
+            2>"$RUNNER_TEMP/baseer-chrome-prewarm.log"
       - name: Run Baseer VAT Hoot tests at desktop and mobile widths
         shell: bash
         run: |
@@ -81,6 +89,8 @@ jobs:
         with:
           name: baseer-vat-ui-diagnostics
           path: |
+            ${{ runner.temp }}/baseer-chrome-prewarm.log
+            ${{ runner.temp }}/baseer-chrome-prewarm.html
             ${{ runner.temp }}/baseer-vat-hoot.log
             /tmp/odoo_tests/baseer_vat_ui_ci/screenshots/
           retention-days: 7

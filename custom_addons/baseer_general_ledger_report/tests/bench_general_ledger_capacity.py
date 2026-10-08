@@ -307,7 +307,28 @@ def measure_capacity():
             "CI runner is not deployment capacity; independent G6 review is required",
         ],
     }, sort_keys=True), flush=True)
-    if "status" in two_readers or "status" in ten_readers:
+    final_memory = memory_snapshot()
+    vms_limit = final_memory['address_space_soft_limit_mb']
+    cgroup_limit = final_memory['cgroup_limit_mb']
+    memory_limits = {
+        'vms_under_75pct_of_address_space': (
+            final_memory['process_vms_mb'] <= vms_limit * 0.75
+            if vms_limit is not None else 'unbounded'),
+        'cgroup_under_75pct': (
+            final_memory['cgroup_peak_mb'] <= cgroup_limit * 0.75
+            if cgroup_limit is not None and final_memory['cgroup_peak_mb'] is not None
+            else 'unbounded'),
+    }
+    print('BASEER_GL_MEMORY_LIMITS=' + json.dumps(memory_limits), flush=True)
+    capacity_failed = (
+        "status" in two_readers or "status" in ten_readers
+        or first["seconds"] > 3.0 or page50["seconds"] > 3.0
+        or two_readers.get("max_seconds", float("inf")) > 5.0
+        or ten_readers.get("max_seconds", float("inf")) > 5.0
+        or any(value is False for value in memory_limits.values())
+        or all(value == 'unbounded' for value in memory_limits.values())
+    )
+    if capacity_failed:
         # Only a failed diagnostic receives profiler overhead. Never treat
         # the profiled repeat as a capacity measurement or persist its trace.
         with Profiler(collectors=['sql'], db=None,
@@ -340,7 +361,7 @@ def measure_capacity():
             'sql_count': len(entries), 'top_patterns': top_groups(patterns),
             'top_callers': top_groups(callers),
         }), flush=True)
-        raise RuntimeError("Capacity stages were skipped: diagnostic incomplete, not G6 GO")
+        raise RuntimeError("GL capacity threshold was not met: not G6 GO")
 
 
 if PHASE == "seed":

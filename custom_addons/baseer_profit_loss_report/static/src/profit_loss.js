@@ -2,6 +2,8 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { user } from "@web/core/user";
 import { useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
@@ -34,7 +36,7 @@ const COMPARISON_KINDS = ["none", "previous_period", "same_period_last_year", "c
 
 export class BaseerProfitLossReport extends Component {
     static template = "baseer_profit_loss_report.Report";
-    static components = { ReportSelector };
+    static components = { ReportSelector, Dropdown, DropdownItem };
     static props = ["*"];
 
     setup() {
@@ -60,8 +62,17 @@ export class BaseerProfitLossReport extends Component {
     get labels() { return copy[this.lang]; }
     get reportPeriods() { return this.state.report?.periods || []; }
     get primaryPeriod() { return this.reportPeriods.find((period) => period.role === "primary") || this.reportPeriods[0]; }
-    get periodSummary() { return this.primaryPeriod?.label || this.periodKindLabel(this.state.filters.period.kind); }
-    get comparisonSummary() { return this.comparisonKindLabel(this.state.filters.comparison.kind); }
+    get periodSummary() { return this.primaryPeriod?.display_label || this.primaryPeriod?.label || this.periodKindLabel(this.state.filters.period.kind); }
+    get periodOptions() {
+        return this.state.report?.period_controls?.options || PERIOD_KINDS.map((kind) => ({ kind, display_label: this.periodKindLabel(kind) }));
+    }
+    get comparisonSummary() {
+        const comparison = this.state.filters.comparison;
+        if (comparison.kind === "previous_period") {
+            return `${this.labels.comparison}: ${comparison.count} ${this.labels.previousPeriods}`;
+        }
+        return `${this.labels.comparison}: ${this.comparisonKindLabel(comparison.kind)}`;
+    }
     periodKindLabel(kind) { return { month: this.labels.month, quarter: this.labels.quarter, fiscal_year: this.labels.fiscalYear, custom: this.labels.customDates }[kind] || kind; }
     comparisonKindLabel(kind) { return { none: this.labels.noComparison, previous_period: this.labels.previousPeriods, same_period_last_year: this.labels.samePeriodLastYear, custom: this.labels.customDates }[kind] || kind; }
     amountClass(value) {
@@ -114,9 +125,20 @@ export class BaseerProfitLossReport extends Component {
         if (!PERIOD_KINDS.includes(kind) || this.state.filters.period.kind === kind) { return; }
         this.state.filters.period.kind = kind;
         this.state.filters.period.direction = 0;
+        if (kind === "custom") {
+            this.state.filters.period.date_from = this.primaryPeriod?.date_from || this.state.filters.period.date_from;
+            this.state.filters.period.date_to = this.primaryPeriod?.date_to || this.state.filters.period.date_to;
+            return;
+        }
         await this.apply();
     }
     async navigatePeriod(direction) { if ([-1, 1].includes(direction) && this.state.filters.period.kind !== "custom") { await this.apply(direction); } }
+    async navigatePeriodKind(kind, direction) {
+        if (!PERIOD_KINDS.includes(kind) || kind === "custom" || ![-1, 1].includes(direction)) { return; }
+        this.state.filters.period.kind = kind;
+        this.state.filters.period.direction = 0;
+        await this.apply(direction);
+    }
     async onPeriodDateChange(event) {
         this.state.filters.period[event.target.name] = event.target.value;
         if (this.state.filters.period.date_from && this.state.filters.period.date_to) { await this.apply(); }
@@ -125,6 +147,11 @@ export class BaseerProfitLossReport extends Component {
         if (!COMPARISON_KINDS.includes(kind) || this.state.filters.comparison.kind === kind) { return; }
         this.state.filters.comparison.kind = kind;
         if (kind !== "previous_period") { this.state.filters.comparison.count = 1; }
+        if (kind === "custom") {
+            this.state.filters.comparison.date_from = this.primaryPeriod?.date_from || this.state.filters.comparison.date_from;
+            this.state.filters.comparison.date_to = this.primaryPeriod?.date_to || this.state.filters.comparison.date_to;
+            return;
+        }
         await this.apply();
     }
     async onComparisonChange(event) {
@@ -146,12 +173,10 @@ export class BaseerProfitLossReport extends Component {
         const rows = [];
         for (const section of report.sections || []) {
             rows.push({ key: section.key, kind: "section", level: 0, section: section.key, label: this.sectionLabel(section.key), expandable: true, amounts: { [current]: section } });
-            if (section.key === "income") { rows.push({ key: "total_income", kind: "subtotal", label: this.labels.totalIncome, amounts: { [current]: section } }); }
             if (section.key === "expense_direct_cost") { rows.push({ key: "gross_profit", kind: "subtotal", label: this.labels.gross, amounts: { [current]: report.gross_profit || ZERO } }); }
-            if (section.key === "expense") { rows.push({ key: "total_expense", kind: "subtotal", label: this.labels.totalExpense, amounts: { [current]: section } }); }
         }
         rows.push({ key: "net_profit", kind: "result", level: 0, label: this.labels.net, amounts: { [current]: report.net_profit || ZERO } });
-        return { ...report, periods: [{ key: current, role: "primary", label: this.labels.current, date_from: report.period?.date_from, date_to: report.period?.date_to }], rows };
+        return { ...report, periods: [{ key: current, role: "primary", label: this.labels.current, display_label: this.labels.current, date_from: report.period?.date_from, date_to: report.period?.date_to }], rows };
     }
     async apply(direction = 0) {
         const filters = this.cloneFilters(direction);

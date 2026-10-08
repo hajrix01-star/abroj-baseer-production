@@ -455,6 +455,14 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(net_income['amounts']['current']['amount'], '10.00')
         self.assertEqual(net_income['amounts']['previous_1']['amount'], '7.00')
         self.assertEqual(result['period_controls']['anchor_date'], '2041-01-15')
+        self.assertEqual(result['periods'][0]['display_label'], 'January 2041')
+        self.assertEqual(result['periods'][1]['display_label'], 'December 2040')
+        self.assertEqual(result['period_controls']['options'], [
+            {'kind': 'month', 'display_label': 'January 2041'},
+            {'kind': 'quarter', 'display_label': 'Q1 2041'},
+            {'kind': 'fiscal_year', 'display_label': '2041'},
+            {'kind': 'custom', 'display_label': 'Custom Dates'},
+        ])
         previous = self.report.get_report({
             **month, 'period': {**month['period'], 'direction': -1},
         })
@@ -473,6 +481,28 @@ class TestProfitLoss(TransactionCase):
             'date_from': str(expected_fiscal['date_from']),
             'date_to': str(expected_fiscal['date_to']),
         })
+
+    def test_summary_rows_keep_all_financial_details_without_duplicate_totals(self):
+        result = self.report.get_report({
+            'company_id': self.company.id,
+            'journal_ids': [],
+            'period': {'kind': 'month', 'anchor_date': '2041-05-15', 'direction': 0},
+            'comparison': {'kind': 'none', 'order': 'descending'},
+        })
+        rows = {row['key']: row for row in result['rows']}
+        self.assertNotIn('total_income', rows)
+        self.assertNotIn('total_expense', rows)
+        self.assertEqual(rows['income']['kind'], 'section')
+        self.assertEqual(rows['expense']['kind'], 'section')
+        self.assertEqual(rows['net_income']['kind'], 'result')
+        for key, section in (
+            ('cost_of_sales', 'expense_direct_cost'),
+            ('other_income', 'income_other'),
+            ('other_expense', 'expense_other'),
+        ):
+            self.assertEqual(rows[key]['kind'], 'detail')
+            self.assertTrue(rows[key]['expandable'])
+            self.assertEqual(rows[key]['section'], section)
 
     def test_comparison_accounts_are_a_union_and_details_are_period_scoped(self):
         previous_account = self.env['account.account'].with_company(self.company).create({

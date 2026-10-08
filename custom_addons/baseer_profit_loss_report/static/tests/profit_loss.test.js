@@ -16,8 +16,8 @@ const filters = {
     journal_ids: [],
 };
 const periods = [
-    { key: "current", role: "primary", label: "October 2026", date_from: "2026-10-01", date_to: "2026-10-31" },
-    { key: "previous_1", role: "comparison", label: "September 2026", date_from: "2026-09-01", date_to: "2026-09-30" },
+    { key: "current", role: "primary", label: "2026-10-01 — 2026-10-31", display_label: "Oct 2026", date_from: "2026-10-01", date_to: "2026-10-31" },
+    { key: "previous_1", role: "comparison", label: "2026-09-01 — 2026-09-30", display_label: "Sep 2026", date_from: "2026-09-01", date_to: "2026-09-30" },
 ];
 
 function mockReportRequests(calls) {
@@ -31,7 +31,10 @@ function mockReportRequests(calls) {
         calls.push(["get_report", args]);
         return {
             company: { name: "Baseer", currency_code: "SAR" }, periods,
-            period_controls: { kind: "month", anchor_date: "2026-10-15", direction: 0 },
+            period_controls: { kind: "month", anchor_date: "2026-10-15", direction: 0, options: [
+                { kind: "month", display_label: "Oct 2026" }, { kind: "quarter", display_label: "Q4 2026" },
+                { kind: "fiscal_year", display_label: "2026" }, { kind: "custom", display_label: "Custom Dates" },
+            ] },
             is_partial_journals: false,
             rows: [
                 { key: "income", kind: "section", section: "income", label: "Income", expandable: true,
@@ -133,6 +136,39 @@ test("custom dates do not send an unsupported navigation direction", async () =>
     expect(applied).toBe(false);
 });
 
+test("custom period and comparison prepare real dates before their first RPC", async () => {
+    let applied = 0;
+    const periodContext = {
+        primaryPeriod: { date_from: "2026-10-01", date_to: "2026-10-31" },
+        state: { filters: { period: { kind: "month", direction: 0, date_from: "", date_to: "" } } },
+        apply: async () => applied++,
+    };
+    await BaseerProfitLossReport.prototype.setPeriodKind.call(periodContext, "custom");
+    expect(periodContext.state.filters.period.date_from).toBe("2026-10-01");
+    expect(periodContext.state.filters.period.date_to).toBe("2026-10-31");
+    const comparisonContext = {
+        primaryPeriod: { date_from: "2026-10-01", date_to: "2026-10-31" },
+        state: { filters: { comparison: { kind: "none", count: 1, date_from: "", date_to: "" } } },
+        apply: async () => applied++,
+    };
+    await BaseerProfitLossReport.prototype.setComparisonKind.call(comparisonContext, "custom");
+    expect(comparisonContext.state.filters.comparison.date_from).toBe("2026-10-01");
+    expect(comparisonContext.state.filters.comparison.date_to).toBe("2026-10-31");
+    expect(applied).toBe(0);
+});
+
+test("a period-menu arrow changes its own server period kind before navigating", async () => {
+    const directions = [];
+    const context = {
+        state: { filters: { period: { kind: "month", direction: 0 } } },
+        apply: async (direction) => directions.push(direction),
+    };
+    await BaseerProfitLossReport.prototype.navigatePeriodKind.call(context, "quarter", -1);
+    expect(context.state.filters.period.kind).toBe("quarter");
+    expect(context.state.filters.period.direction).toBe(0);
+    expect(directions).toEqual([-1]);
+});
+
 test("source click carries the selected server period key", async () => {
     const calls = [];
     const actions = [];
@@ -149,12 +185,12 @@ test("mounted report displays comparison columns and opens detail only for its c
     const actions = [];
     await mountReport(calls, actions);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("ltr");
-    expect(document.querySelectorAll(".o_baseer_pl_table thead .is-number").length).toBe(2);
+    expect(document.querySelectorAll(".o_baseer_pl_table thead .is-number").length).toBe(4);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
-    expect(document.querySelector(".o_baseer_pl_table td").getAttribute("data-label")).toBe("October 2026");
+    expect(document.querySelector(".o_baseer_pl_table td").getAttribute("data-label")).toBe("Oct 2026");
     await click('.o_baseer_pl_section button[aria-label="Income"]');
     await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
-    await click('.o_baseer_pl_account_amount[aria-label="View entries October 2026 400000 Sales"]');
+    await click('.o_baseer_pl_account_amount[aria-label="View entries Oct 2026 400000 Sales"]');
     await waitUntil(() => document.querySelector('.o_baseer_pl_source[aria-label="View entries INV/42"]'));
     await click('.o_baseer_pl_source[aria-label="View entries INV/42"]');
     expect(calls.map(([method]) => method)).toEqual(["get_report", "get_accounts", "get_lines", "get_source_line"]);
@@ -163,11 +199,24 @@ test("mounted report displays comparison columns and opens detail only for its c
     expect(actions[0].res_model).toBe("account.move.line");
 });
 
+test("native period and comparison menus open from real toolbar controls", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    const calls = [];
+    await mountReport(calls);
+    await click('.o_baseer_pl_filter_chip[aria-label="Period"]');
+    await waitUntil(() => document.querySelector(".o_baseer_pl_native_dropdown.o_baseer_pl_period_menu"));
+    expect(document.querySelectorAll(".o_baseer_pl_period_popover .o_baseer_pl_menu_row").length).toBe(4);
+    expect(document.querySelector(".o_baseer_pl_period_popover .o_baseer_pl_menu_value").textContent).toBe("Oct 2026");
+    await click('.o_baseer_pl_filter_chip[aria-label="Comparison"]');
+    await waitUntil(() => document.querySelector(".o_baseer_pl_native_dropdown.o_baseer_pl_comparison_menu"));
+    expect(document.querySelectorAll(".o_baseer_pl_comparison_popover .dropdown-item").length).toBe(4);
+});
+
 test("mounted Arabic report keeps backend values and exposes Arabic period filters", async () => {
     patchWithCleanup(user, { lang: "ar_001" });
     await mountReport([]);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("rtl");
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("الربح والخسارة");
-    expect(document.querySelector(".o_baseer_pl_comparison_menu summary").textContent.includes("دون مقارنة") || document.querySelector(".o_baseer_pl_comparison_menu summary").textContent.includes("الفترات السابقة")).toBe(true);
+    expect(document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("دون مقارنة") || document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("الفترات السابقة")).toBe(true);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
 });

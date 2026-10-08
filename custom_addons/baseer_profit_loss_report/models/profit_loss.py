@@ -284,35 +284,70 @@ class BaseerProfitLossReport(models.AbstractModel):
         )
 
     @api.model
+    def _period_display_label(self, kind, start, end):
+        """Return a compact, server-derived caption for an already resolved period."""
+        if kind == 'month':
+            month_names = (
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December',
+            )
+            arabic_month_names = (
+                'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+            )
+            names = arabic_month_names if (self.env.lang or '').startswith('ar') else month_names
+            return '%s %s' % (names[start.month - 1], start.year)
+        if kind == 'quarter':
+            quarter = ((start.month - 1) // 3) + 1
+            return (_('ربع %s %s') % (quarter, start.year)
+                    if (self.env.lang or '').startswith('ar')
+                    else 'Q%s %s' % (quarter, start.year))
+        if kind == 'fiscal_year':
+            return str(end.year)
+        return self._period_label(start, end)
+
+    @api.model
+    def _period_payload(self, key, role, kind, start, end):
+        return {
+            'key': key, 'role': role,
+            'label': self._period_label(start, end),
+            'display_label': self._period_display_label(kind, start, end),
+            'date_from': fields.Date.to_string(start),
+            'date_to': fields.Date.to_string(end),
+        }
+
+    @api.model
+    def _period_options(self, company, anchor):
+        """Expose only pre-resolved labels; the browser never derives report dates."""
+        month_start, month_end = self._month_bounds(anchor)
+        quarter_start, quarter_end = self._quarter_bounds(anchor)
+        fiscal = company.compute_fiscalyear_dates(anchor)
+        return [
+            {'kind': 'month', 'display_label': self._period_display_label('month', month_start, month_end)},
+            {'kind': 'quarter', 'display_label': self._period_display_label('quarter', quarter_start, quarter_end)},
+            {'kind': 'fiscal_year', 'display_label': self._period_display_label('fiscal_year', fiscal['date_from'], fiscal['date_to'])},
+            {'kind': 'custom', 'display_label': _('Custom Dates')},
+        ]
+
+    @api.model
     def _resolve_periods(self, company, filters):
         kind, start, end, anchor = self._current_period(company, filters)
         comparison_kind, count, order, comparison = self._comparison_input(filters)
-        periods = [{
-            'key': 'current', 'role': 'primary',
-            'label': self._period_label(start, end),
-            'date_from': fields.Date.to_string(start),
-            'date_to': fields.Date.to_string(end),
-        }]
+        periods = [self._period_payload('current', 'primary', kind, start, end)]
         comparisons = []
         if comparison_kind == 'previous_periods':
             for ordinal in range(1, count + 1):
                 previous_start, previous_end = self._previous_period(
                     company, kind, start, end, ordinal,
                 )
-                comparisons.append({
-                    'key': f'previous_{ordinal}', 'role': 'comparison',
-                    'label': self._period_label(previous_start, previous_end),
-                    'date_from': fields.Date.to_string(previous_start),
-                    'date_to': fields.Date.to_string(previous_end),
-                })
+                comparisons.append(self._period_payload(
+                    f'previous_{ordinal}', 'comparison', kind, previous_start, previous_end,
+                ))
         elif comparison_kind == 'same_period_last_year':
             previous_start, previous_end = self._shift_year(start, -1), self._shift_year(end, -1)
-            comparisons.append({
-                'key': 'last_year', 'role': 'comparison',
-                'label': self._period_label(previous_start, previous_end),
-                'date_from': fields.Date.to_string(previous_start),
-                'date_to': fields.Date.to_string(previous_end),
-            })
+            comparisons.append(self._period_payload(
+                'last_year', 'comparison', kind, previous_start, previous_end,
+            ))
         elif comparison_kind == 'custom':
             previous_start = self._as_date(
                 comparison.get('date_from', filters.get('comparison_date_from')),
@@ -324,16 +359,16 @@ class BaseerProfitLossReport(models.AbstractModel):
             )
             if previous_start > previous_end or (previous_end - previous_start).days >= 366:
                 raise ValidationError(_('Select comparison dates of no more than 366 days.'))
-            comparisons.append({
-                'key': 'custom', 'role': 'comparison',
-                'label': self._period_label(previous_start, previous_end),
-                'date_from': fields.Date.to_string(previous_start),
-                'date_to': fields.Date.to_string(previous_end),
-            })
+            comparisons.append(self._period_payload(
+                'custom', 'comparison', 'custom', previous_start, previous_end,
+            ))
         if order == 'ascending':
             comparisons.reverse()
         periods.extend(comparisons)
-        return periods, {'kind': kind, 'anchor_date': fields.Date.to_string(anchor), 'direction': 0}, {
+        return periods, {
+            'kind': kind, 'anchor_date': fields.Date.to_string(anchor), 'direction': 0,
+            'options': self._period_options(company, anchor),
+        }, {
             'kind': comparison_kind, 'count': count, 'order': order,
         }
 
@@ -488,22 +523,18 @@ class BaseerProfitLossReport(models.AbstractModel):
         return [
             {'key': 'income', 'kind': 'section', 'level': 0, 'label': _('Income'),
              'section': 'income', 'expandable': True, 'amounts': amounts('income')},
-            {'key': 'total_income', 'kind': 'subtotal', 'level': 0, 'label': _('Total Income'),
-             'amounts': amounts('income')},
-            {'key': 'cost_of_sales', 'kind': 'section', 'level': 0, 'label': _('Cost of Sales'),
+            {'key': 'cost_of_sales', 'kind': 'detail', 'level': 0, 'label': _('Cost of Sales'),
              'section': 'expense_direct_cost', 'expandable': True,
              'amounts': amounts('cost_of_sales')},
             {'key': 'gross_profit', 'kind': 'result', 'level': 0, 'label': _('Gross Profit'),
              'amounts': amounts('gross_profit')},
             {'key': 'expense', 'kind': 'section', 'level': 0, 'label': _('Expense'),
              'section': 'expense', 'expandable': True, 'amounts': amounts('expense')},
-            {'key': 'total_expense', 'kind': 'subtotal', 'level': 0, 'label': _('Total Expense'),
-             'amounts': amounts('expense')},
             {'key': 'net_operating_income', 'kind': 'result', 'level': 0,
              'label': _('Net Operating Income'), 'amounts': amounts('net_operating_income')},
-            {'key': 'other_income', 'kind': 'section', 'level': 0, 'label': _('Other Income'),
+            {'key': 'other_income', 'kind': 'detail', 'level': 0, 'label': _('Other Income'),
              'section': 'income_other', 'expandable': True, 'amounts': amounts('other_income')},
-            {'key': 'other_expense', 'kind': 'section', 'level': 0, 'label': _('Other Expense'),
+            {'key': 'other_expense', 'kind': 'detail', 'level': 0, 'label': _('Other Expense'),
              'section': 'expense_other', 'expandable': True,
              'amounts': amounts('other_expense')},
             {'key': 'net_other_income', 'kind': 'result', 'level': 0,

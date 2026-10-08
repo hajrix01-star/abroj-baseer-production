@@ -15,7 +15,7 @@ class BaseerGeneralLedger(models.AbstractModel):
     _description = 'Baseer Posted General Ledger'
 
     PAGE_SIZE = 100
-    SECURITY_BATCH = 1000
+    SECURITY_BATCH = 2500
 
     @staticmethod
     def _decimal(value):

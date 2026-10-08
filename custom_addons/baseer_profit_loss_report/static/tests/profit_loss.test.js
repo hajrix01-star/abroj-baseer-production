@@ -166,7 +166,7 @@ test("a period-menu arrow changes its own server period kind before navigating",
 test("account click opens the native journal-items page for its selected period", async () => {
     const calls = [];
     const actions = [];
-    const context = { appliedFilters: structuredClone(filters), requestToken: 0, state: { accountOpening: {}, error: "" }, labels: { error: "Could not open" }, orm: { call: async (...args) => { calls.push(args); return { type: "ir.actions.act_window", res_model: "account.move.line", target: "current", domain: [["account_id", "=", 7]] }; } }, action: { doAction: async (action) => actions.push(action) }, accountKey: BaseerProfitLossReport.prototype.accountKey };
+    const context = { appliedFilters: structuredClone(filters), requestToken: 0, state: { accountOpening: {}, error: "" }, labels: { error: "Could not open" }, orm: { call: async (...args) => { calls.push(args); return { type: "ir.actions.act_window", res_model: "account.move.line", target: "current", domain: [["account_id", "=", 7]] }; } }, env: { services: { action: { doAction: async (action) => actions.push(action) } } }, accountKey: BaseerProfitLossReport.prototype.accountKey };
     await BaseerProfitLossReport.prototype.openAccount.call(context, { id: 7, code: "400000" }, "previous_1");
     expect(calls[0][1]).toBe("get_account_action");
     expect(calls[0][2][2]).toBe("previous_1");

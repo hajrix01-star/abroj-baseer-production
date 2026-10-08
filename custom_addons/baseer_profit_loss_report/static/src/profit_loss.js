@@ -41,7 +41,6 @@ export class BaseerProfitLossReport extends Component {
 
     setup() {
         this.orm = useService("orm");
-        this.action = useService("action");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
         this.state = useState({ loading: true, error: "", companies: [], journals: [], report: null,
             filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} });
@@ -222,7 +221,7 @@ export class BaseerProfitLossReport extends Component {
         this.state.accountOpening[key] = true;
         try {
             const action = await this.orm.call(MODEL, "get_account_action", [this.appliedFilters, account.id, periodKey]);
-            if (token === this.requestToken) { await this.action.doAction(action); }
+            if (token === this.requestToken) { await this.env.services.action.doAction(action); }
         } catch (error) {
             if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {

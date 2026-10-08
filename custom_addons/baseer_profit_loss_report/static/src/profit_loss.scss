@@ -75,7 +75,14 @@
     .o_baseer_pl_date_range input,
     .o_baseer_pl_control_row input,
     .o_baseer_pl_control_row select { min-width: 0; }
-    .o_baseer_pl_journal_list { max-height: 16rem; overflow: auto; }
+.o_baseer_pl_journal_list {
+    // Keep the published bounded journal menu contract: Odoo's LibSass
+    // accepts this syntax, and the menu stays inside a narrow viewport.
+    width: 22rem;
+        max-width: 90vw;
+    max-height: 16rem;
+    overflow: auto;
+}
     .o_baseer_pl_journal_list label { display: flex; gap: 0.4rem; align-items: center; min-height: 2rem; margin: 0; padding: 0.2rem; cursor: pointer; }
 
     .o_baseer_pl_partial {

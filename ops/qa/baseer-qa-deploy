@@ -7,8 +7,15 @@ umask 027
 
 readonly CONFIG=/etc/baseer-qa/deploy.env
 declare -A APPROVED_MODULE_SET=()
+phase_guard_active=0
 
-die() { printf 'QA_DEPLOY=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
+die() {
+    printf 'QA_DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
+    if [ "${phase_guard_active:-0}" -eq 1 ]; then
+        rollback 1
+    fi
+    exit 1
+}
 
 require_safe_file() {
     local file=$1 mode=$2
@@ -140,6 +147,72 @@ wait_for_login() {
     return 1
 }
 
+# The copied release, Git fetch and recovery pair all occupy QA's filesystem.
+# Use apparent source/filestore sizes so sparse files cannot understate a tar
+# backup.  All probes are read-only and must return bounded decimal integers.
+capacity_number() {
+    [[ "$1" =~ ^(0|[1-9][0-9]{0,14})$ ]] || die "invalid capacity estimate: $2"
+}
+
+release_apparent_bytes() { du -sb -- "$old_release" | awk '{print $1}'; }
+release_entry_count() { find "$old_release" -xdev -printf '.' | wc -c | tr -d '[:space:]'; }
+database_apparent_bytes() {
+    docker exec "$QA_DB_CONTAINER" sh -lc "psql -U \"\$POSTGRES_USER\" -d '$QA_DATABASE' -Atqc 'SELECT pg_database_size(current_database())'"
+}
+filestore_apparent_bytes() {
+    docker run --rm --network none -v "$QA_ODOO_VOLUME":/source:ro alpine:3.20 sh -lc \
+        'du -sb "/source/filestore/'"$QA_DATABASE"'" | awk "{print \$1}"'
+}
+qa_available_bytes() { df -B1 --output=avail -- "$QA_BASE" | tail -n 1 | tr -d '[:space:]'; }
+qa_available_inodes() { df --output=iavail -- "$QA_BASE" | tail -n 1 | tr -d '[:space:]'; }
+
+capacity_guard() {
+    local phase=$1 release_bytes=0 release_entries=0 db_bytes filestore_bytes available_bytes available_inodes required_bytes required_inodes
+    if [ "$phase" = prefetch ]; then
+        release_bytes="$(release_apparent_bytes)" || die 'cannot estimate current QA release size'
+        release_entries="$(release_entry_count)" || die 'cannot estimate current QA release inodes'
+        capacity_number "$release_bytes" release_bytes
+        capacity_number "$release_entries" release_inodes
+    elif [ "$phase" != backup ]; then
+        die 'invalid capacity phase'
+    fi
+    db_bytes="$(database_apparent_bytes)" || die 'cannot estimate QA database size'
+    filestore_bytes="$(filestore_apparent_bytes)" || die 'cannot estimate QA filestore size'
+    available_bytes="$(qa_available_bytes)" || die 'cannot determine QA free bytes'
+    available_inodes="$(qa_available_inodes)" || die 'cannot determine QA free inodes'
+    capacity_number "$db_bytes" database_bytes
+    capacity_number "$filestore_bytes" filestore_bytes
+    capacity_number "$available_bytes" free_bytes
+    capacity_number "$available_inodes" free_inodes
+    # Prefetch needs one copied release plus room for its Git object pack.
+    # The backup probe runs after staging and reserves only the recovery pair.
+    required_bytes=$(( 2 * release_bytes + db_bytes + filestore_bytes + 1073741824 ))
+    required_inodes=$(( release_entries + 4096 ))
+    [ "$available_bytes" -ge "$required_bytes" ] || die "insufficient QA free bytes before $phase: need=$required_bytes available=$available_bytes"
+    [ "$available_inodes" -ge "$required_inodes" ] || die "insufficient QA free inodes before $phase: need=$required_inodes available=$available_inodes"
+    printf 'QA_CAPACITY=PASS PHASE=%s REQUIRED_BYTES=%s AVAILABLE_BYTES=%s REQUIRED_INODES=%s AVAILABLE_INODES=%s\n' \
+        "$phase" "$required_bytes" "$available_bytes" "$required_inodes" "$available_inodes"
+}
+
+capture_recovery_pair() {
+    docker exec "$QA_DB_CONTAINER" sh -lc "pg_dump -Fc -U \"\$POSTGRES_USER\" -d '$QA_DATABASE'" > "$backup/database.dump" \
+        || die 'QA database backup failed'
+    docker run --rm --network none -v "$QA_ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore.tar "filestore/'"$QA_DATABASE"'"' \
+        || die 'QA filestore backup failed'
+    sha256sum "$backup/database.dump" "$backup/filestore.tar" > "$backup/recovery.sha256" \
+        || die 'QA recovery checksum failed'
+}
+
+verify_smoke_log() {
+    local result
+    if grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"; then
+        die 'fatal QA smoke log entry'
+    else
+        result=$?
+        [ "$result" -eq 1 ] || die 'cannot scan QA smoke log'
+    fi
+}
+
 restore_pair() (
     set -Eeuo pipefail
     sha256sum -c "$backup/recovery.sha256"
@@ -157,8 +230,9 @@ restore_pair() (
 )
 
 rollback() {
-    local status=$? rollback_failed=0
-    trap - ERR
+    local status=${1:-$?} rollback_failed=0
+    [ "$status" -ne 0 ] || status=1
+    trap - ERR HUP INT TERM
     set +e
     if [ "${release_switched:-0}" -eq 1 ]; then
         compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
@@ -206,6 +280,8 @@ release="$RELEASES/${commit:0:12}-run-${run_id}-$stamp"
 release_switched=0
 database_mutated=0
 service_quiesced=0
+capacity_guard prefetch
+phase_guard_active=1
 trap rollback ERR HUP INT TERM
 [ ! -e "$stage" ] && [ ! -e "$backup" ] && [ ! -e "$release" ] || die 'deployment path already exists'
 
@@ -257,12 +333,11 @@ for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_th
         *) die "module is in an unsafe state: $module=$state" ;;
     esac
 done
+capacity_guard backup
+mkdir -m 0700 "$backup"
 service_quiesced=1
 compose_cmd stop "$ODOO_SERVICE"
-mkdir -p "$backup"
-docker exec "$QA_DB_CONTAINER" sh -lc "pg_dump -Fc -U \"\$POSTGRES_USER\" -d '$QA_DATABASE'" > "$backup/database.dump"
-docker run --rm --network none -v "$QA_ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore.tar "filestore/'"$QA_DATABASE"'"'
-sha256sum "$backup/database.dump" "$backup/filestore.tar" > "$backup/recovery.sha256"
+capture_recovery_pair
 
 ln -sfn "$release" "$QA_BASE/current"
 release_switched=1
@@ -282,7 +357,7 @@ for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_th
     [ "$(module_state "$module")" = installed ] || die "module not installed after QA deployment: $module"
 done
 compose_cmd logs --no-color --tail=300 "$ODOO_SERVICE" > "$backup/odoo-smoke.log"
-! grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"
+verify_smoke_log
 printf 'QA_DEPLOY=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nTHIRD_PARTY_MODULES=%s\n' \
     "$release_id" "$release" "$backup" "$commit" "$policy_modules" "${policy_third_party_modules:-}" > "$backup/result.env"
 printf 'QA_DEPLOY=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

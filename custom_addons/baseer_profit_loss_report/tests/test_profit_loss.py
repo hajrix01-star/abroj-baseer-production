@@ -229,6 +229,55 @@ class TestProfitLoss(TransactionCase):
         self._entry('income', '8', day='2041-02-01')
         self.assertEqual(self.report.get_report(self.filters)['net_profit']['amount'], '3.00')
 
+    def test_foreign_currency_amount_is_not_added_to_company_currency_profit(self):
+        foreign = self.env['res.currency'].create({
+            'name': 'PLF', 'symbol': 'PLF', 'rounding': 0.01, 'active': True,
+        })
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-10', 'journal_id': self.journal.id,
+            'move_type': 'entry',
+            'line_ids': [
+                Command.create({
+                    'name': 'Foreign currency revenue',
+                    'account_id': self.accounts['income'].id,
+                    'credit': 100, 'debit': 0,
+                    'currency_id': foreign.id, 'amount_currency': -125,
+                }),
+                Command.create({
+                    'name': 'Foreign currency balancing line',
+                    'account_id': self.balance.id,
+                    'credit': 0, 'debit': 100,
+                    'currency_id': foreign.id, 'amount_currency': 125,
+                }),
+            ],
+        })
+        move._post(soft=False)
+        result = self.report.get_report(self.filters)
+        self.assertEqual(result['company']['currency_code'], self.company.currency_id.name)
+        self.assertEqual(result['net_profit']['amount'], '100.00')
+        self.assertEqual(self.report.get_accounts(self.filters, 'income')['total_amount'], '100.00')
+        lines = self.report.get_lines(self.filters, self.accounts['income'].id)
+        self.assertEqual(lines['lines'][0]['credit'], '100.00')
+        self.assertEqual(lines['total_amount'], '100.00')
+
+    def test_aml_rule_excludes_hidden_source_from_every_total(self):
+        hidden_move = self._entry('income', '25')
+        self._entry('income', '10')
+        hidden = hidden_move.line_ids.filtered(
+            lambda line: line.account_id == self.accounts['income'],
+        )
+        report = self.report.with_user(self._accountant()).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self._hide_record('account.move.line', hidden)
+        self.assertEqual(report.get_report(self.filters)['net_profit']['amount'], '10.00')
+        self.assertEqual(report.get_accounts(self.filters, 'income')['total_amount'], '10.00')
+        lines = report.get_lines(self.filters, self.accounts['income'].id)
+        self.assertEqual((lines['total_count'], lines['total_amount']), (1, '10.00'))
+        self.assertNotIn(hidden.id, [line['id'] for line in lines['lines']])
+        with self.assertRaises(AccessError):
+            report.get_source_line(self.filters, hidden.id)
+
     def test_archived_account_and_pagination_total(self):
         original = self.accounts['income']
         self._entry('income', '7')

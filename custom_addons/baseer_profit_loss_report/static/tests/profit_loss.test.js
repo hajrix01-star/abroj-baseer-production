@@ -1,21 +1,24 @@
 /** @odoo-module **/
 
-import { expect, test } from "@odoo/hoot";
-import { click } from "@odoo/hoot-dom";
+import { after, expect, getFixture, globals, test, withFetch } from "@odoo/hoot";
+import { click, waitUntil } from "@odoo/hoot-dom";
+import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
-import { mountWithCleanup, mockService, onRpc, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
 
 const MODEL = "baseer.profit.loss.report";
 
 function mockReportRequests(calls) {
+    const handlers = {};
+    const onRequest = (method, handler) => { handlers[method] = handler; };
     const filters = { company_id: 1, date_from: "2026-10-01", date_to: "2026-10-31", journal_ids: [] };
-    onRpc("get_context", MODEL, () => ({
+    onRequest("get_context", () => ({
         companies: [{ id: 1, name: "Baseer" }], journals: [],
         default_company_id: 1, default_date_from: filters.date_from, default_date_to: filters.date_to,
     }));
-    onRpc("get_report", MODEL, ({ args }) => {
+    onRequest("get_report", ({ args }) => {
         calls.push(["get_report", args]);
         return {
             company: { name: "Baseer", currency_code: "SAR" },
@@ -30,14 +33,14 @@ function mockReportRequests(calls) {
             net_profit: { amount: "-50.00", negative: true },
         };
     });
-    onRpc("get_accounts", MODEL, ({ args }) => {
+    onRequest("get_accounts", ({ args }) => {
         calls.push(["get_accounts", args]);
         return {
             accounts: [{ id: 7, code: "400000", name: "Sales", amount: "1,150.00", negative: false }],
             page: 1, page_size: 50, total_count: 1,
         };
     });
-    onRpc("get_lines", MODEL, ({ args }) => {
+    onRequest("get_lines", ({ args }) => {
         calls.push(["get_lines", args]);
         return {
             lines: [{ id: 42, date: "2026-10-07", move_name: "INV/42", label: "Sale",
@@ -45,10 +48,35 @@ function mockReportRequests(calls) {
             page: 1, page_size: 50, total_count: 1,
         };
     });
-    onRpc("get_source_line", MODEL, ({ args }) => {
+    onRequest("get_source_line", ({ args }) => {
         calls.push(["get_source_line", args]);
         return { line_id: 42, move_id: 9 };
     });
+    return {
+        async call(model, method, args) {
+            if (model !== MODEL || !handlers[method]) {
+                throw new Error(`Unexpected report RPC: ${model}.${method}`);
+            }
+            return handlers[method]({ args });
+        },
+    };
+}
+
+async function mountReport(calls, actions = []) {
+    const response = await withFetch(globals.fetch, () =>
+        fetch("/baseer_profit_loss_report/static/src/profit_loss.xml")
+    );
+    expect(response.ok).toBe(true);
+    const app = new App(BaseerProfitLossReport, {
+        env: { services: {
+            orm: mockReportRequests(calls),
+            action: { doAction: async (action) => actions.push(action) },
+        } },
+        templates: await response.text(), props: {}, test: true,
+    });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    await waitUntil(() => document.querySelector(".o_baseer_report_title"));
 }
 
 test("profit and loss is a real accounting-only report component", () => {
@@ -94,12 +122,7 @@ test("mounted report expands real QWeb rows and opens only the verified source l
     patchWithCleanup(user, { lang: "en_US" });
     const calls = [];
     const actions = [];
-    mockReportRequests(calls);
-    mockService("action", {
-        doAction: async (action) => actions.push(action),
-    });
-
-    await mountWithCleanup(BaseerProfitLossReport);
+    await mountReport(calls, actions);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("ltr");
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("Profit and Loss");
     expect(document.querySelector(".o_baseer_pl_net .o_baseer_report_amount").classList.contains("is-negative")).toBe(true);
@@ -107,9 +130,11 @@ test("mounted report expands real QWeb rows and opens only the verified source l
     expect(document.querySelectorAll(".o_baseer_pl_section .o_baseer_report_amount")[1].classList.contains("is-zero")).toBe(true);
 
     await click('.o_baseer_pl_section button[aria-label="Revenue"]');
+    await waitUntil(() => document.querySelector(".o_baseer_pl_account"));
     expect(document.querySelector('.o_baseer_pl_section button[aria-label="Revenue"]').getAttribute("aria-expanded")).toBe("true");
     expect(document.querySelector(".o_baseer_pl_account").textContent).toContain("400000");
     await click('.o_baseer_pl_account button[aria-label="View entries 400000 Sales"]');
+    await waitUntil(() => document.querySelector('.o_baseer_pl_source[aria-label="View entries INV/42"]'));
     expect(document.querySelector('.o_baseer_pl_source[aria-label="View entries INV/42"]')).not.toBe(null);
     await click('.o_baseer_pl_source[aria-label="View entries INV/42"]');
 
@@ -123,9 +148,7 @@ test("mounted report expands real QWeb rows and opens only the verified source l
 
 test("mounted Arabic report uses RTL labels without changing server-provided amounts", async () => {
     patchWithCleanup(user, { lang: "ar_001" });
-    mockReportRequests([]);
-
-    await mountWithCleanup(BaseerProfitLossReport);
+    await mountReport([]);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("rtl");
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("الربح والخسارة");
     expect(document.querySelector('.o_baseer_pl_section button[aria-label="الإيرادات"]')).not.toBe(null);

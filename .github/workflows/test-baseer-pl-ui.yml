@@ -68,4 +68,13 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/baseer-pl-hoot.log"
           # A green Odoo process is insufficient if the URL filter selected zero tests.
           test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-pl-hoot.log")" -ge 2
-          grep -Fq '[HOOT] Test "@baseer_profit_loss_report/profit_loss/' "$RUNNER_TEMP/baseer-pl-hoot.log"
+          grep -Fq '[HOOT] Running test "@baseer_profit_loss_report/profit_loss/' "$RUNNER_TEMP/baseer-pl-hoot.log"
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-profit-loss-ui-diagnostics
+          path: |
+            ${{ runner.temp }}/baseer-pl-hoot.log
+            /tmp/odoo_tests/baseer_pl_ui_ci/screenshots/
+          retention-days: 7

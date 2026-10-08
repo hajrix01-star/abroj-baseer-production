@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_general_ledger_report.Report">
+        <main class="o_baseer_gl_report" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <header class="o_baseer_report_toolbar">
+                <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
+                    selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
+                    lang="lang" onSelect="props.onReportSelect"/>
+                <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
+                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.company"/>
+                        <select t-att-aria-label="labels.company" t-att-value="state.filters.company_id" t-on-change="onCompanyChange">
+                            <option t-foreach="state.companies" t-as="company" t-key="company.id"
+                                t-att-value="company.id" t-att-selected="company.id === state.filters.company_id"
+                                t-esc="company.name"/>
+                        </select>
+                    </label>
+                    <label class="o_baseer_report_date_filter"><span t-esc="labels.from"/>
+                        <input type="date" name="date_from" t-att-value="state.filters.date_from" t-on-change="onDateChange"/>
+                    </label>
+                    <label class="o_baseer_report_date_filter"><span t-esc="labels.to"/>
+                        <input type="date" name="date_to" t-att-value="state.filters.date_to" t-on-change="onDateChange"/>
+                    </label>
+                    <details class="o_baseer_gl_journals">
+                        <summary t-esc="state.filters.journal_ids.length ? labels.partial : labels.allJournals"/>
+                        <div class="o_baseer_gl_journal_list">
+                            <label t-foreach="state.journals" t-as="journal" t-key="journal.id">
+                                <input type="checkbox" t-att-value="journal.id"
+                                    t-att-checked="state.filters.journal_ids.includes(journal.id)"
+                                    t-on-change="onJournalChange"/>
+                                <span t-esc="journal.code + ' · ' + journal.name"/>
+                            </label>
+                        </div>
+                    </details>
+                    <button type="button" class="btn btn-primary o_baseer_report_apply"
+                        t-att-disabled="state.loading || !state.filters.company_id"
+                        t-on-click="apply" t-esc="labels.apply"/>
+                </div>
+            </header>
+            <div class="o_baseer_report_notice" role="note" t-esc="labels.posted"/>
+            <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
+            <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
+            <div t-if="state.report" class="o_baseer_report_canvas">
+                <section class="o_baseer_report o_baseer_gl_paper" t-att-aria-label="labels.title">
+                    <header class="o_baseer_report_head">
+                        <div>
+                            <h1 class="o_baseer_report_title" t-esc="labels.title"/>
+                            <p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> ·
+                                <span dir="ltr" t-esc="state.report.period.date_from"/> —
+                                <span dir="ltr" t-esc="state.report.period.date_to"/>
+                            </p>
+                        </div>
+                        <span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/>
+                    </header>
+                    <p t-if="state.report.is_partial_journals" class="o_baseer_gl_partial" role="status" t-esc="labels.partial"/>
+                    <div class="o_baseer_gl_scroll">
+                        <table class="o_baseer_gl_table">
+                            <thead><tr>
+                                <th scope="col" t-esc="labels.account"/>
+                                <th scope="col" class="is-number" t-esc="labels.opening"/>
+                                <th scope="col" class="is-number" t-esc="labels.debit"/>
+                                <th scope="col" class="is-number" t-esc="labels.credit"/>
+                                <th scope="col" class="is-number" t-esc="labels.closing"/>
+                            </tr></thead>
+                            <tbody>
+                                <t t-if="state.report.rbf.source_line_count">
+                                    <tr class="o_baseer_gl_rbf">
+                                        <th scope="row"><button type="button" class="o_baseer_gl_toggle"
+                                            t-att-aria-expanded="state.rbfOpen" t-att-aria-label="labels.rbfSources"
+                                            t-on-click="toggleRbf">
+                                            <i t-att-class="state.rbfOpen ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
+                                            <span t-esc="labels.rbf"/>
+                                        </button></th>
+                                        <td class="is-number" t-att-data-label="labels.opening"><strong class="o_baseer_report_amount"
+                                            t-att-class="amountClass(state.report.rbf.negative, state.report.rbf.amount)"
+                                            t-esc="state.report.rbf.amount"/></td>
+                                        <td class="is-number is-empty"/><td class="is-number is-empty"/>
+                                        <td class="is-number" t-att-data-label="labels.closing"><strong class="o_baseer_report_amount"
+                                            t-att-class="amountClass(state.report.rbf.negative, state.report.rbf.amount)"
+                                            t-esc="state.report.rbf.amount"/></td>
+                                    </tr>
+                                    <tr t-if="state.rbfOpen &amp;&amp; state.rbfLoading"><td colspan="5" class="o_baseer_gl_status" role="status" t-esc="labels.accountsLoading"/></tr>
+                                    <t t-if="state.rbfOpen &amp;&amp; state.rbfAccounts">
+                                        <t t-foreach="state.rbfAccounts.accounts" t-as="account" t-key="account.id">
+                                            <tr class="o_baseer_gl_rbf_account">
+                                                <th scope="row"><button type="button" class="o_baseer_gl_toggle"
+                                                    t-att-aria-expanded="!!state.expanded[lineKey(account.id, 'rbf')]"
+                                                    t-att-aria-label="labels.rbfSources + ' ' + account.code + ' ' + account.name"
+                                                    t-on-click="() => this.toggleAccount(account.id, 'rbf')">
+                                                    <i t-att-class="state.expanded[lineKey(account.id, 'rbf')] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
+                                                    <span t-esc="account.code"/> <span t-esc="account.name"/>
+                                                </button></th>
+                                                <td class="is-number" t-att-data-label="labels.opening"><span class="o_baseer_report_amount"
+                                                    t-att-class="amountClass(account.negative, account.amount)" t-esc="account.amount"/></td>
+                                                <td class="is-number is-empty"/><td class="is-number is-empty"/>
+                                                <td class="is-number" t-att-data-label="labels.closing"><span class="o_baseer_report_amount"
+                                                    t-att-class="amountClass(account.negative, account.amount)" t-esc="account.amount"/></td>
+                                            </tr>
+                                            <t t-if="state.expanded[lineKey(account.id, 'rbf')]">
+                                                <t t-call="baseer_general_ledger_report.SourceLines">
+                                                    <t t-set="scope" t-value="'rbf'"/>
+                                                </t>
+                                            </t>
+                                        </t>
+                                        <tr t-if="state.rbfAccounts.account_count > state.rbfAccounts.page_size" class="o_baseer_gl_pager"><td colspan="5">
+                                            <button type="button" t-att-disabled="state.rbfAccounts.page &lt;= 1"
+                                                t-on-click="() => this.loadRbfAccounts(state.rbfAccounts.page - 1)" t-esc="labels.previous"/>
+                                            <span><t t-esc="labels.page"/> <t t-esc="state.rbfAccounts.page"/></span>
+                                            <button type="button" t-att-disabled="state.rbfAccounts.page * state.rbfAccounts.page_size >= state.rbfAccounts.account_count"
+                                                t-on-click="() => this.loadRbfAccounts(state.rbfAccounts.page + 1)" t-esc="labels.next"/>
+                                        </td></tr>
+                                    </t>
+                                </t>
+                                <t t-foreach="state.report.accounts" t-as="account" t-key="account.id">
+                                    <tr class="o_baseer_gl_account">
+                                        <th scope="row"><button type="button" class="o_baseer_gl_toggle"
+                                            t-att-aria-expanded="!!state.expanded[lineKey(account.id, 'period')]"
+                                            t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name"
+                                            t-on-click="() => this.toggleAccount(account.id, 'period')">
+                                            <i t-att-class="state.expanded[lineKey(account.id, 'period')] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
+                                            <span t-esc="account.code"/> <span t-esc="account.name"/>
+                                        </button></th>
+                                        <td class="is-number" t-att-data-label="labels.opening"><span class="o_baseer_report_amount"
+                                            t-att-class="amountClass(account.opening_negative, account.opening)" t-esc="account.opening"/></td>
+                                        <td class="is-number" t-att-data-label="labels.debit"><span class="o_baseer_report_amount"
+                                            t-att-class="amountClass(false, account.debit)" t-esc="account.debit"/></td>
+                                        <td class="is-number" t-att-data-label="labels.credit"><span class="o_baseer_report_amount"
+                                            t-att-class="amountClass(false, account.credit)" t-esc="account.credit"/></td>
+                                        <td class="is-number" t-att-data-label="labels.closing"><span class="o_baseer_report_amount"
+                                            t-att-class="amountClass(account.closing_negative, account.closing)" t-esc="account.closing"/></td>
+                                    </tr>
+                                    <t t-if="state.expanded[lineKey(account.id, 'period')]">
+                                        <t t-call="baseer_general_ledger_report.SourceLines">
+                                            <t t-set="scope" t-value="'period'"/>
+                                        </t>
+                                    </t>
+                                </t>
+                                <tr t-if="!state.report.account_count" class="o_baseer_gl_status"><td colspan="5" t-esc="labels.noAccounts"/></tr>
+                                <tr class="o_baseer_gl_total">
+                                    <th scope="row" t-esc="labels.total"/>
+                                    <td class="is-number" t-att-data-label="labels.opening"><strong class="o_baseer_report_amount"
+                                        t-att-class="amountClass(state.report.total.opening_negative, state.report.total.opening)" t-esc="state.report.total.opening"/></td>
+                                    <td class="is-number" t-att-data-label="labels.debit"><strong class="o_baseer_report_amount"
+                                        t-att-class="amountClass(false, state.report.total.debit)" t-esc="state.report.total.debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.credit"><strong class="o_baseer_report_amount"
+                                        t-att-class="amountClass(false, state.report.total.credit)" t-esc="state.report.total.credit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.closing"><strong class="o_baseer_report_amount"
+                                        t-att-class="amountClass(state.report.total.closing_negative, state.report.total.closing)" t-esc="state.report.total.closing"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <nav t-if="state.report.account_count > state.report.page_size" class="o_baseer_gl_pager" t-att-aria-label="labels.page">
+                        <button type="button" t-att-disabled="state.report.page &lt;= 1"
+                            t-on-click="() => this.loadAccounts(state.report.page - 1)" t-esc="labels.previous"/>
+                        <span><t t-esc="labels.page"/> <t t-esc="state.report.page"/> <t t-esc="labels.of"/>
+                            <t t-esc="state.report.page_count"/></span>
+                        <button type="button" t-att-disabled="state.report.page * state.report.page_size >= state.report.account_count"
+                            t-on-click="() => this.loadAccounts(state.report.page + 1)" t-esc="labels.next"/>
+                    </nav>
+                </section>
+            </div>
+        </main>
+    </t>
+
+    <t t-name="baseer_general_ledger_report.SourceLines">
+        <tr t-if="state.lineLoading[lineKey(account.id, scope)]" class="o_baseer_gl_status"><td colspan="5" role="status" t-esc="labels.linesLoading"/></tr>
+        <tr t-if="state.linePages[lineKey(account.id, scope)]" class="o_baseer_gl_details"><td colspan="5">
+            <div class="o_baseer_gl_details_scroll"><table>
+                <thead><tr><th t-esc="labels.date"/><th t-esc="labels.entry"/><th t-esc="labels.label"/>
+                    <th class="is-number" t-esc="labels.debit"/><th class="is-number" t-esc="labels.credit"/>
+                    <th class="is-number" t-esc="labels.running"/></tr></thead>
+                <tbody><tr t-foreach="state.linePages[lineKey(account.id, scope)].lines" t-as="line" t-key="line.id">
+                    <td dir="ltr" t-att-data-label="labels.date" t-esc="line.date"/>
+                    <td t-att-data-label="labels.entry"><button type="button" class="o_baseer_gl_source" t-att-disabled="!!state.lineOpening[line.id]"
+                        t-att-aria-label="labels.source + ' ' + line.move_name"
+                        t-on-click="() => this.openLine(line, scope)" t-esc="line.move_name"/></td>
+                    <td t-att-data-label="labels.label" t-esc="line.label"/>
+                    <td class="is-number" t-att-data-label="labels.debit"><span class="o_baseer_report_amount" t-att-class="amountClass(false, line.debit)" t-esc="line.debit"/></td>
+                    <td class="is-number" t-att-data-label="labels.credit"><span class="o_baseer_report_amount" t-att-class="amountClass(false, line.credit)" t-esc="line.credit"/></td>
+                    <td class="is-number" t-att-data-label="labels.running"><span class="o_baseer_report_amount" t-att-class="amountClass(line.running_negative, line.running)" t-esc="line.running"/></td>
+                </tr></tbody>
+            </table></div>
+            <p t-if="!state.linePages[lineKey(account.id, scope)].lines.length" class="o_baseer_gl_status" t-esc="labels.noLines"/>
+            <button t-if="state.linePages[lineKey(account.id, scope)].next_cursor" type="button" class="o_baseer_gl_more"
+                t-att-disabled="!!state.lineLoading[lineKey(account.id, scope)]"
+                t-on-click="() => this.loadLines(account.id, scope)" t-esc="labels.more"/>
+        </td></tr>
+    </t>
+</templates>

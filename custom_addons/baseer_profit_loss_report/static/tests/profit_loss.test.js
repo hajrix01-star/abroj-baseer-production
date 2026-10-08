@@ -111,6 +111,28 @@ test("period navigation delegates calendar movement to the server", async () => 
     expect(instance.state.filters.period.anchor_date).toBe("2026-09-15");
 });
 
+test("changing from three prior periods resets the server count for every single-period comparison", async () => {
+    for (const kind of ["none", "same_period_last_year", "custom"]) {
+        const context = {
+            state: { filters: { comparison: { kind: "previous_period", count: 3 } } },
+            apply: async () => {},
+        };
+        await BaseerProfitLossReport.prototype.setComparisonKind.call(context, kind);
+        expect(context.state.filters.comparison.kind).toBe(kind);
+        expect(context.state.filters.comparison.count).toBe(1);
+    }
+});
+
+test("custom dates do not send an unsupported navigation direction", async () => {
+    let applied = false;
+    const context = {
+        state: { filters: { period: { kind: "custom" } } },
+        apply: async () => { applied = true; },
+    };
+    await BaseerProfitLossReport.prototype.navigatePeriod.call(context, -1);
+    expect(applied).toBe(false);
+});
+
 test("source click carries the selected server period key", async () => {
     const calls = [];
     const actions = [];

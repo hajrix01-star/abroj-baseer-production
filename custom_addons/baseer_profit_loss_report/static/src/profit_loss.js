@@ -124,6 +124,7 @@ export class BaseerProfitLossReport extends Component {
     async setComparisonKind(kind) {
         if (!COMPARISON_KINDS.includes(kind) || this.state.filters.comparison.kind === kind) { return; }
         this.state.filters.comparison.kind = kind;
+        if (kind !== "previous_period") { this.state.filters.comparison.count = 1; }
         await this.apply();
     }
     async onComparisonChange(event) {

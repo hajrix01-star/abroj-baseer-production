@@ -22,9 +22,9 @@
                             </div>
                         </div>
                     </details>
-                    <div class="o_baseer_pl_navigation" t-att-aria-label="labels.period">
-                        <button type="button" t-att-disabled="state.loading || state.filters.period.kind === 'custom'" t-att-title="labels.previous" t-att-aria-label="labels.previous" t-on-click="() => this.navigatePeriod(-1)"><i class="fa fa-chevron-left" aria-hidden="true"/></button>
-                        <button type="button" t-att-disabled="state.loading || state.filters.period.kind === 'custom'" t-att-title="labels.next" t-att-aria-label="labels.next" t-on-click="() => this.navigatePeriod(1)"><i class="fa fa-chevron-right" aria-hidden="true"/></button>
+                    <div t-if="state.filters.period.kind !== 'custom'" class="o_baseer_pl_navigation" t-att-aria-label="labels.period">
+                        <button type="button" t-att-disabled="state.loading" t-att-title="labels.previous" t-att-aria-label="labels.previous" t-on-click="() => this.navigatePeriod(-1)"><i class="fa fa-chevron-left" aria-hidden="true"/></button>
+                        <button type="button" t-att-disabled="state.loading" t-att-title="labels.next" t-att-aria-label="labels.next" t-on-click="() => this.navigatePeriod(1)"><i class="fa fa-chevron-right" aria-hidden="true"/></button>
                     </div>
                     <details class="o_baseer_pl_filter_menu o_baseer_pl_comparison_menu">
                         <summary><i class="fa fa-percent" aria-hidden="true"/> <span t-esc="comparisonSummary"/></summary>

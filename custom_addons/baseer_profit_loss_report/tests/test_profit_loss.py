@@ -155,8 +155,8 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(action['target'], 'current')
         self.assertIn(('company_id', '=', self.company.id), action['domain'])
         self.assertIn(('parent_state', '=', 'posted'), action['domain'])
-        self.assertIn(('date', '>=', '2041-01-01'), action['domain'])
-        self.assertIn(('date', '<=', '2041-01-31'), action['domain'])
+        self.assertIn(('date', '>=', selected['date_from']), action['domain'])
+        self.assertIn(('date', '<=', selected['date_to']), action['domain'])
         self.assertIn(('account_id', '=', self.accounts['income'].id), action['domain'])
         self.assertIn(('journal_id', 'in', [other.id]), action['domain'])
         with self.assertRaises(AccessError):

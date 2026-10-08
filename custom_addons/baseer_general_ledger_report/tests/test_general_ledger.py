@@ -295,7 +295,7 @@ class TestGeneralLedger(TransactionCase):
         self.assertEqual(self._row(result, self.income)['credit'], '10.01')
         self.assertEqual(result['total']['closing'], '0.00')
 
-    def test_verified_group_crosses_5000_security_boundary(self):
+    def test_verified_group_handles_5001_lines_across_batches(self):
         commands = [Command.create({
             'name': 'GL security window debit', 'account_id': self.cash.id,
             'debit': 0.01, 'credit': 0,

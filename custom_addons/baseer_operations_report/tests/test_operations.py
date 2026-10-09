@@ -1,8 +1,10 @@
 """Narrow G5 evidence for the incomplete gross-operations source slice."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
+
+from pytz import UTC, timezone
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError
@@ -206,7 +208,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         invoice = self.env['account.move'].with_company(self.company).create({
             'move_type': 'out_invoice', 'partner_id': self.partner.id,
             'journal_id': self.sale_journal.id,
-            'invoice_date': '2041-06-10', 'date': '2041-06-30',
+            'invoice_date': '2041-06-10', 'date': '2041-07-02',
             'invoice_line_ids': [Command.create({
                 'name': 'Issued before accounting date', 'quantity': 1,
                 'price_unit': 100, 'account_id': self.income.id,
@@ -216,7 +218,26 @@ class TestOperationsGrossCalculator(TransactionCase):
         invoice.action_post()
         self.assertEqual(invoice.state, 'posted')
         self.assertEqual(str(invoice.invoice_date), '2041-06-10')
-        self.assertEqual(str(invoice.date), '2041-06-30')
+        self.assertEqual(str(invoice.date), '2041-07-02')
+        june_by_issue = self.env['account.move'].search([
+            ('id', '=', invoice.id), ('state', '=', 'posted'),
+            ('invoice_date', '>=', '2041-06-01'),
+            ('invoice_date', '<=', '2041-06-30'),
+        ])
+        june_by_entry = self.env['account.move'].search([
+            ('id', '=', invoice.id), ('state', '=', 'posted'),
+            ('date', '>=', '2041-06-01'), ('date', '<=', '2041-06-30'),
+        ])
+        self.assertEqual(june_by_issue, invoice)
+        self.assertFalse(june_by_entry)
+        invoice.flush_recordset(['invoice_date', 'date'])
+        self.env.cr.execute(
+            'SELECT invoice_date, date FROM account_move WHERE id = %s',
+            [invoice.id],
+        )
+        issue_day, entry_day = self.env.cr.fetchone()
+        self.assertEqual(str(issue_day), '2041-06-10')
+        self.assertEqual(str(entry_day), '2041-07-02')
 
     def test_restricted_user_fails_closed_and_other_company_is_rejected(self):
         invoice = self._invoice('out_invoice', self.sale_journal, [
@@ -401,3 +422,24 @@ class TestOperationsGrossCalculator(TransactionCase):
         ).date()
         self.assertEqual(str(order.date_order.date()), '2041-06-30')
         self.assertEqual(str(local_day), '2041-07-01')
+        local_tz = timezone('Asia/Riyadh')
+        july_start_utc = local_tz.localize(
+            datetime(2041, 7, 1), is_dst=None,
+        ).astimezone(UTC).replace(tzinfo=None)
+        august_start_utc = local_tz.localize(
+            datetime(2041, 8, 1), is_dst=None,
+        ).astimezone(UTC).replace(tzinfo=None)
+        self.assertEqual(str(july_start_utc), '2041-06-30 21:00:00')
+        native_july = self.env['pos.order'].search([
+            ('id', '=', order.id), ('source', '=', 'pos'),
+            ('date_order', '>=', july_start_utc),
+            ('date_order', '<', august_start_utc),
+        ])
+        self.assertEqual(native_july, order)
+        order.flush_recordset(['date_order'])
+        self.env.cr.execute(
+            'SELECT id FROM pos_order WHERE id = %s AND source = %s '
+            'AND date_order >= %s AND date_order < %s',
+            [order.id, 'pos', july_start_utc, august_start_utc],
+        )
+        self.assertEqual([row[0] for row in self.env.cr.fetchall()], [order.id])

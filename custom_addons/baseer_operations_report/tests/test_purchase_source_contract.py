@@ -195,14 +195,18 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'journal_ids': [],
         })
         self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 0)
-        self.assertEqual(snapshot['periods'][0]['accounts']['expense'], [{
+        account_rows = snapshot['periods'][0]['accounts']['expense']
+        self.assertEqual(len(account_rows), 1)
+        self.assertEqual(len(account_rows[0]['fingerprint']), 64)
+        self.assertEqual({key: value for key, value in account_rows[0].items()
+                          if key != 'fingerprint'}, {
             'account_id': self.expense.id,
             'account_code': self.expense.code,
             'account_name': self.expense.name,
             'amount': '115.00',
             'negative': False,
             'source_count': 1,
-        }])
+        })
 
         reader = self.env['res.users'].create({
             'name': 'Gross taxed bank outflow reader',
@@ -1499,9 +1503,13 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'journal_ids': [],
         })
         self.assertFalse(snapshot['complete'])
-        self.assertEqual(snapshot['periods'][0]['accounts']['expense'], [{
+        account_rows = snapshot['periods'][0]['accounts']['expense']
+        self.assertEqual(len(account_rows), 1)
+        self.assertEqual(len(account_rows[0]['fingerprint']), 64)
+        self.assertEqual({key: value for key, value in account_rows[0].items()
+                          if key != 'fingerprint'}, {
             'account_id': self.expense.id,
             'account_code': self.expense.code,
             'account_name': self.expense.name,
             'amount': '155.00', 'negative': False, 'source_count': 2,
-        }])
+        })

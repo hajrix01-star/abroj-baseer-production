@@ -1,0 +1,50 @@
+name: Test Baseer operations POS source
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_pos_summary/tests/test_operations_pos_source_contract.py
+      - custom_addons/baseer_pos_summary/tests/__init__.py
+      - .github/workflows/test-baseer-operations-pos-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  odoo-pos-source-tests:
+    name: Odoo 19 operations POS source tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Characterize native POS sources in an isolated database
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/heritage-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/payroll-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
+            -d baseer_operations_pos_source_ci -i baseer_pos_summary --without-demo=all \
+            --test-enable --test-tags=/baseer_pos_summary:TestOperationsPosNativeSourceContract \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

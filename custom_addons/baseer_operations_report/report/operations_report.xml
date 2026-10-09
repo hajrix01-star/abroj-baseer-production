@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_operations_portrait" model="report.paperformat">
+        <field name="name">Baseer Gross Operations A4 Portrait</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">14</field><field name="margin_bottom">16</field>
+        <field name="margin_left">12</field><field name="margin_right">12</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="paperformat_operations_landscape" model="report.paperformat">
+        <field name="name">Baseer Gross Operations A4 Landscape</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field><field name="margin_bottom">15</field>
+        <field name="margin_left">11</field><field name="margin_right">11</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="action_operations_pdf_portrait" model="ir.actions.report">
+        <field name="name">Gross Operations / العمليات الإجمالية</field>
+        <field name="model">baseer.operations.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_operations_report.operations_pdf_portrait</field>
+        <field name="report_file">baseer_operations_report.operations_pdf_portrait</field>
+        <field name="paperformat_id" ref="paperformat_operations_portrait"/>
+    </record>
+    <record id="action_operations_pdf_landscape" model="ir.actions.report">
+        <field name="name">Gross Operations / العمليات الإجمالية</field>
+        <field name="model">baseer.operations.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_operations_report.operations_pdf_landscape</field>
+        <field name="report_file">baseer_operations_report.operations_pdf_landscape</field>
+        <field name="paperformat_id" ref="paperformat_operations_landscape"/>
+    </record>
+
+    <template id="operations_pdf_body">
+        <t t-set="o" t-value="company_record"/>
+        <t t-call="web.basic_layout">
+            <div class="page bgo-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .bgo-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 9px;}
+                    .bgo-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
+                    .bgo-pdf .meta {color: #657487; line-height: 1.6; margin-bottom: 12px; border-bottom: 1px solid #d7dde2; padding-bottom: 9px;}
+                    .bgo-pdf .notice {color: #566a75; background: #d9eef2; padding: 6px 8px; margin: 8px 0 12px;}
+                    .bgo-pdf table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .bgo-pdf thead {display: table-header-group;}
+                    .bgo-pdf tr {page-break-inside: avoid;}
+                    .bgo-pdf th, .bgo-pdf td {padding: 6px 8px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                    .bgo-pdf th {font-weight: 600;}
+                    .bgo-pdf .period {font-size: 8px; color: #566a75; font-weight: 400;}
+                    .bgo-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .bgo-pdf .section th, .bgo-pdf .section td {background: #d9dde0; font-weight: 700;}
+                    .bgo-pdf .net_income th, .bgo-pdf .net_income td {border-top: 1px solid #b6bfc7;}
+                    .bgo-pdf .negative {color: #cf2732;}
+                    .bgo-pdf .zero {color: #b8c1ca;}
+                </style>
+                <h1 t-esc="'العمليات الإجمالية' if arabic else 'Gross Operations'"/>
+                <div class="meta">
+                    <div><span t-esc="company_record.name"/> · <span t-esc="snapshot['currency_code']"/></div>
+                    <div><span t-esc="'أُنشئ في' if arabic else 'Generated at'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
+                    <div><span t-if="is_partial_journals" t-esc="'الدفاتر المختارة — تقرير جزئي' if arabic else 'Selected journals — partial report'"/><span t-else="" t-esc="'جميع الدفاتر' if arabic else 'All journals'"/><span t-if="is_partial_journals">: <span t-esc="journal_names"/></span></div>
+                </div>
+                <div class="notice" t-esc="'حركة العمليات شاملة الضريبة المسجلة، وليست ربحاً محاسبياً. يُعاد حساب التقرير عند الطباعة.' if arabic else 'Recorded-tax-inclusive operations movement, not accounting profit. Recalculated when printed.'"/>
+                <table>
+                    <thead><tr>
+                        <th t-att-style="'width: 42%;' if len(periods) == 1 else 'width: 30%;'" t-esc="'البند' if arabic else 'Item'"/>
+                        <th t-foreach="periods" t-as="period" t-att-style="'width: 58%;' if len(periods) == 1 else ''" class="numeric">
+                            <div t-esc="period.get('display_label') or period['label']"/>
+                            <div class="period"><span t-esc="period['date_from']"/> - <span t-esc="period['date_to']"/></div>
+                            <div class="period" t-esc="'الرصيد' if arabic else 'Balance'"/>
+                        </th>
+                    </tr></thead>
+                    <tbody>
+                        <tr t-foreach="rows" t-as="row" t-att-class="row['style'] + ' ' + row['key']">
+                            <th scope="row" t-esc="row['label']"/>
+                            <td t-foreach="row['amounts']" t-as="value" t-att-class="'numeric ' + ('negative' if value['negative'] else ('zero' if value['amount'].replace(',', '').replace('.', '').replace('0', '') == '' else ''))" t-esc="value['amount']"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="font-size: 8px; color: #657487; margin-top: 10px; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                    <span t-esc="company_record.name"/> · <span t-esc="snapshot['currency_code']"/>
+                    <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
+                </div>
+            </div>
+        </t>
+    </template>
+    <template id="operations_pdf_portrait"><t t-call="baseer_operations_report.operations_pdf_body"/></template>
+    <template id="operations_pdf_landscape"><t t-call="baseer_operations_report.operations_pdf_body"/></template>
+</odoo>

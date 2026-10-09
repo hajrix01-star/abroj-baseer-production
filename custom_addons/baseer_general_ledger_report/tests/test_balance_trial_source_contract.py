@@ -39,7 +39,13 @@ class TestBalanceTrialNativeSourceContract(TransactionCase):
         journal = self.env['account.journal'].with_company(company).search([
             ('company_id', '=', company.id), ('type', '=', 'general'),
         ], limit=1)
-        self.assertTrue(journal)
+        if not journal:
+            journal = self.env['account.journal'].with_company(company).create({
+                'name': 'Balance/trial synthetic journal',
+                'code': 'BTG',
+                'type': 'general',
+                'company_id': company.id,
+            })
         return journal
 
     def _entry(self, company, journal, day, debit_account, credit_account,

@@ -61,8 +61,8 @@ class TestOperationsGrossNativeSourceContract(TransactionCase):
         ).write({'account_id': account.id})
         return tax
 
-    def _invoice(self, move_type, journal, rows):
-        move = self.env['account.move'].with_company(self.company).create({
+    def _invoice(self, move_type, journal, rows, currency=None):
+        values = {
             'move_type': move_type,
             'partner_id': self.partner.id,
             'journal_id': journal.id,
@@ -72,7 +72,10 @@ class TestOperationsGrossNativeSourceContract(TransactionCase):
                 'discount': discount, 'account_id': account.id,
                 'tax_ids': [Command.set(tax.ids if tax else [])],
             }) for name, account, price, discount, tax in rows],
-        })
+        }
+        if currency:
+            values['currency_id'] = currency.id
+        move = self.env['account.move'].with_company(self.company).create(values)
         move.action_post()
         self.assertEqual(move.state, 'posted')
         return move
@@ -186,6 +189,32 @@ class TestOperationsGrossNativeSourceContract(TransactionCase):
         self.assertEqual(self._money(vat_like_line.balance), Decimal('-15.00'))
         # A liability credit of 15 beside revenue 100 is not evidence that
         # this journal item originated as a 15% taxable sale.
+
+    def test_foreign_invoice_line_total_is_not_a_company_currency_amount(self):
+        foreign_xmlid = 'base.EUR' if self.company.currency_id.name != 'EUR' else 'base.USD'
+        foreign = self.env.ref(foreign_xmlid)
+        foreign.active = True
+        self.env['res.currency.rate'].create({
+            'name': '2041-06-01', 'company_id': self.company.id,
+            'currency_id': foreign.id, 'rate': 2.0,
+        })
+        invoice = self._invoice('out_invoice', self.sale_journal, [
+            ('Foreign taxable sale', self.income, 100, 0, self.sale_tax),
+        ], currency=foreign)
+        line = self._line(invoice, 'Foreign taxable sale')
+        self.assertEqual(invoice.currency_id, foreign)
+        self.assertEqual(line.currency_id, foreign)
+        self.assertEqual(self._money(line.price_subtotal), Decimal('100.00'))
+        self.assertEqual(self._money(line.price_total), Decimal('115.00'))
+        self.assertEqual(self._money(line.amount_currency), Decimal('-100.00'))
+        company_net = foreign._convert(100, self.company.currency_id,
+                                       self.company, invoice.date)
+        self.assertEqual(self._money(-line.balance), self._money(company_net))
+        self.assertNotEqual(self._money(-line.balance), Decimal('100.00'))
+        # price_total minus price_subtotal is transaction-currency VAT, not
+        # an amount that can be added to company-currency P&L totals as-is.
+        self.assertEqual(self._money(line.price_total - line.price_subtotal),
+                         Decimal('15.00'))
 
     def test_company_scoped_readonly_user_cannot_see_other_invoice_source(self):
         other = self.env['res.company'].create({

@@ -84,6 +84,159 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
         # The same amount on a draft or cancelled order is not a second sale;
         # source state and original order ID are both required.
 
+    def test_native_paid_order_invoice_after_closing_and_refund_keep_one_origin(self):
+        """Exercise native POS posting, not hand-made paid/invoiced order links."""
+        company = self.env.company
+        accounts = self.env['account.account'].with_company(company)
+
+        def account(code, kind, reconcile=False):
+            return accounts.create({
+                'code': code, 'name': f'POS origin {code}',
+                'account_type': kind, 'reconcile': reconcile,
+                'company_ids': [Command.set(company.ids)],
+            })
+
+        original_income = account('957101', 'income')
+        mapped_income = account('957102', 'income')
+        tax_due = account('957103', 'liability_current')
+        receivable = account('957104', 'asset_receivable', reconcile=True)
+        clearing = account('957105', 'asset_current')
+        partner = self.env['res.partner'].with_company(company).create({
+            'name': 'POS origin source partner',
+            'property_account_receivable_id': receivable.id,
+        })
+        tax = self.env['account.tax'].with_company(company).create({
+            'name': 'POS origin VAT 15%', 'company_id': company.id,
+            'type_tax_use': 'sale', 'amount_type': 'percent', 'amount': 15,
+        })
+        tax.invoice_repartition_line_ids.filtered(
+            lambda line: line.repartition_type == 'tax',
+        ).write({'account_id': tax_due.id})
+        fiscal_position = self.env['account.fiscal.position'].with_company(company).create({
+            'name': 'POS source income remap', 'company_id': company.id,
+            'account_ids': [Command.create({
+                'account_src_id': original_income.id,
+                'account_dest_id': mapped_income.id,
+            })],
+        })
+        product = self.env['product.product'].with_company(company).create({
+            'name': 'POS source taxed service', 'type': 'service',
+            'available_in_pos': True, 'list_price': 100,
+            'property_account_income_id': original_income.id,
+            'taxes_id': [Command.set(tax.ids)],
+        })
+        sale_journal = self.env['account.journal'].with_company(company).create({
+            'name': 'POS source sales', 'code': 'OPS',
+            'type': 'sale', 'company_id': company.id,
+        })
+        bank_journal = self.env['account.journal'].with_company(company).search([
+            ('company_id', '=', company.id), ('type', '=', 'bank'),
+        ], limit=1)
+        self.assertTrue(bank_journal)
+        method = self.env['pos.payment.method'].with_company(company).create({
+            'name': 'POS source bank', 'company_id': company.id,
+            'journal_id': bank_journal.id,
+            'receivable_account_id': receivable.id,
+            'outstanding_account_id': clearing.id,
+        })
+        config = self.env['pos.config'].with_company(company).create({
+            'name': 'POS origin source', 'company_id': company.id,
+            'journal_id': sale_journal.id,
+            'invoice_journal_id': sale_journal.id,
+            'payment_method_ids': [Command.set(method.ids)],
+        })
+        config.open_ui()
+        session = config.current_session_id
+        session.set_opening_control(0, 'POS origin source test')
+        payload = {
+            'uuid': str(uuid4()), 'session_id': session.id,
+            'company_id': company.id, 'partner_id': partner.id,
+            'fiscal_position_id': fiscal_position.id,
+            'state': 'paid', 'source': 'pos', 'to_invoice': False,
+            'amount_total': 115, 'amount_tax': 15,
+            'amount_paid': 115, 'amount_return': 0,
+            'lines': [Command.create({
+                'product_id': product.id, 'uuid': str(uuid4()),
+                'qty': 1, 'price_unit': 100,
+                'price_subtotal': 100, 'price_subtotal_incl': 115,
+                'tax_ids': [Command.set(tax.ids)],
+                'full_product_name': product.display_name,
+            })],
+            'payment_ids': [Command.create({
+                'payment_method_id': method.id, 'amount': 115,
+                'payment_date': fields.Datetime.now(),
+            })],
+        }
+        order_id = self.env['pos.order'].with_company(company)._process_order(payload, False)
+        order = self.env['pos.order'].browse(order_id)
+        self.assertEqual(order.state, 'paid')
+        self.assertEqual(order.source, 'pos')
+        self.assertFalse(order.account_move)
+        self.assertEqual(self._money(order.amount_total), Decimal('115.00'))
+        self.assertEqual(self._money(order.amount_tax), Decimal('15.00'))
+        self.assertEqual(self._money(order.lines.price_subtotal), Decimal('100.00'))
+        self.assertEqual(self._money(order.lines.price_subtotal_incl), Decimal('115.00'))
+        self.assertEqual(order.lines._prepare_base_line_for_taxes_computation()['account_id'],
+                         mapped_income)
+
+        session.action_pos_session_closing_control()
+        self.assertEqual(session.state, 'closed')
+        self.assertEqual(session.move_id.state, 'posted')
+        session_income = sum(session.move_id.line_ids.filtered(
+            lambda line: line.account_id == mapped_income,
+        ).mapped('balance'))
+        self.assertEqual(self._money(session_income), Decimal('-100.00'))
+        self.assertFalse(session.move_id.line_ids.filtered(
+            lambda line: line.account_id == original_income,
+        ))
+
+        order.with_context(generate_pdf=False).action_pos_order_invoice()
+        invoice = order.account_move
+        self.assertEqual((invoice.state, invoice.move_type), ('posted', 'out_invoice'))
+        self.assertIn(order, invoice.pos_order_ids)
+        self.assertEqual(self._money(invoice.amount_total), Decimal('115.00'))
+        invoice_income = sum(invoice.line_ids.filtered(
+            lambda line: line.account_id == mapped_income,
+        ).mapped('balance'))
+        reversal = self.env['account.move'].search([
+            ('reversed_pos_order_id', '=', order.id), ('state', '=', 'posted'),
+        ])
+        self.assertEqual(len(reversal), 1)
+        reversal_income = sum(reversal.line_ids.filtered(
+            lambda line: line.account_id == mapped_income,
+        ).mapped('balance'))
+        self.assertEqual(self._money(invoice_income), Decimal('-100.00'))
+        self.assertEqual(self._money(reversal_income), Decimal('100.00'))
+        self.assertEqual(self._money(session_income + invoice_income + reversal_income),
+                         Decimal('-100.00'))
+        # Session move + linked invoice are not two sales. The native reversal
+        # removes the first origin from the ledger when invoicing happens later.
+
+        config.open_ui()
+        refund_session = config.current_session_id
+        refund_session.set_opening_control(0, 'POS origin refund test')
+        refund = order._refund()
+        self.assertEqual(refund.state, 'draft')
+        self.assertEqual(refund.lines.refunded_orderline_id, order.lines)
+        self.assertEqual(self._money(refund.lines.price_subtotal_incl),
+                         Decimal('-115.00'))
+        self.assertEqual(self._money(refund.amount_total), Decimal('-115.00'))
+        self.env['pos.payment'].with_company(company).create({
+            'pos_order_id': refund.id, 'payment_method_id': method.id,
+            'amount': -115,
+        })
+        refund._compute_prices()
+        refund.action_pos_order_paid()
+        refund.with_context(generate_pdf=False).action_pos_order_invoice()
+        self.assertTrue(refund.is_refund)
+        self.assertEqual((refund.account_move.state, refund.account_move.move_type),
+                         ('posted', 'out_refund'))
+        self.assertIn(refund, refund.account_move.pos_order_ids)
+        self.assertEqual(self._money(refund.account_move.amount_total),
+                         Decimal('115.00'))
+        self.assertNotEqual(refund.id, order.id)
+        self.assertEqual(len(order | refund), 2)
+
     def test_approved_summary_uses_business_day_one_order_and_correction_links(self):
         # Reuse the existing onboarding path, which creates a Saudi/SAR chart,
         # a dedicated summary register and a separate platform clearing method.

@@ -299,6 +299,58 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(extra.amount)), Decimal('-116.00'))
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
 
+    def test_cash_statement_is_real_outflow_source_not_internal_transfer(self):
+        self.assertNotEqual(self.cash, self.bank.default_account_id)
+        cash_journal = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Gross cash source', 'code': 'GCA', 'type': 'cash',
+            'company_id': self.company.id,
+            'default_account_id': self.cash.id,
+        })
+        cash_out = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': cash_journal.id, 'date': '2026-06-25',
+            'payment_ref': 'Cash paid for expense',
+            'partner_id': self.partner.id, 'amount': -40,
+            'counterpart_account_id': self.expense.id,
+        })
+        cash_lines = cash_out.move_id.line_ids
+        liquidity = cash_lines.filtered(lambda line: line.account_id == self.cash)
+        expense = cash_lines - liquidity
+        self.assertEqual(cash_journal.type, 'cash')
+        self.assertEqual(cash_journal.default_account_id, self.cash)
+        self.assertEqual(cash_out.company_id, self.company)
+        self.assertEqual(cash_out.currency_id, self.company.currency_id)
+        self.assertEqual(str(cash_out.date), '2026-06-25')
+        self.assertEqual(Decimal(str(cash_out.amount)), Decimal('-40.00'))
+        self.assertEqual(cash_out.move_id.state, 'posted')
+        self.assertEqual(cash_out.move_id.statement_line_id, cash_out)
+        self.assertEqual(cash_out.move_id.journal_id, cash_journal)
+        self.assertEqual(len(cash_lines), 2)
+        self.assertEqual(Decimal(str(liquidity.balance)), Decimal('-40.00'))
+        self.assertEqual(expense.account_id, self.expense)
+        self.assertEqual(Decimal(str(expense.balance)), Decimal('40.00'))
+
+        transfer = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': cash_journal.id, 'date': '2026-06-26',
+            'payment_ref': 'Cash moved to bank',
+            'partner_id': self.partner.id, 'amount': -30,
+            'counterpart_account_id': self.bank.default_account_id.id,
+        })
+        transfer_lines = transfer.move_id.line_ids
+        transfer_cash = transfer_lines.filtered(
+            lambda line: line.account_id == self.cash,
+        )
+        transfer_bank = transfer_lines - transfer_cash
+        self.assertEqual(transfer.move_id.state, 'posted')
+        self.assertEqual(len(transfer_lines), 2)
+        self.assertEqual(Decimal(str(transfer_cash.balance)), Decimal('-30.00'))
+        self.assertEqual(transfer_bank.account_id, self.bank.default_account_id)
+        self.assertEqual(Decimal(str(transfer_bank.balance)), Decimal('30.00'))
+        self.assertEqual(transfer_bank.account_id.account_type, 'asset_cash')
+
     def test_bill_waits_for_real_outflow_and_partial_50_then_65(self):
         bill = self._bill()
         bill_payable = bill.line_ids.filtered(

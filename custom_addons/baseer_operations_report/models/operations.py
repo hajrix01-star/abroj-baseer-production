@@ -508,7 +508,8 @@ class BaseerOperationsReport(models.AbstractModel):
             move = statement.move_id
             move.check_access('read')
             if (statement.id in seen or move.state != 'posted'
-                    or move.company_id != company or journal.type != 'bank'
+                    or move.company_id != company or journal.company_id != company
+                    or move.journal_id != journal or journal.type != 'bank'
                     or not journal.default_account_id
                     or journal.default_account_id.account_type != 'asset_cash'):
                 self._deny_incomplete_source()
@@ -534,7 +535,8 @@ class BaseerOperationsReport(models.AbstractModel):
             (bank | counterpart).mapped('account_id').check_access('read')
             if counterpart.account_id.account_type in EXPENSE_KEYS:
                 if (move.move_type != 'entry' or move.origin_payment_id
-                        or any(line.tax_line_id or line.tax_ids for line in lines)
+                        or any(line.company_id != company or line.tax_line_id
+                               or line.tax_ids or line.tax_tag_ids for line in lines)
                         or counterpart.account_id.reconcile
                         or counterpart.matched_credit_ids
                         or counterpart.matched_debit_ids):

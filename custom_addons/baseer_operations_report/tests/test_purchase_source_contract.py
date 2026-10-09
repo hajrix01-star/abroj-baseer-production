@@ -318,6 +318,42 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                               'expense_depreciation', 'expense_other'))
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
 
+        reader = self.env['res.users'].create({
+            'name': 'Gross direct expense reader',
+            'login': 'gross_direct_expense_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = self.env['baseer.operations.report'].with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', report=secured,
+        ), 40)
+        for model, hidden in (
+                ('account.bank.statement.line', direct),
+                ('account.move', move),
+                ('account.move.line', expense_line),
+                ('account.account', self.expense)):
+            rule = self.env['ir.rule'].create({
+                'name': 'Gross direct hide ' + model,
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {hidden.id})]",
+            })
+            try:
+                rule.flush_recordset()
+                with self.assertRaises(AccessError):
+                    self._purchase_amount(
+                        '2026-06-01', '2026-06-30', report=secured,
+                    )
+            finally:
+                rule.unlink()
+
     def test_hidden_outflow_and_other_company_require_fail_closed_reader(self):
         bill = self._bill()
         outflow = self._entry(
@@ -448,6 +484,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'counterpart_account_id': self.outstanding.id,
         })
         self.assertEqual(statement.currency_id, foreign)
+        foreign_direct = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': foreign_bank.id, 'date': '2026-06-23',
+            'payment_ref': 'Foreign direct expense',
+            'partner_id': self.partner.id, 'amount': -12,
+            'counterpart_account_id': self.expense.id,
+        })
+        self.assertEqual(foreign_direct.currency_id, foreign)
         snapshot = self.env['baseer.operations.report'].get_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
@@ -455,7 +500,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         })
         self.assertFalse(snapshot['complete'])
         self.assertEqual(snapshot['periods'][0]['excluded'][
-            'foreign_currency_bank_outflow'], 1)
+            'foreign_currency_bank_outflow'], 2)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
 
     def test_multi_line_bill_source_and_cumulative_50_105_allocation(self):
         cost = self.accounts.create({

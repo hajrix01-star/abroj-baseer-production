@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_trial_balance" model="report.paperformat">
+        <field name="name">Baseer Trial Balance A4 Landscape</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">11</field><field name="margin_bottom">14</field>
+        <field name="margin_left">10</field><field name="margin_right">10</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="action_trial_balance_pdf" model="ir.actions.report">
+        <field name="name">Trial Balance / ميزان المراجعة</field>
+        <field name="model">baseer.trial.balance.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_trial_balance_report.trial_balance_pdf</field>
+        <field name="report_file">baseer_trial_balance_report.trial_balance_pdf</field>
+        <field name="paperformat_id" ref="paperformat_trial_balance"/>
+    </record>
+    <template id="trial_balance_pdf">
+        <t t-set="o" t-value="company_record"/>
+        <t t-call="web.basic_layout">
+            <div class="page btb-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .btb-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 9px;}
+                    .btb-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
+                    .btb-pdf .meta {color: #657487; line-height: 1.5; margin-bottom: 8px; border-bottom: 1px solid #d7dde2; padding-bottom: 6px;}
+                    .btb-pdf .notice {color: #566a75; background: #d9eef2; padding: 5px 7px; margin: 6px 0 8px;}
+                    .btb-pdf table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .btb-pdf thead {display: table-header-group;}
+                    .btb-pdf tr {page-break-inside: avoid;}
+                    .btb-pdf th, .btb-pdf td {padding: 4px 4px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                    .btb-pdf th {font-weight: 600;}
+                    .btb-pdf thead th:first-child, .btb-pdf tbody th {text-align: left;}
+                    .btb-pdf[dir="rtl"] thead th:first-child, .btb-pdf[dir="rtl"] tbody th {text-align: right;}
+                    .btb-pdf tbody th {font-weight: 400;}
+                    .btb-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .btb-pdf .negative {color: #cf2732;}
+                    .btb-pdf .rbf th, .btb-pdf .rbf td {background: #dfe3e7; font-weight: 700;}
+                    .btb-pdf .total th, .btb-pdf .total td {border-top: 1px solid #c6cdd3; font-weight: 700;}
+                </style>
+                <h1 t-esc="'ميزان المراجعة' if arabic else 'Trial Balance'"/>
+                <div class="meta">
+                    <div><span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/></div>
+                    <div><span t-esc="'الفترة' if arabic else 'Period'"/>: <span dir="ltr" t-esc="report['period']['date_from']"/> — <span dir="ltr" t-esc="report['period']['date_to']"/></div>
+                    <div><span t-esc="'الدفاتر' if arabic else 'Journals'"/>: <span t-esc="journals if report['is_partial_journals'] else ('جميع الدفاتر' if arabic else 'All journals')"/></div>
+                    <div><span t-esc="'أُعيد حسابه عند الطباعة' if arabic else 'Recalculated at print time'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
+                </div>
+                <div class="notice" t-esc="'قيود مرحلة حسب التاريخ المحاسبي؛ ليست لقطة تاريخية مجمدة.' if arabic else 'Posted entries by accounting date; not a frozen historical snapshot.'"/>
+                <table>
+                    <thead>
+                        <tr><th rowspan="2" style="width: 34%;" t-esc="'الحساب' if arabic else 'Account'"/>
+                            <th colspan="2" t-esc="'الرصيد الافتتاحي' if arabic else 'Opening balance'"/>
+                            <th colspan="2" t-esc="'حركة الفترة' if arabic else 'Period movement'"/>
+                            <th colspan="2" t-esc="'الرصيد الختامي' if arabic else 'Closing balance'"/></tr>
+                        <tr><th class="numeric" t-esc="'مدين' if arabic else 'Debit'"/>
+                            <th class="numeric" t-esc="'دائن' if arabic else 'Credit'"/>
+                            <th class="numeric" t-esc="'مدين' if arabic else 'Debit'"/>
+                            <th class="numeric" t-esc="'دائن' if arabic else 'Credit'"/>
+                            <th class="numeric" t-esc="'مدين' if arabic else 'Debit'"/>
+                            <th class="numeric" t-esc="'دائن' if arabic else 'Credit'"/></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-if="report['rbf']['source_line_count']" class="rbf">
+                            <th t-esc="'نتيجة مرحلة من السنة السابقة' if arabic else 'Result Brought Forward'"/>
+                            <td class="numeric" t-esc="report['rbf']['opening_debit']"/>
+                            <td class="numeric" t-esc="report['rbf']['opening_credit']"/>
+                            <td/><td/>
+                            <td class="numeric" t-esc="report['rbf']['closing_debit']"/>
+                            <td class="numeric" t-esc="report['rbf']['closing_credit']"/>
+                        </tr>
+                        <tr t-foreach="accounts" t-as="account">
+                            <th><span t-esc="account['code']"/> <span t-esc="account['name']"/></th>
+                            <td class="numeric" t-esc="account['opening_debit']"/>
+                            <td class="numeric" t-esc="account['opening_credit']"/>
+                            <td t-att-class="'numeric negative' if account['debit_negative'] else 'numeric'" t-esc="account['debit']"/>
+                            <td t-att-class="'numeric negative' if account['credit_negative'] else 'numeric'" t-esc="account['credit']"/>
+                            <td class="numeric" t-esc="account['closing_debit']"/>
+                            <td class="numeric" t-esc="account['closing_credit']"/>
+                        </tr>
+                        <tr class="total"><th t-esc="'الإجمالي' if arabic else 'Total'"/>
+                            <td class="numeric" t-esc="report['total']['opening_debit']"/>
+                            <td class="numeric" t-esc="report['total']['opening_credit']"/>
+                            <td class="numeric" t-esc="report['total']['debit']"/>
+                            <td class="numeric" t-esc="report['total']['credit']"/>
+                            <td class="numeric" t-esc="report['total']['closing_debit']"/>
+                            <td class="numeric" t-esc="report['total']['closing_credit']"/></tr>
+                    </tbody>
+                </table>
+                <div style="font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                    <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
+                    <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

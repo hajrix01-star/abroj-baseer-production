@@ -1053,6 +1053,7 @@ class BaseerOperationsReport(models.AbstractModel):
             payload_periods.append({
                 'key': period['key'], 'date_from': period['date_from'],
                 'date_to': period['date_to'], 'label': period['label'],
+                'display_label': period['display_label'],
                 'rows': rows, 'accounts': accounts,
                 'excluded': dict(excluded),
             })

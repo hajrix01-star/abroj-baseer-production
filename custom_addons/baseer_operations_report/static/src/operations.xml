@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_operations_report.Preview">
+        <main class="o_baseer_pl_report o_baseer_go_report" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <t t-if="!state.detail">
+                <header class="o_baseer_report_toolbar o_baseer_pl_toolbar">
+                    <ReportSelector t-if="props.reportOptions" options="props.reportOptions" selectedKey="props.selectedReportKey" label="props.reportSelectorLabel" lang="lang" onSelect="props.onReportSelect"/>
+                    <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
+                        <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_period_menu'">
+                            <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></button>
+                            <t t-set-slot="content"><div class="o_baseer_pl_native_menu o_baseer_pl_period_popover">
+                                <div t-foreach="periodOptions" t-as="option" t-key="option.kind" t-att-class="state.filters.period.kind === option.kind ? 'o_baseer_pl_menu_row is-selected' : 'o_baseer_pl_menu_row'">
+                                    <button type="button" class="o_baseer_pl_menu_select o-navigable" t-on-click="() => this.setPeriodKind(option.kind)"><i t-if="state.filters.period.kind === option.kind" class="fa fa-check" aria-hidden="true"/><span t-else="" class="o_baseer_pl_check_spacer"/><span t-esc="periodKindLabel(option.kind)"/><span class="o_baseer_pl_menu_value" t-esc="option.display_label"/></button>
+                                    <span t-if="option.kind !== 'custom'" class="o_baseer_pl_row_navigation"><button type="button" class="o-navigable" t-att-disabled="state.loading" t-att-title="labels.previous" t-att-aria-label="labels.previous + ' ' + periodKindLabel(option.kind)" t-on-click.stop="() => this.navigatePeriodKind(option.kind, -1)"><i class="fa fa-chevron-left" aria-hidden="true"/></button><button type="button" class="o-navigable" t-att-disabled="state.loading" t-att-title="labels.next" t-att-aria-label="labels.next + ' ' + periodKindLabel(option.kind)" t-on-click.stop="() => this.navigatePeriodKind(option.kind, 1)"><i class="fa fa-chevron-right" aria-hidden="true"/></button></span>
+                                </div>
+                                <div t-if="state.filters.period.kind === 'custom'" class="o_baseer_pl_date_range"><label><span t-esc="labels.from"/><input type="date" name="date_from" t-att-value="state.filters.period.date_from" t-on-change="onPeriodDateChange"/></label><label><span t-esc="labels.to"/><input type="date" name="date_to" t-att-value="state.filters.period.date_to" t-on-change="onPeriodDateChange"/></label></div>
+                            </div></t>
+                        </Dropdown>
+                        <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_comparison_menu'">
+                            <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.comparison"><i class="fa fa-percent" aria-hidden="true"/> <span t-esc="comparisonSummary"/></button>
+                            <t t-set-slot="content"><div class="o_baseer_pl_native_menu o_baseer_pl_comparison_popover">
+                                <DropdownItem t-foreach="['none', 'previous_period', 'same_period_last_year']" t-as="kind" t-key="kind" onSelected="() => this.setComparisonKind(kind)"><i t-if="state.filters.comparison.kind === kind" class="fa fa-check" aria-hidden="true"/><span class="o_baseer_pl_comparison_choice" t-esc="comparisonKindLabel(kind)"/></DropdownItem>
+                                <button type="button" class="dropdown-item o-navigable o_baseer_pl_custom_choice" t-on-click.stop="() => this.setComparisonKind('custom')"><i t-if="state.filters.comparison.kind === 'custom'" class="fa fa-check" aria-hidden="true"/><span class="o_baseer_pl_comparison_choice" t-esc="labels.customDates"/></button>
+                                <div t-if="state.filters.comparison.kind === 'previous_period'" class="o_baseer_pl_control_row"><label><span t-esc="labels.periods"/><input type="number" name="count" min="1" max="3" step="1" t-att-value="state.filters.comparison.count" t-on-change="onComparisonChange"/></label></div>
+                                <div t-if="state.filters.comparison.kind === 'custom'" class="o_baseer_pl_date_range"><label><span t-esc="labels.from"/><input type="date" name="date_from" t-att-value="state.filters.comparison.date_from" t-on-change="onComparisonChange"/></label><label><span t-esc="labels.to"/><input type="date" name="date_to" t-att-value="state.filters.comparison.date_to" t-on-change="onComparisonChange"/></label></div>
+                                <div class="o_baseer_pl_control_row o_baseer_pl_order_row"><label><span t-esc="labels.periodOrder"/><select name="order" t-att-value="state.filters.comparison.order" t-on-change="onComparisonChange"><option value="descending" t-esc="labels.descending"/><option value="ascending" t-esc="labels.ascending"/></select></label></div>
+                            </div></t>
+                        </Dropdown>
+                        <details class="o_baseer_pl_filter_menu o_baseer_pl_journals">
+                            <summary><i class="fa fa-book" aria-hidden="true"/> <span t-esc="state.filters.journal_ids.length ? labels.selectedJournals : labels.allJournals"/></summary>
+                            <div class="o_baseer_pl_popover o_baseer_pl_journal_list">
+                                <label t-foreach="state.journals" t-as="journal" t-key="journal.id"><input type="checkbox" t-att-value="journal.id" t-att-checked="state.filters.journal_ids.includes(journal.id)" t-on-change="onJournalChange"/><span t-esc="journal.code + ' · ' + journal.name"/></label>
+                            </div>
+                        </details>
+                    </div>
+                </header>
+                <div class="o_baseer_report_notice o_baseer_go_incomplete" role="note" t-esc="labels.incomplete"/>
+                <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
+                <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
+                <div t-if="state.report" class="o_baseer_report_canvas">
+                    <section class="o_baseer_report o_baseer_pl_paper" t-att-aria-label="labels.title">
+                        <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-if="primaryPeriod" t-esc="reportPeriodCaption"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
+                        <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
+                        <div class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table">
+                            <thead><tr><th scope="col" t-esc="labels.account"/><th t-foreach="reportPeriods" t-as="period" t-key="period.key" scope="col" class="is-number"><span t-att-title="period.label" t-esc="period.display_label || period.label"/><small t-esc="labels.balance"/></th></tr></thead>
+                            <tbody><t t-foreach="state.report.rows" t-as="row" t-key="row.key">
+                                <tr t-att-class="rowClass(row)"><th scope="row"><button t-if="row.expandable" type="button" class="o_baseer_pl_toggle" t-att-aria-expanded="state.expanded[row.section] ? 'true' : 'false'" t-on-click="() => this.toggleSection(row)"><i t-att-class="state.expanded[row.section] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/><span t-esc="row.label"/></button><span t-else="" t-esc="row.label"/></th><td t-foreach="reportPeriods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><strong t-att-class="amountClass(amountFor(row, period.key))" t-esc="amountFor(row, period.key).amount"/></td></tr>
+                                <t t-if="row.expandable &amp;&amp; state.expanded[row.section] &amp;&amp; state.pages[row.section]">
+                                    <tr t-foreach="state.pages[row.section].accounts" t-as="account" t-key="account.id" class="o_baseer_pl_account"><th scope="row"><span t-esc="account.code"/> <span t-esc="account.name"/></th><td t-foreach="reportPeriods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><button type="button" class="o_baseer_pl_account_amount" t-att-disabled="!account.sourceCounts[period.key]" t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name" t-on-click="() => this.openAccount(account, period.key, row.section)"><span t-att-class="amountClass(amountFor(account, period.key))" t-esc="amountFor(account, period.key).amount"/></button></td></tr>
+                                    <tr t-if="!state.pages[row.section].accounts.length"><td t-att-colspan="rowColspan()" class="o_baseer_pl_status" t-esc="labels.noAccounts"/></tr>
+                                    <tr t-if="state.pages[row.section].total_count > state.pages[row.section].page_size" class="o_baseer_pl_pager"><td t-att-colspan="rowColspan()"><button type="button" t-att-disabled="state.pages[row.section].page &lt;= 1" t-on-click="() => this.loadAccounts(row.section, state.pages[row.section].page - 1)" t-esc="labels.previous"/><span><t t-esc="labels.page"/> <t t-esc="state.pages[row.section].page"/></span><button type="button" t-att-disabled="state.pages[row.section].page * state.pages[row.section].page_size >= state.pages[row.section].total_count" t-on-click="() => this.loadAccounts(row.section, state.pages[row.section].page + 1)" t-esc="labels.next"/></td></tr>
+                                </t>
+                            </t></tbody>
+                        </table></div>
+                    </section>
+                </div>
+            </t>
+            <section t-if="state.detail" class="o_baseer_report_canvas o_baseer_go_detail_page" t-att-aria-label="labels.source">
+                <div class="o_baseer_report o_baseer_pl_paper">
+                    <button type="button" class="btn btn-secondary o_baseer_go_back" t-on-click="closeDetail"><i class="fa fa-arrow-left" aria-hidden="true"/> <span t-esc="labels.back"/></button>
+                    <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title"><span t-esc="state.detail.account.code"/> <span t-esc="state.detail.account.name"/></h1><p class="o_baseer_report_period"><span t-esc="labels.source"/> · <span t-esc="state.detail.periodLabel"/></p></div></header>
+                    <div class="o_baseer_report_notice o_baseer_go_incomplete" role="note" t-esc="labels.incomplete"/>
+                    <div t-if="state.detail.error" class="alert alert-danger" role="alert" t-esc="state.detail.error"/>
+                    <div t-if="state.detail.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.eventsLoading"/>
+                    <div t-if="state.detail.result" class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table o_baseer_go_events">
+                        <thead><tr><th scope="col" t-esc="labels.date"/><th scope="col" t-esc="labels.eventSource"/><th scope="col" class="is-number" t-esc="labels.balance"/></tr></thead>
+                        <tbody><tr t-foreach="state.detail.result.events" t-as="event" t-key="event_index"><td t-esc="event.date"/><td><span t-esc="event.source_model"/> #<span t-esc="event.source_id"/></td><td class="is-number" t-esc="event.amount"/></tr>
+                            <tr t-if="!state.detail.result.events.length"><td colspan="3" class="o_baseer_pl_status" t-esc="labels.noEvents"/></tr>
+                        </tbody>
+                    </table></div>
+                    <div t-if="state.detail.result &amp;&amp; state.detail.result.total_count > state.detail.result.page_size" class="o_baseer_pl_pager o_baseer_go_event_pager"><button type="button" t-att-disabled="state.detail.loading || state.detail.page &lt;= 1" t-on-click="() => this.loadEventPage(state.detail.page - 1)" t-esc="labels.previous"/><span><t t-esc="labels.page"/> <t t-esc="state.detail.page"/></span><button type="button" t-att-disabled="state.detail.loading || state.detail.page * state.detail.result.page_size >= state.detail.result.total_count" t-on-click="() => this.loadEventPage(state.detail.page + 1)" t-esc="labels.next"/></div>
+                </div>
+            </section>
+        </main>
+    </t>
+</templates>

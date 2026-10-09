@@ -1,0 +1,15 @@
+.o_baseer_go_report {
+    .o_baseer_go_incomplete {
+        border-inline-start: 3px solid #bc8130;
+        background: #fff4dc;
+        color: #614a22;
+    }
+    .o_baseer_go_detail_page { padding-block: 1rem; }
+    .o_baseer_go_back { margin-bottom: 1rem; }
+    .o_baseer_go_event_pager { padding: 0.75rem; }
+    .o_baseer_go_events th:first-child { width: 25%; }
+    .o_baseer_go_events td:nth-child(2) { overflow-wrap: anywhere; }
+}
+
+// Inherit the P&L mobile row layout so the page scrolls vertically without
+// forcing a 38rem-wide table on phones.

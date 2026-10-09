@@ -94,6 +94,19 @@ class TestOperationsGrossCalculator(TransactionCase):
     def _row(snapshot, key):
         return next(row for row in snapshot['periods'][0]['rows'] if row['key'] == key)
 
+    def test_month_caption_uses_server_period_label(self):
+        snapshot = self.report.get_source_snapshot({
+            'company_id': self.company.id,
+            'period': {'kind': 'month', 'anchor_date': '2041-06-15',
+                       'direction': 0},
+            'comparison': {'kind': 'none', 'order': 'descending'},
+            'journal_ids': [],
+        })
+        self.assertEqual(
+            snapshot['periods'][0]['display_label'],
+            snapshot['period_controls']['options'][0]['display_label'],
+        )
+
     def test_invoice_refund_and_nine_rows_include_attributed_vat(self):
         self._invoice('out_invoice', self.sale_journal, [
             ('VAT sale', self.income, 100, 0, self.tax),

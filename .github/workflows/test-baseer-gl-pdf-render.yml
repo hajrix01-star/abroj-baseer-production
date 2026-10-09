@@ -42,11 +42,12 @@ jobs:
           BASEER_GL_PDF_ARTIFACT_DIR: /mnt/artifacts
         run: |
           set -Eeuo pipefail
+          install -d -m 0777 "$RUNNER_TEMP/gl-pdf-artifacts"
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             -e BASEER_GL_PDF_ARTIFACT_DIR=/mnt/artifacts \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
-            --mount type=bind,src="$RUNNER_TEMP",dst=/mnt/artifacts \
+            --mount type=bind,src="$RUNNER_TEMP/gl-pdf-artifacts",dst=/mnt/artifacts \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
@@ -58,5 +59,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: baseer-gl-pdf-render
-          path: ${{ runner.temp }}/gl-*.pdf
+          path: ${{ runner.temp }}/gl-pdf-artifacts/gl-*.pdf
           if-no-files-found: error

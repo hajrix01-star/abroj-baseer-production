@@ -20,7 +20,7 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
     def _money(value):
         return Decimal(str(value)).quantize(Decimal('0.01'))
 
-    def test_ordinary_order_line_gross_refund_and_status_are_distinct(self):
+    def test_synthetic_order_line_gross_refund_and_status_are_distinct(self):
         company = self.env.company
         tax = self.env['account.tax'].with_company(company).create({
             'name': 'Operations native POS VAT 15%',
@@ -78,6 +78,8 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
         self.assertEqual(self._money(refund.amount_tax), Decimal('-15.00'))
         self.assertEqual(self._money(refund.amount_total), Decimal('-115.00'))
         self.assertTrue(refund.is_refund)
+        # This hand-built negative-quantity row only characterizes a possible
+        # stored shape; the native _refund orientation is asserted separately.
         self.assertEqual({row.id for row in (draft | paid | done | cancelled | refund)
                           if row.state in ('paid', 'done')},
                          {paid.id, done.id, refund.id})
@@ -219,8 +221,10 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
         self.assertEqual(refund.state, 'draft')
         self.assertEqual(refund.lines.refunded_orderline_id, order.lines)
         self.assertEqual(self._money(refund.lines.price_subtotal_incl),
-                         Decimal('-115.00'))
+                         Decimal('115.00'))
         self.assertEqual(self._money(refund.amount_total), Decimal('-115.00'))
+        # Native _refund keeps the line's inclusive subtotal positive; the
+        # refund orientation lives on the order amount/is_refund, not the line.
         self.env['pos.payment'].with_company(company).create({
             'pos_order_id': refund.id, 'payment_method_id': method.id,
             'amount': -115,

@@ -404,3 +404,96 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertFalse(snapshot['complete'])
         self.assertEqual(snapshot['periods'][0]['excluded'][
             'foreign_currency_bank_outflow'], 1)
+
+    def test_multi_line_bill_source_stays_outside_limited_calculator(self):
+        cost = self.accounts.create({
+            'code': '958126', 'name': 'Gross payment source direct cost',
+            'account_type': 'expense_direct_cost',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        bill = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'in_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'invoice_date': '2026-06-10',
+            'invoice_line_ids': [
+                Command.create({
+                    'name': 'Cost with actual VAT', 'quantity': 1,
+                    'price_unit': 100, 'account_id': cost.id,
+                    'tax_ids': [Command.set(self.tax.ids)],
+                }),
+                Command.create({
+                    'name': 'Exempt expense', 'quantity': 1,
+                    'price_unit': 40, 'account_id': self.expense.id,
+                    'tax_ids': [Command.clear()],
+                }),
+            ],
+        })
+        bill.action_post()
+        self.assertEqual(bill.currency_id, self.company.currency_id)
+        self.assertEqual(Decimal(str(bill.amount_total)), 155)
+        base_lines, _tax_lines = bill._get_rounded_base_and_tax_lines()
+        self.env['account.tax']._add_accounting_data_in_base_lines_tax_details(
+            base_lines, self.company,
+        )
+        source_gross = {}
+        for base in base_lines:
+            line = base['record']
+            if line not in bill.invoice_line_ids:
+                continue
+            details = base['tax_details']
+            gross = Decimal(str(details['total_excluded'])) + sum((
+                Decimal(str(tax['tax_amount'])) for tax in details['taxes_data']
+            ), Decimal('0'))
+            source_gross[line.account_id.id] = gross
+        self.assertEqual(source_gross[cost.id], 115)
+        self.assertEqual(source_gross[self.expense.id], 40)
+        self.assertEqual(sum(source_gross.values()), Decimal(str(bill.amount_total)))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+
+        bill_payable = bill.line_ids.filtered(
+            lambda line: line.account_id == self.payable,
+        )
+        self.assertEqual(len(bill_payable), 1)
+        events = []
+        for amount, payment_day, bank_day in (
+            (50, '2026-06-12', '2026-06-15'),
+            (105, '2026-07-03', '2026-07-05'),
+        ):
+            wizard = self.env['account.payment.register'].with_context(
+                active_model='account.move', active_ids=bill.ids,
+            ).create({
+                'journal_id': self.bank.id,
+                'payment_method_line_id': self.method.id,
+                'amount': amount, 'payment_date': payment_day,
+                'installments_mode': 'full',
+                'payment_difference_handling': 'open',
+            })
+            payment = wizard._create_payments()
+            payment_payable = payment.move_id.line_ids.filtered(
+                lambda line: line.account_id == self.payable,
+            )
+            bill_partial = self.env['account.partial.reconcile'].search([
+                ('debit_move_id', '=', payment_payable.id),
+                ('credit_move_id', '=', bill_payable.id),
+            ])
+            self.assertEqual(len(bill_partial), 1)
+            self.assertEqual(Decimal(str(bill_partial.amount)), amount)
+            statement = self._bank_statement(bank_day, self.outstanding, amount)
+            outstanding_credit = payment.move_id.line_ids.filtered(
+                lambda line: line.account_id == self.outstanding,
+            )
+            outstanding_debit = statement.move_id.line_ids.filtered(
+                lambda line: line.account_id == self.outstanding,
+            )
+            (outstanding_credit + outstanding_debit).reconcile()
+            events.append((statement.id, Decimal(str(statement.amount)), statement.date))
+        self.assertEqual(len({event[0] for event in events}), 2)
+        self.assertEqual(events[0][1], Decimal('-50'))
+        self.assertEqual(str(events[0][2]), '2026-06-15')
+        self.assertEqual(events[1][1], Decimal('-105'))
+        self.assertEqual(str(events[1][2]), '2026-07-05')
+        self.assertEqual(Decimal(str(bill.amount_residual)), 0)
+        # Odoo reconciles each payment against the bill's payable term, not
+        # against either product line. Allocation by account is a report rule.
+        self.assertEqual(len(bill_payable.matched_debit_ids), 2)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)

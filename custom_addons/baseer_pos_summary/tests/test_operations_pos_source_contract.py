@@ -241,6 +241,26 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
         self.assertNotEqual(refund.id, order.id)
         self.assertEqual(len(order | refund), 2)
 
+        reader = self.env['res.users'].create({
+            'name': 'POS and invoice source reader',
+            'login': 'operations_pos_invoice_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_readonly').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+        })
+        for records in (order, order.lines, session, session.move_id,
+                        invoice, invoice.invoice_line_ids, reversal,
+                        refund, refund.lines, refund.account_move,
+                        tax, mapped_income):
+            with self.subTest(source=records._name):
+                records.with_user(reader).check_access('read')
+        # A real report must require this complete read chain and fail closed
+        # if any source is hidden; possessing only the invoice is insufficient.
+
     def test_approved_summary_uses_business_day_one_order_and_correction_links(self):
         # Reuse the existing onboarding path, which creates a Saudi/SAR chart,
         # a dedicated summary register and a separate platform clearing method.

@@ -216,6 +216,128 @@ class TestOperationsGrossNativeSourceContract(TransactionCase):
         self.assertEqual(self._money(line.price_total - line.price_subtotal),
                          Decimal('15.00'))
 
+    def test_foreign_bill_partial_vat_is_attributed_from_posted_tax_details(self):
+        """VAT per P&L account comes from rounded source/repartition, not FX guesses."""
+        foreign_xmlid = 'base.EUR' if self.company.currency_id.name != 'EUR' else 'base.USD'
+        foreign = self.env.ref(foreign_xmlid)
+        foreign.active = True
+        self.env['res.currency.rate'].create({
+            'name': '2041-06-01', 'company_id': self.company.id,
+            'currency_id': foreign.id, 'rate': 2.3,
+        })
+        # Half the VAT is recoverable; the other half has no dedicated tax
+        # account and Odoo books it to the originating expense account.
+        partial_vat = self.env['account.tax'].with_company(self.company).create({
+            'name': 'Operations source partly recoverable VAT 15%',
+            'amount_type': 'percent', 'amount': 15,
+            'type_tax_use': 'purchase', 'company_id': self.company.id,
+            'invoice_repartition_line_ids': [
+                Command.create({'document_type': 'invoice',
+                                'repartition_type': 'base', 'factor_percent': 100}),
+                Command.create({'document_type': 'invoice',
+                                'repartition_type': 'tax', 'factor_percent': 50,
+                                'account_id': self.vat_paid.id}),
+                Command.create({'document_type': 'invoice',
+                                'repartition_type': 'tax', 'factor_percent': 50}),
+            ],
+            'refund_repartition_line_ids': [
+                Command.create({'document_type': 'refund',
+                                'repartition_type': 'base', 'factor_percent': 100}),
+                Command.create({'document_type': 'refund',
+                                'repartition_type': 'tax', 'factor_percent': 50,
+                                'account_id': self.vat_paid.id}),
+                Command.create({'document_type': 'refund',
+                                'repartition_type': 'tax', 'factor_percent': 50}),
+            ],
+        })
+        bill = self._invoice('in_invoice', self.purchase_journal, [
+            ('Partly recoverable cost', self.cost, 33.33, 0, partial_vat),
+            ('Partly recoverable expense', self.expense, 66.67, 0, partial_vat),
+        ], currency=foreign)
+        self.assertEqual(bill.currency_id, foreign)
+        self.assertEqual(self._money(bill.amount_total), Decimal('115.00'))
+        posted_tax_amls = bill.line_ids.filtered(
+            lambda line: line.tax_repartition_line_id.tax_id == partial_vat,
+        )
+        self.assertTrue(posted_tax_amls)
+        self.assertEqual(set(posted_tax_amls.mapped('account_id').ids),
+                         {self.vat_paid.id, self.cost.id, self.expense.id})
+        self.assertEqual(set(posted_tax_amls.mapped('tax_line_id').ids),
+                         {partial_vat.id})
+
+        # Odoo 19 rebuilds per-source-line tax detail from the *posted* move
+        # and distributes any document-level rounding delta against tax AMLs.
+        # The tax AML alone can aggregate both invoice lines, so its tax ID is
+        # not enough to allocate recoverable VAT between their P&L accounts.
+        base_lines, tax_lines = bill._get_rounded_base_and_tax_lines()
+        self.assertTrue(tax_lines)
+        self.env['account.tax']._add_accounting_data_in_base_lines_tax_details(
+            base_lines, self.company,
+        )
+        source_lines = {line.id: line for line in bill.invoice_line_ids}
+        attributed = {}
+        by_origin_account = {}
+        tax_by_account = {}
+        for base_line in base_lines:
+            source = base_line['record']
+            if source.id not in source_lines:
+                continue
+            self.assertEqual(source.move_id, bill)
+            self.assertIn(source.account_id, self.cost | self.expense)
+            net = self._money(source.balance)
+            self.assertEqual(self._money(base_line['tax_details']['total_excluded']),
+                             net)
+            source_tax = Decimal('0.00')
+            for tax_data in base_line['tax_details']['taxes_data']:
+                self.assertEqual(tax_data['tax'], partial_vat)
+                local_tax = self._money(tax_data['tax_amount'])
+                source_tax += local_tax
+                repartition_tax = Decimal('0.00')
+                for repartition in tax_data['tax_reps_data']:
+                    amount = self._money(repartition['tax_amount'])
+                    tax_by_account[repartition['account'].id] = (
+                        tax_by_account.get(repartition['account'].id, Decimal('0.00'))
+                        + amount
+                    )
+                    repartition_tax += amount
+                self.assertEqual(repartition_tax, local_tax)
+            attributed[source.id] = (net, source_tax, net + source_tax)
+            by_origin_account[source.account_id.id] = (net, source_tax, net + source_tax)
+            # This is a company-currency value; the invoice's 33.33/66.67
+            # price_total values are in the foreign document currency.
+            self.assertNotEqual(net, self._money(source.price_subtotal))
+        self.assertEqual(set(attributed), set(source_lines))
+        self.assertEqual(set(by_origin_account), {self.cost.id, self.expense.id})
+        self.assertEqual(set(tax_by_account),
+                         {self.vat_paid.id, self.cost.id, self.expense.id})
+        # The tax split names the destination accounts, but rounding in Odoo
+        # is first aligned at tax-ID level. Never assume a rep share for one
+        # source line equals a posted *grouped* tax AML for that account.
+        posted_tax_by_account = {
+            account.id: sum((self._money(line.balance) for line in posted_tax_amls
+                             if line.account_id == account), Decimal('0.00'))
+            for account in (self.vat_paid, self.cost, self.expense)
+        }
+        self.assertTrue(posted_tax_by_account[self.cost.id] > 0)
+        self.assertTrue(posted_tax_by_account[self.expense.id] > 0)
+        self.assertEqual(
+            sum((values[1] for values in attributed.values()), Decimal('0.00')),
+            sum((self._money(line.balance) for line in posted_tax_amls),
+                Decimal('0.00')),
+        )
+        self.assertEqual(
+            sum((values[2] for values in attributed.values()), Decimal('0.00')),
+            self._money(sum(bill.line_ids.filtered(
+                lambda line: line.display_type == 'payment_term',
+            ).mapped('credit'))),
+        )
+        # The non-recoverable share is a posted P&L tax AML in cost/expense;
+        # adding every tax AML to P&L net would count that share twice.
+        self.assertEqual(
+            sum(posted_tax_by_account.values(), Decimal('0.00')),
+            sum(tax_by_account.values(), Decimal('0.00')),
+        )
+
     def test_company_scoped_readonly_user_cannot_see_other_invoice_source(self):
         other = self.env['res.company'].create({
             'name': 'Operations source second company',

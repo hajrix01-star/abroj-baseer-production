@@ -74,8 +74,7 @@ class BaseerOperationsReport(models.AbstractModel):
             'baseer.pos.summary', 'res.partner',
             'product.product', 'account.fiscal.position',
             'account.bank.statement.line', 'account.partial.reconcile',
-            'account.payment', 'account.payment.method.line',
-            'baseer.purchase.batch', 'baseer.purchase.batch.line',
+            'account.payment',
         ))
         return company, journal_ids, periods, period_control, comparison_control
 
@@ -736,17 +735,30 @@ class BaseerOperationsReport(models.AbstractModel):
             ('payment_id', '!=', False),
             ('invoice_date', '<=', end),
         ]
-        source = self.env['baseer.purchase.batch.line'].search(domain, order='id')
         self.env['baseer.purchase.batch.line'].flush_model([
             'company_id', 'batch_id', 'payment_id', 'invoice_date',
         ])
         self.env['baseer.purchase.batch'].flush_model(['state'])
-        self._assert_visible(
-            'baseer_purchase_batch_line',
-            'company_id=%s AND invoice_date <= %s AND payment_id IS NOT NULL '
-            'AND batch_id IN (SELECT id FROM baseer_purchase_batch WHERE state=%s)',
-            [company.id, end, 'approved'], source,
+        # Users without purchase-batch ACL may still read a report period
+        # with no batch source. If a source exists, never silently omit it.
+        self.env.cr.execute(
+            'SELECT l.id FROM baseer_purchase_batch_line l '
+            'JOIN baseer_purchase_batch b ON b.id=l.batch_id '
+            'WHERE l.company_id=%s AND l.invoice_date <= %s '
+            'AND l.payment_id IS NOT NULL AND b.state=%s',
+            [company.id, end, 'approved'],
         )
+        source_ids = {row[0] for row in self.env.cr.fetchall()}
+        if not source_ids:
+            return
+        self._require_read((
+            'baseer.purchase.batch', 'baseer.purchase.batch.line',
+            'account.payment.method.line',
+        ))
+        source = self.env['baseer.purchase.batch.line'].search(domain, order='id')
+        if set(source.ids) != source_ids:
+            self._deny_incomplete_source()
+        source.check_access('read')
         seen_payments = set()
         for line in source:
             batch = line.batch_id

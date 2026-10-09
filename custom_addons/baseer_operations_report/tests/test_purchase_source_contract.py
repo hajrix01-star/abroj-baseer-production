@@ -710,6 +710,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
 
     def test_approved_batch_direct_cash_payment_counts_its_bill_once(self):
+        self.company.currency_id = self.env.ref('base.SAR')
         self.purchase.write({
             'default_account_id': self.expense.id, 'sequence': -100,
         })

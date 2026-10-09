@@ -1,6 +1,6 @@
 """Narrow G5 evidence for the incomplete gross-operations source slice."""
 
-from datetime import date
+from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
 
@@ -143,6 +143,15 @@ class TestOperationsGrossCalculator(TransactionCase):
                 Command.create({'document_type': 'invoice',
                                 'repartition_type': 'tax', 'factor_percent': 50}),
             ],
+            'refund_repartition_line_ids': [
+                Command.create({'document_type': 'refund',
+                                'repartition_type': 'base', 'factor_percent': 100}),
+                Command.create({'document_type': 'refund',
+                                'repartition_type': 'tax', 'factor_percent': 50,
+                                'account_id': self.input_tax_account.id}),
+                Command.create({'document_type': 'refund',
+                                'repartition_type': 'tax', 'factor_percent': 50}),
+            ],
         })
         bill = self._invoice('in_invoice', self.purchase_journal, [
             ('Partial cost', self.cost, 33.33, 0, partial),
@@ -194,18 +203,34 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 1)
 
     def test_restricted_user_fails_closed_and_other_company_is_rejected(self):
+        invoice = self._invoice('out_invoice', self.sale_journal, [
+            ('Restricted VAT sale', self.income, 100, 0, self.tax),
+        ])
         reader = self.env['res.users'].create({
             'name': 'Gross operations limited reader',
             'login': 'gross_operations_limited_reader',
             'group_ids': [Command.set([
                 self.env.ref('base.group_user').id,
                 self.env.ref('account.group_account_readonly').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
             ])],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
-        with self.assertRaises(AccessError):
-            self._snapshot(report=self.report.with_user(reader))
+        secured = self.report.with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(self._row(self._snapshot(report=secured), 'income')['amount'], '115.00')
+        rule = self.env['ir.rule'].create({
+            'name': 'Gross operations hide source invoice',
+            'model_id': self.env['ir.model']._get('account.move').id,
+            'domain_force': f"[('id', '!=', {invoice.id})]",
+        })
+        try:
+            with self.assertRaises(AccessError):
+                self._snapshot(report=secured)
+        finally:
+            rule.unlink()
         other = self.env['res.company'].create({'name': 'Other gross operations company'})
         with self.assertRaises(AccessError):
             self.report.get_source_snapshot({**self._filters(), 'company_id': other.id})
@@ -300,3 +325,40 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(self._row(after_refund, 'income')['amount'], '0.00')
         self.assertEqual(after_refund['periods'][0]['excluded']['linked_pos_invoice'], 2)
         self.assertEqual(after_refund['periods'][0]['accounts']['income'][0]['source_count'], 2)
+
+        # The invoices remain in today's period, but their original POS
+        # operations have moved outside it. Hiding one old order must fail
+        # closed rather than allowing its invoice to become a second sale.
+        older = fields.Datetime.now() - timedelta(days=1)
+        (order | refund).write({'date_order': older})
+        invoice_only = current_snapshot()
+        self.assertEqual(self._row(invoice_only, 'income')['amount'], '0.00')
+        self.assertEqual(invoice_only['periods'][0]['excluded']['linked_pos_invoice'], 2)
+        reader = self.env['res.users'].create({
+            'name': 'Gross operations POS link reader',
+            'login': 'gross_operations_pos_link_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_manager').id,
+                self.env.ref('point_of_sale.group_pos_manager').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = self.report.with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(
+            self._row(secured.get_source_snapshot(current_filters), 'income')['amount'],
+            '0.00',
+        )
+        rule = self.env['ir.rule'].create({
+            'name': 'Gross operations hide older linked POS order',
+            'model_id': self.env['ir.model']._get('pos.order').id,
+            'domain_force': f"[('id', '!=', {order.id})]",
+        })
+        try:
+            with self.assertRaises(AccessError):
+                secured.get_source_snapshot(current_filters)
+        finally:
+            rule.unlink()

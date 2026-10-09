@@ -394,7 +394,8 @@ class BaseerOperationsReport(models.AbstractModel):
             self._record(sections, section, account, amount, 'pos')
 
     @api.model
-    def _direct_exclusions(self, company, start, end, journal_ids):
+    def _direct_exclusions(self, company, start, end, journal_ids,
+                           recognized_direct_ids=()):
         domain = [
             ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
             ('move_id.move_type', '=', 'entry'),
@@ -426,8 +427,11 @@ class BaseerOperationsReport(models.AbstractModel):
         if set(row[0] for row in self.env.cr.fetchall()) != set(lines.ids):
             self._deny_incomplete_source()
         lines.check_access('read')
-        # Source count only, not a VAT allocation or a subtotal.
-        return len(lines)
+        recognized = set(recognized_direct_ids)
+        if not recognized.issubset(set(lines.ids)):
+            self._deny_incomplete_source()
+        # Recognized direct bank expenses are not still called unproven AML.
+        return len(lines) - len(recognized)
 
     @api.model
     def _allocate_purchase_event(self, gross_amounts, prior, amount, currency):
@@ -495,11 +499,9 @@ class BaseerOperationsReport(models.AbstractModel):
             self._deny_incomplete_source()
         statements.check_access('read')
         seen = set()
+        recognized_direct = set()
         cumulative = {}
         for statement in statements.sorted(lambda item: (item.date, item.id)):
-            if journal_ids:
-                excluded['purchase_journal_filter_unproven'] += 1
-                continue
             statement.check_access('read')
             journal = statement.journal_id
             journal.check_access('read')
@@ -507,7 +509,8 @@ class BaseerOperationsReport(models.AbstractModel):
             move.check_access('read')
             if (statement.id in seen or move.state != 'posted'
                     or move.company_id != company or journal.type != 'bank'
-                    or not journal.default_account_id):
+                    or not journal.default_account_id
+                    or journal.default_account_id.account_type != 'asset_cash'):
                 self._deny_incomplete_source()
             seen.add(statement.id)
             if statement.currency_id != company.currency_id:
@@ -529,6 +532,26 @@ class BaseerOperationsReport(models.AbstractModel):
                 excluded['unproven_bank_outflow'] += 1
                 continue
             (bank | counterpart).mapped('account_id').check_access('read')
+            if counterpart.account_id.account_type in EXPENSE_KEYS:
+                if (move.move_type != 'entry' or move.origin_payment_id
+                        or any(line.tax_line_id or line.tax_ids for line in lines)
+                        or counterpart.account_id.reconcile
+                        or counterpart.matched_credit_ids
+                        or counterpart.matched_debit_ids):
+                    excluded['unsupported_direct_bank_expense'] += 1
+                    continue
+                if journal_ids and journal.id not in journal_ids:
+                    continue
+                if start <= statement.date <= end:
+                    self._record(
+                        sections, counterpart.account_id.account_type,
+                        counterpart.account_id, amount, 'bank_statement_direct',
+                    )
+                    recognized_direct.add(counterpart.id)
+                continue
+            if journal_ids:
+                excluded['purchase_journal_filter_unproven'] += 1
+                continue
             if (counterpart.account_id.account_type == 'asset_current'
                   and counterpart.account_id.reconcile):
                 # The bank has cleared an outstanding payment.  That payment
@@ -641,6 +664,7 @@ class BaseerOperationsReport(models.AbstractModel):
                             sections, section, account, allocated,
                             'bank_statement',
                         )
+        return recognized_direct
 
     @api.model
     def _rows(self, sections, company):
@@ -693,11 +717,11 @@ class BaseerOperationsReport(models.AbstractModel):
                 self._invoice_amounts(move, company, sections, excluded)
             for order in self._pos_records(company, start, end, journal_ids):
                 self._pos_amounts(order, company, sections, excluded)
-            self._purchase_outflows(
+            recognized_direct = self._purchase_outflows(
                 company, start, end, journal_ids, sections, excluded,
             )
             excluded['direct_aml_unproven'] = self._direct_exclusions(
-                company, start, end, journal_ids,
+                company, start, end, journal_ids, recognized_direct,
             )
             rows, accounts = self._rows(sections, company)
             payload_periods.append({

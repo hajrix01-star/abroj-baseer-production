@@ -109,11 +109,12 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(statement_line.amount)), -Decimal(str(amount)))
         return statement_line
 
-    def _purchase_amount(self, start, end, report=None):
+    def _purchase_amount(self, start, end, report=None, journal_ids=None):
         report = report or self.env['baseer.operations.report']
         snapshot = report.get_source_snapshot({
             'company_id': self.company.id,
-            'date_from': start, 'date_to': end, 'journal_ids': [],
+            'date_from': start, 'date_to': end,
+            'journal_ids': journal_ids or [],
         })
         self.assertFalse(snapshot['complete'])
         rows = snapshot['periods'][0]['rows']
@@ -286,7 +287,23 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertFalse(lines.filtered('tax_line_id'))
         self.assertFalse(expense_line.tax_ids)
         self.assertFalse(expense_line.matched_credit_ids | expense_line.matched_debit_ids)
-        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+        ), 40)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.general.ids,
+        ), 0)
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        rows = {row['key']: row['amount'] for row in snapshot['periods'][0]['rows']}
+        self.assertEqual(rows['expense'], '40.00')
+        self.assertEqual(rows['net_income'], '-40.00')
+        self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 0)
 
         transfer = self._bank_statement('2026-06-19', self.cash, 30)
         advance = self._bank_statement('2026-06-20', self.payable, 20)
@@ -299,7 +316,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             self.assertNotIn(counterpart.account_id.account_type,
                              ('expense', 'expense_direct_cost',
                               'expense_depreciation', 'expense_other'))
-        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
 
     def test_hidden_outflow_and_other_company_require_fail_closed_reader(self):
         bill = self._bill()

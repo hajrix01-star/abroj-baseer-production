@@ -352,15 +352,6 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(transfer_bank.balance)), Decimal('30.00'))
         self.assertEqual(transfer_bank.account_id.account_type, 'asset_cash')
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
-        sections, _excluded = self.env['baseer.operations.report']._period_sources(
-            self.company, direct.date, direct.date, [],
-        )
-        direct_event = sections['expense'][self.expense.id]['events'][0]
-        self.assertEqual((direct_event['source_model'], direct_event['source_id']),
-                         ('account.bank.statement.line', direct.id))
-        self.assertEqual(direct_event['line_id'], expense_line.id)
-        self.assertEqual(direct_event['date'], '2026-06-18')
-        self.assertEqual(direct_event['amount'], Decimal('40.00'))
         self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=cash_journal.ids,
@@ -992,6 +983,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertFalse(expense_line.tax_ids)
         self.assertFalse(expense_line.matched_credit_ids | expense_line.matched_debit_ids)
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
+        sections, _excluded = self.env['baseer.operations.report']._period_sources(
+            self.company, direct.date, direct.date, [],
+        )
+        direct_event = sections['expense'][self.expense.id]['events'][0]
+        self.assertEqual((direct_event['source_model'], direct_event['source_id']),
+                         ('account.bank.statement.line', direct.id))
+        self.assertEqual(direct_event['line_id'], expense_line.id)
+        self.assertEqual(direct_event['date'], '2026-06-18')
+        self.assertEqual(direct_event['amount'], Decimal('40.00'))
         self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,

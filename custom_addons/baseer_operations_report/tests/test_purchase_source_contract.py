@@ -165,7 +165,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
         self.assertEqual(Decimal(str(bank_50_line.balance)), Decimal('-50.00'))
         self.assertEqual(str(bank_50_line.date), '2026-06-15')
-        self.assertEqual(str(first_partial.max_date), '2026-06-12')
+        self.assertEqual(first_partial.max_date, max(bill_payable.date, payment_payable.date))
+        self.assertNotEqual(first_partial.max_date, bank_50_line.date)
 
         bank_65 = self._bank_statement('2026-07-05', self.payable, 65)
         payable_65 = bank_65.move_id.line_ids.filtered(

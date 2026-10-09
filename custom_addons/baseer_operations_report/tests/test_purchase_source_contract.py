@@ -495,5 +495,35 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         # Odoo reconciles each payment against the bill's payable term, not
         # against either product line. Allocation by account is a report rule.
         self.assertEqual(len(bill_payable.matched_debit_ids), 2)
-        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
-        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
+        report = self.env['baseer.operations.report']
+        def row_amount(start, end, key):
+            snapshot = report.get_source_snapshot({
+                'company_id': self.company.id,
+                'date_from': start, 'date_to': end, 'journal_ids': [],
+            })
+            self.assertFalse(snapshot['complete'])
+            return Decimal(next(row['amount'].replace(',', '') for row in
+                                snapshot['periods'][0]['rows'] if row['key'] == key))
+
+        self.assertEqual(row_amount('2026-06-01', '2026-06-30', 'cost_of_sales'),
+                         Decimal('37.10'))
+        self.assertEqual(row_amount('2026-06-01', '2026-06-30', 'expense'),
+                         Decimal('12.90'))
+        self.assertEqual(row_amount('2026-07-01', '2026-07-31', 'cost_of_sales'),
+                         Decimal('77.90'))
+        self.assertEqual(row_amount('2026-07-01', '2026-07-31', 'expense'),
+                         Decimal('27.10'))
+
+    def test_cumulative_allocation_of_many_small_outflows_has_no_drift(self):
+        report = self.env['baseer.operations.report']
+        gross = [Decimal('115.00'), Decimal('40.00')]
+        totals = [Decimal('0'), Decimal('0')]
+        for paid_before in range(155):
+            allocation = report._allocate_purchase_event(
+                gross, Decimal(paid_before), Decimal('1'),
+                self.company.currency_id,
+            )
+            self.assertEqual(sum(allocation), Decimal('1'))
+            for index, value in enumerate(allocation):
+                totals[index] += value
+        self.assertEqual(totals, gross)

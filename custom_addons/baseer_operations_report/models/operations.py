@@ -161,7 +161,7 @@ class BaseerOperationsReport(models.AbstractModel):
         entry['source_counts'][source] += 1
 
     @api.model
-    def _invoice_amounts(self, move, company, sections, excluded):
+    def _invoice_amounts(self, move, company, sections, excluded, line_entries=None):
         move.check_access('read')
         move.journal_id.check_access('read')
         if move.company_id != company:
@@ -247,6 +247,8 @@ class BaseerOperationsReport(models.AbstractModel):
                 excluded['tax_only_invoice_lines'] += 1
                 continue
             signed_tax = source_tax.copy_sign(net) if source_tax else Decimal('0')
+            if line_entries is not None:
+                line_entries.append((line.id, section, account, net + signed_tax))
             self._record(sections, section, account, net + signed_tax, 'invoice')
         # Tax AML is accounting evidence, never an additional operation.
         move.line_ids.filtered('tax_line_id').check_access('read')
@@ -351,6 +353,32 @@ class BaseerOperationsReport(models.AbstractModel):
         return len(lines)
 
     @api.model
+    def _allocate_purchase_event(self, gross_amounts, prior, amount, currency):
+        """Allocate one cash event by the change in cumulative rounded targets."""
+        total = sum(gross_amounts, Decimal('0'))
+        after = prior + amount
+        if (not gross_amounts or any(gross <= 0 for gross in gross_amounts)
+                or prior < 0 or amount <= 0 or after > total):
+            self._deny_incomplete_source()
+        allocated = []
+        used = Decimal('0')
+        target_used = Decimal('0')
+        for gross in gross_amounts[:-1]:
+            before_target = self._decimal(currency.round(float(prior * gross / total)))
+            after_target = self._decimal(currency.round(float(after * gross / total)))
+            delta = after_target - before_target
+            if delta < 0 or after_target > gross:
+                self._deny_incomplete_source()
+            allocated.append(delta)
+            used += delta
+            target_used += after_target
+        last_delta = amount - used
+        if last_delta < 0 or after - target_used > gross_amounts[-1]:
+            self._deny_incomplete_source()
+        allocated.append(last_delta)
+        return allocated
+
+    @api.model
     def _purchase_outflows(self, company, start, end, journal_ids, sections, excluded):
         """Limited proof: one-line company-currency bill paid by a bank statement.
 
@@ -359,7 +387,7 @@ class BaseerOperationsReport(models.AbstractModel):
         Unsupported purchase patterns remain outside this incomplete report.
         """
         domain = [
-            ('company_id', '=', company.id), ('date', '>=', start),
+            ('company_id', '=', company.id),
             ('date', '<=', end), ('amount', '<', 0),
         ]
         statements = self.env['account.bank.statement.line'].search(domain, order='id')
@@ -372,15 +400,16 @@ class BaseerOperationsReport(models.AbstractModel):
         self.env.cr.execute(
             'SELECT s.id FROM account_bank_statement_line s '
             'JOIN account_move m ON m.id=s.move_id '
-            'WHERE s.company_id=%s AND m.date >= %s AND m.date <= %s '
+            'WHERE s.company_id=%s AND m.date <= %s '
             'AND s.amount < 0',
-            [company.id, start, end],
+            [company.id, end],
         )
         if {row[0] for row in self.env.cr.fetchall()} != set(statements.ids):
             self._deny_incomplete_source()
         statements.check_access('read')
         seen = set()
-        for statement in statements:
+        cumulative = {}
+        for statement in statements.sorted(lambda item: (item.date, item.id)):
             if journal_ids:
                 excluded['purchase_journal_filter_unproven'] += 1
                 continue
@@ -491,17 +520,42 @@ class BaseerOperationsReport(models.AbstractModel):
                 continue
             bill_sections = {key: {} for key in SECTION_KEYS}
             bill_excluded = Counter()
-            self._invoice_amounts(bill, company, bill_sections, bill_excluded)
-            entries = [(kind, entry) for kind in EXPENSE_KEYS
-                       for entry in bill_sections[kind].values()]
-            if (len(entries) != 1 or bill_excluded.get('non_pl_invoice_lines')
+            line_entries = []
+            self._invoice_amounts(
+                bill, company, bill_sections, bill_excluded, line_entries,
+            )
+            source_lines = bill.invoice_line_ids.filtered(
+                lambda line: line.display_type == 'product',
+            )
+            if (not line_entries or len(line_entries) != len(source_lines)
+                    or any(kind not in EXPENSE_KEYS or gross <= 0
+                           for _line_id, kind, _account, gross in line_entries)
+                    or bill_excluded.get('non_pl_invoice_lines')
                     or bill_excluded.get('unsupported_negative_tax_lines')
                     or bill_excluded.get('tax_only_invoice_lines')
-                    or entries[0][1]['raw'] != self._decimal(bill.amount_total)):
+                    or sum((item[3] for item in line_entries), Decimal('0'))
+                    != self._decimal(bill.amount_total)):
                 excluded['unsupported_purchase_bill'] += 1
                 continue
-            section, entry = entries[0]
-            self._record(sections, section, entry['account'], amount, 'bank_statement')
+            total = self._decimal(bill.amount_total)
+            prior = cumulative.get(bill.id, Decimal('0'))
+            after = prior + amount
+            if after > total:
+                self._deny_incomplete_source()
+            cumulative[bill.id] = after
+            line_entries.sort(key=lambda item: item[0])
+            allocations = self._allocate_purchase_event(
+                [item[3] for item in line_entries], prior, amount,
+                company.currency_id,
+            )
+            if start <= statement.date <= end:
+                for (_line_id, section, account, _gross), allocated in zip(
+                        line_entries, allocations, strict=True):
+                    if allocated:
+                        self._record(
+                            sections, section, account, allocated,
+                            'bank_statement',
+                        )
 
     @api.model
     def _rows(self, sections, company):

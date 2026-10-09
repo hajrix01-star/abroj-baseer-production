@@ -8,6 +8,7 @@ precede the bank movement when an outstanding account is configured.
 from decimal import Decimal
 
 from odoo import Command
+from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -288,6 +289,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'group_ids': [Command.set([
                 self.env.ref('base.group_user').id,
                 self.env.ref('account.group_account_readonly').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
             ])],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
@@ -310,6 +312,26 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             self.assertEqual(self.env.cr.fetchone()[0], outflow.id)
         finally:
             rule.unlink()
+
+        hidden_bank = self._bank_statement('2026-06-15', self.outstanding, 10)
+        secured_report = self.env['baseer.operations.report'].with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        bank_rule = self.env['ir.rule'].create({
+            'name': 'Gross payment source hide bank statement',
+            'model_id': self.env['ir.model']._get('account.bank.statement.line').id,
+            'domain_force': f"[('id', '!=', {hidden_bank.id})]",
+        })
+        try:
+            bank_rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                secured_report.get_source_snapshot({
+                    'company_id': self.company.id,
+                    'date_from': '2026-06-01', 'date_to': '2026-06-30',
+                    'journal_ids': [],
+                })
+        finally:
+            bank_rule.unlink()
 
         other = self.env['res.company'].create({
             'name': 'Gross payment source other company',
@@ -342,3 +364,34 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         other_move._post(soft=False)
         self.assertFalse(secured_move.search([('id', '=', other_move.id)]))
         self.assertNotEqual(other_move.company_id, self.company)
+
+    def test_foreign_currency_bank_statement_is_not_company_currency_purchase(self):
+        foreign = self.env.ref('base.EUR' if self.company.currency_id.name != 'EUR'
+                               else 'base.USD')
+        foreign.active = True
+        self.env['res.currency.rate'].create({
+            'name': '2026-06-01', 'company_id': self.company.id,
+            'currency_id': foreign.id, 'rate': 2,
+        })
+        foreign_bank = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Gross payment foreign bank', 'code': 'GPF',
+            'type': 'bank', 'company_id': self.company.id,
+            'currency_id': foreign.id, 'default_account_id': self.cash.id,
+        })
+        statement = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': foreign_bank.id, 'date': '2026-06-22',
+            'payment_ref': 'Foreign currency outflow',
+            'partner_id': self.partner.id, 'amount': -10,
+            'counterpart_account_id': self.outstanding.id,
+        })
+        self.assertEqual(statement.currency_id, foreign)
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        self.assertFalse(snapshot['complete'])
+        self.assertEqual(snapshot['periods'][0]['excluded'][
+            'foreign_currency_bank_outflow'], 1)

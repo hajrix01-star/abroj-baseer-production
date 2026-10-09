@@ -394,6 +394,9 @@ class BaseerOperationsReport(models.AbstractModel):
                     or not journal.default_account_id):
                 self._deny_incomplete_source()
             seen.add(statement.id)
+            if statement.currency_id != company.currency_id:
+                excluded['foreign_currency_bank_outflow'] += 1
+                continue
             lines = move.line_ids
             self.env['account.move.line'].flush_model(['move_id'])
             self._assert_visible(
@@ -448,6 +451,9 @@ class BaseerOperationsReport(models.AbstractModel):
                         or payment.payment_type != 'outbound'
                         or payment.partner_type != 'supplier'
                         or payment.state not in ('in_process', 'paid')
+                        or payment.currency_id != company.currency_id
+                        or payment.date > statement.date
+                        or statement.partner_id != payment.partner_id
                         or payment.outstanding_account_id != counterpart.account_id):
                     excluded['unproven_outstanding_allocation'] += 1
                     continue

@@ -240,6 +240,65 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             finally:
                 rule.unlink()
 
+    def test_direct_taxed_bank_rejects_unlinked_vat_and_fourth_line(self):
+        # A VAT-looking AML without an Odoo tax repartition is not proof of
+        # recorded VAT for the expense base.  This negative fixture is manual
+        # deliberately; the positive fixture never creates its VAT AML.
+        unlinked = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': self.bank.id, 'date': '2026-06-23',
+            'payment_ref': 'Manual VAT-looking counterpart',
+            'partner_id': self.partner.id, 'amount': -115,
+            'line_ids': [
+                Command.create({
+                    'account_id': self.bank.default_account_id.id,
+                    'name': 'Bank', 'credit': 115,
+                }),
+                Command.create({
+                    'account_id': self.expense.id,
+                    'name': 'Expense without tax configuration', 'debit': 100,
+                }),
+                Command.create({
+                    'account_id': self.vat_account.id,
+                    'name': 'Unlinked VAT-like amount', 'debit': 15,
+                }),
+            ],
+        })
+        self.assertEqual(len(unlinked.move_id.line_ids), 3)
+        self.assertFalse(unlinked.move_id.line_ids.filtered('tax_line_id'))
+
+        other = self.accounts.create({
+            'code': '958126', 'name': 'Extra gross payment expense',
+            'account_type': 'expense_other',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        extra = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': self.bank.id, 'date': '2026-06-24',
+            'payment_ref': 'Four AML direct expense',
+            'partner_id': self.partner.id, 'amount': -116,
+            'line_ids': [
+                Command.create({
+                    'account_id': self.bank.default_account_id.id,
+                    'name': 'Bank', 'credit': 116,
+                }),
+                Command.create({
+                    'account_id': self.expense.id,
+                    'name': 'Taxed expense base', 'debit': 100,
+                    'tax_ids': [Command.set(self.tax.ids)],
+                }),
+                Command.create({
+                    'account_id': other.id,
+                    'name': 'Another expense not in narrow contract', 'debit': 1,
+                }),
+            ],
+        })
+        self.assertEqual(len(extra.move_id.line_ids), 4)
+        self.assertEqual(Decimal(str(extra.amount)), Decimal('-116.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+
     def test_bill_waits_for_real_outflow_and_partial_50_then_65(self):
         bill = self._bill()
         bill_payable = bill.line_ids.filtered(

@@ -559,6 +559,7 @@ class BaseerOperationsReport(models.AbstractModel):
                         or tax.type_tax_use != 'purchase'
                         or not repartition or repartition.tax_id != tax
                         or repartition.repartition_type != 'tax'
+                        or repartition not in tax.invoice_repartition_line_ids
                         or repartition.account_id != tax_line.account_id
                         or tax_line.account_id.account_type in SECTION_KEYS
                         or tax_line.account_id.account_type == 'asset_cash'

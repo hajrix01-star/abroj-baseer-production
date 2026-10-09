@@ -317,6 +317,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         secured_report = self.env['baseer.operations.report'].with_user(reader).with_context(
             allowed_company_ids=self.company.ids,
         )
+        self.assertEqual(
+            Decimal(next(row['amount'].replace(',', '') for row in
+                         secured_report.get_source_snapshot({
+                             'company_id': self.company.id,
+                             'date_from': '2026-06-01', 'date_to': '2026-06-30',
+                             'journal_ids': [],
+                         })['periods'][0]['rows'] if row['key'] == 'expense')),
+            0,
+        )
         bank_rule = self.env['ir.rule'].create({
             'name': 'Gross payment source hide bank statement',
             'model_id': self.env['ir.model']._get('account.bank.statement.line').id,

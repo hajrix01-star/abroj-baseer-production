@@ -110,7 +110,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         return statement_line
 
     def _purchase_amount(self, start, end, report=None, journal_ids=None):
-        report = report or self.env['baseer.operations.report']
+        report = report if report is not None else self.env['baseer.operations.report']
         snapshot = report.get_source_snapshot({
             'company_id': self.company.id,
             'date_from': start, 'date_to': end,
@@ -353,6 +353,12 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                     )
             finally:
                 rule.unlink()
+        tax_tag = self.env['account.account.tag']._get_tax_tags(
+            '7(B)', self.env.ref('base.sa').id,
+        )
+        expense_line.write({'tax_tag_ids': [Command.set(tax_tag.ids)]})
+        self.assertTrue(expense_line.tax_tag_ids)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
 
     def test_hidden_outflow_and_other_company_require_fail_closed_reader(self):
         bill = self._bill()

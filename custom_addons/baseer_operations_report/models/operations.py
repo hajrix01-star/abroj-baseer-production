@@ -1113,7 +1113,7 @@ class BaseerOperationsReport(models.AbstractModel):
                     or bill_payable.account_id != payable.account_id
                     or bill_payable.account_id.account_type != 'liability_payable'
                     or bill_payable.partner_id != bill.partner_id
-                    or bill not in reconciled_bills
+                    or reconciled_bills != bill
                     or (origin_bills and origin_bills != bill)
                     or len(bill_lines.filtered(
                         lambda item: item.account_id.account_type == 'liability_payable',

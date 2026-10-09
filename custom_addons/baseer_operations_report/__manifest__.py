@@ -7,6 +7,16 @@
     'category': 'Accounting/Reporting',
     'depends': ['baseer_profit_loss_report', 'baseer_pos_summary',
                 'baseer_purchase_batch'],
+    'assets': {
+        'web.assets_backend': [
+            'baseer_operations_report/static/src/operations.js',
+            'baseer_operations_report/static/src/operations.xml',
+            'baseer_operations_report/static/src/operations.scss',
+        ],
+        'web.assets_unit_tests': [
+            'baseer_operations_report/static/tests/operations.test.js',
+        ],
+    },
     'application': False,
     'installable': True,
 }

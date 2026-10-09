@@ -997,7 +997,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                 lambda line: line.account_id == self.bank.default_account_id,
             )
             self.assertEqual(payment.invoice_ids, bill)
-            self.assertIn(bill, payment.reconciled_bill_ids)
+            self.assertEqual(payment.reconciled_bill_ids, bill)
             self.assertIn(payment, bill.matched_payment_ids)
             self.assertEqual(payment.move_id.state, 'posted')
             self.assertEqual(payment.company_id, self.company)
@@ -1072,7 +1072,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
         self.assertEqual(len(matched_late), 1)
         self.assertEqual(Decimal(str(matched_late.amount)), Decimal('20'))
-        self.assertIn(existing_bill, late_link.reconciled_bill_ids)
+        self.assertEqual(late_link.reconciled_bill_ids, existing_bill)
         self.assertNotIn(existing_bill, late_link.invoice_ids)
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 70)
         self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 65)

@@ -829,6 +829,14 @@ class BaseerOperationsReport(models.AbstractModel):
                                  [payment_move.id], payment_lines)
             bill_lines.mapped('account_id').check_access('read')
             payment_lines.mapped('account_id').check_access('read')
+            for tax_line in bill_lines.filtered('tax_line_id'):
+                tax = tax_line.tax_line_id
+                repartition = tax_line.tax_repartition_line_id
+                tax.check_access('read')
+                repartition.check_access('read')
+                if (not repartition or repartition.tax_id != tax
+                        or repartition not in tax.invoice_repartition_line_ids):
+                    self._deny_incomplete_source()
             liquidity = payment_lines.filtered(
                 lambda item: item.account_id == liquidity_account,
             )

@@ -843,7 +843,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                 ('account.tax.repartition.line',
                  self.tax.invoice_repartition_line_ids.filtered(
                      lambda item: item.repartition_type == 'tax',
-                 ))):
+                 )),
+                ('account.account', self.vat_account)):
             rule = self.env['ir.rule'].create({
                 'name': 'Gross batch hide ' + model,
                 'model_id': self.env['ir.model']._get(model).id,

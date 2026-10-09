@@ -246,6 +246,81 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(self._row(june, 'income')['amount'], '115.00')
         self.assertEqual(self._row(july, 'income')['amount'], '0.00')
 
+    def test_approved_app_summary_uses_business_day_not_synthetic_utc_time(self):
+        company = self.env['res.company'].create({
+            'name': 'Gross operations app timing company',
+        })
+        wizard_action = company.action_baseer_open_onboarding()
+        wizard = self.env[wizard_action['res_model']].browse(wizard_action['res_id'])
+        wizard.write({'sales_mode': 'summary', 'setup_summary_jahez': True})
+        wizard.action_apply_selected()
+        company.partner_id.tz = 'Pacific/Honolulu'
+        scoped = self.env['baseer.pos.summary'].with_context(
+            allowed_company_ids=[company.id],
+        ).with_company(company)
+        config = scoped.env['pos.config'].search([
+            ('company_id', '=', company.id),
+            ('baseer_summary_only', '=', True),
+        ], limit=1)
+        platform = config.payment_method_ids.filtered(
+            lambda method: method.baseer_category_id.kind == 'platform',
+        )
+        self.assertEqual(len(platform), 1)
+        business_day = fields.Date.today() - timedelta(days=1)
+        summary = scoped.create({
+            'company_id': company.id, 'config_id': config.id,
+            'business_date': business_day, 'period_scope': 'all',
+            'day_schedule': 'all', 'customer_count': 1,
+            'allocation_ids': [Command.create({
+                'payment_method_id': platform.id, 'amount': 115,
+            })],
+        })
+        summary.action_approve()
+        self.assertEqual(summary.state, 'approved')
+        self.assertEqual(summary.order_id.source, 'baseer_summary')
+        local_synthetic_day = fields.Datetime.context_timestamp(
+            summary.order_id.with_context(tz='Pacific/Honolulu'),
+            summary.order_id.date_order,
+        ).date()
+        self.assertEqual(local_synthetic_day, business_day - timedelta(days=1))
+        report = self.report.with_context(
+            allowed_company_ids=[company.id],
+        ).with_company(company)
+        def at_day(day):
+            return report.get_source_snapshot({
+                'company_id': company.id,
+                'date_from': fields.Date.to_string(day),
+                'date_to': fields.Date.to_string(day),
+                'journal_ids': [],
+            })
+
+        original = at_day(business_day)
+        synthetic = at_day(local_synthetic_day)
+        self.assertEqual(self._row(original, 'income')['amount'], '115.00')
+        self.assertEqual(self._row(synthetic, 'income')['amount'], '0.00')
+
+    def test_company_timezone_prefers_partner_then_calendar(self):
+        calendar = self.company.resource_calendar_id
+        if not calendar:
+            calendar = self.env['resource.calendar'].with_company(self.company).create({
+                'name': 'Gross operations company calendar',
+                'company_id': self.company.id, 'tz': 'Asia/Riyadh',
+            })
+            self.company.resource_calendar_id = calendar
+        calendar.tz = 'Asia/Riyadh'
+        self.company.partner_id.tz = False
+        lower, _upper = self.report._local_utc_bounds(
+            self.company, fields.Date.to_date('2041-07-01'),
+            fields.Date.to_date('2041-07-01'),
+        )
+        self.assertEqual(str(lower), '2041-06-30 21:00:00')
+        self.company.partner_id.tz = 'Pacific/Honolulu'
+        lower, _upper = self.report._local_utc_bounds(
+            self.company, fields.Date.to_date('2041-07-01'),
+            fields.Date.to_date('2041-07-01'),
+        )
+        self.assertEqual(str(lower), '2041-07-01 10:00:00')
+
     def test_restricted_user_fails_closed_and_other_company_is_rejected(self):
         invoice = self._invoice('out_invoice', self.sale_journal, [
             ('Restricted VAT sale', self.income, 100, 0, self.tax),
@@ -454,3 +529,6 @@ class TestOperationsGrossCalculator(TransactionCase):
         july_filters.update({'date_from': '2041-07-01', 'date_to': '2041-07-31'})
         july = self.report.get_source_snapshot(july_filters)
         self.assertEqual(self._row(july, 'income')['amount'], '115.00')
+        june_filters = self._filters([self.sale_journal.id])
+        june = self.report.get_source_snapshot(june_filters)
+        self.assertEqual(self._row(june, 'income')['amount'], '0.00')

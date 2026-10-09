@@ -72,7 +72,7 @@ class BaseerOperationsReport(models.AbstractModel):
             'account.move', 'account.move.line', 'account.account',
             'account.tax', 'account.tax.repartition.line', 'account.journal',
             'pos.order', 'pos.order.line', 'pos.session', 'pos.config',
-            'baseer.pos.summary', 'res.partner', 'resource.calendar',
+            'baseer.pos.summary', 'res.partner',
             'product.product', 'account.fiscal.position',
             'account.bank.statement.line', 'account.partial.reconcile',
             'account.payment',

@@ -307,6 +307,56 @@ class TestOperationsGrossCalculator(TransactionCase):
         synthetic = at_day(local_synthetic_day)
         self.assertEqual(self._row(original, 'income')['amount'], '115.00')
         self.assertEqual(self._row(synthetic, 'income')['amount'], '0.00')
+        other_company = self.report.get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': fields.Date.to_string(business_day),
+            'date_to': fields.Date.to_string(business_day),
+            'journal_ids': [],
+        })
+        self.assertEqual(self._row(other_company, 'income')['amount'], '0.00')
+        self.assertNotEqual(
+            report._local_utc_bounds(company, business_day, business_day),
+            self.report._local_utc_bounds(
+                self.company, business_day, business_day,
+            ),
+        )
+        reader = self.env['res.users'].create({
+            'name': 'Gross operations summary reader',
+            'login': 'gross_operations_summary_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_manager').id,
+                self.env.ref('point_of_sale.group_pos_manager').id,
+            ])],
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+        })
+        secured = report.with_user(reader)
+        self.assertEqual(
+            self._row(secured.get_source_snapshot({
+                'company_id': company.id,
+                'date_from': fields.Date.to_string(business_day),
+                'date_to': fields.Date.to_string(business_day),
+                'journal_ids': [],
+            }), 'income')['amount'], '115.00',
+        )
+        for model in ('baseer.pos.summary', 'pos.order'):
+            rule = self.env['ir.rule'].create({
+                'name': 'Gross operations hide ' + model,
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {summary.id if model == 'baseer.pos.summary' else summary.order_id.id})]",
+            })
+            try:
+                rule.flush_recordset()
+                with self.assertRaises(AccessError):
+                    secured.get_source_snapshot({
+                        'company_id': company.id,
+                        'date_from': fields.Date.to_string(business_day),
+                        'date_to': fields.Date.to_string(business_day),
+                        'journal_ids': [],
+                    })
+            finally:
+                rule.unlink()
 
     def test_company_timezone_prefers_partner_then_calendar(self):
         calendar = self.company.resource_calendar_id
@@ -329,6 +379,24 @@ class TestOperationsGrossCalculator(TransactionCase):
             fields.Date.to_date('2041-07-01'),
         )
         self.assertEqual(str(lower), '2041-07-01 10:00:00')
+        self.company.partner_id.tz = False
+        self.company.resource_calendar_id = False
+        with self.assertRaises(AccessError):
+            self.report._local_utc_bounds(
+                self.company, fields.Date.to_date('2041-07-01'),
+                fields.Date.to_date('2041-07-01'),
+            )
+        self.company.resource_calendar_id = calendar
+        self.env.cr.execute(
+            'UPDATE res_partner SET tz=%s WHERE id=%s',
+            ['Not/A_Timezone', self.company.partner_id.id],
+        )
+        self.company.partner_id.invalidate_recordset(['tz'])
+        with self.assertRaises(AccessError):
+            self.report._local_utc_bounds(
+                self.company, fields.Date.to_date('2041-07-01'),
+                fields.Date.to_date('2041-07-01'),
+            )
 
     def test_restricted_user_fails_closed_and_other_company_is_rejected(self):
         invoice = self._invoice('out_invoice', self.sale_journal, [

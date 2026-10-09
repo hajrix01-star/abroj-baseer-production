@@ -688,6 +688,16 @@ class TestOperationsGrossCalculator(TransactionCase):
         invoice_only = current_snapshot()
         self.assertEqual(self._row(invoice_only, 'income')['amount'], '0.00')
         self.assertEqual(invoice_only['periods'][0]['excluded']['linked_pos_invoice'], 2)
+        # The linked invoice must not hide an older POS order whose current
+        # source classification would produce a different gross event sum.
+        original_income_account = product.property_account_income_id
+        product.property_account_income_id = self.expense
+        try:
+            with self.assertRaises(AccessError):
+                current_snapshot()
+        finally:
+            product.property_account_income_id = original_income_account
+        self.assertEqual(self._row(current_snapshot(), 'income')['amount'], '0.00')
         reader = self.env['res.users'].create({
             'name': 'Gross operations POS link reader',
             'login': 'gross_operations_pos_link_reader',

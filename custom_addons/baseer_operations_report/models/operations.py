@@ -1,9 +1,8 @@
 """A deliberately incomplete, read-only gross-operations calculator.
 
-The source of an operation is its posted invoice product line or its original
-approved POS order line.  Ledger entries are never added as a third channel:
-POS session moves, their reversals, nonrecoverable tax AML, and later POS
-invoices would otherwise duplicate an original operation.
+Sales come from original invoice/POS sources. Purchases enter only through
+the limited, proven cash/bank outflows below; posting a bill or an outstanding
+payment alone never creates an operation.
 """
 
 from collections import Counter
@@ -534,9 +533,6 @@ class BaseerOperationsReport(models.AbstractModel):
                 continue
             lines.mapped('account_id').check_access('read')
             if len(counterpart) == 2:
-                if journal.type != 'bank':
-                    excluded['unsupported_direct_cash_tax'] += 1
-                    continue
                 bases = counterpart.filtered(
                     lambda line: line.account_id.account_type in EXPENSE_KEYS
                     and not line.tax_line_id,
@@ -578,7 +574,9 @@ class BaseerOperationsReport(models.AbstractModel):
                 if start <= statement.date <= end:
                     self._record(
                         sections, base.account_id.account_type,
-                        base.account_id, amount, 'bank_statement_direct_taxed',
+                        base.account_id, amount,
+                        'cash_statement_direct_taxed' if journal.type == 'cash'
+                        else 'bank_statement_direct_taxed',
                     )
                     recognized_direct.add(base.id)
                 continue
@@ -793,7 +791,7 @@ class BaseerOperationsReport(models.AbstractModel):
             })
         return {
             'complete': False,
-            'scope': 'proven_invoice_and_original_pos_only',
+            'scope': 'limited_proven_sales_and_cash_outflows',
             'not_accounting_profit': True,
             'company_id': company.id,
             'currency_code': company.currency_id.name,

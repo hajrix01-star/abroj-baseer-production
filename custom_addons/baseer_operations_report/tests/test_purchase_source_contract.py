@@ -1009,6 +1009,32 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(excluded['unproven_liquidity_outflow'], 3)
         self.assertFalse(snapshot['complete'])
 
+    def test_liquidity_event_guard_rejects_short_or_double_source(self):
+        statement = self._bank_statement('2026-06-21', self.vat_account, 50)
+        bank_line = statement.move_id.line_ids.filtered(
+            lambda item: item.account_id == self.bank.default_account_id,
+        )
+        self.assertEqual(len(bank_line), 1)
+        event = {
+            'source_model': 'account.bank.statement.line',
+            'source_id': statement.id,
+            'line_model': 'account.move.line',
+            'line_id': bank_line.id,
+            'date': '2026-06-21',
+            'amount': Decimal('49.99'),
+        }
+        guard = self.env['baseer.operations.report']._liquidity_outflow_exclusions
+        with self.assertRaises(AccessError):
+            guard(self.company, '2026-06-01', '2026-06-30', [],
+                  {bank_line.id: [event]})
+        with self.assertRaises(AccessError):
+            guard(self.company, '2026-06-01', '2026-06-30', [],
+                  {bank_line.id: [
+                      {**event, 'amount': Decimal('25.00')},
+                      {**event, 'source_id': statement.id + 1,
+                       'amount': Decimal('25.00')},
+                  ]})
+
     def test_native_payment_origin_link_differs_from_later_advance_match(self):
         """Characterize the stored invoice link; do not admit it to the report yet."""
         self.method.payment_account_id = self.bank.default_account_id

@@ -464,7 +464,7 @@ class BaseerOperationsReport(models.AbstractModel):
 
     @api.model
     def _liquidity_outflow_exclusions(self, company, start, end, journal_ids,
-                                      recognized_ids):
+                                      events_by_liquidity):
         """Conservatively inventory cash decreases not backed by a report event."""
         domain = [
             ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
@@ -500,11 +500,25 @@ class BaseerOperationsReport(models.AbstractModel):
         lines.mapped('move_id').check_access('read')
         lines.mapped('account_id').check_access('read')
         lines.mapped('journal_id').check_access('read')
-        if not set(recognized_ids).issubset(set(lines.ids)):
+        if not set(events_by_liquidity).issubset(set(lines.ids)):
             self._deny_incomplete_source()
         excluded = Counter()
         for line in lines:
-            if line.id in recognized_ids:
+            if line.id in events_by_liquidity:
+                events = events_by_liquidity[line.id]
+                sources = {(event['source_model'], event['source_id'])
+                           for event in events}
+                identities = {
+                    (event['source_model'], event['source_id'],
+                     event['line_model'], event['line_id'], event['date'])
+                    for event in events
+                }
+                if (len(sources) != 1 or len(identities) != len(events)
+                        or any(event['date'] != fields.Date.to_string(line.date)
+                               for event in events)
+                        or sum((event['amount'] for event in events),
+                               Decimal('0')) != -self._decimal(line.balance)):
+                    self._deny_incomplete_source()
                 continue
             move_lines = line.move_id.line_ids
             self._assert_visible('account_move_line', 'move_id=%s',
@@ -1302,15 +1316,16 @@ class BaseerOperationsReport(models.AbstractModel):
                             Decimal('0'),
                         )):
                     self._deny_incomplete_source()
-        recognized_liquidity_ids = {
-            event['payment_line_id']
-            for section in sections.values()
-            for entry in section.values()
-            for event in entry['events']
-            if event.get('payment_line_id')
-        }
+        events_by_liquidity = {}
+        for section in sections.values():
+            for entry in section.values():
+                for event in entry['events']:
+                    if event.get('payment_line_id'):
+                        events_by_liquidity.setdefault(
+                            event['payment_line_id'], [],
+                        ).append(event)
         excluded.update(self._liquidity_outflow_exclusions(
-            company, start, end, journal_ids, recognized_liquidity_ids,
+            company, start, end, journal_ids, events_by_liquidity,
         ))
         return sections, excluded
 

@@ -311,6 +311,12 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
                          ('baseer_summary', 'done', False))
         self.assertFalse(order.account_move)
         self.assertEqual(order.date_order, datetime.combine(business_day, time(9, 0)))
+        company.partner_id.tz = 'Pacific/Honolulu'
+        local_order_day = fields.Datetime.context_timestamp(
+            order.with_context(tz='Pacific/Honolulu'), order.date_order,
+        ).date()
+        self.assertEqual(local_order_day, business_day - timedelta(days=1))
+        self.assertEqual(summary.business_date, business_day)
         self.assertEqual(session.move_id.state, 'posted')
         self.assertEqual(session.move_id.date, business_day)
         self.assertEqual(self._money(order.lines.price_subtotal_incl),

@@ -202,6 +202,22 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(self._row(snapshot, 'income')['amount'], '0.00')
         self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 1)
 
+    def test_customer_invoice_issue_and_accounting_dates_are_distinct_sources(self):
+        invoice = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': '2041-06-10', 'date': '2041-06-30',
+            'invoice_line_ids': [Command.create({
+                'name': 'Issued before accounting date', 'quantity': 1,
+                'price_unit': 100, 'account_id': self.income.id,
+                'tax_ids': [Command.set(self.tax.ids)],
+            })],
+        })
+        invoice.action_post()
+        self.assertEqual(invoice.state, 'posted')
+        self.assertEqual(str(invoice.invoice_date), '2041-06-10')
+        self.assertEqual(str(invoice.date), '2041-06-30')
+
     def test_restricted_user_fails_closed_and_other_company_is_rejected(self):
         invoice = self._invoice('out_invoice', self.sale_journal, [
             ('Restricted VAT sale', self.income, 100, 0, self.tax),
@@ -376,3 +392,12 @@ class TestOperationsGrossCalculator(TransactionCase):
                 secured.get_source_snapshot(current_filters)
         finally:
             rule.unlink()
+        # The UTC date is still June 30, but the company's Riyadh business
+        # date is July 1.  This is source characterization, not calculator GO.
+        self.company.partner_id.tz = 'Asia/Riyadh'
+        order.date_order = '2041-06-30 21:30:00'
+        local_day = fields.Datetime.context_timestamp(
+            order.with_context(tz='Asia/Riyadh'), order.date_order,
+        ).date()
+        self.assertEqual(str(order.date_order.date()), '2041-06-30')
+        self.assertEqual(str(local_day), '2041-07-01')

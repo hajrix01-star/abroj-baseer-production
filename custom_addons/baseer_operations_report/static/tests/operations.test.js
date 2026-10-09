@@ -53,6 +53,10 @@ test("operations preview opens a separate source page and preserves the warning"
     const fingerprint = "b".repeat(64);
     const calls = [];
     patchWithCleanup(user, { activeCompany: { id: 1 } });
+    // POS services are loaded by this module's dependencies, but this test
+    // mounts only the accounting preview. Do not initialize a POS session.
+    mockService("pos_data", {});
+    mockService("pos", {});
     mockService("orm", { async call(model, method, args) {
         calls.push([model, method, args]);
         if (model === "baseer.profit.loss.report" && method === "get_context") {
@@ -85,11 +89,6 @@ test("operations preview opens a separate source page and preserves the warning"
             return { page: 1, page_size: 50, total_count: 1,
                 events: [{ date: "2026-06-15", amount: "50.00", source_model: "account.payment",
                     source_id: 9, link_status: "unconfirmed" }] };
-        }
-        // POS initializes a device identifier in the background when this module's
-        // assets are loaded; it is unrelated to the report interaction under test.
-        if (model === "pos.config" && method === "register_new_device_identifier") {
-            return { device_identifier: "test-device-identifier" };
         }
         throw new Error(`Unexpected report RPC: ${model}.${method}`);
     } });

@@ -86,6 +86,11 @@ test("operations preview opens a separate source page and preserves the warning"
                 events: [{ date: "2026-06-15", amount: "50.00", source_model: "account.payment",
                     source_id: 9, link_status: "unconfirmed" }] };
         }
+        // POS initializes a device identifier in the background when this module's
+        // assets are loaded; it is unrelated to the report interaction under test.
+        if (model === "pos.config" && method === "register_new_device_identifier") {
+            return "test-device-identifier";
+        }
         throw new Error(`Unexpected report RPC: ${model}.${method}`);
     } });
     const response = await withFetch(globals.fetch, () =>

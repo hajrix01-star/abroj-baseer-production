@@ -1495,8 +1495,8 @@ class BaseerOperationsReport(models.AbstractModel):
         return sections, excluded
 
     @api.model
-    def get_source_snapshot(self, filters):
-        """Internal source evidence only. Never expose it as a complete report."""
+    def _build_source_snapshot(self, filters):
+        """Internal financial evidence, including rows for isolated tests."""
         company, journal_ids, periods, period_control, comparison_control = self._scope(filters)
         payload_periods = []
         for period in periods:
@@ -1531,8 +1531,31 @@ class BaseerOperationsReport(models.AbstractModel):
         }
 
     @api.model
+    def get_source_snapshot(self, filters):
+        """Expose figures only when every requested period has proven coverage."""
+        snapshot = self._build_source_snapshot(filters)
+        snapshot['complete'] = snapshot['coverage_complete']
+        if not snapshot['complete']:
+            for period in snapshot['periods']:
+                period.pop('rows', None)
+                period.pop('accounts', None)
+        return snapshot
+
+    @api.model
     def get_account_events(self, filters, display_section, account_id,
                            period_key, expected_fingerprint, page=1):
+        """Deny detail access if even one requested period is unproven."""
+        snapshot = self._build_source_snapshot(filters)
+        if not snapshot['coverage_complete']:
+            self._deny_incomplete_source()
+        return self._build_account_events(
+            filters, display_section, account_id,
+            period_key, expected_fingerprint, page,
+        )
+
+    @api.model
+    def _build_account_events(self, filters, display_section, account_id,
+                              period_key, expected_fingerprint, page=1):
         """Read one account's current events only if the shown snapshot is fresh."""
         if (display_section not in DISPLAY_SECTIONS
                 or not isinstance(account_id, int) or account_id <= 0

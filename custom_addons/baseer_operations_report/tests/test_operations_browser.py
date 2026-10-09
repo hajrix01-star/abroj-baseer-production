@@ -58,7 +58,7 @@ class TestOperationsBrowser(HttpCase):
             hub.append(host);
             const app = await mountComponent(BaseerOperationsPreview, host, { env, props: { embedded: true } });
             await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_pl_net_income'), 'operations preview');
-            if (!host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Incomplete source warning missing'); }
+            if (host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Proven source was hidden'); }
             const periodButton = () => host.querySelector('button[aria-label="Period"], button[aria-label="الفترة"]');
             periodButton().click();
             const quarter = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(

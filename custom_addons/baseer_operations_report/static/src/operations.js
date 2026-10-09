@@ -14,7 +14,7 @@ const labels = {
     ar: {
         title: "العمليات الإجمالية شاملة الضريبة", company: "الشركة", journals: "الدفاتر",
         allJournals: "جميع الدفاتر", selectedJournals: "الدفاتر المختارة",
-        incomplete: "معاينة مصدر محدود وغير مكتمل. لا تعتمد هذه الأرقام كتقرير العمليات الإجمالية النهائي أو كربح محاسبي.",
+        incomplete: "لا يمكن عرض أرقام هذه الفترة قبل التحقق من جميع مصادر الحركة.",
         unconfirmed: "ارتباط الدفعة بالفاتورة غير مؤكد تاريخيًا",
         unconfirmedCount: "ظهور دفعات مرتبطة غير مؤكدة عبر الفترات",
         excludedNativeCount: "حالات دفع مستبعدة عبر الفترات لعدم اكتمال الدليل",
@@ -38,7 +38,7 @@ const labels = {
     en: {
         title: "Gross Operations Including VAT", company: "Company", journals: "Journals",
         allJournals: "All journals", selectedJournals: "Selected journals only",
-        incomplete: "Limited, incomplete source preview. Do not use these figures as the final Gross Operations report or accounting profit.",
+        incomplete: "This period cannot show amounts until all movement sources are verified.",
         unconfirmed: "Historical payment-to-bill link unconfirmed",
         unconfirmedCount: "Unconfirmed payment occurrences across periods",
         excludedNativeCount: "Excluded payment cases across periods",
@@ -134,6 +134,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
     setup() {
         super.setup();
         this.state.detail = null;
+        this.state.incomplete = false;
         this.snapshotAccounts = {};
         this.detailRequestToken = 0;
     }
@@ -162,6 +163,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
     invalidate() {
         super.invalidate();
         this.state.detail = null;
+        this.state.incomplete = false;
         this.snapshotAccounts = {};
         this.detailRequestToken += 1;
     }
@@ -177,6 +179,13 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             const snapshot = await this.orm.call(MODEL, "get_source_snapshot", [filters]);
             if (token !== this.requestToken || generation !== this.companyGeneration || companyId !== this.activeCompanyId) { return; }
             if (snapshot.company_id !== companyId || typeof snapshot.complete !== "boolean") { throw new Error("Unexpected source contract"); }
+            if (!snapshot.complete) {
+                this.state.incomplete = true;
+                this.state.report = null;
+                this.snapshotAccounts = {};
+                this.appliedFilters = null;
+                return;
+            }
             const prepared = prepareOperationsSnapshot(snapshot, this.companyName || "",
                 !!filters.journal_ids.length, this.labels);
             this.state.report = prepared.report;

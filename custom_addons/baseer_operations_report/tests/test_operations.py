@@ -88,14 +88,14 @@ class TestOperationsGrossCalculator(TransactionCase):
 
     def _snapshot(self, journal_ids=None, report=None):
         selected_report = report if report is not None else self.report
-        return selected_report.get_source_snapshot(self._filters(journal_ids))
+        return selected_report._build_source_snapshot(self._filters(journal_ids))
 
     @staticmethod
     def _row(snapshot, key):
         return next(row for row in snapshot['periods'][0]['rows'] if row['key'] == key)
 
     def test_month_caption_uses_server_period_label(self):
-        snapshot = self.report.get_source_snapshot({
+        snapshot = self.report._build_source_snapshot({
             'company_id': self.company.id,
             'period': {'kind': 'month', 'anchor_date': '2041-06-15',
                        'direction': 0},
@@ -139,7 +139,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(len(income_accounts), 1)
         self.assertEqual(income_accounts[0]['account_id'], self.income.id)
         self.assertEqual(income_accounts[0]['amount'], '51.75')
-        details = self.report.get_account_events(
+        details = self.report._build_account_events(
             self._filters(), 'income', self.income.id,
             snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
         )
@@ -151,12 +151,12 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual({event['date'] for event in details['events']},
                          {'2041-06-10'})
         with self.assertRaises(ValidationError):
-            self.report.get_account_events(
+            self.report._build_account_events(
                 self._filters(), 'expense', self.income.id,
                 snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
             )
         with self.assertRaises(ValidationError):
-            self.report.get_account_events(
+            self.report._build_account_events(
                 self._filters([self.sale_journal.id]), 'income', self.income.id,
                 snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
             )
@@ -164,7 +164,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             ('New sale after snapshot', self.income, 10, 0, False),
         ])
         with self.assertRaises(ValidationError):
-            self.report.get_account_events(
+            self.report._build_account_events(
                 self._filters(), 'income', self.income.id,
                 snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
             )
@@ -281,10 +281,10 @@ class TestOperationsGrossCalculator(TransactionCase):
         issue_day, entry_day = self.env.cr.fetchone()
         self.assertEqual(str(issue_day), '2041-06-10')
         self.assertEqual(str(entry_day), '2041-07-02')
-        june = self.report.get_source_snapshot(self._filters())
+        june = self.report._build_source_snapshot(self._filters())
         july_filters = self._filters()
         july_filters.update({'date_from': '2041-07-01', 'date_to': '2041-07-31'})
-        july = self.report.get_source_snapshot(july_filters)
+        july = self.report._build_source_snapshot(july_filters)
         self.assertEqual(self._row(june, 'income')['amount'], '115.00')
         self.assertEqual(self._row(july, 'income')['amount'], '0.00')
         sections, _excluded = self.report._period_sources(
@@ -384,7 +384,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             allowed_company_ids=[company.id],
         ).with_company(company)
         def at_day(day):
-            return report.get_source_snapshot({
+            return report._build_source_snapshot({
                 'company_id': company.id,
                 'date_from': fields.Date.to_string(day),
                 'date_to': fields.Date.to_string(day),
@@ -396,7 +396,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(self._row(original, 'income')['amount'], '115.00')
         self.assertEqual(self._row(synthetic, 'income')['amount'], '0.00')
         summary_account = original['periods'][0]['accounts']['income'][0]
-        summary_details = report.get_account_events(
+        summary_details = report._build_account_events(
             {'company_id': company.id,
              'date_from': fields.Date.to_string(business_day),
              'date_to': fields.Date.to_string(business_day),
@@ -418,7 +418,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(events[0]['line_id'], summary.order_id.lines.id)
         self.assertEqual(events[0]['date'], fields.Date.to_string(business_day))
         self.assertEqual(events[0]['amount'], Decimal('115.00'))
-        other_company = self.report.get_source_snapshot({
+        other_company = self.report._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': fields.Date.to_string(business_day),
             'date_to': fields.Date.to_string(business_day),
@@ -444,7 +444,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         })
         secured = report.with_user(reader)
         self.assertEqual(
-            self._row(secured.get_source_snapshot({
+            self._row(secured._build_source_snapshot({
                 'company_id': company.id,
                 'date_from': fields.Date.to_string(business_day),
                 'date_to': fields.Date.to_string(business_day),
@@ -460,7 +460,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             try:
                 rule.flush_recordset()
                 with self.assertRaises(AccessError):
-                    secured.get_source_snapshot({
+                    secured._build_source_snapshot({
                         'company_id': company.id,
                         'date_from': fields.Date.to_string(business_day),
                         'date_to': fields.Date.to_string(business_day),
@@ -530,7 +530,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         visible = self._snapshot(report=secured)
         self.assertEqual(self._row(visible, 'income')['amount'], '115.00')
         fingerprint = visible['periods'][0]['accounts']['income'][0]['fingerprint']
-        self.assertEqual(secured.get_account_events(
+        self.assertEqual(secured._build_account_events(
             self._filters(), 'income', self.income.id,
             visible['periods'][0]['key'], fingerprint,
         )['amount'], '115.00')
@@ -555,7 +555,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             with self.assertRaises(AccessError):
                 self._snapshot(report=secured)
             with self.assertRaises(AccessError):
-                secured.get_account_events(
+                secured._build_account_events(
                     self._filters(), 'income', self.income.id,
                     visible['periods'][0]['key'], fingerprint,
                 )
@@ -563,9 +563,9 @@ class TestOperationsGrossCalculator(TransactionCase):
             rule.unlink()
         other = self.env['res.company'].create({'name': 'Other gross operations company'})
         with self.assertRaises(AccessError):
-            self.report.get_source_snapshot({**self._filters(), 'company_id': other.id})
+            self.report._build_source_snapshot({**self._filters(), 'company_id': other.id})
         with self.assertRaises(AccessError):
-            self.report.get_account_events(
+            self.report._build_account_events(
                 {**self._filters(), 'company_id': other.id},
                 'income', self.income.id, visible['periods'][0]['key'], fingerprint,
             )
@@ -634,7 +634,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         })
 
         def current_snapshot():
-            return self.report.get_source_snapshot(current_filters)
+            return self.report._build_source_snapshot(current_filters)
 
         first = current_snapshot()
         self.assertEqual(self._row(first, 'income')['amount'], '115.00')
@@ -661,7 +661,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(after_refund['periods'][0]['excluded']['linked_pos_invoice'], 2)
         self.assertEqual(after_refund['periods'][0]['accounts']['income'][0]['source_count'], 2)
         pos_account = after_refund['periods'][0]['accounts']['income'][0]
-        pos_details = self.report.get_account_events(
+        pos_details = self.report._build_account_events(
             current_filters, 'income', mapped_income.id,
             after_refund['periods'][0]['key'], pos_account['fingerprint'],
         )
@@ -713,7 +713,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             allowed_company_ids=self.company.ids,
         )
         self.assertEqual(
-            self._row(secured.get_source_snapshot(current_filters), 'income')['amount'],
+            self._row(secured._build_source_snapshot(current_filters), 'income')['amount'],
             '0.00',
         )
         rule = self.env['ir.rule'].create({
@@ -725,7 +725,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             rule.flush_recordset()
             self.assertFalse(secured.env['pos.order'].search([('id', '=', order.id)]))
             with self.assertRaises(AccessError):
-                secured.get_source_snapshot(current_filters)
+                secured._build_source_snapshot(current_filters)
         finally:
             rule.unlink()
         # The UTC date is still June 30, but the company's Riyadh business
@@ -760,7 +760,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual([row[0] for row in self.env.cr.fetchall()], [order.id])
         july_filters = self._filters([self.sale_journal.id])
         july_filters.update({'date_from': '2041-07-01', 'date_to': '2041-07-31'})
-        july = self.report.get_source_snapshot(july_filters)
+        july = self.report._build_source_snapshot(july_filters)
         self.assertEqual(self._row(july, 'income')['amount'], '115.00')
         july_sections, _excluded = self.report._period_sources(
             self.company, fields.Date.to_date('2041-07-01'),
@@ -770,5 +770,5 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual((july_event['source_id'], july_event['date']),
                          (order.id, '2041-07-01'))
         june_filters = self._filters([self.sale_journal.id])
-        june = self.report.get_source_snapshot(june_filters)
+        june = self.report._build_source_snapshot(june_filters)
         self.assertEqual(self._row(june, 'income')['amount'], '0.00')

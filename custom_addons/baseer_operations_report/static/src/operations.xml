@@ -34,7 +34,7 @@
                         </details>
                     </div>
                 </header>
-                <div t-if="state.report &amp;&amp; !state.report.complete" class="o_baseer_report_notice o_baseer_go_incomplete" role="note"><span t-esc="labels.incomplete"/><span t-if="unconfirmedCount"> · <t t-esc="labels.unconfirmedCount"/>: <t t-esc="unconfirmedCount"/></span><span t-if="excludedNativeCount"> · <t t-esc="labels.excludedNativeCount"/>: <t t-esc="excludedNativeCount"/></span><span t-if="unprovenLiquidityCount"> · <t t-esc="labels.unprovenLiquidityCount"/>: <t t-esc="unprovenLiquidityCount"/></span></div>
+                <div t-if="state.incomplete" class="o_baseer_report_notice o_baseer_go_incomplete" role="status" t-esc="labels.incomplete"/>
                 <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
                 <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
                 <div t-if="state.report" class="o_baseer_report_canvas">

@@ -112,7 +112,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
 
     def _purchase_amount(self, start, end, report=None, journal_ids=None):
         report = report if report is not None else self.env['baseer.operations.report']
-        snapshot = report.get_source_snapshot({
+        snapshot = report._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': start, 'date_to': end,
             'journal_ids': journal_ids or [],
@@ -189,7 +189,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=self.general.ids,
         ), 0)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -365,7 +365,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
         ), 0)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -507,7 +507,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
         ), 0)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -784,7 +784,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
         ), 0)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -794,7 +794,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(snapshot['periods'][0]['accounts']['expense'][0][
             'source_count'], 1)
         account = snapshot['periods'][0]['accounts']['expense'][0]
-        details = self.env['baseer.operations.report'].get_account_events(
+        details = self.env['baseer.operations.report']._build_account_events(
             {'company_id': self.company.id,
              'date_from': '2026-06-01', 'date_to': '2026-06-30',
              'journal_ids': []},
@@ -998,7 +998,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         bank_entry('2026-06-18', self.cash, 40)
         self._bank_statement('2026-06-19', self.vat_account, 20)
         self._entry('2026-06-20', self.vat_account, self.cash, 10)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -1133,14 +1133,14 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertNotIn(existing_bill, late_link.invoice_ids)
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 70)
         self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 65)
-        june = self.env['baseer.operations.report'].get_source_snapshot({
+        june = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
         })
         self.assertEqual(june['periods'][0]['unconfirmed_count'], 2)
         account_row = june['periods'][0]['accounts']['expense'][0]
-        detail = self.env['baseer.operations.report'].get_account_events(
+        detail = self.env['baseer.operations.report']._build_account_events(
             {'company_id': self.company.id, 'date_from': '2026-06-01',
              'date_to': '2026-06-30', 'journal_ids': []},
             'expense', self.expense.id, 'current',
@@ -1230,10 +1230,10 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'journal_ids': [],
         }
         report = self.env['baseer.operations.report']
-        snapshot = report.get_source_snapshot(filters)
+        snapshot = report._build_source_snapshot(filters)
         account = next(item for item in snapshot['periods'][0]['accounts']['expense']
                        if item['account_id'] == depreciation.id)
-        details = report.get_account_events(
+        details = report._build_account_events(
             filters, 'expense', depreciation.id,
             snapshot['periods'][0]['key'], account['fingerprint'],
         )
@@ -1241,7 +1241,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(details['total_count'], 1)
         self.assertEqual(details['events'][0]['source_id'], statement.id)
         with self.assertRaises(ValidationError):
-            report.get_account_events(
+            report._build_account_events(
                 filters, 'cost_of_sales', depreciation.id,
                 snapshot['periods'][0]['key'], account['fingerprint'],
             )
@@ -1283,7 +1283,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=self.general.ids,
         ), 0)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -1401,7 +1401,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
         self.assertEqual(
             Decimal(next(row['amount'].replace(',', '') for row in
-                         secured_report.get_source_snapshot({
+                         secured_report._build_source_snapshot({
                              'company_id': self.company.id,
                              'date_from': '2026-06-01', 'date_to': '2026-06-30',
                              'journal_ids': [],
@@ -1416,7 +1416,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         try:
             bank_rule.flush_recordset()
             with self.assertRaises(AccessError):
-                secured_report.get_source_snapshot({
+                secured_report._build_source_snapshot({
                     'company_id': self.company.id,
                     'date_from': '2026-06-01', 'date_to': '2026-06-30',
                     'journal_ids': [],
@@ -1487,7 +1487,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'counterpart_account_id': self.expense.id,
         })
         self.assertEqual(foreign_direct.currency_id, foreign)
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -1589,7 +1589,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(len(bill_payable.matched_debit_ids), 2)
         report = self.env['baseer.operations.report']
         def row_amount(start, end, key):
-            snapshot = report.get_source_snapshot({
+            snapshot = report._build_source_snapshot({
                 'company_id': self.company.id,
                 'date_from': start, 'date_to': end, 'journal_ids': [],
             })
@@ -1605,7 +1605,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                          Decimal('77.90'))
         self.assertEqual(row_amount('2026-07-01', '2026-07-31', 'expense'),
                          Decimal('27.10'))
-        june_snapshot = report.get_source_snapshot({
+        june_snapshot = report._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],
@@ -1613,7 +1613,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         for display_section, expected in (
                 ('cost_of_sales', '37.10'), ('expense', '12.90')):
             account = june_snapshot['periods'][0]['accounts'][display_section][0]
-            details = report.get_account_events(
+            details = report._build_account_events(
                 {'company_id': self.company.id,
                  'date_from': '2026-06-01', 'date_to': '2026-06-30',
                  'journal_ids': []},
@@ -1655,7 +1655,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'date_from': '2026-07-01', 'date_to': '2026-07-31',
             'journal_ids': [],
         }
-        baseline = secured.get_source_snapshot(july)
+        baseline = secured._build_source_snapshot(july)
         self.assertEqual(Decimal(next(
             row['amount'].replace(',', '') for row in baseline['periods'][0]['rows']
             if row['key'] == 'expense'
@@ -1668,7 +1668,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         try:
             prior_bank_rule.flush_recordset()
             with self.assertRaises(AccessError):
-                secured.get_source_snapshot(july)
+                secured._build_source_snapshot(july)
         finally:
             prior_bank_rule.unlink()
 
@@ -1736,7 +1736,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             lambda line: line.account_id == self.outstanding,
         )
         (outstanding_credit + outstanding_debit).reconcile()
-        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+        snapshot = self.env['baseer.operations.report']._build_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
             'journal_ids': [],

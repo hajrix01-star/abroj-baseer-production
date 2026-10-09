@@ -2,12 +2,14 @@
 
 from collections import Counter
 from datetime import date
+from unittest.mock import patch
 
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.baseer_profit_loss_report.models.profit_loss import SECTION_KEYS
+from ..models.operations import BaseerOperationsReport
 
 
 @tagged('post_install', '-at_install')
@@ -59,7 +61,7 @@ class TestOperationsSalesCensus(TransactionCase):
         return receipt
 
     def _snapshot(self, start, end, company_id=None):
-        return self.report.get_source_snapshot({
+        return self.report._build_source_snapshot({
             'company_id': company_id or self.company.id,
             'date_from': start, 'date_to': end, 'journal_ids': [],
         })
@@ -78,7 +80,7 @@ class TestOperationsSalesCensus(TransactionCase):
         self.assertEqual(next(row for row in july['periods'][0]['rows']
                               if row['key'] == 'income')['amount'], '0.00')
         account = june['periods'][0]['accounts']['income'][0]
-        detail = self.report.get_account_events(
+        detail = self.report._build_account_events(
             {'company_id': self.company.id, 'date_from': '2041-06-01',
              'date_to': '2041-06-30', 'journal_ids': []},
             'income', self.income.id, june['periods'][0]['key'],
@@ -97,6 +99,36 @@ class TestOperationsSalesCensus(TransactionCase):
                     'unproven_foreign_sales_document',
                     'unsupported_new_source'):
             self.assertFalse(self.report._coverage_complete(Counter({key: 1})))
+
+    def test_public_report_and_details_hide_unproven_amounts(self):
+        self._receipt('2041-06-10')
+        filters = {'company_id': self.company.id,
+                   'date_from': '2041-06-01', 'date_to': '2041-06-30',
+                   'journal_ids': []}
+        proven = self.report.get_source_snapshot(filters)
+        self.assertTrue(proven['complete'])
+        self.assertEqual(next(row for row in proven['periods'][0]['rows']
+                              if row['key'] == 'income')['amount'], '115.00')
+        account = proven['periods'][0]['accounts']['income'][0]
+        self.assertEqual(self.report.get_account_events(
+            filters, 'income', self.income.id, proven['periods'][0]['key'],
+            account['fingerprint'],
+        )['total_count'], 1)
+        with patch.object(BaseerOperationsReport, '_coverage_complete',
+                          return_value=False):
+            hidden = self.report.get_source_snapshot(filters)
+            self.assertFalse(hidden['complete'])
+            self.assertNotIn('rows', hidden['periods'][0])
+            self.assertNotIn('accounts', hidden['periods'][0])
+            with self.assertRaises(AccessError):
+                self.report.get_account_events(
+                    filters, 'income', self.income.id,
+                    proven['periods'][0]['key'], account['fingerprint'],
+                )
+            with self.assertRaises(AccessError):
+                self.env['report.baseer_operations_report.operations_pdf_portrait']._get_report_values(
+                    [], {'filters': filters},
+                )
 
     def test_census_rejects_a_posted_receipt_without_its_counted_event(self):
         self._receipt('2041-06-10')

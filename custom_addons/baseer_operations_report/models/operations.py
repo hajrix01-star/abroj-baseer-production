@@ -23,7 +23,7 @@ ROW_KEYS = (
     'net_operating_income', 'other_income', 'other_expense',
     'net_other_income', 'net_income',
 )
-INVOICE_TYPES = ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')
+INVOICE_TYPES = ('out_invoice', 'out_refund')
 POS_STATES = ('paid', 'done', 'invoiced')
 
 
@@ -70,6 +70,7 @@ class BaseerOperationsReport(models.AbstractModel):
             'account.tax', 'account.tax.repartition.line', 'account.journal',
             'pos.order', 'pos.order.line', 'pos.session', 'pos.config',
             'product.product', 'account.fiscal.position',
+            'account.bank.statement.line', 'account.partial.reconcile',
         ))
         return company, journal_ids, periods, period_control, comparison_control
 
@@ -349,6 +350,130 @@ class BaseerOperationsReport(models.AbstractModel):
         return len(lines)
 
     @api.model
+    def _purchase_outflows(self, company, start, end, journal_ids, sections, excluded):
+        """Limited proof: one-line company-currency bill paid by a bank statement.
+
+        Neither a posted bill nor a registered payment on an outstanding
+        account is a cash event.  The statement is the unique dated source.
+        Unsupported purchase patterns remain outside this incomplete report.
+        """
+        domain = [
+            ('company_id', '=', company.id), ('date', '>=', start),
+            ('date', '<=', end), ('amount', '<', 0),
+        ]
+        statements = self.env['account.bank.statement.line'].search(domain, order='id')
+        self.env['account.bank.statement.line'].flush_model([
+            'company_id', 'date', 'amount',
+        ])
+        self._assert_visible(
+            'account_bank_statement_line',
+            'company_id=%s AND date >= %s AND date <= %s AND amount < 0',
+            [company.id, start, end], statements,
+        )
+        seen = set()
+        for statement in statements:
+            if journal_ids:
+                excluded['purchase_journal_filter_unproven'] += 1
+                continue
+            statement.check_access('read')
+            journal = statement.journal_id
+            journal.check_access('read')
+            move = statement.move_id
+            move.check_access('read')
+            if (statement.id in seen or move.state != 'posted'
+                    or move.company_id != company or journal.type != 'bank'
+                    or not journal.default_account_id):
+                self._deny_incomplete_source()
+            seen.add(statement.id)
+            lines = move.line_ids
+            self.env['account.move.line'].flush_model(['move_id'])
+            self._assert_visible(
+                'account_move_line', 'move_id=%s', [move.id], lines,
+            )
+            bank = lines.filtered(
+                lambda line: line.account_id == journal.default_account_id,
+            )
+            counterpart = lines - bank
+            amount = -self._decimal(statement.amount)
+            if (len(bank) != 1 or len(counterpart) != 1
+                    or self._decimal(bank.balance) != -amount
+                    or self._decimal(counterpart.balance) != amount):
+                excluded['unproven_bank_outflow'] += 1
+                continue
+            if counterpart.account_id.account_type == 'liability_payable':
+                payable_debit = counterpart
+            elif (counterpart.account_id.account_type == 'asset_current'
+                  and counterpart.account_id.reconcile):
+                # The bank has cleared an outstanding payment.  That payment
+                # must already be matched to exactly one bill for this slice.
+                clearing = counterpart.matched_credit_ids
+                self._assert_visible(
+                    'account_partial_reconcile', 'debit_move_id=%s',
+                    [counterpart.id], clearing,
+                )
+                if len(clearing) != 1 or self._decimal(clearing.amount) != amount:
+                    excluded['unproven_outstanding_allocation'] += 1
+                    continue
+                payment_credit = clearing.credit_move_id
+                payment_move = payment_credit.move_id
+                payment_move.check_access('read')
+                payment_lines = payment_move.line_ids
+                self._assert_visible(
+                    'account_move_line', 'move_id=%s',
+                    [payment_move.id], payment_lines,
+                )
+                payables = payment_lines.filtered(
+                    lambda line: line.account_id.account_type == 'liability_payable',
+                )
+                if (len(payables) != 1 or payment_credit.account_id != counterpart.account_id
+                        or self._decimal(payment_credit.balance) != -amount
+                        or self._decimal(payables.balance) != amount):
+                    excluded['unproven_outstanding_allocation'] += 1
+                    continue
+                payable_debit = payables
+            else:
+                # Internal liquidity transfers and unclassified cash events
+                # never become a purchase by inference.
+                excluded['non_purchase_bank_outflow'] += 1
+                continue
+            allocations = payable_debit.matched_credit_ids
+            self._assert_visible(
+                'account_partial_reconcile', 'debit_move_id=%s',
+                [payable_debit.id], allocations,
+            )
+            if len(allocations) != 1 or self._decimal(allocations.amount) != amount:
+                excluded['unproven_bill_allocation'] += 1
+                continue
+            bill_line = allocations.credit_move_id
+            bill = bill_line.move_id
+            bill.check_access('read')
+            bill_lines = bill.line_ids
+            self._assert_visible(
+                'account_move_line', 'move_id=%s', [bill.id], bill_lines,
+            )
+            if (bill.state != 'posted' or bill.move_type != 'in_invoice'
+                    or bill.company_id != company or bill.currency_id != company.currency_id
+                    or not bill.invoice_date or bill.invoice_date > statement.date
+                    or bill_line.account_id != payable_debit.account_id
+                    or len(bill.invoice_line_ids.filtered(
+                        lambda line: line.display_type == 'product')) != 1):
+                excluded['unsupported_purchase_bill'] += 1
+                continue
+            bill_sections = {key: {} for key in SECTION_KEYS}
+            bill_excluded = Counter()
+            self._invoice_amounts(bill, company, bill_sections, bill_excluded)
+            entries = [(kind, entry) for kind in EXPENSE_KEYS
+                       for entry in bill_sections[kind].values()]
+            if (len(entries) != 1 or bill_excluded.get('non_pl_invoice_lines')
+                    or bill_excluded.get('unsupported_negative_tax_lines')
+                    or bill_excluded.get('tax_only_invoice_lines')
+                    or entries[0][1]['raw'] != self._decimal(bill.amount_total)):
+                excluded['unsupported_purchase_bill'] += 1
+                continue
+            section, entry = entries[0]
+            self._record(sections, section, entry['account'], amount, 'bank_statement')
+
+    @api.model
     def _rows(self, sections, company):
         raw = {key: sum((entry['raw'] for entry in sections[key].values()), Decimal('0'))
                for key in SECTION_KEYS}
@@ -399,6 +524,9 @@ class BaseerOperationsReport(models.AbstractModel):
                 self._invoice_amounts(move, company, sections, excluded)
             for order in self._pos_records(company, start, end, journal_ids):
                 self._pos_amounts(order, company, sections, excluded)
+            self._purchase_outflows(
+                company, start, end, journal_ids, sections, excluded,
+            )
             excluded['direct_aml_unproven'] = self._direct_exclusions(
                 company, start, end, journal_ids,
             )

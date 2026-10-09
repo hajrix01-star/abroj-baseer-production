@@ -113,11 +113,12 @@ class TestOperationsGrossCalculator(TransactionCase):
             'net_other_income', 'net_income',
         ])
         self.assertEqual(self._row(snapshot, 'income')['amount'], '51.75')
-        self.assertEqual(self._row(snapshot, 'cost_of_sales')['amount'], '115.00')
-        self.assertEqual(self._row(snapshot, 'expense')['amount'], '40.00')
+        # Posting an unpaid vendor bill is no longer a purchase cash event.
+        self.assertEqual(self._row(snapshot, 'cost_of_sales')['amount'], '0.00')
+        self.assertEqual(self._row(snapshot, 'expense')['amount'], '0.00')
         self.assertEqual(self._row(snapshot, 'other_income')['amount'], '80.00')
-        self.assertEqual(self._row(snapshot, 'gross_profit')['amount'], '-63.25')
-        self.assertEqual(self._row(snapshot, 'net_income')['amount'], '-23.25')
+        self.assertEqual(self._row(snapshot, 'gross_profit')['amount'], '51.75')
+        self.assertEqual(self._row(snapshot, 'net_income')['amount'], '131.75')
         income_accounts = snapshot['periods'][0]['accounts']['income']
         self.assertEqual(len(income_accounts), 1)
         self.assertEqual(income_accounts[0]['account_id'], self.income.id)
@@ -172,12 +173,10 @@ class TestOperationsGrossCalculator(TransactionCase):
                        for item in base['tax_details']['taxes_data']), Decimal('0'))
             expected[line.account_id.id] = net + vat
         snapshot = self._snapshot([self.purchase_journal.id])
-        for section, account in (('cost_of_sales', self.cost), ('expense', self.expense)):
-            leaf = next(row for row in snapshot['periods'][0]['accounts'][section]
-                        if row['account_id'] == account.id)
-            self.assertEqual(leaf['amount'], f'{expected[account.id]:,.2f}')
-        self.assertEqual(snapshot['periods'][0]['excluded'][
-            'nonrecoverable_tax_amls_not_readded'], 2)
+        self.assertEqual(self._row(snapshot, 'cost_of_sales')['amount'], '0.00')
+        self.assertEqual(self._row(snapshot, 'expense')['amount'], '0.00')
+        self.assertFalse(snapshot['periods'][0]['accounts']['cost_of_sales'])
+        self.assertFalse(snapshot['periods'][0]['accounts']['expense'])
         self.assertEqual(
             sum((expected[account.id] for account in (self.cost, self.expense)), Decimal('0')),
             sum((Decimal(str(line.credit)) for line in bill.line_ids.filtered(

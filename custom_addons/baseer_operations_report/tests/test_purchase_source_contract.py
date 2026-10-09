@@ -108,6 +108,17 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(statement_line.amount)), -Decimal(str(amount)))
         return statement_line
 
+    def _purchase_amount(self, start, end, report=None):
+        report = report or self.env['baseer.operations.report']
+        snapshot = report.get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': start, 'date_to': end, 'journal_ids': [],
+        })
+        self.assertFalse(snapshot['complete'])
+        rows = snapshot['periods'][0]['rows']
+        return Decimal(next(row['amount'].replace(',', '') for row in rows
+                            if row['key'] == 'expense'))
+
     def test_bill_waits_for_real_outflow_and_partial_50_then_65(self):
         bill = self._bill()
         bill_payable = bill.line_ids.filtered(
@@ -116,6 +127,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(len(bill_payable), 1)
         self.assertFalse(bill_payable.matched_debit_ids)
         self.assertEqual(Decimal(str(bill.amount_residual)), Decimal('115.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
 
         wizard = self.env['account.payment.register'].with_context(
             active_model='account.move', active_ids=bill.ids,
@@ -154,6 +166,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         # Reconciliation is not proof of bank outflow: this payment still sits
         # in outstanding, and the bill has 65 due.
         self.assertEqual(Decimal(str(bill.amount_residual)), Decimal('65.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
 
         bank_50 = self._bank_statement('2026-06-15', self.outstanding, 50)
         outstanding_debit = bank_50.move_id.line_ids.filtered(
@@ -167,6 +180,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(str(bank_50_line.date), '2026-06-15')
         self.assertEqual(first_partial.max_date, max(bill_payable.date, payment_payable.date))
         self.assertNotEqual(first_partial.max_date, bank_50_line.date)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 50)
 
         bank_65 = self._bank_statement('2026-07-05', self.payable, 65)
         payable_65 = bank_65.move_id.line_ids.filtered(
@@ -185,6 +199,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
         self.assertEqual(Decimal(str(bank_65_line.balance)), Decimal('-65.00'))
         self.assertEqual(str(bank_65_line.date), '2026-07-05')
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 50)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 65)
         # One bill, two unique real outflow lines; payment posting and both
         # reconciliations must not introduce a third recognized event.
         self.assertEqual(len(bank_50_line | bank_65_line), 2)
@@ -216,6 +232,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(transfer.line_ids.filtered(
             lambda line: line.account_id == self.bank.default_account_id,
         ).balance)), Decimal('-40.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
         # Neither bank decrease is a classified purchase source: the first is
         # an unapplied vendor advance; the second only changes liquidity.
 

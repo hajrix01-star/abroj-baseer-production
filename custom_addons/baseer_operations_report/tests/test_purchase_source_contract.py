@@ -182,11 +182,20 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertNotEqual(first_partial.max_date, bank_50_line.date)
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 50)
 
-        bank_65 = self._bank_statement('2026-07-05', self.payable, 65)
-        payable_65 = bank_65.move_id.line_ids.filtered(
+        second_wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id,
+            'payment_method_line_id': self.method.id,
+            'amount': 65,
+            'payment_date': '2026-07-03',
+            'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })
+        second_payment = second_wizard._create_payments()
+        payable_65 = second_payment.move_id.line_ids.filtered(
             lambda line: line.account_id == self.payable,
         )
-        (bill_payable + payable_65).reconcile()
         second_partial = self.env['account.partial.reconcile'].search([
             ('debit_move_id', '=', payable_65.id),
             ('credit_move_id', '=', bill_payable.id),
@@ -194,6 +203,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(len(second_partial), 1)
         self.assertEqual(Decimal(str(second_partial.amount)), Decimal('65.00'))
         self.assertEqual(Decimal(str(bill.amount_residual)), Decimal('0.00'))
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
+        bank_65 = self._bank_statement('2026-07-05', self.outstanding, 65)
+        outstanding_65_credit = second_payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.outstanding,
+        )
+        outstanding_65_debit = bank_65.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.outstanding,
+        )
+        (outstanding_65_credit + outstanding_65_debit).reconcile()
         bank_65_line = bank_65.move_id.line_ids.filtered(
             lambda line: line.account_id == self.bank.default_account_id,
         )
@@ -211,7 +229,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
 
     def test_advance_and_internal_transfer_have_no_bill_allocation(self):
-        self._bill()
+        bill = self._bill()
         advance = self._entry(
             '2026-06-16', self.payable, self.bank.default_account_id, 30,
         )
@@ -233,6 +251,17 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             lambda line: line.account_id == self.bank.default_account_id,
         ).balance)), Decimal('-40.00'))
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+        # A direct bank debit booked before the bill stays an excluded
+        # advance even if someone matches it to a backdated bill later.
+        bank_advance = self._bank_statement('2026-05-16', self.payable, 30)
+        advance_debit = bank_advance.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.payable,
+        )
+        bill_payable = bill.line_ids.filtered(
+            lambda line: line.account_id == self.payable,
+        )
+        (advance_debit + bill_payable).reconcile()
+        self.assertEqual(self._purchase_amount('2026-05-01', '2026-05-31'), 0)
         # Neither bank decrease is a classified purchase source: the first is
         # an unapplied vendor advance; the second only changes liquidity.
 

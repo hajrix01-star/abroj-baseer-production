@@ -71,6 +71,7 @@ class BaseerOperationsReport(models.AbstractModel):
             'pos.order', 'pos.order.line', 'pos.session', 'pos.config',
             'product.product', 'account.fiscal.position',
             'account.bank.statement.line', 'account.partial.reconcile',
+            'account.payment',
         ))
         return company, journal_ids, periods, period_control, comparison_control
 
@@ -363,13 +364,21 @@ class BaseerOperationsReport(models.AbstractModel):
         ]
         statements = self.env['account.bank.statement.line'].search(domain, order='id')
         self.env['account.bank.statement.line'].flush_model([
-            'company_id', 'date', 'amount',
+            'company_id', 'move_id', 'amount',
         ])
-        self._assert_visible(
-            'account_bank_statement_line',
-            'company_id=%s AND date >= %s AND date <= %s AND amount < 0',
-            [company.id, start, end], statements,
+        # statement.date is related to move.date, not a physical statement
+        # table column in Odoo 19.  Compare the unruled joined source IDs.
+        self.env['account.move'].flush_model(['date'])
+        self.env.cr.execute(
+            'SELECT s.id FROM account_bank_statement_line s '
+            'JOIN account_move m ON m.id=s.move_id '
+            'WHERE s.company_id=%s AND m.date >= %s AND m.date <= %s '
+            'AND s.amount < 0',
+            [company.id, start, end],
         )
+        if {row[0] for row in self.env.cr.fetchall()} != set(statements.ids):
+            self._deny_incomplete_source()
+        statements.check_access('read')
         seen = set()
         for statement in statements:
             if journal_ids:
@@ -400,9 +409,8 @@ class BaseerOperationsReport(models.AbstractModel):
                     or self._decimal(counterpart.balance) != amount):
                 excluded['unproven_bank_outflow'] += 1
                 continue
-            if counterpart.account_id.account_type == 'liability_payable':
-                payable_debit = counterpart
-            elif (counterpart.account_id.account_type == 'asset_current'
+            (bank | counterpart).mapped('account_id').check_access('read')
+            if (counterpart.account_id.account_type == 'asset_current'
                   and counterpart.account_id.reconcile):
                 # The bank has cleared an outstanding payment.  That payment
                 # must already be matched to exactly one bill for this slice.
@@ -417,6 +425,11 @@ class BaseerOperationsReport(models.AbstractModel):
                 payment_credit = clearing.credit_move_id
                 payment_move = payment_credit.move_id
                 payment_move.check_access('read')
+                payment = payment_move.origin_payment_id
+                if not payment:
+                    excluded['unproven_outstanding_allocation'] += 1
+                    continue
+                payment.check_access('read')
                 payment_lines = payment_move.line_ids
                 self._assert_visible(
                     'account_move_line', 'move_id=%s',
@@ -425,15 +438,24 @@ class BaseerOperationsReport(models.AbstractModel):
                 payables = payment_lines.filtered(
                     lambda line: line.account_id.account_type == 'liability_payable',
                 )
+                payables.mapped('account_id').check_access('read')
                 if (len(payables) != 1 or payment_credit.account_id != counterpart.account_id
                         or self._decimal(payment_credit.balance) != -amount
-                        or self._decimal(payables.balance) != amount):
+                        or self._decimal(payables.balance) != amount
+                        or payment.move_id != payment_move
+                        or payment.company_id != company
+                        or payment_move.company_id != company
+                        or payment.payment_type != 'outbound'
+                        or payment.partner_type != 'supplier'
+                        or payment.state not in ('in_process', 'paid')
+                        or payment.outstanding_account_id != counterpart.account_id):
                     excluded['unproven_outstanding_allocation'] += 1
                     continue
                 payable_debit = payables
             else:
-                # Internal liquidity transfers and unclassified cash events
-                # never become a purchase by inference.
+                # A direct payable bank debit could be an advance reconciled
+                # later. Without contemporaneous payment provenance it is not
+                # supported by this narrow source slice.
                 excluded['non_purchase_bank_outflow'] += 1
                 continue
             allocations = payable_debit.matched_credit_ids
@@ -447,6 +469,7 @@ class BaseerOperationsReport(models.AbstractModel):
             bill_line = allocations.credit_move_id
             bill = bill_line.move_id
             bill.check_access('read')
+            bill_line.account_id.check_access('read')
             bill_lines = bill.line_ids
             self._assert_visible(
                 'account_move_line', 'move_id=%s', [bill.id], bill_lines,
@@ -455,6 +478,7 @@ class BaseerOperationsReport(models.AbstractModel):
                     or bill.company_id != company or bill.currency_id != company.currency_id
                     or not bill.invoice_date or bill.invoice_date > statement.date
                     or bill_line.account_id != payable_debit.account_id
+                    or payment.partner_id != bill.partner_id
                     or len(bill.invoice_line_ids.filtered(
                         lambda line: line.display_type == 'product')) != 1):
                 excluded['unsupported_purchase_bill'] += 1

@@ -43,8 +43,52 @@ jobs:
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
             -d baseer_ar_ci -i baseer_aged_receivable_report --without-demo=all \
-            --test-enable --test-tags=/baseer_aged_receivable_report \
+            --test-enable --test-tags=/baseer_aged_receivable_report,-ar_pdf_http \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+
+  render-pdf:
+    name: Real receivables PDF A4 render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render one 101-line multipage A4 PDF
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -d -m 0777 "$RUNNER_TEMP/ar-pdf-artifacts"
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e BASEER_AR_PDF_ARTIFACT_DIR=/mnt/artifacts \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/ar-pdf-artifacts",dst=/mnt/artifacts \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_ar_pdf_ci -i baseer_aged_receivable_report --without-demo=all \
+            --test-enable --test-tags=/baseer_aged_receivable_report:TestAgedReceivablePdfHttp \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+      - name: Keep PDF for independent visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-aged-receivables-pdf-render
+          path: ${{ runner.temp }}/ar-pdf-artifacts/ar-101.pdf
+          if-no-files-found: error
 
   hoot-report-tests:
     name: Odoo 19 receivables UI tests

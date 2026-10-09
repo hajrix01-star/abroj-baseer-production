@@ -37,7 +37,11 @@ test("cutoff, partner pages, and PDF pass backend options without calculating mo
     const report = instance(async (model, method, args) => {
         calls.push([model, method, args]);
         if (method === "get_report") {
-            return { cutoff_date: "2026-10-09", summary: { receivables: "1,000.00", credits: "200.00", net: "800.00" },
+            return { cutoff_date: "2026-10-09", summary: {
+                receivables: "1,000.00", credits: "200.00", net: "800.00",
+                buckets: { not_due: "0.00", d1_30: "1,000.00", d31_60: "0.00", d61_90: "0.00", over_90: "0.00" },
+                credit_buckets: { not_due: "0.00", d1_30: "200.00", d31_60: "0.00", d61_90: "0.00", over_90: "0.00" },
+            },
                 partners: [{ id: 7, name: "A", receivables: "1,000.00", credits: "200.00", net: "800.00", open_count: 2 }],
                 page: args[0].page, page_count: 2, partner_count: 101 };
         }

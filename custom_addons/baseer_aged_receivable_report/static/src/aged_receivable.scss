@@ -24,6 +24,12 @@
     .o_baseer_aged_summary_item strong.is-zero { color: var(--baseer-report-zero); }
     .o_baseer_aged_credit { background: #f8f6f8; }
     .o_baseer_aged_net { background: #eef6f6; }
+    .o_baseer_aged_bucket_heading {
+        margin: 0.8rem 0 0.35rem;
+        color: var(--baseer-report-muted);
+        font-size: 0.76rem;
+        font-weight: 600;
+    }
     .o_baseer_aged_buckets {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -43,6 +49,7 @@
     }
     .o_baseer_aged_bucket strong { color: var(--baseer-report-ink); font-size: 0.82rem; }
     .o_baseer_aged_bucket strong.is-zero { color: var(--baseer-report-zero); }
+    .o_baseer_aged_credit_buckets .o_baseer_aged_bucket { background: #fbf9fb; }
     .o_baseer_aged_table_wrap, .o_baseer_aged_lines_wrap { max-width: 100%; overflow-x: auto; }
     .o_baseer_aged_table, .o_baseer_aged_lines {
         width: 100%;

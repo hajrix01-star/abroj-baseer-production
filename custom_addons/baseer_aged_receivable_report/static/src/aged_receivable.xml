@@ -47,10 +47,18 @@
                             <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.net)" t-esc="state.report.summary.net"/>
                         </div>
                     </div>
-                    <div class="o_baseer_aged_buckets" t-att-aria-label="labels.bucket">
+                    <h2 class="o_baseer_aged_bucket_heading" t-esc="labels.receivableAging"/>
+                    <div class="o_baseer_aged_buckets" t-att-aria-label="labels.receivableAging">
                         <div t-foreach="buckets" t-as="bucket" t-key="bucket" class="o_baseer_aged_bucket">
                             <span t-esc="labelFor(bucket)"/>
                             <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.buckets[bucket])" t-esc="state.report.summary.buckets[bucket]"/>
+                        </div>
+                    </div>
+                    <h2 class="o_baseer_aged_bucket_heading" t-esc="labels.creditAging"/>
+                    <div class="o_baseer_aged_buckets o_baseer_aged_credit_buckets" t-att-aria-label="labels.creditAging">
+                        <div t-foreach="buckets" t-as="bucket" t-key="bucket" class="o_baseer_aged_bucket">
+                            <span t-esc="labelFor(bucket)"/>
+                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.credit_buckets[bucket])" t-esc="state.report.summary.credit_buckets[bucket]"/>
                         </div>
                     </div>
                     <div class="o_baseer_aged_table_wrap">
@@ -103,7 +111,7 @@
                                                                 t-att-aria-label="labels.openLine + ': ' + line.move_name"
                                                                 t-on-click="() => this.openLine(line.id)" t-esc="line.move_name"/></th>
                                                             <td t-att-data-label="labels.kind" t-esc="labelFor(line.kind)"/>
-                                                            <td t-att-data-label="labels.bucket" t-esc="labelFor(line.bucket)"/>
+                                                            <td t-att-data-label="labels.bucket" t-esc="line.credit_age_bucket ? labels.credit + ' · ' + labelFor(line.credit_age_bucket) : labelFor(line.bucket)"/>
                                                             <td class="is-number" t-att-data-label="labels.open"><span class="o_baseer_report_amount" t-att-class="amountClass(line.open)" t-esc="line.open"/></td>
                                                         </tr>
                                                     </tbody>

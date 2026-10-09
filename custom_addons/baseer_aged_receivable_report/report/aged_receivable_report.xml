@@ -57,6 +57,13 @@
                     <td><span class="label">61-90</span><span class="value numeric" t-esc="report['summary']['buckets']['d61_90']"/></td>
                     <td><span class="label">90+</span><span class="value numeric" t-esc="report['summary']['buckets']['over_90']"/></td>
                 </tr></table>
+                <div style="color: #657487; font-size: 10px; margin-top: 7px;" t-esc="'أعمار الأرصدة الدائنة من تاريخ القيد' if arabic else 'Credits aged from posting date'"/>
+                <table class="summary"><tr>
+                    <td t-foreach="('not_due', 'd1_30', 'd31_60', 'd61_90', 'over_90')" t-as="bucket">
+                        <span class="label" t-esc="age_labels[bucket]"/>
+                        <span class="value numeric" t-esc="report['summary']['credit_buckets'][bucket]"/>
+                    </td>
+                </tr></table>
                 <table class="detail">
                     <thead><tr>
                         <th style="width: 25%;" t-esc="'العميل' if arabic else 'Customer'"/>
@@ -72,7 +79,9 @@
                             <td t-esc="line['move_name']"/>
                             <td dir="ltr" t-esc="line['date']"/>
                             <td dir="ltr" t-esc="line['date_maturity'] or '-'"/>
-                            <td t-esc="kind_labels[line['kind']]"/>
+                            <td><span t-esc="kind_labels[line['kind']]"/>
+                                <span t-if="line['credit_age_bucket']" t-esc="' · ' + age_labels[line['credit_age_bucket']]"/>
+                            </td>
                             <td t-att-class="'numeric credit' if line['bucket'] == 'credit' else 'numeric'" t-esc="line['open']"/>
                         </tr>
                         <tr t-if="not report['lines']"><td colspan="6" t-esc="'لا توجد مديونيات مفتوحة' if arabic else 'No open receivables'"/></tr>

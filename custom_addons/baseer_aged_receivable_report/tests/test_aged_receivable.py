@@ -44,7 +44,7 @@ class TestAgedReceivable(TransactionCase):
     def _invoice(self, move_type, day, amount):
         move = self.env['account.move'].with_company(self.company).create({
             'move_type': move_type, 'partner_id': self.partner.id,
-            'journal_id': self.sales.id, 'invoice_date': day,
+            'journal_id': self.sales.id, 'invoice_date': day, 'invoice_date_due': day,
             'invoice_line_ids': [Command.create({
                 'name': 'AR synthetic invoice line', 'quantity': 1,
                 'price_unit': amount, 'account_id': self.income.id,
@@ -159,6 +159,24 @@ class TestAgedReceivable(TransactionCase):
             'cutoff_date': '2025-01-31', 'partner_id': False, 'page': 1,
         })['lines'][0]['open'], '10.00')
 
+    def test_unapplied_credits_are_aged_separately_from_claims(self):
+        recent = self._entry('2025-01-20', self.bank, self.receivable, 11)
+        old = self._entry('2024-12-01', self.bank, self.receivable, 17)
+        result = self.report.get_report({'cutoff_date': '2025-01-31', 'page': 1})
+        self.assertEqual(result['summary']['receivables'], '0.00')
+        self.assertEqual(result['summary']['credits'], '28.00')
+        self.assertEqual(result['summary']['net'], '-28.00')
+        self.assertEqual(result['summary']['credit_buckets']['d1_30'], '11.00')
+        self.assertEqual(result['summary']['credit_buckets']['d61_90'], '17.00')
+        self.assertEqual(result['summary']['buckets']['d1_30'], '0.00')
+        rows = self.report.get_partner_lines({
+            'cutoff_date': '2025-01-31', 'partner_id': self.partner.id, 'page': 1,
+        })['lines']
+        by_id = {row['id']: row for row in rows}
+        self.assertEqual(by_id[recent.id]['credit_age_bucket'], 'd1_30')
+        self.assertEqual(by_id[old.id]['credit_age_bucket'], 'd61_90')
+        self.assertEqual(by_id[recent.id]['bucket'], 'credit')
+
     def test_hidden_source_and_reconciliation_fail_closed(self):
         invoice = self._invoice('out_invoice', '2025-01-10', 100)
         payment = self._entry('2025-01-20', self.bank, self.receivable, 30)
@@ -195,6 +213,27 @@ class TestAgedReceivable(TransactionCase):
             self.report.with_user(internal).get_report({
                 'cutoff_date': '2025-01-31', 'page': 1,
             })
+
+    def test_hidden_reconciliation_counterpart_and_related_records_fail_closed(self):
+        invoice = self._invoice('out_invoice', '2025-01-10', 100)
+        payment = self._entry('2025-01-20', self.bank, self.receivable, 30)
+        (invoice + payment).reconcile()
+        readonly_report = self.report.with_user(self._readonly())
+        options = {'cutoff_date': '2025-01-31', 'page': 1}
+        for model, record in (
+            ('account.move.line', payment),
+            ('account.move', invoice.move_id),
+            ('account.account', self.receivable),
+            ('account.journal', self.sales),
+            ('res.partner', self.partner),
+        ):
+            with self.subTest(hidden_model=model):
+                rule = self._hide(model, record)
+                try:
+                    with self.assertRaises(AccessError):
+                        readonly_report.get_report(options)
+                finally:
+                    rule.unlink()
 
     def test_pdf_uses_full_snapshot_and_a4(self):
         self._invoice('out_invoice', '2025-01-10', 100)

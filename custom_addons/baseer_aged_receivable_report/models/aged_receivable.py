@@ -185,6 +185,20 @@ class BaseerAgedReceivable(models.AbstractModel):
             return 'd61_90'
         return 'over_90'
 
+    @staticmethod
+    def _credit_age_bucket(line, cutoff):
+        """Age a separate credit from its posted source date, not invoice due date."""
+        days = (cutoff - line.date).days
+        if days <= 0:
+            return 'not_due'
+        if days <= 30:
+            return 'd1_30'
+        if days <= 60:
+            return 'd31_60'
+        if days <= 90:
+            return 'd61_90'
+        return 'over_90'
+
     @api.model
     def _snapshot(self, cutoff):
         self._check_accounting_access()
@@ -204,6 +218,7 @@ class BaseerAgedReceivable(models.AbstractModel):
                 open_by_id[credit_id] += amount
 
         buckets = dict.fromkeys(self._BUCKETS, Decimal('0'))
+        credit_buckets = dict.fromkeys(self._BUCKETS, Decimal('0'))
         partners = defaultdict(lambda: {
             'receivables': Decimal('0'), 'credits': Decimal('0'),
             'net': Decimal('0'), 'open_count': 0, 'lines': [],
@@ -226,6 +241,7 @@ class BaseerAgedReceivable(models.AbstractModel):
                 'move_name': line.move_id.name or line.move_id.ref or '',
                 'kind': self._kind(line, amount),
                 'bucket': bucket,
+                'credit_age_bucket': self._credit_age_bucket(line, cutoff) if amount < 0 else '',
                 'amount': amount,
             }
             group['lines'].append(row)
@@ -240,6 +256,7 @@ class BaseerAgedReceivable(models.AbstractModel):
                 credit = -amount
                 credits += credit
                 group['credits'] += credit
+                credit_buckets[self._credit_age_bucket(line, cutoff)] += credit
 
         partner_rows = []
         for partner_id, values in partners.items():
@@ -264,6 +281,8 @@ class BaseerAgedReceivable(models.AbstractModel):
                 'net': self._money(receivables - credits, currency),
                 'buckets': {key: self._money(value, currency)
                             for key, value in buckets.items()},
+                'credit_buckets': {key: self._money(value, currency)
+                                   for key, value in credit_buckets.items()},
             },
         }
 
@@ -341,7 +360,7 @@ class BaseerAgedReceivable(models.AbstractModel):
         cutoff = self._cutoff(options['cutoff_date'])
         self._check_accounting_access()
         return self.env.ref('baseer_aged_receivable_report.action_aged_receivable_pdf').report_action(
-            self, data={'cutoff_date': cutoff.isoformat()},
+            [], data={'cutoff_date': cutoff.isoformat()}, config=False,
         )
 
     @api.model

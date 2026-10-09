@@ -24,6 +24,13 @@ class AgedReceivablePdf(models.AbstractModel):
             'direct_claim': 'Direct item', 'unapplied_credit': 'Unapplied credit',
             'unusual': 'Unusual sign',
         })
+        age_labels = ({
+            'not_due': 'حديث', 'd1_30': '1–30', 'd31_60': '31–60',
+            'd61_90': '61–90', 'over_90': '90+',
+        } if arabic else {
+            'not_due': 'Current', 'd1_30': '1–30', 'd31_60': '31–60',
+            'd61_90': '61–90', 'over_90': '90+',
+        })
         return {
             'doc_ids': [],
             'doc_model': 'baseer.aged.receivable.report',
@@ -31,6 +38,7 @@ class AgedReceivablePdf(models.AbstractModel):
             'report': report,
             'arabic': arabic,
             'kind_labels': kind_labels,
+            'age_labels': age_labels,
             'generated_at': fields.Datetime.context_timestamp(
                 self, report['generated_at'],
             ),

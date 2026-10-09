@@ -87,6 +87,9 @@ class BaseerOperationsReport(models.AbstractModel):
             sql += ' AND journal_id = ANY(%s)'
             params.append(journal_ids)
         moves = self.env['account.move'].search(domain, order='id')
+        self.env['account.move'].flush_model([
+            'company_id', 'state', 'move_type', 'date', 'journal_id',
+        ])
         self._assert_visible('account_move', sql, params, moves)
         return moves
 
@@ -105,6 +108,9 @@ class BaseerOperationsReport(models.AbstractModel):
                'AND date_order >= %s AND date_order < %s')
         params = [company.id, ('pos', 'baseer_summary'), POS_STATES, start, next_day]
         orders = self.env['pos.order'].search(domain, order='id')
+        self.env['pos.order'].flush_model([
+            'company_id', 'source', 'state', 'date_order',
+        ])
         self._assert_visible('pos_order', sql, params, orders)
         if journal_ids:
             # Never silently drop an order because its config/journal link is
@@ -126,6 +132,7 @@ class BaseerOperationsReport(models.AbstractModel):
         lines = move.invoice_line_ids
         lines.check_access('read')
         source_lines = lines.filtered(lambda line: line.display_type == 'product')
+        self.env['account.move.line'].flush_model(['move_id', 'display_type'])
         self._assert_visible('account_move_line',
                              'move_id=%s AND display_type=%s',
                              [move.id, 'product'], source_lines)
@@ -134,6 +141,7 @@ class BaseerOperationsReport(models.AbstractModel):
     @api.model
     def _pos_lines(self, order):
         lines = order.lines
+        self.env['pos.order.line'].flush_model(['order_id'])
         self._assert_visible('pos_order_line', 'order_id=%s', [order.id], lines)
         return lines
 
@@ -323,6 +331,11 @@ class BaseerOperationsReport(models.AbstractModel):
         if journal_ids:
             sql += ' AND aml.journal_id = ANY(%s)'
             params.append(journal_ids)
+        self.env['account.move.line'].flush_model([
+            'company_id', 'parent_state', 'date', 'journal_id', 'move_id', 'account_id',
+        ])
+        self.env['account.move'].flush_model(['move_type'])
+        self.env['account.account'].flush_model(['account_type'])
         self.env.cr.execute(
             'SELECT aml.id FROM account_move_line aml '
             'JOIN account_move m ON m.id=aml.move_id '

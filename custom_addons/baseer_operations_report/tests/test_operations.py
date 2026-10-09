@@ -229,6 +229,16 @@ class TestOperationsGrossCalculator(TransactionCase):
         try:
             rule.flush_recordset()
             self.assertFalse(secured.env['account.move'].search([('id', '=', invoice.id)]))
+            self.env['account.move'].flush_model([
+                'company_id', 'state', 'move_type', 'date',
+            ])
+            self.env.cr.execute(
+                "SELECT id FROM account_move WHERE id=%s AND company_id=%s "
+                "AND state='posted' AND move_type='out_invoice' "
+                'AND date >= %s AND date <= %s',
+                [invoice.id, self.company.id, '2041-06-01', '2041-06-30'],
+            )
+            self.assertEqual(self.env.cr.fetchone()[0], invoice.id)
             with self.assertRaises(AccessError):
                 self._snapshot(report=secured)
         finally:

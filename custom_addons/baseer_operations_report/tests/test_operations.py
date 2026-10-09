@@ -562,6 +562,8 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual({event['source_id'] for event in events},
                          {order.id, refund.id})
         self.assertEqual({event['source_model'] for event in events}, {'pos.order'})
+        self.assertEqual({event['date'] for event in events},
+                         {fields.Date.to_string(today)})
         self.assertEqual(sum((event['amount'] for event in events), Decimal('0')),
                          Decimal('0'))
 
@@ -637,6 +639,13 @@ class TestOperationsGrossCalculator(TransactionCase):
         july_filters.update({'date_from': '2041-07-01', 'date_to': '2041-07-31'})
         july = self.report.get_source_snapshot(july_filters)
         self.assertEqual(self._row(july, 'income')['amount'], '115.00')
+        july_sections, _excluded = self.report._period_sources(
+            self.company, fields.Date.to_date('2041-07-01'),
+            fields.Date.to_date('2041-07-31'), [self.sale_journal.id],
+        )
+        july_event = july_sections['income'][mapped_income.id]['events'][0]
+        self.assertEqual((july_event['source_id'], july_event['date']),
+                         (order.id, '2041-07-01'))
         june_filters = self._filters([self.sale_journal.id])
         june = self.report.get_source_snapshot(june_filters)
         self.assertEqual(self._row(june, 'income')['amount'], '0.00')

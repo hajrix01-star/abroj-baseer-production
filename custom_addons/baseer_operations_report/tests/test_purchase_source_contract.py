@@ -758,6 +758,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                          ('baseer.purchase.batch.line', line.id))
         self.assertEqual(event['payment_move_id'], payment.move_id.id)
         self.assertEqual(event['payment_line_id'], cash_line.id)
+        self.assertEqual(event['date'], str(payment.move_id.date))
         self.assertEqual(event['amount'], Decimal('115.00'))
         payable_payment = payment.move_id.line_ids.filtered(
             lambda item: item.account_id == self.payable,

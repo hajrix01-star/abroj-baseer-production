@@ -22,7 +22,7 @@
         <t t-call="web.basic_layout">
             <div class="page bgl-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
                 <style>
-                    .bgl-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 9px;}
+                    .bgl-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 11px;}
                     .bgl-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
                     .bgl-pdf .meta {color: #657487; line-height: 1.5; margin-bottom: 10px; border-bottom: 1px solid #d7dde2; padding-bottom: 8px;}
                     .bgl-pdf .notice {color: #566a75; background: #d9eef2; padding: 6px 8px; margin: 7px 0 10px;}
@@ -31,6 +31,9 @@
                     .bgl-pdf tr {page-break-inside: avoid;}
                     .bgl-pdf th, .bgl-pdf td {padding: 5px 7px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
                     .bgl-pdf th {font-weight: 600;}
+                    .bgl-pdf thead th:first-child, .bgl-pdf tbody th {text-align: left;}
+                    .bgl-pdf[dir="rtl"] thead th:first-child, .bgl-pdf[dir="rtl"] tbody th {text-align: right;}
+                    .bgl-pdf tbody th {font-weight: 400;}
                     .bgl-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
                     .bgl-pdf .negative {color: #cf2732;}
                     .bgl-pdf .zero {color: #b8c1ca;}
@@ -75,7 +78,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="footer" style="font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                <div class="footer" style="font-size: 9px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
                     <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
                     <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
                 </div>

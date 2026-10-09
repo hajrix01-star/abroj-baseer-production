@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
+import { registry } from "@web/core/registry";
 
 const MODEL = "baseer.operations.report";
 const ACCOUNT_PAGE_SIZE = 50;
@@ -135,11 +136,15 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         super.setup();
         this.state.detail = null;
         this.state.incomplete = false;
+        this.state.incompletePeriod = null;
+        this.state.incompleteControls = null;
         this.snapshotAccounts = {};
         this.detailRequestToken = 0;
     }
 
     get labels() { return labels[this.lang]; }
+    get periodSummary() { return this.state.incompletePeriod?.display_label || super.periodSummary; }
+    get periodOptions() { return this.state.incompleteControls?.options || super.periodOptions; }
     get unconfirmedCount() {
         return this.reportPeriods.reduce((count, period) => count + (period.unconfirmed_count || 0), 0);
     }
@@ -164,6 +169,8 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         super.invalidate();
         this.state.detail = null;
         this.state.incomplete = false;
+        this.state.incompletePeriod = null;
+        this.state.incompleteControls = null;
         this.snapshotAccounts = {};
         this.detailRequestToken += 1;
     }
@@ -179,8 +186,18 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             const snapshot = await this.orm.call(MODEL, "get_source_snapshot", [filters]);
             if (token !== this.requestToken || generation !== this.companyGeneration || companyId !== this.activeCompanyId) { return; }
             if (snapshot.company_id !== companyId || typeof snapshot.complete !== "boolean") { throw new Error("Unexpected source contract"); }
+            if (snapshot.period_controls?.anchor_date) {
+                this.state.filters.period.anchor_date = snapshot.period_controls.anchor_date;
+            }
+            this.state.filters.period.direction = 0;
             if (!snapshot.complete) {
                 this.state.incomplete = true;
+                this.state.incompleteControls = snapshot.period_controls || null;
+                this.state.incompletePeriod = snapshot.periods?.find((period) => period.role === "primary") || snapshot.periods?.[0] || null;
+                if (this.state.incompletePeriod) {
+                    this.state.filters.period.date_from = this.state.incompletePeriod.date_from;
+                    this.state.filters.period.date_to = this.state.incompletePeriod.date_to;
+                }
                 this.state.report = null;
                 this.snapshotAccounts = {};
                 this.appliedFilters = null;
@@ -190,10 +207,6 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
                 !!filters.journal_ids.length, this.labels);
             this.state.report = prepared.report;
             this.snapshotAccounts = prepared.accounts;
-            if (snapshot.period_controls?.anchor_date) {
-                this.state.filters.period.anchor_date = snapshot.period_controls.anchor_date;
-            }
-            this.state.filters.period.direction = 0;
             this.appliedFilters = this.cloneFilters();
         } catch (error) {
             if (token === this.requestToken && generation === this.companyGeneration) {
@@ -250,6 +263,30 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         this.detailRequestToken += 1;
         this.state.detail = null;
     }
+
+    async printReport() {
+        if (!this.appliedFilters || !this.state.report?.complete || this.state.loading || this.state.printing) { return; }
+        const token = this.requestToken;
+        const generation = this.companyGeneration;
+        const companyId = this.activeCompanyId;
+        this.state.printing = true;
+        try {
+            const action = await this.orm.call(MODEL, "action_print", [{ ...this.appliedFilters, company_id: companyId }]);
+            if (token === this.requestToken && generation === this.companyGeneration && companyId === this.activeCompanyId) {
+                await this.env.services.action.doAction(action);
+            }
+        } catch (error) {
+            if (token === this.requestToken && generation === this.companyGeneration) {
+                this.state.error = error?.data?.message || this.labels.error;
+            }
+        } finally {
+            if (token === this.requestToken && generation === this.companyGeneration) { this.state.printing = false; }
+        }
+    }
 }
 
-// Deliberately not registered in baseer_reports: the source remains incomplete.
+registry.category("baseer_reports").add("operations_gross", {
+    key: "operations_gross", label: { ar: "العمليات الإجمالية", en: "Gross Operations" },
+    sequence: 45, kind: "component", component: BaseerOperationsPreview,
+    groups: ["account.group_account_readonly", "account.group_account_user", "account.group_account_manager"],
+});

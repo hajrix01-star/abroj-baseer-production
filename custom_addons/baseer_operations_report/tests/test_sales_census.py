@@ -107,6 +107,12 @@ class TestOperationsSalesCensus(TransactionCase):
                    'journal_ids': []}
         proven = self.report.get_source_snapshot(filters)
         self.assertTrue(proven['complete'])
+        self.assertEqual(self.report.action_print(filters)['report_name'],
+                         'baseer_operations_report.operations_pdf_portrait')
+        self.assertEqual(self.report.action_print({
+            **filters, 'comparison': {'kind': 'previous_period', 'count': 1,
+                                      'order': 'descending'},
+        })['report_name'], 'baseer_operations_report.operations_pdf_landscape')
         self.assertEqual(next(row for row in proven['periods'][0]['rows']
                               if row['key'] == 'income')['amount'], '115.00')
         account = proven['periods'][0]['accounts']['income'][0]
@@ -129,6 +135,8 @@ class TestOperationsSalesCensus(TransactionCase):
                 self.env['report.baseer_operations_report.operations_pdf_portrait']._get_report_values(
                     [], {'filters': filters},
                 )
+            with self.assertRaises(AccessError):
+                self.report.action_print(filters)
 
     def test_census_rejects_a_posted_receipt_without_its_counted_event(self):
         self._receipt('2041-06-10')

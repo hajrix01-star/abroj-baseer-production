@@ -1542,6 +1542,19 @@ class BaseerOperationsReport(models.AbstractModel):
         return snapshot
 
     @api.model
+    def action_print(self, filters):
+        """Print only the same complete snapshot available to the screen."""
+        snapshot = self.get_source_snapshot(filters)
+        if not snapshot['complete']:
+            self._deny_incomplete_source()
+        report_id = ('action_operations_pdf_landscape'
+                     if len(snapshot['periods']) > 1
+                     else 'action_operations_pdf_portrait')
+        return self.env.ref(f'baseer_operations_report.{report_id}').report_action(
+            [], data={'filters': filters}, config=False,
+        )
+
+    @api.model
     def get_account_events(self, filters, display_section, account_id,
                            period_key, expected_fingerprint, page=1):
         """Deny detail access if even one requested period is unproven."""

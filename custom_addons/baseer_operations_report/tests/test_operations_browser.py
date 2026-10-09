@@ -1,4 +1,6 @@
-"""Browser smoke for the deliberately unactivated operations preview."""
+"""Browser smoke for the activated operations report."""
+
+from datetime import timedelta
 
 from odoo import Command, fields
 from odoo.tests.common import HttpCase, tagged
@@ -31,6 +33,29 @@ class TestOperationsBrowser(HttpCase):
             })],
         })
         invoice.action_post()
+        prior_month = fields.Date.today().replace(day=1) - timedelta(days=1)
+        cash = self.env['account.account'].with_company(company).create({
+            'code': '989902', 'name': 'Browser unproven cash',
+            'account_type': 'asset_cash',
+            'company_ids': [Command.set(company.ids)],
+        })
+        other_asset = self.env['account.account'].with_company(company).create({
+            'code': '989903', 'name': 'Browser unproven asset',
+            'account_type': 'asset_current',
+            'company_ids': [Command.set(company.ids)],
+        })
+        general = self.env['account.journal'].search([
+            ('company_id', '=', company.id), ('type', '=', 'general'),
+        ], limit=1)
+        self.assertTrue(general)
+        cash_outflow = self.env['account.move'].with_company(company).create({
+            'move_type': 'entry', 'date': prior_month, 'journal_id': general.id,
+            'line_ids': [
+                Command.create({'account_id': other_asset.id, 'debit': 10}),
+                Command.create({'account_id': cash.id, 'credit': 10}),
+            ],
+        })
+        cash_outflow._post(soft=False)
         self.env.flush_all()
         action = self.env.ref('baseer_reports_menu.action_baseer_reports_hub')
         script = r"""
@@ -82,6 +107,22 @@ class TestOperationsBrowser(HttpCase):
                 (item) => /No comparison|دون مقارنة/.test(item.textContent)), 'no comparison');
             none.click();
             await waitFor(() => host.querySelectorAll('.o_baseer_pl_table thead th').length === 2, 'single period');
+
+            const currentMonth = periodButton().textContent;
+            periodButton().click();
+            const previousMonth = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(
+                (row) => /Month|شهر/.test(row.textContent)), 'month navigation');
+            previousMonth.querySelector('.o_baseer_pl_row_navigation button').click();
+            await waitFor(() => host.querySelector('.o_baseer_go_incomplete'), 'unproven prior month');
+            if (host.querySelector('.o_baseer_pl_table') || periodButton().textContent === currentMonth) {
+                throw new Error('Unproven period leaked amounts or did not advance');
+            }
+            periodButton().click();
+            const nextMonth = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(
+                (row) => /Month|شهر/.test(row.textContent)), 'return month navigation');
+            nextMonth.querySelectorAll('.o_baseer_pl_row_navigation button')[1].click();
+            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_pl_net_income'), 'proven month restored');
+            if (periodButton().textContent !== currentMonth) { throw new Error('Month anchor was not restored'); }
 
             const journals = host.querySelector('.o_baseer_pl_journals');
             journals.querySelector('summary').click();

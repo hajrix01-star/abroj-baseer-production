@@ -1,0 +1,159 @@
+name: Test Baseer aged receivables
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_aged_receivable_report/**
+      - .github/workflows/test-baseer-aged-receivable.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  odoo-report-tests:
+    name: Odoo 19 receivables money and access tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install module and run its Odoo tests in an isolated database
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_ar_ci -i baseer_aged_receivable_report --without-demo=all \
+            --test-enable --test-tags=/baseer_aged_receivable_report,-ar_pdf_http \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+
+  render-pdf:
+    name: Real receivables PDF A4 render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render one 101-line multipage A4 PDF
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -d -m 0777 "$RUNNER_TEMP/ar-pdf-artifacts"
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e BASEER_AR_PDF_ARTIFACT_DIR=/mnt/artifacts \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/ar-pdf-artifacts",dst=/mnt/artifacts \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_ar_pdf_ci -i baseer_aged_receivable_report --without-demo=all \
+            --test-enable --test-tags=/baseer_aged_receivable_report:TestAgedReceivablePdfHttp \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+      - name: Keep PDF for independent visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-aged-receivables-pdf-render
+          path: ${{ runner.temp }}/ar-pdf-artifacts/ar-101.pdf
+          if-no-files-found: error
+
+  hoot-report-tests:
+    name: Odoo 19 receivables UI tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify headless Chrome and install the pinned Odoo package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v google-chrome
+          curl --fail --location --silent --show-error \
+            https://nightly.odoo.com/19.0/nightly/deb/odoo_19.0.20260926_all.deb \
+            --output "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          printf '%s  %s\n' \
+            cb9d876779edc8d5f0394ddd3936a387e349077c \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" | sha1sum --check
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" python3-websocket
+      - name: Warm headless Chrome before Odoo browser tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          timeout 30s google-chrome --headless --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage --no-first-run --dump-dom about:blank \
+            >"$RUNNER_TEMP/baseer-ar-chrome-prewarm.html" \
+            2>"$RUNNER_TEMP/baseer-ar-chrome-prewarm.log"
+      - name: Run focused desktop and mobile Hoot checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          odoo --db_host=127.0.0.1 --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons" \
+            -d baseer_ar_ui_ci -i baseer_aged_receivable_report --without-demo=all \
+            '--test-tags=/web:WebSuite.test_unit_desktop[@baseer_aged_receivable_report/aged_receivable],/web:MobileWebSuite.test_unit_mobile[@baseer_aged_receivable_report/aged_receivable]' \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-ar-hoot.log"
+          test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-ar-hoot.log")" -ge 2
+          grep -Fq '[HOOT] Running test "@baseer_aged_receivable_report/aged_receivable/' "$RUNNER_TEMP/baseer-ar-hoot.log"
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-aged-receivables-ui-diagnostics
+          path: |
+            ${{ runner.temp }}/baseer-ar-chrome-prewarm.log
+            ${{ runner.temp }}/baseer-ar-chrome-prewarm.html
+            ${{ runner.temp }}/baseer-ar-hoot.log
+            /tmp/odoo_tests/baseer_ar_ui_ci/screenshots/
+          retention-days: 7

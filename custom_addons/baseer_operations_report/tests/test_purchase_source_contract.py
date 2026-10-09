@@ -5,6 +5,7 @@ real company cash/bank account.  In Odoo an invoice/payment reconciliation can
 precede the bank movement when an outstanding account is configured.
 """
 
+from collections import Counter
 from decimal import Decimal
 
 from odoo import Command
@@ -858,6 +859,62 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                     )
             finally:
                 rule.unlink()
+
+    def test_approved_batch_direct_bank_payment_and_company_scope(self):
+        self.company.currency_id = self.env.ref('base.SAR')
+        self.purchase.write({
+            'default_account_id': self.expense.id, 'sequence': -100,
+        })
+        self.method.payment_account_id = self.bank.default_account_id
+        batch = self.env['baseer.purchase.batch'].with_company(self.company).create({
+            'line_ids': [Command.create({
+                'partner_id': self.partner.id,
+                'supplier_ref': 'GROSS-DIRECT-BANK-115',
+                'gross_amount': 115, 'tax_id': self.tax.id,
+                'is_credit': False,
+                'payment_method_line_id': self.method.id,
+                'invoice_date': '2026-06-27',
+            })],
+        })
+        batch.action_approve()
+        line = batch.line_ids
+        payment_move = line.payment_id.move_id
+        bank_line = payment_move.line_ids.filtered(
+            lambda item: item.account_id == self.bank.default_account_id,
+        )
+        self.assertEqual(payment_move.journal_id, self.bank)
+        self.assertEqual(payment_move.company_id, self.company)
+        self.assertEqual(len(bank_line), 1)
+        self.assertEqual(Decimal(str(bank_line.balance)), Decimal('-115.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+        ), 115)
+        other = self.env['res.company'].create({
+            'name': 'Other company for gross bank source',
+            'currency_id': self.company.currency_id.id,
+        })
+        other_report = self.env['baseer.operations.report'].with_company(other)
+        sections = {key: {} for key in (
+            'income', 'income_other', 'expense_direct_cost', 'expense',
+            'expense_depreciation', 'expense_other',
+        )}
+        other_report._batch_purchase_outflows(
+            other, payment_move.date, payment_move.date,
+            set(), sections, Counter(),
+        )
+        self.assertTrue(all(not values for values in sections.values()))
+
+        # Simulate a source-date mismatch that would previously be hidden by
+        # the invoice-date SQL filter. It must fail closed for a June report.
+        line.flush_recordset(['invoice_date'])
+        self.env.cr.execute(
+            'UPDATE baseer_purchase_batch_line SET invoice_date=%s WHERE id=%s',
+            ['2026-07-27', line.id],
+        )
+        line.invalidate_recordset(['invoice_date'])
+        with self.assertRaises(AccessError):
+            self._purchase_amount('2026-06-01', '2026-06-30')
 
     def test_advance_and_internal_transfer_have_no_bill_allocation(self):
         bill = self._bill()

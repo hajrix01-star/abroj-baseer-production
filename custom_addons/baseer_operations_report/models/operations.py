@@ -733,10 +733,9 @@ class BaseerOperationsReport(models.AbstractModel):
             ('company_id', '=', company.id),
             ('batch_id.state', '=', 'approved'),
             ('payment_id', '!=', False),
-            ('invoice_date', '<=', end),
         ]
         self.env['baseer.purchase.batch.line'].flush_model([
-            'company_id', 'batch_id', 'payment_id', 'invoice_date',
+            'company_id', 'batch_id', 'payment_id',
         ])
         self.env['baseer.purchase.batch'].flush_model(['state'])
         # Users without purchase-batch ACL may still read a report period
@@ -744,9 +743,9 @@ class BaseerOperationsReport(models.AbstractModel):
         self.env.cr.execute(
             'SELECT l.id FROM baseer_purchase_batch_line l '
             'JOIN baseer_purchase_batch b ON b.id=l.batch_id '
-            'WHERE l.company_id=%s AND l.invoice_date <= %s '
-            'AND l.payment_id IS NOT NULL AND b.state=%s',
-            [company.id, end, 'approved'],
+            'WHERE l.company_id=%s AND l.payment_id IS NOT NULL '
+            'AND b.state=%s',
+            [company.id, 'approved'],
         )
         source_ids = {row[0] for row in self.env.cr.fetchall()}
         if not source_ids:
@@ -760,6 +759,7 @@ class BaseerOperationsReport(models.AbstractModel):
             self._deny_incomplete_source()
         source.check_access('read')
         seen_payments = set()
+        seen_bills = set()
         for line in source:
             batch = line.batch_id
             batch.check_access('read')
@@ -767,6 +767,9 @@ class BaseerOperationsReport(models.AbstractModel):
             payment = line.payment_id
             bill.check_access('read')
             payment.check_access('read')
+            line.partner_id.check_access('read')
+            bill.partner_id.check_access('read')
+            payment.partner_id.check_access('read')
             method = line.payment_method_line_id
             method.check_access('read')
             journal = method.journal_id
@@ -775,6 +778,12 @@ class BaseerOperationsReport(models.AbstractModel):
             liquidity_account.check_access('read')
             payment_move = payment.move_id
             payment_move.check_access('read')
+            if bill.id in seen_bills or payment.id in seen_payments:
+                self._deny_incomplete_source()
+            seen_bills.add(bill.id)
+            seen_payments.add(payment.id)
+            if payment_move and payment_move.date != line.invoice_date:
+                self._deny_incomplete_source()
             if bill and payment_move:
                 self._assert_visible(
                     'account_move', 'reversed_entry_id=%s', [bill.id],
@@ -784,7 +793,7 @@ class BaseerOperationsReport(models.AbstractModel):
                     'account_move', 'reversed_entry_id=%s',
                     [payment_move.id], payment_move.reversal_move_ids,
                 )
-            if (payment.id in seen_payments or batch.company_id != company
+            if (batch.company_id != company
                     or line.company_id != company or batch.state != 'approved'
                     or line.batch_id != batch or line.is_credit
                     or not bill or not payment_move or not method
@@ -804,8 +813,8 @@ class BaseerOperationsReport(models.AbstractModel):
                     or payment_move.company_id != company
                     or payment_move.origin_payment_id != payment
                     or payment_move.statement_line_id
-                    or payment_move.date != line.invoice_date
                     or payment.journal_id != journal
+                    or payment_move.journal_id != journal
                     or payment.payment_method_line_id != method
                     or method.company_id != company or method.code != 'manual'
                     or method.payment_type != 'outbound'
@@ -820,7 +829,6 @@ class BaseerOperationsReport(models.AbstractModel):
                     or bill.reversal_move_ids or payment_move.reversal_move_ids):
                 excluded['unsupported_batch_cash_payment'] += 1
                 continue
-            seen_payments.add(payment.id)
             bill_lines = bill.line_ids
             payment_lines = payment_move.line_ids
             self._assert_visible('account_move_line', 'move_id=%s',
@@ -829,6 +837,11 @@ class BaseerOperationsReport(models.AbstractModel):
                                  [payment_move.id], payment_lines)
             bill_lines.mapped('account_id').check_access('read')
             payment_lines.mapped('account_id').check_access('read')
+            if any(item.company_id != company or item.move_id != payment_move
+                   or item.journal_id != journal
+                   or item.currency_id != company.currency_id
+                   for item in payment_lines):
+                self._deny_incomplete_source()
             for tax_line in bill_lines.filtered('tax_line_id'):
                 tax = tax_line.tax_line_id
                 repartition = tax_line.tax_repartition_line_id

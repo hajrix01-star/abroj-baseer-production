@@ -1317,6 +1317,25 @@ class BaseerOperationsReport(models.AbstractModel):
             if event['line_model'] == 'pos.order.line':
                 pos_events.setdefault(event['line_id'], []).append(event)
 
+        def assert_pos_events(order, event_map, day):
+            lines = self._pos_lines(order)
+            counted = [event for line in lines
+                       for event in event_map.get(line.id, [])]
+            expected_model = ('baseer.pos.summary' if order.source == 'baseer_summary'
+                              else 'pos.order')
+            expected_id = (order.baseer_summary_id.id if order.source == 'baseer_summary'
+                           else order.id)
+            if (len(counted) != len(lines)
+                    or {event['line_id'] for event in counted} != set(lines.ids)
+                    or sum((event['amount'] for event in counted), Decimal('0'))
+                    != self._decimal(order.amount_total)
+                    or any(event['source_model'] != expected_model
+                           or event['source_id'] != expected_id
+                           or event['date'] != fields.Date.to_string(day)
+                           for event in counted)):
+                self._deny_incomplete_source()
+            return set(lines.ids)
+
         current_order_ids = set(orders.ids)
         for move in moves:
             move.check_access('read')
@@ -1370,6 +1389,14 @@ class BaseerOperationsReport(models.AbstractModel):
                     self._pos_amounts(order, company, proven, proof_excluded)
                     if proof_excluded.get('foreign_pos_orders') or proof_excluded.get('non_pl_pos_lines'):
                         self._deny_incomplete_source()
+                    proof_events = {}
+                    for section in proven.values():
+                        for entry in section.values():
+                            for event in entry['events']:
+                                if event['line_model'] == 'pos.order.line':
+                                    proof_events.setdefault(event['line_id'], []).append(event)
+                    if set(proof_events) != assert_pos_events(order, proof_events, day):
+                        self._deny_incomplete_source()
                     if start <= day <= end and journal_ids:
                         self._deny_incomplete_source()
                 continue
@@ -1397,14 +1424,13 @@ class BaseerOperationsReport(models.AbstractModel):
 
         order_line_ids = set()
         for order in orders:
-            lines = self._pos_lines(order)
-            order_line_ids.update(lines.ids)
-            counted = [event for line in lines for event in pos_events.get(line.id, [])]
-            if (len(counted) != len(lines)
-                    or {event['line_id'] for event in counted} != set(lines.ids)
-                    or sum((event['amount'] for event in counted), Decimal('0'))
-                    != self._decimal(order.amount_total)):
-                self._deny_incomplete_source()
+            if order.source == 'baseer_summary':
+                day = order.baseer_summary_id.business_date
+            else:
+                day = fields.Datetime.to_datetime(order.date_order).replace(
+                    tzinfo=UTC,
+                ).astimezone(self._company_timezone(company)).date()
+            order_line_ids.update(assert_pos_events(order, pos_events, day))
         if set(pos_events) != order_line_ids:
             self._deny_incomplete_source()
         excluded['census_sales_documents'] += len(moves)

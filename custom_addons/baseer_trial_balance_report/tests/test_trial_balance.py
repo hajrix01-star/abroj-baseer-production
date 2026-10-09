@@ -259,6 +259,12 @@ class TestTrialBalance(TransactionCase):
             "//div[contains(@class, 'btb-pdf')]//table/tbody/tr",
         )
         self.assertEqual(len(rows), 102)
+        bodies, _ids, _header, footer, _paperformat = self.env['ir.actions.report']._prepare_html(
+            html, report_model='baseer.trial.balance.report',
+        )
+        self.assertEqual(len(bodies), 1)
+        self.assertIn('class="page"', footer)
+        self.assertIn('class="topage"', footer)
         self.assertEqual(self.env.ref(
             'baseer_trial_balance_report.action_trial_balance_pdf',
         ).paperformat_id.orientation, 'Landscape')

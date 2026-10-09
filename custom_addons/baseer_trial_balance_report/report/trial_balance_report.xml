@@ -87,10 +87,10 @@
                             <td class="numeric" t-esc="report['total']['closing_credit']"/></tr>
                     </tbody>
                 </table>
-                <div style="font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
-                    <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
-                    <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
-                </div>
+            </div>
+            <div class="footer" style="font-family: DejaVu Sans, Arial, sans-serif; font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
+                <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
             </div>
         </t>
     </template>

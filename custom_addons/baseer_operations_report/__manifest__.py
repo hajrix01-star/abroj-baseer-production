@@ -7,6 +7,7 @@
     'category': 'Accounting/Reporting',
     'depends': ['baseer_profit_loss_report', 'baseer_pos_summary',
                 'baseer_purchase_batch'],
+    'data': ['report/operations_report.xml'],
     'assets': {
         'web.assets_backend': [
             'baseer_operations_report/static/src/operations.js',

@@ -121,6 +121,66 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         return Decimal(next(row['amount'].replace(',', '') for row in rows
                             if row['key'] == 'expense'))
 
+    def test_native_bank_entry_generates_recorded_purchase_vat(self):
+        """Describe Odoo's source before admitting taxed direct outflow to report."""
+        statement = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': self.bank.id,
+            'date': '2026-06-22',
+            'payment_ref': 'Actual taxed bank outflow',
+            'partner_id': self.partner.id,
+            'amount': -115,
+            'line_ids': [
+                Command.create({
+                    'name': 'Actual bank decrease',
+                    'partner_id': self.partner.id,
+                    'account_id': self.bank.default_account_id.id,
+                    'credit': 115,
+                }),
+                Command.create({
+                    'name': 'Expense base with native purchase VAT',
+                    'partner_id': self.partner.id,
+                    'account_id': self.expense.id,
+                    'debit': 100,
+                    'tax_ids': [Command.set(self.tax.ids)],
+                }),
+            ],
+        })
+        move = statement.move_id
+        lines = move.line_ids
+        bank_lines = lines.filtered(
+            lambda line: line.account_id == self.bank.default_account_id,
+        )
+        base_lines = lines.filtered(lambda line: line.account_id == self.expense)
+        tax_lines = lines.filtered(lambda line: line.tax_line_id)
+        self.assertEqual(statement.company_id, self.company)
+        self.assertEqual(statement.currency_id, self.company.currency_id)
+        self.assertEqual(str(statement.date), '2026-06-22')
+        self.assertEqual(Decimal(str(statement.amount)), Decimal('-115.00'))
+        self.assertEqual(move.state, 'posted')
+        self.assertEqual(move.company_id, self.company)
+        self.assertEqual(move.journal_id, self.bank)
+        self.assertEqual(move.statement_line_id, statement)
+        self.assertFalse(move.origin_payment_id)
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(len(bank_lines), 1)
+        self.assertEqual(len(base_lines), 1)
+        self.assertEqual(len(tax_lines), 1)
+        self.assertEqual(Decimal(str(bank_lines.balance)), Decimal('-115.00'))
+        self.assertEqual(Decimal(str(base_lines.balance)), Decimal('100.00'))
+        self.assertEqual(base_lines.tax_ids, self.tax)
+        self.assertEqual(Decimal(str(tax_lines.balance)), Decimal('15.00'))
+        self.assertEqual(tax_lines.account_id, self.vat_account)
+        self.assertEqual(tax_lines.tax_line_id, self.tax)
+        self.assertIn(
+            tax_lines.tax_repartition_line_id,
+            self.tax.invoice_repartition_line_ids,
+        )
+        self.assertEqual(sum(Decimal(str(line.balance)) for line in lines), 0)
+        self.assertFalse(lines.filtered(lambda line:
+                                        line.matched_credit_ids or line.matched_debit_ids))
+
     def test_bill_waits_for_real_outflow_and_partial_50_then_65(self):
         bill = self._bill()
         bill_payable = bill.line_ids.filtered(

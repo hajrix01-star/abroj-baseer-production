@@ -48,7 +48,7 @@ class TestGeneralLedgerPdfHttp(HttpCase):
                 force_report_rendering=True,
             )._render_qweb_pdf(
                 'baseer_general_ledger_report.general_ledger_pdf',
-                docids=[], data={'filters': filters},
+                res_ids=[], data={'filters': filters},
             )
         elapsed = monotonic() - start
         self.assertEqual(mime, 'pdf')

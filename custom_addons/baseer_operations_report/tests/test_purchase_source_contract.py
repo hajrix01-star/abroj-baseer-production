@@ -352,6 +352,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(transfer_bank.balance)), Decimal('30.00'))
         self.assertEqual(transfer_bank.account_id.account_type, 'asset_cash')
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
+        sections, _excluded = self.env['baseer.operations.report']._period_sources(
+            self.company, direct.date, direct.date, [],
+        )
+        direct_event = sections['expense'][self.expense.id]['events'][0]
+        self.assertEqual((direct_event['source_model'], direct_event['source_id']),
+                         ('account.bank.statement.line', direct.id))
+        self.assertEqual(direct_event['line_id'], expense_line.id)
+        self.assertEqual(direct_event['date'], '2026-06-18')
+        self.assertEqual(direct_event['amount'], Decimal('40.00'))
         self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', journal_ids=cash_journal.ids,
@@ -750,6 +759,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
         self.assertEqual(len(cash_line), 1)
         self.assertEqual(Decimal(str(cash_line.balance)), Decimal('-115.00'))
+        sections, _excluded = self.env['baseer.operations.report']._period_sources(
+            self.company, line.invoice_date, line.invoice_date, [],
+        )
+        event = sections['expense'][self.expense.id]['events'][0]
+        self.assertEqual((event['source_model'], event['source_id']),
+                         ('baseer.purchase.batch.line', line.id))
+        self.assertEqual(event['payment_move_id'], payment.move_id.id)
+        self.assertEqual(event['payment_line_id'], cash_line.id)
+        self.assertEqual(event['amount'], Decimal('115.00'))
         payable_payment = payment.move_id.line_ids.filtered(
             lambda item: item.account_id == self.payable,
         )
@@ -1303,6 +1321,19 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                          Decimal('77.90'))
         self.assertEqual(row_amount('2026-07-01', '2026-07-31', 'expense'),
                          Decimal('27.10'))
+        june_sections, _excluded = report._period_sources(
+            self.company, bill.invoice_date, events[0][2], [],
+        )
+        allocated_events = [event for account_type in ('expense_direct_cost', 'expense')
+                            for entry in june_sections[account_type].values()
+                            for event in entry['events']]
+        self.assertEqual(len(allocated_events), 2)
+        self.assertEqual({event['source_id'] for event in allocated_events},
+                         {events[0][0]})
+        self.assertEqual({event['date'] for event in allocated_events},
+                         {'2026-06-15'})
+        self.assertEqual(sum((event['amount'] for event in allocated_events),
+                             Decimal('0')), Decimal('50.00'))
         reader = self.env['res.users'].create({
             'name': 'Gross multi-line accountant',
             'login': 'gross_multiline_accountant',

@@ -224,17 +224,19 @@ class BaseerOperationsReport(models.AbstractModel):
         return lines
 
     @api.model
-    def _record(self, sections, section, account, amount, source):
+    def _record(self, sections, section, account, amount, source, event=None):
         if section not in SECTION_KEYS:
             self._deny_incomplete_source()
         account.check_access('read')
         entry = sections[section].setdefault(account.id, {
             'account': account, 'raw': Decimal('0'), 'count': 0,
-            'source_counts': Counter(),
+            'source_counts': Counter(), 'events': [],
         })
         entry['raw'] += amount
         entry['count'] += 1
         entry['source_counts'][source] += 1
+        if event is not None:
+            entry['events'].append({**event, 'amount': amount})
 
     @api.model
     def _invoice_amounts(self, move, company, sections, excluded, line_entries=None):
@@ -325,7 +327,14 @@ class BaseerOperationsReport(models.AbstractModel):
             signed_tax = source_tax.copy_sign(net) if source_tax else Decimal('0')
             if line_entries is not None:
                 line_entries.append((line.id, section, account, net + signed_tax))
-            self._record(sections, section, account, net + signed_tax, 'invoice')
+            self._record(
+                sections, section, account, net + signed_tax, 'invoice',
+                None if line_entries is not None else {
+                    'source_model': 'account.move', 'source_id': move.id,
+                    'line_model': 'account.move.line', 'line_id': line.id,
+                    'date': fields.Date.to_string(move.invoice_date),
+                },
+            )
         # Tax AML is accounting evidence, never an additional operation.
         move.line_ids.filtered('tax_line_id').check_access('read')
         excluded['nonrecoverable_tax_amls_not_readded'] += len(
@@ -390,7 +399,19 @@ class BaseerOperationsReport(models.AbstractModel):
                 continue
             gross_amount = sign * self._decimal(line.price_subtotal_incl)
             amount = -gross_amount if section in EXPENSE_KEYS else gross_amount
-            self._record(sections, section, account, amount, 'pos')
+            event_date = (summary.business_date if order.source == 'baseer_summary'
+                          else fields.Datetime.to_datetime(order.date_order).replace(
+                              tzinfo=UTC,
+                          ).astimezone(self._company_timezone(company)).date())
+            self._record(
+                sections, section, account, amount, 'pos', {
+                    'source_model': ('baseer.pos.summary' if order.source == 'baseer_summary'
+                                     else 'pos.order'),
+                    'source_id': summary.id if order.source == 'baseer_summary' else order.id,
+                    'line_model': 'pos.order.line', 'line_id': line.id,
+                    'date': fields.Date.to_string(event_date),
+                },
+            )
 
     @api.model
     def _direct_exclusions(self, company, start, end, journal_ids,
@@ -577,6 +598,10 @@ class BaseerOperationsReport(models.AbstractModel):
                         base.account_id, amount,
                         'cash_statement_direct_taxed' if journal.type == 'cash'
                         else 'bank_statement_direct_taxed',
+                        {'source_model': 'account.bank.statement.line',
+                         'source_id': statement.id,
+                         'line_model': 'account.move.line', 'line_id': base.id,
+                         'date': fields.Date.to_string(statement.date)},
                     )
                     recognized_direct.add(base.id)
                 continue
@@ -602,6 +627,11 @@ class BaseerOperationsReport(models.AbstractModel):
                         counterpart.account_id, amount,
                         'cash_statement_direct' if journal.type == 'cash'
                         else 'bank_statement_direct',
+                        {'source_model': 'account.bank.statement.line',
+                         'source_id': statement.id,
+                         'line_model': 'account.move.line',
+                         'line_id': counterpart.id,
+                         'date': fields.Date.to_string(statement.date)},
                     )
                     recognized_direct.add(counterpart.id)
                 continue
@@ -716,12 +746,17 @@ class BaseerOperationsReport(models.AbstractModel):
                 company.currency_id,
             )
             if start <= statement.date <= end:
-                for (_line_id, section, account, _gross), allocated in zip(
+                for (invoice_line_id, section, account, _gross), allocated in zip(
                         line_entries, allocations, strict=True):
                     if allocated:
                         self._record(
                             sections, section, account, allocated,
                             'bank_statement',
+                            {'source_model': 'account.bank.statement.line',
+                             'source_id': statement.id,
+                             'line_model': 'account.move.line',
+                             'line_id': invoice_line_id,
+                             'date': fields.Date.to_string(statement.date)},
                         )
         return recognized_direct
 
@@ -897,10 +932,17 @@ class BaseerOperationsReport(models.AbstractModel):
             if journal_ids and journal.id not in journal_ids:
                 continue
             if start <= payment_move.date <= end:
-                _line_id, section, account, amount = line_entries[0]
+                invoice_line_id, section, account, amount = line_entries[0]
                 self._record(
                     sections, section, account, amount,
                     'baseer_batch_direct_payment',
+                    {'source_model': 'baseer.purchase.batch.line',
+                     'source_id': line.id,
+                     'line_model': 'account.move.line',
+                     'line_id': invoice_line_id,
+                     'payment_move_id': payment_move.id,
+                     'payment_line_id': liquidity.id,
+                     'date': fields.Date.to_string(payment_move.date)},
                 )
 
     @api.model
@@ -941,6 +983,34 @@ class BaseerOperationsReport(models.AbstractModel):
         return rows, leaf
 
     @api.model
+    def _period_sources(self, company, start, end, journal_ids):
+        """One calculation path for totals and non-public event evidence."""
+        sections = {key: {} for key in SECTION_KEYS}
+        excluded = Counter()
+        for move in self._invoice_records(company, start, end, journal_ids):
+            self._invoice_amounts(move, company, sections, excluded)
+        for order in self._pos_records(company, start, end, journal_ids):
+            self._pos_amounts(order, company, sections, excluded)
+        recognized_direct = self._purchase_outflows(
+            company, start, end, journal_ids, sections, excluded,
+        )
+        self._batch_purchase_outflows(
+            company, start, end, journal_ids, sections, excluded,
+        )
+        excluded['direct_aml_unproven'] = self._direct_exclusions(
+            company, start, end, journal_ids, recognized_direct,
+        )
+        for section in sections.values():
+            for entry in section.values():
+                if (entry['count'] != len(entry['events'])
+                        or entry['raw'] != sum(
+                            (event['amount'] for event in entry['events']),
+                            Decimal('0'),
+                        )):
+                    self._deny_incomplete_source()
+        return sections, excluded
+
+    @api.model
     def get_source_snapshot(self, filters):
         """Internal source evidence only. Never expose it as a complete report."""
         company, journal_ids, periods, period_control, comparison_control = self._scope(filters)
@@ -948,20 +1018,8 @@ class BaseerOperationsReport(models.AbstractModel):
         for period in periods:
             start = fields.Date.to_date(period['date_from'])
             end = fields.Date.to_date(period['date_to'])
-            sections = {key: {} for key in SECTION_KEYS}
-            excluded = Counter()
-            for move in self._invoice_records(company, start, end, journal_ids):
-                self._invoice_amounts(move, company, sections, excluded)
-            for order in self._pos_records(company, start, end, journal_ids):
-                self._pos_amounts(order, company, sections, excluded)
-            recognized_direct = self._purchase_outflows(
-                company, start, end, journal_ids, sections, excluded,
-            )
-            self._batch_purchase_outflows(
-                company, start, end, journal_ids, sections, excluded,
-            )
-            excluded['direct_aml_unproven'] = self._direct_exclusions(
-                company, start, end, journal_ids, recognized_direct,
+            sections, excluded = self._period_sources(
+                company, start, end, journal_ids,
             )
             rows, accounts = self._rows(sections, company)
             payload_periods.append({

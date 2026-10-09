@@ -245,6 +245,17 @@ class TestOperationsGrossCalculator(TransactionCase):
         july = self.report.get_source_snapshot(july_filters)
         self.assertEqual(self._row(june, 'income')['amount'], '115.00')
         self.assertEqual(self._row(july, 'income')['amount'], '0.00')
+        sections, _excluded = self.report._period_sources(
+            self.company, fields.Date.to_date('2041-06-01'),
+            fields.Date.to_date('2041-06-30'), [],
+        )
+        event = sections['income'][self.income.id]['events'][0]
+        self.assertEqual((event['source_model'], event['source_id']),
+                         ('account.move', invoice.id))
+        self.assertEqual((event['line_model'], event['line_id']),
+                         ('account.move.line', invoice.invoice_line_ids.id))
+        self.assertEqual(event['date'], '2041-06-10')
+        self.assertEqual(event['amount'], Decimal('115.00'))
 
     def test_approved_app_summary_uses_business_day_not_synthetic_utc_time(self):
         company = self.env['res.company'].create({
@@ -307,6 +318,17 @@ class TestOperationsGrossCalculator(TransactionCase):
         synthetic = at_day(local_synthetic_day)
         self.assertEqual(self._row(original, 'income')['amount'], '115.00')
         self.assertEqual(self._row(synthetic, 'income')['amount'], '0.00')
+        sections, _excluded = report._period_sources(
+            company, business_day, business_day, [],
+        )
+        events = [event for entry in sections['income'].values()
+                  for event in entry['events']]
+        self.assertEqual(len(events), 1)
+        self.assertEqual((events[0]['source_model'], events[0]['source_id']),
+                         ('baseer.pos.summary', summary.id))
+        self.assertEqual(events[0]['line_id'], summary.order_id.lines.id)
+        self.assertEqual(events[0]['date'], fields.Date.to_string(business_day))
+        self.assertEqual(events[0]['amount'], Decimal('115.00'))
         other_company = self.report.get_source_snapshot({
             'company_id': self.company.id,
             'date_from': fields.Date.to_string(business_day),
@@ -533,6 +555,15 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(self._row(after_refund, 'income')['amount'], '0.00')
         self.assertEqual(after_refund['periods'][0]['excluded']['linked_pos_invoice'], 2)
         self.assertEqual(after_refund['periods'][0]['accounts']['income'][0]['source_count'], 2)
+        sections, _excluded = self.report._period_sources(
+            self.company, today, today, [self.sale_journal.id],
+        )
+        events = sections['income'][mapped_income.id]['events']
+        self.assertEqual({event['source_id'] for event in events},
+                         {order.id, refund.id})
+        self.assertEqual({event['source_model'] for event in events}, {'pos.order'})
+        self.assertEqual(sum((event['amount'] for event in events), Decimal('0')),
+                         Decimal('0'))
 
         # The invoices remain in today's period, but their original POS
         # operations have moved outside it. Hiding one old order must fail

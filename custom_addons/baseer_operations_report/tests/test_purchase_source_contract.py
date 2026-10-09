@@ -978,6 +978,58 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         # Neither bank decrease is a classified purchase source: the first is
         # an unapplied vendor advance; the second only changes liquidity.
 
+    def test_native_payment_origin_link_differs_from_later_advance_match(self):
+        """Characterize the stored invoice link; do not admit it to the report yet."""
+        self.method.payment_account_id = self.bank.default_account_id
+        bill = self._bill()
+        for amount, day in ((50, '2026-06-15'), (65, '2026-07-05')):
+            wizard = self.env['account.payment.register'].with_context(
+                active_model='account.move', active_ids=bill.ids,
+            ).create({
+                'journal_id': self.bank.id,
+                'payment_method_line_id': self.method.id,
+                'amount': amount, 'payment_date': day,
+                'installments_mode': 'full',
+                'payment_difference_handling': 'open',
+            })
+            payment = wizard._create_payments()
+            liquidity = payment.move_id.line_ids.filtered(
+                lambda line: line.account_id == self.bank.default_account_id,
+            )
+            self.assertEqual(payment.invoice_ids, bill)
+            self.assertIn(payment, bill.matched_payment_ids)
+            self.assertEqual(payment.move_id.state, 'posted')
+            self.assertEqual(payment.company_id, self.company)
+            self.assertEqual(payment.journal_id, self.bank)
+            self.assertEqual(payment.currency_id, self.company.currency_id)
+            self.assertEqual(str(payment.move_id.date), day)
+            self.assertEqual(len(liquidity), 1)
+            self.assertEqual(Decimal(str(liquidity.balance)), -Decimal(amount))
+
+        # This payment predates its bill and was not created by Register
+        # Payment on that bill. Later reconciliation must not forge the
+        # wizard's stored invoice origin link.
+        advance = self.env['account.payment'].with_company(self.company).create({
+            'date': '2026-06-05', 'amount': 30,
+            'payment_type': 'outbound', 'partner_type': 'supplier',
+            'partner_id': self.partner.id, 'journal_id': self.bank.id,
+            'company_id': self.company.id,
+            'currency_id': self.company.currency_id.id,
+            'payment_method_line_id': self.method.id,
+        })
+        advance.action_post()
+        later_bill = self._bill()
+        advance_payable = advance.move_id.line_ids.filtered(
+            lambda line: line.account_id.account_type == 'liability_payable',
+        )
+        bill_payable = later_bill.line_ids.filtered(
+            lambda line: line.account_id.account_type == 'liability_payable',
+        )
+        (advance_payable + bill_payable).reconcile()
+        self.assertIn(later_bill, advance.reconciled_bill_ids)
+        self.assertNotIn(later_bill, advance.invoice_ids)
+        self.assertNotIn(advance, later_bill.matched_payment_ids)
+
     def test_details_use_display_expense_for_depreciation_account(self):
         depreciation = self.accounts.create({
             'code': '958126', 'name': 'Gross report depreciation',

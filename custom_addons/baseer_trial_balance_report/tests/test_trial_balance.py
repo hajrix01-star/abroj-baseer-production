@@ -11,9 +11,6 @@ from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
-from ..models.trial_balance import BaseerTrialBalance
-
-
 @tagged('post_install', '-at_install')
 class TestTrialBalance(TransactionCase):
     def setUp(self):
@@ -50,9 +47,11 @@ class TestTrialBalance(TransactionCase):
                company=None, journal=None, posted=True, currency=None):
         company = company or self.company
         journal = journal or self.journal
-        debit = {'name': 'TB debit source', 'account_id': debit_account.id,
+        debit = {'name': 'TB debit source', 'company_id': company.id,
+                 'account_id': debit_account.id,
                  'debit': amount}
-        credit = {'name': 'TB credit source', 'account_id': credit_account.id,
+        credit = {'name': 'TB credit source', 'company_id': company.id,
+                  'account_id': credit_account.id,
                   'credit': amount}
         if currency:
             debit.update({'currency_id': currency.id, 'amount_currency': amount})
@@ -165,6 +164,29 @@ class TestTrialBalance(TransactionCase):
         self.assertTrue(selected['is_partial_journals'])
         self.assertEqual(selected['total']['debit'], selected['total']['credit'])
 
+    def test_off_balance_memoranda_are_excluded_but_hidden_source_fails_closed(self):
+        off_debit = self._account(self.company, '958106', 'off_balance')
+        off_credit = self._account(self.company, '958107', 'off_balance')
+        move = self._entry('2041-10-12', off_debit, off_credit, 17)
+        result = self.report.get_report(self.filters)
+        self.assertNotIn(off_debit.id, [row['id'] for row in result['accounts']])
+        self.assertNotIn(off_credit.id, [row['id'] for row in result['accounts']])
+        self.assertEqual(result['total']['debit'], '0.00')
+        self.assertEqual(result['total']['credit'], '0.00')
+        accountant = self._accountant()
+        rule = self.env['ir.rule'].create({
+            'name': 'TB hide off-balance source',
+            'model_id': self.env['ir.model']._get('account.move.line').id,
+            'domain_force': f"[('id', '!=', {move.line_ids[0].id})]",
+        })
+        try:
+            with self.assertRaises(AccessError):
+                self.report.with_user(accountant).with_context(
+                    allowed_company_ids=self.company.ids,
+                ).get_report(self.filters)
+        finally:
+            rule.unlink()
+
     def test_fail_closed_for_each_source_relation_and_nonaccountant(self):
         move = self._entry('2041-10-03', self.cash, self.income, 20)
         accountant = self._accountant()
@@ -212,8 +234,9 @@ class TestTrialBalance(TransactionCase):
         ) for index in range(1, 102)}
         snapshot = (self.company, date(2041, 10, 1), date(2041, 10, 31),
                     date(2041, 1, 1), [], {}, {}, {}, accounts)
-        with patch.object(BaseerTrialBalance, '_snapshot', return_value=snapshot), \
-                patch.object(BaseerTrialBalance, '_assert_complete_source'):
+        trial_class = type(self.report)
+        with patch.object(trial_class, '_snapshot', return_value=snapshot), \
+                patch.object(trial_class, '_assert_complete_source'):
             screen = self.report.get_report(self.filters)
             full = self.report._build_trial_balance(self.filters, full=True)
             pdf = self.env['report.baseer_trial_balance_report.trial_balance_pdf']
@@ -238,8 +261,8 @@ class TestTrialBalance(TransactionCase):
         accounts[5000] = SimpleNamespace(
             id=5000, code='005000', name='Account 5000', include_initial_balance=True,
         )
-        with patch.object(BaseerTrialBalance, '_snapshot', return_value=snapshot), \
-                patch.object(BaseerTrialBalance, '_assert_complete_source'):
+        with patch.object(trial_class, '_snapshot', return_value=snapshot), \
+                patch.object(trial_class, '_assert_complete_source'):
             self.assertEqual(len(self.report._build_trial_balance(self.filters, full=True)['accounts']), 102)
             for index in range(102, 5002):
                 accounts[index] = SimpleNamespace(

@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.fields import Domain
 
 
 class BaseerTrialBalance(models.AbstractModel):
@@ -18,6 +19,14 @@ class BaseerTrialBalance(models.AbstractModel):
         if company_id != self.env.company.id:
             raise AccessError(_('The report is limited to the active company.'))
         return super()._company(company_id)
+
+    @api.model
+    def _filters(self, filters):
+        company, start, end, fiscal_start, journal_ids, base = super()._filters(filters)
+        # Off-balance memoranda are not part of the statutory trial balance.
+        # The inherited count check still verifies complete source access.
+        base &= Domain('account_id.account_type', '!=', 'off_balance')
+        return company, start, end, fiscal_start, journal_ids, base
 
     @classmethod
     def _sides(cls, amount, currency):

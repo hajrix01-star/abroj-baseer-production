@@ -10,9 +10,6 @@ from unittest.mock import patch
 
 from odoo.tests.common import HttpCase, tagged
 
-from ..models.trial_balance import BaseerTrialBalance
-
-
 @tagged('post_install', '-at_install', 'tb_pdf_http')
 class TestTrialBalancePdfHttp(HttpCase):
     def test_real_101_account_pdf_is_multipage_a4(self):
@@ -30,8 +27,9 @@ class TestTrialBalancePdfHttp(HttpCase):
         snapshot = (company, date(2041, 3, 1), date(2041, 3, 31),
                     date(2041, 1, 1), [], {}, {}, {}, accounts)
         start = monotonic()
-        with patch.object(BaseerTrialBalance, '_snapshot', return_value=snapshot), \
-                patch.object(BaseerTrialBalance, '_assert_complete_source'):
+        trial_class = type(self.env['baseer.trial.balance.report'])
+        with patch.object(trial_class, '_snapshot', return_value=snapshot), \
+                patch.object(trial_class, '_assert_complete_source'):
             pdf, mime = self.env['ir.actions.report'].with_context(
                 force_report_rendering=True,
             )._render_qweb_pdf(

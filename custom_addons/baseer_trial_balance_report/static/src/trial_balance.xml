@@ -104,8 +104,8 @@
                                         t-on-click="() => this.openAccount(account.id)"><span t-esc="account.code"/> <span t-esc="account.name"/></button></th>
                                     <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" t-esc="account.opening_debit"/>
                                     <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" t-esc="account.opening_credit"/>
-                                    <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.debit" t-att-class="amountClass(account.debit, account.debit_negative)" t-esc="account.debit"/>
-                                    <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.credit" t-att-class="amountClass(account.credit, account.credit_negative)" t-esc="account.credit"/>
+                                    <td t-att-class="'is-number ' + amountClass(account.debit, account.debit_negative)" t-att-data-label="labels.movement + ' · ' + labels.debit" t-esc="account.debit"/>
+                                    <td t-att-class="'is-number ' + amountClass(account.credit, account.credit_negative)" t-att-data-label="labels.movement + ' · ' + labels.credit" t-esc="account.credit"/>
                                     <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" t-esc="account.closing_debit"/>
                                     <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" t-esc="account.closing_credit"/>
                                 </tr>

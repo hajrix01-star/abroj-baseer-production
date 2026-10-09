@@ -13,6 +13,9 @@
             "baseer_trial_balance_report/static/src/trial_balance.xml",
             "baseer_trial_balance_report/static/src/trial_balance.scss",
         ],
+        "web.assets_unit_tests": [
+            "baseer_trial_balance_report/static/tests/trial_balance.test.js",
+        ],
     },
     "application": False,
     "installable": True,

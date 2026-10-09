@@ -360,22 +360,32 @@ class BaseerOperationsReport(models.AbstractModel):
         if (not gross_amounts or any(gross <= 0 for gross in gross_amounts)
                 or prior < 0 or amount <= 0 or after > total):
             self._deny_incomplete_source()
-        allocated = []
-        used = Decimal('0')
-        target_used = Decimal('0')
-        for gross in gross_amounts[:-1]:
-            before_target = self._decimal(currency.round(float(prior * gross / total)))
-            after_target = self._decimal(currency.round(float(after * gross / total)))
-            delta = after_target - before_target
-            if delta < 0 or after_target > gross:
-                self._deny_incomplete_source()
-            allocated.append(delta)
-            used += delta
-            target_used += after_target
-        last_delta = amount - used
-        if last_delta < 0 or after - target_used > gross_amounts[-1]:
+        def targets(paid):
+            remaining_paid = paid
+            remaining_gross = total
+            result = []
+            for gross in gross_amounts[:-1]:
+                target = self._decimal(currency.round(float(
+                    remaining_paid * gross / remaining_gross,
+                )))
+                target = min(max(target, Decimal('0')), gross, remaining_paid)
+                result.append(target)
+                remaining_paid -= target
+                remaining_gross -= gross
+            result.append(remaining_paid)
+            return result
+
+        before_targets = targets(prior)
+        after_targets = targets(after)
+        allocated = [new - old for new, old in zip(
+            after_targets, before_targets, strict=True,
+        )]
+        if (any(delta < 0 for delta in allocated)
+                or any(target > gross for target, gross in zip(
+                    after_targets, gross_amounts, strict=True,
+                ))
+                or sum(allocated, Decimal('0')) != amount):
             self._deny_incomplete_source()
-        allocated.append(last_delta)
         return allocated
 
     @api.model
@@ -513,9 +523,7 @@ class BaseerOperationsReport(models.AbstractModel):
                     or bill.company_id != company or bill.currency_id != company.currency_id
                     or not bill.invoice_date or bill.invoice_date > statement.date
                     or bill_line.account_id != payable_debit.account_id
-                    or payment.partner_id != bill.partner_id
-                    or len(bill.invoice_line_ids.filtered(
-                        lambda line: line.display_type == 'product')) != 1):
+                    or payment.partner_id != bill.partner_id):
                 excluded['unsupported_purchase_bill'] += 1
                 continue
             bill_sections = {key: {} for key in SECTION_KEYS}

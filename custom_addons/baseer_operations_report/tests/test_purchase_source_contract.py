@@ -405,7 +405,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(snapshot['periods'][0]['excluded'][
             'foreign_currency_bank_outflow'], 1)
 
-    def test_multi_line_bill_source_stays_outside_limited_calculator(self):
+    def test_multi_line_bill_source_and_cumulative_50_105_allocation(self):
         cost = self.accounts.create({
             'code': '958126', 'name': 'Gross payment source direct cost',
             'account_type': 'expense_direct_cost',
@@ -513,6 +513,41 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                          Decimal('77.90'))
         self.assertEqual(row_amount('2026-07-01', '2026-07-31', 'expense'),
                          Decimal('27.10'))
+        reader = self.env['res.users'].create({
+            'name': 'Gross multi-line accountant',
+            'login': 'gross_multiline_accountant',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = report.with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        july = {
+            'company_id': self.company.id,
+            'date_from': '2026-07-01', 'date_to': '2026-07-31',
+            'journal_ids': [],
+        }
+        baseline = secured.get_source_snapshot(july)
+        self.assertEqual(Decimal(next(
+            row['amount'].replace(',', '') for row in baseline['periods'][0]['rows']
+            if row['key'] == 'expense'
+        )), Decimal('27.10'))
+        prior_bank_rule = self.env['ir.rule'].create({
+            'name': 'Gross multi-line hide prior June bank',
+            'model_id': self.env['ir.model']._get('account.bank.statement.line').id,
+            'domain_force': f"[('id', '!=', {events[0][0]})]",
+        })
+        try:
+            prior_bank_rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                secured.get_source_snapshot(july)
+        finally:
+            prior_bank_rule.unlink()
 
     def test_cumulative_allocation_of_many_small_outflows_has_no_drift(self):
         report = self.env['baseer.operations.report']
@@ -527,3 +562,66 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             for index, value in enumerate(allocation):
                 totals[index] += value
         self.assertEqual(totals, gross)
+        tiny_gross = [Decimal('0.01')] * 3
+        tiny_totals = [Decimal('0')] * 3
+        for step in range(3):
+            allocation = report._allocate_purchase_event(
+                tiny_gross, Decimal(step) / 100, Decimal('0.01'),
+                self.company.currency_id,
+            )
+            self.assertEqual(sum(allocation), Decimal('0.01'))
+            self.assertTrue(all(value >= 0 for value in allocation))
+            tiny_totals = [old + new for old, new in zip(
+                tiny_totals, allocation, strict=True,
+            )]
+        self.assertEqual(tiny_totals, tiny_gross)
+
+    def test_two_bill_lines_on_same_pl_account_aggregate_after_allocation(self):
+        bill = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'in_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'invoice_date': '2026-06-10',
+            'invoice_line_ids': [
+                Command.create({
+                    'name': 'Taxed expense', 'quantity': 1,
+                    'price_unit': 100, 'account_id': self.expense.id,
+                    'tax_ids': [Command.set(self.tax.ids)],
+                }),
+                Command.create({
+                    'name': 'Exempt expense', 'quantity': 1,
+                    'price_unit': 40, 'account_id': self.expense.id,
+                    'tax_ids': [Command.clear()],
+                }),
+            ],
+        })
+        bill.action_post()
+        self.assertEqual(Decimal(str(bill.amount_total)), 155)
+        wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id,
+            'payment_method_line_id': self.method.id,
+            'amount': 155, 'payment_date': '2026-06-12',
+            'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })
+        payment = wizard._create_payments()
+        statement = self._bank_statement('2026-06-15', self.outstanding, 155)
+        outstanding_credit = payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.outstanding,
+        )
+        outstanding_debit = statement.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.outstanding,
+        )
+        (outstanding_credit + outstanding_debit).reconcile()
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        self.assertFalse(snapshot['complete'])
+        self.assertEqual(snapshot['periods'][0]['accounts']['expense'], [{
+            'account_id': self.expense.id,
+            'account_code': self.expense.code,
+            'account_name': self.expense.name,
+            'amount': '155.00', 'negative': False, 'source_count': 2,
+        }])

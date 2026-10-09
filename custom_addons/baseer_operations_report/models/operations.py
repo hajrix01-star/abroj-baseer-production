@@ -955,6 +955,187 @@ class BaseerOperationsReport(models.AbstractModel):
                 )
 
     @api.model
+    def _native_payment_outflows(self, company, start, end, journal_ids,
+                                 sections, excluded):
+        """Count a fully assigned, direct-liquidity vendor payment once.
+
+        An old reconciliation cannot prove that the bill was the payment's
+        original purpose. Every event from this path is marked unconfirmed.
+        """
+        domain = [
+            ('company_id', '=', company.id),
+            ('payment_type', '=', 'outbound'),
+            ('partner_type', '=', 'supplier'),
+            ('move_id.state', '=', 'posted'),
+            ('move_id.date', '>=', start),
+            ('move_id.date', '<=', end),
+        ]
+        if journal_ids:
+            domain.append(('journal_id', 'in', journal_ids))
+        self.env['account.payment'].flush_model([
+            'company_id', 'payment_type', 'partner_type', 'move_id',
+        ])
+        self.env['account.move'].flush_model(['state', 'date'])
+        sql = (
+            "SELECT p.id FROM account_payment p "
+            "JOIN account_move m ON m.id=p.move_id "
+            "WHERE p.company_id=%s AND p.payment_type='outbound' "
+            "AND p.partner_type='supplier' AND m.state='posted' "
+            'AND m.date >= %s AND m.date <= %s'
+        )
+        params = [company.id, start, end]
+        if journal_ids:
+            sql += ' AND p.journal_id = ANY(%s)'
+            params.append(journal_ids)
+        self.env.cr.execute(sql, params)
+        source_ids = {row[0] for row in self.env.cr.fetchall()}
+        payments = self.env['account.payment'].search(domain, order='id')
+        if set(payments.ids) != source_ids:
+            self._deny_incomplete_source()
+        payments.check_access('read')
+        if not payments:
+            return
+        # A hidden Baseer batch relation must not make the same payment look
+        # generic and count it a second time.
+        self.env['baseer.purchase.batch.line'].flush_model([
+            'company_id', 'payment_id',
+        ])
+        self.env.cr.execute(
+            'SELECT id FROM baseer_purchase_batch_line '
+            'WHERE company_id=%s AND payment_id = ANY(%s)',
+            [company.id, payments.ids],
+        )
+        batch_ids = {row[0] for row in self.env.cr.fetchall()}
+        if batch_ids:
+            self._require_read(('baseer.purchase.batch.line',))
+            batch_lines = self.env['baseer.purchase.batch.line'].search([
+                ('company_id', '=', company.id),
+                ('payment_id', 'in', payments.ids),
+            ])
+            if set(batch_lines.ids) != batch_ids:
+                self._deny_incomplete_source()
+            batch_lines.check_access('read')
+            batch_payments = set(batch_lines.mapped('payment_id').ids)
+        else:
+            batch_payments = set()
+        for payment in payments:
+            if payment.id in batch_payments:
+                continue
+            move = payment.move_id
+            move.check_access('read')
+            journal = payment.journal_id
+            journal.check_access('read')
+            partner = payment.partner_id
+            partner.check_access('read')
+            method = payment.payment_method_line_id
+            method.check_access('read')
+            liquidity_account = journal.default_account_id
+            liquidity_account.check_access('read')
+            self._assert_visible(
+                'account_move', 'reversed_entry_id=%s', [move.id],
+                move.reversal_move_ids,
+            )
+            if (payment.company_id != company or move.company_id != company
+                    or payment.move_id != move or move.origin_payment_id != payment
+                    or payment.payment_type != 'outbound'
+                    or payment.partner_type != 'supplier'
+                    or payment.state not in ('in_process', 'paid')
+                    or payment.currency_id != company.currency_id
+                    or journal.company_id != company
+                    or journal.type not in ('bank', 'cash')
+                    or (journal.currency_id
+                        and journal.currency_id != company.currency_id)
+                    or move.journal_id != journal or move.state != 'posted'
+                    or move.statement_line_id or move.reversed_entry_id
+                    or move.reversal_move_ids or not partner
+                    or not method or method.journal_id != journal
+                    or method.payment_account_id != liquidity_account
+                    or payment.outstanding_account_id != liquidity_account
+                    or liquidity_account.account_type != 'asset_cash'):
+                excluded['unsupported_native_payment'] += 1
+                continue
+            lines = move.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s',
+                                 [move.id], lines)
+            lines.mapped('account_id').check_access('read')
+            liquidity = lines.filtered(
+                lambda item: item.account_id == liquidity_account,
+            )
+            payable = lines.filtered(
+                lambda item: item.account_id.account_type == 'liability_payable',
+            )
+            amount = self._decimal(payment.amount)
+            if (len(lines) != 2 or len(liquidity) != 1 or len(payable) != 1
+                    or amount <= 0
+                    or self._decimal(liquidity.balance) != -amount
+                    or self._decimal(payable.balance) != amount
+                    or any(item.company_id != company or item.journal_id != journal
+                           or item.currency_id != company.currency_id
+                           for item in lines)):
+                excluded['unsupported_native_payment'] += 1
+                continue
+            partials = payable.matched_credit_ids
+            self._assert_visible('account_partial_reconcile',
+                                 'debit_move_id=%s', [payable.id], partials)
+            if len(partials) != 1 or self._decimal(partials.amount) != amount:
+                excluded['unassigned_native_payment'] += 1
+                continue
+            bill_payable = partials.credit_move_id
+            bill_payable.check_access('read')
+            bill = bill_payable.move_id
+            bill.check_access('read')
+            self._assert_visible('account_move', 'reversed_entry_id=%s',
+                                 [bill.id], bill.reversal_move_ids)
+            bill_lines = bill.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s',
+                                 [bill.id], bill_lines)
+            bill_lines.mapped('account_id').check_access('read')
+            bill.partner_id.check_access('read')
+            bill_partials = bill_payable.matched_debit_ids
+            self._assert_visible('account_partial_reconcile',
+                                 'credit_move_id=%s', [bill_payable.id],
+                                 bill_partials)
+            if (bill.move_type != 'in_invoice' or bill.state != 'posted'
+                    or bill.company_id != company
+                    or bill.currency_id != company.currency_id
+                    or bill.partner_id != partner
+                    or not bill.invoice_date or bill.invoice_date > move.date
+                    or bill.reversed_entry_id or bill.reversal_move_ids
+                    or bill_payable.account_id != payable.account_id
+                    or bill_payable.account_id.account_type != 'liability_payable'
+                    or len(bill_lines.filtered(
+                        lambda item: item.account_id.account_type == 'liability_payable',
+                    )) != 1
+                    or partials.credit_move_id != bill_payable
+                    or partials.debit_move_id != payable
+                    or partials not in bill_partials):
+                excluded['unsupported_native_bill'] += 1
+                continue
+            bill_sections = {key: {} for key in SECTION_KEYS}
+            bill_excluded = Counter()
+            line_entries = []
+            self._invoice_amounts(
+                bill, company, bill_sections, bill_excluded, line_entries,
+            )
+            if (len(line_entries) != 1 or line_entries[0][1] not in EXPENSE_KEYS
+                    or line_entries[0][3] != self._decimal(bill.amount_total)
+                    or any(bill_excluded.values())):
+                excluded['unsupported_native_bill'] += 1
+                continue
+            invoice_line_id, section, account, _gross = line_entries[0]
+            self._record(
+                sections, section, account, amount,
+                'native_vendor_payment_unconfirmed',
+                {'source_model': 'account.payment', 'source_id': payment.id,
+                 'line_model': 'account.move.line', 'line_id': invoice_line_id,
+                 'payment_move_id': move.id,
+                 'payment_line_id': liquidity.id,
+                 'date': fields.Date.to_string(move.date),
+                 'link_status': 'unconfirmed'},
+            )
+            excluded['unconfirmed_payment_link'] += 1
+
+    @api.model
     def _event_fingerprint(self, company, start, end, journal_ids,
                            display_section, account_id, events):
         """Detect a changed source set; permissions are checked separately."""
@@ -964,6 +1145,7 @@ class BaseerOperationsReport(models.AbstractModel):
             format(event['amount'].normalize(), 'f'),
             event.get('payment_move_id') or 0,
             event.get('payment_line_id') or 0,
+            event.get('link_status') or '',
         ) for event in events)
         payload = [company.id, fields.Date.to_string(start),
                    fields.Date.to_string(end), sorted(journal_ids),
@@ -1023,6 +1205,9 @@ class BaseerOperationsReport(models.AbstractModel):
         self._batch_purchase_outflows(
             company, start, end, journal_ids, sections, excluded,
         )
+        self._native_payment_outflows(
+            company, start, end, journal_ids, sections, excluded,
+        )
         excluded['direct_aml_unproven'] = self._direct_exclusions(
             company, start, end, journal_ids, recognized_direct,
         )
@@ -1056,6 +1241,7 @@ class BaseerOperationsReport(models.AbstractModel):
                 'display_label': period['display_label'],
                 'rows': rows, 'accounts': accounts,
                 'excluded': dict(excluded),
+                'unconfirmed_count': excluded.get('unconfirmed_payment_link', 0),
             })
         return {
             'complete': False,
@@ -1126,7 +1312,8 @@ class BaseerOperationsReport(models.AbstractModel):
                  'source_model': event['source_model'],
                  'source_id': event['source_id'],
                  'line_model': event['line_model'],
-                 'line_id': event['line_id']}
+                 'line_id': event['line_id'],
+                 'link_status': event.get('link_status') or 'documented'}
                 for event in selected
             ],
         }

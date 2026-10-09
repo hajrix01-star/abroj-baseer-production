@@ -34,7 +34,7 @@
                         </details>
                     </div>
                 </header>
-                <div class="o_baseer_report_notice o_baseer_go_incomplete" role="note" t-esc="labels.incomplete"/>
+                <div class="o_baseer_report_notice o_baseer_go_incomplete" role="note"><span t-esc="labels.incomplete"/><span t-if="unconfirmedCount"> · <t t-esc="labels.unconfirmedCount"/>: <t t-esc="unconfirmedCount"/></span><span t-if="excludedNativeCount"> · <t t-esc="labels.excludedNativeCount"/>: <t t-esc="excludedNativeCount"/></span></div>
                 <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
                 <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
                 <div t-if="state.report" class="o_baseer_report_canvas">
@@ -64,7 +64,7 @@
                     <div t-if="state.detail.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.eventsLoading"/>
                     <div t-if="state.detail.result" class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table o_baseer_go_events">
                         <thead><tr><th scope="col" t-esc="labels.date"/><th scope="col" t-esc="labels.eventSource"/><th scope="col" class="is-number" t-esc="labels.balance"/></tr></thead>
-                        <tbody><tr t-foreach="state.detail.result.events" t-as="event" t-key="event_index"><td t-att-data-label="labels.date" t-esc="event.date"/><td t-att-data-label="labels.eventSource"><span t-esc="event.source_model"/> #<span t-esc="event.source_id"/></td><td class="is-number" t-att-data-label="labels.balance" t-esc="event.amount"/></tr>
+                        <tbody><tr t-foreach="state.detail.result.events" t-as="event" t-key="event_index"><td t-att-data-label="labels.date" t-esc="event.date"/><td t-att-data-label="labels.eventSource"><span t-esc="event.source_model"/> #<span t-esc="event.source_id"/><small t-if="event.link_status === 'unconfirmed'" class="o_baseer_go_uncertain" t-esc="labels.unconfirmed"/></td><td class="is-number" t-att-data-label="labels.balance" t-esc="event.amount"/></tr>
                             <tr t-if="!state.detail.result.events.length"><td colspan="3" class="o_baseer_pl_status" t-esc="labels.noEvents"/></tr>
                         </tbody>
                     </table></div>

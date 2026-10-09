@@ -820,8 +820,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertFalse(credit.line_ids.payment_id)
         self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
 
-        # A generic Odoo payment is not a Baseer batch source even when its
-        # journal directly credits bank liquidity; advances share this shape.
+        # A generic Odoo payment is a separate, explicitly unconfirmed source;
+        # it must not duplicate the protected Baseer batch payment above.
         generic_bill = self._bill()
         self.method.payment_account_id = self.bank.default_account_id
         generic_wizard = self.env['account.payment.register'].with_context(
@@ -838,7 +838,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             lambda item: item.account_id == self.bank.default_account_id,
         )
         self.assertEqual(Decimal(str(generic_liquidity.balance)), Decimal('-30.00'))
-        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 145)
 
         reader = self.env['res.users'].create({
             'name': 'Gross batch direct cash reader',
@@ -857,7 +857,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         )
         self.assertEqual(self._purchase_amount(
             '2026-06-01', '2026-06-30', report=secured,
-        ), 115)
+        ), 145)
         for model, hidden in (
                 ('baseer.purchase.batch.line', line),
                 ('baseer.purchase.batch', batch),
@@ -1073,6 +1073,66 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(Decimal(str(matched_late.amount)), Decimal('20'))
         self.assertIn(existing_bill, late_link.reconciled_bill_ids)
         self.assertNotIn(existing_bill, late_link.invoice_ids)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 70)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 65)
+        june = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        self.assertEqual(june['periods'][0]['unconfirmed_count'], 2)
+        account_row = june['periods'][0]['accounts']['expense'][0]
+        detail = self.env['baseer.operations.report'].get_account_events(
+            {'company_id': self.company.id, 'date_from': '2026-06-01',
+             'date_to': '2026-06-30', 'journal_ids': []},
+            'expense', self.expense.id, 'current',
+            account_row['fingerprint'], 1,
+        )
+        self.assertEqual(detail['total_count'], 2)
+        self.assertEqual({event['date'] for event in detail['events']},
+                         {'2026-06-15', '2026-06-20'})
+        self.assertEqual({event['link_status'] for event in detail['events']},
+                         {'unconfirmed'})
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+        ), 70)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.general.ids,
+        ), 0)
+        reader = self.env['res.users'].create({
+            'name': 'Gross native payment reader',
+            'login': 'gross_native_payment_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = self.env['baseer.operations.report'].with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', report=secured,
+        ), 70)
+        for model, hidden in (
+                ('account.payment', late_link),
+                ('account.move', existing_bill),
+                ('account.partial.reconcile', matched_late)):
+            rule = self.env['ir.rule'].create({
+                'name': 'Gross native hide ' + model,
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {hidden.id})]",
+            })
+            try:
+                rule.flush_recordset()
+                with self.assertRaises(AccessError):
+                    self._purchase_amount(
+                        '2026-06-01', '2026-06-30', report=secured,
+                    )
+            finally:
+                rule.unlink()
 
     def test_details_use_display_expense_for_depreciation_account(self):
         depreciation = self.accounts.create({

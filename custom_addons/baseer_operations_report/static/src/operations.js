@@ -15,6 +15,9 @@ const labels = {
         title: "العمليات الإجمالية شاملة الضريبة", company: "الشركة", journals: "الدفاتر",
         allJournals: "جميع الدفاتر", selectedJournals: "الدفاتر المختارة",
         incomplete: "معاينة مصدر محدود وغير مكتمل. لا تعتمد هذه الأرقام كتقرير العمليات الإجمالية النهائي أو كربح محاسبي.",
+        unconfirmed: "ارتباط الدفعة بالفاتورة غير مؤكد تاريخيًا",
+        unconfirmedCount: "دفعات مرتبطة غير مؤكدة",
+        excludedNativeCount: "دفعات مورد مستبعدة لعدم اكتمال الدليل",
         loading: "جارٍ تحميل المعاينة…", accountsLoading: "جارٍ تحميل الحسابات…",
         eventsLoading: "جارٍ تحميل الأحداث…", error: "تعذر عرض المعاينة. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
         account: "الحساب", balance: "المبلغ", income: "الإيرادات", cost_of_sales: "تكلفة المبيعات",
@@ -35,6 +38,9 @@ const labels = {
         title: "Gross Operations Including VAT", company: "Company", journals: "Journals",
         allJournals: "All journals", selectedJournals: "Selected journals only",
         incomplete: "Limited, incomplete source preview. Do not use these figures as the final Gross Operations report or accounting profit.",
+        unconfirmed: "Historical payment-to-bill link unconfirmed",
+        unconfirmedCount: "Payments with unconfirmed links",
+        excludedNativeCount: "Vendor payments excluded for insufficient evidence",
         loading: "Loading preview…", accountsLoading: "Loading accounts…",
         eventsLoading: "Loading events…", error: "Could not load the preview. Check the period and access rights, then retry.",
         account: "Account", balance: "Amount", income: "Income", cost_of_sales: "Cost of sales",
@@ -128,6 +134,15 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
     }
 
     get labels() { return labels[this.lang]; }
+    get unconfirmedCount() {
+        return this.reportPeriods.reduce((count, period) => count + (period.unconfirmed_count || 0), 0);
+    }
+    get excludedNativeCount() {
+        return this.reportPeriods.reduce((count, period) => count +
+            (period.excluded?.unsupported_native_payment || 0) +
+            (period.excluded?.unassigned_native_payment || 0) +
+            (period.excluded?.unsupported_native_bill || 0), 0);
+    }
 
     installContext(context) {
         super.installContext(context);

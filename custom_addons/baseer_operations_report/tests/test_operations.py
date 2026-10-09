@@ -84,7 +84,8 @@ class TestOperationsGrossCalculator(TransactionCase):
         }
 
     def _snapshot(self, journal_ids=None, report=None):
-        return (report or self.report).get_source_snapshot(self._filters(journal_ids))
+        selected_report = report if report is not None else self.report
+        return selected_report.get_source_snapshot(self._filters(journal_ids))
 
     @staticmethod
     def _row(snapshot, key):

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_aged_receivable_report.Report">
+        <main class="o_baseer_aged_report" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <header class="o_baseer_report_toolbar">
+                <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
+                    selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
+                    lang="lang" onSelect="props.onReportSelect"/>
+                <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
+                    <label class="o_baseer_report_date_filter">
+                        <span t-esc="labels.cutoff"/>
+                        <input type="date" name="cutoff_date" required="required"
+                            t-att-aria-label="labels.cutoff" t-att-value="state.cutoffDate"
+                            t-on-change="onDateChange"/>
+                    </label>
+                    <button type="button" class="btn btn-primary o_baseer_report_apply"
+                        t-att-disabled="state.loading || !state.cutoffDate"
+                        t-on-click="onApplyClick" t-esc="labels.apply"/>
+                    <button type="button" class="btn o_baseer_report_pdf"
+                        t-att-disabled="!state.report || state.loading || state.printing"
+                        t-on-click="printReport" t-esc="labels.print"/>
+                </div>
+            </header>
+            <div class="o_baseer_report_notice" role="note" t-esc="labels.notice"/>
+            <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
+            <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
+            <div t-if="state.report" class="o_baseer_report_canvas">
+                <section class="o_baseer_report o_baseer_aged_paper" t-att-aria-label="labels.title">
+                    <header class="o_baseer_report_head">
+                        <div>
+                            <h1 class="o_baseer_report_title" t-esc="labels.title"/>
+                            <p class="o_baseer_report_period"><t t-esc="labels.cutoff"/> <time dir="ltr" t-att-datetime="state.report.cutoff_date" t-esc="state.report.cutoff_date"/></p>
+                        </div>
+                        <span class="o_baseer_aged_currency" t-esc="state.report.currency_symbol"/>
+                    </header>
+                    <div class="o_baseer_aged_summary" t-att-aria-label="labels.title">
+                        <div class="o_baseer_aged_summary_item">
+                            <span t-esc="labels.receivables"/>
+                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.receivables)" t-esc="state.report.summary.receivables"/>
+                        </div>
+                        <div class="o_baseer_aged_summary_item o_baseer_aged_credit">
+                            <span t-esc="labels.credits"/>
+                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.credits)" t-esc="state.report.summary.credits"/>
+                        </div>
+                        <div class="o_baseer_aged_summary_item o_baseer_aged_net">
+                            <span t-esc="labels.net"/>
+                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.net)" t-esc="state.report.summary.net"/>
+                        </div>
+                    </div>
+                    <div class="o_baseer_aged_buckets" t-att-aria-label="labels.bucket">
+                        <div t-foreach="buckets" t-as="bucket" t-key="bucket" class="o_baseer_aged_bucket">
+                            <span t-esc="labelFor(bucket)"/>
+                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.buckets[bucket])" t-esc="state.report.summary.buckets[bucket]"/>
+                        </div>
+                    </div>
+                    <div class="o_baseer_aged_table_wrap">
+                        <table class="o_baseer_aged_table">
+                            <thead><tr>
+                                <th scope="col" t-esc="labels.partner"/>
+                                <th scope="col" class="is-number" t-esc="labels.receivables"/>
+                                <th scope="col" class="is-number" t-esc="labels.credits"/>
+                                <th scope="col" class="is-number" t-esc="labels.net"/>
+                                <th scope="col" class="is-number" t-esc="labels.openCount"/>
+                            </tr></thead>
+                            <tbody>
+                                <t t-foreach="state.report.partners" t-as="partner" t-key="partner.id">
+                                    <tr class="o_baseer_aged_partner">
+                                        <th scope="row"><button type="button" class="o_baseer_aged_toggle"
+                                            t-att-aria-expanded="state.expandedPartnerId === partner.id ? 'true' : 'false'"
+                                            t-att-aria-controls="'baseer-aged-lines-' + partner.id"
+                                            t-att-aria-label="labels.details + ': ' + partner.name"
+                                            t-on-click="() => this.togglePartner(partner.id)">
+                                            <i t-att-class="state.expandedPartnerId === partner.id ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
+                                            <span t-esc="partner.name"/>
+                                        </button></th>
+                                        <td class="is-number" t-att-data-label="labels.receivables"><span class="o_baseer_report_amount" t-att-class="amountClass(partner.receivables)" t-esc="partner.receivables"/></td>
+                                        <td class="is-number" t-att-data-label="labels.credits"><span class="o_baseer_report_amount" t-att-class="amountClass(partner.credits)" t-esc="partner.credits"/></td>
+                                        <td class="is-number" t-att-data-label="labels.net"><strong class="o_baseer_report_amount" t-att-class="amountClass(partner.net)" t-esc="partner.net"/></td>
+                                        <td class="is-number" t-att-data-label="labels.openCount"><span dir="ltr" t-esc="partner.open_count"/></td>
+                                    </tr>
+                                    <tr t-if="state.expandedPartnerId === partner.id" class="o_baseer_aged_detail_row">
+                                        <td colspan="5" t-att-id="'baseer-aged-lines-' + partner.id">
+                                            <div t-if="state.linesLoading" class="o_baseer_aged_status" role="status" t-esc="labels.linesLoading"/>
+                                            <div t-if="!state.linesLoading &amp;&amp; !state.lines" class="o_baseer_aged_status">
+                                                <button type="button" class="o_baseer_aged_retry" t-on-click="() => this.loadPartnerLines(partner.id, 1)" t-esc="labels.retry"/>
+                                            </div>
+                                            <t t-if="state.lines">
+                                                <div class="o_baseer_aged_lines_wrap"><table class="o_baseer_aged_lines">
+                                                    <thead><tr>
+                                                        <th scope="col" t-esc="labels.date"/>
+                                                        <th scope="col" t-esc="labels.dueDate"/>
+                                                        <th scope="col" t-esc="labels.entry"/>
+                                                        <th scope="col" t-esc="labels.kind"/>
+                                                        <th scope="col" t-esc="labels.bucket"/>
+                                                        <th scope="col" class="is-number" t-esc="labels.open"/>
+                                                    </tr></thead>
+                                                    <tbody>
+                                                        <tr t-foreach="state.lines.lines" t-as="line" t-key="line.id">
+                                                            <td t-att-data-label="labels.date"><time dir="ltr" t-att-datetime="line.date" t-esc="line.date"/></td>
+                                                            <td t-att-data-label="labels.dueDate"><time t-if="line.date_maturity" dir="ltr" t-att-datetime="line.date_maturity" t-esc="line.date_maturity"/></td>
+                                                            <th scope="row" t-att-data-label="labels.entry"><button type="button" class="o_baseer_aged_line_link"
+                                                                t-att-disabled="!!state.openingLineId"
+                                                                t-att-aria-label="labels.openLine + ': ' + line.move_name"
+                                                                t-on-click="() => this.openLine(line.id)" t-esc="line.move_name"/></th>
+                                                            <td t-att-data-label="labels.kind" t-esc="labelFor(line.kind)"/>
+                                                            <td t-att-data-label="labels.bucket" t-esc="labelFor(line.bucket)"/>
+                                                            <td class="is-number" t-att-data-label="labels.open"><span class="o_baseer_report_amount" t-att-class="amountClass(line.open)" t-esc="line.open"/></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table></div>
+                                                <p t-if="!state.lines.lines.length" class="o_baseer_aged_status" t-esc="labels.noLines"/>
+                                                <nav t-if="state.lines.page_count > 1" class="o_baseer_aged_pager" t-att-aria-label="labels.openCount">
+                                                    <button type="button" t-att-disabled="state.linesLoading || state.lines.page &lt;= 1"
+                                                        t-on-click="() => this.loadPartnerLines(partner.id, state.lines.page - 1)" t-esc="labels.previous"/>
+                                                    <span><t t-esc="labels.page"/> <bdi t-esc="state.lines.page"/> <t t-esc="labels.of"/> <bdi t-esc="state.lines.page_count"/></span>
+                                                    <button type="button" t-att-disabled="state.linesLoading || state.lines.page >= state.lines.page_count"
+                                                        t-on-click="() => this.loadPartnerLines(partner.id, state.lines.page + 1)" t-esc="labels.next"/>
+                                                </nav>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table></div>
+                    <p t-if="!state.report.partner_count" class="o_baseer_report_empty" t-esc="labels.noPartners"/>
+                    <nav t-if="state.report.page_count > 1" class="o_baseer_aged_pager" t-att-aria-label="labels.partners">
+                        <button type="button" t-att-disabled="state.loading || state.report.page &lt;= 1"
+                            t-on-click="() => this.changePage(state.report.page - 1)" t-esc="labels.previous"/>
+                        <span><t t-esc="labels.page"/> <bdi t-esc="state.report.page"/> <t t-esc="labels.of"/> <bdi t-esc="state.report.page_count"/></span>
+                        <button type="button" t-att-disabled="state.loading || state.report.page >= state.report.page_count"
+                            t-on-click="() => this.changePage(state.report.page + 1)" t-esc="labels.next"/>
+                    </nav>
+                </section>
+            </div>
+        </main>
+    </t>
+</templates>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_aged_receivable" model="report.paperformat">
+        <field name="name">Baseer Aged Receivables A4 Landscape</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field><field name="margin_bottom">15</field>
+        <field name="margin_left">11</field><field name="margin_right">11</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="action_aged_receivable_pdf" model="ir.actions.report">
+        <field name="name">Aged Receivables / مديونيات العملاء</field>
+        <field name="model">baseer.aged.receivable.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_aged_receivable_report.aged_receivable_pdf</field>
+        <field name="report_file">baseer_aged_receivable_report.aged_receivable_pdf</field>
+        <field name="paperformat_id" ref="paperformat_aged_receivable"/>
+    </record>
+    <template id="aged_receivable_pdf">
+        <t t-set="o" t-value="company_record"/>
+        <t t-call="web.basic_layout">
+            <div class="page bar-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .bar-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 11px;}
+                    .bar-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
+                    .bar-pdf .meta {color: #657487; line-height: 1.5; border-bottom: 1px solid #d7dde2; padding-bottom: 8px; margin-bottom: 9px;}
+                    .bar-pdf .notice {background: #d9eef2; color: #566a75; padding: 6px 8px; margin: 8px 0 10px;}
+                    .bar-pdf .summary {margin: 7px 0 11px; width: 100%; border-collapse: collapse;}
+                    .bar-pdf .summary td {padding: 6px 8px; border: 1px solid #d7dde2;}
+                    .bar-pdf .summary .label {font-size: 9px; color: #657487; display: block;}
+                    .bar-pdf .summary .value {font-weight: 700; display: block; white-space: nowrap;}
+                    .bar-pdf .detail {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .bar-pdf .detail thead {display: table-header-group;}
+                    .bar-pdf .detail tr {page-break-inside: avoid;}
+                    .bar-pdf .detail th, .bar-pdf .detail td {padding: 5px 6px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                    .bar-pdf .detail th {font-weight: 600; text-align: left;}
+                    .bar-pdf[dir="rtl"] .detail th {text-align: right;}
+                    .bar-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .bar-pdf .credit {color: #cf2732;}
+                    .bar-pdf .total td {background: #d9dde0; font-weight: 700;}
+                </style>
+                <h1 t-esc="'مديونيات العملاء' if arabic else 'Aged Receivables'"/>
+                <div class="meta">
+                    <div><span t-esc="company_record.name"/> · <span t-esc="company_record.currency_id.name"/></div>
+                    <div><span t-esc="'حتى تاريخ' if arabic else 'As of'"/> <span dir="ltr" t-esc="report['cutoff_date']"/></div>
+                    <div><span t-esc="'أُعيد حسابه عند الطباعة' if arabic else 'Recalculated at print time'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
+                </div>
+                <div class="notice" t-esc="'أرصدة قيود مرحلة وتسوياتها الموجودة وقت التشغيل؛ ليست لقطة تاريخية مجمدة. الأرصدة الدائنة منفصلة ولا تخصم من فاتورة دون تسوية.' if arabic else 'Posted balances and reconciliations available at run time; not a frozen historical snapshot. Unapplied credits are separate from invoices.'"/>
+                <table class="summary"><tr>
+                    <td><span class="label" t-esc="'المطالبات المفتوحة' if arabic else 'Open receivables'"/><span class="value numeric" t-esc="report['summary']['receivables']"/></td>
+                    <td><span class="label" t-esc="'الأرصدة الدائنة غير المطبقة' if arabic else 'Unapplied credits'"/><span class="value numeric" t-esc="report['summary']['credits']"/></td>
+                    <td><span class="label" t-esc="'الصافي' if arabic else 'Net'"/><span class="value numeric" t-esc="report['summary']['net']"/></td>
+                    <td><span class="label" t-esc="'غير مستحق' if arabic else 'Not due'"/><span class="value numeric" t-esc="report['summary']['buckets']['not_due']"/></td>
+                    <td><span class="label">1-30</span><span class="value numeric" t-esc="report['summary']['buckets']['d1_30']"/></td>
+                    <td><span class="label">31-60</span><span class="value numeric" t-esc="report['summary']['buckets']['d31_60']"/></td>
+                    <td><span class="label">61-90</span><span class="value numeric" t-esc="report['summary']['buckets']['d61_90']"/></td>
+                    <td><span class="label">90+</span><span class="value numeric" t-esc="report['summary']['buckets']['over_90']"/></td>
+                </tr></table>
+                <table class="detail">
+                    <thead><tr>
+                        <th style="width: 25%;" t-esc="'العميل' if arabic else 'Customer'"/>
+                        <th style="width: 19%;" t-esc="'المستند' if arabic else 'Document'"/>
+                        <th style="width: 12%;" t-esc="'التاريخ' if arabic else 'Date'"/>
+                        <th style="width: 12%;" t-esc="'الاستحقاق' if arabic else 'Due date'"/>
+                        <th style="width: 18%;" t-esc="'التصنيف' if arabic else 'Category'"/>
+                        <th class="numeric" style="width: 14%;" t-esc="'الرصيد' if arabic else 'Balance'"/>
+                    </tr></thead>
+                    <tbody>
+                        <tr t-foreach="report['lines']" t-as="line">
+                            <td t-esc="line['partner_name']"/>
+                            <td t-esc="line['move_name']"/>
+                            <td dir="ltr" t-esc="line['date']"/>
+                            <td dir="ltr" t-esc="line['date_maturity'] or '-'"/>
+                            <td t-esc="kind_labels[line['kind']]"/>
+                            <td t-att-class="'numeric credit' if line['bucket'] == 'credit' else 'numeric'" t-esc="line['open']"/>
+                        </tr>
+                        <tr t-if="not report['lines']"><td colspan="6" t-esc="'لا توجد مديونيات مفتوحة' if arabic else 'No open receivables'"/></tr>
+                        <tr class="total"><td colspan="5" t-esc="'الصافي' if arabic else 'Net'"/><td class="numeric" t-esc="report['summary']['net']"/></tr>
+                    </tbody>
+                </table>
+                <div class="footer" style="font-size: 9px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                    <span t-esc="company_record.name"/> · <span t-esc="company_record.currency_id.name"/>
+                    <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

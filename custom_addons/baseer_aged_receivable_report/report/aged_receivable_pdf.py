@@ -9,7 +9,10 @@ class AgedReceivablePdf(models.AbstractModel):
     _description = 'Baseer Customer Aged Receivables A4'
 
     def _get_report_values(self, docids, data=None):
-        if docids or not isinstance(data, dict) or set(data) != {'cutoff_date'}:
+        # Odoo adds rendering metadata to `data` before calling this model.
+        # The public action validates its original options strictly; ignore
+        # framework keys here while still validating the requested cutoff.
+        if docids or not isinstance(data, dict) or 'cutoff_date' not in data:
             raise ValidationError(_('Select a valid cutoff date.'))
         report_model = self.env['baseer.aged.receivable.report']
         cutoff = report_model._cutoff(data['cutoff_date'])

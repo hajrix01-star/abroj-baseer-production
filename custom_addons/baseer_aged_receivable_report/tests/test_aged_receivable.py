@@ -112,6 +112,13 @@ class TestAgedReceivable(TransactionCase):
         self.assertEqual(january['summary']['net'], '50.00')
         self.assertEqual(january['summary']['buckets']['d1_30'], '70.00')
         self.assertEqual(january['partner_count'], 1)
+        posted_balance = sum((Decimal(str(line.balance)) for line in self.env[
+            'account.move.line'
+        ].search([
+            ('company_id', '=', self.company.id), ('parent_state', '=', 'posted'),
+            ('date', '<=', '2025-01-31'), ('account_id', '=', self.receivable.id),
+        ])), Decimal('0'))
+        self.assertEqual(Decimal(january['summary']['net'].replace(',', '')), posted_balance)
         rows = self.report.get_partner_lines({
             'cutoff_date': '2025-01-31', 'partner_id': self.partner.id, 'page': 1,
         })['lines']
@@ -134,6 +141,32 @@ class TestAgedReceivable(TransactionCase):
         self.assertEqual(february['summary']['credits'], '20.00')
         self.assertEqual(february['summary']['net'], '10.00')
         self.assertEqual(february['summary']['buckets']['d31_60'], '30.00')
+
+    def test_two_due_dates_on_one_posted_entry_remain_separate(self):
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2025-01-01', 'journal_id': self.general.id,
+            'line_ids': [
+                Command.create({
+                    'name': 'First installment', 'partner_id': self.partner.id,
+                    'account_id': self.receivable.id, 'debit': 10,
+                    'date_maturity': '2025-01-15',
+                }),
+                Command.create({
+                    'name': 'Second installment', 'partner_id': self.partner.id,
+                    'account_id': self.receivable.id, 'debit': 20,
+                    'date_maturity': '2025-03-01',
+                }),
+                Command.create({
+                    'name': 'Revenue', 'partner_id': self.partner.id,
+                    'account_id': self.income.id, 'credit': 30,
+                }),
+            ],
+        })
+        move._post(soft=False)
+        report = self.report.get_report({'cutoff_date': '2025-01-31', 'page': 1})
+        self.assertEqual(report['summary']['buckets']['d1_30'], '10.00')
+        self.assertEqual(report['summary']['buckets']['not_due'], '20.00')
+        self.assertEqual(report['partners'][0]['open_count'], 2)
 
     def test_due_buckets_partnerless_and_company_currency(self):
         self._entry('2025-01-01', self.receivable, self.income, 10,
@@ -176,6 +209,24 @@ class TestAgedReceivable(TransactionCase):
         self.assertEqual(by_id[recent.id]['credit_age_bucket'], 'd1_30')
         self.assertEqual(by_id[old.id]['credit_age_bucket'], 'd61_90')
         self.assertEqual(by_id[recent.id]['bucket'], 'credit')
+
+    def test_matched_credit_note_and_reconciliation_removal(self):
+        invoice = self._invoice('out_invoice', '2025-01-10', 100)
+        refund = self._invoice('out_refund', '2025-01-20', 20)
+        (invoice + refund).reconcile()
+        options = {'cutoff_date': '2025-01-31', 'page': 1}
+        matched = self.report.get_report(options)
+        self.assertEqual(matched['summary']['receivables'], '80.00')
+        self.assertEqual(matched['summary']['credits'], '0.00')
+        partial = self.env['account.partial.reconcile'].search([
+            ('debit_move_id', '=', invoice.id), ('credit_move_id', '=', refund.id),
+        ], limit=1)
+        self.assertTrue(partial)
+        partial.unlink()
+        unmatched = self.report.get_report(options)
+        self.assertEqual(unmatched['summary']['receivables'], '100.00')
+        self.assertEqual(unmatched['summary']['credits'], '20.00')
+        self.assertEqual(unmatched['summary']['net'], '80.00')
 
     def test_hidden_source_and_reconciliation_fail_closed(self):
         invoice = self._invoice('out_invoice', '2025-01-10', 100)

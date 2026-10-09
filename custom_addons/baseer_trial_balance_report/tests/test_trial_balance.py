@@ -39,9 +39,15 @@ class TestTrialBalance(TransactionCase):
         })
 
     def _journal(self, company):
-        return self.env['account.journal'].with_company(company).search([
+        journal = self.env['account.journal'].with_company(company).search([
             ('company_id', '=', company.id), ('type', '=', 'general'),
         ], limit=1)
+        if not journal:
+            journal = self.env['account.journal'].with_company(company).create({
+                'name': 'Trial balance synthetic journal',
+                'code': 'TBG', 'type': 'general', 'company_id': company.id,
+            })
+        return journal
 
     def _entry(self, day, debit_account, credit_account, amount,
                company=None, journal=None, posted=True, currency=None):
@@ -57,7 +63,8 @@ class TestTrialBalance(TransactionCase):
             debit.update({'currency_id': currency.id, 'amount_currency': amount})
             credit.update({'currency_id': currency.id, 'amount_currency': -amount})
         move = self.env['account.move'].with_company(company).create({
-            'date': day, 'journal_id': journal.id, 'move_type': 'entry',
+            'company_id': company.id, 'date': day, 'journal_id': journal.id,
+            'move_type': 'entry',
             'line_ids': [Command.create(debit), Command.create(credit)],
         })
         if posted:

@@ -56,6 +56,17 @@ const labels = {
 // This adapter reshapes server amounts for the existing P&L table. It never
 // derives, adds, subtracts, or reclassifies a financial value in the browser.
 export function prepareOperationsSnapshot(snapshot, companyName, selectedJournals, translate) {
+    if (!Array.isArray(snapshot.periods) || !snapshot.periods.length) {
+        throw new Error("Incomplete operations periods");
+    }
+    for (const period of snapshot.periods) {
+        const keys = (period.rows || []).map((row) => row.key);
+        if (keys.length !== ROWS.length || new Set(keys).size !== ROWS.length ||
+            ROWS.some((key) => !keys.includes(key)) ||
+            [...SECTIONS].some((section) => !Array.isArray(period.accounts?.[section]))) {
+            throw new Error("Incomplete operations rows");
+        }
+    }
     const periods = (snapshot.periods || []).map((period) => ({
         ...period, role: period.key === "current" ? "primary" : "comparison",
         display_label: period.display_label || period.label,

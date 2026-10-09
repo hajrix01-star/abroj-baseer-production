@@ -1005,6 +1005,15 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             self.assertEqual(str(payment.move_id.date), day)
             self.assertEqual(len(liquidity), 1)
             self.assertEqual(Decimal(str(liquidity.balance)), -Decimal(amount))
+            payment_payable = payment.move_id.line_ids.filtered(
+                lambda line: line.account_id == self.payable,
+            )
+            matched = payment_payable.matched_credit_ids.filtered(
+                lambda partial: partial.credit_move_id.move_id == bill,
+            )
+            self.assertEqual(len(payment_payable), 1)
+            self.assertEqual(len(matched), 1)
+            self.assertEqual(Decimal(str(matched.amount)), Decimal(amount))
 
         # This payment predates its bill and was not created by Register
         # Payment on that bill. Later reconciliation must not forge the
@@ -1029,6 +1038,41 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertIn(later_bill, advance.reconciled_bill_ids)
         self.assertNotIn(later_bill, advance.invoice_ids)
         self.assertNotIn(advance, later_bill.matched_payment_ids)
+
+        # The owner permits an explicitly uncertain historical link: this
+        # independent cash payment follows an existing bill but was not
+        # created from Register Payment.  A later reconciliation is visible
+        # now, though it cannot prove what was intended on payment day.
+        existing_bill = self._bill()
+        late_link = self.env['account.payment'].with_company(self.company).create({
+            'date': '2026-06-20', 'amount': 20,
+            'payment_type': 'outbound', 'partner_type': 'supplier',
+            'partner_id': self.partner.id, 'journal_id': self.bank.id,
+            'company_id': self.company.id,
+            'currency_id': self.company.currency_id.id,
+            'payment_method_line_id': self.method.id,
+        })
+        late_link.action_post()
+        late_liquidity = late_link.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.bank.default_account_id,
+        )
+        self.assertEqual(len(late_liquidity), 1)
+        self.assertEqual(Decimal(str(late_liquidity.balance)), Decimal('-20'))
+        self.assertFalse(late_link.invoice_ids)
+        late_payable = late_link.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.payable,
+        )
+        existing_payable = existing_bill.line_ids.filtered(
+            lambda line: line.account_id == self.payable,
+        )
+        (late_payable + existing_payable).reconcile()
+        matched_late = late_payable.matched_credit_ids.filtered(
+            lambda partial: partial.credit_move_id.move_id == existing_bill,
+        )
+        self.assertEqual(len(matched_late), 1)
+        self.assertEqual(Decimal(str(matched_late.amount)), Decimal('20'))
+        self.assertIn(existing_bill, late_link.reconciled_bill_ids)
+        self.assertNotIn(existing_bill, late_link.invoice_ids)
 
     def test_details_use_display_expense_for_depreciation_account(self):
         depreciation = self.accounts.create({

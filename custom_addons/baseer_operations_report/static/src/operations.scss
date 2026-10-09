@@ -13,3 +13,11 @@
 
 // Inherit the P&L mobile row layout so the page scrolls vertically without
 // forcing a 38rem-wide table on phones.
+@media (max-width: 560px) {
+    .o_baseer_go_report .o_baseer_go_events td:not(.is-number)::before {
+        content: attr(data-label);
+        display: block;
+        color: var(--baseer-report-muted);
+        font-size: 0.76rem;
+    }
+}

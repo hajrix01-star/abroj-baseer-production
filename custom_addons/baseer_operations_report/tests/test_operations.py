@@ -299,6 +299,41 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(event['date'], '2041-06-10')
         self.assertEqual(event['amount'], Decimal('115.00'))
 
+    def test_sales_receipt_source_shape_before_reusing_invoice_calculator(self):
+        """Prove Odoo's posted receipt uses the same 100 + recorded VAT 15 evidence."""
+        receipt = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_receipt', 'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': '2041-06-10', 'date': '2041-07-02',
+            'invoice_line_ids': [Command.create({
+                'name': 'Issued sales receipt', 'quantity': 1,
+                'price_unit': 100, 'account_id': self.income.id,
+                'tax_ids': [Command.set(self.tax.ids)],
+            })],
+        })
+        receipt.action_post()
+        self.assertEqual(receipt.state, 'posted')
+        self.assertEqual(str(receipt.invoice_date), '2041-06-10')
+        self.assertEqual(str(receipt.date), '2041-07-02')
+        self.assertEqual(Decimal(str(receipt.amount_total)), Decimal('115.00'))
+        line = receipt.invoice_line_ids
+        self.assertEqual(len(line), 1)
+        self.assertEqual(Decimal(str(line.balance)), Decimal('-100.00'))
+        base_lines, _tax_lines = receipt._get_rounded_base_and_tax_lines()
+        self.env['account.tax']._add_accounting_data_in_base_lines_tax_details(
+            base_lines, self.company,
+        )
+        base = next(item for item in base_lines if item['record'] == line)
+        details = base['tax_details']
+        self.assertEqual(Decimal(str(details['total_excluded'])), Decimal('100.00'))
+        self.assertEqual(sum((Decimal(str(item['tax_amount']))
+                              for item in details['taxes_data']), Decimal('0')),
+                         Decimal('15.00'))
+        tax_lines = receipt.line_ids.filtered('tax_line_id')
+        self.assertEqual(sum((Decimal(str(item.credit - item.debit))
+                              for item in tax_lines), Decimal('0')),
+                         Decimal('15.00'))
+
     def test_approved_app_summary_uses_business_day_not_synthetic_utc_time(self):
         company = self.env['res.company'].create({
             'name': 'Gross operations app timing company',

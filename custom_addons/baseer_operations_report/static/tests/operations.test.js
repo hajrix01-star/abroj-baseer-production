@@ -33,12 +33,19 @@ test("operations preview preserves server amounts, row order, and detail fingerp
     expect(output.report.rows[8].amounts.current.amount).toBe("-7.50");
     expect(output.accounts.income[0].fingerprints.current).toBe(fingerprint);
     expect(output.accounts.income[0].sourceCounts.current).toBe(1);
+    const completeOutput = prepareOperationsSnapshot({ ...snapshot, complete: true },
+        "Baseer", false, { income: "Income", net_income: "Net operations" });
+    expect(completeOutput.report.complete).toBe(true);
 });
 
 test("operations preview rejects a missing financial row instead of showing zero", () => {
-    expect(() => prepareOperationsSnapshot({ periods: [{
+    expect(() => prepareOperationsSnapshot({ complete: false, periods: [{
         key: "current", rows: [{ key: "income", amount: "115.00", negative: false }],
         accounts: { income: [], cost_of_sales: [], expense: [],
             other_income: [], other_expense: [] },
     }] }, "Baseer", false, { income: "Income" })).toThrow();
+});
+
+test("operations preview rejects a missing completeness state", () => {
+    expect(() => prepareOperationsSnapshot({ periods: [] }, "Baseer", false, {})).toThrow();
 });

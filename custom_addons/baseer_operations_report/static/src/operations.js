@@ -18,6 +18,7 @@ const labels = {
         unconfirmed: "ارتباط الدفعة بالفاتورة غير مؤكد تاريخيًا",
         unconfirmedCount: "ظهور دفعات مرتبطة غير مؤكدة عبر الفترات",
         excludedNativeCount: "حالات دفع مستبعدة عبر الفترات لعدم اكتمال الدليل",
+        unprovenLiquidityCount: "خروج سيولة غير مثبت المصدر عبر الفترات",
         loading: "جارٍ تحميل المعاينة…", accountsLoading: "جارٍ تحميل الحسابات…",
         eventsLoading: "جارٍ تحميل الأحداث…", error: "تعذر عرض المعاينة. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
         account: "الحساب", balance: "المبلغ", income: "الإيرادات", cost_of_sales: "تكلفة المبيعات",
@@ -41,6 +42,7 @@ const labels = {
         unconfirmed: "Historical payment-to-bill link unconfirmed",
         unconfirmedCount: "Unconfirmed payment occurrences across periods",
         excludedNativeCount: "Excluded payment cases across periods",
+        unprovenLiquidityCount: "Cash outflows without proven source across periods",
         loading: "Loading preview…", accountsLoading: "Loading accounts…",
         eventsLoading: "Loading events…", error: "Could not load the preview. Check the period and access rights, then retry.",
         account: "Account", balance: "Amount", income: "Income", cost_of_sales: "Cost of sales",
@@ -62,6 +64,9 @@ const labels = {
 // This adapter reshapes server amounts for the existing P&L table. It never
 // derives, adds, subtracts, or reclassifies a financial value in the browser.
 export function prepareOperationsSnapshot(snapshot, companyName, selectedJournals, translate) {
+    if (typeof snapshot.complete !== "boolean") {
+        throw new Error("Missing operations completeness state");
+    }
     if (!Array.isArray(snapshot.periods) || !snapshot.periods.length) {
         throw new Error("Incomplete operations periods");
     }
@@ -143,6 +148,10 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             (period.excluded?.unassigned_native_payment || 0) +
             (period.excluded?.unsupported_native_bill || 0), 0);
     }
+    get unprovenLiquidityCount() {
+        return this.reportPeriods.reduce((count, period) => count +
+            (period.excluded?.unproven_liquidity_outflow || 0), 0);
+    }
 
     installContext(context) {
         super.installContext(context);
@@ -167,7 +176,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         try {
             const snapshot = await this.orm.call(MODEL, "get_source_snapshot", [filters]);
             if (token !== this.requestToken || generation !== this.companyGeneration || companyId !== this.activeCompanyId) { return; }
-            if (snapshot.company_id !== companyId || snapshot.complete !== false) { throw new Error("Unexpected source contract"); }
+            if (snapshot.company_id !== companyId || typeof snapshot.complete !== "boolean") { throw new Error("Unexpected source contract"); }
             const prepared = prepareOperationsSnapshot(snapshot, this.companyName || "",
                 !!filters.journal_ids.length, this.labels);
             this.state.report = prepared.report;

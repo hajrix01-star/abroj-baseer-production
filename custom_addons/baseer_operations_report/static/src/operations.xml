@@ -34,7 +34,7 @@
                         </details>
                     </div>
                 </header>
-                <div class="o_baseer_report_notice o_baseer_go_incomplete" role="note"><span t-esc="labels.incomplete"/><span t-if="unconfirmedCount"> · <t t-esc="labels.unconfirmedCount"/>: <t t-esc="unconfirmedCount"/></span><span t-if="excludedNativeCount"> · <t t-esc="labels.excludedNativeCount"/>: <t t-esc="excludedNativeCount"/></span></div>
+                <div t-if="state.report &amp;&amp; !state.report.complete" class="o_baseer_report_notice o_baseer_go_incomplete" role="note"><span t-esc="labels.incomplete"/><span t-if="unconfirmedCount"> · <t t-esc="labels.unconfirmedCount"/>: <t t-esc="unconfirmedCount"/></span><span t-if="excludedNativeCount"> · <t t-esc="labels.excludedNativeCount"/>: <t t-esc="excludedNativeCount"/></span><span t-if="unprovenLiquidityCount"> · <t t-esc="labels.unprovenLiquidityCount"/>: <t t-esc="unprovenLiquidityCount"/></span></div>
                 <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
                 <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
                 <div t-if="state.report" class="o_baseer_report_canvas">
@@ -59,7 +59,7 @@
                 <div class="o_baseer_report o_baseer_pl_paper">
                     <button type="button" class="btn btn-secondary o_baseer_go_back" t-on-click="closeDetail"><i t-att-class="lang === 'ar' ? 'fa fa-arrow-right' : 'fa fa-arrow-left'" aria-hidden="true"/> <span t-esc="labels.back"/></button>
                     <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title"><span t-esc="state.detail.account.code"/> <span t-esc="state.detail.account.name"/></h1><p class="o_baseer_report_period"><span t-esc="labels.source"/> · <span t-esc="state.detail.periodLabel"/></p></div></header>
-                    <div class="o_baseer_report_notice o_baseer_go_incomplete" role="note" t-esc="labels.incomplete"/>
+                    <div t-if="state.report &amp;&amp; !state.report.complete" class="o_baseer_report_notice o_baseer_go_incomplete" role="note" t-esc="labels.incomplete"/>
                     <div t-if="state.detail.error" class="alert alert-danger" role="alert" t-esc="state.detail.error"/>
                     <div t-if="state.detail.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.eventsLoading"/>
                     <div t-if="state.detail.result" class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table o_baseer_go_events">

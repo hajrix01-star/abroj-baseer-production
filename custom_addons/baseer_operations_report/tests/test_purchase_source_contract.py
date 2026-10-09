@@ -195,6 +195,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'journal_ids': [],
         })
         self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 0)
+        self.assertEqual(snapshot['periods'][0]['excluded'].get(
+            'unproven_liquidity_outflow', 0), 0)
         account_rows = snapshot['periods'][0]['accounts']['expense']
         self.assertEqual(len(account_rows), 1)
         self.assertEqual(len(account_rows[0]['fingerprint']), 64)
@@ -977,6 +979,34 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount('2026-05-01', '2026-05-31'), 0)
         # Neither bank decrease is a classified purchase source: the first is
         # an unapplied vendor advance; the second only changes liquidity.
+
+    def test_liquidity_census_detects_unproven_cash_decreases(self):
+        def bank_entry(day, debit_account, amount):
+            move = self.env['account.move'].with_company(self.company).create({
+                'date': day, 'journal_id': self.bank.id, 'move_type': 'entry',
+                'line_ids': [
+                    Command.create({'account_id': debit_account.id,
+                                    'debit': amount}),
+                    Command.create({'account_id': self.bank.default_account_id.id,
+                                    'credit': amount}),
+                ],
+            })
+            move._post(soft=False)
+            return move
+
+        bank_entry('2026-06-17', self.vat_account, 30)
+        bank_entry('2026-06-18', self.cash, 40)
+        self._bank_statement('2026-06-19', self.vat_account, 20)
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        excluded = snapshot['periods'][0]['excluded']
+        self.assertEqual(excluded['direct_aml_unproven'], 0)
+        self.assertEqual(excluded['proven_internal_transfer'], 1)
+        self.assertEqual(excluded['unproven_liquidity_outflow'], 2)
+        self.assertFalse(snapshot['complete'])
 
     def test_native_payment_origin_link_differs_from_later_advance_match(self):
         """Characterize the stored invoice link; do not admit it to the report yet."""

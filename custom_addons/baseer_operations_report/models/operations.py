@@ -463,6 +463,69 @@ class BaseerOperationsReport(models.AbstractModel):
         return len(lines) - len(recognized)
 
     @api.model
+    def _liquidity_outflow_exclusions(self, company, start, end, journal_ids,
+                                      recognized_ids):
+        """Conservatively inventory cash decreases not backed by a report event."""
+        domain = [
+            ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+            ('date', '>=', start), ('date', '<=', end),
+            ('journal_id.type', 'in', ('bank', 'cash')),
+            ('account_id.account_type', '=', 'asset_cash'),
+            ('balance', '<', 0),
+        ]
+        sql = (
+            'aml.company_id=%s AND aml.parent_state=%s '
+            'AND aml.date >= %s AND aml.date <= %s '
+            'AND j.type IN %s AND a.account_type=%s AND aml.balance < 0'
+        )
+        params = [company.id, 'posted', start, end,
+                  ('bank', 'cash'), 'asset_cash']
+        if journal_ids:
+            domain.append(('journal_id', 'in', journal_ids))
+            sql += ' AND aml.journal_id = ANY(%s)'
+            params.append(journal_ids)
+        lines = self.env['account.move.line'].search(domain)
+        self.env['account.move.line'].flush_model([
+            'company_id', 'parent_state', 'date', 'journal_id',
+            'account_id', 'balance', 'move_id',
+        ])
+        self.env['account.account'].flush_model(['account_type'])
+        self.env['account.journal'].flush_model(['type'])
+        self.env.cr.execute(
+            'SELECT aml.id FROM account_move_line aml '
+            'JOIN account_account a ON a.id=aml.account_id '
+            'JOIN account_journal j ON j.id=aml.journal_id WHERE ' + sql,
+            params,
+        )
+        if {row[0] for row in self.env.cr.fetchall()} != set(lines.ids):
+            self._deny_incomplete_source()
+        lines.check_access('read')
+        lines.mapped('move_id').check_access('read')
+        lines.mapped('account_id').check_access('read')
+        lines.mapped('journal_id').check_access('read')
+        if not set(recognized_ids).issubset(set(lines.ids)):
+            self._deny_incomplete_source()
+        excluded = Counter()
+        for line in lines:
+            if line.id in recognized_ids:
+                continue
+            move_lines = line.move_id.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s',
+                                 [line.move_id.id], move_lines)
+            move_lines.mapped('account_id').check_access('read')
+            # A single balanced cash-to-cash entry is an internal transfer,
+            # not a purchase. Other debits require stronger source evidence.
+            other = move_lines - line
+            if (len(move_lines) == 2 and len(other) == 1
+                    and other.account_id.account_type == 'asset_cash'
+                    and other.company_id == company
+                    and self._decimal(other.balance) == -self._decimal(line.balance)):
+                excluded['proven_internal_transfer'] += 1
+            else:
+                excluded['unproven_liquidity_outflow'] += 1
+        return excluded
+
+    @api.model
     def _allocate_purchase_event(self, gross_amounts, prior, amount, currency):
         """Allocate one cash event by the change in cumulative rounded targets."""
         total = sum(gross_amounts, Decimal('0'))
@@ -610,6 +673,7 @@ class BaseerOperationsReport(models.AbstractModel):
                         {'source_model': 'account.bank.statement.line',
                          'source_id': statement.id,
                          'line_model': 'account.move.line', 'line_id': base.id,
+                         'payment_line_id': bank.id,
                          'date': fields.Date.to_string(statement.date)},
                     )
                     recognized_direct.add(base.id)
@@ -640,6 +704,7 @@ class BaseerOperationsReport(models.AbstractModel):
                          'source_id': statement.id,
                          'line_model': 'account.move.line',
                          'line_id': counterpart.id,
+                         'payment_line_id': bank.id,
                          'date': fields.Date.to_string(statement.date)},
                     )
                     recognized_direct.add(counterpart.id)
@@ -765,6 +830,7 @@ class BaseerOperationsReport(models.AbstractModel):
                              'source_id': statement.id,
                              'line_model': 'account.move.line',
                              'line_id': invoice_line_id,
+                             'payment_line_id': bank.id,
                              'date': fields.Date.to_string(statement.date)},
                         )
         return recognized_direct
@@ -1239,6 +1305,16 @@ class BaseerOperationsReport(models.AbstractModel):
                             Decimal('0'),
                         )):
                     self._deny_incomplete_source()
+        recognized_liquidity_ids = {
+            event['payment_line_id']
+            for section in sections.values()
+            for entry in section.values()
+            for event in entry['events']
+            if event.get('payment_line_id')
+        }
+        excluded.update(self._liquidity_outflow_exclusions(
+            company, start, end, journal_ids, recognized_liquidity_ids,
+        ))
         return sections, excluded
 
     @api.model

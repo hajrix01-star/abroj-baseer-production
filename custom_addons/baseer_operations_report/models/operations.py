@@ -527,14 +527,63 @@ class BaseerOperationsReport(models.AbstractModel):
             )
             counterpart = lines - bank
             amount = -self._decimal(statement.amount)
-            if (len(bank) != 1 or len(counterpart) != 1
-                    or self._decimal(bank.balance) != -amount
+            if (len(bank) != 1 or self._decimal(bank.balance) != -amount
+                    or move.statement_line_id != statement):
+                excluded['unproven_bank_outflow'] += 1
+                continue
+            lines.mapped('account_id').check_access('read')
+            if len(counterpart) == 2:
+                bases = counterpart.filtered(
+                    lambda line: line.account_id.account_type in EXPENSE_KEYS
+                    and not line.tax_line_id,
+                )
+                taxes = counterpart.filtered(lambda line: line.tax_line_id)
+                if len(bases) != 1 or len(taxes) != 1:
+                    excluded['unsupported_direct_bank_expense'] += 1
+                    continue
+                base, tax_line = bases, taxes
+                tax = tax_line.tax_line_id
+                repartition = tax_line.tax_repartition_line_id
+                tax.check_access('read')
+                repartition.check_access('read')
+                if (move.move_type != 'entry' or move.origin_payment_id
+                        or statement.payment_ids
+                        or any(line.move_id != move or line.company_id != company
+                               or line.journal_id != journal
+                               or line.currency_id != company.currency_id
+                               or line.matched_credit_ids or line.matched_debit_ids
+                               for line in lines)
+                        or bank.tax_ids or bank.tax_line_id
+                        or base.account_id.reconcile or base.tax_ids != tax
+                        or tax_line.tax_ids or tax.company_id != company
+                        or tax.type_tax_use != 'purchase'
+                        or not repartition or repartition.tax_id != tax
+                        or repartition.repartition_type != 'tax'
+                        or repartition.account_id != tax_line.account_id
+                        or tax_line.account_id.account_type in SECTION_KEYS
+                        or tax_line.account_id.account_type == 'asset_cash'
+                        or self._decimal(base.balance) <= 0
+                        or self._decimal(tax_line.balance) <= 0
+                        or self._decimal(base.balance)
+                           + self._decimal(tax_line.balance) != amount):
+                    excluded['unsupported_direct_bank_expense'] += 1
+                    continue
+                if journal_ids and journal.id not in journal_ids:
+                    continue
+                if start <= statement.date <= end:
+                    self._record(
+                        sections, base.account_id.account_type,
+                        base.account_id, amount, 'bank_statement_direct_taxed',
+                    )
+                    recognized_direct.add(base.id)
+                continue
+            if (len(counterpart) != 1
                     or self._decimal(counterpart.balance) != amount):
                 excluded['unproven_bank_outflow'] += 1
                 continue
-            (bank | counterpart).mapped('account_id').check_access('read')
             if counterpart.account_id.account_type in EXPENSE_KEYS:
                 if (move.move_type != 'entry' or move.origin_payment_id
+                        or statement.payment_ids
                         or any(line.company_id != company or line.tax_line_id
                                or line.tax_ids or line.tax_tag_ids for line in lines)
                         or counterpart.account_id.reconcile

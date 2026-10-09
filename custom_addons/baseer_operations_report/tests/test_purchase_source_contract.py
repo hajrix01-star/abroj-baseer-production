@@ -180,6 +180,65 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(sum(Decimal(str(line.balance)) for line in lines), 0)
         self.assertFalse(lines.filtered(lambda line:
                                         line.matched_credit_ids or line.matched_debit_ids))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+        ), 115)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.general.ids,
+        ), 0)
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 0)
+        self.assertEqual(snapshot['periods'][0]['accounts']['expense'], [{
+            'account_id': self.expense.id,
+            'account_code': self.expense.code,
+            'account_name': self.expense.name,
+            'amount': '115.00',
+            'negative': False,
+            'source_count': 1,
+        }])
+
+        reader = self.env['res.users'].create({
+            'name': 'Gross taxed bank outflow reader',
+            'login': 'gross_taxed_bank_outflow_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = self.env['baseer.operations.report'].with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', report=secured,
+        ), 115)
+        for model, hidden in (
+                ('account.bank.statement.line', statement),
+                ('account.move.line', tax_lines),
+                ('account.tax', self.tax),
+                ('account.tax.repartition.line', tax_lines.tax_repartition_line_id),
+                ('account.account', self.vat_account)):
+            rule = self.env['ir.rule'].create({
+                'name': 'Gross taxed bank hide ' + model,
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {hidden.id})]",
+            })
+            try:
+                rule.flush_recordset()
+                with self.assertRaises(AccessError):
+                    self._purchase_amount(
+                        '2026-06-01', '2026-06-30', report=secured,
+                    )
+            finally:
+                rule.unlink()
 
     def test_bill_waits_for_real_outflow_and_partial_50_then_65(self):
         bill = self._bill()

@@ -56,7 +56,7 @@ class TestAgedReceivable(TransactionCase):
         return line
 
     def _entry(self, day, debit_account, credit_account, amount, posted=True,
-               partner=None, date_maturity=None, currency=None):
+               partner=None, date_maturity=None, currency=None, foreign_amount=None):
         partner = self.partner if partner is None else partner
         debit = {
             'name': 'AR synthetic debit', 'partner_id': partner.id if partner else False,
@@ -69,8 +69,9 @@ class TestAgedReceivable(TransactionCase):
         if date_maturity:
             (debit if debit_account == self.receivable else credit)['date_maturity'] = date_maturity
         if currency:
-            debit.update({'currency_id': currency.id, 'amount_currency': amount * 2})
-            credit.update({'currency_id': currency.id, 'amount_currency': -amount * 2})
+            foreign_amount = foreign_amount if foreign_amount is not None else amount * 2
+            debit.update({'currency_id': currency.id, 'amount_currency': foreign_amount})
+            credit.update({'currency_id': currency.id, 'amount_currency': -foreign_amount})
         move = self.env['account.move'].with_company(self.company).create({
             'date': day, 'journal_id': self.general.id, 'move_type': 'entry',
             'line_ids': [Command.create(debit), Command.create(credit)],
@@ -227,6 +228,31 @@ class TestAgedReceivable(TransactionCase):
         self.assertEqual(unmatched['summary']['receivables'], '100.00')
         self.assertEqual(unmatched['summary']['credits'], '20.00')
         self.assertEqual(unmatched['summary']['net'], '80.00')
+
+    def test_foreign_currency_full_settlement_with_exchange_difference_at_cutoff(self):
+        foreign = self.env['res.currency'].create({
+            'name': 'ARX', 'symbol': 'ARX', 'rounding': 0.01, 'active': True,
+        })
+        invoice = self._entry(
+            '2025-01-10', self.receivable, self.income, 100,
+            currency=foreign, foreign_amount=200,
+        )
+        payment = self._entry(
+            '2025-02-10', self.bank, self.receivable, 120,
+            currency=foreign, foreign_amount=200,
+        )
+        (invoice + payment).reconcile()
+        before = self.report.get_report({'cutoff_date': '2025-01-31', 'page': 1})
+        after = self.report.get_report({'cutoff_date': '2025-02-28', 'page': 1})
+        self.assertEqual(before['summary']['net'], '100.00')
+        self.assertEqual(after['summary']['net'], '0.00')
+        exchange_lines = self.env['account.move.line'].search([
+            ('company_id', '=', self.company.id), ('parent_state', '=', 'posted'),
+            ('date', '<=', '2025-02-28'), ('account_id', '=', self.receivable.id),
+        ]) - invoice - payment
+        self.assertTrue(exchange_lines)
+        self.assertEqual(sum((Decimal(str(line.balance)) for line in exchange_lines),
+                             Decimal('0')), Decimal('20'))
 
     def test_hidden_source_and_reconciliation_fail_closed(self):
         invoice = self._invoice('out_invoice', '2025-01-10', 100)

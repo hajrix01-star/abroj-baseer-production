@@ -284,11 +284,11 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         ])
         self.assertEqual(len(partial), 1)
         reader = self.env['res.users'].create({
-            'name': 'Gross payment source readonly',
-            'login': 'gross_payment_source_readonly',
+            'name': 'Gross payment source accountant',
+            'login': 'gross_payment_source_accountant',
             'group_ids': [Command.set([
                 self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_readonly').id,
+                self.env.ref('account.group_account_user').id,
                 self.env.ref('point_of_sale.group_pos_user').id,
             ])],
             'company_id': self.company.id,

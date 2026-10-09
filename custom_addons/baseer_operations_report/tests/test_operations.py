@@ -283,6 +283,15 @@ class TestOperationsGrossCalculator(TransactionCase):
             summary.order_id.date_order,
         ).date()
         self.assertEqual(local_synthetic_day, business_day - timedelta(days=1))
+        zero_day = scoped.create({
+            'company_id': company.id, 'config_id': config.id,
+            'business_date': local_synthetic_day, 'period_scope': 'all',
+            'day_schedule': 'all', 'zero_sales': True,
+            'customer_count': 0, 'allocation_ids': [],
+        })
+        zero_day.action_approve()
+        self.assertEqual(zero_day.state, 'approved')
+        self.assertFalse(zero_day.order_id)
         report = self.report.with_context(
             allowed_company_ids=[company.id],
         ).with_company(company)

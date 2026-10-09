@@ -169,6 +169,12 @@ class BaseerOperationsReport(models.AbstractModel):
         summary_ids = []
         for summary in summaries:
             order = summary.order_id
+            if summary.zero_sales:
+                if (order or summary.session_id or summary.amount_gross
+                        or summary.amount_net or summary.amount_tax):
+                    self._deny_incomplete_source()
+                # An approved no-sales day has no POS order by design.
+                continue
             if (not order or order.company_id != company
                     or order.source != 'baseer_summary'
                     or order.state not in POS_STATES

@@ -997,6 +997,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         bank_entry('2026-06-17', self.vat_account, 30)
         bank_entry('2026-06-18', self.cash, 40)
         self._bank_statement('2026-06-19', self.vat_account, 20)
+        self._entry('2026-06-20', self.vat_account, self.cash, 10)
         snapshot = self.env['baseer.operations.report'].get_source_snapshot({
             'company_id': self.company.id,
             'date_from': '2026-06-01', 'date_to': '2026-06-30',
@@ -1005,7 +1006,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         excluded = snapshot['periods'][0]['excluded']
         self.assertEqual(excluded['direct_aml_unproven'], 0)
         self.assertEqual(excluded['proven_internal_transfer'], 1)
-        self.assertEqual(excluded['unproven_liquidity_outflow'], 2)
+        self.assertEqual(excluded['unproven_liquidity_outflow'], 3)
         self.assertFalse(snapshot['complete'])
 
     def test_native_payment_origin_link_differs_from_later_advance_match(self):

@@ -469,17 +469,15 @@ class BaseerOperationsReport(models.AbstractModel):
         domain = [
             ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
             ('date', '>=', start), ('date', '<=', end),
-            ('journal_id.type', 'in', ('bank', 'cash')),
             ('account_id.account_type', '=', 'asset_cash'),
             ('balance', '<', 0),
         ]
         sql = (
             'aml.company_id=%s AND aml.parent_state=%s '
             'AND aml.date >= %s AND aml.date <= %s '
-            'AND j.type IN %s AND a.account_type=%s AND aml.balance < 0'
+            'AND a.account_type=%s AND aml.balance < 0'
         )
-        params = [company.id, 'posted', start, end,
-                  ('bank', 'cash'), 'asset_cash']
+        params = [company.id, 'posted', start, end, 'asset_cash']
         if journal_ids:
             domain.append(('journal_id', 'in', journal_ids))
             sql += ' AND aml.journal_id = ANY(%s)'
@@ -490,11 +488,10 @@ class BaseerOperationsReport(models.AbstractModel):
             'account_id', 'balance', 'move_id',
         ])
         self.env['account.account'].flush_model(['account_type'])
-        self.env['account.journal'].flush_model(['type'])
         self.env.cr.execute(
             'SELECT aml.id FROM account_move_line aml '
             'JOIN account_account a ON a.id=aml.account_id '
-            'JOIN account_journal j ON j.id=aml.journal_id WHERE ' + sql,
+            'WHERE ' + sql,
             params,
         )
         if {row[0] for row in self.env.cr.fetchall()} != set(lines.ids):

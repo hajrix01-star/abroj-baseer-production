@@ -49,7 +49,7 @@ jobs:
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
 
   hoot-operations-preview:
-    name: Odoo 19 operations preview Hoot
+    name: Odoo 19 operations adapter Hoot
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
@@ -82,7 +82,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" python3-websocket
-      - name: Test only the operations preview at desktop and mobile width
+      - name: Test only the operations amount adapter at desktop and mobile width
         shell: bash
         run: |
           set -Eeuo pipefail

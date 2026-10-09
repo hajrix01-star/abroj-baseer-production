@@ -7,8 +7,11 @@ invoices would otherwise duplicate an original operation.
 """
 
 from collections import Counter
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
+
+from pytz import UTC, timezone
+from pytz.exceptions import AmbiguousTimeError, NonExistentTimeError, UnknownTimeZoneError
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
@@ -69,6 +72,7 @@ class BaseerOperationsReport(models.AbstractModel):
             'account.move', 'account.move.line', 'account.account',
             'account.tax', 'account.tax.repartition.line', 'account.journal',
             'pos.order', 'pos.order.line', 'pos.session', 'pos.config',
+            'baseer.pos.summary', 'res.partner', 'resource.calendar',
             'product.product', 'account.fiscal.position',
             'account.bank.statement.line', 'account.partial.reconcile',
             'account.payment',
@@ -80,9 +84,10 @@ class BaseerOperationsReport(models.AbstractModel):
         domain = [
             ('company_id', '=', company.id), ('state', '=', 'posted'),
             ('move_type', 'in', INVOICE_TYPES),
-            ('date', '>=', start), ('date', '<=', end),
+            ('invoice_date', '>=', start), ('invoice_date', '<=', end),
         ]
-        sql = "company_id=%s AND state='posted' AND move_type IN %s AND date >= %s AND date <= %s"
+        sql = ("company_id=%s AND state='posted' AND move_type IN %s "
+               "AND invoice_date >= %s AND invoice_date <= %s")
         params = [company.id, INVOICE_TYPES, start, end]
         if journal_ids:
             domain.append(('journal_id', 'in', journal_ids))
@@ -90,30 +95,96 @@ class BaseerOperationsReport(models.AbstractModel):
             params.append(journal_ids)
         moves = self.env['account.move'].search(domain, order='id')
         self.env['account.move'].flush_model([
-            'company_id', 'state', 'move_type', 'date', 'journal_id',
+            'company_id', 'state', 'move_type', 'invoice_date', 'journal_id',
         ])
         self._assert_visible('account_move', sql, params, moves)
         return moves
 
     @api.model
+    def _company_timezone(self, company):
+        company.partner_id.check_access('read')
+        name = company.partner_id.tz
+        if not name:
+            calendar = company.resource_calendar_id
+            if calendar:
+                calendar.check_access('read')
+                name = calendar.tz
+        if not name:
+            self._deny_incomplete_source()
+        try:
+            return timezone(name)
+        except (UnknownTimeZoneError, AttributeError, TypeError):
+            self._deny_incomplete_source()
+
+    @api.model
+    def _local_utc_bounds(self, company, start, end):
+        zone = self._company_timezone(company)
+        try:
+            lower = zone.localize(datetime.combine(start, time.min), is_dst=None)
+            upper = zone.localize(
+                datetime.combine(end + timedelta(days=1), time.min),
+                is_dst=None,
+            )
+        except (AmbiguousTimeError, NonExistentTimeError, OverflowError):
+            self._deny_incomplete_source()
+        return (
+            lower.astimezone(UTC).replace(tzinfo=None),
+            upper.astimezone(UTC).replace(tzinfo=None),
+        )
+
+    @api.model
     def _pos_records(self, company, start, end, journal_ids):
-        # date_order is stored as a UTC datetime. The source contract uses its
-        # stored date; local business-day conversion needs a separate GO.
-        next_day = end + timedelta(days=1)
-        domain = [
-            ('company_id', '=', company.id), ('source', 'in', ('pos', 'baseer_summary')),
+        # Native POS date_order is a real UTC timestamp; external-summary
+        # date_order is synthetic and must never be used as its business day.
+        lower, upper = self._local_utc_bounds(company, start, end)
+        native_domain = [
+            ('company_id', '=', company.id), ('source', '=', 'pos'),
             ('state', 'in', POS_STATES),
-            ('date_order', '>=', fields.Datetime.to_string(start)),
-            ('date_order', '<', fields.Datetime.to_string(next_day)),
+            ('date_order', '>=', lower), ('date_order', '<', upper),
         ]
-        sql = ('company_id=%s AND source IN %s AND state IN %s '
-               'AND date_order >= %s AND date_order < %s')
-        params = [company.id, ('pos', 'baseer_summary'), POS_STATES, start, next_day]
-        orders = self.env['pos.order'].search(domain, order='id')
+        native = self.env['pos.order'].search(native_domain, order='id')
         self.env['pos.order'].flush_model([
             'company_id', 'source', 'state', 'date_order',
         ])
-        self._assert_visible('pos_order', sql, params, orders)
+        self._assert_visible(
+            'pos_order',
+            'company_id=%s AND source=%s AND state IN %s '
+            'AND date_order >= %s AND date_order < %s',
+            [company.id, 'pos', POS_STATES, lower, upper], native,
+        )
+        summary_domain = [
+            ('company_id', '=', company.id), ('state', '=', 'approved'),
+            ('business_date', '>=', start), ('business_date', '<=', end),
+        ]
+        summaries = self.env['baseer.pos.summary'].search(summary_domain, order='id')
+        self.env['baseer.pos.summary'].flush_model([
+            'company_id', 'state', 'business_date', 'order_id',
+        ])
+        self._assert_visible(
+            'baseer_pos_summary',
+            'company_id=%s AND state=%s AND business_date >= %s '
+            'AND business_date <= %s',
+            [company.id, 'approved', start, end], summaries,
+        )
+        summary_ids = []
+        for summary in summaries:
+            order = summary.order_id
+            if (not order or order.company_id != company
+                    or order.source != 'baseer_summary'
+                    or order.state not in POS_STATES
+                    or order.baseer_summary_id != summary):
+                self._deny_incomplete_source()
+            summary_ids.append(order.id)
+        if len(summary_ids) != len(set(summary_ids)):
+            self._deny_incomplete_source()
+        linked = self.env['pos.order'].search([
+            ('id', 'in', summary_ids), ('company_id', '=', company.id),
+            ('source', '=', 'baseer_summary'), ('state', 'in', POS_STATES),
+        ], order='id')
+        if set(linked.ids) != set(summary_ids):
+            self._deny_incomplete_source()
+        linked.check_access('read')
+        orders = native | linked
         if journal_ids:
             # Never silently drop an order because its config/journal link is
             # hidden or absent. Verify links before applying the user filter.

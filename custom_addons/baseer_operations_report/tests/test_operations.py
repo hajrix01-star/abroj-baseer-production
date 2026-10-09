@@ -17,6 +17,7 @@ class TestOperationsGrossCalculator(TransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.company
+        self.company.partner_id.tz = 'UTC'
         self.report = self.env['baseer.operations.report']
         self.receivable = self._account('958101', 'asset_receivable', True)
         self.payable = self._account('958102', 'liability_payable', True)
@@ -238,6 +239,12 @@ class TestOperationsGrossCalculator(TransactionCase):
         issue_day, entry_day = self.env.cr.fetchone()
         self.assertEqual(str(issue_day), '2041-06-10')
         self.assertEqual(str(entry_day), '2041-07-02')
+        june = self.report.get_source_snapshot(self._filters())
+        july_filters = self._filters()
+        july_filters.update({'date_from': '2041-07-01', 'date_to': '2041-07-31'})
+        july = self.report.get_source_snapshot(july_filters)
+        self.assertEqual(self._row(june, 'income')['amount'], '115.00')
+        self.assertEqual(self._row(july, 'income')['amount'], '0.00')
 
     def test_restricted_user_fails_closed_and_other_company_is_rejected(self):
         invoice = self._invoice('out_invoice', self.sale_journal, [
@@ -443,3 +450,7 @@ class TestOperationsGrossCalculator(TransactionCase):
             [order.id, 'pos', july_start_utc, august_start_utc],
         )
         self.assertEqual([row[0] for row in self.env.cr.fetchall()], [order.id])
+        july_filters = self._filters([self.sale_journal.id])
+        july_filters.update({'date_from': '2041-07-01', 'date_to': '2041-07-31'})
+        july = self.report.get_source_snapshot(july_filters)
+        self.assertEqual(self._row(july, 'income')['amount'], '115.00')

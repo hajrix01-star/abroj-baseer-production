@@ -73,6 +73,7 @@ class TestOperationsSalesCensus(TransactionCase):
                       if row['key'] == 'income')
         self.assertEqual(income['amount'], '115.00')
         self.assertEqual(june['periods'][0]['excluded']['census_sales_documents'], 1)
+        self.assertTrue(june['coverage_complete'])
         self.assertFalse(june['complete'])
         self.assertEqual(next(row for row in july['periods'][0]['rows']
                               if row['key'] == 'income')['amount'], '0.00')
@@ -86,6 +87,16 @@ class TestOperationsSalesCensus(TransactionCase):
         self.assertEqual(detail['total_count'], 1)
         self.assertEqual(detail['events'][0]['source_id'], receipt.id)
         self.assertEqual(detail['events'][0]['date'], '2041-06-10')
+
+    def test_coverage_is_closed_for_unknown_or_unproven_sources(self):
+        self.assertTrue(self.report._coverage_complete(Counter({
+            'linked_pos_invoice': 1, 'proven_internal_transfer': 2,
+            'unconfirmed_payment_link': 1, 'census_sales_documents': 1,
+        })))
+        for key in ('unproven_liquidity_outflow',
+                    'unproven_foreign_sales_document',
+                    'unsupported_new_source'):
+            self.assertFalse(self.report._coverage_complete(Counter({key: 1})))
 
     def test_census_rejects_a_posted_receipt_without_its_counted_event(self):
         self._receipt('2041-06-10')

@@ -36,6 +36,12 @@ DISPLAY_SECTIONS = {
     'other_income': ('income_other',),
     'other_expense': ('expense_other',),
 }
+INFORMATIONAL_EXCLUSIONS = frozenset({
+    'linked_pos_invoice', 'linked_pos_invoice_not_readded',
+    'nonrecoverable_tax_amls_not_readded', 'proven_internal_transfer',
+    'unconfirmed_payment_link', 'census_sales_documents',
+    'census_pos_orders',
+})
 
 
 class BaseerOperationsReport(models.AbstractModel):
@@ -45,6 +51,12 @@ class BaseerOperationsReport(models.AbstractModel):
     @staticmethod
     def _decimal(value):
         return Decimal(str(value or 0))
+
+    @staticmethod
+    def _coverage_complete(excluded):
+        """Unknown and unsupported source classes are never silently accepted."""
+        return all(not count for key, count in excluded.items()
+                   if key not in INFORMATIONAL_EXCLUSIONS)
 
     @api.model
     def _deny_incomplete_source(self):
@@ -1502,10 +1514,13 @@ class BaseerOperationsReport(models.AbstractModel):
                 'display_label': period['display_label'],
                 'rows': rows, 'accounts': accounts,
                 'excluded': dict(excluded),
+                'coverage_complete': self._coverage_complete(excluded),
                 'unconfirmed_count': excluded.get('unconfirmed_payment_link', 0),
             })
         return {
             'complete': False,
+            'coverage_complete': all(period['coverage_complete']
+                                     for period in payload_periods),
             'scope': 'limited_proven_sales_and_cash_outflows',
             'not_accounting_profit': True,
             'company_id': company.id,

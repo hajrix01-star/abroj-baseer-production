@@ -8,6 +8,8 @@ payment alone never creates an operation.
 from collections import Counter
 from datetime import datetime, time, timedelta
 from decimal import Decimal
+from hashlib import sha256
+import json
 
 from pytz import UTC, timezone
 from pytz.exceptions import AmbiguousTimeError, NonExistentTimeError, UnknownTimeZoneError
@@ -27,6 +29,13 @@ ROW_KEYS = (
 )
 INVOICE_TYPES = ('out_invoice', 'out_refund')
 POS_STATES = ('paid', 'done', 'invoiced')
+DISPLAY_SECTIONS = {
+    'income': ('income',),
+    'cost_of_sales': ('expense_direct_cost',),
+    'expense': SECTION_GROUPS['expense'],
+    'other_income': ('income_other',),
+    'other_expense': ('expense_other',),
+}
 
 
 class BaseerOperationsReport(models.AbstractModel):
@@ -946,7 +955,24 @@ class BaseerOperationsReport(models.AbstractModel):
                 )
 
     @api.model
-    def _rows(self, sections, company):
+    def _event_fingerprint(self, company, start, end, journal_ids,
+                           display_section, account_id, events):
+        """Detect a changed source set; permissions are checked separately."""
+        canonical_events = sorted((
+            event['source_model'], event['source_id'], event['line_model'],
+            event['line_id'], event['date'],
+            format(event['amount'].normalize(), 'f'),
+            event.get('payment_move_id') or 0,
+            event.get('payment_line_id') or 0,
+        ) for event in events)
+        payload = [company.id, fields.Date.to_string(start),
+                   fields.Date.to_string(end), sorted(journal_ids),
+                   display_section, account_id, canonical_events]
+        return sha256(json.dumps(payload, separators=(',', ':'),
+                                 ensure_ascii=True).encode('utf-8')).hexdigest()
+
+    @api.model
+    def _rows(self, sections, company, start, end, journal_ids):
         raw = {key: sum((entry['raw'] for entry in sections[key].values()), Decimal('0'))
                for key in SECTION_KEYS}
         result = {
@@ -964,20 +990,20 @@ class BaseerOperationsReport(models.AbstractModel):
         rows = [{'key': key, 'amount': pl._format_money(result[key], company.currency_id),
                  'negative': result[key] < 0} for key in ROW_KEYS]
         leaf = {}
-        for key, account_types in (
-            ('income', ('income',)), ('cost_of_sales', ('expense_direct_cost',)),
-            ('expense', SECTION_GROUPS['expense']),
-            ('other_income', ('income_other',)), ('other_expense', ('expense_other',)),
-        ):
+        for key, account_types in DISPLAY_SECTIONS.items():
             accounts = [entry for kind in account_types for entry in sections[kind].values()]
             accounts.sort(key=lambda entry: (entry['account'].code or '', entry['account'].id))
             leaf[key] = [
                 {'account_id': entry['account'].id,
                  'account_code': entry['account'].code,
                  'account_name': entry['account'].name,
-                 'amount': pl._format_money(entry['raw'], company.currency_id),
-                 'negative': entry['raw'] < 0,
-                 'source_count': entry['count']}
+                  'amount': pl._format_money(entry['raw'], company.currency_id),
+                  'negative': entry['raw'] < 0,
+                  'source_count': entry['count'],
+                  'fingerprint': self._event_fingerprint(
+                      company, start, end, journal_ids, key,
+                      entry['account'].id, entry['events'],
+                  )}
                 for entry in accounts
             ]
         return rows, leaf
@@ -1021,7 +1047,9 @@ class BaseerOperationsReport(models.AbstractModel):
             sections, excluded = self._period_sources(
                 company, start, end, journal_ids,
             )
-            rows, accounts = self._rows(sections, company)
+            rows, accounts = self._rows(
+                sections, company, start, end, journal_ids,
+            )
             payload_periods.append({
                 'key': period['key'], 'date_from': period['date_from'],
                 'date_to': period['date_to'], 'label': period['label'],
@@ -1037,4 +1065,67 @@ class BaseerOperationsReport(models.AbstractModel):
             'period_controls': period_control,
             'comparison_controls': comparison_control,
             'periods': payload_periods,
+        }
+
+    @api.model
+    def get_account_events(self, filters, display_section, account_id,
+                           period_key, expected_fingerprint, page=1):
+        """Read one account's current events only if the shown snapshot is fresh."""
+        if (display_section not in DISPLAY_SECTIONS
+                or not isinstance(account_id, int) or account_id <= 0
+                or not isinstance(page, int) or page < 1 or page > 10000
+                or not isinstance(expected_fingerprint, str)
+                or len(expected_fingerprint) != 64):
+            raise ValidationError(_('Invalid operations detail request.'))
+        company, journal_ids, periods, _period_control, _comparison = self._scope(filters)
+        period = next((item for item in periods if item['key'] == period_key), None)
+        if not period:
+            raise ValidationError(_('The selected report period is unavailable.'))
+        start = fields.Date.to_date(period['date_from'])
+        end = fields.Date.to_date(period['date_to'])
+        sections, _excluded = self._period_sources(company, start, end, journal_ids)
+        matches = [sections[kind][account_id]
+                   for kind in DISPLAY_SECTIONS[display_section]
+                   if account_id in sections[kind]]
+        if len(matches) != 1:
+            raise ValidationError(_('The selected account is unavailable in this report row.'))
+        entry = matches[0]
+        if entry['account'].account_type not in DISPLAY_SECTIONS[display_section]:
+            self._deny_incomplete_source()
+        actual_fingerprint = self._event_fingerprint(
+            company, start, end, journal_ids, display_section,
+            account_id, entry['events'],
+        )
+        if actual_fingerprint != expected_fingerprint:
+            raise ValidationError(_('The report changed. Refresh it before opening details.'))
+        events = sorted(
+            entry['events'],
+            key=lambda item: (item['date'], item['source_model'],
+                              item['source_id'], item['line_model'], item['line_id']),
+            reverse=True,
+        )
+        page_size = 50
+        selected = events[(page - 1) * page_size:page * page_size]
+        pl = self.env['baseer.profit.loss.report']
+        return {
+            'company_id': company.id,
+            'period_key': period_key,
+            'date_from': fields.Date.to_string(start),
+            'date_to': fields.Date.to_string(end),
+            'account_id': account_id,
+            'display_section': display_section,
+            'amount': pl._format_money(entry['raw'], company.currency_id),
+            'fingerprint': actual_fingerprint,
+            'page': page,
+            'page_size': page_size,
+            'total_count': len(events),
+            'events': [
+                {'date': event['date'],
+                 'amount': pl._format_money(event['amount'], company.currency_id),
+                 'source_model': event['source_model'],
+                 'source_id': event['source_id'],
+                 'line_model': event['line_model'],
+                 'line_id': event['line_id']}
+                for event in selected
+            ],
         }

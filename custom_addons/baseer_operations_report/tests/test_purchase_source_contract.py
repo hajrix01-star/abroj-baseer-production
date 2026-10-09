@@ -9,7 +9,7 @@ from collections import Counter
 from decimal import Decimal
 
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -787,6 +787,17 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(rows['net_income'], '-115.00')
         self.assertEqual(snapshot['periods'][0]['accounts']['expense'][0][
             'source_count'], 1)
+        account = snapshot['periods'][0]['accounts']['expense'][0]
+        details = self.env['baseer.operations.report'].get_account_events(
+            {'company_id': self.company.id,
+             'date_from': '2026-06-01', 'date_to': '2026-06-30',
+             'journal_ids': []},
+            'expense', account['account_id'], snapshot['periods'][0]['key'],
+            account['fingerprint'],
+        )
+        self.assertEqual(details['amount'], '115.00')
+        self.assertEqual(details['events'][0]['source_id'], line.id)
+        self.assertEqual(details['events'][0]['date'], '2026-06-27')
         bill_ids, payment_ids = bill.ids, payment.ids
         batch.action_approve()
         self.assertEqual(batch.line_ids.move_id.ids, bill_ids)
@@ -962,6 +973,35 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(self._purchase_amount('2026-05-01', '2026-05-31'), 0)
         # Neither bank decrease is a classified purchase source: the first is
         # an unapplied vendor advance; the second only changes liquidity.
+
+    def test_details_use_display_expense_for_depreciation_account(self):
+        depreciation = self.accounts.create({
+            'code': '958126', 'name': 'Gross report depreciation',
+            'account_type': 'expense_depreciation',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        statement = self._bank_statement('2026-06-18', depreciation, 25)
+        filters = {
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        }
+        report = self.env['baseer.operations.report']
+        snapshot = report.get_source_snapshot(filters)
+        account = next(item for item in snapshot['periods'][0]['accounts']['expense']
+                       if item['account_id'] == depreciation.id)
+        details = report.get_account_events(
+            filters, 'expense', depreciation.id,
+            snapshot['periods'][0]['key'], account['fingerprint'],
+        )
+        self.assertEqual(details['amount'], '25.00')
+        self.assertEqual(details['total_count'], 1)
+        self.assertEqual(details['events'][0]['source_id'], statement.id)
+        with self.assertRaises(ValidationError):
+            report.get_account_events(
+                filters, 'cost_of_sales', depreciation.id,
+                snapshot['periods'][0]['key'], account['fingerprint'],
+            )
 
     def test_direct_untaxed_bank_expense_has_a_distinct_cash_source(self):
         direct = self._bank_statement('2026-06-18', self.expense, 40)
@@ -1322,6 +1362,24 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                          Decimal('77.90'))
         self.assertEqual(row_amount('2026-07-01', '2026-07-31', 'expense'),
                          Decimal('27.10'))
+        june_snapshot = report.get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        for display_section, expected in (
+                ('cost_of_sales', '37.10'), ('expense', '12.90')):
+            account = june_snapshot['periods'][0]['accounts'][display_section][0]
+            details = report.get_account_events(
+                {'company_id': self.company.id,
+                 'date_from': '2026-06-01', 'date_to': '2026-06-30',
+                 'journal_ids': []},
+                display_section, account['account_id'],
+                june_snapshot['periods'][0]['key'], account['fingerprint'],
+            )
+            self.assertEqual(details['amount'], expected)
+            self.assertEqual(details['total_count'], 1)
+            self.assertEqual(details['events'][0]['source_id'], events[0][0])
         june_sections, _excluded = report._period_sources(
             self.company, bill.invoice_date, events[0][2], [],
         )

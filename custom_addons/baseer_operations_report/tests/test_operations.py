@@ -7,7 +7,7 @@ from uuid import uuid4
 from pytz import UTC, timezone
 
 from odoo import Command, fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -126,6 +126,35 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(len(income_accounts), 1)
         self.assertEqual(income_accounts[0]['account_id'], self.income.id)
         self.assertEqual(income_accounts[0]['amount'], '51.75')
+        details = self.report.get_account_events(
+            self._filters(), 'income', self.income.id,
+            snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
+        )
+        self.assertEqual(details['amount'], '51.75')
+        self.assertEqual(details['total_count'], 3)
+        self.assertEqual(sum((Decimal(event['amount'].replace(',', ''))
+                              for event in details['events']), Decimal('0')),
+                         Decimal('51.75'))
+        self.assertEqual({event['date'] for event in details['events']},
+                         {'2041-06-10'})
+        with self.assertRaises(ValidationError):
+            self.report.get_account_events(
+                self._filters(), 'expense', self.income.id,
+                snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
+            )
+        with self.assertRaises(ValidationError):
+            self.report.get_account_events(
+                self._filters([self.sale_journal.id]), 'income', self.income.id,
+                snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
+            )
+        self._invoice('out_invoice', self.sale_journal, [
+            ('New sale after snapshot', self.income, 10, 0, False),
+        ])
+        with self.assertRaises(ValidationError):
+            self.report.get_account_events(
+                self._filters(), 'income', self.income.id,
+                snapshot['periods'][0]['key'], income_accounts[0]['fingerprint'],
+            )
 
     def test_fx_partial_vat_uses_rounded_company_currency_and_no_tax_aml_double_count(self):
         foreign_xmlid = 'base.EUR' if self.company.currency_id.name != 'EUR' else 'base.USD'
@@ -318,6 +347,18 @@ class TestOperationsGrossCalculator(TransactionCase):
         synthetic = at_day(local_synthetic_day)
         self.assertEqual(self._row(original, 'income')['amount'], '115.00')
         self.assertEqual(self._row(synthetic, 'income')['amount'], '0.00')
+        summary_account = original['periods'][0]['accounts']['income'][0]
+        summary_details = report.get_account_events(
+            {'company_id': company.id,
+             'date_from': fields.Date.to_string(business_day),
+             'date_to': fields.Date.to_string(business_day),
+             'journal_ids': []},
+            'income', summary_account['account_id'],
+            original['periods'][0]['key'], summary_account['fingerprint'],
+        )
+        self.assertEqual(summary_details['events'][0]['source_id'], summary.id)
+        self.assertEqual(summary_details['events'][0]['date'],
+                         fields.Date.to_string(business_day))
         sections, _excluded = report._period_sources(
             company, business_day, business_day, [],
         )
@@ -438,7 +479,13 @@ class TestOperationsGrossCalculator(TransactionCase):
         secured = self.report.with_user(reader).with_context(
             allowed_company_ids=self.company.ids,
         )
-        self.assertEqual(self._row(self._snapshot(report=secured), 'income')['amount'], '115.00')
+        visible = self._snapshot(report=secured)
+        self.assertEqual(self._row(visible, 'income')['amount'], '115.00')
+        fingerprint = visible['periods'][0]['accounts']['income'][0]['fingerprint']
+        self.assertEqual(secured.get_account_events(
+            self._filters(), 'income', self.income.id,
+            visible['periods'][0]['key'], fingerprint,
+        )['amount'], '115.00')
         rule = self.env['ir.rule'].create({
             'name': 'Gross operations hide source invoice',
             'model_id': self.env['ir.model']._get('account.move').id,
@@ -459,11 +506,21 @@ class TestOperationsGrossCalculator(TransactionCase):
             self.assertEqual(self.env.cr.fetchone()[0], invoice.id)
             with self.assertRaises(AccessError):
                 self._snapshot(report=secured)
+            with self.assertRaises(AccessError):
+                secured.get_account_events(
+                    self._filters(), 'income', self.income.id,
+                    visible['periods'][0]['key'], fingerprint,
+                )
         finally:
             rule.unlink()
         other = self.env['res.company'].create({'name': 'Other gross operations company'})
         with self.assertRaises(AccessError):
             self.report.get_source_snapshot({**self._filters(), 'company_id': other.id})
+        with self.assertRaises(AccessError):
+            self.report.get_account_events(
+                {**self._filters(), 'company_id': other.id},
+                'income', self.income.id, visible['periods'][0]['key'], fingerprint,
+            )
 
     def test_native_pos_order_and_refund_are_once_only_after_invoice(self):
         """One original order each; invoice/session/reversal are never added."""
@@ -555,6 +612,14 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertEqual(self._row(after_refund, 'income')['amount'], '0.00')
         self.assertEqual(after_refund['periods'][0]['excluded']['linked_pos_invoice'], 2)
         self.assertEqual(after_refund['periods'][0]['accounts']['income'][0]['source_count'], 2)
+        pos_account = after_refund['periods'][0]['accounts']['income'][0]
+        pos_details = self.report.get_account_events(
+            current_filters, 'income', mapped_income.id,
+            after_refund['periods'][0]['key'], pos_account['fingerprint'],
+        )
+        self.assertEqual(pos_details['total_count'], 2)
+        self.assertEqual({event['source_id'] for event in pos_details['events']},
+                         {order.id, refund.id})
         sections, _excluded = self.report._period_sources(
             self.company, today, today, [self.sale_journal.id],
         )

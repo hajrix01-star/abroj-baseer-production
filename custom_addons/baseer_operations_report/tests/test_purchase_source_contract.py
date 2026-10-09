@@ -266,6 +266,41 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         # Neither bank decrease is a classified purchase source: the first is
         # an unapplied vendor advance; the second only changes liquidity.
 
+    def test_direct_untaxed_bank_expense_has_a_distinct_cash_source(self):
+        direct = self._bank_statement('2026-06-18', self.expense, 40)
+        move = direct.move_id
+        lines = move.line_ids
+        bank_line = lines.filtered(
+            lambda line: line.account_id == self.bank.default_account_id,
+        )
+        expense_line = lines - bank_line
+        self.assertEqual(len(bank_line), 1)
+        self.assertEqual(len(expense_line), 1)
+        self.assertEqual(expense_line.account_id, self.expense)
+        self.assertEqual(Decimal(str(bank_line.balance)), Decimal('-40.00'))
+        self.assertEqual(Decimal(str(expense_line.balance)), Decimal('40.00'))
+        self.assertEqual(str(direct.date), '2026-06-18')
+        self.assertEqual(direct.company_id, self.company)
+        self.assertEqual(direct.currency_id, self.company.currency_id)
+        self.assertFalse(move.origin_payment_id)
+        self.assertFalse(lines.filtered('tax_line_id'))
+        self.assertFalse(expense_line.tax_ids)
+        self.assertFalse(expense_line.matched_credit_ids | expense_line.matched_debit_ids)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+
+        transfer = self._bank_statement('2026-06-19', self.cash, 30)
+        advance = self._bank_statement('2026-06-20', self.payable, 20)
+        outstanding = self._bank_statement('2026-06-21', self.outstanding, 10)
+        for statement in (transfer, advance, outstanding):
+            counterpart = statement.move_id.line_ids.filtered(
+                lambda line: line.account_id != self.bank.default_account_id,
+            )
+            self.assertEqual(len(counterpart), 1)
+            self.assertNotIn(counterpart.account_id.account_type,
+                             ('expense', 'expense_direct_cost',
+                              'expense_depreciation', 'expense_other'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+
     def test_hidden_outflow_and_other_company_require_fail_closed_reader(self):
         bill = self._bill()
         outflow = self._entry(

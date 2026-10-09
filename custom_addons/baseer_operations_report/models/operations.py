@@ -27,7 +27,7 @@ ROW_KEYS = (
     'net_operating_income', 'other_income', 'other_expense',
     'net_other_income', 'net_income',
 )
-INVOICE_TYPES = ('out_invoice', 'out_refund')
+INVOICE_TYPES = ('out_invoice', 'out_refund', 'out_receipt')
 POS_STATES = ('paid', 'done', 'invoiced')
 DISPLAY_SECTIONS = {
     'income': ('income',),
@@ -1288,14 +1288,141 @@ class BaseerOperationsReport(models.AbstractModel):
         return rows, leaf
 
     @api.model
+    def _sales_census(self, company, start, end, journal_ids, moves, orders,
+                      sections, excluded):
+        """Fail closed when a posted sale or eligible POS source is not counted.
+
+        This is evidence for the limited source, not permission to publish it.
+        SQL supplies only IDs; ORM/record rules and posted lines supply amounts.
+        """
+        sales_types = ('out_invoice', 'out_refund', 'out_receipt')
+        sql = ("company_id=%s AND state='posted' AND move_type IN %s "
+               "AND invoice_date >= %s AND invoice_date <= %s")
+        params = [company.id, sales_types, start, end]
+        if journal_ids:
+            sql += ' AND journal_id = ANY(%s)'
+            params.append(journal_ids)
+        self.env['account.move'].flush_model([
+            'company_id', 'state', 'move_type', 'invoice_date', 'journal_id',
+        ])
+        self._assert_visible('account_move', sql, params, moves)
+
+        events = [event for section in sections.values()
+                  for entry in section.values() for event in entry['events']]
+        invoice_events = {}
+        pos_events = {}
+        for event in events:
+            if event['source_model'] == 'account.move':
+                invoice_events.setdefault(event['source_id'], []).append(event)
+            if event['line_model'] == 'pos.order.line':
+                pos_events.setdefault(event['line_id'], []).append(event)
+
+        current_order_ids = set(orders.ids)
+        for move in moves:
+            move.check_access('read')
+            if move.currency_id != company.currency_id:
+                excluded['unproven_foreign_sales_document'] += 1
+                continue
+            self.env['pos.order'].flush_model(['account_move'])
+            self.env.cr.execute(
+                'SELECT id FROM pos_order WHERE account_move = %s', [move.id],
+            )
+            linked_ids = {row[0] for row in self.env.cr.fetchall()}
+            if linked_ids:
+                if invoice_events.get(move.id):
+                    self._deny_incomplete_source()
+                linked = self.env['pos.order'].browse(sorted(linked_ids))
+                linked.check_access('read')
+                linked_gross = sum(
+                    (self._decimal(order.amount_total) for order in linked),
+                    Decimal('0'),
+                )
+                linked_sign = -1 if move.move_type == 'out_refund' else 1
+                if company.currency_id.compare_amounts(
+                        float(linked_gross),
+                        float(self._decimal(move.amount_total) * linked_sign)):
+                    self._deny_incomplete_source()
+                for order in linked:
+                    if order.company_id != company or order.account_move != move:
+                        self._deny_incomplete_source()
+                    if order.source == 'baseer_summary':
+                        summary = order.baseer_summary_id
+                        if not summary:
+                            self._deny_incomplete_source()
+                        summary.check_access('read')
+                        day = summary.business_date
+                    elif order.source == 'pos':
+                        day = fields.Datetime.to_datetime(order.date_order).replace(
+                            tzinfo=UTC,
+                        ).astimezone(self._company_timezone(company)).date()
+                    else:
+                        self._deny_incomplete_source()
+                    eligible = self._pos_records(company, day, day, [])
+                    if order.id not in eligible.ids:
+                        self._deny_incomplete_source()
+                    if start <= day <= end and order.id in current_order_ids:
+                        continue
+                    # A receipt may be issued after the original POS day.
+                    # Verify that day's source would actually count before
+                    # suppressing the later invoice as a duplicate sale.
+                    proven = {key: {} for key in SECTION_KEYS}
+                    proof_excluded = Counter()
+                    self._pos_amounts(order, company, proven, proof_excluded)
+                    if proof_excluded.get('foreign_pos_orders') or proof_excluded.get('non_pl_pos_lines'):
+                        self._deny_incomplete_source()
+                    if start <= day <= end and journal_ids:
+                        self._deny_incomplete_source()
+                continue
+
+            lines = self._invoice_lines(move)
+            if not lines or any(line.account_id.account_type not in SECTION_KEYS
+                                for line in lines):
+                excluded['unproven_sales_document_lines'] += 1
+                continue
+            move.line_ids.check_access('read')
+            taxes = move.line_ids.filtered('tax_line_id')
+            taxes.mapped('account_id').check_access('read')
+            sign = -1 if move.move_type == 'out_refund' else 1
+            gross = self._decimal(move.amount_total) * sign
+            net = -sum((self._decimal(line.balance) for line in lines), Decimal('0'))
+            posted_tax = sum((self._decimal(line.credit) - self._decimal(line.debit)
+                              for line in taxes), Decimal('0'))
+            if company.currency_id.compare_amounts(float(net + posted_tax), float(gross)):
+                self._deny_incomplete_source()
+            counted = invoice_events.get(move.id, [])
+            if (len(counted) != len(lines)
+                    or {event['line_id'] for event in counted} != set(lines.ids)
+                    or sum((event['amount'] for event in counted), Decimal('0')) != gross):
+                self._deny_incomplete_source()
+
+        order_line_ids = set()
+        for order in orders:
+            lines = self._pos_lines(order)
+            order_line_ids.update(lines.ids)
+            counted = [event for line in lines for event in pos_events.get(line.id, [])]
+            if (len(counted) != len(lines)
+                    or {event['line_id'] for event in counted} != set(lines.ids)
+                    or sum((event['amount'] for event in counted), Decimal('0'))
+                    != self._decimal(order.amount_total)):
+                self._deny_incomplete_source()
+        if set(pos_events) != order_line_ids:
+            self._deny_incomplete_source()
+        excluded['census_sales_documents'] += len(moves)
+        excluded['census_pos_orders'] += len(orders)
+
+    @api.model
     def _period_sources(self, company, start, end, journal_ids):
         """One calculation path for totals and non-public event evidence."""
         sections = {key: {} for key in SECTION_KEYS}
         excluded = Counter()
-        for move in self._invoice_records(company, start, end, journal_ids):
+        moves = self._invoice_records(company, start, end, journal_ids)
+        for move in moves:
             self._invoice_amounts(move, company, sections, excluded)
-        for order in self._pos_records(company, start, end, journal_ids):
+        orders = self._pos_records(company, start, end, journal_ids)
+        for order in orders:
             self._pos_amounts(order, company, sections, excluded)
+        self._sales_census(company, start, end, journal_ids, moves, orders,
+                           sections, excluded)
         recognized_direct = self._purchase_outflows(
             company, start, end, journal_ids, sections, excluded,
         )

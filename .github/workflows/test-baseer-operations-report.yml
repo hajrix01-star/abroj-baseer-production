@@ -45,7 +45,7 @@ jobs:
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
             -d baseer_operations_report_ci -i baseer_operations_report --without-demo=all \
-            --test-enable --test-tags=/baseer_operations_report \
+            --test-enable --test-tags=/baseer_operations_report,-operations_browser \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
 
   hoot-operations-preview:
@@ -96,6 +96,19 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/baseer-operations-hoot.log"
           test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-operations-hoot.log")" -ge 2
           grep -Fq '[HOOT] Running test "@baseer_operations_report/operations/' "$RUNNER_TEMP/baseer-operations-hoot.log"
+      - name: Exercise the unactivated preview at desktop and mobile width
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          odoo --db_host=127.0.0.1 --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons","$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19","$GITHUB_WORKSPACE/third_party_addons/odoomates_19" \
+            -d baseer_operations_ui_ci -u baseer_operations_report --without-demo=all \
+            '--test-tags=/baseer_operations_report:TestOperationsBrowser.test_preview_filters_detail_and_scroll,/baseer_operations_report:TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll' \
+            --test-enable --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq '0 failed, 0 error' "$RUNNER_TEMP/baseer-operations-browser.log"
       - name: Preserve browser diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -103,5 +116,6 @@ jobs:
           name: baseer-operations-preview-diagnostics
           path: |
             ${{ runner.temp }}/baseer-operations-hoot.log
+            ${{ runner.temp }}/baseer-operations-browser.log
             /tmp/odoo_tests/baseer_operations_ui_ci/screenshots/
           retention-days: 7

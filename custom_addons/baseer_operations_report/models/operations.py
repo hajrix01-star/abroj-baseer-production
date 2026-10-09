@@ -509,7 +509,8 @@ class BaseerOperationsReport(models.AbstractModel):
             move.check_access('read')
             if (statement.id in seen or move.state != 'posted'
                     or move.company_id != company or journal.company_id != company
-                    or move.journal_id != journal or journal.type != 'bank'
+                    or move.journal_id != journal
+                    or journal.type not in ('bank', 'cash')
                     or not journal.default_account_id
                     or journal.default_account_id.account_type != 'asset_cash'):
                 self._deny_incomplete_source()
@@ -533,6 +534,9 @@ class BaseerOperationsReport(models.AbstractModel):
                 continue
             lines.mapped('account_id').check_access('read')
             if len(counterpart) == 2:
+                if journal.type != 'bank':
+                    excluded['unsupported_direct_cash_tax'] += 1
+                    continue
                 bases = counterpart.filtered(
                     lambda line: line.account_id.account_type in EXPENSE_KEYS
                     and not line.tax_line_id,
@@ -597,9 +601,14 @@ class BaseerOperationsReport(models.AbstractModel):
                 if start <= statement.date <= end:
                     self._record(
                         sections, counterpart.account_id.account_type,
-                        counterpart.account_id, amount, 'bank_statement_direct',
+                        counterpart.account_id, amount,
+                        'cash_statement_direct' if journal.type == 'cash'
+                        else 'bank_statement_direct',
                     )
                     recognized_direct.add(counterpart.id)
+                continue
+            if journal.type != 'bank':
+                excluded['non_purchase_cash_outflow'] += 1
                 continue
             if journal_ids:
                 excluded['purchase_journal_filter_unproven'] += 1

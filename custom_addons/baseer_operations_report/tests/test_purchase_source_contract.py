@@ -350,6 +350,88 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         self.assertEqual(transfer_bank.account_id, self.bank.default_account_id)
         self.assertEqual(Decimal(str(transfer_bank.balance)), Decimal('30.00'))
         self.assertEqual(transfer_bank.account_id.account_type, 'asset_cash')
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=cash_journal.ids,
+        ), 40)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+        ), 0)
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        rows = {row['key']: row['amount'] for row in snapshot['periods'][0]['rows']}
+        self.assertEqual(rows['net_income'], '-40.00')
+        self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 0)
+
+        # A cash statement with a tax line is deliberately outside this
+        # narrow cash slice, even though its bank analogue is supported.
+        cash_taxed = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': cash_journal.id, 'date': '2026-06-27',
+            'payment_ref': 'Taxed cash outflow not yet proven',
+            'partner_id': self.partner.id, 'amount': -115,
+            'line_ids': [
+                Command.create({
+                    'account_id': self.cash.id, 'name': 'Cash', 'credit': 115,
+                }),
+                Command.create({
+                    'account_id': self.expense.id, 'name': 'Expense base',
+                    'debit': 100, 'tax_ids': [Command.set(self.tax.ids)],
+                }),
+            ],
+        })
+        self.assertEqual(len(cash_taxed.move_id.line_ids), 3)
+        cash_outstanding = self.env['account.bank.statement.line'].with_company(
+            self.company,
+        ).create({
+            'journal_id': cash_journal.id, 'date': '2026-06-28',
+            'payment_ref': 'Cash outstanding allocation not yet proven',
+            'partner_id': self.partner.id, 'amount': -20,
+            'counterpart_account_id': self.outstanding.id,
+        })
+        self.assertEqual(cash_outstanding.move_id.state, 'posted')
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 40)
+
+        reader = self.env['res.users'].create({
+            'name': 'Gross cash outflow reader',
+            'login': 'gross_cash_outflow_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = self.env['baseer.operations.report'].with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', report=secured,
+        ), 40)
+        for model, hidden in (
+                ('account.bank.statement.line', cash_out),
+                ('account.move', cash_out.move_id),
+                ('account.move.line', expense),
+                ('account.account', self.cash)):
+            rule = self.env['ir.rule'].create({
+                'name': 'Gross cash hide ' + model,
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {hidden.id})]",
+            })
+            try:
+                rule.flush_recordset()
+                with self.assertRaises(AccessError):
+                    self._purchase_amount(
+                        '2026-06-01', '2026-06-30', report=secured,
+                    )
+            finally:
+                rule.unlink()
 
     def test_bill_waits_for_real_outflow_and_partial_50_then_65(self):
         bill = self._bill()

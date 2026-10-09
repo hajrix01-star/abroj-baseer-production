@@ -159,16 +159,15 @@ class BaseerOperationsReport(models.AbstractModel):
         # A linked original order may be outside this report period. Compare
         # the unruled link IDs with the visible relation before classifying
         # the invoice; a hidden order must never turn into a second sale.
+        self.env['pos.order'].flush_model(['account_move'])
         self.env.cr.execute(
             'SELECT id FROM pos_order WHERE account_move = %s', (move.id,),
         )
         linked_ids = {row[0] for row in self.env.cr.fetchall()}
-        visible_orders = move.pos_order_ids
-        if linked_ids != set(visible_orders.ids):
-            self._deny_incomplete_source()
-        visible_orders.check_access('read')
+        linked_orders = self.env['pos.order'].browse(sorted(linked_ids))
+        linked_orders.check_access('read')
         if linked_ids:
-            for order in visible_orders:
+            for order in linked_orders:
                 if order.account_move != move or order.company_id != company:
                     self._deny_incomplete_source()
             excluded['linked_pos_invoice'] += 1

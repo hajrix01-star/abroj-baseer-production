@@ -227,6 +227,8 @@ class TestOperationsGrossCalculator(TransactionCase):
             'domain_force': f"[('id', '!=', {invoice.id})]",
         })
         try:
+            rule.flush_recordset()
+            self.assertFalse(secured.env['account.move'].search([('id', '=', invoice.id)]))
             with self.assertRaises(AccessError):
                 self._snapshot(report=secured)
         finally:
@@ -358,6 +360,8 @@ class TestOperationsGrossCalculator(TransactionCase):
             'domain_force': f"[('id', '!=', {order.id})]",
         })
         try:
+            rule.flush_recordset()
+            self.assertFalse(secured.env['pos.order'].search([('id', '=', order.id)]))
             with self.assertRaises(AccessError):
                 secured.get_source_snapshot(current_filters)
         finally:

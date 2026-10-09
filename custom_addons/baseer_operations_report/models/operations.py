@@ -74,7 +74,8 @@ class BaseerOperationsReport(models.AbstractModel):
             'baseer.pos.summary', 'res.partner',
             'product.product', 'account.fiscal.position',
             'account.bank.statement.line', 'account.partial.reconcile',
-            'account.payment',
+            'account.payment', 'account.payment.method.line',
+            'baseer.purchase.batch', 'baseer.purchase.batch.line',
         ))
         return company, journal_ids, periods, period_control, comparison_control
 
@@ -726,6 +727,150 @@ class BaseerOperationsReport(models.AbstractModel):
         return recognized_direct
 
     @api.model
+    def _batch_purchase_outflows(self, company, start, end, journal_ids,
+                                 sections, excluded):
+        """Count only an approved Baseer row that created its own cash payment."""
+        domain = [
+            ('company_id', '=', company.id),
+            ('batch_id.state', '=', 'approved'),
+            ('payment_id', '!=', False),
+            ('invoice_date', '<=', end),
+        ]
+        source = self.env['baseer.purchase.batch.line'].search(domain, order='id')
+        self.env['baseer.purchase.batch.line'].flush_model([
+            'company_id', 'batch_id', 'payment_id', 'invoice_date',
+        ])
+        self.env['baseer.purchase.batch'].flush_model(['state'])
+        self._assert_visible(
+            'baseer_purchase_batch_line',
+            'company_id=%s AND invoice_date <= %s AND payment_id IS NOT NULL '
+            'AND batch_id IN (SELECT id FROM baseer_purchase_batch WHERE state=%s)',
+            [company.id, end, 'approved'], source,
+        )
+        seen_payments = set()
+        for line in source:
+            batch = line.batch_id
+            batch.check_access('read')
+            bill = line.move_id
+            payment = line.payment_id
+            bill.check_access('read')
+            payment.check_access('read')
+            method = line.payment_method_line_id
+            method.check_access('read')
+            journal = method.journal_id
+            journal.check_access('read')
+            liquidity_account = journal.default_account_id
+            liquidity_account.check_access('read')
+            payment_move = payment.move_id
+            payment_move.check_access('read')
+            if bill and payment_move:
+                self._assert_visible(
+                    'account_move', 'reversed_entry_id=%s', [bill.id],
+                    bill.reversal_move_ids,
+                )
+                self._assert_visible(
+                    'account_move', 'reversed_entry_id=%s',
+                    [payment_move.id], payment_move.reversal_move_ids,
+                )
+            if (payment.id in seen_payments or batch.company_id != company
+                    or line.company_id != company or batch.state != 'approved'
+                    or line.batch_id != batch or line.is_credit
+                    or not bill or not payment_move or not method
+                    or bill.company_id != company or bill.state != 'posted'
+                    or bill.move_type != 'in_invoice'
+                    or bill.currency_id != company.currency_id
+                    or not bill.invoice_date or bill.invoice_date != line.invoice_date
+                    or bill.partner_id != line.partner_id
+                    or payment.company_id != company
+                    or payment.partner_id != line.partner_id
+                    or payment.payment_type != 'outbound'
+                    or payment.partner_type != 'supplier'
+                    or payment.state != 'paid'
+                    or payment.currency_id != company.currency_id
+                    or payment.move_id != payment_move
+                    or payment_move.state != 'posted'
+                    or payment_move.company_id != company
+                    or payment_move.origin_payment_id != payment
+                    or payment_move.statement_line_id
+                    or payment_move.date != line.invoice_date
+                    or payment.journal_id != journal
+                    or payment.payment_method_line_id != method
+                    or method.company_id != company or method.code != 'manual'
+                    or method.payment_type != 'outbound'
+                    or journal.company_id != company
+                    or journal.type not in ('bank', 'cash')
+                    or (journal.currency_id
+                        and journal.currency_id != company.currency_id)
+                    or liquidity_account.account_type != 'asset_cash'
+                    or method.payment_account_id != liquidity_account
+                    or payment.outstanding_account_id != liquidity_account
+                    or bill.reversed_entry_id or payment_move.reversed_entry_id
+                    or bill.reversal_move_ids or payment_move.reversal_move_ids):
+                excluded['unsupported_batch_cash_payment'] += 1
+                continue
+            seen_payments.add(payment.id)
+            bill_lines = bill.line_ids
+            payment_lines = payment_move.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s',
+                                 [bill.id], bill_lines)
+            self._assert_visible('account_move_line', 'move_id=%s',
+                                 [payment_move.id], payment_lines)
+            bill_lines.mapped('account_id').check_access('read')
+            payment_lines.mapped('account_id').check_access('read')
+            liquidity = payment_lines.filtered(
+                lambda item: item.account_id == liquidity_account,
+            )
+            paid_payable = payment_lines.filtered(
+                lambda item: item.account_id.account_type == 'liability_payable',
+            )
+            bill_payable = bill_lines.filtered(
+                lambda item: item.account_id.account_type == 'liability_payable',
+            )
+            total = self._decimal(bill.amount_total)
+            if (len(payment_lines) != 2 or len(liquidity) != 1
+                    or len(paid_payable) != 1 or len(bill_payable) != 1
+                    or self._decimal(liquidity.balance) != -total
+                    or self._decimal(paid_payable.balance) != total
+                    or self._decimal(bill_payable.balance) != -total
+                    or paid_payable.account_id != bill_payable.account_id
+                    or self._decimal(bill.amount_residual) != 0
+                    or bill.payment_state != 'paid'):
+                excluded['unsupported_batch_cash_payment'] += 1
+                continue
+            partials = paid_payable.matched_credit_ids
+            self._assert_visible('account_partial_reconcile',
+                                 'debit_move_id=%s', [paid_payable.id], partials)
+            self._assert_visible('account_partial_reconcile',
+                                 'credit_move_id=%s', [bill_payable.id],
+                                 bill_payable.matched_debit_ids)
+            if (len(partials) != 1 or partials != bill_payable.matched_debit_ids
+                    or partials.credit_move_id != bill_payable
+                    or self._decimal(partials.amount) != total):
+                excluded['unsupported_batch_cash_payment'] += 1
+                continue
+            bill_sections = {key: {} for key in SECTION_KEYS}
+            bill_excluded = Counter()
+            line_entries = []
+            self._invoice_amounts(
+                bill, company, bill_sections, bill_excluded, line_entries,
+            )
+            if (len(line_entries) != 1 or line_entries[0][1] not in EXPENSE_KEYS
+                    or line_entries[0][3] != total
+                    or bill_excluded.get('non_pl_invoice_lines')
+                    or bill_excluded.get('unsupported_negative_tax_lines')
+                    or bill_excluded.get('tax_only_invoice_lines')):
+                excluded['unsupported_batch_cash_payment'] += 1
+                continue
+            if journal_ids and journal.id not in journal_ids:
+                continue
+            if start <= payment_move.date <= end:
+                _line_id, section, account, amount = line_entries[0]
+                self._record(
+                    sections, section, account, amount,
+                    'baseer_batch_direct_payment',
+                )
+
+    @api.model
     def _rows(self, sections, company):
         raw = {key: sum((entry['raw'] for entry in sections[key].values()), Decimal('0'))
                for key in SECTION_KEYS}
@@ -777,6 +922,9 @@ class BaseerOperationsReport(models.AbstractModel):
             for order in self._pos_records(company, start, end, journal_ids):
                 self._pos_amounts(order, company, sections, excluded)
             recognized_direct = self._purchase_outflows(
+                company, start, end, journal_ids, sections, excluded,
+            )
+            self._batch_purchase_outflows(
                 company, start, end, journal_ids, sections, excluded,
             )
             excluded['direct_aml_unproven'] = self._direct_exclusions(

@@ -5,7 +5,8 @@
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',
-    'depends': ['baseer_profit_loss_report', 'baseer_pos_summary'],
+    'depends': ['baseer_profit_loss_report', 'baseer_pos_summary',
+                'baseer_purchase_batch'],
     'application': False,
     'installable': True,
 }

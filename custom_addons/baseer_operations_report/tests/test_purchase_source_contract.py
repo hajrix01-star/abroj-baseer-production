@@ -709,6 +709,154 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             Decimal('115.00'),
         )
 
+    def test_approved_batch_direct_cash_payment_counts_its_bill_once(self):
+        self.purchase.write({
+            'default_account_id': self.expense.id, 'sequence': -100,
+        })
+        cash_journal = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Gross batch cash', 'code': 'GBC', 'type': 'cash',
+            'company_id': self.company.id,
+            'default_account_id': self.cash.id,
+        })
+        method = cash_journal.outbound_payment_method_line_ids.filtered(
+            lambda item: item.code == 'manual',
+        )[:1]
+        self.assertTrue(method)
+        method.payment_account_id = self.cash
+        batch = self.env['baseer.purchase.batch'].with_company(self.company).create({
+            'line_ids': [Command.create({
+                'partner_id': self.partner.id,
+                'supplier_ref': 'GROSS-DIRECT-CASH-115',
+                'gross_amount': 115, 'tax_id': self.tax.id,
+                'is_credit': False,
+                'payment_method_line_id': method.id,
+                'invoice_date': '2026-06-27',
+            })],
+        })
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 0)
+        batch.action_approve()
+        line = batch.line_ids
+        bill = line.move_id
+        payment = line.payment_id
+        self.assertEqual(batch.state, 'approved')
+        self.assertEqual(bill.state, 'posted')
+        self.assertEqual(payment.move_id.state, 'posted')
+        self.assertEqual(str(payment.move_id.date), '2026-06-27')
+        self.assertEqual(Decimal(str(bill.amount_total)), Decimal('115.00'))
+        cash_line = payment.move_id.line_ids.filtered(
+            lambda item: item.account_id == self.cash,
+        )
+        self.assertEqual(len(cash_line), 1)
+        self.assertEqual(Decimal(str(cash_line.balance)), Decimal('-115.00'))
+        payable_payment = payment.move_id.line_ids.filtered(
+            lambda item: item.account_id == self.payable,
+        )
+        payable_bill = bill.line_ids.filtered(
+            lambda item: item.account_id == self.payable,
+        )
+        partial = payable_payment.matched_credit_ids
+        self.assertEqual(len(partial), 1)
+        self.assertEqual(partial.credit_move_id, payable_bill)
+        self.assertEqual(Decimal(str(partial.amount)), Decimal('115.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+        self.assertEqual(self._purchase_amount('2026-07-01', '2026-07-31'), 0)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=cash_journal.ids,
+        ), 115)
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+        ), 0)
+        snapshot = self.env['baseer.operations.report'].get_source_snapshot({
+            'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30',
+            'journal_ids': [],
+        })
+        rows = {row['key']: row['amount'] for row in snapshot['periods'][0]['rows']}
+        self.assertEqual(rows['net_income'], '-115.00')
+        self.assertEqual(snapshot['periods'][0]['accounts']['expense'][0][
+            'source_count'], 1)
+        bill_ids, payment_ids = bill.ids, payment.ids
+        batch.action_approve()
+        self.assertEqual(batch.line_ids.move_id.ids, bill_ids)
+        self.assertEqual(batch.line_ids.payment_id.ids, payment_ids)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+
+        credit = self.env['baseer.purchase.batch'].with_company(self.company).create({
+            'line_ids': [Command.create({
+                'partner_id': self.partner.id,
+                'supplier_ref': 'GROSS-CREDIT-115',
+                'gross_amount': 115, 'tax_id': self.tax.id,
+                'is_credit': True, 'invoice_date': '2026-06-28',
+            })],
+        })
+        credit.action_approve()
+        self.assertFalse(credit.line_ids.payment_id)
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+
+        # A generic Odoo payment is not a Baseer batch source even when its
+        # journal directly credits bank liquidity; advances share this shape.
+        generic_bill = self._bill()
+        self.method.payment_account_id = self.bank.default_account_id
+        generic_wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=generic_bill.ids,
+        ).create({
+            'journal_id': self.bank.id,
+            'payment_method_line_id': self.method.id,
+            'amount': 30, 'payment_date': '2026-06-29',
+            'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })
+        generic_payment = generic_wizard._create_payments()
+        generic_liquidity = generic_payment.move_id.line_ids.filtered(
+            lambda item: item.account_id == self.bank.default_account_id,
+        )
+        self.assertEqual(Decimal(str(generic_liquidity.balance)), Decimal('-30.00'))
+        self.assertEqual(self._purchase_amount('2026-06-01', '2026-06-30'), 115)
+
+        reader = self.env['res.users'].create({
+            'name': 'Gross batch direct cash reader',
+            'login': 'gross_batch_direct_cash_reader',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_invoice').id,
+                self.env.ref('account.group_account_user').id,
+                self.env.ref('point_of_sale.group_pos_user').id,
+            ])],
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        secured = self.env['baseer.operations.report'].with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertEqual(self._purchase_amount(
+            '2026-06-01', '2026-06-30', report=secured,
+        ), 115)
+        for model, hidden in (
+                ('baseer.purchase.batch.line', line),
+                ('baseer.purchase.batch', batch),
+                ('account.move', bill),
+                ('account.payment', payment),
+                ('account.move.line', cash_line),
+                ('account.partial.reconcile', partial),
+                ('account.tax', self.tax),
+                ('account.tax.repartition.line',
+                 self.tax.invoice_repartition_line_ids.filtered(
+                     lambda item: item.repartition_type == 'tax',
+                 ))):
+            rule = self.env['ir.rule'].create({
+                'name': 'Gross batch hide ' + model,
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {hidden.id})]",
+            })
+            try:
+                rule.flush_recordset()
+                with self.assertRaises(AccessError):
+                    self._purchase_amount(
+                        '2026-06-01', '2026-06-30', report=secured,
+                    )
+            finally:
+                rule.unlink()
+
     def test_advance_and_internal_transfer_have_no_bill_allocation(self):
         bill = self._bill()
         advance = self._entry(

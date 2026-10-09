@@ -997,6 +997,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                 lambda line: line.account_id == self.bank.default_account_id,
             )
             self.assertEqual(payment.invoice_ids, bill)
+            self.assertIn(bill, payment.reconciled_bill_ids)
             self.assertIn(payment, bill.matched_payment_ids)
             self.assertEqual(payment.move_id.state, 'posted')
             self.assertEqual(payment.company_id, self.company)
@@ -1119,7 +1120,13 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         for model, hidden in (
                 ('account.payment', late_link),
                 ('account.move', existing_bill),
-                ('account.partial.reconcile', matched_late)):
+                ('account.partial.reconcile', matched_late),
+                ('account.tax', self.tax),
+                ('account.tax.repartition.line',
+                 self.tax.invoice_repartition_line_ids.filtered(
+                     lambda item: item.repartition_type == 'tax',
+                 )),
+                ('account.account', self.vat_account)):
             rule = self.env['ir.rule'].create({
                 'name': 'Gross native hide ' + model,
                 'model_id': self.env['ir.model']._get(model).id,
@@ -1133,6 +1140,25 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                     )
             finally:
                 rule.unlink()
+        # Simulate a damaged historical header.  A filter for the actual
+        # move journal must not silently lose the payment.
+        late_link.flush_recordset(['journal_id'])
+        self.env.cr.execute(
+            'UPDATE account_payment SET journal_id=%s WHERE id=%s',
+            [self.general.id, late_link.id],
+        )
+        late_link.invalidate_recordset(['journal_id'])
+        try:
+            with self.assertRaises(AccessError):
+                self._purchase_amount(
+                    '2026-06-01', '2026-06-30', journal_ids=self.bank.ids,
+                )
+        finally:
+            self.env.cr.execute(
+                'UPDATE account_payment SET journal_id=%s WHERE id=%s',
+                [self.bank.id, late_link.id],
+            )
+            late_link.invalidate_recordset(['journal_id'])
 
     def test_details_use_display_expense_for_depreciation_account(self):
         depreciation = self.accounts.create({

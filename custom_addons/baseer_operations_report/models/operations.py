@@ -970,8 +970,6 @@ class BaseerOperationsReport(models.AbstractModel):
             ('move_id.date', '>=', start),
             ('move_id.date', '<=', end),
         ]
-        if journal_ids:
-            domain.append(('journal_id', 'in', journal_ids))
         self.env['account.payment'].flush_model([
             'company_id', 'payment_type', 'partner_type', 'move_id',
         ])
@@ -984,9 +982,6 @@ class BaseerOperationsReport(models.AbstractModel):
             'AND m.date >= %s AND m.date <= %s'
         )
         params = [company.id, start, end]
-        if journal_ids:
-            sql += ' AND p.journal_id = ANY(%s)'
-            params.append(journal_ids)
         self.env.cr.execute(sql, params)
         source_ids = {row[0] for row in self.env.cr.fetchall()}
         payments = self.env['account.payment'].search(domain, order='id')
@@ -1031,6 +1026,18 @@ class BaseerOperationsReport(models.AbstractModel):
             method.check_access('read')
             liquidity_account = journal.default_account_id
             liquidity_account.check_access('read')
+            if (move.company_id != company or journal.company_id != company
+                    or move.journal_id != journal):
+                self._deny_incomplete_source()
+            lines = move.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s',
+                                 [move.id], lines)
+            lines.mapped('account_id').check_access('read')
+            if any(item.company_id != company or item.journal_id != journal
+                   for item in lines):
+                self._deny_incomplete_source()
+            if journal_ids and journal.id not in journal_ids:
+                continue
             self._assert_visible(
                 'account_move', 'reversed_entry_id=%s', [move.id],
                 move.reversal_move_ids,
@@ -1054,23 +1061,20 @@ class BaseerOperationsReport(models.AbstractModel):
                     or liquidity_account.account_type != 'asset_cash'):
                 excluded['unsupported_native_payment'] += 1
                 continue
-            lines = move.line_ids
-            self._assert_visible('account_move_line', 'move_id=%s',
-                                 [move.id], lines)
-            lines.mapped('account_id').check_access('read')
             liquidity = lines.filtered(
                 lambda item: item.account_id == liquidity_account,
             )
             payable = lines.filtered(
                 lambda item: item.account_id.account_type == 'liability_payable',
             )
+            payable.mapped('partner_id').check_access('read')
             amount = self._decimal(payment.amount)
             if (len(lines) != 2 or len(liquidity) != 1 or len(payable) != 1
                     or amount <= 0
                     or self._decimal(liquidity.balance) != -amount
                     or self._decimal(payable.balance) != amount
-                    or any(item.company_id != company or item.journal_id != journal
-                           or item.currency_id != company.currency_id
+                    or payable.partner_id != partner
+                    or any(item.currency_id != company.currency_id
                            for item in lines)):
                 excluded['unsupported_native_payment'] += 1
                 continue
@@ -1082,8 +1086,13 @@ class BaseerOperationsReport(models.AbstractModel):
                 continue
             bill_payable = partials.credit_move_id
             bill_payable.check_access('read')
+            bill_payable.partner_id.check_access('read')
             bill = bill_payable.move_id
             bill.check_access('read')
+            origin_bills = payment.invoice_ids
+            reconciled_bills = payment.reconciled_bill_ids
+            origin_bills.check_access('read')
+            reconciled_bills.check_access('read')
             self._assert_visible('account_move', 'reversed_entry_id=%s',
                                  [bill.id], bill.reversal_move_ids)
             bill_lines = bill.line_ids
@@ -1103,6 +1112,9 @@ class BaseerOperationsReport(models.AbstractModel):
                     or bill.reversed_entry_id or bill.reversal_move_ids
                     or bill_payable.account_id != payable.account_id
                     or bill_payable.account_id.account_type != 'liability_payable'
+                    or bill_payable.partner_id != bill.partner_id
+                    or bill not in reconciled_bills
+                    or (origin_bills and origin_bills != bill)
                     or len(bill_lines.filtered(
                         lambda item: item.account_id.account_type == 'liability_payable',
                     )) != 1
@@ -1111,6 +1123,14 @@ class BaseerOperationsReport(models.AbstractModel):
                     or partials not in bill_partials):
                 excluded['unsupported_native_bill'] += 1
                 continue
+            for tax_line in bill_lines.filtered('tax_line_id'):
+                tax = tax_line.tax_line_id
+                repartition = tax_line.tax_repartition_line_id
+                tax.check_access('read')
+                repartition.check_access('read')
+                if (not repartition or repartition.tax_id != tax
+                        or repartition not in tax.invoice_repartition_line_ids):
+                    self._deny_incomplete_source()
             bill_sections = {key: {} for key in SECTION_KEYS}
             bill_excluded = Counter()
             line_entries = []

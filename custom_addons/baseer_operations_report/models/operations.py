@@ -40,7 +40,7 @@ INFORMATIONAL_EXCLUSIONS = frozenset({
     'linked_pos_invoice', 'linked_pos_invoice_not_readded',
     'nonrecoverable_tax_amls_not_readded', 'proven_internal_transfer',
     'unconfirmed_payment_link', 'census_sales_documents',
-    'census_pos_orders',
+    'census_pos_orders', 'pos_session_income_not_readded',
 })
 
 
@@ -51,6 +51,39 @@ class BaseerOperationsReport(models.AbstractModel):
     @staticmethod
     def _decimal(value):
         return Decimal(str(value or 0))
+
+    @staticmethod
+    def _pos_totals_consistent(gross, net, tax, total, sign, line_count,
+                               rounding):
+        # Odoo may round the order tax globally after rounding each POS line.
+        # The gross line sum remains exact; only the net/tax cross-check may
+        # differ by the single minor unit observed in the source.
+        return (sign * gross == total
+                and abs(sign * net + tax - total)
+                <= (rounding if line_count > 1 else Decimal('0')))
+
+    @staticmethod
+    def _pos_session_income_reconciled(source_lines, posted_lines, header_net,
+                                       rounding):
+        if (not source_lines or not posted_lines
+                or len(posted_lines) > len(source_lines)
+                or sum((amount for _, amount in posted_lines), Decimal('0')) != header_net):
+            return False
+        expected = Counter()
+        posted = Counter()
+        source_signs = {}
+        for account_id, amount in source_lines:
+            expected[account_id] += amount
+            if amount:
+                source_signs.setdefault(account_id, set()).add(1 if amount > 0 else -1)
+        for account_id, amount in posted_lines:
+            posted[account_id] += amount
+            if amount and (1 if amount > 0 else -1) not in source_signs.get(account_id, set()):
+                return False
+        return (expected.keys() == posted.keys()
+                and all(len(source_signs.get(key, ())) == 1
+                        and abs(expected[key] - posted[key]) <= rounding
+                        for key in expected))
 
     @staticmethod
     def _coverage_complete(excluded):
@@ -406,8 +439,10 @@ class BaseerOperationsReport(models.AbstractModel):
         sign = -1 if order.is_refund else 1
         gross = sum((self._decimal(line.price_subtotal_incl) for line in lines), Decimal('0'))
         net = sum((self._decimal(line.price_subtotal) for line in lines), Decimal('0'))
-        if (sign * gross != self._decimal(order.amount_total)
-                or sign * net + self._decimal(order.amount_tax) != self._decimal(order.amount_total)):
+        if not self._pos_totals_consistent(
+                gross, net, self._decimal(order.amount_tax),
+                self._decimal(order.amount_total), sign, len(lines),
+                self._decimal(company.currency_id.rounding)):
             self._deny_incomplete_source()
         for line in lines:
             account = line._prepare_base_line_for_taxes_computation().get('account_id')
@@ -436,7 +471,7 @@ class BaseerOperationsReport(models.AbstractModel):
 
     @api.model
     def _direct_exclusions(self, company, start, end, journal_ids,
-                           recognized_direct_ids=()):
+                           recognized_direct_ids=(), excluded=None):
         domain = [
             ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
             ('move_id.move_type', '=', 'entry'),
@@ -471,8 +506,93 @@ class BaseerOperationsReport(models.AbstractModel):
         recognized = set(recognized_direct_ids)
         if not recognized.issubset(set(lines.ids)):
             self._deny_incomplete_source()
+        # A closed POS session posts accounting income after its original
+        # orders.  Those entries are evidence of the sale, not new operations.
+        sessions = self.env['pos.session'].search([
+            ('move_id', 'in', lines.mapped('move_id').ids),
+            ('company_id', '=', company.id), ('state', '=', 'closed'),
+        ])
+        sessions.check_access('read')
+        proven_session_moves = set()
+        self.env['pos.order'].flush_model(['session_id'])
+        for session in sessions:
+            session.move_id.check_access('read')
+            session.config_id.check_access('read')
+            session.config_id.journal_id.check_access('read')
+            orders = session.order_ids
+            self._assert_visible('pos_order', 'session_id=%s', [session.id], orders)
+            eligible = orders.filtered(lambda order: order.state in POS_STATES)
+            if (session.move_id.state != 'posted' or not eligible
+                    or not session.config_id
+                    or session.config_id.journal_id != session.move_id.journal_id
+                    or any(order.company_id != company
+                           or (order.source == 'pos' and not order.date_order)
+                           or (order.source == 'baseer_summary' and (
+                               not order.baseer_summary_id
+                               or order.baseer_summary_id.state != 'approved'
+                               or order.baseer_summary_id.order_id != order))
+                           or order.source not in ('pos', 'baseer_summary')
+                           for order in eligible)):
+                continue
+            source_income = []
+            header_net = Decimal('0')
+            for order in eligible:
+                order.check_access('read')
+                order.currency_id.check_access('read')
+                if order.currency_id != company.currency_id:
+                    self._deny_incomplete_source()
+                if order.source == 'baseer_summary':
+                    order.baseer_summary_id.check_access('read')
+                if order.fiscal_position_id:
+                    order.fiscal_position_id.check_access('read')
+                header_net += (self._decimal(order.amount_total)
+                               - self._decimal(order.amount_tax))
+                pos_lines = self._pos_lines(order)
+                if not pos_lines:
+                    self._deny_incomplete_source()
+                pos_lines.mapped('product_id').check_access('read')
+                pos_lines.mapped('tax_ids').check_access('read')
+                for pos_line in pos_lines:
+                    account = pos_line._prepare_base_line_for_taxes_computation().get(
+                        'account_id',
+                    )
+                    if not account or account._name != 'account.account':
+                        self._deny_incomplete_source()
+                    account.check_access('read')
+                    if account.account_type in ('income', 'income_other'):
+                        sign = -1 if order.is_refund else 1
+                        source_income.append((
+                            account.id, sign * self._decimal(pos_line.price_subtotal),
+                        ))
+            move_lines = session.move_id.line_ids
+            self.env['account.move.line'].flush_model(['move_id'])
+            self._assert_visible(
+                'account_move_line', 'move_id=%s', [session.move_id.id], move_lines,
+            )
+            posted_income = []
+            for move_line in move_lines:
+                move_line.account_id.check_access('read')
+                if (move_line.company_id != company
+                        or move_line.parent_state != 'posted'):
+                    self._deny_incomplete_source()
+                if move_line.account_id.account_type in ('income', 'income_other'):
+                    posted_income.append((
+                        move_line.account_id.id, -self._decimal(move_line.balance),
+                    ))
+            if not self._pos_session_income_reconciled(
+                    source_income, posted_income, header_net,
+                    self._decimal(company.currency_id.rounding)):
+                continue
+            proven_session_moves.add(session.move_id.id)
+        secondary = {
+            line.id for line in lines
+            if line.move_id.id in proven_session_moves
+            and line.account_id.account_type in ('income', 'income_other')
+        }
+        if excluded is not None:
+            excluded['pos_session_income_not_readded'] += len(secondary)
         # Recognized direct bank expenses are not still called unproven AML.
-        return len(lines) - len(recognized)
+        return len(lines) - len(recognized | secondary)
 
     @api.model
     def _liquidity_outflow_exclusions(self, company, start, end, journal_ids,
@@ -1471,7 +1591,7 @@ class BaseerOperationsReport(models.AbstractModel):
             company, start, end, journal_ids, sections, excluded,
         )
         excluded['direct_aml_unproven'] = self._direct_exclusions(
-            company, start, end, journal_ids, recognized_direct,
+            company, start, end, journal_ids, recognized_direct, excluded,
         )
         for section in sections.values():
             for entry in section.values():

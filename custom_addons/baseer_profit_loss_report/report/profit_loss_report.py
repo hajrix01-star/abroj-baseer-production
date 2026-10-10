@@ -37,6 +37,17 @@ class _ProfitLossPdfValues:
         journals.check_access('read')
         arabic = (self.env.user.lang or '').startswith('ar')
         labels = {key: pair[0 if arabic else 1] for key, pair in LABELS.items()}
+        source = self.env['baseer.profit.loss.report']
+        revenue_accounts = {}
+        for key, section in (('income', 'income'), ('other_income', 'income_other')):
+            revenue_accounts[key] = []
+            page = 1
+            while True:
+                detail = source.get_accounts(filters, section, page)
+                revenue_accounts[key].extend(detail['accounts'])
+                if page * detail['page_size'] >= detail['total_count']:
+                    break
+                page += 1
         return {
             'doc_ids': [],
             'doc_model': 'baseer.profit.loss.report',
@@ -44,6 +55,7 @@ class _ProfitLossPdfValues:
             'report': report,
             'periods': periods,
             'rows': report['rows'],
+            'revenue_accounts': revenue_accounts,
             'labels': labels,
             'journal_names': ', '.join(journals.mapped('display_name')),
             'arabic': arabic,

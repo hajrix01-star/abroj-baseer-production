@@ -20,6 +20,7 @@ from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.baseer_profit_loss_report.models.profit_loss import (
     EXPENSE_KEYS, SECTION_GROUPS, SECTION_KEYS,
 )
+from odoo.addons.baseer_profit_loss_report.models.revenue_channels import UNALLOCATED
 
 
 ROW_KEYS = (
@@ -1411,6 +1412,8 @@ class BaseerOperationsReport(models.AbstractModel):
                   'amount': pl._format_money(entry['raw'], company.currency_id),
                   'negative': entry['raw'] < 0,
                   'source_count': entry['count'],
+                  'channels': self._entry_channels(entry, company)
+                      if key in ('income', 'other_income') else [],
                   'fingerprint': self._event_fingerprint(
                       company, start, end, journal_ids, key,
                       entry['account'].id, entry['events'],
@@ -1418,6 +1421,27 @@ class BaseerOperationsReport(models.AbstractModel):
                 for entry in accounts
             ]
         return rows, leaf
+
+    def _entry_channels(self, entry, company):
+        pl = self.env['baseer.profit.loss.report']
+        channels = {}
+        for event in entry['events']:
+            amount = self._decimal(event['amount'])
+            allocation = {UNALLOCATED: ('', amount)}
+            if event['line_model'] == 'pos.order.line':
+                try:
+                    line = self.env['pos.order.line'].browse(event['line_id']).exists()
+                    line.check_access('read')
+                    if line and line.order_id.company_id == company:
+                        allocation = pl._order_channels(line.order_id, amount, company)
+                except AccessError:
+                    pass
+            for key, (name, value) in allocation.items():
+                prior = channels.get(key, (name, Decimal('0')))
+                channels[key] = (name, prior[1] + value)
+        return [{'key': key, 'name': name or pl._unallocated_channel_label(),
+                 'amount': pl._format_money(value, company.currency_id),
+                 'negative': value < 0} for key, (name, value) in sorted(channels.items())]
 
     @api.model
     def _sales_census(self, company, start, end, journal_ids, moves, orders,

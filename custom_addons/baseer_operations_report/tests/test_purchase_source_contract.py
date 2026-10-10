@@ -208,6 +208,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'amount': '115.00',
             'negative': False,
             'source_count': 1,
+            'channels': [],
         })
 
         reader = self.env['res.users'].create({
@@ -1751,4 +1752,5 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             'account_code': self.expense.code,
             'account_name': self.expense.name,
             'amount': '155.00', 'negative': False, 'source_count': 2,
+            'channels': [],
         })

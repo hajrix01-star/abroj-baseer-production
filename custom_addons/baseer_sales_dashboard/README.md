@@ -1,5 +1,22 @@
 # Sales summaries dashboard
 
+## Command center session day
+
+The command center alone groups confirmed native POS orders by their session's
+`start_at` date in Riyadh time. Every order of a session belongs to that opening
+day, including after-midnight sales and sessions spanning several days. No hourly
+gap is excluded. A refund uses its own session's opening day. Future orders are
+not included; a visible confirmed order without a session opening timestamp
+refuses the result rather than guessing a date.
+
+Today, Yesterday, current month and last 30 days refer to opening calendar dates.
+An open contributing session makes its day/current card provisional; closed
+sessions do not imply an accounting cutoff or prevent a later session on that
+date. Comparisons require both contributing days' sessions to be closed. Totals,
+the chart and session pages use the same secured order selection. Session detail
+shows the opening date; latest sale retains the actual order timestamp.
+No POS order, session, invoice, journal entry or accounting report is changed.
+
 Adds **Dashboards → Sales → Sales summaries**, using the native dashboard navigation and company selector. Install `baseer_sales_dashboard` together with its declared dependencies. The dashboard definition is shared across companies; each request reads only the active, authorized SAR company.
 
 The existing `baseer.pos.daily.report._aggregate_days` remains the source of sales, customers and operating-day definitions. No accounting transactions, salary data, spreadsheet formulas or duplicated financial tables are created by viewing the dashboard.

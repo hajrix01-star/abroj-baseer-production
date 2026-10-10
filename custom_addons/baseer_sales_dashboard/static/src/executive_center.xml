@@ -33,9 +33,9 @@
                     <section class="o_bec_daily" t-att-aria-label="labels.total"><p t-esc="labels.total"/><div class="o_bec_daily_value"><bdi t-esc="card.total.display"/><small t-if="card.total.available" t-esc="card.company.currency"/></div></section>
                     <section class="o_bec_metrics"><div t-foreach="metrics(card)" t-as="metric" t-key="metric.key"><p t-esc="metric.label"/><strong><bdi t-esc="metric.value"/></strong></div></section>
                     <p class="o_bec_snapshot_note mt-3"><t t-esc="labels.latestSale"/>: <bdi t-esc="card.latest_sale_at || '—'"/></p>
+                    <p class="o_bec_snapshot_note" t-esc="periodStatus(card.period)"/>
                     <p class="o_bec_snapshot_note"><t t-esc="labels.daily"/> · <bdi t-esc="card.date"/>: <bdi t-esc="card.daily.display"/></p>
                     <p t-if="card.daily_change.available" class="o_bec_snapshot_note"><t t-esc="labels.change"/>: <bdi t-esc="card.daily_change.amount_display"/> (<bdi t-esc="card.daily_change.display"/>)</p>
-                    <div t-if="card.outside_hours.count" class="alert alert-warning o_bec_outside" role="status"><p t-esc="labels.outside"/><p><t t-esc="labels.outsideCount"/>: <bdi t-esc="card.outside_hours.count"/></p><p><t t-esc="labels.outsideTotal"/>: <bdi t-esc="card.outside_hours.total.display"/> <t t-esc="card.company.currency"/></p></div>
                     <section class="o_bec_chart" t-att-aria-label="labels.chart"><p class="o_bec_chart_title" t-esc="labels.chart"/>
                         <div class="o_bec_bars" role="group" t-att-aria-label="labels.chart">
                             <button t-foreach="card.timeline" t-as="point" t-key="point.date" type="button" class="o_bec_bar" t-att-class="{'o_bec_point_open': state.point === pointKey(card, point), 'o_bec_point_missing': ['missing','no_orders'].includes(point.status), 'o_bec_point_partial': ['current','incomplete'].includes(point.status), 'o_bec_point_negative': point.value !== null and point.value.startsWith('-')}" t-att-aria-label="pointLabel(point)" t-on-click="() => this.togglePoint(card, point)" t-on-keydown="onPointKeydown">
@@ -47,7 +47,7 @@
                     </section>
                     <details class="o_bec_sessions"><summary><t t-esc="labels.sessionDetails"/> (<bdi t-esc="card.session_count"/>)</summary>
                         <p t-if="!card.sessions.rows.length" class="o_bec_status" t-esc="labels.noSessions"/>
-                        <ul><li t-foreach="card.sessions.rows" t-as="session" t-key="session.session_id"><div><strong t-esc="session.name"/><small><t t-esc="session.pos_name"/> · <t t-esc="sessionStatus(session.state)"/></small><small><t t-esc="labels.orders"/>: <bdi t-esc="session.order_count"/></small></div><strong><bdi t-esc="session.sales.display"/> <small t-esc="card.company.currency"/></strong></li></ul>
+                        <ul><li t-foreach="card.sessions.rows" t-as="session" t-key="session.session_id"><div><strong t-esc="session.name"/><small><t t-esc="session.pos_name"/> · <t t-esc="sessionStatus(session.state)"/></small><small><t t-esc="labels.openingDay"/>: <bdi t-esc="session.opening_day"/></small><small><t t-esc="labels.orders"/>: <bdi t-esc="session.order_count"/></small></div><strong><bdi t-esc="session.sales.display"/> <small t-esc="card.company.currency"/></strong></li></ul>
                         <p t-if="state.sessionErrors[card.company.id]" class="o_bec_warning" role="alert" t-esc="state.sessionErrors[card.company.id]"/>
                         <nav t-if="card.sessions.total > card.sessions.page_size" class="o_bec_session_pages" t-att-aria-label="labels.sessionDetails">
                             <button type="button" class="btn btn-outline-secondary" t-att-disabled="state.sessionLoading[card.company.id] || card.sessions.page &lt;= 1" t-on-click="() => this.loadSessionPage(card, card.sessions.page - 1)" t-esc="labels.previousPage"/>

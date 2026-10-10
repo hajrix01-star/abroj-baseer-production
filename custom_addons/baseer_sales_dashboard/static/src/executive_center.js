@@ -24,17 +24,16 @@ export class BaseerExecutiveCenter extends Component {
             empty: _t("Choose a company to display its executive overview."),
             noCompanies: _t("No authorized companies are available."),
             unavailable: _t("No Point of Sale sales are recorded in this period."), unsupportedCurrency: _t("This overview supports SAR only"),
-            daily: _t("Last operating day's sales"), change: _t("Change from previous operating day"), chart: _t("Operating days · last 14 days of selected period"),
-            noData: _t("Unavailable"), snapshotNote: _t("07:00 to 05:00 next day · Riyadh time. Paid sales after refunds, including tax. Sessions do not define the operating date."),
-            period: _t("Period"), from: _t("From operating date"), to: _t("To operating date"), apply: _t("Apply filters"),
-            lastComplete: _t("Last ended operating day"), currentDay: _t("Current operating day"), thisMonth: _t("This month · ended days"),
-            lastMonth: _t("Previous month"), last30: _t("Last 30 ended days"), custom: _t("Custom period"),
-            current: _t("In progress · not a full day"), ended: _t("Operating window ended · not an accounting approval"), gap: _t("Outside operating hours"),
+            daily: _t("Last selected session opening day's sales"), change: _t("Change from previous closed session day"), chart: _t("Session opening days · last 14 days of selected period"),
+            noData: _t("Unavailable"), snapshotNote: _t("All confirmed sales belong to their session opening date in Riyadh time, including sales after midnight. Refunds belong to their own session. This is not an accounting cutoff."),
+            period: _t("Period"), from: _t("From session opening date"), to: _t("To session opening date"), apply: _t("Apply filters"),
+            lastComplete: _t("Yesterday"), currentDay: _t("Today"), thisMonth: _t("This month · through today"),
+            lastMonth: _t("Previous month"), last30: _t("Last 30 days · through today"), custom: _t("Custom period"),
+            current: _t("Contributing sessions still open"), ended: _t("Contributing sessions closed · not an accounting approval"), selected: _t("By session opening date · Riyadh time"),
             total: _t("Period net sales including tax"), orders: _t("Paid orders including refunds"), sessions: _t("Sessions with sales in this period"),
             latestSale: _t("Latest recorded POS sale · Riyadh time"), sessionDetails: _t("Sales by session within selected period"),
+            openingDay: _t("Session opening day"),
             noSessions: _t("No sessions have sales in this period."), next: _t("Next page"), previousPage: _t("Previous page"),
-            outside: _t("Sales between 05:00 and 07:00 are outside the operating window and excluded from the total above."),
-            outsideCount: _t("Outside-hours orders"), outsideTotal: _t("Outside-hours net sales including tax"),
             page: _t("Page"), sessionError: _t("Unable to load session details. Please try again."),
         };
     }
@@ -98,7 +97,7 @@ export class BaseerExecutiveCenter extends Component {
         if (this.state.preset === "custom" && (!this.state.dateFrom || !this.state.dateTo)) {
             this.generation++;
             this.state.cards = []; this.state.period = null; this.state.loading = false;
-            this.state.error = _t("Choose both operating dates for the custom period.");
+            this.state.error = _t("Choose both session opening dates for the custom period.");
             return;
         }
         this.loadCards();
@@ -145,10 +144,10 @@ export class BaseerExecutiveCenter extends Component {
     onPointKeydown(event) { if (event.key === "Escape") this.state.point = null; }
     pointLabel(point) { return `${point.date}: ${point.display} · ${this.pointStatus(point)} · ${point.change.display}`; }
     pointStatus(point) {
-        return { complete: _t("Operating window ended"), current: this.labels.current, incomplete: this.labels.current,
-            closed_gap: this.labels.gap, missing: _t("No recorded POS sales"), no_orders: _t("No recorded POS sales") }[point.status] || this.labels.noData;
+        return { complete: this.labels.ended, current: this.labels.current, incomplete: this.labels.current,
+            missing: _t("No recorded POS sales"), no_orders: _t("No recorded POS sales") }[point.status] || this.labels.noData;
     }
-    periodStatus(period) { return { complete: this.labels.ended, current: this.labels.current, closed_gap: this.labels.gap }[period?.status] || this.labels.noData; }
+    periodStatus(period) { return { complete: this.labels.ended, current: this.labels.current, selected: this.labels.selected }[period?.status] || this.labels.noData; }
     sessionStatus(state) { return { opening_control: _t("Opening"), opened: _t("Open"), closing_control: _t("Closing"), closed: _t("Closed") }[state] || this.labels.noData; }
     arrow(direction) { return direction === "up" ? "↑" : direction === "down" ? "↓" : "→"; }
 }

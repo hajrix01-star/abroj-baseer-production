@@ -8,7 +8,7 @@ import { user } from "@web/core/user";
 import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { SaudiVatReport } from "@baseer_tax_report/js/saudi_vat_report";
 
-async function mountVisualReport(lang) {
+async function mountVisualReport(lang, withWarnings = false) {
     patchWithCleanup(user, { lang, activeCompany: { id: 3 } });
     const orm = {
         async call(model, method) {
@@ -24,7 +24,10 @@ async function mountVisualReport(lang) {
             if (method === "get_hub_report") {
                 return {
                     company: "Test Company", date_from: "2026-07-01", date_to: "2026-09-30",
-                    currency: "SAR", exception: { count: 0, other_count: 0 },
+                    currency: "SAR", exception: withWarnings
+                        ? { count: 1, amount_text: "-42.13", amount_state: "negative",
+                            other_count: 1, other_amount_text: "-100.00", other_amount_state: "negative" }
+                        : { count: 0, other_count: 0 },
                     rows: [
                         {
                             number: "1", name: "Taxed sales", base_text: "1,150.00", base_state: "",
@@ -64,6 +67,27 @@ async function mountVisualReport(lang) {
     await app.mount(getFixture());
     await waitUntil(() => Boolean(queryOne(".o_baseer_vat_table")));
 }
+
+test("VAT warning keeps untagged VAT distinct from municipal fees in Arabic", async () => {
+    await mountVisualReport("ar_001", true);
+    const warnings = document.querySelectorAll(".o_baseer_report_warning");
+    expect(warnings.length).toBe(2);
+    expect(warnings[0].textContent.includes("قيود ضريبة القيمة المضافة غير المصنفة")).toBe(true);
+    expect(warnings[0].textContent.includes("راجع وسومها الضريبية")).toBe(true);
+    expect(warnings[0].querySelector(".o_baseer_vat_warning_help").title.includes("راجع وسومها الضريبية")).toBe(true);
+    expect(warnings[1].textContent.includes("قيود رسوم وضرائب أخرى بلا وسوم")).toBe(true);
+    expect(warnings[1].textContent.includes("رسوم البلدية خارج إقرار القيمة المضافة")).toBe(true);
+    expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("رسوم البلدية خارج إقرار القيمة المضافة")).toBe(true);
+});
+
+test("VAT warning identifies municipal fees as outside the VAT return in English", async () => {
+    await mountVisualReport("en_US", true);
+    const warnings = document.querySelectorAll(".o_baseer_report_warning");
+    expect(warnings.length).toBe(2);
+    expect(warnings[1].textContent.includes("Other untagged fees and taxes")).toBe(true);
+    expect(warnings[1].textContent.includes("Municipal fees are outside the VAT return")).toBe(true);
+    expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("Municipal fees are outside the VAT return")).toBe(true);
+});
 
 test("clicking VAT XLSX exports the selected quarter, detailed view, and journals once", async () => {
     patchWithCleanup(user, { activeCompany: { id: 3 } });

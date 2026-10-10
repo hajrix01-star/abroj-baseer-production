@@ -119,22 +119,22 @@
         </div>
         <div t-if="report_data['exception']['other_count']" class="btr-warning">
             <t t-if="report_data['is_rtl']">
-                <strong>قيود ضرائب أخرى غير مصنفة:</strong>
+                <strong>قيود رسوم وضرائب أخرى بلا وسوم:</strong>
                 عدد القيود: <span t-esc="report_data['exception']['other_count']"/>؛ الرصيد:
                 <span class="btr-money" dir="ltr" t-esc="report_data['other_tax_amount_text']"/>.
                 <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
-                    title="راجع مجموعات هذه الضرائب قبل تصنيفها ضمن ضريبة القيمة المضافة. لا تُدرج هذه القيود في خانات الإقرار."
-                    aria-label="معلومات عن قيود الضرائب الأخرى غير المصنفة">؟</a>
-                <span t-else="">راجع مجموعات هذه الضرائب قبل تصنيفها ضمن ضريبة القيمة المضافة. لا تُدرج هذه القيود في خانات الإقرار.</span>
+                    title="هذه القيود خارج خانات الإقرار؛ وقد تشمل رسومًا بلدية. رسوم البلدية خارج إقرار القيمة المضافة؛ راجع تصنيف القيود الأخرى."
+                    aria-label="معلومات عن قيود الرسوم والضرائب الأخرى">؟</a>
+                <span t-else="">هذه القيود خارج خانات الإقرار؛ وقد تشمل رسومًا بلدية. رسوم البلدية خارج إقرار القيمة المضافة؛ راجع تصنيف القيود الأخرى.</span>
             </t>
             <t t-else="">
-                <strong>Other unclassified tax entries:</strong>
+                <strong>Other untagged fees and taxes:</strong>
                 Entries: <span t-esc="report_data['exception']['other_count']"/>; signed balance:
                 <span class="btr-money" dir="ltr" t-esc="report_data['other_tax_amount_text']"/>.
                 <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
-                    title="Review these tax groups before classifying them as VAT. These entries are excluded from the VAT return boxes."
-                    aria-label="About other unclassified tax entries">?</a>
-                <span t-else="">Review these tax groups before classifying them as VAT. These entries are excluded from the VAT return boxes.</span>
+                    title="These entries are outside the VAT return boxes and may include municipal fees. Municipal fees are outside the VAT return; review the other entries' classification."
+                    aria-label="About other untagged fees and taxes">?</a>
+                <span t-else="">These entries are outside the VAT return boxes and may include municipal fees. Municipal fees are outside the VAT return; review the other entries' classification.</span>
             </t>
         </div>
     </template>

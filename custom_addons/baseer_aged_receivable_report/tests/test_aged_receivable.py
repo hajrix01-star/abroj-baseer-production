@@ -28,6 +28,9 @@ class TestAgedReceivable(TransactionCase):
         self.receivable = account('958801', 'asset_receivable', True)
         self.income = account('958802', 'income')
         self.bank = account('958803', 'asset_cash')
+        self.assertIn('baseer_loan_account_id', self.company._fields)
+        self.loan_account = account('958804', 'asset_receivable', True)
+        self.company.baseer_loan_account_id = self.loan_account
         self.partner = self.env['res.partner'].with_company(self.company).create({
             'name': 'AR synthetic customer',
             'property_account_receivable_id': self.receivable.id,
@@ -312,6 +315,126 @@ class TestAgedReceivable(TransactionCase):
                 finally:
                     rule.unlink()
 
+    def test_employee_advances_are_not_customer_debt_in_screen_details_or_pdf(self):
+        self.assertFalse(self.partner.employee)
+        self._entry('2025-01-10', self.loan_account, self.bank, 5100)
+        loan_line = self.env['account.move.line'].search([
+            ('company_id', '=', self.company.id),
+            ('account_id', '=', self.loan_account.id),
+            ('date', '=', '2025-01-10'),
+        ], limit=1)
+        self.assertTrue(loan_line)
+        options = {'cutoff_date': '2025-01-31', 'page': 1}
+        loan_only = self.report.get_report(options)
+        self.assertEqual(loan_only['summary']['net'], '0.00')
+        self.assertEqual(loan_only['partner_count'], 0)
+        with self.assertRaises(AccessError):
+            self.report.action_open_line({
+                'line_id': loan_line.id, 'cutoff_date': '2025-01-31',
+            })
+
+        customer_line = self._entry('2025-01-15', self.receivable, self.income, 115)
+        mixed = self.report.get_report(options)
+        self.assertEqual(mixed['summary']['receivables'], '115.00')
+        self.assertEqual(mixed['summary']['net'], '115.00')
+        self.assertEqual(mixed['partner_count'], 1)
+        details = self.report.get_partner_lines({
+            'cutoff_date': '2025-01-31', 'partner_id': self.partner.id, 'page': 1,
+        })['lines']
+        self.assertEqual([row['id'] for row in details], [customer_line.id])
+        pdf = self.report._build_pdf(self.report._cutoff('2025-01-31'))
+        self.assertEqual(pdf['summary']['net'], '115.00')
+        self.assertEqual([row['id'] for row in pdf['lines']], [customer_line.id])
+
+        hidden_loan = self._hide('account.move.line', loan_line)
+        try:
+            self.assertEqual(self.report.with_user(self._readonly()).get_report(
+                options,
+            )['summary']['net'], '115.00')
+        finally:
+            hidden_loan.unlink()
+
+    def test_employee_advance_account_configuration_and_access_fail_closed(self):
+        options = {'cutoff_date': '2025-01-31', 'page': 1}
+        self.company.baseer_loan_account_id = False
+        with self.assertRaises(ValidationError):
+            self.report.get_report(options)
+        with self.assertRaises(ValidationError):
+            self.report.action_print({'cutoff_date': '2025-01-31'})
+        self.company.baseer_loan_account_id = self.income
+        with self.assertRaises(ValidationError):
+            self.report.get_report(options)
+        with self.assertRaises(ValidationError):
+            self.report.action_print({'cutoff_date': '2025-01-31'})
+        other_company = self.env['res.company'].create({'name': 'AR other company'})
+        foreign_loan = self.env['account.account'].create({
+            'code': '958805', 'name': 'Other company advances',
+            'account_type': 'asset_receivable', 'reconcile': True,
+            'company_ids': [Command.set(other_company.ids)],
+        })
+        self.company.baseer_loan_account_id = foreign_loan
+        with self.assertRaises(ValidationError):
+            self.report.get_report(options)
+        self.company.baseer_loan_account_id = self.loan_account
+
+        hidden_account = self._hide('account.account', self.loan_account)
+        try:
+            with self.assertRaises(AccessError):
+                self.report.with_user(self._readonly()).get_report(options)
+            with self.assertRaises(AccessError):
+                self.report.with_user(self._readonly()).action_print({
+                    'cutoff_date': '2025-01-31',
+                })
+        finally:
+            hidden_account.unlink()
+
+    def test_each_company_uses_its_own_employee_advance_account(self):
+        self._entry('2025-01-15', self.receivable, self.income, 115)
+        other_company = self.env['res.company'].create({'name': 'AR second company'})
+        self.env.user.company_ids = [Command.set((self.company | other_company).ids)]
+        Account = self.env['account.account'].with_company(other_company)
+
+        def other_account(code, kind, reconcile=False):
+            return Account.create({
+                'code': code, 'name': f'AR second company {code}',
+                'account_type': kind, 'reconcile': reconcile,
+                'company_ids': [Command.set(other_company.ids)],
+            })
+
+        other_receivable = other_account('958806', 'asset_receivable', True)
+        other_loan = other_account('958807', 'asset_receivable', True)
+        other_income = other_account('958808', 'income')
+        other_bank = other_account('958809', 'asset_cash')
+        other_company.baseer_loan_account_id = other_loan
+        journal = self.env['account.journal'].with_company(other_company).create({
+            'name': 'AR second company journal', 'code': 'AR2', 'type': 'general',
+            'company_id': other_company.id,
+        })
+        for debit_account, credit_account, amount in (
+            (other_receivable, other_income, 20),
+            (other_loan, other_bank, 5100),
+        ):
+            move = self.env['account.move'].with_company(other_company).create({
+                'date': '2025-01-15', 'journal_id': journal.id,
+                'line_ids': [
+                    Command.create({'name': 'Second company debit',
+                                    'account_id': debit_account.id, 'debit': amount,
+                                    'partner_id': self.partner.id}),
+                    Command.create({'name': 'Second company credit',
+                                    'account_id': credit_account.id, 'credit': amount,
+                                    'partner_id': self.partner.id}),
+                ],
+            })
+            move._post(soft=False)
+
+        options = {'cutoff_date': '2025-01-31', 'page': 1}
+        first = self.report.get_report(options)
+        second = self.report.with_company(other_company).get_report(options)
+        self.assertEqual(first['summary']['net'], '115.00')
+        self.assertEqual(second['summary']['net'], '20.00')
+        self.assertEqual(first['partner_count'], 1)
+        self.assertEqual(second['partner_count'], 1)
+
     def test_pdf_uses_full_snapshot_and_a4(self):
         self._invoice('out_invoice', '2025-01-10', 100)
         action = self.report.action_print({'cutoff_date': '2025-01-31'})
@@ -342,3 +465,18 @@ class TestAgedReceivable(TransactionCase):
             with self.subTest(options=options):
                 with self.assertRaises(ValidationError):
                     self.report.get_report(options)
+
+
+@tagged('post_install', '-at_install', 'ar_without_payroll')
+class TestAgedReceivableWithoutPayroll(TransactionCase):
+
+    def test_missing_employee_advance_configuration_fails_closed(self):
+        self.assertNotIn('baseer_loan_account_id', self.env.company._fields)
+        with self.assertRaises(ValidationError):
+            self.env['baseer.aged.receivable.report'].get_report({
+                'cutoff_date': '2025-01-31', 'page': 1,
+            })
+        with self.assertRaises(ValidationError):
+            self.env['baseer.aged.receivable.report'].action_print({
+                'cutoff_date': '2025-01-31',
+            })

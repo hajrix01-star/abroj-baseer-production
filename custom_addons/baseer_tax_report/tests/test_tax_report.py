@@ -351,15 +351,18 @@ class TestSaudiVatReport(TransactionCase):
         preview = self.env['ir.qweb']._render(
             'baseer_tax_report.preview_tax_report', {'report_data': data})
         self.assertIn('قيود ضريبة القيمة المضافة غير المصنفة', preview)
-        self.assertIn('قيود ضرائب أخرى غير مصنفة', preview)
+        self.assertIn('قيود رسوم وضرائب أخرى بلا وسوم', preview)
         self.assertIn('class="btr-help', preview)
         self.assertIn('title="هذه القيود لا تدخل', preview)
+        self.assertIn('رسوم البلدية خارج إقرار القيمة المضافة', preview)
+        self.assertNotIn('قبل تصنيفها ضمن ضريبة القيمة المضافة', preview)
         self.assertNotIn('Review required', preview)
         data['interactive'] = False
         printed = self.env['ir.qweb']._render(
             'baseer_tax_report.tax_table', {'report_data': data})
         self.assertNotIn('class="btr-help', printed)
         self.assertIn('راجع وسومها الضريبية قبل اعتماد التقرير', printed)
+        self.assertIn('رسوم البلدية خارج إقرار القيمة المضافة', printed)
 
     def test_arabic_box_labels_do_not_change_the_original_formulas(self):
         arabic = self.wizard.with_context(lang='ar_001')._build_report()

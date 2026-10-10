@@ -39,11 +39,26 @@ jobs:
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/odoomates-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/erp-heritage-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/odoomates-addons,/mnt/erp-heritage-addons \
+            -d baseer_ar_ci -i baseer_payroll,baseer_aged_receivable_report --without-demo=all \
+            --test-enable --test-tags=/baseer_aged_receivable_report,-ar_pdf_http,-ar_without_payroll \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+      - name: Confirm standalone installs fail closed without payroll configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d baseer_ar_ci -i baseer_aged_receivable_report --without-demo=all \
-            --test-enable --test-tags=/baseer_aged_receivable_report,-ar_pdf_http \
+            -d baseer_ar_standalone_ci -i baseer_aged_receivable_report --without-demo=all \
+            --test-enable --test-tags=/baseer_aged_receivable_report:TestAgedReceivableWithoutPayroll \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
 
   render-pdf:
@@ -75,11 +90,13 @@ jobs:
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             -e BASEER_AR_PDF_ARTIFACT_DIR=/mnt/artifacts \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/odoomates-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/erp-heritage-addons,readonly \
             --mount type=bind,src="$RUNNER_TEMP/ar-pdf-artifacts",dst=/mnt/artifacts \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
-            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d baseer_ar_pdf_ci -i baseer_aged_receivable_report --without-demo=all \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/odoomates-addons,/mnt/erp-heritage-addons \
+            -d baseer_ar_pdf_ci -i baseer_payroll,baseer_aged_receivable_report --without-demo=all \
             --test-enable --test-tags=/baseer_aged_receivable_report:TestAgedReceivablePdfHttp \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
       - name: Keep PDF for independent visual review

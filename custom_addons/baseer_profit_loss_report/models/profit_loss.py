@@ -8,7 +8,9 @@ from decimal import Decimal, ROUND_HALF_UP, localcontext
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 from odoo.fields import Domain
-from .revenue_channels import UNALLOCATED, allocate_channels, tender_matches_order
+from .revenue_channels import (
+    UNALLOCATED, allocate_channels, tender_matches_order, reconcile_order_amounts,
+)
 
 
 SECTION_KEYS = (
@@ -749,7 +751,9 @@ class BaseerProfitLossReport(models.AbstractModel):
                             subtotal = self._decimal(source.price_subtotal)
                             net += -abs(subtotal) if order.is_refund else subtotal
                     order_amounts.append((order, net))
-                if orders and sum((net for _order, net in order_amounts), Decimal('0')) == amount:
+                order_amounts = reconcile_order_amounts(
+                    order_amounts, amount, self._decimal(company.currency_id.rounding))
+                if order_amounts is not None:
                     allocation = {}
                     for order, net in order_amounts:
                         for key, (name, value) in self._order_channels(order, net, company).items():

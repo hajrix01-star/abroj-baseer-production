@@ -756,6 +756,18 @@ class TestOperationsGrossCalculator(TransactionCase):
             self._row(secured._build_source_snapshot(current_filters), 'income')['amount'],
             '0.00',
         )
+        hidden_config = self.env['ir.rule'].create({
+            'name': 'Gross operations hide POS configuration after source day',
+            'model_id': self.env['ir.model']._get('pos.config').id,
+            'domain_force': f"[('id', '!=', {config.id})]",
+        })
+        try:
+            hidden_config.flush_recordset()
+            self.assertFalse(secured.env['pos.config'].search([('id', '=', config.id)]))
+            with self.assertRaises(AccessError):
+                secured._build_source_snapshot(current_filters)
+        finally:
+            hidden_config.unlink()
         rule = self.env['ir.rule'].create({
             'name': 'Gross operations hide older linked POS order',
             'model_id': self.env['ir.model']._get('pos.order').id,

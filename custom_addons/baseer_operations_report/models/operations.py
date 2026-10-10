@@ -517,6 +517,8 @@ class BaseerOperationsReport(models.AbstractModel):
         self.env['pos.order'].flush_model(['session_id'])
         for session in sessions:
             session.move_id.check_access('read')
+            session.config_id.check_access('read')
+            session.config_id.journal_id.check_access('read')
             orders = session.order_ids
             self._assert_visible('pos_order', 'session_id=%s', [session.id], orders)
             eligible = orders.filtered(lambda order: order.state in POS_STATES)
@@ -536,13 +538,20 @@ class BaseerOperationsReport(models.AbstractModel):
             header_net = Decimal('0')
             for order in eligible:
                 order.check_access('read')
+                order.currency_id.check_access('read')
                 if order.currency_id != company.currency_id:
                     self._deny_incomplete_source()
+                if order.source == 'baseer_summary':
+                    order.baseer_summary_id.check_access('read')
+                if order.fiscal_position_id:
+                    order.fiscal_position_id.check_access('read')
                 header_net += (self._decimal(order.amount_total)
                                - self._decimal(order.amount_tax))
                 pos_lines = self._pos_lines(order)
                 if not pos_lines:
                     self._deny_incomplete_source()
+                pos_lines.mapped('product_id').check_access('read')
+                pos_lines.mapped('tax_ids').check_access('read')
                 for pos_line in pos_lines:
                     account = pos_line._prepare_base_line_for_taxes_computation().get(
                         'account_id',

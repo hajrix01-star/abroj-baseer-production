@@ -988,3 +988,108 @@ msgstr "مركز القيادة يدعم الشركات التي تعمل بال
 #: code:addons/baseer_sales_dashboard/models/executive.py:0
 msgid "This period exceeds 100,000 POS orders. Choose a shorter period; no records have been omitted."
 msgstr "تتجاوز هذه الفترة 100,000 طلب في نقاط البيع. اختر فترة أقصر؛ لم تُستبعد أي سجلات من النتائج."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Last selected session opening day's sales"
+msgstr "مبيعات آخر تاريخ فتح جلسة في الفترة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Change from previous closed session day"
+msgstr "التغير عن يوم الجلسات المغلقة السابق"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Session opening days · last 14 days of selected period"
+msgstr "أيام فتح الجلسات · آخر 14 يومًا من الفترة المختارة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "All confirmed sales belong to their session opening date in Riyadh time, including sales after midnight. Refunds belong to their own session. This is not an accounting cutoff."
+msgstr "تُنسب جميع المبيعات المؤكدة إلى تاريخ فتح جلستها بتوقيت الرياض، بما فيها المبيعات بعد منتصف الليل. تُنسب المرتجعات إلى جلستها الخاصة. هذا ليس إقفالًا محاسبيًا."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "From session opening date"
+msgstr "من تاريخ فتح الجلسة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "To session opening date"
+msgstr "إلى تاريخ فتح الجلسة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Yesterday"
+msgstr "أمس"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Today"
+msgstr "اليوم"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "This month · through today"
+msgstr "هذا الشهر · حتى اليوم"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Last 30 days · through today"
+msgstr "آخر 30 يومًا · حتى اليوم"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Contributing sessions still open"
+msgstr "الجلسات المساهمة لا تزال مفتوحة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Contributing sessions closed · not an accounting approval"
+msgstr "الجلسات المساهمة مغلقة · لا يعني اعتمادًا محاسبيًا"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "By session opening date · Riyadh time"
+msgstr "حسب تاريخ فتح الجلسة · بتوقيت الرياض"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Session opening day"
+msgstr "يوم فتح الجلسة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Choose both session opening dates for the custom period."
+msgstr "اختر تاريخ بداية ونهاية فتح الجلسات للفترة المخصصة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "The start date must be on or before the end date."
+msgstr "يجب أن يكون تاريخ البداية قبل تاريخ النهاية أو مساويًا له."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "Future session opening days are not available."
+msgstr "لا يمكن عرض تواريخ فتح جلسات مستقبلية."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/executive.py:0
+msgid "A confirmed POS order has no session opening time; its operating day cannot be determined."
+msgstr "يوجد طلب مؤكد في نقاط البيع دون وقت فتح جلسة؛ لا يمكن تحديد يومه التشغيلي."

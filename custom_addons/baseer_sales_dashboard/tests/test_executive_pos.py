@@ -62,9 +62,20 @@ class ExecutivePosCase(TransactionCase):
         return cls.env[model].browse(cls.env.cr.fetchone()[0])
 
     @classmethod
-    def _session(cls, name, config, state='opened'):
+    def _session(cls, name, config, state='opened', start='2026-10-03 00:00:00'):
         return cls._insert('pos.session', {
-            'name': name, 'config_id': config.id, 'user_id': cls.env.uid, 'state': state})
+            'name': name, 'config_id': config.id,
+            'user_id': cls.env.uid, 'state': state,
+            'start_at': datetime.fromisoformat(start) - timedelta(hours=3) if start else None})
+
+    def _update_fixture(self, record, values):
+        """Update this SQL-only fixture without invoking native POS write hooks."""
+        record.flush_recordset(list(values))
+        self.env.cr.execute(SQL('UPDATE %s SET %s WHERE id = %s',
+            SQL.identifier(record._table),
+            SQL(', ').join(SQL('%s = %s', SQL.identifier(key), value) for key, value in values.items()),
+            record.id))
+        record.invalidate_recordset(list(values))
 
     def _order(self, local, amount, session=None, state='paid', company=None):
         session = session or self.session_a
@@ -83,67 +94,70 @@ class ExecutivePosCase(TransactionCase):
                 self.company.ids, period, first if period == 'custom' else None,
                 last if period == 'custom' else None)['cards'][0]
 
-    def test_windows_gaps_midnight_states_refunds_and_cross_day_sessions(self):
-        self._order('2026-10-02 06:59:59', '999')  # prior gap, outside selection
-        self._order('2026-10-02 07:00:00', '100')
+    def test_session_opening_day_midnight_states_refunds_and_long_sessions(self):
+        self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 2, 15)})
+        self._order('2026-10-02 18:00:00', '100')
         self._order('2026-10-03 00:01:00', '20', self.session_b, 'done')
         self._order('2026-10-03 04:59:59', '-10')
         self._order('2026-10-03 05:00:00', '3')
         self._order('2026-10-03 06:59:59', '4')
         self._order('2026-10-03 07:00:00', '50', self.session_a, 'invoiced')
         self._order('2026-10-04 04:59:59', '10', self.session_b)
-        self._order('2026-10-04 05:00:00', '5')  # final gap included in warning
+        self._order('2026-10-04 05:00:00', '5')
         self._order('2026-10-04 06:59:59', '6')
-        self._order('2026-10-04 07:00:00', '800')  # next day excluded
+        self._order('2026-10-04 07:00:00', '800')  # still opening day October 2
+        self._order('2026-10-04 10:00:00', '900')  # future order excluded at 09:00
         self._order('2026-10-03 13:00:00', '1000', state='draft')
         self._order('2026-10-03 14:00:00', '2000', state='cancel')
         self._order('2026-10-03 15:00:00', '5000', self.other_session, company=self.other)
         card = self._cards()
-        self.assertEqual(card['total']['value'], '170.00')
-        self.assertEqual(card['daily']['value'], '60.00')
-        self.assertEqual(card['order_count'], 5)
+        self.assertEqual(card['total']['value'], '988.00')
+        self.assertEqual(card['daily']['value'], '30.00')
+        self.assertEqual(card['order_count'], 10)
         self.assertEqual(card['session_count'], 2)
-        self.assertEqual(card['outside_hours'], {'count': 4, 'total': {'value': '18.00', 'display': '18.00', 'available': True}})
+        self.assertEqual(card['outside_hours']['count'], 0)
         sessions = {row['session_id']: row for row in card['sessions']['rows']}
-        self.assertEqual(sessions[self.session_a.id]['sales']['value'], '140.00')
+        self.assertEqual(sessions[self.session_a.id]['sales']['value'], '958.00')
         self.assertEqual(sessions[self.session_b.id]['sales']['value'], '30.00')
         self.assertEqual(card['latest_sale_at'], '2026-10-04 07:00:00')
-        self.assertEqual([row['value'] for row in card['timeline']], ['110.00', '60.00'])
+        self.assertEqual([row['value'] for row in card['timeline']], ['958.00', '30.00'])
+        self.assertEqual([row['status'] for row in card['timeline']], ['current', 'complete'])
+        self.assertFalse(card['daily_change']['available'])  # prior session is still open
+        self.assertEqual(sessions[self.session_a.id]['opening_day'], '2026-10-02')
 
-    def test_server_clock_current_and_gap_cap(self):
-        self._order('2026-10-03 07:00:00', '10')
+    def test_server_clock_today_no_gap_exclusion_and_open_session_status(self):
+        self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 4, 0)})  # 03:00 Riyadh
+        self._order('2026-10-04 03:30:00', '10')
         self._order('2026-10-04 04:30:00', '20')
         self._order('2026-10-04 05:30:00', '3')
         self._order('2026-10-04 06:30:00', '4')
         self._order('2026-10-04 07:00:00', '50')
         current = self._cards('current_day', now=datetime(2026, 10, 4, 1))  # local 04:00
-        self.assertEqual(current['date'], '2026-10-03')
+        self.assertEqual(current['date'], '2026-10-04')
         self.assertEqual(current['period']['status'], 'current')
         self.assertEqual(current['total']['value'], '10.00')
         self.assertFalse(current['daily_change']['available'])
         gap = self._cards('current_day', now=datetime(2026, 10, 4, 3))  # local 06:00
-        self.assertEqual(gap['date'], '2026-10-03')
-        self.assertEqual(gap['period']['status'], 'closed_gap')
-        self.assertEqual(gap['total']['value'], '30.00')
-        self.assertEqual(gap['outside_hours']['total']['value'], '3.00')
+        self.assertEqual(gap['date'], '2026-10-04')
+        self.assertEqual(gap['period']['status'], 'current')
+        self.assertEqual(gap['total']['value'], '33.00')
+        self.assertEqual(gap['outside_hours']['total']['value'], '0.00')
         after = self._cards('current_day', now=datetime(2026, 10, 4, 5))
         self.assertEqual(after['date'], '2026-10-04')
-        self.assertEqual(after['total']['value'], '50.00')
+        self.assertEqual(after['total']['value'], '87.00')
 
     def test_period_resolution_strict_dates_and_366_day_limit(self):
         self.assertEqual(_utc_at(date(2026, 10, 3), 7), datetime(2026, 10, 3, 4))
-        for hour, complete, active, status in ((1, '2026-10-02', '2026-10-03', 'current'),
-                                              (2, '2026-10-03', '2026-10-03', 'closed_gap'),
-                                              (4, '2026-10-03', '2026-10-04', 'current')):
+        for hour in (1, 2, 4):
             now = datetime(2026, 10, 4, hour)
-            self.assertEqual(_resolve_period('last_complete_day', None, None, now)['to'], complete)
+            self.assertEqual(_resolve_period('last_complete_day', None, None, now)['to'], '2026-10-03')
             current = _resolve_period('current_day', None, None, now)
-            self.assertEqual(current['to'], active)
-            self.assertEqual(current['status'], status)
+            self.assertEqual(current['to'], '2026-10-04')
+            self.assertEqual(current['status'], 'selected')
         month = _resolve_period('this_month', None, None, self.NOW)
-        self.assertEqual((month['from'], month['to']), ('2026-10-01', '2026-10-03'))
+        self.assertEqual((month['from'], month['to']), ('2026-10-01', '2026-10-04'))
         self.assertEqual(_resolve_period('last_month', None, None, self.NOW)['to'], '2026-09-30')
-        self.assertEqual(_resolve_period('last_30_days', None, None, self.NOW)['from'], '2026-09-04')
+        self.assertEqual(_resolve_period('last_30_days', None, None, self.NOW)['from'], '2026-09-05')
         for preset, first, last in (('custom', None, None), ('custom', '2026-1-01', '2026-10-01'),
                 ('custom', '2026-10-03', '2026-10-02'), ('custom', '2026-10-04', '2026-10-05'),
                 ('custom', '2025-10-01', '2026-10-02'), ('invalid', None, None),
@@ -151,8 +165,7 @@ class ExecutivePosCase(TransactionCase):
             with self.assertRaises(ValidationError):
                 _resolve_period(preset, first, last, self.NOW)
         self.assertEqual(_resolve_period('custom', '2025-10-03', '2026-10-03', self.NOW)['from'], '2025-10-03')
-        with self.assertRaises(ValidationError):
-            _resolve_period('this_month', None, None, datetime(2026, 10, 1, 0))
+        self.assertEqual(_resolve_period('this_month', None, None, datetime(2026, 10, 1, 0))['from'], '2026-10-01')
 
     def test_money_precision_empty_and_fourteen_day_chart(self):
         for amount in ('0.10', '0.20', '0.30', '-0.10', '9999999999.99', '0.01', '-9999999999.98'):
@@ -270,25 +283,58 @@ class ExecutivePosCase(TransactionCase):
         with patch('odoo.fields.Datetime.now', return_value=self.NOW), self.assertRaises(ValidationError):
             self.dashboard.with_user(self.reader).get_baseer_executive_sessions(
                 self.company.id, 'custom', '2026-10-02', '2026-10-03')
-        # An older foreign day must not contaminate the optional comparison.
-        self.env.cr.execute(SQL('UPDATE pos_order SET date_order = %s WHERE id = %s',
-                                datetime(2026, 10, 1, 9), foreign.id))
+        # An older foreign opening day must not contaminate the main day.
+        self._update_fixture(session, {'start_at': datetime(2026, 10, 1, 9)})
+        self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 2, 9), 'state': 'closed'})
         self._order('2026-10-02 12:00:00', '5')
         card = self._cards(first='2026-10-02', last='2026-10-02')
         self.assertTrue(card['available'])
-        self.assertEqual(card['total']['value'], '5.00')
+        self.assertEqual(card['total']['value'], '55.00')
         self.assertFalse(card['daily_change']['available'])
 
     def test_100000_orders_limit_rejects_without_truncation(self):
-        self.env.cr.execute(SQL('''
-            INSERT INTO pos_order (name, date_order, state, amount_tax, amount_total,
-                amount_paid, amount_return, company_id, session_id, config_id, currency_rate)
-            SELECT 'EC capacity', %s, 'paid', 0, 0.01, 0.01, 0, %s, %s, %s, 1
-            FROM generate_series(1, %s)
-        ''', datetime(2026, 10, 3, 9), self.company.id, self.session_a.id, self.config.id, MAX_ORDERS))
         period = _resolve_period('last_complete_day', None, None, self.NOW)
         scoped = self.dashboard.with_user(self.reader)._baseer_executive_scope(self.company.id)
-        scoped._baseer_executive_capacity(period, self.NOW)
-        self._order('2026-10-03 12:30:00', '0.01')
-        with self.assertRaises(ValidationError):
+        # Existing cap contract, without creating a new load fixture for small-company use.
+        with patch.object(type(self.env['pos.order']), 'search_count', side_effect=[0, MAX_ORDERS]):
             scoped._baseer_executive_capacity(period, self.NOW)
+        with patch.object(type(self.env['pos.order']), 'search_count', side_effect=[0, MAX_ORDERS + 1]), self.assertRaises(ValidationError):
+            scoped._baseer_executive_capacity(period, self.NOW)
+
+    def test_missing_opening_time_fails_and_month_boundary_uses_session(self):
+        missing = self._session('Missing start', self.config, start=None)
+        self._order('2026-10-03 12:00:00', '1', missing)
+        with self.assertRaises(ValidationError):
+            self._cards()
+        self._update_fixture(missing, {'start_at': datetime(2026, 9, 30, 20, 59, 59)})  # 23:59:59 Riyadh
+        october = self._cards(first='2026-10-01')
+        self.assertEqual(october['total']['value'], '0.00')
+        september = self._cards(first='2026-09-30', last='2026-09-30')
+        self.assertEqual(september['total']['value'], '1.00')
+        self.assertEqual(september['timeline'][-1]['status'], 'current')
+        self._update_fixture(missing, {'state': 'closed'})
+        self.assertEqual(self._cards(first='2026-09-30', last='2026-09-30')['period']['status'], 'complete')
+
+    def test_refund_uses_own_session_day_and_inconsistent_company_is_not_visible(self):
+        original = self._session('Original September', self.config, state='closed', start='2026-09-30 23:59:59')
+        refund = self._session('Refund October', self.config, state='closed', start='2026-10-01 00:00:00')
+        self._order('2026-10-01 00:01:00', '100', original, 'done')
+        self._order('2026-10-01 01:00:00', '-25', refund, 'done')
+        self._order('2026-10-01 02:00:00', '5000', self.other_session, company=self.company)
+        card = self._cards(first='2026-10-01', last='2026-10-01')
+        self.assertEqual(card['total']['value'], '-25.00')
+        self.assertEqual(card['timeline'][0]['value'], '-25.00')
+        self.assertEqual(card['sessions']['rows'][0]['sales']['value'], '-25.00')
+        self.assertEqual(card['sessions']['rows'][0]['opening_day'], '2026-10-01')
+        self.assertEqual(self._cards(first='2026-09-30', last='2026-09-30')['total']['value'], '100.00')
+
+    def test_comparison_requires_both_contributing_session_days_closed(self):
+        previous = self._session('Previous', self.config, state='closed', start='2026-10-02 18:00:00')
+        current = self._session('Current', self.config, state='closed', start='2026-10-03 18:00:00')
+        self._order('2026-10-03 03:00:00', '10', previous, 'done')
+        self._order('2026-10-04 03:00:00', '20', current, 'done')
+        card = self._cards(first='2026-10-03', last='2026-10-03')
+        self.assertTrue(card['daily_change']['available'])
+        self.assertEqual(card['daily_change']['amount_display'], '+10.00')
+        self._update_fixture(previous, {'state': 'opened'})
+        self.assertFalse(self._cards(first='2026-10-03', last='2026-10-03')['daily_change']['available'])

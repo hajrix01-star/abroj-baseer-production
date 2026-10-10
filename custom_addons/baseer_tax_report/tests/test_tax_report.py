@@ -288,6 +288,83 @@ class TestSaudiVatReport(TransactionCase):
         self.assertEqual(data['exception']['amount'], Decimal('-15.0'))
         self.assertEqual(data['rows'][0]['tax'], Decimal('0.00'))
 
+    def test_tobacco_fee_is_not_a_vat_exception_but_other_fees_remain(self):
+        self.wizard.write({'period_type': 'month', 'year': 2041, 'month': '9'})
+        accounts = self.env['account.account'].with_company(self.company)
+        tobacco = accounts.search([
+            ('company_ids', 'in', self.company.id), ('code', '=', '201021'),
+        ], limit=1)
+        if not tobacco:
+            tobacco = accounts.create({
+                'name': 'Municipal tobacco fee payable', 'code': '201021',
+                'account_type': 'liability_current',
+                'company_ids': [Command.set(self.company.ids)],
+            })
+        other = accounts.create({
+            'name': 'Unclassified service fee payable', 'code': 'BVATOTHER41',
+            'account_type': 'liability_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        clearing = accounts.search([
+            ('company_ids', 'in', self.company.id), ('account_type', '=', 'asset_current'),
+        ], limit=1)
+        journal = self.env['account.journal'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('type', '=', 'general'),
+        ], limit=1)
+        standard_tax = self.env['account.tax'].with_company(self.company).search([
+            ('company_id', '=', self.company.id), ('type_tax_use', '=', 'sale'),
+            ('amount', '=', 15), ('tax_exigibility', '=', 'on_invoice'),
+        ], limit=1)
+        self.assertTrue(clearing and journal and standard_tax)
+        fee_group = self.env['account.tax.group'].with_company(self.company).create({
+            'name': 'Municipal service fee test group',
+            'company_id': self.company.id, 'country_id': self.env.ref('base.sa').id,
+        })
+        fee_tax = standard_tax.copy({
+            'name': 'Non-VAT fee test', 'tax_group_id': fee_group.id,
+            'country_id': self.env.ref('base.sa').id,
+        })
+        (fee_tax.invoice_repartition_line_ids + fee_tax.refund_repartition_line_ids).write({
+            'tag_ids': [Command.clear()],
+        })
+        fee_line = fee_tax.invoice_repartition_line_ids.filtered(
+            lambda line: line.repartition_type == 'tax')[:1]
+        move = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'date': date(2041, 9, 15), 'journal_id': journal.id,
+            'line_ids': [
+                Command.create({'name': 'Municipal tobacco fee', 'account_id': tobacco.id,
+                                'credit': 25, 'tax_repartition_line_id': fee_line.id}),
+                Command.create({'name': 'Other untagged fee', 'account_id': other.id,
+                                'credit': 4, 'tax_repartition_line_id': fee_line.id}),
+                Command.create({'name': 'Counterpart', 'account_id': clearing.id, 'debit': 29}),
+            ],
+        })
+        move._post(soft=False)
+        vat_tax = self._copy_sa_tax(standard_tax, {'name': 'Untagged VAT on tobacco account'})
+        (vat_tax.invoice_repartition_line_ids + vat_tax.refund_repartition_line_ids).write({
+            'tag_ids': [Command.clear()],
+        })
+        vat_line = vat_tax.invoice_repartition_line_ids.filtered(
+            lambda line: line.repartition_type == 'tax')[:1]
+        vat_move = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'date': date(2041, 9, 15), 'journal_id': journal.id,
+            'line_ids': [
+                Command.create({'name': 'Misclassified VAT', 'account_id': tobacco.id,
+                                'credit': 7.17, 'tax_repartition_line_id': vat_line.id}),
+                Command.create({'name': 'Counterpart', 'account_id': clearing.id,
+                                'debit': 7.17}),
+            ],
+        })
+        vat_move._post(soft=False)
+        exception = self.wizard._untagged_vat(self.wizard._base_domain())
+        self.assertEqual(exception['count'], 1)
+        self.assertEqual(exception['amount'], Decimal('-7.17'))
+        self.assertEqual(exception['other_count'], 1)
+        self.assertEqual(exception['other_amount'], Decimal('-4.0'))
+        self.assertEqual(self.env['account.move.line'].search(
+            self.wizard.action_view_other_untagged()['domain']).mapped('account_id'), other)
+        self.assertEqual(self.wizard._build_report()['rows'][0]['tax'], Decimal('0.00'))
+
     def test_report_paper_and_preview(self):
         paper = self.env.ref('baseer_tax_report.paperformat_tax')
         self.assertEqual((paper.format, paper.orientation), ('A4', 'Portrait'))
@@ -354,7 +431,8 @@ class TestSaudiVatReport(TransactionCase):
         self.assertIn('قيود رسوم وضرائب أخرى بلا وسوم', preview)
         self.assertIn('class="btr-help', preview)
         self.assertIn('title="هذه القيود لا تدخل', preview)
-        self.assertIn('رسوم البلدية خارج إقرار القيمة المضافة', preview)
+        self.assertIn('راجع تصنيف الضرائب والرسوم الأخرى غير الموسومة', preview)
+        self.assertNotIn('رسومًا بلدية', preview)
         self.assertNotIn('قبل تصنيفها ضمن ضريبة القيمة المضافة', preview)
         self.assertNotIn('Review required', preview)
         data['interactive'] = False
@@ -362,7 +440,7 @@ class TestSaudiVatReport(TransactionCase):
             'baseer_tax_report.tax_table', {'report_data': data})
         self.assertNotIn('class="btr-help', printed)
         self.assertIn('راجع وسومها الضريبية قبل اعتماد التقرير', printed)
-        self.assertIn('رسوم البلدية خارج إقرار القيمة المضافة', printed)
+        self.assertIn('راجع تصنيف الضرائب والرسوم الأخرى غير الموسومة', printed)
 
     def test_arabic_box_labels_do_not_change_the_original_formulas(self):
         arabic = self.wizard.with_context(lang='ar_001')._build_report()

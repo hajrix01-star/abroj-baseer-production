@@ -68,7 +68,7 @@ async function mountVisualReport(lang, withWarnings = false) {
     await waitUntil(() => Boolean(queryOne(".o_baseer_vat_table")));
 }
 
-test("VAT warning keeps untagged VAT distinct from municipal fees in Arabic", async () => {
+test("VAT warning keeps untagged VAT distinct from other fees in Arabic", async () => {
     await mountVisualReport("ar_001", true);
     const warnings = document.querySelectorAll(".o_baseer_report_warning");
     expect(warnings.length).toBe(2);
@@ -76,17 +76,17 @@ test("VAT warning keeps untagged VAT distinct from municipal fees in Arabic", as
     expect(warnings[0].textContent.includes("راجع وسومها الضريبية")).toBe(true);
     expect(warnings[0].querySelector(".o_baseer_vat_warning_help").title.includes("راجع وسومها الضريبية")).toBe(true);
     expect(warnings[1].textContent.includes("قيود رسوم وضرائب أخرى بلا وسوم")).toBe(true);
-    expect(warnings[1].textContent.includes("رسوم البلدية خارج إقرار القيمة المضافة")).toBe(true);
-    expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("رسوم البلدية خارج إقرار القيمة المضافة")).toBe(true);
+    expect(warnings[1].textContent.includes("راجع تصنيف الضرائب والرسوم الأخرى غير الموسومة")).toBe(true);
+    expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("راجع تصنيف الضرائب والرسوم الأخرى غير الموسومة")).toBe(true);
 });
 
-test("VAT warning identifies municipal fees as outside the VAT return in English", async () => {
+test("VAT warning describes remaining untagged fees in English", async () => {
     await mountVisualReport("en_US", true);
     const warnings = document.querySelectorAll(".o_baseer_report_warning");
     expect(warnings.length).toBe(2);
     expect(warnings[1].textContent.includes("Other untagged fees and taxes")).toBe(true);
-    expect(warnings[1].textContent.includes("Municipal fees are outside the VAT return")).toBe(true);
-    expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("Municipal fees are outside the VAT return")).toBe(true);
+    expect(warnings[1].textContent.includes("Review the classification of the remaining untagged taxes and fees")).toBe(true);
+    expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("Review the classification of the remaining untagged taxes and fees")).toBe(true);
 });
 
 test("clicking VAT XLSX exports the selected quarter, detailed view, and journals once", async () => {

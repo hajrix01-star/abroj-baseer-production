@@ -64,8 +64,18 @@ class ExecutivePosCase(TransactionCase):
     @classmethod
     def _session(cls, name, config, state='opened', start='2026-10-03 00:00:00'):
         return cls._insert('pos.session', {
-            'name': name, 'config_id': config.id, 'user_id': cls.env.uid, 'state': state,
+            'name': name, 'config_id': config.id, 'company_id': config.company_id.id,
+            'user_id': cls.env.uid, 'state': state,
             'start_at': datetime.fromisoformat(start) - timedelta(hours=3) if start else None})
+
+    def _update_fixture(self, record, values):
+        """Update this SQL-only fixture without invoking native POS write hooks."""
+        record.flush_recordset(list(values))
+        self.env.cr.execute(SQL('UPDATE %s SET %s WHERE id = %s',
+            SQL.identifier(record._table),
+            SQL(', ').join(SQL('%s = %s', SQL.identifier(key), value) for key, value in values.items()),
+            record.id))
+        record.invalidate_recordset(list(values))
 
     def _order(self, local, amount, session=None, state='paid', company=None):
         session = session or self.session_a
@@ -85,7 +95,7 @@ class ExecutivePosCase(TransactionCase):
                 last if period == 'custom' else None)['cards'][0]
 
     def test_session_opening_day_midnight_states_refunds_and_long_sessions(self):
-        self.session_a.write({'start_at': datetime(2026, 10, 2, 15)})
+        self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 2, 15)})
         self._order('2026-10-02 18:00:00', '100')
         self._order('2026-10-03 00:01:00', '20', self.session_b, 'done')
         self._order('2026-10-03 04:59:59', '-10')
@@ -116,7 +126,7 @@ class ExecutivePosCase(TransactionCase):
         self.assertEqual(sessions[self.session_a.id]['opening_day'], '2026-10-02')
 
     def test_server_clock_today_no_gap_exclusion_and_open_session_status(self):
-        self.session_a.write({'start_at': datetime(2026, 10, 4, 0)})  # 03:00 Riyadh
+        self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 4, 0)})  # 03:00 Riyadh
         self._order('2026-10-04 03:30:00', '10')
         self._order('2026-10-04 04:30:00', '20')
         self._order('2026-10-04 05:30:00', '3')
@@ -274,8 +284,8 @@ class ExecutivePosCase(TransactionCase):
             self.dashboard.with_user(self.reader).get_baseer_executive_sessions(
                 self.company.id, 'custom', '2026-10-02', '2026-10-03')
         # An older foreign opening day must not contaminate the main day.
-        session.write({'start_at': datetime(2026, 10, 1, 9)})
-        self.session_a.write({'start_at': datetime(2026, 10, 2, 9), 'state': 'closed'})
+        self._update_fixture(session, {'start_at': datetime(2026, 10, 1, 9)})
+        self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 2, 9), 'state': 'closed'})
         self._order('2026-10-02 12:00:00', '5')
         card = self._cards(first='2026-10-02', last='2026-10-02')
         self.assertTrue(card['available'])
@@ -296,13 +306,13 @@ class ExecutivePosCase(TransactionCase):
         self._order('2026-10-03 12:00:00', '1', missing)
         with self.assertRaises(ValidationError):
             self._cards()
-        missing.write({'start_at': datetime(2026, 9, 30, 20, 59, 59)})  # 23:59:59 Riyadh
+        self._update_fixture(missing, {'start_at': datetime(2026, 9, 30, 20, 59, 59)})  # 23:59:59 Riyadh
         october = self._cards(first='2026-10-01')
         self.assertEqual(october['total']['value'], '0.00')
         september = self._cards(first='2026-09-30', last='2026-09-30')
         self.assertEqual(september['total']['value'], '1.00')
         self.assertEqual(september['timeline'][-1]['status'], 'current')
-        missing.write({'state': 'closed'})
+        self._update_fixture(missing, {'state': 'closed'})
         self.assertEqual(self._cards(first='2026-09-30', last='2026-09-30')['period']['status'], 'complete')
 
     def test_refund_uses_own_session_day_and_inconsistent_company_is_not_visible(self):
@@ -326,5 +336,5 @@ class ExecutivePosCase(TransactionCase):
         card = self._cards(first='2026-10-03', last='2026-10-03')
         self.assertTrue(card['daily_change']['available'])
         self.assertEqual(card['daily_change']['amount_display'], '+10.00')
-        previous.write({'state': 'opened'})
+        self._update_fixture(previous, {'state': 'opened'})
         self.assertFalse(self._cards(first='2026-10-03', last='2026-10-03')['daily_change']['available'])

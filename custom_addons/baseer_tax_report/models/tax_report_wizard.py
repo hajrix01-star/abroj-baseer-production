@@ -164,15 +164,15 @@ class BaseerTaxReportWizard(models.TransientModel):
         tax_groups |= vat_named_groups
         untagged = (base_domain & Domain('tax_line_id', '!=', False)
                     & Domain('tax_tag_ids', '=', False))
+        domain = untagged & Domain('tax_line_id.tax_group_id', 'in', tax_groups.ids)
+        other_domain = untagged & Domain('tax_line_id.tax_group_id', 'not in', tax_groups.ids)
         # The municipal tobacco fee has its own report, not a VAT exception.
         # Use the company-specific account code already used by that report.
         tobacco_accounts = self.env['account.account'].with_company(self.company_id).search([
             ('company_ids', 'in', self.company_id.id), ('code', '=', '201021'),
         ])
         if tobacco_accounts:
-            untagged &= Domain('account_id', 'not in', tobacco_accounts.ids)
-        domain = untagged & Domain('tax_line_id.tax_group_id', 'in', tax_groups.ids)
-        other_domain = untagged & Domain('tax_line_id.tax_group_id', 'not in', tax_groups.ids)
+            other_domain &= Domain('account_id', 'not in', tobacco_accounts.ids)
         aml = self.env['account.move.line']
         grouped = aml._read_group(domain, [], ['balance:sum'])
         other_grouped = aml._read_group(other_domain, [], ['balance:sum'])

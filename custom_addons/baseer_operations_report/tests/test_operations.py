@@ -94,6 +94,41 @@ class TestOperationsGrossCalculator(TransactionCase):
     def _row(snapshot, key):
         return next(row for row in snapshot['periods'][0]['rows'] if row['key'] == key)
 
+    def test_pos_tax_rounding_accepts_only_bounded_multiline_difference(self):
+        consistent = self.report._pos_totals_consistent
+        gross, net, tax, total = map(
+            Decimal, ('53.00', '46.08', '6.91', '53.00'),
+        )
+        cent = Decimal('0.01')
+        self.assertTrue(consistent(gross, net, tax, total, 1, 2, cent))
+        self.assertTrue(consistent(gross, net, -tax, -total, -1, 2, cent))
+        self.assertFalse(consistent(gross, net, tax, total, 1, 1, cent))
+        self.assertFalse(consistent(gross, net, Decimal('46.07'), tax,
+                                    total, 1, 2, cent))
+        self.assertFalse(consistent(gross, Decimal('46.07'), tax, total,
+                                    1, 100, cent))
+        self.assertFalse(consistent(gross, net, tax, Decimal('53.01'),
+                                    1, 2, cent))
+
+    def test_pos_session_income_reconciliation_rejects_extra_or_changed_income(self):
+        reconciled = self.report._pos_session_income_reconciled
+        cent = Decimal('0.01')
+        source = [(self.income.id, Decimal('15.65')),
+                  (self.income.id, Decimal('30.43'))]
+        posted = [(self.income.id, Decimal('46.09'))]
+        self.assertTrue(reconciled(source, posted, Decimal('46.09'), cent))
+        self.assertFalse(reconciled(source, [(self.income.id, Decimal('46.10'))],
+                                    Decimal('46.09'), cent))
+        self.assertFalse(reconciled(source, posted, Decimal('46.08'), cent))
+        self.assertFalse(reconciled(source, posted + [
+            (self.income.id, Decimal('1.00')),
+            (self.income.id, Decimal('-1.00')),
+        ], Decimal('46.09'), cent))
+        self.assertFalse(reconciled(source, [
+            (self.other_income.id, Decimal('46.09')),
+        ], Decimal('46.09'), cent))
+        self.assertFalse(reconciled([], [], Decimal('0'), cent))
+
     def test_month_caption_uses_server_period_label(self):
         snapshot = self.report._build_source_snapshot({
             'company_id': self.company.id,
@@ -246,6 +281,7 @@ class TestOperationsGrossCalculator(TransactionCase):
         snapshot = self._snapshot([journal.id])
         self.assertEqual(self._row(snapshot, 'income')['amount'], '0.00')
         self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 1)
+        self.assertFalse(snapshot['periods'][0]['coverage_complete'])
 
     def test_customer_invoice_issue_and_accounting_dates_are_distinct_sources(self):
         invoice = self.env['account.move'].with_company(self.company).create({
@@ -645,6 +681,10 @@ class TestOperationsGrossCalculator(TransactionCase):
         after_invoice = current_snapshot()
         self.assertEqual(self._row(after_invoice, 'income')['amount'], '115.00')
         self.assertEqual(after_invoice['periods'][0]['excluded']['linked_pos_invoice'], 1)
+        self.assertGreater(
+            after_invoice['periods'][0]['excluded']['pos_session_income_not_readded'], 0,
+        )
+        self.assertEqual(after_invoice['periods'][0]['excluded']['direct_aml_unproven'], 0)
         config.open_ui()
         refund_session = config.current_session_id
         refund_session.set_opening_control(0, 'Gross operations refund test')

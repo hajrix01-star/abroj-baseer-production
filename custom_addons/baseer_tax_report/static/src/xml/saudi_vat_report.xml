@@ -147,10 +147,11 @@
                         <span class="o_baseer_report_amount" dir="ltr"
                             t-att-class="amountClass(state.data.exception.amount_state)"
                             t-esc="state.data.exception.amount_text"/>
-                        <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.review"
-                            t-att-aria-label="labels.review">?</button>
+                        <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.reviewVat"
+                            t-att-aria-label="labels.reviewVat">?</button>
                         <button type="button" class="o_baseer_vat_warning_link" t-on-click="() => this.openException('vat')"
                             t-esc="labels.viewEntries"/>
+                        <div class="o_baseer_report_warning_line" t-esc="labels.reviewVat"/>
                     </div>
                     <div t-if="state.data.exception.other_count" class="o_baseer_report_warning" role="status">
                         <strong t-esc="labels.untaggedOther"/>
@@ -159,10 +160,11 @@
                         <span class="o_baseer_report_amount" dir="ltr"
                             t-att-class="amountClass(state.data.exception.other_amount_state)"
                             t-esc="state.data.exception.other_amount_text"/>
-                        <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.review"
-                            t-att-aria-label="labels.review">?</button>
+                        <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.reviewOther"
+                            t-att-aria-label="labels.reviewOther">?</button>
                         <button type="button" class="o_baseer_vat_warning_link" t-on-click="() => this.openException('other')"
                             t-esc="labels.viewEntries"/>
+                        <div class="o_baseer_report_warning_line" t-esc="labels.reviewOther"/>
                     </div>
                 </section>
             </div>

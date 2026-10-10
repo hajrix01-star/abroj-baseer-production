@@ -79,6 +79,19 @@ class BaseerAgedReceivable(models.AbstractModel):
         }
 
     @api.model
+    def _employee_advance_account(self, company):
+        company.check_access('read')
+        if 'baseer_loan_account_id' not in company._fields:
+            raise ValidationError(_('The employee advance account is not configured for this company.'))
+        loan_account = company.baseer_loan_account_id
+        if not loan_account:
+            raise ValidationError(_('The employee advance account is not configured for this company.'))
+        loan_account.check_access('read')
+        if company not in loan_account.company_ids or loan_account.account_type != 'asset_receivable':
+            raise ValidationError(_('Review the configured employee advance account for this company.'))
+        return loan_account
+
+    @api.model
     def _source_lines(self, company, cutoff):
         """Return a complete readable posted AR source, or fail closed.
 
@@ -86,12 +99,14 @@ class BaseerAgedReceivable(models.AbstractModel):
         access-controlled ORM records; custom record rules cannot silently drop
         a debt line or a reconciliation needed by the calculation.
         """
+        loan_account = self._employee_advance_account(company)
         aml = self.env['account.move.line'].with_context(active_test=False)
         domain = [
             ('company_id', '=', company.id),
             ('parent_state', '=', 'posted'),
             ('date', '<=', cutoff),
             ('account_id.account_type', '=', 'asset_receivable'),
+            ('account_id', '!=', loan_account.id),
         ]
         count = aml.search_count(domain)
         if count > self.MAX_SOURCE_LINES:
@@ -105,7 +120,8 @@ class BaseerAgedReceivable(models.AbstractModel):
               JOIN account_account AS account ON account.id = line.account_id
              WHERE line.company_id = %s AND line.parent_state = 'posted'
                AND line.date <= %s AND account.account_type = 'asset_receivable'
-        ''', (company.id, cutoff))
+               AND line.account_id != %s
+        ''', (company.id, cutoff, loan_account.id))
         if count != self.env.cr.fetchone()[0]:
             raise AccessError(_('The complete receivable source is not available.'))
         lines = aml.search(domain, order='id', limit=self.MAX_SOURCE_LINES + 1)
@@ -359,6 +375,7 @@ class BaseerAgedReceivable(models.AbstractModel):
             raise ValidationError(_('Select a valid cutoff date.'))
         cutoff = self._cutoff(options['cutoff_date'])
         self._check_accounting_access()
+        self._employee_advance_account(self.env.company)
         return self.env.ref('baseer_aged_receivable_report.action_aged_receivable_pdf').report_action(
             [], data={'cutoff_date': cutoff.isoformat()}, config=False,
         )

@@ -3,10 +3,9 @@
     <t t-name="baseer_sales_dashboard.ExecutiveCenter">
         <section class="o_baseer_executive" t-att-aria-label="labels.title" t-att-aria-busy="state.loading">
             <header class="o_bec_heading">
-                <div><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div>
+                <div><h1 t-esc="labels.title"/></div>
                 <button type="button" class="btn btn-light" t-on-click="loadCards" t-att-disabled="state.loading"><i class="fa fa-refresh me-1" aria-hidden="true"/><t t-esc="labels.refresh"/></button>
             </header>
-            <p class="o_bec_snapshot_note" t-esc="labels.snapshotNote"/>
             <form class="o_bec_filters" t-on-submit="applyFilters">
                 <label><span t-esc="labels.period"/><select class="form-select" t-model="state.preset">
                     <option value="last_complete_day" t-esc="labels.lastComplete"/><option value="current_day" t-esc="labels.currentDay"/>
@@ -17,7 +16,7 @@
                 <label t-if="state.preset === 'custom'"><span t-esc="labels.to"/><input type="date" class="form-control" t-model="state.dateTo" required="required"/></label>
                 <button type="submit" class="btn btn-primary" t-att-disabled="state.loading" t-esc="labels.apply"/>
             </form>
-            <p t-if="state.period" class="o_bec_period"><bdi><t t-esc="state.period.from"/> — <t t-esc="state.period.to"/></bdi><span t-esc="periodStatus(state.period)"/></p>
+            <p t-if="state.period" class="o_bec_period"><bdi><t t-esc="state.period.from"/> — <t t-esc="state.period.to"/></bdi></p>
             <details class="o_bec_picker">
                 <summary><i class="fa fa-building-o me-2" aria-hidden="true"/><t t-esc="labels.companies"/> <bdi t-esc="state.selected.length"/></summary>
                 <div class="o_bec_picker_actions"><button type="button" class="btn btn-link" t-on-click="selectAll" t-esc="labels.all"/><button type="button" class="btn btn-link" t-on-click="clearSelection" t-esc="labels.clear"/></div>
@@ -33,7 +32,6 @@
                     <section class="o_bec_daily" t-att-aria-label="labels.total"><p t-esc="labels.total"/><div class="o_bec_daily_value"><bdi t-esc="card.total.display"/><small t-if="card.total.available" t-esc="card.company.currency"/></div></section>
                     <section class="o_bec_metrics"><div t-foreach="metrics(card)" t-as="metric" t-key="metric.key"><p t-esc="metric.label"/><strong><bdi t-esc="metric.value"/></strong></div></section>
                     <p class="o_bec_snapshot_note mt-3"><t t-esc="labels.latestSale"/>: <bdi t-esc="card.latest_sale_at || '—'"/></p>
-                    <p class="o_bec_snapshot_note" t-esc="periodStatus(card.period)"/>
                     <p class="o_bec_snapshot_note"><t t-esc="labels.daily"/> · <bdi t-esc="card.date"/>: <bdi t-esc="card.daily.display"/></p>
                     <p t-if="card.daily_change.available" class="o_bec_snapshot_note"><t t-esc="labels.change"/>: <bdi t-esc="card.daily_change.amount_display"/> (<bdi t-esc="card.daily_change.display"/>)</p>
                     <section class="o_bec_chart" t-att-aria-label="labels.chart"><p class="o_bec_chart_title" t-esc="labels.chart"/>

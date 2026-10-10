@@ -42,6 +42,7 @@ INFORMATIONAL_EXCLUSIONS = frozenset({
     'nonrecoverable_tax_amls_not_readded', 'proven_internal_transfer',
     'unconfirmed_payment_link', 'census_sales_documents',
     'census_pos_orders', 'pos_session_income_not_readded',
+    'pos_invoice_reversal_not_readded', 'proven_representative_advance',
 })
 
 
@@ -590,10 +591,99 @@ class BaseerOperationsReport(models.AbstractModel):
             if line.move_id.id in proven_session_moves
             and line.account_id.account_type in ('income', 'income_other')
         }
+        # Native POS invoicing reverses the order's session recognition.
+        # This is not a customer refund and must not become a second event.
+        reversals = self._proven_pos_invoice_reversal_lines(company, lines)
         if excluded is not None:
             excluded['pos_session_income_not_readded'] += len(secondary)
+            excluded['pos_invoice_reversal_not_readded'] += len(reversals)
+        secondary |= reversals
         # Recognized direct bank expenses are not still called unproven AML.
         return len(lines) - len(recognized | secondary)
+
+    @api.model
+    def _proven_pos_invoice_reversal_lines(self, company, candidate_lines):
+        moves = candidate_lines.move_id
+        field = self.env['pos.order']._fields['reversed_move_ids']
+        orders = self.env['pos.order'].search([
+            ('company_id', '=', company.id), ('reversed_move_ids', 'in', moves.ids),
+        ]) if moves else self.env['pos.order']
+        if moves:
+            self._assert_visible(
+                'pos_order', 'id IN (SELECT %s FROM account_move WHERE id = ANY(%%s))' % (
+                    field.inverse_name,
+                ), [moves.ids], orders,
+            )
+        proven = set()
+        for order in orders:
+            invoice = order.account_move
+            order.reversed_move_ids.check_access('read')
+            invoice.check_access('read')
+            if (order.company_id != company or order.state not in POS_STATES
+                    or order.currency_id != company.currency_id
+                    or not invoice or invoice.state != 'posted'
+                    or invoice.company_id != company or order not in invoice.pos_order_ids
+                    or invoice.move_type not in ('out_invoice', 'out_refund')):
+                continue
+            invoice_lines = invoice.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s', [invoice.id], invoice_lines)
+            invoice_lines.account_id.check_access('read')
+            invoice_lines.tax_line_id.check_access('read')
+            original = Counter((l.account_id.id, l.tax_line_id.id,
+                                -self._decimal(l.balance)) for l in invoice_lines
+                               if l.account_id and l.account_id.account_type != 'asset_receivable')
+            for move in order.reversed_move_ids & moves:
+                move_lines = move.line_ids
+                self._assert_visible('account_move_line', 'move_id=%s', [move.id], move_lines)
+                move_lines.account_id.check_access('read')
+                move_lines.tax_line_id.check_access('read')
+                receivable = move_lines.filtered(
+                    lambda l: l.account_id.account_type == 'asset_receivable')
+                mirrored = Counter((l.account_id.id, l.tax_line_id.id,
+                                    self._decimal(l.balance)) for l in move_lines
+                                   if l.account_id and l.account_id.account_type != 'asset_receivable')
+                if (move.company_id != company or move.state != 'posted'
+                        or move.move_type != 'entry' or len(receivable) != 1
+                        or move.currency_id != company.currency_id
+                        or any(l.company_id != company for l in move_lines)
+                        or sum((self._decimal(l.balance) for l in move_lines), Decimal('0'))
+                        or not original or mirrored != original
+                        or self._decimal(receivable.balance) != -self._decimal(invoice.amount_total_signed)):
+                    continue
+                proven.update((candidate_lines & move_lines).ids)
+        return proven
+
+    @api.model
+    def _is_proven_representative_advance(self, company, liquidity, move_lines):
+        model_name = 'baseer.procurement.representative.advance'
+        account_field = 'baseer_procurement_representative_petty_cash_account_id'
+        if model_name not in self.env or account_field not in company._fields:
+            return False
+        records = self.env[model_name].search([('move_id', '=', liquidity.move_id.id)])
+        self._assert_visible(self.env[model_name]._table, 'move_id=%s',
+                             [liquidity.move_id.id], records)
+        if len(records) != 1 or len(move_lines) != 2:
+            return False
+        record = records
+        other = move_lines - liquidity
+        record.payment_journal_id.check_access('read')
+        configured = company[account_field]
+        configured.check_access('read')
+        return bool(
+            record.company_id == company and record.state == 'posted'
+            and record.movement_type == 'funding'
+            and record.currency_id == company.currency_id
+            and record.movement_date == liquidity.date
+            and record.payment_journal_id.company_id == company
+            and record.payment_journal_id.type in ('bank', 'cash')
+            and record.payment_journal_id.default_account_id == liquidity.account_id
+            and configured and other.account_id == configured
+            and configured.account_type == 'asset_current'
+            and other.company_id == company
+            and self._decimal(record.amount) > 0
+            and self._decimal(record.amount) == -self._decimal(liquidity.balance)
+            and self._decimal(other.balance) == self._decimal(record.amount)
+        )
 
     @api.model
     def _liquidity_outflow_exclusions(self, company, start, end, journal_ids,
@@ -660,7 +750,9 @@ class BaseerOperationsReport(models.AbstractModel):
             # A single balanced cash-to-cash entry is an internal transfer,
             # not a purchase. Other debits require stronger source evidence.
             other = move_lines - line
-            if (len(move_lines) == 2 and len(other) == 1
+            if self._is_proven_representative_advance(company, line, move_lines):
+                excluded['proven_representative_advance'] += 1
+            elif (len(move_lines) == 2 and len(other) == 1
                     and other.account_id.account_type == 'asset_cash'
                     and other.company_id == company
                     and self._decimal(other.balance) == -self._decimal(line.balance)):

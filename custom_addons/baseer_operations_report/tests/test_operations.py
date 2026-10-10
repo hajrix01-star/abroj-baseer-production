@@ -129,6 +129,56 @@ class TestOperationsGrossCalculator(TransactionCase):
         ], Decimal('46.09'), cent))
         self.assertFalse(reconciled([], [], Decimal('0'), cent))
 
+    def test_unknown_asset_funding_remains_unproven(self):
+        asset = self._account('958121', 'asset_current')
+        journal = self._journal('general', 'GOA')
+        move = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': journal.id,
+            'date': '2041-06-10',
+            'line_ids': [Command.create({'account_id': asset.id, 'debit': 1}),
+                         Command.create({'account_id': self.cash.id, 'credit': 1})],
+        })
+        move.action_post()
+        excluded = self.report._liquidity_outflow_exclusions(
+            self.company, fields.Date.to_date('2041-06-01'),
+            fields.Date.to_date('2041-06-30'), [journal.id], {},
+        )
+        self.assertEqual(excluded['unproven_liquidity_outflow'], 1)
+        self.assertFalse(self.report._coverage_complete(excluded))
+
+    def test_native_representative_advance_excluded_without_hiding_amount_mismatch(self):
+        model = 'baseer.procurement.representative.advance'
+        if model not in self.env:
+            self.skipTest('Optional procurement source is not installed in this test database')
+        asset = self._account('958122', 'asset_current', True)
+        bank = self._journal('bank', 'GOF')
+        bank.default_account_id = self.cash
+        self.company.write({
+            'baseer_procurement_representative_petty_cash_account_id': asset.id,
+            'baseer_procurement_representative_petty_cash_payment_journal_ids':
+                [Command.link(bank.id)],
+        })
+        for documented_amount, expected in ((1, True), (2, False)):
+            move = self.env['account.move'].create({
+                'move_type': 'entry', 'journal_id': self.sale_journal.id,
+                'date': '2041-06-10',
+                'line_ids': [Command.create({'account_id': asset.id, 'debit': 1}),
+                             Command.create({'account_id': self.cash.id, 'credit': 1})],
+            })
+            move.action_post()
+            self.env[model].sudo().with_context(
+                baseer_representative_petty_cash_internal=True,
+            ).create({
+                'company_id': self.company.id, 'movement_type': 'funding',
+                'representative_partner_id': self.partner.id,
+                'payment_journal_id': bank.id, 'movement_date': '2041-06-10',
+                'amount': documented_amount, 'move_id': move.id,
+                'client_token': str(uuid4()),
+            })
+            liquidity = move.line_ids.filtered(lambda line: line.account_id == self.cash)
+            self.assertEqual(self.report._is_proven_representative_advance(
+                self.company, liquidity, move.line_ids), expected)
+
     def test_month_caption_uses_server_period_label(self):
         snapshot = self.report._build_source_snapshot({
             'company_id': self.company.id,
@@ -680,6 +730,31 @@ class TestOperationsGrossCalculator(TransactionCase):
         order.with_context(generate_pdf=False).action_pos_order_invoice()
         after_invoice = current_snapshot()
         self.assertEqual(self._row(after_invoice, 'income')['amount'], '115.00')
+        self.assertEqual(after_invoice['periods'][0]['excluded'].get('direct_aml_unproven', 0), 0)
+        reversal_income = order.reversed_move_ids.line_ids.filtered(
+            lambda line: line.account_id == mapped_income)
+        self.assertTrue(reversal_income)
+        self.assertEqual(self.report._proven_pos_invoice_reversal_lines(
+            self.company, reversal_income), set(reversal_income.ids))
+        # Merely attaching an unrelated balanced entry must not prove it.
+        malformed = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': self.sale_journal.id,
+            'date': today,
+            'line_ids': [Command.create({
+                'account_id': self.other_income.id, 'debit': 115,
+            }), Command.create({
+                'account_id': self.receivable.id, 'partner_id': self.partner.id,
+                'credit': 115,
+            })],
+        })
+        malformed.action_post()
+        reversal_inverse = order._fields['reversed_move_ids'].inverse_name
+        malformed.write({reversal_inverse: order.id})
+        self.assertEqual(self.report._proven_pos_invoice_reversal_lines(
+            self.company, malformed.line_ids), set())
+        malformed.write({reversal_inverse: False})
+        malformed.button_draft()
+        malformed.unlink()
         self.assertEqual(after_invoice['periods'][0]['excluded']['linked_pos_invoice'], 1)
         self.assertGreater(
             after_invoice['periods'][0]['excluded']['pos_session_income_not_readded'], 0,

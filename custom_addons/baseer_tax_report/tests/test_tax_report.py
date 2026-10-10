@@ -340,8 +340,25 @@ class TestSaudiVatReport(TransactionCase):
             ],
         })
         move._post(soft=False)
+        vat_tax = self._copy_sa_tax(standard_tax, {'name': 'Untagged VAT on tobacco account'})
+        (vat_tax.invoice_repartition_line_ids + vat_tax.refund_repartition_line_ids).write({
+            'tag_ids': [Command.clear()],
+        })
+        vat_line = vat_tax.invoice_repartition_line_ids.filtered(
+            lambda line: line.repartition_type == 'tax')[:1]
+        vat_move = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'date': date(2041, 9, 15), 'journal_id': journal.id,
+            'line_ids': [
+                Command.create({'name': 'Misclassified VAT', 'account_id': tobacco.id,
+                                'credit': 7.17, 'tax_repartition_line_id': vat_line.id}),
+                Command.create({'name': 'Counterpart', 'account_id': clearing.id,
+                                'debit': 7.17}),
+            ],
+        })
+        vat_move._post(soft=False)
         exception = self.wizard._untagged_vat(self.wizard._base_domain())
-        self.assertEqual(exception['count'], 0)
+        self.assertEqual(exception['count'], 1)
+        self.assertEqual(exception['amount'], Decimal('-7.17'))
         self.assertEqual(exception['other_count'], 1)
         self.assertEqual(exception['other_amount'], Decimal('-4.0'))
         self.assertEqual(self.env['account.move.line'].search(

@@ -317,3 +317,14 @@ class ExecutivePosCase(TransactionCase):
         self.assertEqual(card['sessions']['rows'][0]['sales']['value'], '-25.00')
         self.assertEqual(card['sessions']['rows'][0]['opening_day'], '2026-10-01')
         self.assertEqual(self._cards(first='2026-09-30', last='2026-09-30')['total']['value'], '100.00')
+
+    def test_comparison_requires_both_contributing_session_days_closed(self):
+        previous = self._session('Previous', self.config, state='closed', start='2026-10-02 18:00:00')
+        current = self._session('Current', self.config, state='closed', start='2026-10-03 18:00:00')
+        self._order('2026-10-03 03:00:00', '10', previous, 'done')
+        self._order('2026-10-04 03:00:00', '20', current, 'done')
+        card = self._cards(first='2026-10-03', last='2026-10-03')
+        self.assertTrue(card['daily_change']['available'])
+        self.assertEqual(card['daily_change']['amount_display'], '+10.00')
+        previous.write({'state': 'opened'})
+        self.assertFalse(self._cards(first='2026-10-03', last='2026-10-03')['daily_change']['available'])

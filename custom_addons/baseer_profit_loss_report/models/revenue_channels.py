@@ -4,6 +4,30 @@ from decimal import Decimal, ROUND_HALF_UP
 UNALLOCATED = 'unallocated'
 
 
+def reconcile_order_amounts(order_amounts, posted_amount, rounding):
+    """Absorb at most one currency unit per move/account, never per order.
+
+    The posted ledger remains authoritative. Call only after proving source
+    completeness, company, access and account mapping. Larger differences or
+    zero/opposite net sources cannot be explained by a rounding residual.
+    """
+    total = sum((value for _order, value in order_amounts), Decimal('0'))
+    difference = posted_amount - total
+    if not order_amounts:
+        return None
+    if not difference:
+        return list(order_amounts)
+    if rounding <= 0 or abs(difference) > rounding or total * posted_amount <= 0:
+        return None
+    result = list(order_amounts)
+    for index in range(len(result) - 1, -1, -1):
+        order, value = result[index]
+        if value * posted_amount > 0 and (value + difference) * value > 0:
+            result[index] = (order, value + difference)
+            return result
+    return None
+
+
 def tender_matches_order(payments, order_total, rounding):
     total = sum((Decimal(str(value)) for _key, _name, value in payments), Decimal('0'))
     return (bool(total) and total * order_total > 0

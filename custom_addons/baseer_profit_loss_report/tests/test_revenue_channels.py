@@ -3,11 +3,36 @@ from decimal import Decimal
 from odoo.tests.common import TransactionCase, tagged
 from types import SimpleNamespace
 from ..models.profit_loss import BaseerProfitLossReport
-from ..models.revenue_channels import allocate_channels, UNALLOCATED, tender_matches_order
+from ..models.revenue_channels import (
+    allocate_channels, UNALLOCATED, tender_matches_order, reconcile_order_amounts,
+)
 
 
 @tagged('post_install', '-at_install')
 class TestRevenueChannels(TransactionCase):
+    def test_posted_rounding_residual_preserves_ledger(self):
+        unit = Decimal('.01')
+        for sign in (Decimal('1'), Decimal('-1')):
+            source = [('order', Decimal('46.08') * sign)]
+            posted = Decimal('46.09') * sign
+            adjusted = reconcile_order_amounts(source, posted, unit)
+            self.assertEqual(adjusted, [('order', posted)])
+            self.assertEqual(source, [('order', Decimal('46.08') * sign)])
+            payments = [('bank', 'Bank', Decimal('53') * sign)]
+            self.assertEqual(allocate_channels(adjusted[0][1], payments, unit),
+                             {'bank': ('Bank', posted)})
+
+    def test_rounding_limit_is_per_account_not_per_order(self):
+        source = [('a', Decimal('15.65')), ('b', Decimal('30.43'))]
+        adjusted = reconcile_order_amounts(source, Decimal('46.09'), Decimal('.01'))
+        self.assertEqual(adjusted, [('a', Decimal('15.65')), ('b', Decimal('30.44'))])
+        self.assertEqual(sum(value for _order, value in adjusted), Decimal('46.09'))
+        for posted in (Decimal('46.10'), Decimal('-46.08'), Decimal('0')):
+            self.assertIsNone(reconcile_order_amounts(source, posted, Decimal('.01')))
+        self.assertIsNone(reconcile_order_amounts([], Decimal('0'), Decimal('.01')))
+        self.assertIsNone(reconcile_order_amounts([('a', Decimal('0'))],
+                                                Decimal('.01'), Decimal('.01')))
+
     def test_order_adapter_currency_and_partial_fallback(self):
         class Records(list):
             def check_access(self, _mode):

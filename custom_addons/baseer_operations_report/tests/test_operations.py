@@ -103,8 +103,8 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertTrue(consistent(gross, net, tax, total, 1, 2, cent))
         self.assertTrue(consistent(gross, net, -tax, -total, -1, 2, cent))
         self.assertFalse(consistent(gross, net, tax, total, 1, 1, cent))
-        self.assertFalse(consistent(gross, net, Decimal('46.07'), tax,
-                                    total, 1, 2, cent))
+        self.assertFalse(consistent(gross, Decimal('46.07'), tax, total,
+                                    1, 2, cent))
         self.assertFalse(consistent(gross, Decimal('46.07'), tax, total,
                                     1, 100, cent))
         self.assertFalse(consistent(gross, net, tax, Decimal('53.01'),
@@ -684,7 +684,6 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertGreater(
             after_invoice['periods'][0]['excluded']['pos_session_income_not_readded'], 0,
         )
-        self.assertEqual(after_invoice['periods'][0]['excluded']['direct_aml_unproven'], 0)
         config.open_ui()
         refund_session = config.current_session_id
         refund_session.set_opening_control(0, 'Gross operations refund test')

@@ -394,7 +394,13 @@ class TestProfitLoss(TransactionCase):
         self.assertIn(b'56.00', html)
         document = lxml_html.fromstring(html)
         printed_rows = document.xpath("//div[contains(@class, 'bpl-pdf')]//table/tbody/tr")
-        self.assertEqual(len(printed_rows), 9)
+        summary_rows = [row for row in printed_rows if row.get('class') not in ('account', 'channel')]
+        self.assertEqual(len(summary_rows), 9)
+        self.assertTrue(document.xpath("//tr[@class='channel']"))
+        for account in values['revenue_accounts']['income']:
+            self.assertEqual(sum(Decimal(channel['amounts']['current']['amount'].replace(',', ''))
+                                 for channel in account['channels']),
+                             Decimal(account['amounts']['current']['amount'].replace(',', '')))
         self.assertTrue(all(len(row.xpath('./td')) == 1 for row in printed_rows))
 
         compared = {
@@ -415,7 +421,8 @@ class TestProfitLoss(TransactionCase):
         )
         document = lxml_html.fromstring(html)
         printed_rows = document.xpath("//div[contains(@class, 'bpl-pdf')]//table/tbody/tr")
-        self.assertEqual(len(printed_rows), 9)
+        summary_rows = [row for row in printed_rows if row.get('class') not in ('account', 'channel')]
+        self.assertEqual(len(summary_rows), 9)
         self.assertTrue(all(len(row.xpath('./td')) == 4 for row in printed_rows))
         self.assertIn(b'56.00', html)
 

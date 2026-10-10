@@ -765,7 +765,9 @@ class TestOperationsGrossCalculator(TransactionCase):
             hidden_config.flush_recordset()
             self.assertFalse(secured.env['pos.config'].search([('id', '=', config.id)]))
             with self.assertRaises(AccessError):
-                secured._build_source_snapshot(current_filters)
+                secured._direct_exclusions(
+                    self.company, today, today, [self.sale_journal.id],
+                )
         finally:
             hidden_config.unlink()
         rule = self.env['ir.rule'].create({

@@ -64,7 +64,7 @@ class ExecutivePosCase(TransactionCase):
     @classmethod
     def _session(cls, name, config, state='opened', start='2026-10-03 00:00:00'):
         return cls._insert('pos.session', {
-            'name': name, 'config_id': config.id, 'company_id': config.company_id.id,
+            'name': name, 'config_id': config.id,
             'user_id': cls.env.uid, 'state': state,
             'start_at': datetime.fromisoformat(start) - timedelta(hours=3) if start else None})
 

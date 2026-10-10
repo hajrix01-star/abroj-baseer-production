@@ -16,6 +16,19 @@ from odoo.tests.common import TransactionCase, tagged
 @tagged('post_install', '-at_install')
 class TestOperationsPosNativeSourceContract(TransactionCase):
 
+    def test_cash_evidence_header_cent_settlement_is_bounded(self):
+        handler = self.env['eh.account.dynamic.report.handler.baseer_cash_categories']
+        settled = handler._baseer_native_pos_rounded_net
+        D = Decimal
+        self.assertEqual(settled(D('53'), D('6.91'), D('46.08'), D('53'), D('.01')), D('46.09'))
+        self.assertEqual(settled(D('270'), D('135.22'), D('134.78'), D('270'), D('.01')), D('134.78'))
+        self.assertEqual(settled(D('-53'), D('-6.91'), D('-46.08'), D('-53'), D('.01')), D('-46.09'))
+        self.assertIsNone(settled(D('53'), D('6.91'), D('46.07'), D('53'), D('.01')))
+        self.assertIsNone(settled(D('53'), D('6.91'), D('46.09'), D('52.98'), D('.01')))
+        self.assertIsNone(settled(D('53'), D('6.91'), D('46.09'), D('52.99'), D('.01')))
+        self.assertIsNone(settled(D('53'), D('6.91'), D('46.09'), D('53'), D('0')))
+        self.assertIsNone(settled(D('53'), D('6.91'), D('46.09'), D('53'), D('-.01')))
+
     @staticmethod
     def _money(value):
         return Decimal(str(value)).quantize(Decimal('0.01'))
@@ -181,6 +194,9 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
         self.assertEqual(order.lines._prepare_base_line_for_taxes_computation()['account_id'],
                          mapped_income)
 
+        cancelled = order.copy({'state': 'cancel', 'payment_ids': [Command.clear()]})
+        self.assertIn(cancelled, session.order_ids)
+
         session.action_pos_session_closing_control()
         self.assertEqual(session.state, 'closed')
         self.assertEqual(session.move_id.state, 'posted')
@@ -191,6 +207,14 @@ class TestOperationsPosNativeSourceContract(TransactionCase):
         self.assertFalse(session.move_id.line_ids.filtered(
             lambda line: line.account_id == original_income,
         ))
+        cash_reader = self.env['eh.account.dynamic.report.handler.baseer_cash_categories']
+        evidence = cash_reader._baseer_native_pos_evidence(session, {
+            'company_id': company.id, 'date_to': fields.Date.context_today(session) + timedelta(days=1),
+            'visits': 0, 'budget': None,
+        })
+        self.assertNotIn('error', evidence)
+        self.assertEqual(evidence['gross'], Decimal('115.00'))
+        self.assertEqual(evidence['net'], Decimal('100.00'))
 
         order.with_context(generate_pdf=False).action_pos_order_invoice()
         invoice = order.account_move

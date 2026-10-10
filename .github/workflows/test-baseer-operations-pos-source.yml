@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - custom_addons/baseer_pos_summary/models/cash_report.py
+      - custom_addons/baseer_pos_summary/__manifest__.py
       - custom_addons/baseer_pos_summary/tests/test_operations_pos_source_contract.py
       - custom_addons/baseer_pos_summary/tests/__init__.py
       - .github/workflows/test-baseer-operations-pos-source.yml

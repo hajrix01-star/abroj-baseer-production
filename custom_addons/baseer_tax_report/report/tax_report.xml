@@ -123,18 +123,18 @@
                 عدد القيود: <span t-esc="report_data['exception']['other_count']"/>؛ الرصيد:
                 <span class="btr-money" dir="ltr" t-esc="report_data['other_tax_amount_text']"/>.
                 <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
-                    title="هذه القيود خارج خانات الإقرار؛ وقد تشمل رسومًا بلدية. رسوم البلدية خارج إقرار القيمة المضافة؛ راجع تصنيف القيود الأخرى."
+                    title="هذه القيود خارج خانات الإقرار؛ راجع تصنيف الضرائب والرسوم الأخرى غير الموسومة."
                     aria-label="معلومات عن قيود الرسوم والضرائب الأخرى">؟</a>
-                <span t-else="">هذه القيود خارج خانات الإقرار؛ وقد تشمل رسومًا بلدية. رسوم البلدية خارج إقرار القيمة المضافة؛ راجع تصنيف القيود الأخرى.</span>
+                <span t-else="">هذه القيود خارج خانات الإقرار؛ راجع تصنيف الضرائب والرسوم الأخرى غير الموسومة.</span>
             </t>
             <t t-else="">
                 <strong>Other untagged fees and taxes:</strong>
                 Entries: <span t-esc="report_data['exception']['other_count']"/>; signed balance:
                 <span class="btr-money" dir="ltr" t-esc="report_data['other_tax_amount_text']"/>.
                 <a t-if="report_data['interactive']" href="#" class="btr-help ms-1"
-                    title="These entries are outside the VAT return boxes and may include municipal fees. Municipal fees are outside the VAT return; review the other entries' classification."
+                    title="These entries are outside the VAT return boxes. Review the classification of the remaining untagged taxes and fees."
                     aria-label="About other untagged fees and taxes">?</a>
-                <span t-else="">These entries are outside the VAT return boxes and may include municipal fees. Municipal fees are outside the VAT return; review the other entries' classification.</span>
+                <span t-else="">These entries are outside the VAT return boxes. Review the classification of the remaining untagged taxes and fees.</span>
             </t>
         </div>
     </template>

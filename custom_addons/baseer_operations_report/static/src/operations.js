@@ -102,12 +102,20 @@ export function prepareOperationsSnapshot(snapshot, companyName, selectedJournal
                 let display = sectionMap.get(account.account_id);
                 if (!display) {
                     display = { id: account.account_id, code: account.account_code,
-                        name: account.account_name, amounts: {}, sourceCounts: {}, fingerprints: {} };
+                        name: account.account_name, amounts: {}, sourceCounts: {}, fingerprints: {}, channels: [] };
                     sectionMap.set(account.account_id, display);
                 }
                 display.amounts[period.key] = { amount: account.amount, negative: account.negative };
                 display.sourceCounts[period.key] = account.source_count;
                 display.fingerprints[period.key] = account.fingerprint;
+                for (const channel of account.channels || []) {
+                    let displayChannel = display.channels.find((item) => item.key === channel.key);
+                    if (!displayChannel) {
+                        displayChannel = { key: channel.key, name: channel.name, amounts: {} };
+                        display.channels.push(displayChannel);
+                    }
+                    displayChannel.amounts[period.key] = { amount: channel.amount, negative: channel.negative };
+                }
             }
         }
     }

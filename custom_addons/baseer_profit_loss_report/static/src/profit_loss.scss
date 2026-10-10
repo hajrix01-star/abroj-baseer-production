@@ -176,6 +176,7 @@
     .o_baseer_pl_account_amount:focus-visible,
     .o_baseer_pl_source:focus-visible { outline: 2px solid var(--baseer-report-accent); outline-offset: 3px; }
     .o_baseer_pl_account th { padding-inline-start: 2rem; overflow-wrap: anywhere; }
+    .o_baseer_pl_channel th { padding-inline-start: 3rem; overflow-wrap: anywhere; font-weight: 400; }
     .o_baseer_pl_account_amount {
         width: 100%;
         padding: 0;
@@ -218,5 +219,6 @@
         .o_baseer_pl_section th,
         .o_baseer_pl_net_income th { border-bottom: 0; }
         .o_baseer_pl_account th { padding-inline-start: 1.15rem; }
+        .o_baseer_pl_channel th { padding-inline-start: 1.8rem; }
     }
 }

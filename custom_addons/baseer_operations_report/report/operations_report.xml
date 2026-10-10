@@ -55,6 +55,8 @@
                     .bgo-pdf .net_income th, .bgo-pdf .net_income td {border-top: 1px solid #b6bfc7;}
                     .bgo-pdf .negative {color: #cf2732;}
                     .bgo-pdf .zero {color: #b8c1ca;}
+                    .bgo-pdf .account th {padding-inline-start: 18px;}
+                    .bgo-pdf .channel th {padding-inline-start: 28px; font-weight: 400;}
                 </style>
                 <h1 t-esc="'العمليات الإجمالية' if arabic else 'Gross Operations'"/>
                 <div class="meta">
@@ -73,10 +75,20 @@
                         </th>
                     </tr></thead>
                     <tbody>
-                        <tr t-foreach="rows" t-as="row" t-att-class="row['style'] + ' ' + row['key']">
+                        <t t-foreach="rows" t-as="row">
+                        <tr t-att-class="row['style'] + ' ' + row['key']">
                             <th scope="row" t-esc="row['label']"/>
                             <td t-foreach="row['amounts']" t-as="value" t-att-class="'numeric ' + ('negative' if value['negative'] else ('zero' if value['amount'].replace(',', '').replace('.', '').replace('0', '') == '' else ''))" t-esc="value['amount']"/>
                         </tr>
+                        <t t-if="row['key'] in ('income', 'other_income')">
+                            <t t-set="revenue_accounts" t-value="{account['account_id']: account for period in periods for account in period['accounts'].get(row['key'], [])}"/>
+                            <t t-foreach="revenue_accounts.values()" t-as="account">
+                                <tr class="account"><th scope="row"><span t-esc="account['account_code']"/> <span t-esc="account['account_name']"/></th><td t-foreach="periods" t-as="period" class="numeric"><t t-set="period_account" t-value="{item['account_id']: item for item in period['accounts'].get(row['key'], [])}.get(account['account_id'], {})"/><span t-att-class="'negative' if period_account.get('negative') else ''" t-esc="period_account.get('amount', '0.00')"/></td></tr>
+                                <t t-set="channels" t-value="{channel['key']: channel for period in periods for item in period['accounts'].get(row['key'], []) if item['account_id'] == account['account_id'] for channel in item.get('channels', [])}"/>
+                                <tr t-foreach="channels.values()" t-as="channel" class="channel"><th scope="row" t-esc="channel['name']"/><td t-foreach="periods" t-as="period" class="numeric"><t t-set="period_channels" t-value="{item_channel['key']: item_channel for item in period['accounts'].get(row['key'], []) if item['account_id'] == account['account_id'] for item_channel in item.get('channels', [])}"/><span t-att-class="'negative' if period_channels.get(channel['key'], {}).get('negative') else ''" t-esc="period_channels.get(channel['key'], {}).get('amount', '0.00')"/></td></tr>
+                            </t>
+                        </t>
+                        </t>
                     </tbody>
                 </table>
                 <div style="font-size: 8px; color: #657487; margin-top: 10px; border-top: 1px solid #d9dfe4; padding-top: 4px;">

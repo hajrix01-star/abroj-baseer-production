@@ -8,6 +8,7 @@ from decimal import Decimal, ROUND_HALF_UP, localcontext
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 from odoo.fields import Domain
+from .revenue_channels import UNALLOCATED, allocate_channels, tender_matches_order
 
 
 SECTION_KEYS = (
@@ -628,6 +629,12 @@ class BaseerProfitLossReport(models.AbstractModel):
         selected = ordered[start:start + self.PAGE_SIZE]
         currency = company.currency_id
         accounts = []
+        channel_periods = {
+            period['key']: self._revenue_channels(
+                company, period['domain'] & Domain('account_id', 'in',
+                    [item['account'].id for item in selected]))
+            for period in periods
+        } if section in ('income', 'income_other') else {}
         for row in selected:
             account = row['account']
             amounts = {}
@@ -645,6 +652,8 @@ class BaseerProfitLossReport(models.AbstractModel):
                 'negative': current_raw < 0,
                 'move_line_count': counts['current'],
                 'amounts': amounts, 'move_line_counts': counts,
+                'channels': self._channel_period_payload(
+                    account.id, periods, channel_periods, currency),
             })
         total_amounts = {}
         for period in periods:
@@ -658,6 +667,116 @@ class BaseerProfitLossReport(models.AbstractModel):
             'total_amounts': total_amounts,
             'accounts': accounts,
         }
+
+    def _order_channels(self, order, amount, company):
+        """Use original payment method IDs, not channel names or inference."""
+        try:
+            order.check_access('read')
+            if order.company_id != company or order.currency_id != company.currency_id:
+                return {UNALLOCATED: ('', amount)}
+            payments = order.payment_ids
+            payments.check_access('read')
+            self.env['pos.payment'].flush_model(['pos_order_id'])
+            self.env.cr.execute('SELECT id FROM pos_payment WHERE pos_order_id=%s', [order.id])
+            if set(payments.ids) != {item[0] for item in self.env.cr.fetchall()}:
+                return {UNALLOCATED: ('', amount)}
+            methods = payments.payment_method_id
+            methods.check_access('read')
+            if any(method.company_id != company for method in methods):
+                return {UNALLOCATED: ('', amount)}
+            tenders = [
+                ('payment_%s' % payment.payment_method_id.id,
+                 payment.payment_method_id.name, self._decimal(payment.amount))
+                for payment in payments.sorted('id')
+            ]
+            rounding = self._decimal(company.currency_id.rounding)
+            total = self._decimal(order.amount_total)
+            total = -abs(total) if order.is_refund else total
+            if not tender_matches_order(tenders, total, rounding):
+                return {UNALLOCATED: ('', amount)}
+            return allocate_channels(amount, tenders, rounding)
+        except AccessError:
+            return {UNALLOCATED: ('', amount)}
+
+    def _revenue_channels(self, company, domain):
+        """Only attribute a whole move/account after exact POS net matching."""
+        lines = self.env['account.move.line'].search(domain)
+        self._verify_links(lines)
+        grouped = {}
+        for line in lines:
+            key = (line.move_id.id, line.account_id.id)
+            grouped[key] = grouped.get(key, Decimal('0')) - self._decimal(line.balance)
+        result = {}
+        for (move_id, account_id), amount in grouped.items():
+            allocation = {UNALLOCATED: ('', amount)}
+            try:
+                Order = self.env['pos.order']
+                Order.browse().check_access('read')
+                orders = Order.search([
+                    ('company_id', '=', company.id), ('state', 'in', ('paid', 'done', 'invoiced')),
+                    '|', ('account_move', '=', move_id),
+                    '&', ('account_move', '=', False), ('session_id.move_id', '=', move_id),
+                ])
+                orders.check_access('read')
+                # Rules may silently hide some orders. IDs are used only to
+                # prove completeness, never to expose hidden amounts/names.
+                Order.flush_model(['company_id', 'state', 'account_move', 'session_id'])
+                self.env['pos.session'].flush_model(['move_id'])
+                self.env.cr.execute('''SELECT o.id FROM pos_order o
+                    LEFT JOIN pos_session s ON s.id=o.session_id
+                    WHERE o.company_id=%s AND o.state IN ('paid','done','invoiced')
+                    AND (o.account_move=%s OR (o.account_move IS NULL AND s.move_id=%s))''',
+                    [company.id, move_id, move_id])
+                if set(orders.ids) != {item[0] for item in self.env.cr.fetchall()}:
+                    raise AccessError(_('POS source is not available.'))
+                orders.session_id.check_access('read')
+                order_amounts = []
+                for order in orders:
+                    order.lines.check_access('read')
+                    self.env['pos.order.line'].flush_model(['order_id'])
+                    self.env.cr.execute('SELECT id FROM pos_order_line WHERE order_id=%s',
+                                        [order.id])
+                    if set(order.lines.ids) != {item[0] for item in self.env.cr.fetchall()}:
+                        raise AccessError(_('POS source is not available.'))
+                    net = Decimal('0')
+                    for source in order.lines:
+                        account = source._prepare_base_line_for_taxes_computation().get('account_id')
+                        if account:
+                            account.check_access('read')
+                        if account and account.id == account_id:
+                            # Baseer refunds can store positive subtotals;
+                            # already-negative native lines must not flip twice.
+                            subtotal = self._decimal(source.price_subtotal)
+                            net += -abs(subtotal) if order.is_refund else subtotal
+                    order_amounts.append((order, net))
+                if orders and sum((net for _order, net in order_amounts), Decimal('0')) == amount:
+                    allocation = {}
+                    for order, net in order_amounts:
+                        for key, (name, value) in self._order_channels(order, net, company).items():
+                            prior = allocation.get(key, (name, Decimal('0')))
+                            allocation[key] = (name, prior[1] + value)
+            except (AccessError, KeyError):
+                # POS is an optional source for an accounting-only installation.
+                pass
+            target = result.setdefault(account_id, {})
+            for key, (name, value) in allocation.items():
+                previous = target.get(key, (name, Decimal('0')))
+                target[key] = (name, previous[1] + value)
+        return result
+
+    def _channel_period_payload(self, account_id, periods, channel_periods, currency):
+        keys = {}
+        for period in periods:
+            keys.update(channel_periods.get(period['key'], {}).get(account_id, {}))
+        return [{'key': key, 'name': (name or self._unallocated_channel_label()),
+                 'amounts': {period['key']: self._period_amount(
+                     channel_periods.get(period['key'], {}).get(account_id, {}).get(
+                         key, ('', Decimal('0')))[1], currency) for period in periods}}
+                for key, (name, _value) in sorted(keys.items())]
+
+    def _unallocated_channel_label(self):
+        return ('غير موزع حسب طريقة الدفع' if (self.env.lang or '').startswith('ar')
+                else _('Unallocated by payment method'))
 
     @api.model
     def get_lines(self, filters, account_id, page=1, period_key='current'):

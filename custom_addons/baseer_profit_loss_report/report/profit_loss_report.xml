@@ -56,6 +56,8 @@
                     .bpl-pdf .result th, .bpl-pdf .result td {font-weight: 600;}
                     .bpl-pdf .negative {color: #cf2732;}
                     .bpl-pdf .zero {color: #b8c1ca;}
+                    .bpl-pdf .account th {padding-inline-start: 18px;}
+                    .bpl-pdf .channel th {padding-inline-start: 28px; font-weight: 400;}
                 </style>
                 <h1 t-esc="'الربح والخسارة' if arabic else 'Profit and Loss'"/>
                 <div class="meta">
@@ -74,10 +76,16 @@
                         </th>
                     </tr></thead>
                     <tbody>
-                        <tr t-foreach="rows" t-as="row" t-att-class="row['kind'] + ' ' + row['key']">
+                        <t t-foreach="rows" t-as="row">
+                        <tr t-att-class="row['kind'] + ' ' + row['key']">
                             <th scope="row" t-esc="labels[row['key']]"/>
                             <td t-foreach="periods" t-as="period" t-att-class="'numeric ' + ('negative' if row['amounts'][period['key']]['negative'] else ('zero' if not row['amounts'][period['key']]['amount'].replace(',', '').replace('.', '').replace('0', '') else ''))" t-esc="row['amounts'][period['key']]['amount']"/>
                         </tr>
+                        <t t-foreach="revenue_accounts.get(row['key'], [])" t-as="account">
+                            <tr class="account"><th scope="row"><span t-esc="account['code']"/> <span t-esc="account['name']"/></th><td t-foreach="periods" t-as="period" t-att-class="'numeric ' + ('negative' if account['amounts'][period['key']]['negative'] else '')" t-esc="account['amounts'][period['key']]['amount']"/></tr>
+                            <tr t-foreach="account.get('channels', [])" t-as="channel" class="channel"><th scope="row" t-esc="channel['name']"/><td t-foreach="periods" t-as="period" t-att-class="'numeric ' + ('negative' if channel['amounts'].get(period['key'], {}).get('negative') else '')" t-esc="channel['amounts'].get(period['key'], {}).get('amount', '0.00')"/></tr>
+                        </t>
+                        </t>
                     </tbody>
                 </table>
                 <div class="footer" style="font-size: 8px; color: #657487; margin-top: 10px; border-top: 1px solid #d9dfe4; padding-top: 4px;">

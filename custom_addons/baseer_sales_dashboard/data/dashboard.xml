@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Keep the native dashboard application ahead of Discuss; retain its action and access rules. -->
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu">
+        <field name="sequence">0</field>
+    </record>
     <data noupdate="1">
         <record id="dashboard_executive_center" model="spreadsheet.dashboard">
             <field name="name">Command center</field>

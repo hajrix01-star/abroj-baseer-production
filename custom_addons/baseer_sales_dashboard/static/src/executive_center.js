@@ -10,7 +10,7 @@ export class BaseerExecutiveCenter extends Component {
     setup() {
         this.orm = useService("orm");
         this.state = useState({ companies: [], selected: [], cards: [], loading: true, error: "", loaded: 0, point: null,
-            preset: "last_complete_day", dateFrom: "", dateTo: "", period: null, sessionLoading: {}, sessionErrors: {} });
+            preset: "last_complete_day", dateFrom: "", dateTo: "", period: null, sessionLoading: {}, sessionErrors: {}, daySessions: {}, activeCompany: null });
         this.generation = 0;
         onWillStart(() => { this.initialize(); });
         onWillUnmount(() => { this.disposed = true; this.generation++; });
@@ -24,7 +24,7 @@ export class BaseerExecutiveCenter extends Component {
             empty: _t("Choose a company to display its executive overview."),
             noCompanies: _t("No authorized companies are available."),
             unavailable: _t("No Point of Sale sales are recorded in this period."), unsupportedCurrency: _t("This overview supports SAR only"),
-            daily: _t("Last selected session opening day's sales"), change: _t("Change from previous closed session day"), chart: _t("Session opening days · last 14 days of selected period"),
+            daily: _t("Last selected session opening day's sales"), change: _t("Change from previous closed session day"), chart: _t("Sales trend"),
             noData: _t("Unavailable"), snapshotNote: _t("All confirmed sales belong to their session opening date in Riyadh time, including sales after midnight. Refunds belong to their own session. This is not an accounting cutoff."),
             period: _t("Period"), from: _t("From session opening date"), to: _t("To session opening date"), apply: _t("Apply filters"),
             lastComplete: _t("Yesterday"), currentDay: _t("Today"), thisMonth: _t("This month · through today"),
@@ -33,8 +33,12 @@ export class BaseerExecutiveCenter extends Component {
             total: _t("Period net sales including tax"), orders: _t("Paid orders including refunds"), sessions: _t("Sessions with sales in this period"),
             latestSale: _t("Latest recorded POS sale · Riyadh time"), sessionDetails: _t("Sales by session within selected period"),
             openingDay: _t("Session opening day"),
-            noSessions: _t("No sessions have sales in this period."), next: _t("Next page"), previousPage: _t("Previous page"),
+            noSessions: _t("No sessions are recorded in this period."), next: _t("Next page"), previousPage: _t("Previous page"),
             page: _t("Page"), sessionError: _t("Unable to load session details. Please try again."),
+            sales: _t("Net sales including tax"), customers: _t("Customers"), saleOrders: _t("Sales orders"),
+            averageOrder: _t("Average per order"), averageCustomer: _t("Average per customer"),
+            days: _t("Daily sessions"), cancelledOrders: _t("Cancelled orders"), itemCancellations: _t("Cancelled items"),
+            substitutions: _t("Product substitutions"), allSessions: _t("Sessions"), loadingSessions: _t("Loading sessions"),
         };
     }
 
@@ -66,6 +70,7 @@ export class BaseerExecutiveCenter extends Component {
         this.state.period = null;
         this.state.sessionLoading = {};
         this.state.sessionErrors = {};
+        this.state.daySessions = {};
         const ids = [...this.state.selected];
         const filters = this.filters();
         try {
@@ -74,6 +79,7 @@ export class BaseerExecutiveCenter extends Component {
                 const result = await this.orm.call("spreadsheet.dashboard", "get_baseer_executive_cards", [[this.props.dashboardId], ids.slice(offset, offset + 3)], filters);
                 if (this.disposed || generation !== this.generation) return;
                 this.state.cards.push(...result.cards);
+                if (!this.state.cards.some((card) => card.company.id === this.state.activeCompany)) this.state.activeCompany = this.state.cards[0]?.company.id || null;
                 this.state.period = result.period;
                 this.state.loaded = Math.min(offset + 3, ids.length);
             }
@@ -102,21 +108,27 @@ export class BaseerExecutiveCenter extends Component {
         }
         this.loadCards();
     }
-    async loadSessionPage(card, page) {
+    dayKey(card, day) { return `${card.company.id}:${day.date}`; }
+    sessionsFor(card, day) { return this.state.daySessions[this.dayKey(card, day)]; }
+    async onDayToggle(event, card, day) {
+        if (event.target.open && !this.sessionsFor(card, day)) await this.loadSessionPage(card, day, 1);
+    }
+    async loadSessionPage(card, day, page) {
         const id = card.company.id;
-        if (this.state.sessionLoading[id]) return;
+        const key = this.dayKey(card, day);
+        if (this.state.sessionLoading[key]) return;
         const generation = this.generation;
-        this.state.sessionLoading[id] = true; this.state.sessionErrors[id] = "";
+        this.state.sessionLoading[key] = true; this.state.sessionErrors[key] = "";
         // Displayed period, not unapplied form edits.
-        const filters = { period: "custom", date_from: card.period.from, date_to: card.period.to, page };
+        const filters = { period: "custom", date_from: day.date, date_to: day.date, page };
         try {
             const result = await this.orm.call("spreadsheet.dashboard", "get_baseer_executive_sessions", [[this.props.dashboardId], id], filters);
             if (this.disposed || generation !== this.generation) return;
-            card.sessions = result;
+            this.state.daySessions[key] = result;
         } catch {
-            if (!this.disposed && generation === this.generation) this.state.sessionErrors[id] = this.labels.sessionError;
+            if (!this.disposed && generation === this.generation) this.state.sessionErrors[key] = this.labels.sessionError;
         } finally {
-            if (!this.disposed && generation === this.generation) this.state.sessionLoading[id] = false;
+            if (!this.disposed && generation === this.generation) this.state.sessionLoading[key] = false;
         }
     }
 
@@ -132,10 +144,15 @@ export class BaseerExecutiveCenter extends Component {
     }
     metrics(card) {
         return [
-            { key: "orders", label: this.labels.orders, value: card.order_count },
-            { key: "sessions", label: this.labels.sessions, value: card.session_count },
+            { key: "orders", label: this.labels.saleOrders, value: card.sale_order_count },
+            { key: "customers", label: this.labels.customers, value: card.customer_count?.display || "—" },
+            { key: "averageOrder", label: this.labels.averageOrder, value: card.average_order?.display || "—" },
+            { key: "averageCustomer", label: this.labels.averageCustomer, value: card.average_customer?.display || "—" },
         ];
     }
+    activateCompany(id) { this.state.activeCompany = id; this.state.point = null; }
+    get activeCards() { return this.state.cards.filter((card) => card.company.id === this.state.activeCompany); }
+    counterDisplay(counter) { return counter?.available ? counter.display : this.labels.noData; }
     barStyle(point) {
         return `height:${point.bar_height || "0"}%;`;
     }

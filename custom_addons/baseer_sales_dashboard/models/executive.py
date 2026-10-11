@@ -18,6 +18,19 @@ SESSION_PAGE_SIZE = 50
 POS_STATES = ('paid', 'done', 'invoiced')
 
 
+def _count_card(value, available=True):
+    return {'value': value if available else None,
+            'display': str(value) if available else '—', 'available': available}
+
+
+def _averages(total, sale_count, customers, customer_available):
+    return {'sale_order_count': sale_count,
+            'customer_count': _count_card(customers, customer_available),
+            'average_order': _card(Decimal(total) / Decimal(sale_count)) if sale_count else _card(None, False),
+            'average_customer': _card(Decimal(total) / Decimal(customers))
+                if customer_available and customers else _card(None, False)}
+
+
 def _validate_company_ids(company_ids, permitted):
     if (not isinstance(company_ids, list) or not 1 <= len(company_ids) <= 3
             or any(type(identifier) is not int or identifier <= 0 for identifier in company_ids)
@@ -165,7 +178,10 @@ class ExecutiveDashboard(models.Model):
                          ('session_id.start_at', '<=', now), ('date_order', '<=', now)]
 
     def _baseer_executive_capacity(self, period, now):
-        domain = self._baseer_executive_domain(period, now)
+        # Cancellation statistics now read other states too. The same budget
+        # must bound those visible orders, not only the financial sale subset.
+        domain = [term for term in self._baseer_executive_domain(period, now)
+                  if term != ('state', 'in', POS_STATES)]
         if self.env['pos.order'].search_count(domain, limit=MAX_ORDERS + 1) > MAX_ORDERS:
             raise ValidationError(_('This period exceeds 100,000 POS orders. Choose a shorter period; no records have been omitted.'))
 
@@ -181,6 +197,47 @@ class ExecutiveDashboard(models.Model):
 
     def _baseer_executive_query(self, period, now):
         return self.env['pos.order']._search(self._baseer_executive_domain(period, now))
+
+    def _baseer_executive_visible_session_domain(self, period, now):
+        first, last = date.fromisoformat(period['from']), date.fromisoformat(period['to'])
+        return [('company_id', '=', self.env.company.id),
+                ('start_at', '>=', _utc_at(first, 0)),
+                ('start_at', '<', _utc_at(last + timedelta(days=1), 0)),
+                ('start_at', '<=', now)]
+
+    def _baseer_executive_metric_columns(self):
+        orders = self.env['pos.order']
+        amount = SQL.identifier(orders._table, 'amount_total', to_flush=orders._fields['amount_total'])
+        # Negative totals are refunds even on installations without is_refund.
+        sale = SQL('%s >= 0', amount)
+        refund = orders._fields.get('is_refund')
+        if refund and refund.store and refund.column_type:
+            sale = SQL('%s AND NOT COALESCE(%s, FALSE)', sale,
+                       SQL.identifier(orders._table, 'is_refund', to_flush=refund))
+        customer = orders._fields.get('customer_count')
+        if customer and customer.store and customer.column_type:
+            number = SQL.identifier(orders._table, 'customer_count', to_flush=customer)
+            return (SQL('COUNT(*) FILTER (WHERE %s)', sale),
+                    SQL('CAST(COALESCE(SUM(%s) FILTER (WHERE %s AND %s > 0), 0) AS TEXT)', number, sale, number),
+                    SQL('COUNT(*) FILTER (WHERE %s AND COALESCE(%s, 0) <= 0)', sale, number), True)
+        return SQL('COUNT(*) FILTER (WHERE %s)', sale), SQL("'0'"), SQL('COUNT(*) FILTER (WHERE %s)', sale), False
+
+    def _baseer_executive_group_metrics(self, period, now, group):
+        query = self._baseer_executive_query(period, now)
+        query.groupby = group
+        sale_count, customers, missing, supported = self._baseer_executive_metric_columns()
+        return {key: {'sales': Decimal(total), 'count': count,
+                      'sale_count': sales, 'customers': int(Decimal(customer_total)),
+                      'customer_available': supported and not absent,
+                      'status': 'current' if opened else 'complete'}
+                for key, total, count, sales, customer_total, absent, opened in self.env.execute_query(query.select(
+                    group, self._baseer_executive_amount(), SQL('COUNT(*)'), sale_count, customers, missing,
+                    SQL('BOOL_OR(%s)', self._baseer_executive_open_session())))}
+
+    def _baseer_executive_empty_metrics(self):
+        return {'sales': ZERO, 'count': 0, 'sale_count': 0, 'customers': 0,
+                'customer_available': self._baseer_executive_metric_columns()[3],
+                'session_count': 0, 'status': 'no_orders'}
 
     def _baseer_executive_session_stamp(self):
         self.env['pos.session'].flush_model(['start_at', 'state'])
@@ -200,34 +257,65 @@ class ExecutiveDashboard(models.Model):
                    SQL.identifier(orders._table, 'amount_total', to_flush=orders._fields['amount_total']))
 
     def _baseer_executive_days(self, period, now):
-        query = self._baseer_executive_query(period, now)
         stamp = self._baseer_executive_session_stamp()
         business_day = SQL("CAST(%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh' AS DATE)", stamp)
-        query.groupby = business_day
-        return {day: {'sales': Decimal(total), 'count': count, 'status': 'current' if opened else 'complete'}
-                for day, total, count, opened in self.env.execute_query(query.select(
-                    business_day, self._baseer_executive_amount(), SQL('COUNT(*)'),
-                    SQL('BOOL_OR(%s)', self._baseer_executive_open_session())))}
+        result = self._baseer_executive_group_metrics(period, now, business_day)
+        sessions = self.env['pos.session']
+        query = sessions._search(self._baseer_executive_visible_session_domain(period, now))
+        session_day = SQL("CAST(%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh' AS DATE)",
+                          SQL.identifier(sessions._table, 'start_at', to_flush=sessions._fields['start_at']))
+        query.groupby = session_day
+        state = SQL.identifier(sessions._table, 'state', to_flush=sessions._fields['state'])
+        for day, count, opened in self.env.execute_query(query.select(session_day, SQL('COUNT(*)'), SQL("BOOL_OR(%s != 'closed')", state))):
+            item = result.setdefault(day, self._baseer_executive_empty_metrics())
+            item.update(session_count=count, status='current' if opened else 'complete')
+        return result
+
+    def _baseer_executive_audit_counts(self, model_name, sessions, orders):
+        if model_name not in self.env.registry:
+            return None
+        model = self.env[model_name]
+        try:
+            model.check_access('read')
+            query = model._search([('company_id', '=', self.env.company.id),
+                                   ('session_id', 'in', sessions.ids), ('order_id', 'in', orders)])
+            session = SQL.identifier(model._table, 'session_id', to_flush=model._fields['session_id'])
+            query.groupby = session
+            return dict(self.env.execute_query(query.select(session, SQL('COUNT(*)'))))
+        except AccessError:
+            return None
 
     def _baseer_executive_session_page(self, period, now, page=1):
-        query = self._baseer_executive_query(period, now)
-        session = SQL.identifier('pos_order', 'session_id')
-        total = self.env.execute_query(query.select(SQL('COUNT(DISTINCT %s)', session)))[0][0]
+        session_model = self.env['pos.session']
+        domain = self._baseer_executive_visible_session_domain(period, now)
+        total = session_model.search_count(domain)
         if type(page) is not int or page < 1 or page > max(1, (total + SESSION_PAGE_SIZE - 1) // SESSION_PAGE_SIZE):
             raise ValidationError(_('Choose a valid session page.'))
-        query.groupby = session
-        query.order = session
-        query.limit = SESSION_PAGE_SIZE
-        query.offset = (page - 1) * SESSION_PAGE_SIZE
-        grouped = self.env.execute_query(query.select(session, self._baseer_executive_amount(), SQL('COUNT(*)')))
-        sessions = self.env['pos.session'].browse([row[0] for row in grouped])
+        sessions = session_model.search(domain, order='start_at desc, id desc',
+                                       limit=SESSION_PAGE_SIZE, offset=(page - 1) * SESSION_PAGE_SIZE)
         sessions.check_access('read')
-        by_id = {item.id: item for item in sessions}
-        rows = [{'session_id': identifier, 'name': report_name(by_id[identifier].name, self.env.lang),
-                 'pos_name': report_name(by_id[identifier].config_id.name, self.env.lang),
-                 'opening_day': by_id[identifier].start_at.replace(tzinfo=timezone.utc).astimezone(RIYADH).date().isoformat(),
-                 'state': by_id[identifier].state, 'order_count': count, 'sales': _card(amount)}
-                for identifier, amount, count in grouped]
+        session = SQL.identifier('pos_order', 'session_id')
+        grouped = self._baseer_executive_group_metrics(period, now, session)
+        order_domain = [('company_id', '=', self.env.company.id),
+                        ('session_id.company_id', '=', self.env.company.id),
+                        ('session_id', 'in', sessions.ids), ('date_order', '<=', now)]
+        visible_orders = self.env['pos.order']._search(order_domain)
+        cancelled_query = self.env['pos.order']._search(order_domain + [('state', '=', 'cancel')])
+        cancelled_query.groupby = session
+        cancelled = dict(self.env.execute_query(cancelled_query.select(session, SQL('COUNT(*)'))))
+        item_cancellations = self._baseer_executive_audit_counts('baseer.pos.protected_item_cancellation', sessions, visible_orders)
+        substitutions = self._baseer_executive_audit_counts('baseer.pos.substitution', sessions, visible_orders)
+        rows = []
+        for item in sessions:
+            metrics = grouped.get(item.id, self._baseer_executive_empty_metrics())
+            rows.append({'session_id': item.id, 'name': report_name(item.name, self.env.lang),
+                         'pos_name': report_name(item.config_id.name, self.env.lang),
+                         'opening_day': item.start_at.replace(tzinfo=timezone.utc).astimezone(RIYADH).date().isoformat(),
+                         'state': item.state, 'order_count': metrics['count'], 'sales': _card(metrics['sales']),
+                         **_averages(metrics['sales'], metrics['sale_count'], metrics['customers'], metrics['customer_available']),
+                         'cancelled_orders': cancelled.get(item.id, 0),
+                         'item_cancellations': _count_card(item_cancellations.get(item.id, 0) if item_cancellations is not None else 0, item_cancellations is not None),
+                         'substitutions': _count_card(substitutions.get(item.id, 0) if substitutions is not None else 0, substitutions is not None)})
         return {'rows': rows, 'total': total, 'page': page, 'page_size': SESSION_PAGE_SIZE,
                 'has_next': page * SESSION_PAGE_SIZE < total}
 
@@ -246,7 +334,8 @@ class ExecutiveDashboard(models.Model):
                     'available': False, 'reason': 'unsupported_currency', 'date': period['to'],
                     'period': dict(period), 'daily': dict(empty), 'total': dict(empty),
                     'daily_change': self._baseer_executive_change(empty, empty, False),
-                    'order_count': 0, 'session_count': 0, 'timeline': [],
+                    'order_count': 0, 'session_count': 0, 'timeline': [], 'days': [],
+                    **_averages(ZERO, 0, 0, False),
                     'sessions': {'rows': [], 'total': 0, 'page': 1,
                                  'page_size': SESSION_PAGE_SIZE, 'has_next': False},
                     'outside_hours': {'count': 0, 'total': dict(empty)}, 'latest_sale_at': None}
@@ -281,12 +370,31 @@ class ExecutiveDashboard(models.Model):
                           'change': dict(unavailable_change), 'order_count': item['count'],
                           'bar_height': str(money(abs(item['sales']) / peak * Decimal(100))) if peak else '0.00'})
             day += timedelta(days=1)
-        sessions = self._baseer_executive_session_page(period, now)
+        # Session rows and optional audit models are fetched only when a day is
+        # expanded. Card totals come from the complete bounded day projection.
+        session_total = sum(item.get('session_count', 0) for item in days.values())
+        sessions = {'rows': [], 'total': session_total, 'page': 1,
+                    'page_size': SESSION_PAGE_SIZE, 'has_next': False}
+        complete_days = []
+        day = first
+        while day <= last:
+            item = days.get(day, self._baseer_executive_empty_metrics())
+            complete_days.append({'date': day.isoformat(), 'sales': _card(item['sales']),
+                                  'order_count': item['count'], 'session_count': item.get('session_count', 0),
+                                  'status': item['status'],
+                                  **_averages(item['sales'], item['sale_count'], item['customers'], item['customer_available'])})
+            day += timedelta(days=1)
+        complete_days.reverse()
+        summary = _averages(total, sum(item['sale_count'] for item in days.values()),
+                            sum(item['customers'] for item in days.values()),
+                            self._baseer_executive_metric_columns()[3]
+                            and all(item['customer_available'] for item in days.values()))
         return {'company': {'id': company.id, 'name': report_name(company.name, self.env.lang),
                             'currency': company.currency_id.name},
                 'available': True, 'reason': None if order_count else 'no_sales',
                 'date': last.isoformat(), 'period': card_period, 'daily': _card(daily['sales']),
                 'daily_change': change, 'total': _card(total), 'order_count': order_count,
-                'session_count': sessions['total'], 'timeline': chart, 'sessions': sessions,
+                'session_count': session_total, 'timeline': chart, 'sessions': sessions,
+                'days': complete_days, **summary,
                 'outside_hours': {'count': 0, 'total': _card(ZERO)},
                 'latest_sale_at': self._baseer_executive_latest(now)}

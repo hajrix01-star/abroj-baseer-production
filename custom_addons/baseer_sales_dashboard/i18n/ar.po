@@ -1093,3 +1093,75 @@ msgstr "لا يمكن عرض تواريخ فتح جلسات مستقبلية."
 #: code:addons/baseer_sales_dashboard/models/executive.py:0
 msgid "A confirmed POS order has no session opening time; its operating day cannot be determined."
 msgstr "يوجد طلب مؤكد في نقاط البيع دون وقت فتح جلسة؛ لا يمكن تحديد يومه التشغيلي."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Net sales including tax"
+msgstr "صافي المبيعات شامل الضريبة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sales orders"
+msgstr "طلبات البيع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Average per order"
+msgstr "متوسط الفاتورة للطلب"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Average per customer"
+msgstr "متوسط الفاتورة للعميل"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Daily sessions"
+msgstr "الجلسات حسب اليوم"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Cancelled orders"
+msgstr "الطلبات الملغاة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Cancelled items"
+msgstr "إلغاءات الأصناف"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Product substitutions"
+msgstr "الاستبدالات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sessions"
+msgstr "الجلسات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Loading sessions"
+msgstr "جاري تحميل الجلسات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "No sessions are recorded in this period."
+msgstr "لا توجد جلسات مسجلة في هذه الفترة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
+msgid "Sales trend"
+msgstr "حركة المبيعات"

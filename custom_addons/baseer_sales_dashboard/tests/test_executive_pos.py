@@ -12,7 +12,7 @@ from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, new_test_user, tagged
 from odoo.tools import SQL
 
-from ..models.executive import _resolve_period, _utc_at, MAX_ORDERS
+from ..models.executive import _resolve_period, _utc_at, _averages, MAX_ORDERS
 
 
 @tagged('post_install', '-at_install')
@@ -94,6 +94,11 @@ class ExecutivePosCase(TransactionCase):
                 self.company.ids, period, first if period == 'custom' else None,
                 last if period == 'custom' else None)['cards'][0]
 
+    def _session_rows(self, first='2026-10-02', last='2026-10-03', page=1):
+        with patch('odoo.fields.Datetime.now', return_value=self.NOW):
+            return self.dashboard.with_user(self.reader).get_baseer_executive_sessions(
+                self.company.id, 'custom', first, last, page=page)['rows']
+
     def test_session_opening_day_midnight_states_refunds_and_long_sessions(self):
         self._update_fixture(self.session_a, {'start_at': datetime(2026, 10, 2, 15)})
         self._order('2026-10-02 18:00:00', '100')
@@ -116,7 +121,7 @@ class ExecutivePosCase(TransactionCase):
         self.assertEqual(card['order_count'], 10)
         self.assertEqual(card['session_count'], 2)
         self.assertEqual(card['outside_hours']['count'], 0)
-        sessions = {row['session_id']: row for row in card['sessions']['rows']}
+        sessions = {row['session_id']: row for row in self._session_rows()}
         self.assertEqual(sessions[self.session_a.id]['sales']['value'], '958.00')
         self.assertEqual(sessions[self.session_b.id]['sales']['value'], '30.00')
         self.assertEqual(card['latest_sale_at'], '2026-10-04 07:00:00')
@@ -186,24 +191,124 @@ class ExecutivePosCase(TransactionCase):
         self.assertEqual(empty['total']['value'], '0.00')
         self.assertEqual(empty['sessions']['rows'], [])
 
-    def test_session_paging_only_contributing_sessions(self):
+    def test_session_paging_all_visible_sessions_including_no_orders(self):
         self._session('No orders', self.config)
         for index in range(51):
             session = self._session('Page %02d' % index, self.config)
             self._order('2026-10-03 12:00:00', '1.01', session)
         card = self._cards()
-        self.assertEqual(card['session_count'], 51)
-        self.assertEqual(len(card['sessions']['rows']), 50)
-        self.assertTrue(card['sessions']['has_next'])
+        self.assertEqual(card['session_count'], 54)
+        self.assertEqual(card['sessions']['rows'], [])
+        self.assertFalse(card['sessions']['has_next'])
+        self.assertEqual(len(self._session_rows()), 50)
         dashboard = self.dashboard.with_user(self.reader)
         with patch('odoo.fields.Datetime.now', return_value=self.NOW):
             page = dashboard.get_baseer_executive_sessions(self.company.id, 'custom', '2026-10-02', '2026-10-03', page=2)
-            self.assertEqual(len(page['rows']), 1)
+            self.assertEqual(len(page['rows']), 4)
             self.assertFalse(page['has_next'])
-            self.assertEqual(page['rows'][0]['sales']['value'], '1.01')
+            self.assertEqual(sum(Decimal(row['sales']['value']) for row in page['rows']), Decimal('1.01'))
             for invalid in (0, True, '2', 1.5, -1, 3, 1000000):
                 with self.assertRaises(ValidationError):
                     dashboard.get_baseer_executive_sessions(self.company.id, 'custom', '2026-10-02', '2026-10-03', page=invalid)
+
+    def test_compact_decimal_averages_and_zero_denominators(self):
+        result = _averages(Decimal('1200'), 10, 12, True)
+        self.assertEqual(result['average_order']['value'], '120.00')
+        self.assertEqual(result['average_customer']['value'], '100.00')
+        self.assertEqual(_averages(Decimal('1'), 3, 3, True)['average_customer']['value'], '0.33')
+        self.assertFalse(_averages(Decimal('-25'), 0, 0, True)['average_order']['available'])
+        self.assertFalse(_averages(Decimal('100'), 1, 0, False)['customer_count']['available'])
+        self.assertFalse(_averages(Decimal('100'), 1, 0, False)['average_customer']['available'])
+
+    def test_compact_full_days_cancel_only_session_and_day_rpc(self):
+        cancelled = self._session('Cancellation only', self.config, start='2026-10-02 18:00:00')
+        self._order('2026-10-02 19:00:00', '80', cancelled, 'cancel')
+        self._order('2026-10-03 01:00:00', '120', self.session_b)
+        card = self._cards(first='2026-09-01', last='2026-10-03')
+        self.assertEqual(len(card['days']), 33)
+        day = next(item for item in card['days'] if item['date'] == '2026-10-02')
+        self.assertEqual(day['sales']['value'], '0.00')
+        self.assertEqual(day['session_count'], 1)
+        self.assertFalse(day['average_customer']['available'])
+        self.assertEqual(card['total']['value'], '120.00')
+        with patch('odoo.fields.Datetime.now', return_value=self.NOW):
+            page = self.dashboard.with_user(self.reader).get_baseer_executive_sessions(
+                self.company.id, 'custom', '2026-10-02', '2026-10-02')
+        self.assertEqual(page['total'], 1)
+        row = page['rows'][0]
+        self.assertEqual(row['session_id'], cancelled.id)
+        self.assertEqual(row['cancelled_orders'], 1)
+        self.assertEqual(row['sales']['value'], '0.00')
+        self.assertFalse(row['average_order']['available'])
+
+    def test_compact_customer_metrics_missing_refund_and_optional_source(self):
+        orders = self.env['pos.order']
+        sale = self._order('2026-10-03 01:00:00', '120', self.session_a)
+        refund = self._order('2026-10-03 02:00:00', '-20', self.session_a)
+        field = orders._fields.get('customer_count')
+        if field and field.store and field.column_type:
+            self._update_fixture(sale, {'customer_count': 2})
+            self._update_fixture(refund, {'customer_count': 9})
+            card = self._cards()
+            self.assertEqual(card['customer_count']['value'], 2)
+            self.assertEqual(card['sale_order_count'], 1)
+            self.assertEqual(card['average_customer']['value'], '50.00')
+            self.assertEqual(card['average_order']['value'], '100.00')
+            self._update_fixture(sale, {'customer_count': 0})
+            card = self._cards()
+            self.assertFalse(card['customer_count']['available'])
+            self.assertFalse(card['average_customer']['available'])
+        else:
+            self.assertFalse(self._cards()['customer_count']['available'])
+        scoped = self.dashboard.with_user(self.reader)._baseer_executive_scope(self.company.id)
+        self.assertIsNone(scoped._baseer_executive_audit_counts('baseer.missing.audit', self.session_a, orders._search([])))
+
+    def test_compact_cancel_order_rules_and_optional_audit_access(self):
+        hidden = self._order('2026-10-03 01:00:00', '100', self.session_a, 'cancel')
+        self.env['ir.rule'].create({'name': 'Compact hide cancelled order',
+            'model_id': self.env['ir.model']._get_id('pos.order'),
+            'domain_force': "[('id', '!=', %d)]" % hidden.id})
+        row = next(item for item in self._session_rows() if item['session_id'] == self.session_a.id)
+        self.assertEqual(row['cancelled_orders'], 0)
+        scoped = self.dashboard.with_user(self.reader)._baseer_executive_scope(self.company.id)
+        for name in ('baseer.pos.substitution', 'baseer.pos.protected_item_cancellation'):
+            if name in self.env.registry:
+                with patch.object(type(self.env[name]), 'check_access', side_effect=AccessError('denied')):
+                    self.assertIsNone(scoped._baseer_executive_audit_counts(name, self.session_a, self.env['pos.order']._search([])))
+
+    def test_compact_card_does_not_load_session_details_or_audits(self):
+        self._order('2026-10-03 01:00:00', '80', self.session_a)
+        with patch.object(type(self.dashboard), '_baseer_executive_session_page',
+                          side_effect=AssertionError('Card must not load session details')), \
+             patch.object(type(self.dashboard), '_baseer_executive_audit_counts',
+                          side_effect=AssertionError('Card must not load audits')):
+            card = self._cards()
+        self.assertEqual(card['session_count'], 2)
+        self.assertEqual(card['sessions']['rows'], [])
+        self.assertEqual(sum(day['session_count'] for day in card['days']), 2)
+
+    def test_compact_audit_group_query_counts_visible_and_excludes_hidden_other_company(self):
+        # SQL/query surrogate for optional event models: pos.order supplies the
+        # same company/session fields; its id stands in for event.order_id.
+        # This proves grouped SQL and ACL intersection without installing an
+        # optional addon, not the optional addon schema/ACL binding itself.
+        visible = self._order('2026-10-03 01:00:00', '80', self.session_a)
+        hidden = self._order('2026-10-03 02:00:00', '90', self.session_a)
+        self._order('2026-10-03 03:00:00', '100', self.other_session, company=self.other)
+        self.env['ir.rule'].create({'name': 'Compact event surrogate hide order',
+            'model_id': self.env['ir.model']._get_id('pos.order'),
+            'domain_force': "[('id', '!=', %d)]" % hidden.id})
+        scoped = self.dashboard.with_user(self.reader)._baseer_executive_scope(self.company.id)
+        model = scoped.env['pos.order']
+        visible_orders = model._search([('session_id', 'in', self.session_a.ids)])
+        original_search = type(model)._search
+        def event_search(records, domain, *args, **kwargs):
+            mapped = [('id', term[1], term[2]) if term[0] == 'order_id' else term for term in domain]
+            return original_search(records, mapped, *args, **kwargs)
+        with patch.object(type(model), '_search', event_search):
+            counts = scoped._baseer_executive_audit_counts('pos.order', self.session_a, visible_orders)
+        self.assertEqual(counts, {self.session_a.id: 1})
+        self.assertEqual(model.search([('id', '=', visible.id)]).ids, visible.ids)
 
     def test_acl_on_orders_sessions_and_forged_context(self):
         visible = self._order('2026-10-03 12:00:00', '10')
@@ -324,11 +429,14 @@ class ExecutivePosCase(TransactionCase):
         card = self._cards(first='2026-10-01', last='2026-10-01')
         self.assertEqual(card['total']['value'], '-25.00')
         self.assertEqual(card['timeline'][0]['value'], '-25.00')
-        self.assertEqual(card['sessions']['rows'][0]['sales']['value'], '-25.00')
-        self.assertEqual(card['sessions']['rows'][0]['opening_day'], '2026-10-01')
+        rows = self._session_rows(first='2026-10-01', last='2026-10-01')
+        self.assertEqual(rows[0]['sales']['value'], '-25.00')
+        self.assertEqual(rows[0]['opening_day'], '2026-10-01')
         self.assertEqual(self._cards(first='2026-09-30', last='2026-09-30')['total']['value'], '100.00')
 
     def test_comparison_requires_both_contributing_session_days_closed(self):
+        # All visible sessions now determine day status, including empty ones.
+        self._update_fixture(self.session_a, {'state': 'closed'})
         previous = self._session('Previous', self.config, state='closed', start='2026-10-02 18:00:00')
         current = self._session('Current', self.config, state='closed', start='2026-10-03 18:00:00')
         self._order('2026-10-03 03:00:00', '10', previous, 'done')

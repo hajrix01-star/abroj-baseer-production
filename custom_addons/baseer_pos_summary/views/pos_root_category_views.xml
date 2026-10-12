@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_report_pos_order_search_root_category" model="ir.ui.view">
+        <field name="name">report.pos.order.search.main.category</field>
+        <field name="model">report.pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_report_pos_order_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='pos_categ_id']" position="after">
+                <filter name="baseer_root_pos_categ_id" string="Main POS Category"
+                        context="{'group_by': 'baseer_root_pos_categ_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -50,7 +50,7 @@ class TestPosPaymentCategory(TransactionCase):
             session = self.session
         order = self.env['pos.order'].with_company(session.company_id).create({
             'session_id': session.id, 'company_id': session.company_id.id,
-            'state': state, 'source': 'pos', 'is_refund': amount < 0,
+            'state': 'draft', 'source': 'pos', 'is_refund': amount < 0,
             'amount_total': amount, 'amount_tax': 0,
             'amount_paid': amount, 'amount_return': 0,
         })
@@ -58,6 +58,7 @@ class TestPosPaymentCategory(TransactionCase):
             'pos_order_id': order.id, 'payment_method_id': method.id,
             'amount': amount,
         })
+        order.write({'state': state})
         self.payments |= payment
         return payment
 
@@ -126,8 +127,31 @@ class TestPosPaymentCategory(TransactionCase):
         self.assertEqual(sum(drilldown.mapped('amount')), 45)
         self.assertTrue(all(payment.baseer_payment_category_id == platform for payment in drilldown))
         field = self.env['pos.payment']._fields['baseer_payment_category_id']
-        self.assertFalse(field.store)
+        self.assertTrue(field.store)
         self.assertFalse(field.compute_sudo)
+
+    def test_related_category_recomputes_without_changing_payment_money(self):
+        first_category = self._category()
+        second_category = self._category()
+        method = self._method(first_category)
+        payment = self._payment(method, 25)
+        self.env.flush_all()
+        before = payment.read([
+            'amount', 'pos_order_id', 'payment_method_id', 'payment_date',
+            'create_date', 'write_date',
+        ])[0]
+        self.assertEqual(payment.baseer_payment_category_id, first_category)
+        method.write({'baseer_category_id': second_category.id})
+        self.env.flush_all()
+        payment.invalidate_recordset()
+        self.assertEqual(payment.baseer_payment_category_id, second_category)
+        self.assertEqual(payment.read([
+            'amount', 'pos_order_id', 'payment_method_id', 'payment_date',
+            'create_date', 'write_date',
+        ])[0], before)
+        self.assertEqual(self._grouped()[0]['amount'], 25)
+        self.assertEqual(self._grouped()[0]['baseer_payment_category_id'][0],
+                         second_category.id)
 
     def test_active_company_scope_excludes_real_foreign_payment(self):
         self._payment(self._method(), 15)

@@ -7,8 +7,8 @@ class PosPayment(models.Model):
 
     baseer_payment_category_id = fields.Many2one(
         related='payment_method_id.baseer_category_id',
-        string='Payment Category', readonly=True, store=False,
-        compute_sudo=False,
+        string='Payment Category', readonly=True, store=True,
+        compute_sudo=False, index=True,
         help='Current configured settlement category; not proof of bank collection.',
     )
 

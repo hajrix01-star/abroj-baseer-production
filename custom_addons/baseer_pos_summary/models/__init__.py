@@ -10,3 +10,4 @@ from . import accounting
 from . import correction
 from . import payment_seed
 from . import company_onboarding
+from . import pos_root_category

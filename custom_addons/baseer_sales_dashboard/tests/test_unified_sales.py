@@ -187,13 +187,16 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         order = self._pos(sale, invoice=True)
         self.assertTrue(order.account_move)
         self.assertEqual(order.account_move.state, 'posted')
-        self.assertTrue(order.account_move.invoice_line_ids.sale_line_ids)
+        # Native pos_sale deliberately leaves invoice sale_line_ids empty;
+        # SO settlement is represented by the original POS order line links.
+        self.assertFalse(order.account_move.invoice_line_ids.sale_line_ids)
+        self.assertEqual(order.lines.sale_order_origin_id, sale)
         self._assert_sales(100)
         credit = order.account_move._reverse_moves([{
             'date': '2026-10-03', 'invoice_date': '2026-10-03',
         }], cancel=False)
         credit.action_post()
-        self.assertTrue(credit.invoice_line_ids.sale_line_ids)
+        self.assertFalse(credit.invoice_line_ids.sale_line_ids)
         self.assertEqual(credit.reversed_entry_id, order.account_move)
         # Accounting-only reversal of a POS-origin invoice is not a second
         # operational sale/refund. A POS refund is counted from its own POS row.
@@ -202,7 +205,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
             'date': '2026-10-04', 'invoice_date': '2026-10-04',
         }], cancel=False)
         restored.action_post()
-        self.assertTrue(restored.invoice_line_ids.sale_line_ids)
+        self.assertFalse(restored.invoice_line_ids.sale_line_ids)
         self.assertEqual(restored.reversed_entry_id, credit)
         self._assert_sales(100)
         refund = order._refund()
@@ -430,6 +433,32 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         }], cancel=False)
         restored.action_post()
         return invoice, credit, restored
+
+    def test_imported_pos_origin_metadata_excludes_deep_sales_linked_reversals(self):
+        invoice, credit, restored = self._posted_sales_reversal_chain()
+        order = self._pos()
+        self.assertTrue(invoice.invoice_line_ids.sale_line_ids)
+        self.assertTrue(credit.invoice_line_ids.sale_line_ids)
+        self.assertTrue(restored.invoice_line_ids.sale_line_ids)
+        # Defensive imported-origin fixture, NOT the native POS invoice shape:
+        # attach a POS origin to a genuine posted Sales invoice. Only origin
+        # metadata changes, never amounts, tax lines, invoice lines or states.
+        order.flush_recordset(['account_move'])
+        self.env.cr.execute('UPDATE pos_order SET account_move=%s WHERE id=%s',
+                            [invoice.id, order.id])
+        order.invalidate_recordset(['account_move'])
+        invoice.invalidate_recordset(['pos_order_ids'])
+        self.assertEqual(invoice.pos_order_ids, order)
+        result = self._assert_sales(100)
+        totals = {row['key']: Decimal(row['sales']['value'])
+                  for row in result['source_breakdown']}
+        self.assertEqual(totals['sales'], 0)
+        self.assertEqual(totals['pos'], 100)
+        # POS opening date moves out of the invoice window: ancestry exclusions
+        # must remain global rather than admitting its accounting descendants.
+        self.session.start_at = datetime(2026, 8, 1, 15)
+        self._assert_sales(0)
+        self._assert_sales(100, first='2026-08-01', last='2026-08-31')
 
     def test_reversal_shared_ancestor_budget_fails_without_partial_total(self):
         self._posted_sales_reversal_chain()

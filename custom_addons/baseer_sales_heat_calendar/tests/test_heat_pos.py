@@ -4,6 +4,7 @@ SQL mirrors the executive POS tests and bypasses approval/payment/accounting
 hooks. It is used only inside TransactionCase, never on operational databases.
 """
 from contextlib import ExitStack
+import json
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -68,13 +69,18 @@ class HeatPosCase(TransactionCase):
         return cls.env[model].browse(cls.env.cr.fetchone()[0])
 
     @classmethod
-    def _session(cls, name, config, state='opened'):
+    def _session(cls, name, config, state='closed', start='2026-10-03 18:00:00'):
         return cls._insert('pos.session', {
-            'name': name, 'config_id': config.id, 'user_id': cls.env.uid, 'state': state})
+            'name': name, 'config_id': config.id, 'user_id': cls.env.uid, 'state': state,
+            'start_at': datetime.fromisoformat(start) - timedelta(hours=3) if start else None})
 
     def _order(self, local, amount, session=None, state='paid', company=None,
                tax='0', summary=None, source=None):
-        session, company = session or self.session_a, company or self.company
+        if session is None:
+            local_day = datetime.fromisoformat(local).date()
+            session = (self.session_a if local_day == date(2026, 10, 3) else
+                       self._session('Heat day %s' % local_day, self.config, start=local[:10] + ' 00:00:00'))
+        company = company or self.company
         values = {
             'name': 'Heat fixture order',
             'date_order': datetime.fromisoformat(local) - timedelta(hours=3),
@@ -99,7 +105,7 @@ class HeatPosCase(TransactionCase):
             'amount_gross': Decimal(amount), 'amount_net': Decimal(amount), 'amount_tax': 0,
         })
         if linked and Decimal(amount) and state == 'approved':
-            session = self._session('Heat summary %s' % summary.id, self.config, 'closed')
+            session = self._session('Heat summary %s' % summary.id, self.config, 'closed', day + ' 00:00:00')
             order = self._order(day + ' 12:00:00', amount, session, state='done',
                                 summary=summary, source='baseer_summary')
             self.env.cr.execute(SQL('UPDATE baseer_pos_summary SET order_id = %s, '
@@ -167,65 +173,60 @@ class HeatPosCase(TransactionCase):
         self.assertEqual(days['2026-10-02']['sales_display'], '0.00')
 
     def test_direct_vat_signed_refunds_boundaries_gaps_states_and_multiple_sessions(self):
-        self._order('2026-10-02 06:59:59', '999')  # prior gap excluded
-        first = self._order('2026-10-02 07:00:00', '115', tax='15')
-        overnight = self._order('2026-10-03 00:01:00', '23', self.session_b, 'done', tax='3')
-        refund = self._order('2026-10-03 04:59:59', '-11.50', tax='-1.50')
-        self._order('2026-10-03 05:00:00', '3')
-        self._order('2026-10-03 06:59:59', '4')
-        third = self._order('2026-10-03 07:00:00', '50', state='invoiced')
+        session = self._session('Overnight', self.config, start='2026-10-02 18:00:00')
+        first = self._order('2026-10-02 18:00:00', '115', session, tax='15')
+        overnight = self._order('2026-10-03 00:01:00', '23', session, 'done', tax='3')
+        refund = self._order('2026-10-03 04:59:59', '-11.50', session, tax='-1.50')
+        gap = self._order('2026-10-03 05:00:00', '3', session)
+        long = self._order('2026-10-04 07:00:00', '4', session)
+        third = self._order('2026-10-03 19:00:00', '50', state='invoiced')
         last = self._order('2026-10-04 04:59:59', '10', self.session_b)
-        self._order('2026-10-04 05:00:00', '5')
-        self._order('2026-10-04 06:59:59', '6')
-        self._order('2026-10-04 07:00:00', '800')  # next business day
         self._order('2026-10-03 13:00:00', '1000', state='draft')
         self._order('2026-10-03 14:00:00', '2000', state='cancel')
         self._order('2026-10-03 15:00:00', '5000', self.other_session, company=self.other)
         rows = self._rows(first='2026-10-02')
         a, b = rows[date(2026, 10, 2)], rows[date(2026, 10, 3)]
         self.assertEqual((a['source_kind'], a['sales'], a['order_count']),
-                         ('direct', Decimal('126.50'), 3))
+                         ('direct', Decimal('133.50'), 5))
         self.assertEqual((b['sales'], b['order_count']), (Decimal('60.00'), 2))
-        self.assertEqual((a['outside_count'], b['outside_count']), (2, 2))
+        self.assertEqual((a['outside_count'], b['outside_count']), (0, 0))
         self.assertEqual(a['status'], 'complete')
         self.assertEqual(b['status'], 'complete')
-        self.assertEqual(set(self._action_records(a['source_action']).ids), {first.id, overnight.id, refund.id})
+        self.assertEqual(set(self._action_records(a['source_action']).ids), {first.id, overnight.id, refund.id, gap.id, long.id})
         self.assertEqual(set(self._action_records(b['source_action']).ids), {third.id, last.id})
         days = self._days()
         self.assertIn('transactions', days['2026-10-02']['aria_label'])
         self.assertEqual(days['2026-10-02']['count_label'], 'POS transactions')
         self.assertEqual(days['2026-10-02']['shift_breakdown'], [])
 
-    def test_gap_only_day_is_missing_and_warned_not_complete_zero(self):
-        self._order('2026-10-03 05:30:00', '99')
+    def test_missing_day_is_not_complete_zero(self):
         row = self._rows()[date(2026, 10, 2)]
         self.assertEqual(row['source_kind'], 'none')
         self.assertEqual(row['status'], 'missing')
         self.assertFalse(row['has_sales'])
-        self.assertEqual(row['outside_count'], 1)
+        self.assertEqual(row['outside_count'], 0)
         day = self._days()['2026-10-02']
         self.assertEqual(day['sales_display'], '—')
         self.assertEqual(day['heat_level'], 'neutral')
-        self.assertEqual(day['outside_count'], 1)
-        self.assertTrue(day['outside_warning'])
+        self.assertEqual(day['outside_count'], 0)
+        self.assertFalse(day['outside_warning'])
 
-    def test_server_clock_current_future_and_exact_five_am_completion(self):
-        self._order('2026-10-03 07:00:00', '10')
-        self._order('2026-10-04 04:30:00', '20')
-        self._order('2026-10-04 05:30:00', '3')
-        self._order('2026-10-04 06:30:00', '4')
-        self._order('2026-10-04 07:00:00', '50')
+    def test_completion_requires_closed_contributors_not_five_am(self):
+        session = self._session('Still open', self.config, 'opened')
+        self._order('2026-10-03 19:00:00', '10', session)
+        self._order('2026-10-04 04:30:00', '20', session)
         current = self._rows(last='2026-10-05', now=datetime(2026, 10, 4, 1))
         self.assertEqual(current[date(2026, 10, 3)]['sales'], Decimal('10.00'))
         self.assertEqual(current[date(2026, 10, 3)]['status'], 'incomplete')
         for day in (4, 5):
             self.assertEqual(current[date(2026, 10, day)]['status'], 'missing')
             self.assertFalse(current[date(2026, 10, day)]['has_sales'])
-        completed = self._rows(now=datetime(2026, 10, 4, 2))  # exactly 05:00 local
+        completed = self._rows(now=datetime(2026, 10, 4, 2))
         self.assertEqual(completed[date(2026, 10, 3)]['sales'], Decimal('30.00'))
-        self.assertEqual(completed[date(2026, 10, 3)]['status'], 'complete')
-        gap = self._rows(now=datetime(2026, 10, 4, 3))
-        self.assertEqual(gap[date(2026, 10, 3)]['outside_count'], 1)
+        self.assertEqual(completed[date(2026, 10, 3)]['status'], 'incomplete')
+        self.env.cr.execute(SQL("UPDATE pos_session SET state = 'closed' WHERE id = %s", session.id))
+        session.invalidate_recordset()
+        self.assertEqual(self._rows()[date(2026, 10, 3)]['status'], 'complete')
 
     def test_exact_sql_decimal_survives_large_cancelling_values(self):
         for amount in ('0.10', '0.20', '0.30', '-0.10', '9999999999.99',
@@ -236,7 +237,7 @@ class HeatPosCase(TransactionCase):
         self.assertEqual(row['sales'], Decimal('0.52'))
         self.assertEqual(self._days()['2026-10-03']['sales_display'], '0.52')
 
-    def test_same_day_source_conflict_hides_sum_and_excludes_baselines_and_average(self):
+    def test_same_day_source_conflict_preserves_native_sum_and_excludes_baselines_and_average(self):
         for day, amount in (('2026-09-05', '20'), ('2026-09-12', '30'), ('2026-09-19', '40')):
             self._order(day + ' 12:00:00', amount)
         self._summary('2026-09-26', amount='1000')
@@ -248,15 +249,15 @@ class HeatPosCase(TransactionCase):
         row = self._rows(now=now)[date(2026, 10, 3)]
         self.assertEqual(row['source_kind'], 'conflict')
         self.assertEqual(row['status'], 'conflict')
-        self.assertFalse(row['has_sales'])
-        self.assertEqual(row['sales'], Decimal('0.00'))
+        self.assertTrue(row['has_sales'])
+        self.assertEqual(row['sales'], Decimal('110.00'))
         payload = self._payload(now=now)
         days = {day['date']: day for week in payload['weeks'] for day in week if day}
         conflict = days['2026-10-03']
-        self.assertEqual(conflict['sales_display'], '—')
+        self.assertEqual(conflict['sales_display'], '110.00')
         self.assertEqual(conflict['ratio_display'], '—')
         self.assertEqual(conflict['heat_level'], 'neutral')
-        self.assertEqual(conflict['customers_display'], '—')
+        self.assertEqual(conflict['customers_display'], '8')
         self.assertTrue(conflict['warning'])
         self.assertEqual(days['2026-10-10']['baseline_sample_count'], 3)
         self.assertEqual(days['2026-10-10']['basis_display'], '30.00')
@@ -269,7 +270,7 @@ class HeatPosCase(TransactionCase):
         row = self._rows()[date(2026, 10, 3)]
         self.assertEqual(row['source_kind'], 'conflict')
         self.assertNotEqual(row['status'], 'complete')
-        self.assertEqual(self._days()['2026-10-03']['sales_display'], '—')
+        self.assertEqual(self._days()['2026-10-03']['sales_display'], '25.00')
 
     def test_nonzero_summary_missing_cancelled_mismatched_or_hidden_order_is_unavailable(self):
         summary = self._summary('2026-10-03', linked=False)
@@ -289,8 +290,7 @@ class HeatPosCase(TransactionCase):
         self.env.cr.execute(SQL("UPDATE pos_order SET source = 'baseer_summary', date_order = %s WHERE id = %s",
                                 datetime(2026, 10, 2, 9), order.id))
         order.invalidate_recordset()
-        with self.assertRaises(ValidationError):
-            self._rows()
+        self.assertEqual(self._rows()[date(2026, 10, 3)]['sales'], Decimal('115.00'))
         self.env.cr.execute(SQL('UPDATE pos_order SET date_order = %s WHERE id = %s',
                                 datetime(2026, 10, 3, 9), order.id))
         order.invalidate_recordset()
@@ -324,8 +324,7 @@ class HeatPosCase(TransactionCase):
         self._summary('2026-10-03')
         with self.assertRaises(ValidationError):
             self._rows(now=datetime(2026, 10, 3, 7))  # 10:00 local, source noon is future
-        with self.assertRaises(ValidationError):
-            self._rows(now=datetime(2026, 10, 3, 9))  # exactly noon: native upper bound is exclusive
+        self.assertEqual(self._rows(now=datetime(2026, 10, 3, 9))[date(2026, 10, 3)]['sales'], Decimal('115.00'))
         row = self._rows(now=datetime(2026, 10, 3, 9, 0, 1))[date(2026, 10, 3)]
         self.assertEqual(row['source_kind'], 'summary')
         self.assertEqual(row['sales'], Decimal('115.00'))
@@ -336,6 +335,27 @@ class HeatPosCase(TransactionCase):
         order = self._order('2026-10-03 12:00:00', '115', summary=draft)
         self.env.cr.execute(SQL('UPDATE pos_order SET source = NULL WHERE id = %s', order.id))
         order.invalidate_recordset()
+        with self.assertRaises(ValidationError):
+            self._rows()
+
+    def test_session_month_boundary_summary_date_conflict_and_serializable_drilldown(self):
+        summary = self._summary('2026-09-30', amount='50')
+        self.env.cr.execute(SQL('UPDATE pos_session SET start_at = %s WHERE id = %s',
+                                datetime(2026, 10, 1, 15), summary.session_id.id))
+        summary.session_id.invalidate_recordset()
+        row = self._rows()[date(2026, 10, 1)]
+        self.assertEqual(row['sales'], Decimal('50.00'))
+        self.assertEqual(row['status'], 'conflict')
+        self.assertEqual(summary.business_date, date(2026, 9, 30))
+        self.assertEqual(self._action_records(row['source_action']), summary.order_id)
+        json.dumps(row['source_action'])
+        day = self._days()['2026-10-01']
+        self.assertEqual(day['sales_display'], '50.00')
+        self.assertEqual(day['ratio_display'], '—')
+
+    def test_missing_session_opening_is_rejected_without_omitting_money(self):
+        session = self._session('No opening', self.config, start=None)
+        self._order('2026-10-03 12:00:00', '10', session)
         with self.assertRaises(ValidationError):
             self._rows()
 

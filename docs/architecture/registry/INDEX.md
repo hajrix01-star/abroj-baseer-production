@@ -381,3 +381,7 @@ release. [Record](../../build-governance/REPRESENTATIVE-PETTY-CASH-SETTLEMENT-UI
 ## Baseer Reports UI — account activity layout (2026-10-07; QA candidate)
 
 Reference `BASEER-REPORT-SUITE-20261007`; last verified deployed source `4d4fa914` and candidate PR #216. Impact is CONTROLLED: `baseer_reports_menu` owns common report toolbar/canvas styles; `baseer_account_activity` owns the 939 account-specific controls and paginated details. Odoo's visible menu tree supplies switcher options; sample preview 938 is excluded. The financial `get_activity` contract, record rules, tax/tobacco calculations, and ERP Heritage boundaries are unchanged. [Build contract, gates, and checks](../../build-governance/BASEER-REPORT-SUITE-20261007.md).
+
+## POS-CATEGORY-ANALYSIS-20261012 — native POS categories (QA + LIVE)
+
+`baseer_pos_summary` 19.0.1.6.4 / verified source `366059e3346b8e660cb167bc5bd18e1873085291`. Main POS product category extends native order analysis without changing row grain/measures. Settlement-by-category uses original `pos.payment.amount`, stored readonly method-category related FK, compute_sudo=False, native company/ACL and paid/done states. New scoped action only; native payment action unchanged. One derived column/index/backfill, all original payment fields including write_date and original report measures verified unchanged. No bank-arrival/cash-flow claim. CI13tests PASS, QA38228703203 GO, LIVE38229190553 GO, independent deliveryGO. [Contract, migration and release evidence](../../build-governance/POS-PAYMENT-CATEGORY-20261012.md).

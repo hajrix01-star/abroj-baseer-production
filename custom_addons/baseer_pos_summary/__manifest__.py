@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Sales Summaries',
     'author': 'Baseer',
-    'version': '19.0.1.6.3',
+    'version': '19.0.1.6.4',
     'summary': 'External sales summaries with native POS accounting and manual WhatsApp sharing',
     'category': 'Sales/Point of Sale',
     'license': 'LGPL-3',
@@ -19,6 +19,7 @@
         'views/correction_views.xml',
         'views/company_onboarding_views.xml',
         'views/pos_root_category_views.xml',
+        'views/pos_payment_category_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

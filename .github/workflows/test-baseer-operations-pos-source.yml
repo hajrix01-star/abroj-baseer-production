@@ -11,6 +11,9 @@ on:
       - custom_addons/baseer_pos_summary/tests/test_pos_root_category.py
       - custom_addons/baseer_pos_summary/models/pos_root_category.py
       - custom_addons/baseer_pos_summary/views/pos_root_category_views.xml
+      - custom_addons/baseer_pos_summary/models/pos_payment_category.py
+      - custom_addons/baseer_pos_summary/views/pos_payment_category_views.xml
+      - custom_addons/baseer_pos_summary/tests/test_pos_payment_category.py
       - .github/workflows/test-baseer-operations-pos-source.yml
   workflow_dispatch:
 
@@ -51,5 +54,5 @@ jobs:
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
             -d baseer_operations_pos_source_ci -i baseer_pos_summary --without-demo=all \
-            --test-enable --test-tags=/baseer_pos_summary:TestOperationsPosNativeSourceContract,/baseer_pos_summary:TestPosRootCategory \
+            --test-enable --test-tags=/baseer_pos_summary:TestOperationsPosNativeSourceContract,/baseer_pos_summary:TestPosRootCategory,/baseer_pos_summary:TestPosPaymentCategory \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

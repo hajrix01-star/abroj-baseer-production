@@ -422,6 +422,17 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         result = self.dashboard.get_baseer_sales_metrics({'native': None})
         self.assertEqual(Decimal(result['cards']['sales']['value']), Decimal('200'))
 
+    def test_arabic_source_labels_and_sales_drilldown_are_translated(self):
+        self.env['res.lang'].with_user(self.env.ref('base.user_admin'))._activate_lang('ar_001')
+        dashboard = self.dashboard.with_context(lang='ar_001')
+        result = self._metrics(dashboard=dashboard)
+        sources = {row['key']: row for row in result['source_breakdown']}
+        self.assertEqual({key: row['name'] for key, row in sources.items()}, {
+            'manual': 'الملخصات المعتمدة', 'pos': 'نقاط البيع',
+            'restaurant': 'المطاعم', 'sales': 'فواتير المبيعات',
+        })
+        self.assertEqual(sources['sales']['source_action']['name'], 'فواتير المبيعات')
+
     def _posted_sales_reversal_chain(self):
         invoice = self._invoice(self._sale())
         credit = invoice._reverse_moves([{

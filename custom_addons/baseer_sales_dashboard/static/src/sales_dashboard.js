@@ -54,9 +54,9 @@ export class BaseerSalesDashboard extends Component {
         const values = this.state.payload?.cards || {};
         return [
             { key: "sales", title: _t("Total sales"), note: _t("Tax included"), icon: "fa-line-chart" },
-            { key: "customers", title: _t("Registered customers"), note: _t("Available when all sources record customers"), icon: "fa-users" },
+            { key: "customers", title: _t("Recorded customers"), note: _t("Known guest counts; missing counts are not zero"), icon: "fa-users" },
             { key: "daily_sales", title: this.state.payload?.unified_sources ? _t("Average sales per recorded day") : _t("Average daily sales"), note: _t("Days with recorded sales"), icon: "fa-calendar" },
-            { key: "daily_customers", title: _t("Average daily customers"), note: _t("Completed days"), icon: "fa-user" },
+            { key: "daily_customers", title: _t("Average daily customers"), note: _t("Days with positive recorded sales"), icon: "fa-user" },
             { key: "average_bill", title: _t("Average bill"), note: _t("Per registered customer"), icon: "fa-credit-card" },
         ].map((spec) => ({
             ...spec, ...values[spec.key],
@@ -105,7 +105,13 @@ export class BaseerSalesDashboard extends Component {
             metric: _t("Metric"), averageBill: _t("Average bill"),
             shiftEmpty: _t("No recorded shifts in this period"),
             shiftUnavailable: _t("This metric is unavailable for the recorded shifts"),
-            payments: _t("Summary sales by payment method"), paymentMethod: _t("Payment method"),
+            payments: _t("Sales by payment category"), paymentMethod: _t("Payment category"),
+            paymentScope: _t("Summary allocations and POS payments; invoice receipts are not inferred"),
+            knownCustomers: _t("Recorded customer counts are partial when source rows have no guest count."),
+            missingCustomerRows: _t("Source rows without guest counts"),
+            invoiceTenderUnknown: _t("Invoice sales with unknown payment category"),
+            settlementDifference: _t("Sale and tender difference"),
+            unclassifiedSales: _t("Unclassified payment amounts"),
             paymentShare: _t("Share of total sales (%)"),
             categorySales: _t("Approved summaries only"),
             categoryDistribution: _t("Summary sales by category"),
@@ -113,9 +119,9 @@ export class BaseerSalesDashboard extends Component {
             categoryShare: _t("Share (%)"), categoryAmounts: _t("Category amounts"),
             categoryUnavailable: _t("Category percentages and rankings are unavailable until all payment allocations are complete."),
             paymentEmpty: _t("No payment allocations recorded in this period"),
-            paymentIncomplete: _t("Some approved summaries have missing or inconsistent payment allocations. The breakdown is partial and percentages are unavailable."),
+            paymentIncomplete: _t("Payment coverage is incomplete or inconsistent. Amounts remain visible; full-sales percentages are unavailable."),
             applicationShare: _t("Applications share of total sales (%)"),
-            coveredSales: _t("Covered sales"), uncoveredSales: _t("Sales excluded from payment breakdown"),
+            coveredSales: _t("Sales with matched payment allocation"), uncoveredSales: _t("Sales excluded from payment breakdown"),
             coveredSummaries: _t("Covered summaries"), missingAllocations: _t("Missing allocations"),
             mismatchedAllocations: _t("Inconsistent allocations"),
             preview: _t("No recorded sales in this period"),
@@ -193,8 +199,9 @@ export class BaseerSalesDashboard extends Component {
         if (row.has_data && row.source_action) { return this.action.doAction(row.source_action); }
     }
 
-    get paymentRows() { return this.state.payload?.payment_performance?.rows || []; }
+    get paymentRows() { return this.state.payload?.payment_performance?.categories || []; }
     get paymentCoverage() { return this.state.payload?.payment_performance?.coverage; }
+    get paymentPerformance() { return this.state.payload?.payment_performance; }
     get applicationShare() { return this.state.payload?.payment_performance?.application_share; }
     get categoryRows() { return this.state.payload?.payment_performance?.categories || []; }
     get categoryChartRows() { return this.state.payload?.payment_performance?.chart_categories || []; }
@@ -222,6 +229,10 @@ export class BaseerSalesDashboard extends Component {
 
     openPaymentSources(row) {
         if (row.source_action) { return this.action.doAction(row.source_action); }
+    }
+
+    openCategorySource(action) {
+        if (action?.action) { return this.action.doAction(action.action); }
     }
 
     openSources() {
@@ -313,7 +324,6 @@ export class BaseerSalesDashboard extends Component {
             this.charts.push(chart);
         this.drawShiftChart(font, rtl);
         this.drawPaymentChart(font, rtl);
-        this.drawCategoryChart(font, rtl);
     }
 
     drawShiftChart(font, rtl) {

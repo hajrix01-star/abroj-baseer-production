@@ -1340,3 +1340,141 @@ msgstr "المطاعم"
 #: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
 msgid "An invoice reversal has an invalid origin chain. Unified sales cannot be calculated."
 msgstr "سلسلة مصدر عكس الفاتورة غير صالحة. لا يمكن احتساب المبيعات الموحدة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Recorded customers"
+msgstr "العملاء المسجلون"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Known guest counts; missing counts are not zero"
+msgstr "أعداد الزبائن المعروفة؛ الأعداد المفقودة ليست صفرًا"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Sales by payment category"
+msgstr "المبيعات حسب فئة الدفع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Payment category"
+msgstr "فئة الدفع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Summary allocations and POS payments; invoice receipts are not inferred"
+msgstr "توزيعات الملخصات ومدفوعات نقاط البيع؛ لا نفترض تحصيل الفواتير"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Recorded customer counts are partial when source rows have no guest count."
+msgstr "عدد العملاء المسجل جزئي إذا كانت بعض سجلات المصدر بلا عدد زبائن."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Payment coverage is incomplete or inconsistent. Amounts remain visible; full-sales percentages are unavailable."
+msgstr "تغطية الدفع ناقصة أو غير متسقة. المبالغ ظاهرة؛ النسب من كامل المبيعات غير متاحة."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Source rows without guest counts"
+msgstr "سجلات المصدر بلا عدد زبائن"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Invoice sales with unknown payment category"
+msgstr "مبيعات الفواتير بفئة دفع غير معروفة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Sale and tender difference"
+msgstr "الفرق بين المبيعات ومبالغ الدفع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Unclassified payment amounts"
+msgstr "مبالغ الدفع غير المصنفة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Days with positive recorded sales"
+msgstr "أيام البيع المسجلة بمبالغ موجبة"
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Point of Sale payments"
+msgstr "مدفوعات نقاط البيع"
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "This report exceeds 100,000 payment rows. Choose a shorter period; no records have been omitted."
+msgstr "يتجاوز التقرير 100,000 سجل دفع. اختر فترة أقصر؛ لم تُستبعد أي سجلات."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A sale tender method belongs to another company."
+msgstr "طريقة دفع للمبيعات تخص شركة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Unclassified"
+msgstr "غير مصنف"
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A sale tender method changed category during reporting."
+msgstr "تغيرت فئة طريقة دفع للمبيعات أثناء إعداد التقرير."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A sale tender category belongs to another company."
+msgstr "فئة دفع للمبيعات تخص شركة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A summary tender allocation has another company or currency."
+msgstr "توزيع دفع لملخص يخص شركة أو عملة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A POS tender payment has another company or currency."
+msgstr "دفعة نقاط بيع تخص شركة أو عملة أخرى."
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Summary allocations"
+msgstr "توزيعات الملخصات"
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "POS payments"
+msgstr "مدفوعات نقاط البيع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Sales with matched payment allocation"
+msgstr "المبيعات ذات توزيع الدفع المطابق"

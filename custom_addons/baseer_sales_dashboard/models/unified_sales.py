@@ -1,7 +1,7 @@
 """Union of approved summaries, native POS, and posted Sales invoices.
 
-Amounts and dates are resolved on the server. The pre-existing daily/shift and
-payment panels deliberately remain scoped to approved summaries only.
+Amounts and dates are resolved on the server. The pre-existing daily/shift
+panels remain scoped to approved summaries; sale tender categories are unified.
 """
 
 from collections import defaultdict
@@ -263,9 +263,14 @@ class UnifiedSalesDashboard(models.Model):
         sale_days = set()
         new_days = set()
         new_count = 0
+        guests = {'known_count': 0, 'known_rows': 0, 'missing_rows': 0,
+                  'by_day': defaultdict(lambda: {'known_count': 0, 'known_rows': 0, 'missing_rows': 0}),
+                  'sale_days': set()}
         if not first or not last:
             return {'totals': totals, 'by_day': by_day, 'sale_days': sale_days,
-                    'new_days': new_days, 'new_count': 0}
+                    'new_days': new_days, 'new_count': 0, 'guests': guests,
+                    'summaries': self.env['baseer.pos.summary'],
+                    'orders': self.env['pos.order'], 'invoices': self.env['account.move']}
 
         summaries = self.env['baseer.pos.summary'].search([
             ('company_id', '=', company.id), ('state', '=', 'approved'),
@@ -283,6 +288,8 @@ class UnifiedSalesDashboard(models.Model):
                 # session/order; their zero remains a legitimate record.
                 by_day[summary.business_date] += ZERO
                 sale_days.add(summary.business_date)
+                guests['known_rows'] += 1
+                guests['by_day'][summary.business_date]['known_rows'] += 1
                 continue
             if (not order or not session or summary.currency_id != company.currency_id
                     or order.company_id != company or session.company_id != company
@@ -304,9 +311,22 @@ class UnifiedSalesDashboard(models.Model):
             totals['manual'] += amount
             by_day[summary.business_date] += amount
             sale_days.add(summary.business_date)
+            if amount > ZERO:
+                guests['sale_days'].add(summary.business_date)
+                row = guests['by_day'][summary.business_date]
+                if summary.customer_count > 0:
+                    guests['known_count'] += summary.customer_count
+                    guests['known_rows'] += 1
+                    row['known_count'] += summary.customer_count
+                    row['known_rows'] += 1
+                else:
+                    guests['missing_rows'] += 1
+                    row['missing_rows'] += 1
 
         self._baseer_unified_validate_bridges(company, first, last)
         orders = self.env['pos.order'].search(self._baseer_unified_pos_domain(company, first, last))
+        has_guest_field = bool(orders._fields.get('customer_count'))
+        has_refund_field = bool(orders._fields.get('is_refund'))
         orders.mapped('session_id').check_access('read')
         orders.mapped('config_id').check_access('read')
         for order in orders:
@@ -326,6 +346,17 @@ class UnifiedSalesDashboard(models.Model):
             sale_days.add(day)
             new_days.add(day)
             new_count += 1
+            if amount > ZERO and not (has_refund_field and order.is_refund):
+                guests['sale_days'].add(day)
+                row = guests['by_day'][day]
+                if has_guest_field and order.customer_count > 0:
+                    guests['known_count'] += order.customer_count
+                    guests['known_rows'] += 1
+                    row['known_count'] += order.customer_count
+                    row['known_rows'] += 1
+                else:
+                    guests['missing_rows'] += 1
+                    row['missing_rows'] += 1
 
         invoices = self.env['account.move'].search(
             self._baseer_unified_invoice_domain(company, first, last),
@@ -341,8 +372,13 @@ class UnifiedSalesDashboard(models.Model):
             sale_days.add(invoice.invoice_date)
             new_days.add(invoice.invoice_date)
             new_count += 1
+            if amount > ZERO:
+                guests['sale_days'].add(invoice.invoice_date)
+                guests['missing_rows'] += 1
+                guests['by_day'][invoice.invoice_date]['missing_rows'] += 1
         return {'totals': totals, 'by_day': by_day, 'sale_days': sale_days,
-                'new_days': new_days, 'new_count': new_count}
+                'new_days': new_days, 'new_count': new_count, 'guests': guests,
+                'summaries': summaries, 'orders': orders, 'invoices': invoices}
 
     def _baseer_unified_action(self, company, first, last, key):
         if key == 'manual':
@@ -362,6 +398,193 @@ class UnifiedSalesDashboard(models.Model):
             'views': [(False, 'list'), (False, 'form')],
             'domain': domain,
             'context': {'create': False, 'allowed_company_ids': [company.id]},
+        }
+
+    def _baseer_unified_tender_action(self, company, key, ids):
+        model, name = (
+            ('baseer.pos.summary.allocation', _('Approved payment allocations'))
+            if key == 'summary' else ('pos.payment', _('Point of Sale payments'))
+        )
+        return {
+            'type': 'ir.actions.act_window', 'name': name,
+            'res_model': model, 'view_mode': 'list,form',
+            'views': [(False, 'list'), (False, 'form')],
+            'domain': [('id', 'in', sorted(ids)), ('company_id', '=', company.id)],
+            'context': {'create': False, 'allowed_company_ids': [company.id]},
+        }
+
+    def _baseer_unified_payment_performance(self, company, period, sales_total):
+        """Recorded sale tender, never a claim of bank/platform collection."""
+        for model in ('baseer.pos.summary.allocation', 'pos.payment',
+                      'pos.payment.method', 'baseer.pos.payment.category'):
+            self.env[model].check_access('read')
+        # Source-row cap does not bound payment splits: one order can carry
+        # many tender lines. Check the union budget before traversing either
+        # relation, rather than silently truncating a payment category.
+        summary_lines = self.env['baseer.pos.summary.allocation'].search_count(
+            [('summary_id', 'in', period['summaries'].ids), ('company_id', '=', company.id)],
+            limit=MAX_SOURCE_ROWS + 1,
+        ) if period['summaries'] else 0
+        remaining = MAX_SOURCE_ROWS - summary_lines
+        pos_lines = self.env['pos.payment'].search_count(
+            [('pos_order_id', 'in', period['orders'].ids), ('company_id', '=', company.id)],
+            limit=max(remaining, 0) + 1,
+        ) if period['orders'] else 0
+        if summary_lines + pos_lines > MAX_SOURCE_ROWS:
+            raise ValidationError(_(
+                'This report exceeds 100,000 payment rows. Choose a shorter period; no records have been omitted.'
+            ))
+        by_method = {}
+        by_category = {}
+        settlement_difference = ZERO
+        absolute_difference = ZERO
+        mismatched_count = 0
+        unclassified_count = 0
+        covered_summary_count = 0
+        missing_summary_count = 0
+        mismatched_summary_count = 0
+        covered_sales = ZERO
+
+        def add_tender(method, amount, source, source_id):
+            nonlocal unclassified_count
+            method.check_access('read')
+            if method.company_id != company:
+                raise ValidationError(_('A sale tender method belongs to another company.'))
+            # Archived categories remain historically classified by their
+            # stored ID/name. Active status governs new configuration only.
+            category = method.with_context(active_test=False).baseer_category_id
+            if category:
+                category.check_access('read')
+                if category.company_id != company:
+                    raise ValidationError(_('A sale tender category belongs to another company.'))
+            if not category:
+                category_id, category_name, kind = -1, _('Unclassified'), 'unclassified'
+                unclassified_count += 1
+            else:
+                category_id, category_name, kind = category.id, category.name, category.kind
+            method_bucket = by_method.setdefault(method.id, {
+                'name': method.name, 'category_id': category_id, 'category_name': category_name,
+                'kind': kind, 'sales': ZERO, 'source_ids': defaultdict(set),
+            })
+            if method_bucket['category_id'] != category_id:
+                raise ValidationError(_('A sale tender method changed category during reporting.'))
+            method_bucket['sales'] += amount
+            method_bucket['source_ids'][source].add(source_id)
+            category_bucket = by_category.setdefault(category_id, {
+                'name': category_name, 'kind': kind, 'sales': ZERO,
+                'source_ids': defaultdict(set),
+            })
+            category_bucket['sales'] += amount
+            category_bucket['source_ids'][source].add(source_id)
+
+        def reconcile(gross, tender):
+            nonlocal settlement_difference, absolute_difference, mismatched_count
+            difference = money(gross - tender)
+            settlement_difference += difference
+            absolute_difference += abs(difference)
+            if difference:
+                mismatched_count += 1
+            return not difference
+
+        for summary in period['summaries']:
+            lines = summary.allocation_ids
+            lines.check_access('read')
+            tender = ZERO
+            for line in lines:
+                if line.company_id != company or line.currency_id != company.currency_id:
+                    raise ValidationError(_('A summary tender allocation has another company or currency.'))
+                amount = money(line.amount)
+                tender += amount
+                if amount:
+                    add_tender(line.payment_method_id, amount, 'summary', line.id)
+            gross = money(summary.amount_gross)
+            if not lines and gross > ZERO:
+                missing_summary_count += 1
+            elif reconcile(gross, tender):
+                covered_summary_count += 1
+                covered_sales += gross
+                continue
+            else:
+                mismatched_summary_count += 1
+            # Missing allocations also contribute an explicit per-source
+            # difference, rather than a made-up headline minus category sum.
+            if not lines and gross > ZERO:
+                reconcile(gross, ZERO)
+
+        for order in period['orders']:
+            payments = order.payment_ids
+            payments.check_access('read')
+            tender = ZERO
+            for payment in payments:
+                if payment.company_id != company or payment.currency_id != company.currency_id:
+                    raise ValidationError(_('A POS tender payment has another company or currency.'))
+                amount = money(payment.amount)
+                tender += amount
+                if amount:
+                    add_tender(payment.payment_method_id, amount, 'pos', payment.id)
+            gross = money(order.amount_total)
+            if reconcile(gross, tender):
+                covered_sales += gross
+
+        invoice_unknown = period['totals']['sales']
+        unclassified_sales = by_category.get(-1, {}).get('sales', ZERO)
+        complete = not (mismatched_count or unclassified_count or period['invoices'])
+        shares_available = complete and sales_total > ZERO
+        category_result = self._baseer_category_performance(by_category, sales_total, shares_available)
+
+        def actions(source_ids):
+            return [
+                {'key': key, 'name': _('Summary allocations') if key == 'summary' else _('POS payments'),
+                 'action': self._baseer_unified_tender_action(company, key, ids)}
+                for key, ids in (('summary', source_ids.get('summary', set())),
+                                 ('pos', source_ids.get('pos', set()))) if ids
+            ]
+
+        rows = []
+        for method_id, bucket in sorted(by_method.items()):
+            category = {'id': bucket['category_id'], 'name': bucket['category_name'],
+                        'kind': bucket['kind']}
+            rows.append({
+                'method_id': method_id, 'name': bucket['name'], 'category': category,
+                'sales': _card(bucket['sales']),
+                'share': _card(bucket['sales'] * Decimal(100) / sales_total
+                               if shares_available else None, shares_available),
+                'source_actions': actions(bucket['source_ids']),
+            })
+        for row in category_result['rows']:
+            row['source_actions'] = actions(by_category[row['category_id']]['source_ids'])
+        application_sales = sum((bucket['sales'] for bucket in by_category.values()
+                                 if bucket['kind'] == 'platform'), ZERO)
+        invoice_card = _card(invoice_unknown)
+        difference_card = _card(settlement_difference)
+        unclassified_card = _card(unclassified_sales)
+        coverage = {
+            'complete': complete, 'summary_count': len(period['summaries']),
+            'pos_order_count': len(period['orders']), 'invoice_count': len(period['invoices']),
+            'covered_summary_count': covered_summary_count,
+            'missing_summary_count': missing_summary_count,
+            'mismatched_summary_count': mismatched_summary_count,
+            'mismatched_source_count': mismatched_count,
+            'unclassified_line_count': unclassified_count,
+            'covered_sales': _card(covered_sales),
+            'uncovered_sales': _card(None, False),
+            'settlement_difference': difference_card,
+            'settlement_difference_absolute': _card(absolute_difference),
+            'invoice_tender_unknown': invoice_card,
+            'unclassified_sales': unclassified_card,
+        }
+        return {
+            'rows': rows, 'categories': category_result['rows'],
+            'chart_categories': category_result['chart_rows'],
+            'category_performance': category_result['performance'],
+            'application_share': _card(
+                application_sales * Decimal(100) / sales_total if shares_available else None,
+                shares_available,
+            ),
+            'coverage': coverage,
+            'invoice_tender_unknown': invoice_card,
+            'settlement_difference': difference_card,
+            'unclassified_sales': unclassified_card,
         }
 
     @api.readonly
@@ -403,19 +626,50 @@ class UnifiedSalesDashboard(models.Model):
                   bool(previous_day_count)),
             current_sample and previous_sample,
         )
-        if current['new_count']:
-            for key in ('customers', 'daily_customers', 'average_bill'):
-                cards[key] = _card(None, False, integer=key == 'customers')
-        if current['new_count'] or previous['new_count']:
-            for key in ('customers', 'daily_customers', 'average_bill'):
-                cards[key]['comparison'] = self._baseer_comparison(
-                    cards[key], _card(None, False), False,
-                )
+        current_guests = current['guests']
+        previous_guests = previous['guests']
+        current_guests_complete = bool(current_guests['known_rows'] and not current_guests['missing_rows'])
+        previous_guests_complete = bool(previous_guests['known_rows'] and not previous_guests['missing_rows'])
+        cards['customers'] = _card(
+            current_guests['known_count'], bool(current_guests['known_rows']), integer=True,
+        )
+        cards['customers']['comparison'] = self._baseer_comparison(
+            cards['customers'],
+            _card(previous_guests['known_count'], bool(previous_guests['known_rows']), integer=True),
+            current_guests_complete and previous_guests_complete,
+        )
+        current_guest_days = len(current_guests['sale_days'])
+        previous_guest_days = len(previous_guests['sale_days'])
+        cards['daily_customers'] = _card(
+            Decimal(current_guests['known_count']) / Decimal(current_guest_days)
+            if current_guest_days else None,
+            current_guests_complete and bool(current_guest_days),
+        )
+        cards['daily_customers']['comparison'] = self._baseer_comparison(
+            cards['daily_customers'],
+            _card(Decimal(previous_guests['known_count']) / Decimal(previous_guest_days)
+                  if previous_guest_days else None,
+                  previous_guests_complete and bool(previous_guest_days)),
+            current_guests_complete and previous_guests_complete,
+        )
+        cards['average_bill'] = _card(
+            current_total / Decimal(current_guests['known_count'])
+            if current_guests['known_count'] else None,
+            current_guests_complete and bool(current_guests['known_count']),
+        )
+        cards['average_bill']['comparison'] = self._baseer_comparison(
+            cards['average_bill'],
+            _card(previous_total / Decimal(previous_guests['known_count'])
+                  if previous_guests['known_count'] else None,
+                  previous_guests_complete and bool(previous_guests['known_count'])),
+            current_guests_complete and previous_guests_complete,
+        )
 
         granularity = payload['timeline']['granularity']
         bucket_totals = defaultdict(lambda: ZERO)
         bucket_days = set()
         native_buckets = set()
+        guest_buckets = defaultdict(lambda: {'known_count': 0, 'known_rows': 0, 'missing_rows': 0})
         bucket_key = lambda day: day.isoformat()[:7] if granularity == 'month' else day.isoformat()
         for day, amount in current['by_day'].items():
             bucket_totals[bucket_key(day)] += amount
@@ -423,6 +677,10 @@ class UnifiedSalesDashboard(models.Model):
             bucket_days.add(bucket_key(day))
         for day in current['new_days']:
             native_buckets.add(bucket_key(day))
+        for day, guest_row in current_guests['by_day'].items():
+            bucket = guest_buckets[bucket_key(day)]
+            for metric in bucket:
+                bucket[metric] += guest_row[metric]
         for point in payload['timeline']['points']:
             key = point['key']
             if key in bucket_days:
@@ -432,14 +690,27 @@ class UnifiedSalesDashboard(models.Model):
                 if key in native_buckets:
                     point['manual_status'] = point['status']
                     point['status'] = 'recorded'
-            if current['new_count']:
-                point['customers'] = None
-                point['customers_display'] = '—'
+            guest_row = guest_buckets[key]
+            point['customer_coverage'] = {
+                **guest_row,
+                'complete': bool(guest_row['known_rows'] and not guest_row['missing_rows']),
+            }
+            point['customers'] = guest_row['known_count'] if guest_row['known_rows'] else None
+            point['customers_display'] = _display(guest_row['known_count'], True) if guest_row['known_rows'] else '—'
 
         payload['cards'] = cards
         payload['has_data'] = current_sample
         payload['unified_sources'] = True
         payload['sources_complete'] = True
+        payload['customer_coverage'] = {
+            'known_count': current_guests['known_count'],
+            'known_rows': current_guests['known_rows'],
+            'missing_rows': current_guests['missing_rows'],
+            'complete': current_guests_complete,
+        }
+        payload['payment_performance'] = self._baseer_unified_payment_performance(
+            company, current, current_total,
+        )
         payload['source_breakdown'] = [
             {'key': key, 'name': label, 'sales': _card(current['totals'][key]),
              'source_action': self._baseer_unified_action(company, first, last, key)}

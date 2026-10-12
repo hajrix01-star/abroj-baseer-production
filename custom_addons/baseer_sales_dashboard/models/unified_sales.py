@@ -415,6 +415,7 @@ class UnifiedSalesDashboard(models.Model):
 
     def _baseer_unified_payment_performance(self, company, period, sales_total):
         """Recorded sale tender, never a claim of bank/platform collection."""
+        translate = self.env._
         for model in ('baseer.pos.summary.allocation', 'pos.payment',
                       'pos.payment.method', 'baseer.pos.payment.category'):
             self.env[model].check_access('read')
@@ -449,16 +450,16 @@ class UnifiedSalesDashboard(models.Model):
             nonlocal unclassified_count
             method.check_access('read')
             if method.company_id != company:
-                raise ValidationError(_('A sale tender method belongs to another company.'))
+                raise ValidationError(translate('A sale tender method belongs to another company.'))
             # Archived categories remain historically classified by their
             # stored ID/name. Active status governs new configuration only.
             category = method.with_context(active_test=False).baseer_category_id
             if category:
                 category.check_access('read')
                 if category.company_id != company:
-                    raise ValidationError(_('A sale tender category belongs to another company.'))
+                    raise ValidationError(translate('A sale tender category belongs to another company.'))
             if not category:
-                category_id, category_name, kind = -1, _('Unclassified'), 'unclassified'
+                category_id, category_name, kind = -1, translate('Unclassified'), 'unclassified'
                 unclassified_count += 1
             else:
                 category_id, category_name, kind = category.id, category.name, category.kind
@@ -467,7 +468,7 @@ class UnifiedSalesDashboard(models.Model):
                 'kind': kind, 'sales': ZERO, 'source_ids': defaultdict(set),
             })
             if method_bucket['category_id'] != category_id:
-                raise ValidationError(_('A sale tender method changed category during reporting.'))
+                raise ValidationError(translate('A sale tender method changed category during reporting.'))
             method_bucket['sales'] += amount
             method_bucket['source_ids'][source].add(source_id)
             category_bucket = by_category.setdefault(category_id, {
@@ -534,7 +535,8 @@ class UnifiedSalesDashboard(models.Model):
 
         def actions(source_ids):
             return [
-                {'key': key, 'name': _('Summary allocations') if key == 'summary' else _('POS payments'),
+                {'key': key, 'name': translate('Summary allocations') if key == 'summary'
+                 else translate('POS payments'),
                  'action': self._baseer_unified_tender_action(company, key, ids)}
                 for key, ids in (('summary', source_ids.get('summary', set())),
                                  ('pos', source_ids.get('pos', set()))) if ids

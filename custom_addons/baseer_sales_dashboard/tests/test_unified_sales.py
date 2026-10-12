@@ -468,14 +468,14 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self._pos(price=100, guests=3)
         self._pos(price=50, guests=2)
         result = self._assert_sales(150)
-        self.assertEqual(result['cards']['customers']['value'], '5')
+        self.assertEqual(result['cards']['customers']['value'], 5)
         self.assertEqual(result['customer_coverage']['known_count'], 5)
         self.assertTrue(result['customer_coverage']['complete'])
         self.assertTrue(result['cards']['average_bill']['available'])
         self.assertEqual(Decimal(result['cards']['average_bill']['value']), Decimal('30'))
         self._pos(price=25, guests=0)
         result = self._assert_sales(175)
-        self.assertEqual(result['cards']['customers']['value'], '5')
+        self.assertEqual(result['cards']['customers']['value'], 5)
         self.assertEqual(result['customer_coverage']['missing_rows'], 1)
         self.assertFalse(result['customer_coverage']['complete'])
         self.assertFalse(result['cards']['average_bill']['available'])
@@ -484,7 +484,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self._pos(price=80, guests=4)
         self._invoice(self._sale())
         result = self._assert_sales(180)
-        self.assertEqual(result['cards']['customers']['value'], '4')
+        self.assertEqual(result['cards']['customers']['value'], 4)
         self.assertEqual(result['customer_coverage']['known_count'], 4)
         self.assertEqual(result['customer_coverage']['missing_rows'], 1)
         self.assertFalse(result['cards']['average_bill']['available'])
@@ -521,6 +521,12 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self.assertEqual(Decimal(payment['coverage']['settlement_difference']['value']), 0)
         self.assertFalse(payment['coverage']['complete'])
         self.assertFalse(payment['category_performance']['available'])
+        self.env['res.lang'].with_user(self.env.ref('base.user_admin'))._activate_lang('ar_001')
+        arabic = self._metrics(dashboard=self.dashboard.with_context(lang='ar_001'))
+        category = next(row for row in arabic['payment_performance']['categories']
+                        if row['category_id'] == -1)
+        self.assertEqual(category['name'], 'غير مصنف')
+        self.assertEqual(category['source_actions'][0]['name'], 'مدفوعات نقاط البيع')
 
     def test_signed_refund_does_not_add_guests_or_double_payment(self):
         session, categories, methods = self._category_session(kinds=('bank',))
@@ -531,7 +537,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         refund._compute_prices()
         refund.action_pos_order_paid()
         result = self._assert_sales(0)
-        self.assertEqual(result['cards']['customers']['value'], '4')
+        self.assertEqual(result['cards']['customers']['value'], 4)
         self.assertEqual(result['customer_coverage']['missing_rows'], 0)
         self.assertFalse(result['payment_performance']['category_performance']['available'])
         rows = result['payment_performance']['categories']
@@ -551,7 +557,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         session.start_at = datetime(2026, 10, 1, 15)
         self._pos(price=35, session=session, guests=2, payments=[(method, 35)])
         result = self._assert_sales(150, dashboard=dashboard)
-        self.assertEqual(result['cards']['customers']['value'], '3')
+        self.assertEqual(result['cards']['customers']['value'], 3)
         payment = result['payment_performance']
         category = next(row for row in payment['categories']
                         if row['category_id'] == method.baseer_category_id.id)
@@ -581,7 +587,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
     def test_native_cash_change_is_signed_and_reconciles_to_sale(self):
         session, categories, methods = self._category_session(kinds=('cash',))
         order = self._pos(price=100, guests=2, session=session,
-                          payments=[(methods[0], 120)], change=20)
+                          payments=[(methods[0], 120)], change=-20)
         self.assertTrue(order.payment_ids.filtered('is_change'))
         self.assertEqual(sum(order.payment_ids.mapped('amount')), 100)
         result = self._assert_sales(100)
@@ -664,7 +670,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self.env.cr.execute('UPDATE baseer_pos_payment_category SET company_id=%s WHERE id=%s',
                             [foreign.id, category.id])
         category.invalidate_recordset(['company_id'])
-        with self.assertRaises((ValidationError, AccessError)):
+        with self.assertRaises(ValidationError):
             self._metrics()
 
     def test_archived_known_category_retains_historical_id_and_amount(self):

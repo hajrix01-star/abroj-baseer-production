@@ -20,7 +20,7 @@ class TestPosPaymentCategory(TransactionCase):
         cls.config = cls.env['pos.config'].create({
             'name': 'Payment category test', 'company_id': cls.company.id,
         })
-        cls.session = cls.env['pos.session'].create({'config_id': cls.config.id})
+        cls.session = cls.env['pos.session']
         cls.payments = cls.env['pos.payment']
 
     def _method(self, category=False, company=None):
@@ -44,7 +44,10 @@ class TestPosPaymentCategory(TransactionCase):
         })
 
     def _payment(self, method, amount, state='paid', session=None):
-        session = session or self.session
+        if session is None:
+            if not self.session:
+                self.session = self.env['pos.session'].create({'config_id': self.config.id})
+            session = self.session
         order = self.env['pos.order'].with_company(session.company_id).create({
             'session_id': session.id, 'company_id': session.company_id.id,
             'state': state, 'source': 'pos', 'is_refund': amount < 0,
@@ -77,10 +80,11 @@ class TestPosPaymentCategory(TransactionCase):
 
     def test_split_payment_uses_payment_amount_not_repeated_order_total(self):
         cash, bank = self._category('cash'), self._category('bank')
-        first = self._payment(self._method(cash), 40)
+        cash_method, bank_method = self._method(cash), self._method(bank)
+        first = self._payment(cash_method, 40)
         second = self.env['pos.payment'].create({
             'pos_order_id': first.pos_order_id.id,
-            'payment_method_id': self._method(bank).id, 'amount': 60,
+            'payment_method_id': bank_method.id, 'amount': 60,
         })
         self.payments |= second
         first.pos_order_id.write({'amount_total': 100, 'amount_paid': 100})
@@ -93,17 +97,21 @@ class TestPosPaymentCategory(TransactionCase):
 
     def test_platform_new_unclassified_archived_and_refund_remain_visible(self):
         platform = self._category()
-        self._payment(self._method(platform), 20)
-        self._payment(self._method(platform), 30, state='done')
+        first_method, second_method = self._method(platform), self._method(platform)
         archived_method = self._method(platform)
+        new_category = self._category()
+        new_method = self._method(new_category)
+        unclassified = self._method()
+        draft_method, cancelled_method = self._method(new_category), self._method(new_category)
+        self._payment(first_method, 20)
+        self._payment(second_method, 30, state='done')
         self._payment(archived_method, -5, state='invoiced')
         archived_method.active = False
         platform.active = False
-        new_category = self._category()
-        self._payment(self._method(new_category), 7)
-        self._payment(self._method(), 11)
-        draft = self._payment(self._method(new_category), 999, state='draft')
-        self._payment(self._method(new_category), 888, state='cancel')
+        self._payment(new_method, 7)
+        self._payment(unclassified, 11)
+        draft = self._payment(draft_method, 999, state='draft')
+        self._payment(cancelled_method, 888, state='cancel')
         totals = {row['baseer_payment_category_id'][0]
                   if row['baseer_payment_category_id'] else False: row['amount']
                   for row in self._grouped()}
@@ -133,8 +141,9 @@ class TestPosPaymentCategory(TransactionCase):
         config = self.env['pos.config'].with_company(foreign).create({
             'name': 'Payment foreign POS', 'company_id': foreign.id,
         })
+        foreign_method = self._method(company=foreign)
         session = self.env['pos.session'].with_company(foreign).create({'config_id': config.id})
-        foreign_payment = self._payment(self._method(company=foreign), 777, session=session)
+        foreign_payment = self._payment(foreign_method, 777, session=session)
         reader = self.env['pos.payment'].with_user(
             self._reader_user(self.company | foreign),
         ).with_context(

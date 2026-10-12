@@ -56,7 +56,7 @@ export class BaseerSalesDashboard extends Component {
             { key: "sales", title: _t("Total sales"), note: _t("Tax included"), icon: "fa-line-chart" },
             { key: "customers", title: _t("Registered customers"), note: _t("Available when all sources record customers"), icon: "fa-users" },
             { key: "daily_sales", title: this.state.payload?.unified_sources ? _t("Average sales per recorded day") : _t("Average daily sales"), note: _t("Days with recorded sales"), icon: "fa-calendar" },
-            { key: "daily_customers", title: _t("Average daily customers"), note: _t("Days with recorded sales"), icon: "fa-user" },
+            { key: "daily_customers", title: _t("Average daily customers"), note: _t("Completed days"), icon: "fa-user" },
             { key: "average_bill", title: _t("Average bill"), note: _t("Per registered customer"), icon: "fa-credit-card" },
         ].map((spec) => ({
             ...spec, ...values[spec.key],

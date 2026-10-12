@@ -117,6 +117,14 @@ class TestPosRootCategory(TransactionCase):
             'name': 'Root category foreign company',
             'currency_id': self.env.company.currency_id.id,
         })
+        # A new company has no chart fixtures. Native POS config requires a
+        # bank journal even though this test does not post accounting moves.
+        self.env['account.journal'].with_company(foreign).with_context(
+            allowed_company_ids=foreign.ids,
+        ).create({
+            'name': 'Foreign category bank', 'code': 'RCFB',
+            'type': 'bank', 'company_id': foreign.id,
+        })
         foreign_config = self.env['pos.config'].with_company(foreign).with_context(
             allowed_company_ids=foreign.ids,
         ).create({'name': 'Foreign category fixture', 'company_id': foreign.id})

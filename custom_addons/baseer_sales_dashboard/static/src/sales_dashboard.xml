@@ -47,7 +47,7 @@
                         <div class="o_baseer_sales_card_value">
                             <span class="o_baseer_sales_numeric" t-att-class="{'text-muted': !card.available}"
                                   t-esc="card.display"/>
-                            <small t-if="card.currency and (card.available or !hasRecordedData)" t-esc="state.payload.company.currency"/>
+                            <small t-if="card.currency and card.available" t-esc="state.payload.company.currency"/>
                         </div>
                         <p class="o_baseer_sales_card_note text-muted" t-esc="card.note"/>
                         <div t-if="card.comparison and hasRecordedData" class="o_baseer_sales_delta"
@@ -65,7 +65,25 @@
                     </article>
                 </div>
 
-                <div class="o_baseer_sales_coverage">
+                <article t-if="sourceRows.length" class="o_baseer_sales_chart_card mb-3">
+                    <header><h2 t-esc="labels.sourceBreakdown"/></header>
+                    <p class="small text-muted mb-2" t-esc="labels.sourceDateBasis"/>
+                    <ul class="list-group list-group-flush">
+                        <li t-foreach="sourceRows" t-as="source" t-key="source.key"
+                            class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2 px-0">
+                            <button t-if="source.source_action" type="button" class="btn btn-link p-0 text-start"
+                                    t-on-click="() => this.openSalesSource(source)" t-esc="source.name"/>
+                            <span t-else="" t-esc="source.name"/>
+                            <span class="text-nowrap"><strong class="o_baseer_sales_numeric"
+                                t-esc="source.sales.available ? source.sales.display : '—'"/>
+                                <small t-if="source.sales.available" class="text-muted ms-1" t-esc="state.payload.company.currency"/>
+                            </span>
+                        </li>
+                    </ul>
+                </article>
+
+                <p class="small text-muted mb-1" t-esc="labels.manualScope"/>
+                <div class="o_baseer_sales_coverage" t-att-title="labels.manualScope">
                     <div><span class="o_baseer_sales_numeric fw-semibold" t-esc="state.payload.coverage.operating_days"/><span t-esc="labels.completedDays"/></div>
                     <div><span class="o_baseer_sales_numeric fw-semibold" t-esc="state.payload.coverage.incomplete_days"/><span t-esc="labels.partialDays"/></div>
                     <div><span class="o_baseer_sales_numeric fw-semibold" t-esc="state.payload.coverage.closed_days"/><span t-esc="labels.closedDays"/></div>
@@ -86,22 +104,6 @@
                                 <span><i class="o_baseer_sales_legend_bar" aria-hidden="true"/><span t-esc="salesAxisLabel"/></span>
                                 <span><i class="o_baseer_sales_legend_line" aria-hidden="true"/><span t-esc="customersAxisLabel"/></span>
                             </div>
-                            <svg class="o_baseer_sales_preview_art" viewBox="0 0 900 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                                <g fill="#69afe5">
-                                    <rect x="35" y="125" width="48" height="75" rx="2"/>
-                                    <rect x="110" y="90" width="48" height="110" rx="2"/>
-                                    <rect x="185" y="115" width="48" height="85" rx="2"/>
-                                    <rect x="260" y="65" width="48" height="135" rx="2"/>
-                                    <rect x="335" y="95" width="48" height="105" rx="2"/>
-                                    <rect x="410" y="45" width="48" height="155" rx="2"/>
-                                    <rect x="485" y="70" width="48" height="130" rx="2"/>
-                                    <rect x="560" y="35" width="48" height="165" rx="2"/>
-                                    <rect x="635" y="75" width="48" height="125" rx="2"/>
-                                    <rect x="710" y="45" width="48" height="155" rx="2"/>
-                                    <rect x="785" y="20" width="48" height="180" rx="2"/>
-                                </g>
-                                <polyline points="59,135 134,110 209,120 284,80 359,105 434,70 509,90 584,50 659,65 734,40 809,55" fill="none" stroke="#ba7428" stroke-width="3" vector-effect="non-scaling-stroke"/>
-                            </svg>
                             <p class="text-muted mb-0" t-esc="labels.emptyNote"/>
                         </div>
                     </article>
@@ -110,6 +112,7 @@
                 <div class="o_baseer_sales_performance_cards">
                     <article t-if="shiftRows.length" class="o_baseer_sales_performance_card">
                         <h2 t-esc="labels.shifts"/>
+                        <p class="small text-muted" t-esc="labels.manualScope"/>
                         <div class="nav nav-tabs o_baseer_sales_tabs" role="tablist" t-att-aria-label="labels.shifts">
                             <button t-foreach="tabs" t-as="tab" t-key="tab.key" type="button" role="tab"
                                     class="nav-link" t-att-class="{'active': state.shiftTab === tab.key}"
@@ -163,6 +166,7 @@
                     </article>
                     <article t-if="paymentCoverage" class="o_baseer_sales_performance_card">
                         <h2 t-esc="labels.payments"/>
+                        <p class="small text-muted" t-esc="labels.manualScope"/>
                         <div t-if="!paymentCoverage.complete" class="alert alert-warning o_baseer_sales_notice" role="status">
                             <span t-esc="labels.paymentIncomplete"/>
                         </div>

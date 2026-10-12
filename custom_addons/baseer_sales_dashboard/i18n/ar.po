@@ -656,6 +656,7 @@ msgstr "هذا المؤشر غير متاح للشفتات المسجلة"
 #. module: baseer_sales_dashboard
 #. odoo-python
 #: code:addons/baseer_sales_dashboard/models/dashboard.py:0
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
 msgid "This report exceeds 100,000 source rows. Choose a shorter period; no records have been omitted."
 msgstr "يتجاوز التقرير 100,000 سجل مصدر. اختر فترة أقصر؛ لم تُستبعد أي سجلات."
 
@@ -1165,3 +1166,162 @@ msgstr "لا توجد جلسات مسجلة في هذه الفترة."
 #: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
 msgid "Sales trend"
 msgstr "حركة المبيعات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Sales overview"
+msgstr "نظرة عامة على المبيعات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Unified sales sources"
+msgstr "مصادر المبيعات الموحدة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Sales by source"
+msgstr "المبيعات حسب المصدر"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Summaries: business date · POS: session opening day · Sales: invoice date"
+msgstr "الملخصات: يوم العمل · نقاط البيع: يوم فتح الجلسة · المبيعات: تاريخ الفاتورة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Approved summaries only"
+msgstr "الملخصات المعتمدة فقط"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Summary shift performance"
+msgstr "أداء فترات الملخصات"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Summary sales by payment method"
+msgstr "مبيعات الملخصات حسب طريقة الدفع"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Summary sales by category"
+msgstr "مبيعات الملخصات حسب الفئة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Available when all sources record customers"
+msgstr "يتوفر عند تسجيل العملاء في جميع المصادر"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "No recorded sales in this period"
+msgstr "لا توجد مبيعات مسجلة في هذه الفترة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Recorded sales appear here. Unavailable values are shown as —."
+msgstr "تظهر المبيعات المسجلة هنا. القيم غير المتاحة تظهر بعلامة —."
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Days with recorded sales"
+msgstr "الأيام التي تضم مبيعات مسجلة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Recorded sales"
+msgstr "مبيعات مسجلة"
+
+#. module: baseer_sales_dashboard
+#. odoo-javascript
+#: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
+msgid "Average sales per recorded day"
+msgstr "متوسط المبيعات لكل يوم مسجل"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Unified sales currently support SAR companies only."
+msgstr "المبيعات الموحدة تدعم حاليًا الشركات بعملة الريال السعودي فقط."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A confirmed POS order has no session opening time; its sales day cannot be determined."
+msgstr "طلب نقاط بيع مؤكد بلا وقت فتح للجلسة؛ لا يمكن تحديد يوم مبيعاته."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A posted Sales invoice has no invoice date; its sales day cannot be determined."
+msgstr "فاتورة مبيعات مرحلة بلا تاريخ فاتورة؛ لا يمكن تحديد يوم مبيعاتها."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Point of Sale orders"
+msgstr "طلبات نقاط البيع"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Sales invoices"
+msgstr "فواتير المبيعات"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Approved-summary sales disagree with the daily report. Unified sales cannot be calculated."
+msgstr "مبيعات الملخصات المعتمدة لا تطابق التقرير اليومي. لا يمكن احتساب المبيعات الموحدة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A confirmed POS order has no session opening time."
+msgstr "طلب نقاط بيع مؤكد بلا وقت فتح للجلسة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A POS order has an inconsistent approved-summary link. Unified sales cannot be calculated."
+msgstr "ربط طلب نقاط البيع بملخص معتمد غير متسق. لا يمكن احتساب المبيعات الموحدة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "An approved summary has an inconsistent generated POS order. Unified sales cannot be calculated."
+msgstr "طلب نقاط البيع الناتج عن ملخص معتمد غير متسق. لا يمكن احتساب المبيعات الموحدة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A POS order uses another currency; unified SAR sales cannot silently convert it."
+msgstr "طلب نقاط بيع بعملة أخرى؛ لا يمكن تحويله ضمنيًا ضمن المبيعات الموحدة بالريال."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A posted Sales invoice has no invoice date."
+msgstr "فاتورة مبيعات مرحلة بلا تاريخ فاتورة."
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Approved summaries"
+msgstr "الملخصات المعتمدة"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Point of Sale"
+msgstr "نقاط البيع"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "Restaurants"
+msgstr "المطاعم"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "An invoice reversal has an invalid origin chain. Unified sales cannot be calculated."
+msgstr "سلسلة مصدر عكس الفاتورة غير صالحة. لا يمكن احتساب المبيعات الموحدة."

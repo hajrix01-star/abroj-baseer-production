@@ -24,8 +24,6 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
             | cls.env.ref('sales_team.group_sale_manager')
         )
         cls.dashboard = cls.env.ref('baseer_sales_dashboard.dashboard_sales_summary')
-        cls.dashboard.company_ids = [Command.clear()]
-        cls.dashboard.is_published = True
         cls.partner = cls.env['res.partner'].create({
             'name': 'Unified actual customer',
             'property_account_receivable_id': cls.company_data['default_account_receivable'].id,

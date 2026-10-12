@@ -54,7 +54,12 @@ class UnifiedSalesDashboard(models.Model):
             ('move_type', 'in', ('out_invoice', 'out_refund')),
             ('invoice_line_ids.sale_line_ids', '!=', False),
             ('pos_order_ids', '=', False), ('reversed_pos_order_id', '=', False),
-            ('reversed_entry_id.pos_order_ids', '=', False),
+            # An ordinary Sales invoice has no reversal parent. Explicitly
+            # admit that case: a dotted negative test alone can discard NULL
+            # parents at the ORM/SQL relation join. A real reversal parent
+            # must have neither kind of POS origin.
+            '|', ('reversed_entry_id', '=', False),
+            '&', ('reversed_entry_id.pos_order_ids', '=', False),
             ('reversed_entry_id.reversed_pos_order_id', '=', False),
         ]
         if first and last:

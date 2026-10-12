@@ -34,7 +34,11 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
             'taxes_id': [Command.clear()],
             'property_account_income_id': cls.company_data['default_account_revenue'].id,
         })
-        cls.deposit_product = cls.product.copy({'name': 'Unified deposit'})
+        cls.unified_deposit_product = cls.env['product.product'].create({
+            'name': 'Unified deposit', 'type': 'service', 'available_in_pos': True,
+            'invoice_policy': 'order', 'taxes_id': [Command.clear()],
+            'property_account_income_id': cls.company_data['default_account_revenue'].id,
+        })
         cls.method = cls.env['pos.payment.method'].create({
             'name': 'Unified bank', 'company_id': cls.company.id,
             'journal_id': cls.company_data['default_journal_bank'].id,
@@ -46,7 +50,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
             'journal_id': cls.company_data['default_journal_sale'].id,
             'invoice_journal_id': cls.company_data['default_journal_sale'].id,
             'payment_method_ids': [Command.set(cls.method.ids)],
-            'down_payment_product_id': cls.deposit_product.id,
+            'down_payment_product_id': cls.unified_deposit_product.id,
         })
         cls.config.open_ui()
         cls.session = cls.config.current_session_id
@@ -76,7 +80,8 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
 
     def _pos(self, sale=None, quantity=1, price=100, deposit=False, invoice=False, session=None):
         session = session if session is not None else self.session
-        product = self.deposit_product if deposit else self.product
+        product = self.unified_deposit_product if deposit else self.product
+        self.assertTrue(product.exists(), 'Native POS line product must exist')
         line_values = {
             'product_id': product.id, 'uuid': str(uuid4()), 'qty': quantity,
             'price_unit': price, 'price_subtotal': quantity * price,
@@ -134,6 +139,15 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self.assertFalse(self._metrics()['has_data'])
         invoice = self._invoice(sale)
         self.assertEqual(invoice.amount_total, 100)
+        for term in self.dashboard._baseer_unified_invoice_domain(self.company):
+            if isinstance(term, tuple) and not term[0].startswith('reversed_entry_id.'):
+                with self.subTest(native_invoice_domain_term=term):
+                    self.assertIn(invoice, self.env['account.move'].search([
+                        ('id', '=', invoice.id), term,
+                    ]))
+        self.assertIn(invoice, self.env['account.move'].search([
+            ('id', '=', invoice.id),
+        ] + self.dashboard._baseer_unified_invoice_domain(self.company)))
         self._assert_sales(100)
         refund = invoice._reverse_moves([{
             'date': '2026-10-03', 'invoice_date': '2026-10-03',
@@ -162,17 +176,43 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self._assert_sales(100)
 
     def test_native_pos_customer_invoice_is_not_an_extra_sales_source(self):
-        order = self._pos(invoice=True)
+        sale = self._sale()
+        order = self._pos(sale, invoice=True)
         self.assertTrue(order.account_move)
         self.assertEqual(order.account_move.state, 'posted')
+        self.assertTrue(order.account_move.invoice_line_ids.sale_line_ids)
         self._assert_sales(100)
+        credit = order.account_move._reverse_moves([{
+            'date': '2026-10-03', 'invoice_date': '2026-10-03',
+        }], cancel=False)
+        credit.action_post()
+        self.assertTrue(credit.invoice_line_ids.sale_line_ids)
+        self.assertEqual(credit.reversed_entry_id, order.account_move)
+        # Accounting-only reversal of a POS-origin invoice is not a second
+        # operational sale/refund. A POS refund is counted from its own POS row.
+        self._assert_sales(100)
+        refund = order._refund()
+        self.assertEqual(refund.lines.refunded_orderline_id, order.lines)
+        self.env['pos.payment'].create({
+            'pos_order_id': refund.id, 'payment_method_id': self.method.id,
+            'amount': -100,
+        })
+        refund._compute_prices()
+        refund.action_pos_order_paid()
+        refund.with_context(generate_pdf=False).action_pos_order_invoice()
+        self.assertTrue(refund.is_refund)
+        self.assertEqual(refund.account_move.move_type, 'out_refund')
+        self.assertEqual(refund.account_move.state, 'posted')
+        self.assertEqual(refund.amount_total, -100)
+        self._assert_sales(0)
 
     def test_pos_opening_date_and_invoice_date_keep_cross_period_origin(self):
         sale = self._sale()
+        self.session.start_at = datetime(2026, 8, 1, 15)
         self._pos(sale, quantity=.4)
-        self._invoice(sale, date='2026-11-02')
-        self._assert_sales(40)
-        self._assert_sales(60, first='2026-11-01', last='2026-11-30')
+        self._invoice(sale, date='2026-09-02')
+        self._assert_sales(40, first='2026-08-01', last='2026-08-31')
+        self._assert_sales(60, first='2026-09-01', last='2026-09-30')
 
     def test_ordinary_all_source_reader_and_missing_account_permission(self):
         self._invoice(self._sale())
@@ -275,12 +315,13 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
     def _approved_manual_fixture(self, zero=False):
         # Reuse the actual onboarding and approval path exercised by the
         # summary source contract, rather than forging protected bridge IDs.
-        company = self.env['res.company'].create({'name': 'Unified manual native company'})
+        admin = self.env.ref('base.user_admin')
+        company = self.env['res.company'].with_user(admin).create({'name': 'Unified manual native company'})
         action = company.action_baseer_open_onboarding()
-        wizard = self.env[action['res_model']].browse(action['res_id'])
+        wizard = company.env[action['res_model']].browse(action['res_id'])
         wizard.write({'sales_mode': 'summary', 'setup_summary_jahez': True})
         wizard.action_apply_selected()
-        summaries = self.env['baseer.pos.summary'].with_company(company).with_context(
+        summaries = company.env['baseer.pos.summary'].with_company(company).with_context(
             allowed_company_ids=company.ids,
         )
         config = summaries.env['pos.config'].search([
@@ -307,7 +348,7 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
             self.assertEqual(summary.order_id.state, 'done')
             self.assertEqual(summary.order_id.baseer_summary_id, summary)
             self.assertEqual(summary.order_id.amount_total, 115)
-        dashboard = self.dashboard.with_company(company).with_context(allowed_company_ids=company.ids)
+        dashboard = self.dashboard.with_user(admin).with_company(company).with_context(allowed_company_ids=company.ids)
         return dashboard, summary
 
     def test_approved_manual_summary_and_generated_native_pos_count_once(self):
@@ -348,7 +389,10 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
 
     def test_confirmed_pos_without_opening_time_fails_closed(self):
         self._pos()
-        self.session.start_at = False
+        # Fault-injected imported corruption, not a valid session write path.
+        self.session.flush_recordset(['start_at'])
+        self.env.cr.execute('UPDATE pos_session SET start_at=NULL WHERE id=%s', [self.session.id])
+        self.session.invalidate_recordset(['start_at'])
         with self.assertRaises(ValidationError):
             self._metrics()
 

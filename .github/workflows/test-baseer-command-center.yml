@@ -46,5 +46,5 @@ jobs:
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
             -d baseer_command_center_ci -i baseer_sales_heat_calendar --without-demo=all \
-            --test-enable --test-tags=/baseer_sales_dashboard:ExecutivePosCase,/baseer_sales_heat_calendar \
+            --test-enable --test-tags=/baseer_sales_dashboard:ExecutivePosCase,/baseer_sales_dashboard:TestUnifiedSales,/baseer_sales_dashboard:SalesCategoryPerformanceCase,/baseer_sales_heat_calendar \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

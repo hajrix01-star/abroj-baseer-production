@@ -139,6 +139,8 @@ class HeatPosCase(TransactionCase):
 
     def _action_records(self, action):
         self.assertEqual(action['type'], 'ir.actions.act_window')
+        # Odoo action_service preprocesses inline window actions via views.map.
+        self.assertEqual(action['views'], [(False, 'list'), (False, 'form')])
         return self._scoped().env[action['res_model']].search(action['domain'])
 
     def test_summary_generated_native_order_is_counted_once_and_zero_is_preserved(self):

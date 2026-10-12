@@ -223,11 +223,13 @@ class SalesHeatCalendarDashboard(models.Model):
             if row['source_kind'] == 'summary' and not summary:
                 # Explicit zero-day summaries have no order by design.
                 row['source_action'] = self._baseer_source_action(company, day, day)
+                row['source_action']['views'] = [(False, 'list'), (False, 'form')]
             elif native:
                 contributing = set().union(*(bucket['sessions'] for bucket in native.values()))
                 row['source_action'] = {
                     'type': 'ir.actions.act_window', 'name': _('POS sales sources'),
                     'res_model': 'pos.order', 'view_mode': 'list,form',
+                    'views': [(False, 'list'), (False, 'form')],
                     'domain': [('company_id', '=', company.id),
                                ('session_id.company_id', '=', company.id),
                                ('state', 'in', ['paid', 'done', 'invoiced']),

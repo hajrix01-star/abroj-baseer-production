@@ -1320,3 +1320,8 @@ msgstr "نقاط البيع"
 #: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
 msgid "Restaurants"
 msgstr "المطاعم"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "An invoice reversal has an invalid origin chain. Unified sales cannot be calculated."
+msgstr "سلسلة مصدر عكس الفاتورة غير صالحة. لا يمكن احتساب المبيعات الموحدة."

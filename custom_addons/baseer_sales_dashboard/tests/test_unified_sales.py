@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
+from unittest.mock import patch
 from uuid import uuid4
 
 from odoo import Command
@@ -155,6 +156,12 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         refund.action_post()
         self.assertEqual(refund.amount_total_signed, -100)
         self._assert_sales(0)
+        restored = refund._reverse_moves([{
+            'date': '2026-10-04', 'invoice_date': '2026-10-04',
+        }], cancel=False)
+        restored.action_post()
+        self.assertTrue(restored.invoice_line_ids.sale_line_ids)
+        self._assert_sales(100)
 
     def test_native_partial_pos_and_remaining_sales_invoice_total_once(self):
         sale = self._sale()
@@ -190,6 +197,13 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self.assertEqual(credit.reversed_entry_id, order.account_move)
         # Accounting-only reversal of a POS-origin invoice is not a second
         # operational sale/refund. A POS refund is counted from its own POS row.
+        self._assert_sales(100)
+        restored = credit._reverse_moves([{
+            'date': '2026-10-04', 'invoice_date': '2026-10-04',
+        }], cancel=False)
+        restored.action_post()
+        self.assertTrue(restored.invoice_line_ids.sale_line_ids)
+        self.assertEqual(restored.reversed_entry_id, credit)
         self._assert_sales(100)
         refund = order._refund()
         self.assertEqual(refund.lines.refunded_orderline_id, order.lines)
@@ -404,3 +418,41 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         self.assertEqual(last.isoformat(), '2026-10-02')
         result = self.dashboard.get_baseer_sales_metrics({'native': None})
         self.assertEqual(Decimal(result['cards']['sales']['value']), Decimal('200'))
+
+    def _posted_sales_reversal_chain(self):
+        invoice = self._invoice(self._sale())
+        credit = invoice._reverse_moves([{
+            'date': '2026-10-03', 'invoice_date': '2026-10-03',
+        }], cancel=False)
+        credit.action_post()
+        restored = credit._reverse_moves([{
+            'date': '2026-10-04', 'invoice_date': '2026-10-04',
+        }], cancel=False)
+        restored.action_post()
+        return invoice, credit, restored
+
+    def test_reversal_shared_ancestor_budget_fails_without_partial_total(self):
+        self._posted_sales_reversal_chain()
+        # Only the traversal capacity is reduced; money and native workflows
+        # remain actual. One candidate plus two distinct ancestors exceeds 2.
+        with patch('odoo.addons.baseer_sales_dashboard.models.unified_sales.MAX_SOURCE_ROWS', 2):
+            with self.assertRaises(ValidationError):
+                self.dashboard._baseer_unified_deep_pos_reversal_ids(self.company)
+
+    def test_unreadable_reversal_ancestor_fails_closed_for_ordinary_reader(self):
+        invoice, _credit, _restored = self._posted_sales_reversal_chain()
+        reader = new_test_user(
+            self.env, login='unified_hidden_ancestor_reader',
+            groups='base.group_user,point_of_sale.group_pos_user,sales_team.group_sale_salesman_all_leads,account.group_account_readonly',
+            company_id=self.company.id, company_ids=[Command.set(self.company.ids)],
+        )
+        # An isolated global record-rule fixture hides the original invoice
+        # while retaining its descendants. No production ACL is modified.
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Unified hidden invoice ancestor test',
+            'model_id': self.env['ir.model']._get_id('account.move'),
+            'domain_force': repr([('id', '!=', invoice.id)]),
+            'perm_read': True, 'perm_write': False, 'perm_create': False, 'perm_unlink': False,
+        })
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard=self.dashboard.with_user(reader))

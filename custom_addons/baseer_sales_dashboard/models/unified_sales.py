@@ -47,7 +47,7 @@ class UnifiedSalesDashboard(models.Model):
             ]
         return domain
 
-    def _baseer_unified_invoice_domain(self, company, first=None, last=None):
+    def _baseer_unified_invoice_base_domain(self, company, first=None, last=None):
         # The POS links are checked globally, independent of the invoice date.
         domain = [
             ('company_id', '=', company.id), ('state', '=', 'posted'),
@@ -64,6 +64,92 @@ class UnifiedSalesDashboard(models.Model):
         ]
         if first and last:
             domain += [('invoice_date', '>=', first), ('invoice_date', '<=', last)]
+        return domain
+
+    def _baseer_unified_deep_pos_reversal_ids(self, company, first=None, last=None):
+        """Exclude POS-origin reversals at any depth, without guessing a depth limit.
+
+        Odoo copies sale_line_ids on reversal, so a reverse of a POS credit note
+        still looks like a Sales invoice. Only the exceptional multi-hop rows
+        are traversed, under the same 100k source budget and ordinary ACLs.
+        """
+        Move = self.env['account.move']
+        domain = self._baseer_unified_invoice_base_domain(company, first, last)
+        domain.append(('reversed_entry_id.reversed_entry_id', '!=', False))
+        if Move.search_count(domain, limit=MAX_SOURCE_ROWS + 1) > MAX_SOURCE_ROWS:
+            raise ValidationError(_(
+                'This report exceeds 100,000 source rows. Choose a shorter period; no records have been omitted.'
+            ))
+        candidates = Move.search(domain)
+        parents = {}
+        pos_origins = {}
+        visited = set()
+        frontier = candidates
+        while frontier:
+            # One batched ACL/rule-protected read per ancestry level, not one
+            # ORM traversal per invoice. A foreign/inaccessible ancestor fails
+            # the entire calculation rather than silently hiding an origin.
+            frontier.check_access('read')
+            rows = frontier.read([
+                'company_id', 'reversed_entry_id', 'pos_order_ids', 'reversed_pos_order_id',
+            ], load=None)
+            parent_ids = set()
+            pos_order_ids = set()
+            for row in rows:
+                company_value = row['company_id']
+                company_id = company_value[0] if isinstance(company_value, (tuple, list)) else company_value
+                if company_id != company.id:
+                    raise ValidationError(_(
+                        'An invoice reversal has an invalid origin chain. Unified sales cannot be calculated.'
+                    ))
+                parent_value = row['reversed_entry_id']
+                parent_id = parent_value[0] if isinstance(parent_value, (tuple, list)) else parent_value
+                reversed_value = row['reversed_pos_order_id']
+                reversed_order_id = reversed_value[0] if isinstance(reversed_value, (tuple, list)) else reversed_value
+                pos_order_ids.update(row['pos_order_ids'])
+                if reversed_order_id:
+                    pos_order_ids.add(reversed_order_id)
+                parents[row['id']] = parent_id or False
+                pos_origins[row['id']] = bool(row['pos_order_ids'] or reversed_order_id)
+                if parent_id and parent_id not in visited:
+                    parent_ids.add(parent_id)
+            self.env['pos.order'].browse(sorted(pos_order_ids)).check_access('read')
+            visited.update(frontier.ids)
+            parent_ids.difference_update(visited)
+            if len(visited) + len(parent_ids) > MAX_SOURCE_ROWS:
+                raise ValidationError(_(
+                    'This report exceeds 100,000 source rows. Choose a shorter period; no records have been omitted.'
+                ))
+            frontier = Move.browse(sorted(parent_ids))
+
+        resolved = {}
+        excluded = set()
+        for invoice_id in candidates.ids:
+            chain = []
+            chain_seen = set()
+            node = invoice_id
+            while node and node not in resolved:
+                if node in chain_seen or node not in parents:
+                    raise ValidationError(_(
+                        'An invoice reversal has an invalid origin chain. Unified sales cannot be calculated.'
+                    ))
+                chain.append(node)
+                chain_seen.add(node)
+                if pos_origins[node]:
+                    break
+                node = parents[node]
+            pos_origin = pos_origins[node] if node and pos_origins[node] else resolved.get(node, False)
+            for entry_id in chain:
+                resolved[entry_id] = pos_origin
+            if pos_origin:
+                excluded.add(invoice_id)
+        return excluded
+
+    def _baseer_unified_invoice_domain(self, company, first=None, last=None):
+        domain = self._baseer_unified_invoice_base_domain(company, first, last)
+        excluded = self._baseer_unified_deep_pos_reversal_ids(company, first, last)
+        if excluded:
+            domain.append(('id', 'not in', sorted(excluded)))
         return domain
 
     def _baseer_unified_missing_dates(self, company):

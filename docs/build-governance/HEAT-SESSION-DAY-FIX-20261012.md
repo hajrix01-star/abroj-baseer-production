@@ -1,0 +1,11 @@
+# Heat calendar session-day regression correction
+
+QA dashboard9 failed read-only call with TypeError: unexpected outside keyword in executive query. Actual source confirmed. Heat still groups date_order minus7hours while executive query now selects session start date: incompatible dependency and inconsistent day attribution.
+G0: owner requests repair; align heat sales and drilldown with approved Command Center session-opening Riyadh day. No order/session/accounting/target/occasion edits. QA first; no new production authorization assumed.
+G1: reuse current POS secured source/query, SAR guard, capacity, Decimal SQL aggregation and existing calendar UI; no schema/library/new environment/load.
+G2: group by approved executive session timestamp; no outside-hour query; complete only if contributing sessions closed. Generated-summary link/company/access checks retained, but summary business_date cannot redate sales; explicit zero/closure metadata and direct-summary conflicts must not silently lose native money. Details use identical secured session-day domain. Baseline weekday follows same new day.
+G3: focused tests for overnight/month boundary/open session/refund/summary link/security; existing CI and actual QA reproduction verification. Require independent contract review before code, release review before QA. No changes to financial reports or source data.
+Independent compact_dashboard_gate G0-G3 GO: include linked-summary metadata beyond its calendar business_date; summary date cannot redistribute native money. On conflicts retain native amount and alert, suppress performance scoring, never replace money by zero. This refines G2 above.
+G2 conflict clarification: fail-closed applies to performance evaluation, not withholding native money or rejecting the whole calendar. Preserve both native amount and visible conflict flag.
+Early source review caught P1: do not export native domain Query in source_action; concrete JSON-safe secured day/session domain and payload serialization assertion required before release.
+CI difference/risk/use: extend existing command-center isolated CI to heat consumer; uncovered dependency and overnight/month-boundary source mismatch; owner uses small-company personal dashboards. No new QA environment or load test.

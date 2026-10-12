@@ -14,6 +14,9 @@ class TestPosPaymentCategory(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
+        sar = cls.env.ref('base.SAR')
+        sar.active = True
+        cls.company.currency_id = sar
         cls.config = cls.env['pos.config'].create({
             'name': 'Payment category test', 'company_id': cls.company.id,
         })
@@ -22,10 +25,16 @@ class TestPosPaymentCategory(TransactionCase):
 
     def _method(self, category=False, company=None):
         company = company or self.company
-        return self.env['pos.payment.method'].with_company(company).create({
+        method = self.env['pos.payment.method'].with_company(company).create({
             'name': 'Payment group ' + str(uuid4()), 'company_id': company.id,
             'baseer_category_id': category.id if category else False,
         })
+        configs = self.env['pos.config'].with_company(company).search([
+            ('company_id', '=', company.id),
+            ('name', 'in', ['Payment category test', 'Payment foreign POS']),
+        ])
+        configs.write({'payment_method_ids': [Command.link(method.id)]})
+        return method
 
     def _category(self, kind='platform', company=None):
         company = company or self.company

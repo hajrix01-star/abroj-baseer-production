@@ -17,6 +17,6 @@ class PosPayment(models.Model):
             domain = (
                 Domain(domain)
                 & Domain('company_id', '=', self.env.company.id)
-                & Domain('pos_order_id.state', 'in', ['paid', 'done', 'invoiced'])
+                & Domain('pos_order_id.state', 'in', ['paid', 'done'])
             )
         return super()._search(domain, *args, **kwargs)

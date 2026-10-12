@@ -39,7 +39,7 @@
         <field name="res_model">pos.payment</field>
         <field name="view_mode">pivot,graph,list,form</field>
         <field name="search_view_id" ref="point_of_sale.view_pos_payment_search"/>
-        <field name="domain">[('pos_order_id.state', 'in', ['paid', 'done', 'invoiced'])]</field>
+        <field name="domain">[('pos_order_id.state', 'in', ['paid', 'done'])]</field>
         <field name="context">{'baseer_payment_category_report': True, 'search_default_baseer_payment_category': 1, 'create': False, 'edit': False, 'delete': False}</field>
     </record>
     <record id="action_pos_payment_category_pivot" model="ir.actions.act_window.view">

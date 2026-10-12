@@ -3,7 +3,7 @@
 from uuid import uuid4
 
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, tagged
 from odoo.tools.safe_eval import safe_eval
 
@@ -89,6 +89,23 @@ class TestPosPaymentCategory(TransactionCase):
         })
         self.payments |= second
         first.pos_order_id.write({'amount_total': 100, 'amount_paid': 100})
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company.id), ('type', '=', 'sale'),
+        ], limit=1)
+        if not journal:
+            journal = self.env['account.journal'].create({
+                'name': 'Payment test sales', 'code': 'PCTS',
+                'type': 'sale', 'company_id': self.company.id,
+            })
+        partner = self.env['res.partner'].create({'name': 'Payment invoice customer'})
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice', 'company_id': self.company.id,
+            'journal_id': journal.id, 'partner_id': partner.id,
+        })
+        # A real draft invoice link characterizes an invoiced POS origin;
+        # this does not claim to test invoice calculation or accounting posting.
+        first.pos_order_id.write({'account_move': invoice.id})
+        self.assertEqual(first.pos_order_id.account_move, invoice)
         before = [(row.id, row.amount) for row in self.payments]
         groups = self._grouped()
         totals = {row['baseer_payment_category_id'][0]: row['amount'] for row in groups}
@@ -106,13 +123,15 @@ class TestPosPaymentCategory(TransactionCase):
         draft_method, cancelled_method = self._method(new_category), self._method(new_category)
         self._payment(first_method, 20)
         self._payment(second_method, 30, state='done')
-        self._payment(archived_method, -5, state='invoiced')
-        archived_method.active = False
-        platform.active = False
+        self._payment(archived_method, -5, state='done')
         self._payment(new_method, 7)
         self._payment(unclassified, 11)
         draft = self._payment(draft_method, 999, state='draft')
         self._payment(cancelled_method, 888, state='cancel')
+        # Historical closed-session fixture, not an accounting close test.
+        self.session.write({'state': 'closed'})
+        archived_method.active = False
+        platform.active = False
         totals = {row['baseer_payment_category_id'][0]
                   if row['baseer_payment_category_id'] else False: row['amount']
                   for row in self._grouped()}
@@ -141,6 +160,12 @@ class TestPosPaymentCategory(TransactionCase):
             'create_date', 'write_date',
         ])[0]
         self.assertEqual(payment.baseer_payment_category_id, first_category)
+        with self.assertRaises(UserError):
+            method.write({'baseer_category_id': second_category.id})
+        # This synthetic historical session shape tests only related-field
+        # recomputation after the native open-session guard no longer applies;
+        # it does not claim to exercise accounting session closure/posting.
+        self.session.write({'state': 'closed'})
         method.write({'baseer_category_id': second_category.id})
         self.env.flush_all()
         payment.invalidate_recordset()

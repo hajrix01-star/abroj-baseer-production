@@ -213,3 +213,20 @@ bodyClass/widgetprops import; added test25 for JS/XML/SCSS compilation and widge
 registration (no browserclickclaim). Same CIfixture, test-onlydelta justifies next
 run, no duplicatedenvironment/load or sourcepermissionschange. UXAraby produced
 conciseArabicbuttons/status/errorlabels; no names or filenames translated.
+
+Candidateecf9453e: Source38547620927PASS, Odoo38547620713FAIL1/25,0errors.
+Test25 caught actualLibSass uniterror in newSCSS height:min(70vh,850px): incompatible
+px/vh. Replace with height70vh+max-height850px; same responsiveintent, assertion
+unchanged. No QAdeploy beforecorrectedCI. Prior24functionalcasesstillpass.
+
+Capacityprep: QAfree1585135616 before nextrelease. Priorownerarchivepermission
+used for fivecode-onlyoldreleases b1d94eb7183d/a673438ba252/b7a6b372e9b2/d66d4b8b8e69/1cd3f8dc07f3.
+Newestfiveab0aa23d/87bbe/f894/caf5/06a5 kept; alltargets resolvedunderQA/releases,
+notcurrent, exactRELEASE_COMMITs verified. Localarchive
+D:/Codex/Baseer-odoo/.worktrees/baseer-gl-qa-policy/tmp/dms-preview-code-archive/qa-code-preview-space-20261014.tar.gz
+SHA2567a73e9cecf2ab238734f023cf216f5da7626be9f29962c8eb4186cec21e786ad
+matchesremote; gzipintegrity and all7648regularfileSHA256 matched source manifest.
+Onlyverifiedoldcode+temporaryserverarchive removedunderQAdeployflock, recoverable
+localarchive/manifest remain. NoDB/filestorebackups orLIVEtouch. QAfree2196201472.
+Prepreview readonlyoriginal5840checksum74d64754a79987d2ccce685c06ef553cd8930931,
+fullrowMD5f5c49b2644b09fd6a4edbec26dc7c988; linkedDMSfile10/imagePNG currentlygenericicon.

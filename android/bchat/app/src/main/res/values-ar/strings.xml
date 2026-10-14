@@ -677,6 +677,9 @@
     <string name="order_category">"الفئة"</string>
     <string name="order_all_categories">"كل الفئات"</string>
     <string name="order_cart">"السلة"</string>
+    <string name="order_view_cart">عرض السلة</string>
+    <string name="order_tap_retry">اضغط هنا لإعادة المحاولة</string>
+    <string name="order_retry_message">%1$s\n%2$s</string>
     <string name="order_cart_count">"السلة (%1$s)"</string>
     <string name="order_cart_bar">"السلة (%1$s) · %2$s"</string>
     <string name="order_quote_short">"تقديري %1$s %2$s"</string>

@@ -677,6 +677,9 @@
     <string name="order_category">"Category"</string>
     <string name="order_all_categories">"All categories"</string>
     <string name="order_cart">"Cart"</string>
+    <string name="order_view_cart">View cart</string>
+    <string name="order_tap_retry">Tap here to retry</string>
+    <string name="order_retry_message">%1$s\n%2$s</string>
     <string name="order_cart_count">"Cart (%1$s)"</string>
     <string name="order_cart_bar">"Cart (%1$s) · %2$s"</string>
     <string name="order_quote_short">"Est. %1$s %2$s"</string>

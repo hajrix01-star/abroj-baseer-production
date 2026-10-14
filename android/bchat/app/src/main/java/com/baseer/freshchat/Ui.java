@@ -210,11 +210,11 @@ final class Ui {
         button.setMinimumHeight(dp(context, ACTION_TOUCH_DP));
     }
 
-    /** Compact segmented choice for order filters; selection is visible without a thin underline. */
+    /** Fixed-height order tab; its separate underline never changes the row height. */
     static void styleSegment(TextView button, boolean selected) {
         Context context = button.getContext();
         button.setSelected(selected);
-        button.setTextSize(13);
+        button.setTextSize(15);
         button.setTypeface(Typeface.create(selected ? "sans-serif-medium" : "sans-serif",
                 Typeface.NORMAL));
         button.setTextDirection(AppLocale.textDirection(context));
@@ -224,11 +224,11 @@ final class Ui {
         button.setMinHeight(dp(context, ACTION_TOUCH_DP));
         button.setMinimumWidth(dp(context, ACTION_TOUCH_DP));
         button.setMinimumHeight(dp(context, ACTION_TOUCH_DP));
-        button.setPaddingRelative(dp(context, 12), dp(context, 6),
-                dp(context, 12), dp(context, 6));
+        button.setPaddingRelative(dp(context, 6), dp(context, 6),
+                dp(context, 6), dp(context, 6));
         button.setTextColor(actionTextColors(selected ? GREEN : MUTED, MUTED));
-        button.setBackground(actionBackground(context, selected ? LIME : Color.TRANSPARENT,
-                ACTION_TONAL_PRESSED, ACTION_DISABLED, 10));
+        button.setBackground(actionBackground(context, Color.TRANSPARENT,
+                ACTION_TONAL_PRESSED, Color.TRANSPARENT, 0));
         button.setForeground(null);
         button.setClickable(true);
         button.setFocusable(true);

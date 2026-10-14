@@ -39,7 +39,9 @@ if a[0] == "exec":
         sys.exit(int(os.environ.get("QUERY_EXIT", "0")))
     if "id" in a and "-g" in a: print("101")
     elif "pg_database_size" in command: print("1024")
-    elif "SELECT state" in command: print("installed")
+    elif "SELECT state" in command:
+        # These legacy Google fixtures intentionally have no installed DMS.
+        print(os.environ.get("DMS_STATE", "uninstalled") if "name = 'dms'" in command else "installed")
     elif "pg_dump" in command: print("fixture dump")
     elif "-i" in a:
         sys.stdin.read()
@@ -118,6 +120,7 @@ load_policy() {
     approved_run_id=1
     APPROVED_MODULES=(baseer_hr_services)
     APPROVED_THIRD_PARTY_MODULES=()
+    dms_release_requested=0
 }
 fetch_reviewed_source() {
     mkdir -p "$stage/source"

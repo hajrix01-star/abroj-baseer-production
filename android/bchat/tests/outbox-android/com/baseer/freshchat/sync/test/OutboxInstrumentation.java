@@ -118,11 +118,14 @@ public final class OutboxInstrumentation extends Instrumentation {
             box = new DurableOutbox(context);
             AccountScope a = new AccountScope("https://example.invalid", "qa", 1);
             AccountScope b = new AccountScope("https://example.invalid", "qa", 2);
+            AccountScope otherOrigin = new AccountScope("https://qa.example.invalid", "qa", 1);
             MessageRequest message = new MessageRequest(1, 10, "550e8400-e29b-41d4-a716-446655440000", "Test", new long[0], null);
             DurableOutbox.Entry first = box.enqueue(a, message, 1);
             check(first.id == box.enqueue(a, message, 2).id);
             check(box.find(b, 1, 10, message.clientUuid) == null);
             check(box.claimNext(b, 3) == null);
+            check(box.find(otherOrigin, 1, 10, message.clientUuid) == null);
+            check(box.claimNext(otherOrigin, 3) == null);
             final DurableOutbox liveBox = box;
             rejects(() -> liveBox.enqueue(a, new MessageRequest(1, 10, message.clientUuid, "Changed", new long[0], null), 3));
             rejects(() -> liveBox.enqueue(a, new MessageRequest(1, 11, message.clientUuid, "Test", new long[0], null), 3));

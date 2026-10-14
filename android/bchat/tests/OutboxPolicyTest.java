@@ -50,6 +50,9 @@ public final class OutboxPolicyTest {
         check(!a.key.equals(new AccountScope("https://baseer.example","qa",8).key));
         check(!a.key.equals(new AccountScope("https://baseer.example","other",7).key));
         check(!a.key.equals(new AccountScope("https://other.example","qa",7).key));
+        AccountScope oldLocal = new AccountScope("https://desktop-cvc68i5.tail938958.ts.net:18444", "baseer_bchat_local", 7);
+        AccountScope newQa = new AccountScope("https://baseer-live-qa.tail938958.ts.net", "baseer_bchat_local", 7);
+        check(!oldLocal.key.equals(newQa.key));
         check(a.key.length()==64);
         rejects(() -> new AccountScope("http://baseer.example","qa",7));
         rejects(() -> new AccountScope("https://name:password@baseer.example","qa",7));

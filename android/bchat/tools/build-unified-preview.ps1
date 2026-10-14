@@ -47,8 +47,6 @@ try {
     Copy-Item -LiteralPath $built -Destination $artifact
     $expectedHash = (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash
 
-    & $adb -s $EmulatorSerial reverse tcp:18443 tcp:18443
-    if ($LASTEXITCODE -ne 0) { throw 'ADB reverse failed.' }
     & $adb -s $EmulatorSerial install -r $artifact
     if ($LASTEXITCODE -ne 0) { throw 'Installing the unified APK failed.' }
     $remote = (& $adb -s $EmulatorSerial shell pm path com.baseer.bchat.preview | Select-Object -First 1) -replace '^package:', ''

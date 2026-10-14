@@ -301,7 +301,49 @@ class DmsSecurityMixin(models.AbstractModel):
 
     def write(self, vals):
         self._check_access_dms_record("write")
-        return super().write(vals)
+        relocation = bool({self._directory_field, "storage_id"}.intersection(vals))
+        if self.env.su or not self or not relocation:
+            return super().write(vals)
+
+        # Check the destination before changing the record. Source write access
+        # does not grant access to another company's directory or access group.
+        if self._directory_field in vals:
+            destination_id = vals[self._directory_field]
+            if not destination_id and self._name == "dms.file":
+                raise AccessError(self.env._("A document requires an accessible destination directory."))
+            if destination_id:
+                destination = self.env["dms.directory"].browse(destination_id).exists()
+                if not destination:
+                    raise AccessError(self.env._("The destination directory is not accessible."))
+                destination.check_access("read")
+                self.env["dms.directory"].check_access("create")
+                # Directory create rules describe creating the directory in its
+                # parent, not adding content to this destination. Test its own
+                # inclusive group/inherited-record create grant instead.
+                destination_create = Domain.OR([
+                    Domain("storage_id_inherit_access_from_parent_record", "=", False)
+                    & Domain("id", "in", destination._get_access_groups_query("create")),
+                    destination._get_domain_by_inheritance("create"),
+                ])
+                if not destination.search(Domain("id", "=", destination.id) & destination_create):
+                    raise AccessError(self.env._("You cannot add documents to the destination directory."))
+                destination.storage_id.check_access("read")
+        if vals.get("storage_id"):
+            storage = self.env["dms.storage"].browse(vals["storage_id"]).exists()
+            if not storage:
+                raise AccessError(self.env._("The destination storage is not accessible."))
+            storage.check_access("read")
+
+        # Re-evaluate company and computed DMS rules at the resulting location.
+        # A caller catching AccessError must not retain a partial/batch move.
+        with self.env.cr.savepoint():
+            result = super().write(vals)
+            self.env.flush_all()
+            self.check_access("read")
+            self.check_access("write")
+            self._check_access_dms_record("write")
+            self.mapped("storage_id").check_access("read")
+        return result
 
     def unlink(self):
         self._check_access_dms_record("unlink")

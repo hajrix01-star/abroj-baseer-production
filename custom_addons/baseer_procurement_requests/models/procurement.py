@@ -60,6 +60,18 @@ def _is_bchat_receipt_internal(env):
     return bool(env.su and env.context.get(BCHAT_RECEIPT_INTERNAL))
 
 
+def _bchat_receipt_overage_allowed(request):
+    """Keep an actual over-receipt exclusive to the guarded BChat bridge.
+
+    The native manager and cashier paths retain their quantity caps.  BChat
+    authorizes the actual quantity after locking the request and records it
+    against the unchanged requested quantity for later variance/audit review.
+    """
+    return bool(_is_bchat_receipt_internal(request.env)
+                and 'source_channel' in request._fields
+                and request.source_channel == 'bchat')
+
+
 def _whatsapp_product_label(product):
     """Keep migrated source IDs out of the customer-facing WhatsApp text."""
     display_name = product.display_name or ''
@@ -767,7 +779,8 @@ class ProcurementRequest(models.Model):
         picking_type = self.warehouse_id.in_type_id
         moves = []
         for line in purchased_lines:
-            if line.actual_qty > line.manager_received_qty:
+            if (line.actual_qty > line.manager_received_qty
+                    and not _bchat_receipt_overage_allowed(self)):
                 raise UserError(_('Actual quantity for %s cannot exceed the manager receipt.') % line.option_id.product_id.display_name)
             if not line.option_id.product_id.is_storable:
                 continue
@@ -1577,7 +1590,8 @@ class ProcurementRequest(models.Model):
             except ValidationError:
                 raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
             maximum = line.requested_qty if cashier_receipt else line.manager_received_qty
-            if quantity > _decimal_input(maximum, _('Received quantity')):
+            if (quantity > _decimal_input(maximum, _('Received quantity'))
+                    and not _bchat_receipt_overage_allowed(request)):
                 raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
             if cashier_receipt:
                 line.sudo().with_context(cashier_receipt_internal=True).write({
@@ -1808,7 +1822,8 @@ class ProcurementRequestLine(models.Model):
                 raise ValidationError(_('Quantities and prices must be finite numbers.'))
             if line.requested_qty <= 0 or min(line.manager_received_qty, line.actual_qty, line.requested_price, line.actual_price) < 0:
                 raise ValidationError(_('Quantities must be positive and prices cannot be negative.'))
-            if line.manager_received_qty > line.requested_qty:
+            if (line.manager_received_qty > line.requested_qty
+                    and not _bchat_receipt_overage_allowed(line.request_id)):
                 raise ValidationError(_('Manager-received quantity cannot exceed the requested quantity.'))
             if line.actual_qty and not line.actual_price:
                 raise ValidationError(_('Every purchased material needs a positive actual price.'))

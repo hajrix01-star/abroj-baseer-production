@@ -1,4 +1,5 @@
 from . import company
+from . import user_permissions
 from . import receipt
 from . import service
 from . import binding

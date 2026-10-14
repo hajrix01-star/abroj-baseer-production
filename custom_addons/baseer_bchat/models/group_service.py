@@ -25,13 +25,16 @@ class BChatGroupService(models.AbstractModel):
 
     @api.model
     def _v2_group_can_manage(self, room, member):
-        return bool(member and member.is_group_admin) or bool(
-            self.env.uid == self.env.ref('base.user_admin').id
-            and self.env.user.has_group('baseer_bchat.group_bchat_manager')
-        )
+        rights = self._require_user()._bchat_effective_permissions()
+        return bool((rights['group_manage'] and member and member.is_group_admin)
+                    or rights['room_admin'])
 
     @api.model
     def _v2_group_room(self, room_id, *, mutate=False, manager=False):
+        if manager:
+            self._require_any_bchat_permission('group_manage', 'room_admin')
+        else:
+            self._require_bchat_permission('chat_view')
         room = self._v2_lock_room(room_id, mutate=mutate)
         if not room.is_group:
             raise ProtocolError('not_a_group', 'This room is not a managed group.', 409)
@@ -45,6 +48,7 @@ class BChatGroupService(models.AbstractModel):
 
     @api.model
     def _v2_group_create(self, payload):
+        self._require_bchat_permission('group_create')
         data = group_contracts.normalize_create(payload)
         user = self._require_user()
         company_id = data['company_id']
@@ -132,6 +136,7 @@ class BChatGroupService(models.AbstractModel):
     def _v2_group_fresh_replay_if_exists(self, user_id, company_id, client_uuid, digest):
         with self.env.registry.cursor() as fresh_cr:
             fresh = api.Environment(fresh_cr, user_id, {'allowed_company_ids': [company_id]})
+            fresh['baseer.bchat.service']._require_bchat_permission('group_create')
             room = fresh['baseer.bchat.room'].sudo().search([
                 ('group_creator_user_id', '=', user_id), ('group_create_uuid', '=', client_uuid),
             ], limit=1)
@@ -141,6 +146,7 @@ class BChatGroupService(models.AbstractModel):
 
     @api.model
     def _v2_group_detail(self, room_id):
+        self._require_bchat_permission('chat_view')
         # Legacy rooms predate managed groups. Members may inspect them, but
         # the group mutation route must remain restricted to managed groups.
         room = self._v2_lock_room(room_id)
@@ -162,7 +168,7 @@ class BChatGroupService(models.AbstractModel):
 
     @api.model
     def _v2_group_member_candidates(self, company_id, query):
-        user = self._require_user()
+        user = self._require_any_bchat_permission('group_create', 'group_manage', 'room_admin')
         company_id = positive_id(company_id, 'company_id')
         if company_id not in user.company_ids.ids:
             raise AccessError(self.env._('The company is unavailable.'))
@@ -181,6 +187,10 @@ class BChatGroupService(models.AbstractModel):
     @api.model
     def _v2_group_change(self, room_id, payload):
         data = group_contracts.normalize_change(payload)
+        if data['action'] == 'leave':
+            self._require_bchat_permission('chat_view')
+        else:
+            self._require_any_bchat_permission('group_manage', 'room_admin')
         with self.env.cr.savepoint():
             room, caller = self._v2_group_room(room_id, mutate=True,
                                                 manager=data['action'] != 'leave')
@@ -243,6 +253,7 @@ class BChatGroupService(models.AbstractModel):
 
     @api.model
     def _v2_group_avatar(self, room_id):
+        self._require_bchat_permission('chat_view')
         room, _member = self._v2_group_room(room_id)
         if not room.avatar_png:
             raise ProtocolError('avatar_missing', 'This group has no image.', 404)
@@ -250,6 +261,7 @@ class BChatGroupService(models.AbstractModel):
 
     @api.model
     def _v2_group_set_avatar(self, room_id, raw):
+        self._require_any_bchat_permission('group_manage', 'room_admin')
         if not isinstance(raw, bytes) or not raw or len(raw) > 2 * 1024 * 1024:
             raise ProtocolError('invalid_avatar', 'Group image must be at most 2 MiB.', 413)
         try:

@@ -34,6 +34,8 @@ class BChatOrderCase(TransactionCase):
         self.user.write({'group_ids': [Command.link(
             self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
         )]})
+        self.user.write({'bchat_order_view': True, 'bchat_order_create': True,
+                         'bchat_order_receive': True})
         self.other_user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BChat foreign employee', 'login': 'bchat-order-foreign-%s' % uuid4().hex,
             'company_id': self.other_company.id,
@@ -84,13 +86,12 @@ class BChatOrderCase(TransactionCase):
             'lines': [{'option_id': self.option.id, 'quantity': quantity}],
         }
 
-    def test_owner_legacy_group_reads_all_but_cannot_operate(self):
+    def test_owner_reads_without_grant_and_operates_after_explicit_grant(self):
         representative = self._representative('Owner read-only representative', self.company)
         order_id = self.service._v2_order_create(
             self._payload(representative=representative))['order']['id']
-        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
         self.user.write({'baseer_access_role': 'owner'})
-        self.user.write({'group_ids': [Command.link(group.id)]})
+        self.user.write({'bchat_order_create': False, 'bchat_order_receive': False})
         self.assertEqual(self.service._v2_order_options()['access'], 'viewer')
         self.assertIn(order_id, [row['id'] for row in self.service._v2_orders_all()['orders']])
         self.assertEqual(
@@ -107,6 +108,11 @@ class BChatOrderCase(TransactionCase):
         ):
             with self.assertRaises(AccessError):
                 operation()
+        self.user.write({'bchat_order_create': True, 'bchat_order_receive': True})
+        self.assertEqual(self.service._v2_order_options()['access'], 'operator')
+        self.assertEqual(self.service._v2_order_create(self._payload())['order']['state'], 'sent')
+        self.user.write({'bchat_order_create': False, 'bchat_order_receive': False})
+        self.assertEqual(self.service._v2_order_options()['access'], 'viewer')
 
     def test_representative_flag_does_not_grant_order_api(self):
         self.other_user.partner_id.with_company(self.other_company).write({
@@ -459,6 +465,7 @@ class BChatOrderCase(TransactionCase):
         same_company_user.write({'group_ids': [Command.link(
             self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
         )]})
+        same_company_user.write({'bchat_order_view': True})
         for service, company_id, tested_id in (
                 (self.env['baseer.bchat.service'].with_user(same_company_user), self.company.id, order_id),
                 (self.service, self.other_company.id, order_id),
@@ -592,8 +599,8 @@ class BChatOrderCase(TransactionCase):
         with self.assertRaises(ProtocolError) as revoked_detail:
             self.service._v2_order_detail(self.other_company.id, second_company.id, scope='all')
         self.assertEqual(revoked_detail.exception.status, 404)
-        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
-        self.user.write({'group_ids': [Command.unlink(group.id)]})
+        self.user.write({'bchat_order_view': False, 'bchat_order_create': False,
+                         'bchat_order_receive': False})
         with self.assertRaises(AccessError):
             self.service._v2_orders_all()
 
@@ -639,9 +646,8 @@ class BChatOrderCase(TransactionCase):
         payload = self._payload()
         order_id = self.service._v2_order_create(payload)['order']['id']
         _, room, _ = self._room_for_employee()
-        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
-        self.user.write({'group_ids': [Command.unlink(group.id)]})
-        self.assertFalse(self.user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator'))
+        self.user.write({'bchat_order_view': False, 'bchat_order_create': False,
+                         'bchat_order_receive': False})
         denied_calls = (
             lambda: self.service._v2_order_options(self.company.id),
             lambda: self.service._v2_order_catalog(self.company.id),
@@ -771,6 +777,8 @@ class BChatOrderHttpCase(HttpCase):
         user.write({'group_ids': [Command.link(
             self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
         )]})
+        user.write({'bchat_order_view': True, 'bchat_order_create': True,
+                    'bchat_order_receive': True})
         self.authenticate(user.login, password)
         bootstrap = self.url_open('/bchat/api/v2/bootstrap').json()
         csrf = bootstrap['csrf_token']
@@ -914,8 +922,8 @@ class BChatOrderHttpCase(HttpCase):
         }, allow_redirects=False)
         self.assertEqual(sharing.status_code, 409)
         self.assertEqual(sharing.json()['error']['code'], 'room_unavailable')
-        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
-        user.write({'group_ids': [Command.unlink(group.id)]})
+        user.write({'bchat_order_view': False, 'bchat_order_create': False,
+                    'bchat_order_receive': False})
         self.assertEqual(self.url_open('%s?company_id=%s' % (
             receipt_root, company.id,
         ), allow_redirects=False).status_code, 403)

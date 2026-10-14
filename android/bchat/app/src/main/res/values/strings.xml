@@ -829,6 +829,12 @@
     <string name="receipt_share_review_pending">نتائج استلام بانتظار الإرسال</string>
     <string name="receipt_share_pending_item">إرسال نتيجة الطلب %1$s</string>
     <string name="receipt_conflict">تغيّر الطلب أو أُغلق. راجع الحالة قبل إعادة المحاولة.</string>
+    <string name="receipt_invalid_quantity">رفض الخادم الكمية المدخلة. راجع الكميات ثم عدّل نفس محاولة الاستلام؛ لم تُحذف العملية المعلّقة.</string>
+    <string name="receipt_invalid_odoo">رفض أودو قيم الاستلام. راجع الكميات والأسعار ثم عدّل نفس المحاولة؛ لم تُحذف العملية المعلّقة.</string>
+    <string name="receipt_closed">الطلب مستلم بالفعل. راجع حالته في أودو قبل إعادة المحاولة.</string>
+    <string name="receipt_retry_same">معالجة الاستلام جارية. انتظر قليلًا ثم أعد المحاولة المعلّقة نفسها فقط.</string>
+    <string name="receipt_unavailable_state">الطلب غير متاح للاستلام بحالته الحالية. راجع حالته قبل إعادة المحاولة.</string>
+    <string name="receipt_edit_values">تعديل القيم</string>
     <string name="receipt_uncertain">لم نتأكد من نتيجة الاستلام. راجع العملية المعلقة؛ لا تؤكد طلبًا جديدًا.</string>
     <string name="receipt_save_failed">تعذّر حفظ عملية الاستلام محليًا. لم يبدأ التأكيد.</string>
     <string name="receipt_review_pending">استلام غير مؤكد</string>

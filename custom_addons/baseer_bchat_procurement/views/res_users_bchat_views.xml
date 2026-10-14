@@ -3,15 +3,14 @@
     <record id="view_users_form_bchat_capabilities" model="ir.ui.view">
         <field name="name">res.users.form.bchat.capabilities</field>
         <field name="model">res.users</field>
-        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="inherit_id" ref="baseer_bchat.view_users_form_bchat_capabilities"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='access_rights']//field[@name='group_ids']" position="before">
-                <group string="BChat" groups="base.group_system">
-                    <field name="bchat_order_operator_eligible" invisible="1"/>
-                    <field name="bchat_can_order" readonly="not bchat_order_operator_eligible"/>
-                    <field name="bchat_room_admin_eligible" invisible="1"/>
-                    <field name="bchat_manage_rooms" invisible="not bchat_room_admin_eligible"/>
-                </group>
+            <xpath expr="//group[@name='bchat_capabilities']" position="inside">
+                <separator string="Purchase requests"/>
+                <field name="bchat_order_operator_eligible" invisible="1"/>
+                <field name="bchat_order_view"/>
+                <field name="bchat_order_create" readonly="not bchat_order_operator_eligible or not bchat_order_view"/>
+                <field name="bchat_order_receive" readonly="not bchat_order_operator_eligible or not bchat_order_view"/>
             </xpath>
         </field>
     </record>

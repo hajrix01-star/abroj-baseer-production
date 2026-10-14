@@ -23,15 +23,15 @@ class ConnectedOrdersNavigation(unittest.TestCase):
     def test_representative_denied_hides_orders_tab(self):
         navigation = method('renderBottomTabs')
         self.assertIn('String[] sections = {"chats", "orders", "tasks"}', navigation)
-        self.assertIn('if ("orders".equals(section) && !("viewer".equals(orderAccess)', navigation)
-        self.assertIn('|| "operator".equals(orderAccess))) continue;', navigation)
+        self.assertIn('if ("orders".equals(section) && !orderCanView) continue;', navigation)
         denial = method('denyOrdersForSession')
         self.assertIn('orderAccess = "";', denial)
+        self.assertIn('orderCanView = orderCanCreate = orderCanReceive = false;', denial)
         self.assertIn('showRooms();', denial)
 
     def test_viewer_and_operator_discovered_without_opening_hidden_tab(self):
         switch = method('switchSection')
-        self.assertIn('if ("orders".equals(section) && !("viewer".equals(orderAccess)', switch)
+        self.assertIn('if ("orders".equals(section) && !orderCanView) return;', switch)
         self.assertIn('if (!"orders".equals(section)) handler.post(this::maybeProbeOrderCapability);', switch)
         self.assertIn('if ("orders".equals(section)) {', switch)
         self.assertIn('boolean needsDiscovery = !ordersAvailable || ordersDenied', switch)
@@ -42,11 +42,13 @@ class ConnectedOrdersNavigation(unittest.TestCase):
         probe = method('maybeProbeOrderCapability')
         self.assertIn('V2_ORDERS + "/options"', probe)
         self.assertIn('if (status == 403)', probe)
-        self.assertIn('orderAccess = access;', probe)
+        self.assertIn('applyOrderRights(body, scopedAccount);', probe)
         self.assertIn('"viewer".equals(access)', probe)
         self.assertIn('"operator".equals(access)', probe)
         self.assertIn('renderBottomTabs();', probe)
-        self.assertIn('handler.post(this::maybeProbeOrderCapability);', method('loadRooms'))
+        rooms = method('loadRooms')
+        self.assertLess(rooms.index('maybeProbeOrderCapability();'),
+                        rooms.index('maybeRegisterPush();'))
 
     def test_denial_still_clears_order_data_and_server_is_authoritative(self):
         denial = method('denyOrdersForSession')
@@ -133,14 +135,14 @@ class ConnectedOrdersNavigation(unittest.TestCase):
         self.assertIn('orderMine = true;', discovery)
         self.assertIn('if (orderMine) loadOrderSummaries(0);', discovery)
         selectors = method('updateOrderSelectors')
-        self.assertIn('orderCatalogButton.getParent()).setVisibility(operator ? View.VISIBLE : View.GONE)', selectors)
-        self.assertIn('orderReceiptButton.getParent()).setVisibility(operator ? View.VISIBLE : View.GONE)', selectors)
-        self.assertIn('orderHeaderCompanyButton.setVisibility(!"viewer".equals(orderAccess)', selectors)
-        self.assertIn('if (!mine && !"operator".equals(orderAccess)) return;',
+        self.assertIn('orderCatalogButton.getParent()).setVisibility(orderCanCreate ? View.VISIBLE : View.GONE)', selectors)
+        self.assertIn('orderReceiptButton.getParent()).setVisibility(orderCanReceive ? View.VISIBLE : View.GONE)', selectors)
+        self.assertIn('orderHeaderCompanyButton.setVisibility((orderCanCreate || orderCanReceive)', selectors)
+        self.assertIn('if (!mine && !orderCanCreate) return;',
                       method('showOrderMode'))
-        self.assertIn('if (!"operator".equals(orderAccess)) return;',
+        self.assertIn('if (!orderCanReceive) return;',
                       method('showReceiptMode'))
-        self.assertIn('&& "operator".equals(orderAccess)',
+        self.assertIn('&& orderCanCreate',
                       SOURCE[SOURCE.index('private boolean validPreviousOrderContext('):
                              SOURCE.index('private String previousOrderShareText(')])
 
@@ -172,7 +174,7 @@ class ConnectedOrdersNavigation(unittest.TestCase):
         self.assertIn('receiptSharePreferences().getAll()', pending)
         self.assertIn('if (account != scopedAccount) return;', pending)
         selectors = method('updateOrderSelectors')
-        self.assertIn('operator && hasPendingReceiptShare()', selectors)
+        self.assertIn('orderCanReceive && hasPendingReceiptShare()', selectors)
         share = method('shareConfirmedReceipt')
         self.assertIn('if (account != scopedAccount) return;', share)
         self.assertIn('if (status == 0) handleV2TransportFailure(status, true);', share)
@@ -189,6 +191,54 @@ class ConnectedOrdersNavigation(unittest.TestCase):
         self.assertIn('if (orderMine)', select)
         self.assertNotIn('orderSummaries.clear();', select[select.index('if (orderMine)'):
                                                        select.index('return;', select.index('if (orderMine)'))])
+
+    def test_orders_capability_probe_reuses_validated_account_scoped_options(self):
+        probe = method('maybeProbeOrderCapability')
+        self.assertIn('v1Companies.contains(choice.id)', probe)
+        self.assertIn('orderCapabilityAccount = scopedAccount;', probe)
+        self.assertIn('orderCapabilityOptions = body;', probe)
+        self.assertIn('orderCapabilityProbeFailures >= 3', probe)
+        self.assertIn('int backoff = 500 << orderCapabilityProbeFailures++', probe)
+        discovery = method('discoverOrders')
+        self.assertIn('orderCapabilityAccount == scopedAccount', discovery)
+        self.assertIn('orderCapabilityOptionsAt < 30000', discovery)
+        self.assertIn('if (cached != null) discovery.complete(200, cached);', discovery)
+        self.assertIn('else fetchV2("GET", V2_ORDERS + "/options", null, discovery);', discovery)
+        clear = method('clearChatView')
+        self.assertIn('orderCapabilityOptions = null;', clear)
+        self.assertIn('orderCapabilityAccount = null;', clear)
+
+    def test_receipt_list_is_not_blocked_by_catalog_options_or_busy_polling(self):
+        switch = method('switchSection')
+        self.assertIn('!orderReceiving && !orderMine && orderCompanyId > 0', switch)
+        self.assertIn('if (orderReceiving) loadReceipts(0);', switch)
+        self.assertIn('if (orderReceiving) loadReceipts(0);', method('discoverOrders'))
+        self.assertIn('if (orderReceiving) loadReceipts(0);', method('selectOrderCompany'))
+        self.assertNotIn('loadOrderCompanyOptions();', method('showReceiptMode'))
+        receipt = method('loadReceipts')
+        self.assertIn('queueOrderLoadWhenIdle(', receipt)
+        self.assertNotIn('}, 500);', receipt)
+        self.assertIn('scopedAccount == account', receipt)
+        self.assertIn('companyId == orderCompanyId', receipt)
+        self.assertIn('serial == orderViewSerial', receipt)
+        self.assertIn('runQueuedOrderLoad', SOURCE[SOURCE.index('private void fetchV2Internal('):
+                                                   SOURCE.index('private static final class LiveRequest')])
+
+    def test_receipt_conflict_preserves_pending_uuid_and_allows_validated_edit(self):
+        send = method('sendPendingReceipt')
+        self.assertIn('receiptErrorCode(status, body)', send)
+        self.assertIn('receiptFailureMessage(status, code)', send)
+        self.assertIn('editRejectedPendingReceipt(pending, scopedAccount)', send)
+        self.assertNotIn('receiptConfirmPreferences().edit().remove(pending.scope)',
+                         send[send.index('} catch (Exception invalid) {'):])
+        edit = method('editRejectedPendingReceipt')
+        self.assertIn('pending.stored.equals(receiptConfirmPreferences()', edit)
+        self.assertIn('new ReceiptSummary(body.getJSONObject("order"))', edit)
+        self.assertIn('showReceiptForm(detail, lines, scopedAccount, pending.companyId, serial, pending)', edit)
+        review = method('confirmReceiptReview')
+        self.assertIn('replacing == null', review)
+        self.assertIn('UUID.randomUUID().toString() : replacing.uuid', review)
+        self.assertIn('.putString(scopedAccount.key, pending.stored).commit()', review)
 
 
 if __name__ == '__main__':

@@ -206,6 +206,42 @@ public final class BChatV2Outbox extends SQLiteOpenHelper {
         return deleteExact(getWritableDatabase(), account, entry) == 1;
     }
 
+    /** Permission revocation invalidates both queued sends and unsent drafts. */
+    public void purgeAccount(AccountScope account) {
+        if (account == null) throw new IllegalArgumentException("Verified account required");
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete(TABLE, "account_key=?", new String[]{account.key});
+            db.delete("draft_text", "account_key=?", new String[]{account.key});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    /** A reduced company scope retains drafts only in still-authorized rooms. */
+    public void purgeExceptRooms(AccountScope account, java.util.Set<Long> allowedRoomIds) {
+        if (account == null || allowedRoomIds == null)
+            throw new IllegalArgumentException("Verified rooms required");
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (String table : new String[]{TABLE, "draft_text"}) {
+                java.util.Set<Long> removed = new java.util.HashSet<>();
+                try (Cursor rows = db.query(table, new String[]{"room_id"}, "account_key=?",
+                        new String[]{account.key}, null, null, null)) {
+                    while (rows.moveToNext()) {
+                        long roomId = rows.getLong(0);
+                        if (!allowedRoomIds.contains(roomId)) removed.add(roomId);
+                    }
+                }
+                for (Long roomId : removed)
+                    db.delete(table, "account_key=? AND room_id=?",
+                            new String[]{account.key, String.valueOf(roomId)});
+            }
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
     private static boolean exists(SQLiteDatabase db, AccountScope account, Entry entry) {
         try (Cursor rows = db.rawQuery("SELECT 1 FROM pending_text WHERE _id=? AND account_key=? " +
                         "AND room_id=? AND membership_id=? AND client_uuid=? AND body=? " +

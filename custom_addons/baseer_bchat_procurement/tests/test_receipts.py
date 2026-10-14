@@ -25,6 +25,8 @@ class BChatReceiptCase(TransactionCase):
         })
         self.operator.write({'baseer_access_role': 'pos_cashier'})
         self.operator.write({'group_ids': [Command.link(group.id)]})
+        self.operator.write({'bchat_order_view': True, 'bchat_order_create': True,
+                             'bchat_order_receive': True})
         self.outsider = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BChat no receipt role', 'login': 'bchat-receipt-no-%s' % uuid4().hex,
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
@@ -72,6 +74,17 @@ class BChatReceiptCase(TransactionCase):
                        'actual_qty': quantity, 'actual_price': price}],
         }
 
+    def test_create_only_cannot_confirm_and_receive_only_can_finish(self):
+        self.operator.write({'bchat_order_receive': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_receipt_confirm(self.order_id, self._payload())
+        self.assertEqual(self.order.state, 'sent')
+        self.operator.write({'bchat_order_create': False, 'bchat_order_receive': True})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_options(self.company.id)
+        completed = self.service._v2_receipt_confirm(self.order_id, self._payload())
+        self.assertEqual(completed['receipt']['state'], 'purchased')
+
     def _room_order(self):
         admin = self.env.ref('base.user_admin')
         admin.write({'company_ids': [Command.link(self.company.id)], 'group_ids': [Command.link(
@@ -107,6 +120,7 @@ class BChatReceiptCase(TransactionCase):
         another.write({'group_ids': [Command.link(
             self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
         )]})
+        another.write({'bchat_order_view': True, 'bchat_order_receive': True})
         self.env['baseer.bchat.membership'].with_user(
             self.env.ref('base.user_admin'),
         ).with_company(self.company).create({'room_id': room.id, 'user_id': another.id})
@@ -293,7 +307,6 @@ class BChatReceiptCase(TransactionCase):
             })
         for payload in (
                 self._payload(quantity='0.00', price='0.00'),
-                self._payload(quantity='3.00'),
                 self._payload(quantity='1.001'),
                 self._payload(price='7.251'),
                 {**self._payload(), 'lines': []},
@@ -354,6 +367,84 @@ class BChatReceiptCase(TransactionCase):
         self.assertEqual(self.order.line_ids.manager_received_qty, 2.0)
         self.assertEqual(self.order.line_ids.actual_qty, 1.0)
         self.assertEqual(self.order.actual_confirmed_by_id, self.operator)
+
+    def test_bchat_over_receipt_preserves_requested_quantity_and_replays_once(self):
+        payload = self._payload(quantity='3.50', price='9.50')
+        result = self.service._v2_receipt_confirm(self.order_id, payload)
+        self.order.invalidate_recordset()
+        self.assertEqual(result['receipt']['state'], 'purchased')
+        self.assertEqual(result['receipt']['actual_total'], '33.25')
+        self.assertEqual(self.order.line_ids.requested_qty, 2.0)
+        self.assertEqual(self.order.line_ids.manager_received_qty, 3.5)
+        self.assertEqual(self.order.line_ids.actual_qty, 3.5)
+        self.assertEqual(self.order.line_ids.actual_price, 9.5)
+        self.assertEqual(len(self.order.picking_id.move_ids), 1)
+        self.assertEqual(self.order.picking_id.move_ids.quantity, 3.5)
+        self.assertEqual(self.env['baseer.procurement.price.history'].sudo().search_count([
+            ('request_id', '=', self.order_id),
+        ]), 1)
+        replay = self.service._v2_receipt_confirm(self.order_id, payload)
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(self.env['stock.picking'].sudo().search_count([
+            ('origin', '=', self.order.name),
+        ]), 1)
+        self.assertEqual(self.env['baseer.procurement.price.history'].sudo().search_count([
+            ('request_id', '=', self.order_id),
+        ]), 1)
+
+    def test_native_receipt_overage_guard_is_not_relaxed(self):
+        line = self.order.line_ids.with_company(self.company)
+        with self.assertRaises(ValidationError):
+            with self.env.cr.savepoint():
+                line.sudo().with_context(cashier_receipt_internal=True).write({
+                    'manager_received_qty': 3.0,
+                })
+        self.order.invalidate_recordset()
+        self.assertEqual(self.order.line_ids.manager_received_qty, 0.0)
+
+    def test_received_state_bchat_overage_keeps_manager_audit(self):
+        manager_group = self.env.ref('baseer_procurement_requests.group_procurement_manager')
+        manager = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Native overage manager', 'login': 'bchat-manager-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, manager_group.id])],
+        })
+        self.env['baseer.procurement.request'].with_user(manager).with_company(
+            self.company,
+        ).confirm_manager_receipt_from_catalog(self.order_id, [{
+            'line_id': self.order.line_ids.id, 'manager_received_qty': '1.50',
+        }])
+        result = self.service._v2_receipt_confirm(self.order_id, self._payload(
+            quantity='2.50', price='8.00',
+        ))
+        self.order.invalidate_recordset()
+        self.assertEqual(result['receipt']['state'], 'purchased')
+        self.assertEqual(self.order.line_ids.requested_qty, 2.0)
+        self.assertEqual(self.order.line_ids.manager_received_qty, 1.5)
+        self.assertEqual(self.order.line_ids.actual_qty, 2.5)
+        self.assertEqual(result['receipt']['actual_total'], '20.00')
+
+    def test_owner_with_explicit_bchat_grant_can_complete_receipt(self):
+        owner = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat receipt owner', 'login': 'bchat-owner-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'baseer_access_role': 'owner',
+        })
+        owner.write({'bchat_order_view': True})
+        owner_service = self.env['baseer.bchat.service'].with_user(owner)
+        self.assertEqual(owner_service._v2_order_options()['access'], 'viewer')
+        with self.assertRaises(AccessError):
+            owner_service._v2_receipts(self.company.id)
+        owner.write({'bchat_order_create': True, 'bchat_order_receive': True})
+        self.assertEqual(owner_service._v2_order_options()['access'], 'operator')
+        self.assertEqual(len(owner_service._v2_receipts(self.company.id)['orders']), 1)
+        result = owner_service._v2_receipt_confirm(self.order_id, self._payload(
+            quantity='1.25', price='8.50',
+        ))
+        self.assertEqual(result['receipt']['state'], 'purchased')
+        self.assertEqual(result['receipt']['confirmed_by_id'], owner.id)
+        self.order.invalidate_recordset()
+        self.assertEqual(self.order.actual_confirmed_by_id, owner)
 
     def test_same_token_on_another_order_is_rejected(self):
         token = str(uuid4())

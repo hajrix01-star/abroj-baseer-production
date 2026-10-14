@@ -149,14 +149,19 @@ class BChatTextApi(http.Controller):
     def changes(self, **kwargs):
         try:
             args = request.httprequest.args
-            if set(args) - {'after', 'limit'} or any(len(args.getlist(key)) != 1 for key in args):
+            if (set(args) - {'after', 'limit', 'permissions_version'}
+                    or any(len(args.getlist(key)) != 1 for key in args)
+                    or (args.get('permissions_version') not in (None, '1'))):
                 raise ProtocolError('invalid_payload', 'Unexpected or repeated query fields.')
             after_raw = args.get('after', '0')
             limit_raw = args.get('limit', '100')
             if (not re.fullmatch(r'(?:0|[1-9][0-9]*)', after_raw)
                     or not re.fullmatch(r'[1-9][0-9]*', limit_raw)):
                 raise ProtocolError('invalid_payload', 'Invalid change cursor or limit.')
-            return self._response(self._service()._v2_changes(int(after_raw), int(limit_raw)))
+            return self._response(self._service()._v2_changes(
+                int(after_raw), int(limit_raw),
+                include_permissions=args.get('permissions_version') == '1',
+            ))
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 

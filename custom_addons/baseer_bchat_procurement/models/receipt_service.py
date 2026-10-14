@@ -1,6 +1,7 @@
 """A bounded BChat receipt boundary reusing the native procurement workflow."""
 import hashlib
 import json
+import logging
 import re
 from decimal import Decimal
 from uuid import uuid4
@@ -19,6 +20,7 @@ from .service import MAX_CART_LINES, MAX_RESPONSE_BYTES, MAX_ROOM_MESSAGE_BYTES
 RECEIPT_PAGE_SIZE = 30
 QUANTITY_PATTERN = re.compile(r'(?:[1-9][0-9]{0,5}|0)(?:\.[0-9]{1,2})?\Z')
 PRICE_PATTERN = re.compile(r'(?:[1-9][0-9]{0,8}|0)(?:\.[0-9]{1,2})?\Z')
+_logger = logging.getLogger(__name__)
 
 
 class BChatReceiptService(models.AbstractModel):
@@ -26,8 +28,7 @@ class BChatReceiptService(models.AbstractModel):
 
     @api.model
     def _receipt_scope(self, company_id):
-        self._require_order_operator()
-        return self._order_scope(company_id)
+        return self._order_receive_scope(company_id)
 
     @api.model
     def _receipt_order(self, scoped, order_id):
@@ -177,13 +178,10 @@ class BChatReceiptService(models.AbstractModel):
             lines = order.line_ids.sorted('id')
             if len(lines) != len(normalized) or set(lines.ids) != seen:
                 raise ProtocolError('receipt_changed', 'Receipt lines changed; refresh the request.', 409)
-            by_id = {row['line_id']: row for row in normalized}
-            for line in lines:
-                quantity = Decimal(by_id[line.id]['actual_qty'])
-                maximum = Decimal(str(line.requested_qty if order.state == 'sent'
-                                      else line.manager_received_qty))
-                if quantity > maximum:
-                    raise ProtocolError('invalid_quantity', 'Received quantity exceeds the allowed amount.', 409)
+            # Actual quantities may differ from the request in either direction.
+            # The unchanged requested/manager quantities remain the audit baseline;
+            # the native model only permits an overage through this guarded BChat
+            # channel, never through ordinary Odoo manager/cashier actions.
             existing_token = Order.search([('receipt_client_token', '=', token)], limit=1)
             if existing_token:
                 raise ProtocolError('idempotency_conflict', 'This receipt token was already used.', 409)
@@ -192,7 +190,11 @@ class BChatReceiptService(models.AbstractModel):
             })
             try:
                 internal.confirm_actual_from_catalog(order.id, normalized)
-            except (UserError, ValidationError, AccessError):
+            except (UserError, ValidationError, AccessError) as error:
+                _logger.warning(
+                    'BChat receipt rejected by Odoo: order_id=%s company_id=%s cause=%s',
+                    order.id, company_id, type(error).__name__,
+                )
                 raise ProtocolError('receipt_invalid', 'The receipt was rejected by Odoo.', 409) from None
             completed = internal.browse(order.id)
             completed.invalidate_recordset()
@@ -231,6 +233,8 @@ class BChatReceiptService(models.AbstractModel):
 
     @api.model
     def _v2_receipt_share(self, order_id, payload):
+        self._require_order_receiver()
+        self._require_bchat_permission('chat_send')
         if type(payload) is not dict or set(payload) != {'api_version', 'company_id'}:
             raise ProtocolError('invalid_payload', 'Unexpected receipt sharing fields.')
         if type(payload['api_version']) is not int or payload['api_version'] != 2:

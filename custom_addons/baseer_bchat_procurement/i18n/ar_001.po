@@ -10,15 +10,25 @@ msgstr ""
 
 #. module: baseer_bchat_procurement
 #: model_terms:ir.ui.view,arch_db:baseer_bchat_procurement.view_users_form_bchat_capabilities
-msgid "BChat"
-msgstr "BChat"
+msgid "Purchase requests"
+msgstr "طلبات المشتريات"
 
 #. module: baseer_bchat_procurement
 #: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_can_order
-msgid "BChat: Send and receive purchase requests"
-msgstr "BChat: إرسال طلبات المشتريات واستلامها"
+msgid "BChat: Legacy order operator"
+msgstr "BChat: مشغل الطلبات القديم"
 
 #. module: baseer_bchat_procurement
-#: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_manage_rooms
-msgid "BChat: Manage rooms and members"
-msgstr "BChat: إدارة الغرف والأعضاء"
+#: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_order_view
+msgid "BChat: View purchase requests"
+msgstr "BChat: عرض طلبات المشتريات"
+
+#. module: baseer_bchat_procurement
+#: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_order_create
+msgid "BChat: Create and send purchase requests"
+msgstr "BChat: إنشاء طلبات المشتريات وإرسالها"
+
+#. module: baseer_bchat_procurement
+#: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_order_receive
+msgid "BChat: Confirm purchase receipt"
+msgstr "BChat: تأكيد استلام المشتريات"

@@ -1,5 +1,7 @@
-"""BChat checkboxes must be real, narrow Odoo capabilities."""
+"""Independent BChat order grants are administrative, durable and server-side."""
 
+from pathlib import Path
+from runpy import run_path
 from uuid import uuid4
 
 from odoo import Command
@@ -11,6 +13,8 @@ from odoo.tests import TransactionCase, tagged
 class BChatUserPermissionsCase(TransactionCase):
     def setUp(self):
         super().setUp()
+        if 'baseer_access_role' not in self.env['res.users']._fields:
+            self.skipTest('BChat order permissions require Baseer access roles')
         self.admin = self.env.ref('base.user_admin')
         self.company = self.env.company
         self.employee = self.env['res.users'].with_context(no_reset_password=True).create({
@@ -18,93 +22,119 @@ class BChatUserPermissionsCase(TransactionCase):
             'login': 'bchat-permissions-%s' % uuid4().hex,
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
-            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+            'baseer_access_role': 'pos_cashier',
         })
-        self.target = self.employee.with_user(self.admin)
+        self.service = self.env['baseer.bchat.service'].with_user(self.employee)
 
-    def test_order_checkbox_grants_and_revokes_real_group(self):
-        if 'baseer_access_role' not in self.employee._fields:
-            self.skipTest('BChat procurement requires the Baseer access role field')
-        self.target.write({'baseer_access_role': 'cashier'})
-        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
-        self.assertFalse(self.employee.bchat_can_order)
-        self.target.write({'bchat_can_order': True})
-        self.assertIn(group, self.employee.group_ids)
-        self.assertTrue(self.employee.bchat_can_order)
-        self.target.write({'bchat_can_order': False})
-        self.assertNotIn(group, self.employee.group_ids)
+    def _grant(self, **flags):
+        self.employee.with_user(self.admin).write(flags)
 
-    def test_non_admin_cannot_write_computed_checkbox(self):
+    def test_create_and_receive_are_independent(self):
         with self.assertRaises(AccessError):
-            self.employee.with_user(self.employee).write({'bchat_can_order': True})
-        self.assertFalse(self.employee.bchat_can_order)
-
-    def test_room_manager_only_admin_even_with_group(self):
-        group = self.env.ref('baseer_bchat.group_bchat_manager')
-        self.assertFalse(self.employee.bchat_room_admin_eligible)
-        with self.assertRaises(AccessError):
-            self.target.write({'bchat_manage_rooms': True})
-        self.assertNotIn(group, self.employee.group_ids)
-        # A group grant through the generic Access Rights screen must not
-        # bypass the service's account identity check.
-        group.with_user(self.admin).write({'user_ids': [Command.link(self.employee.id)]})
-        with self.assertRaises(AccessError):
-            self.env['baseer.bchat.service'].with_user(self.employee)._require_room_manager()
-        self.assertTrue(self.admin.bchat_room_admin_eligible)
-
-    def test_role_change_requires_fresh_individual_order_grant(self):
-        if 'baseer_access_role' not in self.employee._fields:
-            self.skipTest('Baseer role presets are not installed')
-        self.target.write({'baseer_access_role': 'cashier'})
-        self.target.write({'bchat_can_order': True})
-        self.assertTrue(self.employee.bchat_can_order)
-        self.target.write({'baseer_access_role': 'pos_cashier'})
-        self.assertFalse(self.employee.bchat_can_order)
-        self.assertNotIn(
-            self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator'),
-            self.employee.group_ids,
-        )
-        with self.assertRaises(AccessError):
-            self.env['baseer.bchat.service'].with_user(self.employee)._order_access()
-        self.target.write({'bchat_can_order': True})
-        self.assertTrue(self.employee.bchat_can_order)
-        self.target.write({'baseer_access_role': 'accountant'})
-        self.assertFalse(self.employee.bchat_can_order)
-        with self.assertRaises(ValidationError):
-            self.target.write({'bchat_can_order': True})
-
-    def test_owner_with_legacy_operator_group_is_viewer_only(self):
-        if 'baseer_access_role' not in self.employee._fields:
-            self.skipTest('Baseer role presets are not installed')
-        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
-        self.target.write({'baseer_access_role': 'owner'})
-        self.target.write({'group_ids': [Command.link(group.id)]})
-        self.assertFalse(self.employee.bchat_can_order)
+            self.service._v2_order_options()
+        self._grant(bchat_order_view=True, bchat_order_create=True)
+        options = self.service._v2_order_options()
+        self.assertEqual((options['can_view'], options['can_create'], options['can_receive']),
+                         (True, True, False))
+        self.assertEqual(options['access'], 'viewer')
         self.assertEqual(
-            self.env['baseer.bchat.service'].with_user(self.employee)._order_access(),
-            'viewer',
+            tuple(self.service._v2_bootstrap()['permissions'][key] for key in (
+                'order_view', 'order_create', 'order_receive',
+            )), (True, True, False),
         )
+        self.service._v2_order_options(self.company.id)
         with self.assertRaises(AccessError):
-            self.env['baseer.bchat.service'].with_user(self.employee)._require_order_operator()
+            self.service._v2_receipts(self.company.id)
+        self._grant(bchat_order_create=False, bchat_order_receive=True)
+        options = self.service._v2_order_options()
+        self.assertEqual((options['can_view'], options['can_create'], options['can_receive']),
+                         (True, False, True))
+        with self.assertRaises(AccessError):
+            self.service._v2_order_options(self.company.id)
+        self.service._v2_receipts(self.company.id)
+        self._grant(bchat_order_create=True)
+        self.assertEqual(self.service._v2_order_options()['access'], 'operator')
+        self.assertTrue(self.employee.sudo().bchat_can_order)
 
-    def test_manager_checkbox_roundtrip(self):
-        group = self.env.ref('baseer_bchat.group_bchat_manager')
-        self.admin.with_user(self.admin).write({'bchat_manage_rooms': True})
-        self.assertIn(group, self.admin.group_ids)
-        if 'baseer_access_role' in self.admin._fields:
-            self.admin.with_user(self.admin).write({'baseer_access_role': 'owner'})
-            # A role preset resets optional grants; the administrator must
-            # explicitly grant BChat room management again after changing it.
-            self.assertNotIn(group, self.admin.group_ids)
-            self.admin.with_user(self.admin).write({'bchat_manage_rooms': True})
-            self.assertIn(group, self.admin.group_ids)
-        self.env['baseer.bchat.service'].with_user(self.admin)._require_room_manager()
-        self.admin.with_user(self.admin).write({'bchat_manage_rooms': False})
-        self.assertNotIn(group, self.admin.group_ids)
+    def test_legacy_group_cannot_authorize_and_role_change_does_not_erase_grants(self):
+        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
+        self.employee.write({'group_ids': [Command.link(group.id)]})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_options()
+        self._grant(bchat_order_view=True, bchat_order_create=True,
+                    bchat_order_receive=True)
+        previous = self.employee.sudo().bchat_permission_revision
+        self.employee.write({'baseer_access_role': 'accountant'})
+        self.employee.invalidate_recordset(['bchat_permission_revision'])
+        self.assertGreater(self.employee.sudo().bchat_permission_revision, previous)
+        self.assertTrue(self.employee.sudo().bchat_order_create)
+        self.assertTrue(self.employee.sudo().bchat_order_receive)
+        options = self.service._v2_order_options()
+        self.assertEqual((options['can_view'], options['can_create'], options['can_receive']),
+                         (True, False, False))
+        self.employee.write({'baseer_access_role': 'cashier'})
+        self.assertEqual(self.service._v2_order_options()['access'], 'operator')
+        self.assertNotIn(group, self.employee.group_ids)
 
-    def test_native_user_form_contains_both_capabilities(self):
+    def test_admin_only_and_no_hidden_view_grant(self):
+        with self.assertRaises(AccessError):
+            self.employee.with_user(self.employee).write({'bchat_order_view': True})
+        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+            self._grant(bchat_order_create=True)
+        self._grant(bchat_order_view=True, bchat_order_create=True)
+        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+            self._grant(bchat_order_view=False)
+        self._grant(bchat_order_view=False, bchat_order_create=False)
+        with self.assertRaises(AccessError):
+            self.service._v2_order_options()
+
+    def test_revocation_increments_permission_revision_and_emits_hint(self):
+        self._grant(bchat_order_view=True)
+        previous = self.employee.sudo().bchat_permission_revision
+        cursor = self.service._v2_changes(0, 10, include_permissions=True)['watermark']
+        self._grant(bchat_order_view=False)
+        self.employee.invalidate_recordset(['bchat_permission_revision'])
+        self.assertGreater(self.employee.sudo().bchat_permission_revision, previous)
+        changes = self.service._v2_changes(cursor, 10, include_permissions=True)
+        self.assertIn('permissions', [row['kind'] for row in changes['changes']])
+
+    def test_existing_rights_seed_once_and_new_users_default_closed(self):
+        owner = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat owner before migration', 'login': 'bchat-owner-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'baseer_access_role': 'owner',
+        })
+        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
+        owner.write({'group_ids': [Command.link(group.id)]})
+        self.employee.write({'group_ids': [Command.link(group.id)]})
+        path = (Path(__file__).resolve().parents[1] / 'migrations' /
+                '19.0.1.0.2' / 'post-migration.py')
+        marker = 'baseer_bchat_procurement.order_permissions_seed_19_0_1_0_2'
+        settings = self.env['ir.config_parameter'].sudo()
+        settings.set_param(marker, '')
+        self.assertTrue(path.name.startswith('post-'))
+        run_path(str(path))['migrate'](self.env.cr, '19.0.1.0.0')
+        self.assertTrue(owner.sudo().bchat_order_view)
+        self.assertFalse(owner.sudo().bchat_order_create)
+        self.assertFalse(owner.sudo().bchat_order_receive)
+        self.assertTrue(self.employee.sudo().bchat_order_view)
+        self.assertTrue(self.employee.sudo().bchat_order_create)
+        self.assertTrue(self.employee.sudo().bchat_order_receive)
+        self._grant(bchat_order_view=False, bchat_order_create=False,
+                    bchat_order_receive=False)
+        run_path(str(path))['migrate'](self.env.cr, '19.0.1.0.1')
+        self.assertFalse(self.employee.sudo().bchat_order_view)
+        fresh = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat owner after migration',
+            'login': 'bchat-new-owner-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'baseer_access_role': 'owner',
+        })
+        self.assertFalse(fresh.sudo().bchat_order_view)
+
+    def test_native_user_form_contains_separate_order_options(self):
         view = self.env['res.users'].with_user(self.admin).get_view(
             view_id=self.env.ref('base.view_users_form').id, view_type='form',
         )
-        self.assertIn('bchat_can_order', view['arch'])
-        self.assertIn('bchat_manage_rooms', view['arch'])
+        for field in ('bchat_order_view', 'bchat_order_create', 'bchat_order_receive'):
+            self.assertIn(field, view['arch'])

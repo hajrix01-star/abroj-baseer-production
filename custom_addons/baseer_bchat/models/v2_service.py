@@ -34,6 +34,7 @@ class BChatTextService(models.AbstractModel):
                 'procurement': False, 'report_events': False,
                 'delivery_receipts': True, 'read_receipts': True,
             },
+            'permissions': user._bchat_effective_permissions(),
         }
         try:
             # Profile data is optional; a failed HR read must not block chat login.
@@ -107,7 +108,7 @@ class BChatTextService(models.AbstractModel):
 
     @api.model
     def _v2_rooms(self):
-        user = self._require_user()
+        user = self._require_bchat_permission('chat_view')
         memberships = self.env['baseer.bchat.membership'].sudo().search([
             ('user_id', '=', user.id), ('active', '=', True),
             ('company_id', 'in', user.company_ids.ids),
@@ -204,6 +205,7 @@ class BChatTextService(models.AbstractModel):
 
     @api.model
     def _v2_history(self, room_id, before_id=None):
+        self._require_bchat_permission('chat_view')
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
         room = self._v2_lock_room(room_id)
@@ -309,6 +311,7 @@ class BChatTextService(models.AbstractModel):
 
     @api.model
     def _v2_send(self, room_id, payload):
+        self._require_bchat_permission('chat_send')
         normalized = v2_contracts.normalize_send(payload)
         with self.env.cr.savepoint():
             room = self._v2_lock_room(room_id, mutate=True)
@@ -324,6 +327,7 @@ class BChatTextService(models.AbstractModel):
                     raise AccessError(self.env._('The referenced BChat message is unavailable.'))
             media = None
             if 'media_id' in normalized:
+                self._require_bchat_permission('media')
                 media = self.env['baseer.bchat.media'].sudo().browse(normalized['media_id']).exists()
                 if (not media or media.author_user_id.id != self.env.uid
                         or media.room_id.id != room.id
@@ -391,6 +395,7 @@ class BChatTextService(models.AbstractModel):
 
     @api.model
     def _v2_receipt_ack(self, room_id, message_id, kind):
+        self._require_bchat_permission('chat_view')
         if kind not in ('delivered', 'read'):
             raise ProtocolError('invalid_payload', 'Unknown BChat receipt kind.')
         message_id = positive_id(message_id, 'message_id')
@@ -485,6 +490,9 @@ class BChatTextService(models.AbstractModel):
             user = fresh.user
             if fresh.su or not user.active or not user._is_internal():
                 raise AccessError(self.env._('This room is unavailable.'))
+            fresh['baseer.bchat.service']._require_bchat_permission('chat_send')
+            if 'media_id' in normalized:
+                fresh['baseer.bchat.service']._require_bchat_permission('media')
             room = fresh['baseer.bchat.room'].sudo().browse(room_id)
             if not room.exists() or room.company_id not in user.company_ids:
                 raise AccessError(self.env._('This room is unavailable.'))

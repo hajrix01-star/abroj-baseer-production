@@ -829,6 +829,12 @@
     <string name="receipt_share_review_pending">Receipt results awaiting chat delivery</string>
     <string name="receipt_share_pending_item">Send result for order %1$s</string>
     <string name="receipt_conflict">The order changed or closed. Review its status before retrying.</string>
+    <string name="receipt_invalid_quantity">The server rejected the quantity. Review the amounts and edit this same pending receipt; it has not been deleted.</string>
+    <string name="receipt_invalid_odoo">Odoo rejected the receipt values. Review quantities and prices, then edit this same pending receipt; it has not been deleted.</string>
+    <string name="receipt_closed">This order was already received. Check its status in Odoo before retrying.</string>
+    <string name="receipt_retry_same">Receipt processing is still underway. Wait briefly, then retry this same pending operation only.</string>
+    <string name="receipt_unavailable_state">This order cannot be received in its current state. Check its status before retrying.</string>
+    <string name="receipt_edit_values">Edit values</string>
     <string name="receipt_uncertain">Receipt outcome could not be confirmed. Review the pending operation; do not create a new confirmation.</string>
     <string name="receipt_save_failed">Could not save the receipt operation locally. Nothing was sent.</string>
     <string name="receipt_review_pending">Unconfirmed receipt</string>

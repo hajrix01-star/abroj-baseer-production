@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Exact legacy diagnostic mapping, never applied to user content. -->
+    <array name="localized_error_messages">
+        <item>@string/ui_001</item>
+        <item>@string/ui_002</item>
+        <item>@string/ui_003</item>
+        <item>@string/ui_004</item>
+        <item>@string/ui_005</item>
+        <item>@string/ui_006</item>
+        <item>@string/ui_007</item>
+        <item>@string/ui_008</item>
+        <item>@string/ui_009</item>
+        <item>@string/ui_010</item>
+        <item>@string/ui_011</item>
+        <item>@string/ui_012</item>
+        <item>@string/ui_013</item>
+        <item>@string/ui_014</item>
+        <item>@string/ui_015</item>
+        <item>@string/ui_016</item>
+        <item>@string/ui_017</item>
+        <item>@string/ui_018</item>
+        <item>@string/ui_019</item>
+        <item>@string/ui_020</item>
+        <item>@string/ui_021</item>
+        <item>@string/ui_022</item>
+        <item>@string/ui_023</item>
+        <item>@string/ui_024</item>
+        <item>@string/ui_025</item>
+        <item>@string/ui_026</item>
+        <item>@string/ui_027</item>
+        <item>@string/ui_028</item>
+        <item>@string/ui_029</item>
+        <item>@string/ui_030</item>
+        <item>@string/ui_354</item>
+        <item>@string/ui_355</item>
+        <item>@string/ui_356</item>
+        <item>@string/ui_357</item>
+        <item>@string/ui_358</item>
+    </array>
+    <string-array name="domain_error_codes" translatable="false">
+        <item>"State file is required"</item>
+        <item>"State file needs a parent"</item>
+        <item>"Cannot create internal state directory"</item>
+        <item>"Unknown company"</item>
+        <item>"Missing local deletion undo record"</item>
+        <item>"Only your local messages can be deleted or restored"</item>
+        <item>"Message does not belong to selected conversation"</item>
+        <item>"Page limit must be 1–200"</item>
+        <item>"Cursor does not belong to this conversation"</item>
+        <item>"An unassigned share is already pending"</item>
+        <item>"Stale share id"</item>
+        <item>"Share is no longer pending"</item>
+        <item>"Message UUID is already used by a different action"</item>
+        <item>"Local history storage limit reached"</item>
+        <item>"Invalid local history file"</item>
+        <item>"Unsupported local history object"</item>
+        <item>"Unsupported local history format"</item>
+        <item>"Unexpected class in local history"</item>
+        <item>"Proxy objects are not a local history format"</item>
+        <item>"Invalid snapshot structure"</item>
+        <item>"Unknown synthetic identities"</item>
+        <item>"Invalid company identity"</item>
+        <item>"Invalid conversation identity"</item>
+        <item>"Invalid synthetic conversation identity"</item>
+        <item>"Invalid local group identity"</item>
+        <item>"Invalid local group metadata"</item>
+        <item>"Orphan or missing local group membership"</item>
+        <item>"Missing message collection"</item>
+        <item>"Message in wrong conversation"</item>
+        <item>"Duplicate or noncanonical UUID"</item>
+        <item>"Invalid local message"</item>
+        <item>"Invalid source share UUID"</item>
+        <item>"Invalid local message tombstone"</item>
+        <item>"Invalid local deletion undo identity"</item>
+        <item>"Orphan or missing local deletion undo record"</item>
+        <item>"Orphan draft"</item>
+        <item>"Local history is damaged or incompatible; existing file was preserved"</item>
+        <item>"Reply must reference an earlier message in the same conversation"</item>
+        <item>"Attachment list is required"</item>
+        <item>"Too many attachments"</item>
+        <item>"Null attachment"</item>
+        <item>"Duplicate attachment id"</item>
+        <item>"Attachment must be imported into private local storage"</item>
+        <item>"Invalid local attachment metadata"</item>
+        <item>"Conversation does not belong to selected company"</item>
+        <item>"Group title is required"</item>
+        <item>"Group title must contain 1–80 characters"</item>
+        <item>"Group title must be a single readable line"</item>
+        <item>"Group title must contain visible text"</item>
+        <item>"Select a company and at least one person"</item>
+        <item>"Group members must be distinct people from the selected company"</item>
+        <item>"Invalid message text"</item>
+        <item>"A full UUID is required"</item>
+        <item>"Invalid UUID"</item>
+        <item>"Cannot store an empty message"</item>
+        <item>"Application context and listener are required"</item>
+        <item>"ATTACHMENT_SOURCE_MISSING"</item>
+        <item>"ATTACHMENT_SOURCE_INVALID"</item>
+        <item>"ATTACHMENT_SOURCE_CHANGED"</item>
+    </string-array>
+    <array name="domain_error_messages">
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_wrong_destination</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_delete_local_only</item>
+        <item>@string/error_wrong_destination</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_share_changed</item>
+        <item>@string/error_share_changed</item>
+        <item>@string/error_share_changed</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_history_limit</item>
+        <item>@string/error_history_read</item>
+        <item>@string/error_history_read</item>
+        <item>@string/error_history_read</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_history_read</item>
+        <item>@string/error_reply_target</item>
+        <item>@string/error_attachment_invalid</item>
+        <item>@string/error_attachment_limit</item>
+        <item>@string/error_attachment_invalid</item>
+        <item>@string/error_attachment_invalid</item>
+        <item>@string/error_attachment_invalid</item>
+        <item>@string/error_attachment_invalid</item>
+        <item>@string/error_wrong_destination</item>
+        <item>@string/error_group_name</item>
+        <item>@string/error_group_name</item>
+        <item>@string/error_group_name</item>
+        <item>@string/error_group_name</item>
+        <item>@string/error_group_members</item>
+        <item>@string/error_group_members</item>
+        <item>@string/error_message_text</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/error_message_text</item>
+        <item>@string/error_local_operation</item>
+        <item>@string/image_original_missing</item>
+        <item>@string/error_attachment_invalid</item>
+        <item>@string/error_attachment_invalid</item>
+    </array>
+</resources>

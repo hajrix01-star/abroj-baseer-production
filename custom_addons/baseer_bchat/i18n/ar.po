@@ -1,0 +1,227 @@
+# Translation of Odoo Server.
+# Module: baseer_bchat
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0?0:n==1?1:n==2?2:n%100>=3 && n%100<=10?3:n%100>=11 && n%100<=99?4:5;\n"
+
+#. module: baseer_bchat
+#: model:ir.ui.menu,name:baseer_bchat.menu_bchat_root
+#: model:ir.module.module,shortdesc:base.module_baseer_bchat
+msgid "BChat"
+msgstr "BChat"
+
+#. module: baseer_bchat
+#: model:ir.module.module,summary:base.module_baseer_bchat
+msgid "Private BChat text service and manager-only room administration"
+msgstr "محادثات BChat النصية وإدارة الغرف للمديرين"
+
+#. module: baseer_bchat
+#: model:ir.actions.act_window,name:baseer_bchat.action_bchat_rooms
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_list
+msgid "BChat Rooms"
+msgstr "غرف BChat"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_form
+msgid "BChat Room"
+msgstr "غرفة BChat"
+
+#. module: baseer_bchat
+#: model:ir.actions.act_window,name:baseer_bchat.action_bchat_memberships
+msgid "BChat Members"
+msgstr "أعضاء BChat"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_list
+msgid "BChat Memberships"
+msgstr "عضويات BChat"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_form
+msgid "BChat Membership"
+msgstr "عضوية BChat"
+
+#. module: baseer_bchat
+#: model:ir.ui.menu,name:baseer_bchat.menu_bchat_rooms
+msgid "Rooms"
+msgstr "الغرف"
+
+#. module: baseer_bchat
+#: model:ir.ui.menu,name:baseer_bchat.menu_bchat_members
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_form
+msgid "Members"
+msgstr "الأعضاء"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_form
+msgid "Remove Member"
+msgstr "إزالة العضو"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_room__name
+msgid "Name"
+msgstr "الاسم"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_room__company_id
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_membership__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_membership__room_id
+msgid "Room"
+msgstr "الغرفة"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_membership__user_id
+msgid "User"
+msgstr "المستخدم"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_membership__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_membership__joined_after_message_id
+msgid "Joined After Message"
+msgstr "آخر رسالة قبل الانضمام"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_membership__left_at
+msgid "Left At"
+msgstr "وقت إزالة العضو"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_room__membership_ids
+msgid "Membership"
+msgstr "العضوية"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_baseer_bchat_room__revision
+msgid "Revision"
+msgstr "رقم النسخة"
+
+#. module: baseer_bchat
+#: model:ir.model,name:baseer_bchat.model_baseer_bchat_room
+msgid "BChat private room"
+msgstr "غرفة خاصة في BChat"
+
+#. module: baseer_bchat
+#: model:ir.model,name:baseer_bchat.model_baseer_bchat_membership
+msgid "BChat private room membership epoch"
+msgstr "فترة عضوية غرفة BChat"
+
+#. module: baseer_bchat
+#: model:res.groups,name:baseer_bchat.group_bchat_manager
+msgid "BChat Conversation Manager (development)"
+msgstr "مدير محادثات BChat (تطوير)"
+
+#. module: baseer_bchat
+#: model:res.groups,name:baseer_bchat.group_bchat_user
+msgid "BChat API User (development)"
+msgstr "مستخدم واجهة BChat البرمجية (تطوير)"
+
+#. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_company__bchat_history_policy
+msgid "BChat History Policy"
+msgstr "سياسة تاريخ BChat"
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+msgid "A room name of at most 256 UTF-8 bytes is required."
+msgstr "أدخل اسمًا للغرفة لا يتجاوز 256 بايت."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+msgid "Only a room name and company may be supplied."
+msgstr "أدخل اسم الغرفة والشركة فقط."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+msgid "Only a nonempty room name may be changed."
+msgstr "يمكنك تغيير اسم الغرفة إلى اسم غير فارغ فقط."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+msgid "Select the room company as your active company."
+msgstr "فعّل شركة الغرفة أولًا."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "Only a room and authorized user may be selected."
+msgstr "اختر غرفة ومستخدمًا مصرحًا له فقط."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "The member must be an active internal account in this company."
+msgstr "اختر حسابًا داخليًا نشطًا تابعًا لهذه الشركة."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "This user is already an active room member."
+msgstr "هذا المستخدم عضو في الغرفة بالفعل."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "The room company is not authorized."
+msgstr "ليس لديك صلاحية لهذه الشركة."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+#: code:addons/baseer_bchat/models/v2_service.py:0
+msgid "This room is unavailable."
+msgstr "هذه الغرفة غير متاحة."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+msgid "BChat rooms cannot be copied."
+msgstr "لا يمكن نسخ غرف BChat."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+msgid "BChat rooms cannot be deleted."
+msgstr "لا يمكن حذف غرف BChat."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "Membership epochs cannot be copied."
+msgstr "لا يمكن نسخ فترات العضوية."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "Membership epochs cannot be deleted."
+msgstr "لا يمكن حذف فترات العضوية."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/membership.py:0
+msgid "Membership epochs cannot be edited."
+msgstr "لا يمكن تعديل فترات العضوية."
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/room.py:0
+#: code:addons/baseer_bchat/models/storage.py:0
+msgid "An explicitly assigned BChat manager is required."
+msgstr "لا يمكنك إدارة BChat دون صلاحية المدير."

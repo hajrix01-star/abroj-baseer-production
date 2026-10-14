@@ -1,0 +1,16 @@
+<odoo>
+    <record id="company_department_documents" model="ir.ui.view">
+        <field name="name">res.company.department.documents</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='currency_id']" position="after">
+                <field name="dms_company_root_id" readonly="1" groups="dms.group_dms_manager"/>
+                <field name="dms_purchase_root_id" readonly="1" groups="dms.group_dms_manager"/>
+                <field name="dms_purchase_order_root_id" readonly="1" groups="dms.group_dms_manager"/>
+                <field name="dms_hr_root_id" readonly="1" groups="hr.group_hr_user"/>
+                <field name="dms_employee_root_id" readonly="1" groups="hr.group_hr_user"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

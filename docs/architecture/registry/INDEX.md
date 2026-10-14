@@ -1,5 +1,10 @@
 # سجل معمارية بصير أودو
 
+## PROCUREMENT-ROUTE-ROLLOUT-20261014 — نقد/تحويل/مندوب (QA وLIVE)
+
+lastVerifiedCommit=4d0e044fb877fbc5882cc5f512f4414ce719bcc1؛ PR348 وسياسةfb461962، QA38592047536GO ثمAPPROVAL38592988360 وLIVE38593141327GO، modulebaseer_procurement_requests19.0.14.0.8 فقط. مصدر52ملفًا ونسخالاستعادةSHAمطابقةعلىالبيئتين. حسابQA47غيرsudo أثبتالأنواع3/ARوEN/RPCretryوإرسال مباشر دونقيود/دفعاتمعrollback؛ طلباتQA7والأصلية8وسياساتالشركات7ثابتة، snapshotماليLIVEمتساوٍ. DMSruntimeوGoogleenvمحفوظان. قبولمستقلGOللنشر/الخلفية، لا متصفح/جوالمرئي؛ لا تغييراتسياسةالسداد أومنح أدوار أونقلبياناتQA. [الأدلة وحدودالفحص](../../build-governance/PROCUREMENT-PURCHASE-ROUTE-20261014.md). هذايحدّث حالةجاهزيةالمصدرالتاريخيةأدناه.
+
+
 ## PROCUREMENT-PURCHASE-ROUTE-20261014 — نقد/تحويل/مندوب في الطلب (مصدر جاهز)
 
 lastVerifiedCommit=4d0e044fb877fbc5882cc5f512f4414ce719bcc1، PR345، baseer_procurement_requests19.0.14.0.8. حقل purchase_route تشغيلي افتراضيه representative للتوافق؛ cash/bank_transfer لا يتطلبان مندوبًا ويمنعان هوية مندوب مختلطة. حفظ/إرسال الكتالوج لا ينشئ دفعة/قيد؛ النوع لا يتحول تلقائيًا إلى طريقة سداد. المحاسب يرى نوع كل طلب بالقائمة/النموذج ودفعةالفواتير المرتبطة باستخدام قراءةACLالقائمة، بلا منح أدوار. headerغيرقابل للتعديل بعد المسودة، fingerprintالمندوب القديم محفوظ؛ AR/EN وأزرارwrap/aria-pressed. مصدر38590024057 وORM6/Node6في38590024064PASS معGOمستقل للمصدر. لا نشرQA/LIVE أو قبولمتصفح/جوال. [العقد والفحوص](../../build-governance/PROCUREMENT-PURCHASE-ROUTE-20261014.md).

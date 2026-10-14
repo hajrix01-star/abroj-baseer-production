@@ -108,3 +108,10 @@ sourceab0aa23d8315747447eb9e0bb370ab1ab5f81777. Policy installs
 baseer_dms_bill_link only; THIRD_PARTY_MODULES empty retains exact installed OCA
 and private trial, no othermodule upgrade. Protected request next; successqueue
 is not serveracceptance. QAprobe persists configonly after rollback assertions.
+
+PolicyCI38538605734 rejected empty THIRD_PARTY_MODULES line; staticguard accepts
+omission, not emptyexplicitvalue. Removed optional line; runtime/source unchanged,
+no Odoo retest needed. Merge blocked correctly. Initial queue38538790671 was
+dispatched after rejected merge by sequential shell commands; main has no policy,
+so cannot validate/sign request. Verify failure before validredispatch; no server
+release created or guard bypass. Future merge/dispatch calls separated by checks.

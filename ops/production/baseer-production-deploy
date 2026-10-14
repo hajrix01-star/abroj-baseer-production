@@ -20,8 +20,17 @@ readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
 readonly GOOGLE_ENV="$BASE/secrets/google/odoo-google.env"
 google_compose_override=''
 google_compose_files=()
+dms_old_compose_files=()
+dms_new_compose_files=()
+dms_runtime_required=0
 die() {
     printf 'DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
+    # Explicit policy/acceptance failures may sit on the right of an OR list,
+    # where exit alone would bypass the ERR recovery trap. Once quiesced, every
+    # such failure must use the same protected database/filestore rollback.
+    if [ "${service_quiesced:-0}" -eq 1 ] || [ "${release_switched:-0}" -eq 1 ] || [ "${database_mutated:-0}" -eq 1 ]; then
+        rollback 1
+    fi
     exit 1
 }
 
@@ -76,6 +85,110 @@ validate_arguments() {
     [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid run id'
 }
 
+third_party_module_path() {
+    case "$1" in
+        dms) printf '%s\n' third_party_addons/oca_dms_19/dms ;;
+        eh_*) [[ "$1" =~ ^eh_[a-z0-9_]+$ ]] || return 1; printf '%s\n' "third_party_addons/erp_heritage_19/$1" ;;
+        *) return 1 ;;
+    esac
+}
+
+prepare_dms_runtime() {
+    local dms_state runtime_file runtime_hash
+    dms_state="$(docker exec "$DB_CONTAINER" sh -lc \
+        'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT state FROM ir_module_module WHERE name = '\''dms'\''"')" \
+        || die 'could not check installed DMS state'
+    case "$dms_state" in installed) dms_runtime_required=1 ;; ''|uninstalled) ;; *) die 'DMS has an unsafe module state' ;; esac
+    [ "$dms_release_requested" -eq 0 ] || dms_runtime_required=1
+    runtime_file="$old_release/config/dms-runtime.compose.json"
+    runtime_hash="$old_release/config/dms-runtime.sha256"
+    if [ -e "$runtime_file" ] || [ -L "$runtime_file" ]; then
+        for file in "$runtime_file" "$runtime_hash"; do
+            [ -f "$file" ] && [ ! -L "$file" ] || die 'existing DMS runtime overlay is unsafe'
+            [ "$(stat -c '%U:%G:%a' -- "$file")" = root:root:600 ] || die 'existing DMS runtime ownership is unsafe'
+        done
+        (cd "$old_release" && sha256sum --status -c config/dms-runtime.sha256) || die 'existing DMS runtime checksum mismatch'
+        python3 - "$runtime_file" <<'PY'
+import json, sys
+value = json.load(open(sys.argv[1]))
+assert set(value) == {'services'} and set(value['services']) == {'odoo'}
+assert set(value['services']['odoo']) == {'command'}
+command = value['services']['odoo']['command']
+assert isinstance(command, list) and command and command[0] == 'odoo'
+assert all(isinstance(item, str) and '\n' not in item and '\r' not in item for item in command)
+assert not any('password' in item.lower() for item in command)
+PY
+        dms_old_compose_files=(-f "$runtime_file")
+        dms_runtime_required=1
+    elif [ "$dms_state" = installed ]; then
+        die 'installed DMS requires its persistent reviewed runtime overlay'
+    fi
+}
+
+generate_dms_runtime() {
+    [ "$dms_runtime_required" -eq 1 ] || return 0
+    [ -f "$release/third_party_addons/oca_dms_19/dms/__manifest__.py" ] || die 'DMS source is missing from runtime'
+    [ -f "$release/third_party_addons/oca_dms_19/PROVENANCE.md" ] || die 'DMS provenance is missing from runtime'
+    # Read effective old Compose only into Python; never print its environment.
+    "${compose_old[@]}" config --format json 2> "$backup/dms-compose-check.log" | python3 -c '
+import json, pathlib, sys
+value = json.load(sys.stdin)["services"]["odoo"]
+command = value["command"]
+assert isinstance(command, list) and command and command[0] == "odoo"
+assert all(isinstance(item, str) and "\n" not in item and "\r" not in item for item in command)
+assert not any("password" in item.lower() for item in command)
+indices = [i for i, item in enumerate(command) if item.startswith("--addons-path=")]
+assert len(indices) == 1
+index = indices[0]
+paths = command[index].split("=", 1)[1].split(",")
+assert "/mnt/baseer-addons" in paths
+mounts = value.get("volumes", [])
+assert any(m.get("target") == "/mnt/third-party-addons" and m.get("read_only") is True
+           and pathlib.Path(m.get("source", "")).resolve() == pathlib.Path(sys.argv[1], "third_party_addons").resolve()
+           for m in mounts)
+oca = "/mnt/third-party-addons/oca_dms_19"
+if oca not in paths:
+    command[index] += "," + oca
+print(json.dumps({"services": {"odoo": {"command": command}}}))
+' "$old_release" > "$release/config/dms-runtime.compose.json" 2>> "$backup/dms-compose-check.log"
+    (cd "$release" && sha256sum config/dms-runtime.compose.json > config/dms-runtime.sha256)
+    chmod 0600 "$release/config/dms-runtime.compose.json" "$release/config/dms-runtime.sha256"
+    dms_new_compose_files=(-f "$release/config/dms-runtime.compose.json")
+}
+
+dms_original_snapshot() {
+    docker exec -i "$DB_CONTAINER" sh -lc 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d baseer_prod -Atq' <<'SQL'
+/* DMS_PROTECTED_ORIGINALS: hashes only, no filenames or document bytes emitted. */
+SELECT jsonb_build_object(
+ 'attachments', (SELECT jsonb_build_object('n', count(*), 'hash', md5(coalesce(string_agg(jsonb_build_object(
+                     'id', a.id, 'name', a.name, 'res_model', a.res_model, 'res_id', a.res_id,
+                     'res_field', a.res_field, 'company_id', a.company_id, 'checksum', a.checksum,
+                     'file_size', a.file_size, 'store_fname', a.store_fname, 'type', a.type,
+                     'public', a.public, 'write_date', a.write_date)::text, '' ORDER BY a.id), '')))
+                 FROM ir_attachment a WHERE res_model IN ('account.move', 'purchase.order', 'hr.employee', 'hr.version')),
+ 'versions', (SELECT jsonb_build_object('n', count(*), 'hash', md5(coalesce(string_agg(to_jsonb(v)::text, '' ORDER BY v.id), ''))) FROM hr_version v)
+);
+SQL
+}
+
+run_dms_preflight() {
+    [ "$dms_release_requested" -eq 1 ] || return 0
+    # This registry-only check runs against the unchanged running release before
+    # service quiescence. The reviewed script forces a read-only transaction.
+    current_addons_path="$("${compose_old[@]}" config --format json 2> "$stage/dms-compose-check.log" | python3 -c '
+import json, sys
+command = json.load(sys.stdin)["services"]["odoo"]["command"]
+paths = [item.split("=", 1)[1] for item in command if item.startswith("--addons-path=")]
+assert len(paths) == 1
+print(paths[0])
+' 2>> "$stage/dms-compose-check.log")" || die 'could not validate the current DMS runtime command'
+    [[ "$current_addons_path" =~ ^[a-zA-Z0-9_/,.-]+$ ]] || die 'current addons path is unsafe'
+    "${compose_old[@]}" run --rm --no-deps -T -e "DMS_ADDONS_PATH=$current_addons_path" --entrypoint sh odoo -lc \
+        'DMS_PRODUCTION_PHASE=preflight odoo shell --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path="$DMS_ADDONS_PATH" -d baseer_prod --no-http --workers=0 --max-cron-threads=0' \
+        < "$source_dir/ops/production/dms-private-setup.py" > "$stage/dms-preflight.log" 2>&1
+    grep -Fxq 'DMS_PRODUCTION_PREFLIGHT=GO' "$stage/dms-preflight.log" || die 'DMS preflight did not confirm prerequisites'
+}
+
 load_policy() {
     local policy key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0 seen_revision=0 seen_approval_run=0
     policy="$POLICY_DIR/$release_id.env"
@@ -113,15 +226,26 @@ load_policy() {
         IFS=',' read -r -a APPROVED_THIRD_PARTY_MODULES <<< "$policy_third_party_modules"
         declare -A seen_third_party_module_names=()
         for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
-            [[ "$approved_module" =~ ^eh_[a-z0-9_]+$ ]] || die 'policy third-party module is invalid'
+            third_party_module_path "$approved_module" >/dev/null || die 'policy third-party module is invalid'
             [ -z "${seen_third_party_module_names[$approved_module]+x}" ] || die 'policy repeats a third-party module'
             seen_third_party_module_names[$approved_module]=1
+        done
+    fi
+    dms_release_requested=0
+    for approved_module in "${APPROVED_MODULES[@]}" "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
+        case "$approved_module" in dms|baseer_dms_trial|baseer_dms_bill_link|baseer_dms_departments) dms_release_requested=1 ;; esac
+    done
+    if [ "$dms_release_requested" -eq 1 ]; then
+        [ "${#APPROVED_MODULES[@]}" -eq 3 ] && [ "${#APPROVED_THIRD_PARTY_MODULES[@]}" -eq 1 ] \
+            && [ "${APPROVED_THIRD_PARTY_MODULES[0]}" = dms ] || die 'DMS release requires the exact four private modules'
+        for approved_module in baseer_dms_trial baseer_dms_bill_link baseer_dms_departments; do
+            [ -n "${seen_module_names[$approved_module]+x}" ] || die 'DMS release requires the exact four private modules'
         done
     fi
 }
 
 fetch_reviewed_source() {
-    local fetch_repo fetched_commit approved_module
+    local fetch_repo fetched_commit approved_module module_path source_path
     fetch_repo="$stage/fetch.git"
     install -d -o root -g root -m 0700 "$stage"
     git init --bare --quiet "$fetch_repo"
@@ -153,13 +277,22 @@ fetch_reviewed_source() {
             tar -x -C "$stage/source" --no-same-owner --no-same-permissions
     done
     for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
-        if git -C "$fetch_repo" ls-tree -r "$commit" -- "third_party_addons/erp_heritage_19/$approved_module" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
+        module_path="$(third_party_module_path "$approved_module")"
+        if git -C "$fetch_repo" ls-tree -r "$commit" -- "$module_path" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
             die "approved third-party module contains a symbolic link: $approved_module"
         fi
-        rm -rf -- "$stage/source/third_party_addons/erp_heritage_19/$approved_module"
-        git -C "$fetch_repo" archive --format=tar "$commit" "third_party_addons/erp_heritage_19/$approved_module" | \
+        rm -rf -- "$stage/source/$module_path"
+        git -C "$fetch_repo" archive --format=tar "$commit" "$module_path" | \
             tar -x -C "$stage/source" --no-same-owner --no-same-permissions
     done
+    if [ "$dms_release_requested" -eq 1 ]; then
+        for source_path in third_party_addons/oca_dms_19/PROVENANCE.md ops/production/dms-private-setup.py; do
+            [ "$(git -C "$fetch_repo" ls-tree "$commit" -- "$source_path" | awk '{print $1}')" = 100644 ] \
+                || die 'DMS release support source is absent or unsafe'
+            git -C "$fetch_repo" archive --format=tar "$commit" "$source_path" | \
+                tar -x -C "$stage/source" --no-same-owner --no-same-permissions
+        done
+    fi
     rm -rf -- "$fetch_repo"
 }
 
@@ -245,7 +378,7 @@ restore_pair() (
 )
 
 rollback() {
-    local status=$?
+    local status=${1:-$?}
     local rollback_failed=0
     trap - ERR
     set +e
@@ -295,6 +428,7 @@ old_release="$(readlink -f "$BASE/current")"
 [ -f "$old_release/.env" ] || die 'current .env is missing'
 [ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
 prepare_google_runtime
+prepare_dms_runtime
 if [ -f "$old_release/RELEASE_COMMIT" ]; then
     live_commit="$(tr -d '\r\n' < "$old_release/RELEASE_COMMIT")"
     [[ "$live_commit" =~ ^[a-f0-9]{40}$ ]] || die 'current release commit marker is invalid'
@@ -320,11 +454,13 @@ for approved_module in "${APPROVED_MODULES[@]}"; do
     [ -f "$source_dir/custom_addons/$approved_module/__manifest__.py" ] || die "approved module is missing from release: $approved_module"
 done
 for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
-    [ -f "$source_dir/third_party_addons/erp_heritage_19/$approved_module/__manifest__.py" ] || die "approved third-party module is missing from release: $approved_module"
+    module_path="$(third_party_module_path "$approved_module")"
+    [ -f "$source_dir/$module_path/__manifest__.py" ] || die "approved third-party module is missing from release: $approved_module"
 done
 verify_installed_baseer_module_source
 
-compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" "${google_compose_files[@]}" --project-directory "$old_release")
+compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" "${dms_old_compose_files[@]}" "${google_compose_files[@]}" --project-directory "$old_release")
+run_dms_preflight
 odoo_config_gid="$(docker exec "$ODOO_CONTAINER" id -g odoo)"
 [[ "$odoo_config_gid" =~ ^[0-9]+$ ]] || die 'could not resolve the Odoo configuration group'
 
@@ -347,6 +483,10 @@ trap rollback ERR
 mkdir -p "$BACKUPS" "$backup"
 [ ! -e "$release" ] || die 'release path already exists'
 mv "$source_dir" "$release"
+if [ "$dms_release_requested" -eq 1 ]; then
+    mv "$stage/dms-preflight.log" "$backup/dms-preflight.log"
+    mv "$stage/dms-compose-check.log" "$backup/dms-preflight-compose-check.log"
+fi
 rmdir "$stage"
 printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"
 # The release source is mounted into the unprivileged Odoo container.  It must
@@ -358,7 +498,8 @@ install -D -m 0600 "$old_release/.env" "$release/.env"
 # without exposing `admin_passwd` to the constrained deploy account; `.env`
 # above remains root-only.
 install -D -o root -g "$odoo_config_gid" -m 0640 "$old_release/config/odoo.conf" "$release/config/odoo.conf"
-compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" "${google_compose_files[@]}" --project-directory "$release")
+generate_dms_runtime
+compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.env" -f "$release/compose.production.yaml" "${dms_new_compose_files[@]}" "${google_compose_files[@]}" --project-directory "$release")
 "${compose_old[@]}" config --quiet >/dev/null 2>&1 || die 'current compose configuration is invalid'
 "${compose[@]}" config --quiet >/dev/null 2>&1 || die 'release compose configuration is invalid'
 
@@ -369,6 +510,9 @@ compose=(docker compose --project-name baseer-odoo-prod --env-file "$release/.en
 service_quiesced=1
 "${compose_old[@]}" stop odoo
 snapshot > "$backup/protected-before.json"
+if [ "$dms_release_requested" -eq 1 ]; then
+    dms_original_snapshot > "$backup/dms-originals-before.json"
+fi
 docker exec "$DB_CONTAINER" sh -lc 'pg_dump -Fc -U "$POSTGRES_USER" -d baseer_prod' > "$backup/baseer_prod.dump"
 docker run --rm --network none -v "$ODOO_VOLUME":/source:ro -v "$backup":/target alpine:3.20 sh -lc 'tar -C /source -cf /target/filestore-baseer_prod.tar filestore/baseer_prod'
 sha256sum "$backup/baseer_prod.dump" "$backup/filestore-baseer_prod.tar" > "$backup/recovery.sha256"
@@ -387,6 +531,15 @@ for approved_module in "${APPROVED_MODULES[@]}" "${APPROVED_THIRD_PARTY_MODULES[
     esac
 done
 odoo_command='odoo --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19 -d baseer_prod'
+if [ "$dms_runtime_required" -eq 1 ]; then
+    dms_addons_path="$(python3 -c '
+import json, sys
+command = json.load(open(sys.argv[1]))["services"]["odoo"]["command"]
+print(next(item.split("=", 1)[1] for item in command if item.startswith("--addons-path=")))
+' "$release/config/dms-runtime.compose.json")"
+    [[ "$dms_addons_path" =~ ^[a-zA-Z0-9_/,.-]+$ ]] || die 'DMS addons path is unsafe'
+    odoo_command='odoo --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path="$DMS_ADDONS_PATH" -d baseer_prod'
+fi
 if [ "${#upgrade_modules[@]}" -gt 0 ]; then
     upgrade_csv="$(IFS=,; printf '%s' "${upgrade_modules[*]}")"
     odoo_command+=" -u $upgrade_csv"
@@ -396,8 +549,20 @@ if [ "${#install_modules[@]}" -gt 0 ]; then
     odoo_command+=" -i $install_csv"
 fi
 odoo_command+=' --stop-after-init --workers=0 --max-cron-threads=0'
+if [ "$dms_release_requested" -eq 1 ]; then
+    odoo_command+=' --without-demo=True'
+fi
 database_mutated=1
-"${compose[@]}" run --rm --no-deps --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
+"${compose[@]}" run --rm --no-deps -e "DMS_ADDONS_PATH=${dms_addons_path:-}" --entrypoint sh odoo -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
+
+if [ "$dms_release_requested" -eq 1 ]; then
+    "${compose[@]}" run --rm --no-deps -T -e "DMS_ADDONS_PATH=$dms_addons_path" --entrypoint sh odoo -lc \
+        'DMS_PRODUCTION_PHASE=setup odoo shell --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path="$DMS_ADDONS_PATH" -d baseer_prod --no-http --workers=0 --max-cron-threads=0' \
+        < "$release/ops/production/dms-private-setup.py" > "$backup/dms-private-setup.log" 2>&1
+    grep -Fxq 'DMS_PRODUCTION_SETUP=GO' "$backup/dms-private-setup.log" || die 'DMS private setup did not confirm acceptance'
+    dms_original_snapshot > "$backup/dms-originals-after.json"
+    cmp "$backup/dms-originals-before.json" "$backup/dms-originals-after.json"
+fi
 
 snapshot > "$backup/protected-after.json"
 cmp "$backup/protected-before.json" "$backup/protected-after.json"

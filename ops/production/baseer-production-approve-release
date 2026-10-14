@@ -41,6 +41,14 @@ validate_arguments() {
     [[ "$policy_revision" =~ ^[a-f0-9]{40}$ ]] || die 'invalid policy revision'
 }
 
+third_party_module_path() {
+    case "$1" in
+        dms) printf '%s\n' third_party_addons/oca_dms_19/dms ;;
+        eh_*) [[ "$1" =~ ^eh_[a-z0-9_]+$ ]] || return 1; printf '%s\n' "third_party_addons/erp_heritage_19/$1" ;;
+        *) return 1 ;;
+    esac
+}
+
 parse_policy() {
     local policy=$1 key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0
     while IFS='=' read -r key value || [ -n "$key" ]; do
@@ -69,9 +77,20 @@ parse_policy() {
         IFS=',' read -r -a third_party_modules <<< "$policy_third_party_modules"
         declare -A third_party_names=()
         for module in "${third_party_modules[@]}"; do
-            [[ "$module" =~ ^eh_[a-z0-9_]+$ ]] || die 'policy third-party module is invalid'
+            third_party_module_path "$module" >/dev/null || die 'policy third-party module is invalid'
             [ -z "${third_party_names[$module]+x}" ] || die 'policy repeats a third-party module'
             third_party_names[$module]=1
+        done
+    fi
+    dms_release_requested=0
+    for module in "${modules[@]}" "${third_party_modules[@]}"; do
+        case "$module" in dms|baseer_dms_trial|baseer_dms_bill_link|baseer_dms_departments) dms_release_requested=1 ;; esac
+    done
+    if [ "$dms_release_requested" -eq 1 ]; then
+        [ "${#modules[@]}" -eq 3 ] && [ "${#third_party_modules[@]}" -eq 1 ] \
+            && [ "${third_party_modules[0]}" = dms ] || die 'DMS release requires the exact four private modules'
+        for module in baseer_dms_trial baseer_dms_bill_link baseer_dms_departments; do
+            [ -n "${names[$module]+x}" ] || die 'DMS release requires the exact four private modules'
         done
     fi
 }
@@ -105,8 +124,15 @@ for module in "${modules[@]}"; do
     git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "policy module is absent from commit: $module"
 done
 for module in "${third_party_modules[@]}"; do
-    git -C "$fetch_repo" cat-file -e "$commit:third_party_addons/erp_heritage_19/$module/__manifest__.py" || die "policy third-party module is absent from commit: $module"
+    module_path="$(third_party_module_path "$module")"
+    git -C "$fetch_repo" cat-file -e "$commit:$module_path/__manifest__.py" || die "policy third-party module is absent from commit: $module"
 done
+if [ "$dms_release_requested" -eq 1 ]; then
+    for source_path in third_party_addons/oca_dms_19/PROVENANCE.md ops/production/dms-private-setup.py; do
+        [ "$(git -C "$fetch_repo" ls-tree "$commit" -- "$source_path" | awk '{print $1}')" = 100644 ] \
+            || die 'DMS release support source is absent or unsafe'
+    done
+fi
 
 {
     printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"

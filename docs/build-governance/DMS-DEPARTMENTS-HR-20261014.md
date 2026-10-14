@@ -205,3 +205,19 @@ sanitization (web/models/models.py1719/1768), not an authorization fault.
 Local helper now returns visible internal(parent_id,emptylabel) / hiddenFalse;
 outer RPC values remain int/False. No parent name read/sudo, assertions unchanged.
 Independent targeted source CONDITIONAL GO pending corrected46-case CI.
+
+Corrected33dd4ceb: source38557929953 PASS and Odoo38557929964 PASS, explicit
+0 failures/0 errors of46 including authenticated RPC. Independent GO for QA-only
+single-module release and same readonly reproduction after deployment.
+PR333 merged470fbf819c00e88e178f4ccc9789f39551a27c12. Policy upgrades only
+baseer_dms_departments19.0.1.0.1; basebridge/OCA/private rules remain unchanged.
+
+Capacity for panel fix: six old code releases ab772e83a185/52ed6d8a4140/
+8c5927360e89/d9ea28aeb5f3/714d7b2719ec/55c07f093d6b resolved and commits
+verified; authorized code-only archive at local tmp/dms-panel-code-archive/
+qa-code-dms-panel-six-20261014.tar.gz SHA256
+461ace93dc229d69c0194cdbe9b6ba76983bd763b134344ebb8ad74ff97dce2c.
+All9220 regular-file SHA256 matched source manifest; gzip passed. Under deployment
+lock current7e42/latestfive/identities/hashes rechecked, exact six old code releases
+and temporary remote archive removed, recoverable local. No DB/filestore backups
+or LIVE touched. Available2331033600 bytes; new request pending, no sourceCI repeat.

@@ -35,150 +35,179 @@ msgid "Employee Documents"
 msgstr "مستندات الموظفين"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Private company documents"
 msgstr "مستندات الشركة الخاصة"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Purchases"
 msgstr "المشتريات"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Vendor Bills"
 msgstr "فواتير الموردين"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Purchase Orders"
 msgstr "أوامر الشراء"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Human Resources"
 msgstr "الموارد البشرية"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Employees"
 msgstr "الموظفون"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Sales"
 msgstr "المبيعات"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Administration"
 msgstr "الإدارة"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Documents"
 msgstr "المستندات"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Contracts"
 msgstr "العقود"
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Department folders require a company document root."
 msgstr "تتطلب مجلدات الأقسام مجلدًا رئيسيًا لمستندات الشركة."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "The company document root must belong to this company."
 msgstr "يجب أن يتبع مجلد المستندات الرئيسي هذه الشركة."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Department document folders must remain in their company hierarchy."
 msgstr "يجب أن تبقى مجلدات مستندات الأقسام ضمن هيكل شركتها."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Managed document folders cannot have native associations or public tokens."
 msgstr "لا يمكن ربط المجلدات المنظمة بسجلات عبر الربط الأصلي أو مشاركتها بروابط عامة."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Managed company document configuration is protected."
 msgstr "إعدادات مستندات الشركة المنظمة محمية."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Only the owner administrator can configure department documents."
 msgstr "يمكن لمسؤول النظام المالك فقط إعداد مستندات الأقسام."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 msgid "Select the company before configuring its documents."
 msgstr "اختر الشركة قبل إعداد مستنداتها."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/company.py:0
 #: code:addons/baseer_dms_departments/models/dms_file.py:0
 msgid "The document and employee companies must match."
 msgstr "يجب أن يتبع المستند والموظف الشركة نفسها."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 #: code:addons/baseer_dms_departments/models/dms_file.py:0
 msgid "HR document access requires an HR officer or manager."
 msgstr "يتطلب الاطلاع على مستندات الموارد البشرية صلاحية مسؤول أو مدير الموارد البشرية."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "A managed folder can exist only once."
 msgstr "يمكن إنشاء المجلد المنظم مرة واحدة فقط."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Managed document folders are configured by the private setup method."
 msgstr "تُنشأ مجلدات المستندات المنظمة عبر مسار الإعداد الخاص."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Managed document folder identity is protected."
 msgstr "هوية مجلد المستندات المنظم محمية."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "HR document folder associations are protected."
 msgstr "ارتباطات مجلدات مستندات الموارد البشرية محمية."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Managed document folders cannot be copied."
 msgstr "لا يمكن نسخ مجلدات المستندات المنظمة."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Managed document folders cannot be deleted."
 msgstr "لا يمكن حذف مجلدات المستندات المنظمة."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/directory.py:0
 msgid "Existing vendor bill folders can only be adopted within the same company."
 msgstr "لا يمكن تنظيم مجلدات فواتير الموردين الحالية إلا داخل الشركة نفسها."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/ir_attachment.py:0
 msgid "Remove document references before changing the original association."
 msgstr "احذف مراجع المستندات قبل تغيير ارتباط المرفق الأصلي."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/source_guards.py:0
 msgid "Remove document references before changing the source company or employee."
 msgstr "احذف مراجع المستندات قبل تغيير شركة المصدر أو الموظف المرتبط."
 
 #. module: baseer_dms_departments
+#. odoo-python
 #: code:addons/baseer_dms_departments/models/source_guards.py:0
 msgid "The employee has protected document folders in this company."
 msgstr "لدى الموظف مجلدات مستندات محمية في هذه الشركة."

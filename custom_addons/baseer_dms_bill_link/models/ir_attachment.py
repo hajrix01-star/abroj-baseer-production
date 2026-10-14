@@ -60,6 +60,23 @@ class IrAttachment(models.Model):
         return sources
 
     def write(self, vals):
+        association_fields = {"res_model", "res_id", "res_field", "type"}
+        if self and set(vals) & association_fields:
+            # Legacy bills may be reassociated. Retire the old index while its
+            # source remains valid; a failed write rolls this deletion back.
+            # The additive HR/PO guard rejects its reassociations before here.
+            self.check_access("write")
+            self.env.cr.execute(
+                "SELECT id FROM ir_attachment WHERE id = ANY(%s) ORDER BY id FOR UPDATE", [self.ids]
+            )
+            self.invalidate_recordset()
+            changed = self.filtered(lambda source: any(
+                field in vals and vals[field] != source[field] for field in association_fields
+            ))
+            if changed:
+                self.env["dms.file"].sudo().with_context(active_test=False).search([
+                    ("bill_attachment_id", "in", changed.ids), ("bill_move_id", "!=", False)
+                ]).unlink()
         result = super().write(vals)
         if set(vals) & {
             "res_model", "res_id", "res_field", "type", "datas", "raw", "db_datas",

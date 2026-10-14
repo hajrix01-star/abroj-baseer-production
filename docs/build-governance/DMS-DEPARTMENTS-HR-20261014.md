@@ -101,3 +101,20 @@ Trailing CRLF blank produced shell exit1 AFTER successful removals and df result
 do not repeat deletion. Available2036191232 bytes. No LIVE changes.
 Readonly preflight proves owner already allowed all seven company IDs, private
 six rules active, original5840 checksum/fullrow fingerprint unchanged.
+
+Frozen6c69b07f/PR329: source38552491155 PASS; Odoo38552491160 failed with
+0 failures/2 errors of40. Legacy bill reassociation to nonbill fails cleanup
+because new source eligibility check rejects stale link before unlink; fix atomic
+prewrite legacy cleanup under original write permission without read/context bypass.
+PO unlink fixture must use native cancel before unlink, not weaken production rule.
+Independent parser review also proved missing odoo-python PO comment markers;
+fix catalog and add Arabic-context folder creation regression (names persist).
+No QA deployment of failed candidate, reopen affected G5 checks only; same CI
+environment justified by actual failures and new verified translation defect.
+
+Corrected runtime: preunlink only changed legacy bill association, original write
+ACL and ordered locks first; strict reads unchanged, new HR/PO guard runs first.
+Both catalogs now mark Python code rows. Added native rollback preserving SAME
+index ID, no-op association ID stability, and Arabic-context actual folder names;
+PO fixture follows native button_cancel. Independent targeted source CONDITIONAL
+GO pending corrected43-case CI; no weaker assertions or repeated environment.

@@ -116,6 +116,22 @@ class TestDepartments(DepartmentFixtures, TransactionCase):
         self.assertEqual(self.index(self.version_source).directory_id,
                          self.employee_dirs[self.employee_a.id]['contracts'])
 
+    def test_failed_native_bill_attachment_write_restores_same_index(self):
+        original_index_id = self.index(self.attachment_a).id
+        with self.assertRaises(ValueError), self.cr.savepoint():
+            self.attachment_a.write({'type': 'invalid-selection'})
+        self.assertEqual(self.attachment_a.type, 'binary')
+        self.assertEqual(self.index(self.attachment_a).id, original_index_id)
+
+    def test_noop_bill_attachment_association_write_keeps_index_id(self):
+        original_index_id = self.index(self.attachment_a).id
+        self.attachment_a.write({
+            'res_model': 'account.move', 'res_id': self.bill_a.id,
+            'type': 'binary', 'res_field': False,
+        })
+        self.assertEqual(self.index(self.attachment_a).id, original_index_id)
+        self.assertEqual(self.attachment_a.type, 'binary')
+
     def test_private_hr_metadata_denied_to_public_employee_reader_and_dms_manager(self):
         # Public employee directory access must not confer private HR access.
         self.actor(self.env['hr.employee.public'], self.nonaccount).search([
@@ -185,8 +201,31 @@ class TestDepartments(DepartmentFixtures, TransactionCase):
 
     def test_purchase_order_unlink_removes_reference(self):
         link = self.index(self.order_source)
+        self.order_a.button_cancel()
         self.order_a.unlink()
         self.assertFalse(link.exists())
+
+    def test_new_department_folder_labels_are_arabic_in_arabic_context(self):
+        self.env['res.lang'].with_user(self.owner)._activate_lang('ar_001')
+        self.env['ir.module.module']._load_module_terms(
+            ['baseer_dms_departments'], ['ar_001'], overwrite=True,
+        )
+        company = self.env['res.company'].create({'name': 'شركة اختبار الأقسام'})
+        self.owner.company_ids |= company
+        company = company.with_context(lang='ar_001', allowed_company_ids=company.ids)
+        self.assertEqual(company.env._('Purchases'), 'المشتريات')
+        self.assertEqual(company.env._('Human Resources'), 'الموارد البشرية')
+        folders = company._setup_dms_departments(access_group=self.access_group)[company.id]
+        expected = {
+            'purchases': 'المشتريات', 'bills': 'فواتير الموردين',
+            'purchase_orders': 'أوامر الشراء', 'hr': 'الموارد البشرية',
+            'employees': 'الموظفون', 'sales': 'المبيعات', 'administration': 'الإدارة',
+        }
+        directory = self.env['dms.directory'].with_context(
+            lang='ar_001', allowed_company_ids=company.ids,
+        )
+        for key, label in expected.items():
+            self.assertEqual(directory.browse(folders[key]).name, label)
 
     def test_new_source_reassociation_and_company_changes_rejected(self):
         for source, values in (

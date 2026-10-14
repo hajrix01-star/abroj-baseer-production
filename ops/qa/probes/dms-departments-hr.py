@@ -45,6 +45,11 @@ for company_id, tree in trees.items():
     assert dirs.storage_id.company_id.id == company_id
     assert not dirs.storage_id.model_ids
     assert not dirs.storage_id.inherit_access_from_parent_record
+    for key, label in {'purchases': 'المشتريات', 'bills': 'فواتير الموردين',
+                       'purchase_orders': 'أوامر الشراء', 'hr': 'الموارد البشرية',
+                       'employees': 'الموظفون', 'sales': 'المبيعات',
+                       'administration': 'الإدارة'}.items():
+        assert scoped.env['dms.directory'].browse(tree[key]).name == label, 'Arabic folder label missing'
     assert not scoped.env['dms.directory'].browse(tree['root']).parent_id
     for child, parent in [('purchases', 'root'), ('hr', 'root'), ('sales', 'root'),
                           ('administration', 'root'), ('bills', 'purchases'),

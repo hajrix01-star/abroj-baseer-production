@@ -112,7 +112,7 @@ load_policy() {
     if [ -n "$policy_modules" ]; then
         IFS=',' read -r -a APPROVED_MODULES <<< "$policy_modules"
     fi
-    [ "${#APPROVED_MODULES[@]}" -gt 0 ] || [ "${policy_third_party_modules:-}" = eh_account_dynamic_reports ] || die 'policy has no modules'
+    [ "${#APPROVED_MODULES[@]}" -gt 0 ] || [ -n "${policy_third_party_modules:-}" ] || die 'policy has no modules'
     APPROVED_MODULE_SET=()
     for module in "${APPROVED_MODULES[@]}"; do
         [[ "$module" =~ ^(baseer|abroj)_[a-z0-9_]+$ ]] || die 'invalid module name'
@@ -120,7 +120,24 @@ load_policy() {
         APPROVED_MODULE_SET[$module]=1
     done
     if [ "$seen_third_party" -eq 1 ]; then
-        [ "$policy_third_party_modules" = eh_account_dynamic_reports ] || die 'invalid third-party module'
+        third_party_path="$(third_party_module_path "$policy_third_party_modules")" || die 'invalid third-party module'
+    fi
+}
+
+third_party_module_path() {
+    case "$1" in
+        eh_account_dynamic_reports) printf '%s\n' third_party_addons/erp_heritage_19/eh_account_dynamic_reports ;;
+        dms) printf '%s\n' third_party_addons/oca_dms_19/dms ;;
+        *) return 1 ;;
+    esac
+}
+
+verify_third_party_runtime_path() {
+    if [ "${policy_third_party_modules:-}" = dms ]; then
+        case ",$ADDONS_PATH," in
+            *,/mnt/third-party-addons/oca_dms_19,*) ;;
+            *) die 'QA addons path must include the reviewed OCA DMS directory' ;;
+        esac
     fi
 }
 
@@ -267,6 +284,7 @@ load_config
 validate_arguments "$@"
 verify_source_identity
 load_policy
+verify_third_party_runtime_path
 install -d -o root -g root -m 0700 "$RELEASES" "$BACKUPS" "$STAGING"
 exec 9>"$LOCK_FILE"
 flock -n 9 || die 'another QA deployment is running'
@@ -299,7 +317,6 @@ for module in "${APPROVED_MODULES[@]}"; do
 done
 if [ -n "${policy_third_party_modules:-}" ]; then
     grep -Fq "$QA_BASE/current/third_party_addons:/mnt/third-party-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount current third-party addons read-only'
-    third_party_path="third_party_addons/erp_heritage_19/$policy_third_party_modules"
     git -C "$stage.git" cat-file -e "$commit:$third_party_path/__manifest__.py" || die 'approved third-party module absent from candidate'
     if git -C "$stage.git" ls-tree -r "$commit" -- "$third_party_path" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
         die 'approved third-party module contains a symlink'

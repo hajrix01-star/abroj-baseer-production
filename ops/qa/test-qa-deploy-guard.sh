@@ -37,6 +37,52 @@ expect_failed() {
     fi
 }
 
+# Policy/path tests run only extracted functions; they never contact QA.
+policy_case() (
+    local wrapper=$1 external=$2 mode=${3:-valid}
+    source <(sed '/^require_root$/,$d' "$script_dir/$wrapper")
+    release_id=baseer-dms-test run_id=123
+    local fixture="$test_dir/$wrapper-$mode-${external//\//_}.env"
+    printf 'RELEASE_ID=%s\nCOMMIT=%040d\nMODULES=\nTHIRD_PARTY_MODULES=%s\n' "$release_id" 1 "$external" > "$fixture"
+    if [ "$mode" = duplicate ]; then
+        printf 'THIRD_PARTY_MODULES=dms\n' >> "$fixture"
+    fi
+    if [ "$wrapper" = baseer-qa-deploy ]; then
+        POLICY_DIR="$test_dir/$wrapper-policy"
+        mkdir -p "$POLICY_DIR"
+        cp "$fixture" "$POLICY_DIR/$release_id.env"
+        printf 'POLICY_REVISION=%040d\nAPPROVED_RUN_ID=123\n' 2 >> "$POLICY_DIR/$release_id.env"
+        require_safe_file() { test -f "$1"; }
+        load_policy
+    else
+        parse_policy "$fixture"
+    fi
+    case "$external" in
+        dms) [ "$third_party_path" = third_party_addons/oca_dms_19/dms ] ;;
+        eh_account_dynamic_reports) [ "$third_party_path" = third_party_addons/erp_heritage_19/eh_account_dynamic_reports ] ;;
+        *) return 1 ;;
+    esac
+)
+
+dms_runtime_path() (
+    load_guard
+    policy_third_party_modules=dms
+    ADDONS_PATH=$1
+    verify_third_party_runtime_path
+)
+
+for wrapper in baseer-qa-approve-release baseer-qa-deploy; do
+    policy_case "$wrapper" dms
+    policy_case "$wrapper" eh_account_dynamic_reports
+    expect_failed "$wrapper-unknown" 'invalid third-party module' policy_case "$wrapper" arbitrary
+    expect_failed "$wrapper-csv" 'invalid third-party module' policy_case "$wrapper" dms,eh_account_dynamic_reports
+    expect_failed "$wrapper-traversal" 'invalid third-party module' policy_case "$wrapper" ../dms
+    expect_failed "$wrapper-duplicate" 'duplicate THIRD_PARTY_MODULES' policy_case "$wrapper" dms duplicate
+done
+dms_runtime_path /usr/lib/python3/dist-packages/odoo/addons,/mnt/third-party-addons/oca_dms_19
+expect_failed dms-path-missing 'QA addons path must include' dms_runtime_path /mnt/baseer-addons
+expect_failed dms-path-prefix 'QA addons path must include' dms_runtime_path /mnt/third-party-addons/oca_dms_19_unreviewed
+
 low_bytes() (
     load_guard
     stub_capacity

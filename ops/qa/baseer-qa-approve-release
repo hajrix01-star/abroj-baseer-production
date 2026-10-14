@@ -64,7 +64,7 @@ parse_policy() {
     if [ -n "$policy_modules" ]; then
         IFS=',' read -r -a modules <<< "$policy_modules"
     fi
-    [ "${#modules[@]}" -gt 0 ] || [ "${policy_third_party_modules:-}" = eh_account_dynamic_reports ] || die 'policy has no modules'
+    [ "${#modules[@]}" -gt 0 ] || [ -n "${policy_third_party_modules:-}" ] || die 'policy has no modules'
     declare -A seen=()
     for module in "${modules[@]}"; do
         [[ "$module" =~ ^(baseer|abroj)_[a-z0-9_]+$ ]] || die 'invalid module name'
@@ -72,8 +72,16 @@ parse_policy() {
         seen[$module]=1
     done
     if [ "$seen_third_party" -eq 1 ]; then
-        [ "$policy_third_party_modules" = eh_account_dynamic_reports ] || die 'invalid third-party module'
+        third_party_path="$(third_party_module_path "$policy_third_party_modules")" || die 'invalid third-party module'
     fi
+}
+
+third_party_module_path() {
+    case "$1" in
+        eh_account_dynamic_reports) printf '%s\n' third_party_addons/erp_heritage_19/eh_account_dynamic_reports ;;
+        dms) printf '%s\n' third_party_addons/oca_dms_19/dms ;;
+        *) return 1 ;;
+    esac
 }
 
 require_root
@@ -106,7 +114,7 @@ for module in "${modules[@]}"; do
     git -C "$fetch_repo" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "module absent from candidate: $module"
 done
 if [ -n "${policy_third_party_modules:-}" ]; then
-    git -C "$fetch_repo" cat-file -e "$commit:third_party_addons/erp_heritage_19/$policy_third_party_modules/__manifest__.py" || die 'third-party module absent from candidate'
+    git -C "$fetch_repo" cat-file -e "$commit:$third_party_path/__manifest__.py" || die 'third-party module absent from candidate'
 fi
 
 {

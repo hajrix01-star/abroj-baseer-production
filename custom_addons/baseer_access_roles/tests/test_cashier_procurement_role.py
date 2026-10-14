@@ -4,11 +4,63 @@ from unittest.mock import patch
 from lxml import etree
 
 from odoo import Command, fields
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase
 
 
 class CashierProcurementRoleCase(TransactionCase):
+    def test_optional_bchat_operator_grant_stays_explicit_and_role_limited(self):
+        operator = self.env.ref(
+            'baseer_bchat_procurement.group_bchat_procurement_operator',
+            raise_if_not_found=False,
+        )
+        if not operator:
+            self.skipTest('Optional BChat procurement module is not installed')
+        for role in ('cashier', 'pos_cashier'):
+            user = self.env['res.users'].with_context(no_reset_password=True).create({
+                'name': 'BChat %s' % role,
+                'login': 'bchat-optional-%s-%s' % (role, uuid4().hex),
+                'company_id': self.env.company.id,
+                'company_ids': [Command.set(self.env.company.ids)],
+                'baseer_access_role': role,
+            })
+            self.assertFalse(user.has_group(
+                'baseer_bchat_procurement.group_bchat_procurement_operator'))
+            user.write({'group_ids': [Command.link(operator.id)]})
+            self.assertTrue(user.has_group(
+                'baseer_bchat_procurement.group_bchat_procurement_operator'))
+            user.write({'group_ids': [Command.unlink(operator.id)]})
+            self.assertFalse(user.has_group(
+                'baseer_bchat_procurement.group_bchat_procurement_operator'))
+
+        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat accountant', 'login': 'bchat-accountant-%s' % uuid4().hex,
+            'company_id': self.env.company.id,
+            'company_ids': [Command.set(self.env.company.ids)],
+            'baseer_access_role': 'accountant',
+        })
+        with self.assertRaises(ValidationError):
+            accountant.write({'group_ids': [Command.link(operator.id)]})
+
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat missing optional ID',
+            'login': 'bchat-missing-%s' % uuid4().hex,
+            'company_id': self.env.company.id,
+            'company_ids': [Command.set(self.env.company.ids)],
+            'baseer_access_role': 'pos_cashier',
+        })
+        environment = type(self.env)
+        original_ref = environment.ref
+
+        def ref_without_bchat(instance, xml_id, *args, **kwargs):
+            if xml_id == 'baseer_bchat_procurement.group_bchat_procurement_operator':
+                return False
+            return original_ref(instance, xml_id, *args, **kwargs)
+
+        with patch.object(environment, 'ref', ref_without_bchat):
+            with self.assertRaises(ValidationError):
+                cashier.write({'group_ids': [Command.link(operator.id)]})
+
     def test_cpr_t00_owner_preset_keeps_the_only_system_administrator(self):
         """Owner promotion must not demote the sole native administrator."""
         administrator = self.env.ref('base.user_admin')

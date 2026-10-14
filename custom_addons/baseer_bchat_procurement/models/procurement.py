@@ -62,6 +62,11 @@ class ProcurementRequest(models.Model):
                                        check_company=True, ondelete='restrict', index=True)
     receipt_client_token = fields.Char(readonly=True, copy=False, index=True)
     receipt_payload_hash = fields.Char(readonly=True, copy=False)
+    receipt_share_uuid = fields.Char(readonly=True, copy=False, size=36, index=True)
+    receipt_result_message_id = fields.Many2one(
+        'baseer.bchat.message', readonly=True, copy=False, check_company=True,
+        ondelete='restrict', index=True,
+    )
 
     _bchat_message_unique = models.Constraint(
         'unique(bchat_message_id)', 'A BChat order message may link to only one request.',
@@ -69,10 +74,19 @@ class ProcurementRequest(models.Model):
     _bchat_receipt_token_unique = models.Constraint(
         'unique(receipt_client_token)', 'A BChat receipt token may be used only once.',
     )
+    _bchat_receipt_share_uuid_unique = models.Constraint(
+        'unique(receipt_share_uuid)', 'A BChat receipt result UUID may be used only once.',
+    )
+    _bchat_receipt_result_message_unique = models.Constraint(
+        'unique(receipt_result_message_id)', 'A BChat receipt result message may link to only one request.',
+    )
 
     _bchat_internal_fields = {'source_channel', 'internal_submitted_at',
                               'bchat_room_id', 'bchat_message_id'}
-    _bchat_receipt_fields = {'receipt_client_token', 'receipt_payload_hash'}
+    _bchat_receipt_fields = {
+        'receipt_client_token', 'receipt_payload_hash',
+        'receipt_share_uuid', 'receipt_result_message_id',
+    }
 
     @api.model_create_multi
     def create(self, vals_list):

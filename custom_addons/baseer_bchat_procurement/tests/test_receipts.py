@@ -13,6 +13,8 @@ from odoo.addons.baseer_bchat.contracts import ProtocolError
 class BChatReceiptCase(TransactionCase):
     def setUp(self):
         super().setUp()
+        if 'baseer_access_role' not in self.env['res.users']._fields:
+            self.skipTest('BChat procurement requires the Baseer access role field')
         self.company = self.env['res.company'].create({'name': 'BChat receipt %s' % uuid4().hex[:8]})
         self.foreign = self.env['res.company'].create({'name': 'Foreign receipt %s' % uuid4().hex[:8]})
         group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
@@ -21,6 +23,8 @@ class BChatReceiptCase(TransactionCase):
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id, group.id])],
         })
+        self.operator.write({'baseer_access_role': 'pos_cashier'})
+        self.operator.write({'group_ids': [Command.link(group.id)]})
         self.outsider = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BChat no receipt role', 'login': 'bchat-receipt-no-%s' % uuid4().hex,
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
@@ -67,6 +71,125 @@ class BChatReceiptCase(TransactionCase):
             'lines': [{'line_id': self.order.line_ids.id,
                        'actual_qty': quantity, 'actual_price': price}],
         }
+
+    def _room_order(self):
+        admin = self.env.ref('base.user_admin')
+        admin.write({'company_ids': [Command.link(self.company.id)], 'group_ids': [Command.link(
+            self.env.ref('baseer_bchat.group_bchat_manager').id,
+        )]})
+        room = self.env['baseer.bchat.room'].with_user(admin).with_company(self.company).create({
+            'name': 'BChat receipt result', 'company_id': self.company.id,
+        })
+        membership = self.env['baseer.bchat.membership'].with_user(admin).with_company(
+            self.company,
+        ).create({'room_id': room.id, 'user_id': self.operator.id})
+        order_id = self.service._v2_order_create({
+            'api_version': 2, 'company_id': self.company.id,
+            'warehouse_id': self.warehouse.id, 'representative_partner_id': None,
+            'client_uuid': str(uuid4()), 'room_id': room.id,
+            'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
+        })['order']['id']
+        return room, membership, self.env['baseer.procurement.request'].sudo().browse(order_id)
+
+    def test_receipt_share_is_separate_server_authored_and_idempotent(self):
+        room, membership, order = self._room_order()
+        self.option.product_id.default_code = 'SECRET-SKU'
+        self.order_id, self.order = order.id, order
+        self.service._v2_receipt_confirm(order.id, self._payload(quantity='1.00', price='7.25'))
+        share = {'api_version': 2, 'company_id': self.company.id}
+        first = self.service._v2_receipt_share(order.id, share)
+        second = self.service._v2_receipt_share(order.id, share)
+        another = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Second BChat cashier', 'login': 'bchat-receipt-other-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'baseer_access_role': 'pos_cashier',
+        })
+        another.write({'group_ids': [Command.link(
+            self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
+        )]})
+        self.env['baseer.bchat.membership'].with_user(
+            self.env.ref('base.user_admin'),
+        ).with_company(self.company).create({'room_id': room.id, 'user_id': another.id})
+        cross_user = self.env['baseer.bchat.service'].with_user(another)._v2_receipt_share(
+            order.id, share,
+        )
+        self.assertTrue(first['shared'])
+        self.assertFalse(first['replayed'])
+        self.assertTrue(second['replayed'])
+        self.assertEqual(first['message_id'], second['message_id'])
+        self.assertEqual(first['message_id'], cross_user['message_id'])
+        self.assertTrue(cross_user['replayed'])
+        order.invalidate_recordset()
+        self.assertEqual(order.receipt_result_message_id.id, first['message_id'])
+        self.assertEqual(order.receipt_result_message_id.room_id, room)
+        self.assertEqual(order.receipt_result_message_id.membership_id, membership)
+        self.assertIn('7.25', order.receipt_result_message_id.text)
+        self.assertNotIn('SECRET-SKU', order.receipt_result_message_id.text)
+        self.assertEqual(self.env['baseer.bchat.message'].sudo().search_count([
+            ('room_id', '=', room.id), ('client_uuid', '=', order.receipt_share_uuid),
+        ]), 1)
+
+    def test_share_inflight_other_transaction_retries_then_replays_once(self):
+        room, _membership, order = self._room_order()
+        self.order_id, self.order = order.id, order
+        self.service._v2_receipt_confirm(order.id, self._payload())
+        payload = {'api_version': 2, 'company_id': self.company.id}
+        with self.env.registry.cursor() as concurrent_cr:
+            concurrent_cr.execute(
+                'SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0))',
+                ['bchat-receipt-share:%s' % order.id],
+            )
+            self.assertTrue(concurrent_cr.fetchone()[0])
+            with self.assertRaises(ProtocolError) as retry:
+                self.service._v2_receipt_share(order.id, payload)
+            self.assertEqual(retry.exception.status, 409)
+            self.assertEqual(retry.exception.code, 'retry')
+            order.invalidate_recordset()
+            self.assertFalse(order.receipt_result_message_id)
+            concurrent_cr.rollback()
+        first = self.service._v2_receipt_share(order.id, payload)
+        replay = self.service._v2_receipt_share(order.id, payload)
+        self.assertFalse(first['replayed'])
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(first['message_id'], replay['message_id'])
+        self.assertEqual(self.env['baseer.bchat.message'].sudo().search_count([
+            ('room_id', '=', room.id), ('client_uuid', '=', order.receipt_share_uuid),
+        ]), 1)
+
+    def test_share_without_original_room_keeps_purchased_stock(self):
+        self.service._v2_receipt_confirm(self.order_id, self._payload())
+        picking = self.order.picking_id
+        with self.assertRaises(ProtocolError) as denied:
+            self.service._v2_receipt_share(self.order_id, {
+                'api_version': 2, 'company_id': self.company.id,
+            })
+        self.assertEqual(denied.exception.code, 'room_unavailable')
+        self.order.invalidate_recordset()
+        self.assertEqual(self.order.state, 'purchased')
+        self.assertEqual(self.order.picking_id, picking)
+        self.assertFalse(self.order.receipt_result_message_id)
+
+    def test_share_requires_completed_receipt_original_membership_and_company(self):
+        room, membership, order = self._room_order()
+        payload = {'api_version': 2, 'company_id': self.company.id}
+        with self.assertRaises(ProtocolError) as unfinished:
+            self.service._v2_receipt_share(order.id, payload)
+        self.assertEqual(unfinished.exception.code, 'receipt_unavailable')
+        self.order_id, self.order = order.id, order
+        self.service._v2_receipt_confirm(order.id, self._payload())
+        admin = self.env.ref('base.user_admin')
+        membership.with_user(admin).with_company(self.company).action_revoke()
+        with self.assertRaises(ProtocolError) as revoked:
+            self.service._v2_receipt_share(order.id, payload)
+        self.assertEqual(revoked.exception.code, 'room_unavailable')
+        with self.assertRaises(AccessError):
+            self.service._v2_receipt_share(order.id, {
+                'api_version': 2, 'company_id': self.foreign.id,
+            })
+        order.invalidate_recordset()
+        self.assertFalse(order.receipt_result_message_id)
+        self.assertEqual(order.state, 'purchased')
+        self.assertEqual(room.company_id, self.company)
 
     def test_receipt_product_label_has_no_code_and_keeps_real_parentheses(self):
         self.option.product_id.write({

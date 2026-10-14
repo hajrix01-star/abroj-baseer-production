@@ -671,7 +671,7 @@
     <string name="order_choose_representative">"اختر مندوب المشتريات"</string>
     <string name="order_auto_representative">"المندوب تلقائيًا: %1$s"</string>
     <string name="order_catalog">"المنيو"</string>
-    <string name="order_mine">"طلباتي"</string>
+    <string name="order_mine">"كل الطلبات"</string>
     <string name="order_search">"ابحث عن صنف"</string>
     <string name="order_search_too_long">"عبارة البحث طويلة جدًا."</string>
     <string name="order_category">"الفئة"</string>
@@ -706,7 +706,7 @@
     <string name="order_no_representative">"لا يوجد مندوب مشتريات متاح لهذه الشركة؛ تواصل مع المسؤول."</string>
     <string name="order_no_options">"لا توجد خيارات متاحة."</string>
     <string name="order_empty_catalog">"لا توجد أصناف في هذه الفئة أو عبارة البحث."</string>
-    <string name="order_empty_mine">"لم ترسل طلبات لهذه الشركة بعد."</string>
+    <string name="order_empty_mine">"لا توجد طلبات من الشركات المتاحة لحسابك."</string>
     <string name="order_last_price">"آخر سعر: %1$s %2$s"</string>
     <string name="order_product_image">"صورة الصنف: %1$s"</string>
     <string name="order_add">"أضف للسلة"</string>
@@ -721,6 +721,8 @@
     <string name="order_cart_limit">"يمكن إضافة حتى 100 خيار من المنيو في الطلب الواحد."</string>
     <string name="order_summary_detail">"الحالة: %1$s · المندوب: %2$s · %3$s"</string>
     <string name="order_summary_representative">"المندوب: %1$s"</string>
+    <string name="order_summary_company">"الشركة: %1$s"</string>
+    <string name="order_summary_requester">"الطالب: %1$s"</string>
     <string name="order_total">"القيمة المطلوبة: %1$s %2$s"</string>
     <string name="order_estimated_total">"الإجمالي التقديري للطلب: %1$s %2$s"</string>
     <string name="order_empty_cart">"السلة فارغة؛ أضف صنفًا من المنيو."</string>
@@ -781,6 +783,7 @@
     <string name="order_previous_total">إجمالي الطلب السابق: %1$s %2$s</string>
     <string name="order_previous_quantity">الكمية: %1$s</string>
     <string name="order_share_history_notice">هذه رسالة بالطلب السابق وإجماليه التاريخي، وليست طلب شراء جديدًا.</string>
+    <string name="order_other_requester_readonly">هذا طلب زميلك للعرض فقط؛ إعادة إرساله إلى المحادثة متاحة لصاحب الطلب.</string>
     <string name="order_share_too_long">تفاصيل الطلب طويلة جدًا للإرسال في رسالة واحدة.</string>
     <string name="order_share_chat">إعادة إرساله في المحادثة</string>
     <string name="order_share_choose_room">اختر المحادثة</string>
@@ -812,6 +815,14 @@
     <string name="receipt_confirm">تأكيد الاستلام</string>
     <string name="receipt_sending">جارٍ تأكيد الاستلام في أودو…</string>
     <string name="receipt_confirmed">تأكد استلام %1$s. الإجمالي الفعلي المعتمد: %2$s %3$s</string>
+    <string name="receipt_share_result">إرسال نتيجة الاستلام إلى المحادثة</string>
+    <string name="receipt_share_sending">جارٍ إرسال نتيجة الاستلام إلى المحادثة…</string>
+    <string name="receipt_share_sent">أُرسلت نتيجة الاستلام إلى المحادثة.</string>
+    <string name="receipt_share_failed">تم الاستلام، لكن لم تُرسل نتيجته إلى المحادثة. أعد محاولة الإرسال فقط، ولا تؤكد الاستلام مجددًا.</string>
+    <string name="receipt_share_room_unavailable">تم الاستلام، لكن غرفة المحادثة أو عضويتك غير متاحة الآن. أعد محاولة إرسال النتيجة فقط بعد حل المشكلة.</string>
+    <string name="receipt_share_retry">إعادة إرسال النتيجة</string>
+    <string name="receipt_share_review_pending">نتائج استلام بانتظار الإرسال</string>
+    <string name="receipt_share_pending_item">إرسال نتيجة الطلب %1$s</string>
     <string name="receipt_conflict">تغيّر الطلب أو أُغلق. راجع الحالة قبل إعادة المحاولة.</string>
     <string name="receipt_uncertain">لم نتأكد من نتيجة الاستلام. راجع العملية المعلقة؛ لا تؤكد طلبًا جديدًا.</string>
     <string name="receipt_save_failed">تعذّر حفظ عملية الاستلام محليًا. لم يبدأ التأكيد.</string>

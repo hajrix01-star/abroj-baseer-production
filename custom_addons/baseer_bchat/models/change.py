@@ -182,6 +182,7 @@ class BChatChangeService(models.AbstractModel):
         ], order='sequence', limit=limit + 1)
         scanned = changes[:limit]
         room_cache = {}
+        order_scopes = None
         visible = []
         for change in scanned:
             kind = change.kind
@@ -214,10 +215,16 @@ class BChatChangeService(models.AbstractModel):
             elif kind == 'order':
                 if not self.env.registry.models.get('baseer.procurement.request'):
                     continue
+                if order_scopes is None:
+                    try:
+                        order_scopes = self._order_read_scopes()
+                    except (AccessError, AttributeError):
+                        order_scopes = {}
+                if not change.company_id or change.company_id.id not in order_scopes:
+                    continue
                 order = self.env['baseer.procurement.request'].sudo().browse(change.order_id).exists()
-                if (not order or order.company_id.id not in user.company_ids.ids
-                        or order.source_channel != 'bchat'
-                        or not user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator')):
+                if (not order or order.company_id.id not in order_scopes
+                        or order.source_channel != 'bchat'):
                     continue
             hint = {'seq': change.sequence, 'kind': kind}
             for name, value in (('room_id', room_id), ('message_id', change.message_id.id),
@@ -271,17 +278,28 @@ class BChatChangeService(models.AbstractModel):
         if not self.env.registry.models.get('baseer.procurement.request'):
             return {'api_version': 2, 'section': section, 'snapshot_watermark': watermark,
                     'orders': [], 'next_before_id': None}
-        if not user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator'):
+        try:
+            self._require_order_reader()
+        except (AccessError, AttributeError):
             return {'api_version': 2, 'section': section, 'snapshot_watermark': watermark,
                     'orders': [], 'next_before_id': None}
-        domain = [('source_channel', '=', 'bchat'),
-                  ('company_id', 'in', user.company_ids.ids)]
+        try:
+            scopes = self._order_read_scopes()
+        except AccessError:
+            return {'api_version': 2, 'section': section, 'snapshot_watermark': watermark,
+                    'orders': [], 'next_before_id': None}
+        domain = [('source_channel', '=', 'bchat'), ('company_id', 'in', list(scopes))]
         if before_id:
             domain.append(('id', '<', before_id))
-        found = self.env['baseer.procurement.request'].sudo().search(
+        scoped = self.with_context({
+            'allowed_company_ids': list(scopes),
+            'lang': self.env.lang,
+            'tz': user.tz or 'UTC',
+        })
+        found = scoped.env['baseer.procurement.request'].sudo().search(
             domain, order='id desc', limit=31)
         page = found[:30]
         return {'api_version': 2, 'section': section,
                 'snapshot_watermark': watermark,
-                'orders': [self._order_data(order) for order in page],
+                'orders': self._order_rows_for_scopes(page, scopes),
                 'next_before_id': page[-1].id if len(found) > 30 else None}

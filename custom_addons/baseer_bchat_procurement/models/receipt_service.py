@@ -3,6 +3,7 @@ import hashlib
 import json
 import re
 from decimal import Decimal
+from uuid import uuid4
 
 from odoo import api, models
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -12,7 +13,7 @@ from odoo.addons.baseer_procurement_requests.models.procurement import (
     BCHAT_RECEIPT_INTERNAL, _decimal_input,
 )
 
-from .service import MAX_CART_LINES, MAX_RESPONSE_BYTES
+from .service import MAX_CART_LINES, MAX_RESPONSE_BYTES, MAX_ROOM_MESSAGE_BYTES
 
 
 RECEIPT_PAGE_SIZE = 30
@@ -25,9 +26,7 @@ class BChatReceiptService(models.AbstractModel):
 
     @api.model
     def _receipt_scope(self, company_id):
-        user = self._require_user()
-        if not user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator'):
-            raise AccessError('BChat procurement operator permission is required.')
+        self._require_order_operator()
         return self._order_scope(company_id)
 
     @api.model
@@ -199,8 +198,101 @@ class BChatReceiptService(models.AbstractModel):
             completed.invalidate_recordset()
             if completed.state != 'purchased' or completed.actual_confirmed_by_id.id != scoped.env.uid:
                 raise ProtocolError('receipt_incomplete', 'Odoo did not complete the receipt.', 409)
-            completed.write({'receipt_client_token': token, 'receipt_payload_hash': digest})
+            completed.write({
+                'receipt_client_token': token, 'receipt_payload_hash': digest,
+                'receipt_share_uuid': str(uuid4()),
+            })
             return scoped._receipt_success(completed, token, replayed=False)
+
+    @api.model
+    def _receipt_result_text(self, order):
+        """Use the committed receipt values, never a client-supplied summary."""
+        currency = self._label(order.currency_id.symbol or order.currency_id.name, 16)
+        lines = ['تم استلام طلب الشراء %s' % self._label(order.name, 80)]
+        for line in order.line_ids.sorted('id'):
+            if line.actual_qty <= 0:
+                continue
+            option = line.option_id
+            product = self._label(option.product_id.name)
+            option_name = self._label(option.name)
+            name = ('%s (%s)' % (product, option_name)
+                    if option_name != '-' and option_name != product else product)
+            quantity = Decimal(str(line.actual_qty))
+            price = Decimal(str(line.actual_price))
+            lines.append('%s — %s %s × %s %s = %s %s' % (
+                name, format(quantity, '.2f'), self._label(option.uom_id.name, 80),
+                self._money(price), currency, self._money(quantity * price), currency,
+            ))
+        lines.append('الإجمالي الفعلي: %s %s' % (self._money(order.actual_total), currency))
+        message = '\n'.join(lines)
+        if len(message.encode('utf-8')) > MAX_ROOM_MESSAGE_BYTES:
+            raise ProtocolError('room_message_too_long', 'Receipt result exceeds the room limit.', 413)
+        return message
+
+    @api.model
+    def _v2_receipt_share(self, order_id, payload):
+        if type(payload) is not dict or set(payload) != {'api_version', 'company_id'}:
+            raise ProtocolError('invalid_payload', 'Unexpected receipt sharing fields.')
+        if type(payload['api_version']) is not int or payload['api_version'] != 2:
+            raise ProtocolError('invalid_payload', 'Unsupported receipt API version.')
+        company_id = positive_id(payload['company_id'], 'company_id')
+        order_id = positive_id(order_id, 'order_id')
+        scoped = self._receipt_scope(company_id)
+        scoped._receipt_order(scoped, order_id)
+        scoped.env.cr.execute(
+            'SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0))',
+            ('bchat-receipt-share:%s' % order_id,),
+        )
+        if not scoped.env.cr.fetchone()[0]:
+            raise ProtocolError('retry', 'Receipt sharing is in progress; retry.', 409)
+        Order = scoped.env['baseer.procurement.request'].sudo().with_company(scoped.env.company)
+        with scoped.env.cr.savepoint():
+            scoped.env.cr.execute(
+                'SELECT id FROM baseer_procurement_request WHERE id = %s FOR UPDATE', [order_id],
+            )
+            order = Order.browse(order_id).exists()
+            order.invalidate_recordset()
+            if (not order or order.company_id.id != company_id
+                    or order.source_channel != 'bchat'):
+                raise ProtocolError('not_found', 'This receipt request is unavailable.', 404)
+            if order.state != 'purchased':
+                raise ProtocolError('receipt_unavailable', 'Receipt is not complete.', 409)
+            room = order.bchat_room_id
+            if not room or room.company_id.id != company_id:
+                raise ProtocolError('room_unavailable', 'Original room is unavailable.', 409)
+            try:
+                member = scoped._v2_current_member(room)
+            except AccessError:
+                raise ProtocolError('room_unavailable', 'Original room membership is unavailable.', 409) from None
+            linked = order.receipt_result_message_id
+            if linked:
+                if (linked.room_id.id != order.bchat_room_id.id
+                        or linked.company_id.id != company_id):
+                    raise ProtocolError('receipt_unavailable', 'Receipt message link is invalid.', 409)
+                return {
+                    'api_version': 2, 'order_id': order.id, 'room_id': linked.room_id.id,
+                    'message_id': linked.id, 'shared': True, 'replayed': True,
+                }
+            token = order.receipt_share_uuid or str(uuid4())
+            if not order.receipt_share_uuid:
+                Order.with_context({
+                    'allowed_company_ids': [company_id], BCHAT_RECEIPT_INTERNAL: True,
+                }).browse(order.id).write({'receipt_share_uuid': token})
+            message = scoped._receipt_result_text(order)
+            try:
+                ack = scoped._v2_send(room.id, {
+                    'api_version': 2, 'membership_id': member.id,
+                    'client_uuid': token, 'text': message,
+                })
+            except AccessError:
+                raise ProtocolError('room_unavailable', 'Original room membership is unavailable.', 409) from None
+            Order.with_context({
+                'allowed_company_ids': [company_id], BCHAT_RECEIPT_INTERNAL: True,
+            }).browse(order.id).write({'receipt_result_message_id': ack['message_id']})
+            return {
+                'api_version': 2, 'order_id': order.id, 'room_id': room.id,
+                'message_id': ack['message_id'], 'shared': True, 'replayed': False,
+            }
 
     @api.model
     def _receipt_success(self, order, token, replayed):

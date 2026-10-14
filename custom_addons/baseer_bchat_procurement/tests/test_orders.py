@@ -17,6 +17,8 @@ from odoo.addons.baseer_procurement_requests.models.procurement import (
 class BChatOrderCase(TransactionCase):
     def setUp(self):
         super().setUp()
+        if 'baseer_access_role' not in self.env['res.users']._fields:
+            self.skipTest('BChat procurement requires the Baseer access role field')
         self.company = self.env['res.company'].create({'name': 'BChat order company %s' % uuid4().hex[:8]})
         self.other_company = self.env['res.company'].create({'name': 'BChat foreign company %s' % uuid4().hex[:8]})
         self.user = self.env['res.users'].with_context(no_reset_password=True).create({
@@ -27,6 +29,10 @@ class BChatOrderCase(TransactionCase):
                 self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
             ])],
         })
+        self.user.write({'baseer_access_role': 'pos_cashier'})
+        self.user.write({'group_ids': [Command.link(
+            self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
+        )]})
         self.other_user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BChat foreign employee', 'login': 'bchat-order-foreign-%s' % uuid4().hex,
             'company_id': self.other_company.id,
@@ -76,6 +82,38 @@ class BChatOrderCase(TransactionCase):
             'warehouse_id': self.warehouse.id, 'cart_revision': 1,
             'lines': [{'option_id': self.option.id, 'quantity': quantity}],
         }
+
+    def test_owner_legacy_group_reads_all_but_cannot_operate(self):
+        representative = self._representative('Owner read-only representative', self.company)
+        order_id = self.service._v2_order_create(
+            self._payload(representative=representative))['order']['id']
+        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
+        self.user.write({'baseer_access_role': 'owner'})
+        self.user.write({'group_ids': [Command.link(group.id)]})
+        self.assertEqual(self.service._v2_order_options()['access'], 'viewer')
+        self.assertIn(order_id, [row['id'] for row in self.service._v2_orders_all()['orders']])
+        self.assertEqual(
+            self.service._v2_order_detail(self.company.id, order_id, scope='all')['order']['id'],
+            order_id,
+        )
+        for operation in (
+                lambda: self.service._v2_order_options(self.company.id),
+                lambda: self.service._v2_order_quote(self._quote_payload()),
+                lambda: self.service._v2_order_create(self._payload()),
+                lambda: self.service._v2_receipts(self.company.id),
+                lambda: self.service._v2_receipt_share(
+                    order_id, {'api_version': 2, 'company_id': self.company.id}),
+        ):
+            with self.assertRaises(AccessError):
+                operation()
+
+    def test_representative_flag_does_not_grant_order_api(self):
+        self.other_user.partner_id.with_company(self.other_company).write({
+            'is_purchase_representative': True,
+        })
+        service = self.env['baseer.bchat.service'].with_user(self.other_user)
+        with self.assertRaises(AccessError):
+            service._v2_order_options()
 
     def test_quote_reads_current_price_without_writing_and_create_reprices(self):
         self._representative('Buyer')
@@ -139,11 +177,10 @@ class BChatOrderCase(TransactionCase):
             self.assertEqual(invalid.exception.status, 400)
 
     def _room_for_employee(self, name='Purchase updates'):
-        manager = self.env['res.users'].with_context(no_reset_password=True).create({
-            'name': 'BChat order room manager', 'login': 'bchat-room-%s' % uuid4().hex,
-            'company_id': self.company.id,
-            'company_ids': [Command.set(self.company.ids)],
-            'group_ids': [Command.set([self.env.ref('baseer_bchat.group_bchat_manager').id])],
+        manager = self.env.ref('base.user_admin')
+        manager.write({
+            'company_ids': [Command.link(self.company.id)],
+            'group_ids': [Command.link(self.env.ref('baseer_bchat.group_bchat_manager').id)],
         })
         room = self.env['baseer.bchat.room'].with_user(manager).with_company(self.company).create({
             'name': name, 'company_id': self.company.id,
@@ -339,6 +376,10 @@ class BChatOrderCase(TransactionCase):
                 self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
             ])],
         })
+        same_company_user.write({'baseer_access_role': 'pos_cashier'})
+        same_company_user.write({'group_ids': [Command.link(
+            self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
+        )]})
         for service, company_id, tested_id in (
                 (self.env['baseer.bchat.service'].with_user(same_company_user), self.company.id, order_id),
                 (self.service, self.other_company.id, order_id),
@@ -371,6 +412,111 @@ class BChatOrderCase(TransactionCase):
             with self.assertRaises(ProtocolError) as too_many:
                 self.service._v2_order_detail(self.company.id, order_id)
         self.assertEqual(too_many.exception.status, 413)
+
+    def test_all_orders_authorization_global_page_and_snapshot(self):
+        self.user.write({'company_ids': [Command.link(self.other_company.id)]})
+        warehouse = self.env['stock.warehouse'].search([
+            ('company_id', '=', self.other_company.id),
+        ], limit=1)
+        if not warehouse:
+            warehouse = self.env['stock.warehouse'].create({
+                'name': 'BChat second warehouse', 'code': 'BS%s' % self.other_company.id,
+                'company_id': self.other_company.id,
+            })
+        colleague = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat colleague', 'login': 'bchat-colleague-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        Order = self.env['baseer.procurement.request'].sudo().with_context(**{
+            REQUEST_CREATE_INTERNAL: True,
+        })
+        own = Order.with_company(self.company).create({
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.user.id, 'source_channel': 'bchat', 'state': 'sent',
+        })
+        other_channel = Order.with_company(self.company).create({
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.user.id, 'source_channel': 'odoo', 'state': 'sent',
+        })
+        colleague_order = Order.with_company(self.company).create({
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': colleague.id, 'source_channel': 'bchat', 'state': 'sent',
+        })
+        foreign = self.env['res.company'].create({'name': 'BChat excluded company'})
+        foreign_warehouse = self.env['stock.warehouse'].search([
+            ('company_id', '=', foreign.id),
+        ], limit=1)
+        if not foreign_warehouse:
+            foreign_warehouse = self.env['stock.warehouse'].create({
+                'name': 'BChat excluded warehouse', 'code': 'BE%s' % foreign.id,
+                'company_id': foreign.id,
+            })
+        excluded = Order.with_company(foreign).create({
+            'company_id': foreign.id, 'warehouse_id': foreign_warehouse.id,
+            'requester_id': self.user.id, 'source_channel': 'bchat', 'state': 'sent',
+        })
+        second_company = Order.with_company(self.other_company).create({
+            'company_id': self.other_company.id, 'warehouse_id': warehouse.id,
+            'requester_id': self.other_user.id, 'source_channel': 'bchat', 'state': 'sent',
+        })
+        page_orders = Order.with_company(self.company).create([{
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': colleague.id, 'source_channel': 'bchat', 'state': 'sent',
+        } for _ in range(30)])
+
+        legacy = self.service._v2_orders(self.company.id)['orders']
+        self.assertEqual([row['id'] for row in legacy], [own.id])
+        with self.assertRaises(ProtocolError) as legacy_colleague:
+            self.service._v2_order_detail(self.company.id, colleague_order.id)
+        self.assertEqual(legacy_colleague.exception.status, 404)
+
+        first = self.service._v2_orders_all()
+        second = self.service._v2_orders_all(first['next_before_id'])
+        rows = first['orders'] + second['orders']
+        ids = [row['id'] for row in rows]
+        self.assertEqual(len(first['orders']), 30)
+        self.assertEqual(len(rows), 33)
+        self.assertEqual(ids, sorted(ids, reverse=True))
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(set(ids), {own.id, colleague_order.id, second_company.id, *page_orders.ids})
+        self.assertNotIn(other_channel.id, ids)
+        self.assertNotIn(excluded.id, ids)
+        row = next(row for row in rows if row['id'] == colleague_order.id)
+        self.assertEqual((row['company_id'], row['requester_id']), (self.company.id, colleague.id))
+        self.assertEqual(row['company_name'], self.company.name)
+        self.assertEqual(row['requester_name'], colleague.name)
+        detail = self.service._v2_order_detail(self.company.id, colleague_order.id, scope='all')
+        self.assertEqual(detail['order']['requester_id'], colleague.id)
+        for company_id, order_id in ((foreign.id, excluded.id),
+                                     (self.company.id, second_company.id),
+                                     (self.company.id, other_channel.id)):
+            with self.assertRaises(ProtocolError) as denied:
+                self.service._v2_order_detail(company_id, order_id, scope='all')
+            self.assertEqual(denied.exception.status, 404)
+
+        watermark = self.service._v2_changes(0, 1)['watermark']
+        snapshot = self.service._v2_change_snapshot('orders', watermark=watermark)
+        self.assertEqual(snapshot['orders'][0]['id'], first['orders'][0]['id'])
+        snapshot_next = self.service._v2_change_snapshot(
+            'orders', snapshot['next_before_id'], watermark,
+        )
+        self.assertEqual([row['id'] for row in snapshot['orders'] + snapshot_next['orders']], ids)
+
+        self.user.write({'company_ids': [Command.unlink(self.other_company.id)]})
+        after_revoke = self.service._v2_orders_all()
+        after_ids = [row['id'] for row in after_revoke['orders']]
+        after_ids += [row['id'] for row in self.service._v2_orders_all(
+            after_revoke['next_before_id'],
+        )['orders']]
+        self.assertNotIn(second_company.id, after_ids)
+        with self.assertRaises(ProtocolError) as revoked_detail:
+            self.service._v2_order_detail(self.other_company.id, second_company.id, scope='all')
+        self.assertEqual(revoked_detail.exception.status, 404)
+        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
+        self.user.write({'group_ids': [Command.unlink(group.id)]})
+        with self.assertRaises(AccessError):
+            self.service._v2_orders_all()
 
     def test_company_catalog_and_general_erp_rights_are_isolated(self):
         self._representative('Buyer')
@@ -496,6 +642,8 @@ class BChatOrderCase(TransactionCase):
 @tagged('post_install', '-at_install', 'baseer_bchat_procurement')
 class BChatOrderHttpCase(HttpCase):
     def test_http_submission_csrf_company_and_private_rpc(self):
+        if 'baseer_access_role' not in self.env['res.users']._fields:
+            self.skipTest('BChat procurement requires the Baseer access role field')
         company = self.env['res.company'].create({'name': 'BChat HTTP order %s' % uuid4().hex[:8]})
         foreign = self.env['res.company'].create({'name': 'BChat HTTP foreign %s' % uuid4().hex[:8]})
         warehouse = self.env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
@@ -540,6 +688,10 @@ class BChatOrderHttpCase(HttpCase):
                 self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
             ])],
         })
+        user.write({'baseer_access_role': 'pos_cashier'})
+        user.write({'group_ids': [Command.link(
+            self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator').id,
+        )]})
         self.authenticate(user.login, password)
         bootstrap = self.url_open('/bchat/api/v2/bootstrap').json()
         csrf = bootstrap['csrf_token']
@@ -624,6 +776,13 @@ class BChatOrderHttpCase(HttpCase):
         self.assertEqual(replay.json()['order']['id'], created.json()['order']['id'])
         listed = self.url_open('/bchat/api/v2/orders?company_id=%s' % company.id)
         self.assertIn(created.json()['order']['id'], [row['id'] for row in listed.json()['orders']])
+        all_orders = self.url_open('/bchat/api/v2/orders?scope=all', allow_redirects=False)
+        self.assertEqual(all_orders.status_code, 200, all_orders.text)
+        self.assertEqual(all_orders.json()['orders'][0]['requester_id'], user.id)
+        for path in ('/bchat/api/v2/orders',
+                     '/bchat/api/v2/orders?scope=unknown',
+                     '/bchat/api/v2/orders?scope=all&company_id=%s' % company.id):
+            self.assertEqual(self.url_open(path, allow_redirects=False).status_code, 400)
         detail_path = '/bchat/api/v2/orders/%s?company_id=%s' % (
             created.json()['order']['id'], company.id,
         )
@@ -632,6 +791,10 @@ class BChatOrderHttpCase(HttpCase):
         self.assertEqual(detail.json()['lines'][0]['requested_qty'], '2.00')
         self.assertEqual(detail.json()['lines'][0]['current_option']['id'], option.id)
         self.assertEqual(detail.headers['Cache-Control'], 'no-store')
+        self.assertEqual(self.url_open('%s&scope=all' % detail_path,
+                                       allow_redirects=False).status_code, 200)
+        self.assertEqual(self.url_open('%s&scope=unknown' % detail_path,
+                                       allow_redirects=False).status_code, 400)
         foreign_detail = self.url_open('/bchat/api/v2/orders/%s?company_id=%s' % (
             created.json()['order']['id'], foreign.id,
         ), allow_redirects=False)
@@ -665,6 +828,13 @@ class BChatOrderHttpCase(HttpCase):
         self.assertEqual(confirmed.status_code, 200, confirmed.text)
         self.assertEqual(confirmed.json()['receipt']['state'], 'purchased')
         self.assertEqual(confirmed.json()['receipt']['confirmed_by_id'], user.id)
+        share_path = '%s/%s/share' % (receipt_root, created.json()['order']['id'])
+        sharing = self.url_open(share_path, data={
+            'csrf_token': csrf,
+            'payload': json.dumps({'api_version': 2, 'company_id': company.id}),
+        }, allow_redirects=False)
+        self.assertEqual(sharing.status_code, 409)
+        self.assertEqual(sharing.json()['error']['code'], 'room_unavailable')
         group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
         user.write({'group_ids': [Command.unlink(group.id)]})
         self.assertEqual(self.url_open('%s?company_id=%s' % (
@@ -677,6 +847,8 @@ class BChatOrderHttpCase(HttpCase):
             company.id,
         ), allow_redirects=False).status_code, 403)
         self.assertEqual(self.url_open(detail_path, allow_redirects=False).status_code, 403)
+        self.assertEqual(self.url_open('/bchat/api/v2/orders?scope=all',
+                                       allow_redirects=False).status_code, 403)
         replay_after_revocation = self.url_open('/bchat/api/v2/orders', data={
             'csrf_token': csrf, 'payload': payload,
         }, allow_redirects=False)

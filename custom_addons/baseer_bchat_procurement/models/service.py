@@ -29,33 +29,70 @@ class BChatProcurementService(models.AbstractModel):
 
     @api.model
     def _order_publish_change(self, order):
-        """Hint eligible operators; never carry amounts or catalogue data on Bus."""
+        """Hint eligible readers; never carry amounts or catalogue data on Bus."""
+        if 'baseer_access_role' not in self.env['res.users']._fields:
+            return
         operator_group = self.env.ref(
             'baseer_bchat_procurement.group_bchat_procurement_operator',
         )
         users = self.env['res.users'].sudo().search([
             ('active', '=', True), ('share', '=', False),
             ('company_ids', 'in', [order.company_id.id]),
-            ('group_ids', 'in', [operator_group.id]),
+            '|', ('group_ids', 'in', [operator_group.id]),
+            ('baseer_access_role', '=', 'owner'),
         ], limit=101)
-        recipients = [user.id for user in users if user.has_group(
-            'baseer_bchat_procurement.group_bchat_procurement_operator')]
+        recipients = [user.id for user in users if (
+            user.baseer_access_role == 'owner'
+            or (user.baseer_access_role in ('cashier', 'pos_cashier')
+                and user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator'))
+        )]
         if len(recipients) > 100:
             raise ProtocolError('too_many_operators', 'BChat order event recipients need pagination.', 409)
         self._change_publish(recipients, 'order', order_id=order.id,
                              company_id=order.company_id.id)
 
     @api.model
-    def _require_order_operator(self):
+    def _order_access(self):
         user = self._require_user()
-        if not user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator'):
-            raise AccessError('BChat procurement access is not assigned to this user.')
+        if 'baseer_access_role' not in user._fields:
+            raise AccessError('Baseer access roles are required for BChat procurement.')
+        if user.baseer_access_role == 'owner':
+            return 'viewer'
+        if (user.baseer_access_role in ('cashier', 'pos_cashier')
+                and user.has_group('baseer_bchat_procurement.group_bchat_procurement_operator')):
+            return 'operator'
+        raise AccessError('BChat procurement access is not assigned to this user.')
+
+    @api.model
+    def _require_order_reader(self):
+        self._order_access()
+        return self.env.user
+
+    @api.model
+    def _require_order_operator(self):
+        if self._order_access() != 'operator':
+            raise AccessError('BChat procurement operator permission is required.')
+        user = self.env.user
         return user
 
     @api.model
     def _order_scope(self, company_id):
         self._require_order_operator()
         return self._company_scope(positive_id(company_id, 'company_id'))
+
+    @api.model
+    def _order_read_scopes(self):
+        """Verify every readable operator company before a sudo order search."""
+        user = self._require_order_reader()
+        scopes = {}
+        for company in user.company_ids.sorted('id'):
+            try:
+                scopes[company.id] = self._company_scope(company.id)
+            except AccessError:
+                continue
+        if not scopes:
+            raise AccessError('No readable BChat procurement company is available.')
+        return scopes
 
     @staticmethod
     def _label(value, limit=160):
@@ -85,15 +122,17 @@ class BChatProcurementService(models.AbstractModel):
 
     @api.model
     def _v2_order_options(self, company_id=None):
-        user = self._require_order_operator()
-        companies = user.company_ids
-        if len(companies) > 20:
+        access = self._order_access()
+        scopes = self._order_read_scopes()
+        if len(scopes) > 20:
             raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
-        result = {'api_version': 2, 'companies': [
-            {'id': company.id, 'name': self._label(company.name)} for company in companies
+        result = {'api_version': 2, 'access': access, 'companies': [
+            {'id': company_id, 'name': self._label(scope.env.company.name)}
+            for company_id, scope in scopes.items()
         ]}
         if company_id is None:
             return result
+        self._require_order_operator()
         scoped = self._order_scope(company_id)
         company = scoped.env.company
         warehouses = scoped.env['stock.warehouse'].sudo().search([
@@ -202,6 +241,10 @@ class BChatProcurementService(models.AbstractModel):
     def _order_data(self, order):
         return {
             'id': order.id, 'name': self._label(order.name, 80),
+            'company_id': order.company_id.id,
+            'company_name': self._label(order.company_id.name),
+            'requester_id': order.requester_id.id,
+            'requester_name': self._label(order.requester_id.name),
             'state': order.state,
             'representative_id': order.representative_partner_id.id,
             'representative_name': self._label(order.representative_partner_id.display_name),
@@ -210,6 +253,18 @@ class BChatProcurementService(models.AbstractModel):
             'submitted_at': self._stamp(order.internal_submitted_at),
             'room_id': order.bchat_room_id.id or None,
         }
+
+    @api.model
+    def _order_rows_for_scopes(self, orders, scopes):
+        """Serialize one bounded page in company batches, preserving global ID order."""
+        by_id = {}
+        for company_id in {order.company_id.id for order in orders}:
+            company_orders = orders.filtered(
+                lambda order: order.company_id.id == company_id,
+            ).with_company(scopes[company_id].env.company)
+            for order in company_orders:
+                by_id[order.id] = scopes[company_id]._order_data(order)
+        return [by_id[order.id] for order in orders]
 
     @api.model
     def _order_room_text(self, order):
@@ -251,20 +306,51 @@ class BChatProcurementService(models.AbstractModel):
                 'next_before_id': page[-1].id if len(orders) > 30 else None}
 
     @api.model
-    def _v2_order_detail(self, company_id, order_id):
-        """Read a requester's BChat order without mutating the current catalogue."""
-        self._require_order_operator()
+    def _v2_orders_all(self, before_id=None):
+        scopes = self._order_read_scopes()
+        if before_id is not None:
+            before_id = positive_id(before_id, 'before_id')
+        domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', 'bchat')]
+        if before_id:
+            domain.append(('id', '<', before_id))
+        scoped = self.with_context({
+            'allowed_company_ids': list(scopes),
+            'lang': self.env.lang,
+            'tz': self.env.user.tz or 'UTC',
+        })
+        orders = scoped.env['baseer.procurement.request'].sudo().search(
+            domain, order='id desc', limit=31,
+        )
+        page = orders[:30]
+        response = {
+            'api_version': 2,
+            'orders': self._order_rows_for_scopes(page, scopes),
+            'next_before_id': page[-1].id if len(orders) > 30 else None,
+        }
+        if len(json.dumps(response, ensure_ascii=False).encode('utf-8')) > MAX_RESPONSE_BYTES:
+            raise ProtocolError('page_too_large', 'Order page exceeds 64 KiB.', 413)
+        return response
+
+    @api.model
+    def _v2_order_detail(self, company_id, order_id, scope=None):
+        """Read an authorized BChat order without mutating the current catalogue."""
+        access = self._order_access()
+        if scope is None and access != 'operator':
+            raise AccessError('BChat procurement operator permission is required.')
+        if scope not in (None, 'all'):
+            raise ProtocolError('invalid_payload', 'Unknown order scope.')
         order_id = positive_id(order_id, 'order_id')
         try:
-            scoped = self._order_scope(company_id)
+            scoped = self._company_scope(company_id) if scope == 'all' else self._order_scope(company_id)
         except AccessError:
             raise ProtocolError('not_found', 'The order is unavailable.', 404) from None
         company = scoped.env.company
         Order = scoped.env['baseer.procurement.request'].sudo().with_company(company)
-        order = Order.search([
-            ('id', '=', order_id), ('company_id', '=', company.id),
-            ('requester_id', '=', scoped.env.uid), ('source_channel', '=', 'bchat'),
-        ], limit=1)
+        domain = [('id', '=', order_id), ('company_id', '=', company.id),
+                  ('source_channel', '=', 'bchat')]
+        if scope is None:
+            domain.append(('requester_id', '=', scoped.env.uid))
+        order = Order.search(domain, limit=1)
         if not order:
             raise ProtocolError('not_found', 'The order is unavailable.', 404)
         rows = scoped.env['baseer.procurement.request.line'].sudo().with_company(company).search([
@@ -275,7 +361,7 @@ class BChatProcurementService(models.AbstractModel):
         lines = []
         for row in rows:
             option = row.option_id
-            available = bool(option)
+            available = bool(option) and access == 'operator'
             if available:
                 try:
                     Order._assert_catalog_options(option)

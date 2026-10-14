@@ -44,3 +44,13 @@ class BChatReceiptApi(http.Controller):
             return api._response(api._service()._v2_receipt_confirm(order_id, api._form()))
         except (AccessError, ProtocolError, ConcurrencyError, ValidationError, UserError) as error:
             return api._error(error)
+
+    @http.route('/bchat/api/v2/orders/receipts/<int:order_id>/share', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=65536)
+    def share(self, order_id, **kwargs):
+        api = BChatOrderApi()
+        try:
+            api._args(())
+            return api._response(api._service()._v2_receipt_share(order_id, api._form()))
+        except (AccessError, ProtocolError, ConcurrencyError, ValidationError, UserError) as error:
+            return api._error(error)

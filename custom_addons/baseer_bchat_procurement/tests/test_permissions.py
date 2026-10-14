@@ -23,6 +23,9 @@ class BChatUserPermissionsCase(TransactionCase):
         self.target = self.employee.with_user(self.admin)
 
     def test_order_checkbox_grants_and_revokes_real_group(self):
+        if 'baseer_access_role' not in self.employee._fields:
+            self.skipTest('BChat procurement requires the Baseer access role field')
+        self.target.write({'baseer_access_role': 'cashier'})
         group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
         self.assertFalse(self.employee.bchat_can_order)
         self.target.write({'bchat_can_order': True})
@@ -49,18 +52,40 @@ class BChatUserPermissionsCase(TransactionCase):
             self.env['baseer.bchat.service'].with_user(self.employee)._require_room_manager()
         self.assertTrue(self.admin.bchat_room_admin_eligible)
 
-    def test_role_preset_keeps_individual_order_grant(self):
+    def test_role_change_requires_fresh_individual_order_grant(self):
         if 'baseer_access_role' not in self.employee._fields:
             self.skipTest('Baseer role presets are not installed')
-        self.target.write({'bchat_can_order': True})
         self.target.write({'baseer_access_role': 'cashier'})
+        self.target.write({'bchat_can_order': True})
         self.assertTrue(self.employee.bchat_can_order)
         self.target.write({'baseer_access_role': 'pos_cashier'})
+        self.assertFalse(self.employee.bchat_can_order)
+        self.assertNotIn(
+            self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator'),
+            self.employee.group_ids,
+        )
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.service'].with_user(self.employee)._order_access()
+        self.target.write({'bchat_can_order': True})
         self.assertTrue(self.employee.bchat_can_order)
         self.target.write({'baseer_access_role': 'accountant'})
         self.assertFalse(self.employee.bchat_can_order)
         with self.assertRaises(ValidationError):
             self.target.write({'bchat_can_order': True})
+
+    def test_owner_with_legacy_operator_group_is_viewer_only(self):
+        if 'baseer_access_role' not in self.employee._fields:
+            self.skipTest('Baseer role presets are not installed')
+        group = self.env.ref('baseer_bchat_procurement.group_bchat_procurement_operator')
+        self.target.write({'baseer_access_role': 'owner'})
+        self.target.write({'group_ids': [Command.link(group.id)]})
+        self.assertFalse(self.employee.bchat_can_order)
+        self.assertEqual(
+            self.env['baseer.bchat.service'].with_user(self.employee)._order_access(),
+            'viewer',
+        )
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.service'].with_user(self.employee)._require_order_operator()
 
     def test_manager_checkbox_roundtrip(self):
         group = self.env.ref('baseer_bchat.group_bchat_manager')
@@ -68,6 +93,10 @@ class BChatUserPermissionsCase(TransactionCase):
         self.assertIn(group, self.admin.group_ids)
         if 'baseer_access_role' in self.admin._fields:
             self.admin.with_user(self.admin).write({'baseer_access_role': 'owner'})
+            # A role preset resets optional grants; the administrator must
+            # explicitly grant BChat room management again after changing it.
+            self.assertNotIn(group, self.admin.group_ids)
+            self.admin.with_user(self.admin).write({'bchat_manage_rooms': True})
             self.assertIn(group, self.admin.group_ids)
         self.env['baseer.bchat.service'].with_user(self.admin)._require_room_manager()
         self.admin.with_user(self.admin).write({'bchat_manage_rooms': False})

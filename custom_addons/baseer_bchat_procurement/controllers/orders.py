@@ -104,11 +104,15 @@ class BChatOrderApi(http.Controller):
                 methods=['GET'], csrf=True, save_session=True)
     def orders(self, **kwargs):
         try:
-            args = self._args(('company_id', 'before_id'))
+            args = self._args(('company_id', 'before_id', 'scope'))
+            before_id = self._id(args['before_id'], 'before_id') if 'before_id' in args else None
+            if 'scope' in args:
+                if args['scope'] != 'all' or 'company_id' in args:
+                    raise ProtocolError('invalid_payload', 'Choose one supported order scope.')
+                return self._response(self._service()._v2_orders_all(before_id))
             if 'company_id' not in args:
                 raise ProtocolError('invalid_payload', 'company_id is required.')
             company_id = self._id(args['company_id'], 'company_id')
-            before_id = self._id(args['before_id'], 'before_id') if 'before_id' in args else None
             return self._response(self._service()._v2_orders(company_id, before_id))
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
             return self._error(error)
@@ -117,11 +121,15 @@ class BChatOrderApi(http.Controller):
                 methods=['GET'], csrf=True, save_session=True)
     def order_detail(self, order_id, **kwargs):
         try:
-            args = self._args(('company_id',))
+            args = self._args(('company_id', 'scope'))
             if 'company_id' not in args:
                 raise ProtocolError('invalid_payload', 'company_id is required.')
+            if 'scope' in args and args['scope'] != 'all':
+                raise ProtocolError('invalid_payload', 'Unknown order scope.')
             company_id = self._id(args['company_id'], 'company_id')
-            return self._response(self._service()._v2_order_detail(company_id, order_id))
+            return self._response(self._service()._v2_order_detail(
+                company_id, order_id, scope=args.get('scope'),
+            ))
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
             return self._error(error)
 

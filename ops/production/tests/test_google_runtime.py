@@ -120,6 +120,7 @@ load_policy() {
     approved_run_id=1
     APPROVED_MODULES=(baseer_hr_services)
     APPROVED_THIRD_PARTY_MODULES=()
+    dms_release_requested=0
 }
 fetch_reviewed_source() {
     mkdir -p "$stage/source"

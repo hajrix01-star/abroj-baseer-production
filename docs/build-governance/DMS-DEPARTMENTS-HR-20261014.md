@@ -125,3 +125,24 @@ metadata activation, subject to result/backup/upgrade/hash/probe evidence.
 PR329 merged source7e42bd54dc891ab90f083fe4c044d5e78c5e88b4.
 Release policy scopes exactly baseer_dms_bill_link and baseer_dms_departments,
 retaining OCA/private rules/other modules; no LIVE. Activation still pending.
+
+Policy PR330/b678f29a passed source38553798878 and merged f919af04. Request
+38553908111 queued successfully but server FAILED before prefetch: required
+1957194379, available1945120768 while temporary approval Git fetch existed.
+Current QA stayed54de52fa; no module/database upgrade or new backup occurred.
+Archive existing authorized code-only release06a58d0ec088 (not current, latest
+five retained). Local archive tmp/dms-departments-code-archive/
+qa-code-06a58d0ec088-dms-departments-20261014.tar.gz SHA256
+81a239f5b982beebb61a5507a8cf6d45fd5343cb3ed8706fdf5b40c5b30dfd5d;
+all1548 regular-file hashes match source manifest, gzip integrity passed.
+Archive creation completed before a trailing Windows carriage-return error;
+verified artifact was not recreated. Removal script normalized remote CR input,
+revalidated source/current/latest-five/manifest under deploy lock, removed exact
+old code and temporary remote archive only; local recovery retained, backups/LIVE
+untouched. Available2157998080. Retry38554520293 uses same successful tested
+source/policy; no repeated CI or module edit. Actual deployment still pending.
+
+Retry38554520293 rejected at approval BEFORE deployment: release id already
+approved with different request-bound policy. Do not modify approved policy or
+bypass guard; fresh-r2 release ID points at identical7e42bd54 and two modules.
+Current QA remains54de52fa, business data untouched; no runtimeCI rerun needed.

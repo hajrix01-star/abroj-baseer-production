@@ -149,5 +149,8 @@ class DmsFile(models.Model):
             visible_ids = {record["id"] for record in records}
             for record in records:
                 parent_id = _dms_search_panel_parent_id(record.get(parent_name))
-                record[parent_name] = parent_id if parent_id in visible_ids else False
+                # The installed core counter reader still indexes value[0].
+                # Provide its legacy shape without reading any parent label;
+                # the public directory range above continues to return IDs.
+                record[parent_name] = (parent_id, "") if parent_id in visible_ids else False
         return records

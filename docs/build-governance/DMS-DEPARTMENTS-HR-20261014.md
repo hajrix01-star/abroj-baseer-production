@@ -198,3 +198,10 @@ visible-parent sanitization, counters, other-field delegation, source/global rul
 Add direct native model and authenticated RPC regression for folder tree/company/HR
 privacy. SameCI fixture, no new environment/load. Prior overall visual acceptance
 not granted; folder-list journey now NO-GO until this exact path passes on QA.
+
+PR333/frozen6b8fe804: source38557203378 PASS; Odoo38557203401 failed1/1errors
+of46. Exact authenticated RPC test caught countercore requiring tuple AFTER
+sanitization (web/models/models.py1719/1768), not an authorization fault.
+Local helper now returns visible internal(parent_id,emptylabel) / hiddenFalse;
+outer RPC values remain int/False. No parent name read/sudo, assertions unchanged.
+Independent targeted source CONDITIONAL GO pending corrected46-case CI.

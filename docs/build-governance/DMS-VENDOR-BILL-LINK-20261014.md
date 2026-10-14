@@ -115,3 +115,29 @@ no Odoo retest needed. Merge blocked correctly. Initial queue38538790671 was
 dispatched after rejected merge by sequential shell commands; main has no policy,
 so cannot validate/sign request. Verify failure before validredispatch; no server
 release created or guard bypass. Future merge/dispatch calls separated by checks.
+
+Policy correctedHEAD5e2cab90/source38538897792PASS mergedPR324/de5e3d23.
+Queue38538790671 failed at missingpolicy validation (no tag); validrequest
+38539164015 queuedPASS but serverQA_POLLER=FAILED at capacity prefetch:
+need1949668975/available1923108864. Current87bbe unchanged; noDBupgrade/backup
+oractivation. Retry justified only after capacitychange.
+
+Prior explicit owner permission to move old releases locally applied to one
+code-only QA release, not database/filestore backups. Resolved exactoldtarget
+/srv/baseer-qa/releases/ac43ebcedcfd-run-37930403855-20261009T123129Z;
+RELEASE_COMMIT ac43ebcedcfdbc2cbefa60025a34e2fd44bbc113. Filename timestamp ordering
+preserved latestfive87bbe/f894/caf5/06a5/3660; copied directory mtimes were equal,
+so mtime not treated as chronology. Tar transferred and gzipvalidated; SHA256
+7b31230b6b6f5a05dd852193e73109bbacf870f739d21ea0b9d85d54d76c988b matched both hosts;
+all1502regularfile hashes matched source manifest, local archive:
+D:/Codex/Baseer-odoo/.worktrees/baseer-gl-qa-policy/tmp/dms-bill-code-archive/qa-code-ac43ebcedcfd-20261014.tar.gz
+and correspondingmanifest.sha256. UnderQAdeployflock, exactoldcode and temporary
+serverarchive removed only after verification; recoverable local archive remains.
+QAfree2134740992bytes. NoDB/filestorebackup orLIVEwrite. Newrequest38539932482
+queued; wait for serverresult and modulelog, not queuealone.
+
+Request38539932482 queuePASS but serverapproval FAILED: releaseid already approved
+with different policy (approval binds runid too). No install orDBwrite; current87bbe
+unchanged. Correct retry uses fresh releaseidbaseer-2026-10-14-dms-bill-link-r2,
+sameab0aa23d and singlemodule, never overrides immutableapproval orprocessedmarker.
+No further Odoo testneeded: deploymentpolicy only, unchanged19-case candidate.

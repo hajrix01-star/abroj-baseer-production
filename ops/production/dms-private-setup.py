@@ -62,7 +62,11 @@ else:
 
     files = env["dms.file"].sudo().with_context(active_test=False)
     before_links = files.search_count([("bill_attachment_id", "!=", False)])
-    scoped = companies.with_user(owner).with_context(allowed_company_ids=companies.ids, lang=owner.lang)
+    arabic_active = bool(env["res.lang"].sudo().search_count([
+        ("code", "=", "ar_001"), ("active", "=", True),
+    ], limit=1))
+    folder_lang = "ar_001" if arabic_active else owner.lang
+    scoped = companies.with_user(owner).with_context(allowed_company_ids=companies.ids, lang=folder_lang)
     topology = scoped._setup_dms_departments()
     env.flush_all()
     assert set(topology) == set(companies.ids), "Company configuration is incomplete"

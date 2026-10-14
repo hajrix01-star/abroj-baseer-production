@@ -74,7 +74,7 @@ class Company(models.Model):
             groups = access_group.sudo() if access_group else existing.group_ids
             if not groups:
                 groups = self.env["dms.access.group"].sudo().create({
-                    "name": self.env._("Private company documents"),
+                    "name": f"{self.env._('Private company documents')} [{company.id}]",
                     "perm_create": True, "perm_write": True, "perm_unlink": True,
                     "explicit_user_ids": [(6, 0, [actor.env.uid])],
                 })

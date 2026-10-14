@@ -146,3 +146,40 @@ Retry38554520293 rejected at approval BEFORE deployment: release id already
 approved with different request-bound policy. Do not modify approved policy or
 bypass guard; fresh-r2 release ID points at identical7e42bd54 and two modules.
 Current QA remains54de52fa, business data untouched; no runtimeCI rerun needed.
+
+Final hook readback rationale: actual QA has222 installed-module composition vs60
+in CI, source attachment-hook interoperability not covered by isolatedCI; current
+usage is owner only. One transient attachment against an existing company1 HR
+employee and purchase order if available, row fingerprints unchanged, cross-company
+denial and index deletion verified, all synthetic attachments/lazy folders rollback.
+No new environment or load, no employee/order creation, source writes or messages.
+
+## Final QA acceptance — 2026-10-14
+Fresh-r2 policy PR331/source-check38554894040 PASS, merged e70d2c98; request
+38555027412 produced QA_DEPLOY=GO and QA_POLLER=GO. Release
+/srv/baseer-qa/releases/7e42bd54dc89-run-38555027412-20261014T111428Z
+with recovery pair under pre-7e42bd54dc89-38555027412-20261014T111428Z;
+both recovery SHA256 checks OK. Log loaded/upgraded base bridge19.0.1.0.2,
+installed departments19.0.1.0.0, loaded both ar.po catalogs for ar_001 and
+Modules loaded. All29 tracked module file SHA256 match reviewed7e42bd54 source.
+
+Committed activation probe passed on all seven companies. Company root IDs
+1→10,2→17,3→24,54→32,55→40,56→48,57→56; eight managed nodes per company,
+Arabic department names/parent topology/private storage validated. Repeated setup
+returned same IDs/counts. Existing bill leaves8/9 and DMSfile10 retained.
+Original5840 checksum74d64754a79987d2ccce685c06ef553cd8930931 and full-row
+MD5f5c49b2644b09fd6a4edbec26dc7c988 unchanged; original-reference count1.
+File count and HR original attachment count unchanged, no historical import or grants.
+
+Independent gate approved single actual-QA composition probe. Existing company1
+hr.employee and purchase.order BOTH passed source auto-index uniqueness, readable
+payload, company2 denial, original survival after index deletion, source row
+fingerprint preservation. Forced savepoint and final rollback completed, no retained
+synthetic attachments or lazy folders. No financial/source record writes.
+
+Final independent CONDITIONAL GO covers owner-only QA backend/configuration,
+new/updated non-field binary attachments. No LIVE, wider users, historical backfill,
+company deletion/archive synchronization or manual legacy-file reorganization.
+Visual browser/click/mobile acceptance unverified (earlier runtime EPERM), not claimed.
+Existing image/PDF preview sources unchanged, prior visual limitation retained.
+LIVE current still f894b8927bce-run-38252387973-20261012T125758Z.

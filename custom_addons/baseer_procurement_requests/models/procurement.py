@@ -17,6 +17,7 @@ REQUEST_CREATE_INTERNAL = '_baseer_procurement_request_create_internal'
 OPTION_SYSTEM_WRITE = '_baseer_procurement_option_system_write'
 FAVORITE_SYSTEM_WRITE = '_baseer_procurement_favorite_system_write'
 IDENTITY_SYSTEM_WRITE = '_baseer_procurement_identity_system_write'
+BCHAT_RECEIPT_INTERNAL = 'bchat_receipt_internal'
 MONEY_QUANTUM = Decimal('0.01')
 MAX_CATALOG_LINES = 200
 MAX_CATALOG_HIGHLIGHTS = 12
@@ -52,6 +53,11 @@ def _decimal_total(quantity, price):
 
 def _decimal_text(value):
     return format(Decimal(value).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP), ',.2f')
+
+
+def _is_bchat_receipt_internal(env):
+    """Only the sudoed BChat bridge may reuse receipt logic after its checks."""
+    return bool(env.su and env.context.get(BCHAT_RECEIPT_INTERNAL))
 
 
 def _whatsapp_product_label(product):
@@ -738,7 +744,9 @@ class ProcurementRequest(models.Model):
 
     def action_confirm_actual_purchase(self):
         self.ensure_one()
-        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+        if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ):
             raise AccessError(_('Only a procurement cashier can confirm the quantity receipt.'))
         self._require_active_company_for_cashier()
         if self.state == 'purchased':
@@ -1537,7 +1545,9 @@ class ProcurementRequest(models.Model):
     @api.model
     def confirm_actual_from_catalog(self, request_id, lines):
         """Narrow cashier boundary for the POS-like actual-quantity screen."""
-        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+        if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ):
             raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
         request = self.browse(int(request_id)).exists()
         if not request:
@@ -1840,7 +1850,9 @@ class ProcurementRequestLine(models.Model):
                 if any(line.request_id.state != 'sent' for line in self):
                     raise UserError(_('Received quantities can only be entered after sending the request.'))
             if {'actual_qty', 'actual_price'} & set(vals):
-                if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+                if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+                    'baseer_procurement_requests.group_procurement_cashier'
+                ):
                     raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
                 if any(line.request_id.state != 'received' for line in self):
                     raise UserError(_('Actual purchase details can only be entered after manager receipt.'))

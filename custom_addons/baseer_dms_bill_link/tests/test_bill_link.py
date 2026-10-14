@@ -116,6 +116,24 @@ class TestBillLink(BillFixtures, TransactionCase):
         staged.write({'res_id': self.bill_a.id})
         self.assertEqual(len(self.index(staged)), 1)
 
+    def test_source_reference_does_not_apply_dms_upload_policy(self):
+        params = self.env['ir.config_parameter'].sudo()
+        params.set_param('dms.forbidden_extensions', 'txt')
+        params.set_param('dms.binary_max_size', '0')
+        source = self.env['ir.attachment'].create({
+            'name': 'synthetic-policy.txt', 'datas': self.payload,
+            'res_model': 'account.move', 'res_id': self.bill_a.id,
+            'company_id': self.company_a.id,
+        })
+        link = self.index(source)
+        self.assertEqual(len(link), 1)
+        self.assertEqual(self.actor(link).content, self.payload)
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['dms.file'].create({
+                'name': 'ordinary-policy.txt', 'directory_id': self.root_a.id,
+                'content': self.payload,
+            })
+
     def test_source_reassociation_cleans_old_company_index(self):
         old = self.index(self.attachment_a)
         self.attachment_a.write({'res_id': self.bill_b.id, 'company_id': self.company_b.id})
@@ -206,6 +224,26 @@ class TestBillLink(BillFixtures, TransactionCase):
         company = self.env['res.company'].create({'name': 'Synthetic invalid root owner'})
         with self.assertRaises(ValidationError), self.cr.savepoint():
             company.dms_bill_root_id = self.root_b
+
+    def test_configured_root_and_storage_association_are_frozen(self):
+        for values in ({'parent_id': self.root_b.id},
+                       {'storage_id': self.root_b.storage_id.id},
+                       {'res_model': 'account.move'}, {'access_token': 'forbidden-token'}):
+            with self.assertRaises(UserError), self.cr.savepoint():
+                self.root_a.write(values)
+        move_model = self.env['ir.model']._get('account.move')
+        for values in ({'company_id': self.company_b.id}, {'save_type': 'file'},
+                       {'model_ids': [(6, 0, move_model.ids)]},
+                       {'inherit_access_from_parent_record': True}):
+            with self.assertRaises(UserError), self.cr.savepoint():
+                self.root_a.storage_id.write(values)
+        unconfigured = self.env['dms.storage'].create({
+            'name': 'Synthetic unconfigured storage', 'company_id': self.company_a.id,
+            'save_type': 'database', 'model_ids': [(5, 0, 0)],
+            'include_message_attachments': False, 'inherit_access_from_parent_record': False,
+        })
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            unconfigured.write({'model_ids': [(6, 0, move_model.ids)]})
 
     def test_bill_company_and_type_mutation_rejected(self):
         for values in ({'company_id': self.company_b.id}, {'move_type': 'in_refund'}):

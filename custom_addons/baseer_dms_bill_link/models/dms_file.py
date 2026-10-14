@@ -173,6 +173,15 @@ class DmsFile(models.Model):
             raise UserError(self.env._("Original bill documents are read only in Documents."))
         return super()._inverse_content()
 
+    @api.constrains("size")
+    def _check_size(self):
+        # An index is not a new upload: preserve the original accounting policy.
+        return super(DmsFile, self.filtered(lambda item: not item.bill_attachment_id))._check_size()
+
+    @api.constrains("extension")
+    def _check_extension(self):
+        return super(DmsFile, self.filtered(lambda item: not item.bill_attachment_id))._check_extension()
+
     def action_migrate(self, should_logging=True):
         if self.sudo().filtered("bill_attachment_id"):
             raise UserError(self.env._("Original bill document references cannot be migrated."))

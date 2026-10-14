@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import odoo.addons.dms as dms_package
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 assert env.cr.dbname == "baseer_live_qa_clean_20260928"
 env.cr.rollback()
@@ -56,7 +56,7 @@ def denied(call):
         with env.cr.savepoint():
             call()
             raise AssertionError("Forbidden mutation succeeded")
-    except (AccessError, ValidationError):
+    except (AccessError, UserError, ValidationError):
         pass
 
 

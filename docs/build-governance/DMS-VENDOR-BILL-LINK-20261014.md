@@ -89,3 +89,15 @@ under token/sudo, no persistent derivatives, provenance not caller context, and
 frozen source/topology. Implementation/runtime owner dms_bridge_implementation;
 tests/workflow owner dms_bridge_tests; leader owns docs and protected QA operations.
 G5/G8 still pending; no code approval implies release acceptance.
+
+Candidate PR323/bb27ac0f: AST/XML PASS; source38537788066 and Odoo38537788209
+running. Independent source review CONDITIONAL GO pendingCI; probe must catch
+UserError for intentional mutations (corrected), pinnedcompanies1/2 and zero-lines
+and syntheticrollback assertions added. Reviewer requested explicit root/storage
+freeze test, added test18. Actual frozen settings are topology/company/storage type,
+native model associations and source-permission inheritance, not DMS group membership:
+native group rights still intersect source and company rules; QAprivate remains.
+Final candidate adds AR labels/errors and bridge-only exemptions from DMS upload
+size/extension constraints: a reference is not a second upload, original Accounting
+policy remains authoritative. Normal DMS upload constraints unchanged; targeted
+test required before finalCI. No originalcontent/name mutation by index.

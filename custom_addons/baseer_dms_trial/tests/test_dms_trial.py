@@ -1,6 +1,7 @@
 import base64
+import json
 
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
 
@@ -170,13 +171,187 @@ class TestDmsTrialDownload(TrialFixtures, HttpCase):
         self.assertNotIn(base64.b64decode(self.payload), foreign.content)
 
 
-@tagged("post_install", "-at_install", "dms_known_defect")
+@tagged("post_install", "-at_install", "baseer_dms_trial", "dms_known_defect")
 class TestDmsKnownMoveDefect(TrialFixtures, TransactionCase):
     def test_native_cross_company_move_known_defect(self):
-        # Strict reproducer, separately excluded under the private QA waiver.
-        # This is NOT fixed by the confinement rules or by upstream OCA.
+        # Strict reproducer remains an active acceptance gate for the fix.
         with self.assertRaises(AccessError):
             self.as_user(self.file_a).write({"directory_id": self.dir_b.id})
+
+
+class DestinationFixtures(TrialFixtures):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.editor_groups = cls.dir_a.group_ids.filtered(lambda group: group.name == 'Trial editors')
+        cls.readonly_group = cls.env['dms.access.group'].create({
+            'name': 'Destination read and edit without create', 'perm_create': False,
+            'perm_write': True, 'perm_unlink': False,
+            'explicit_user_ids': [(6, 0, cls.editor.ids)],
+        })
+        cls.other_group = cls.env['dms.access.group'].create({
+            'name': 'Destination unrelated group', 'perm_create': True,
+            'perm_write': True, 'perm_unlink': True,
+            'explicit_user_ids': [(6, 0, cls.outsider.ids)],
+        })
+        cls.create_only_group = cls.env['dms.access.group'].create({
+            'name': 'Destination create without write', 'perm_create': True,
+            'perm_write': False, 'perm_unlink': False,
+            'explicit_user_ids': [(6, 0, cls.editor.ids)],
+        })
+        def root(name, group):
+            return cls.env['dms.directory'].create({
+                'name': name, 'storage_id': cls.dir_a.storage_id.id,
+                'is_root_directory': True, 'inherit_group_ids': False,
+                'group_ids': [(6, 0, group.ids)],
+            })
+        cls.readonly_root = root('Read-only destination root', cls.readonly_group)
+        cls.other_root = root('Unrelated destination root', cls.other_group)
+        cls.create_only_root = root('Create-only destination root', cls.create_only_group)
+        def child(name, parent, group):
+            return cls.env['dms.directory'].create({
+                'name': name, 'parent_id': parent.id, 'inherit_group_ids': False,
+                'group_ids': [(6, 0, group.ids)],
+            })
+        cls.readonly_child = child('Read-only child of writable parent', cls.dir_a, cls.readonly_group)
+        cls.writable_child = child('Writable child of read-only parent', cls.readonly_root, cls.editor_groups)
+        cls.movable_child = child('Movable source directory', cls.dir_a, cls.editor_groups)
+
+    def allow_both_companies(self, record):
+        self.editor.company_ids |= self.company_b
+        return record.with_user(self.editor).with_context(
+            allowed_company_ids=(self.company_a | self.company_b).ids,
+        )
+
+    def file_identity(self, record):
+        record.invalidate_recordset()
+        return (record.id, record.name, record.directory_id.id, record.company_id.id,
+                record.checksum, record.content)
+
+
+@tagged('post_install', '-at_install', 'baseer_dms_trial')
+class TestDmsDestinationAccess(DestinationFixtures, TransactionCase):
+    def test_cross_company_move_allowed_only_with_both_companies_and_groups(self):
+        original_id, original_checksum = self.file_a.id, self.file_a.checksum
+        blobs = self.env['ir.attachment'].search([
+            ('res_model', '=', 'dms.file'), ('res_field', '=', 'content_file'),
+            ('res_id', '=', original_id),
+        ])
+        original_blob_ids = blobs.ids
+        self.allow_both_companies(self.file_a).write({
+            'name': 'authorized-moved.txt', 'directory_id': self.dir_b.id,
+        })
+        self.file_a.invalidate_recordset()
+        self.assertEqual(self.file_a.id, original_id)
+        self.assertEqual(self.file_a.company_id, self.company_b)
+        self.assertEqual(self.file_a.directory_id, self.dir_b)
+        self.assertEqual(self.file_a.checksum, original_checksum)
+        self.assertEqual(self.file_a.content, self.payload)
+        self.assertEqual(self.env['ir.attachment'].search([
+            ('res_model', '=', 'dms.file'), ('res_field', '=', 'content_file'),
+            ('res_id', '=', original_id),
+        ]).ids, original_blob_ids)
+
+    def test_foreign_missing_group_readonly_and_false_file_destinations_denied(self):
+        original = self.file_identity(self.file_a)
+        for destination in (self.dir_b, self.other_root, self.readonly_root, self.readonly_child):
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                self.as_user(self.file_a).write({'directory_id': destination.id})
+            self.assertEqual(self.file_identity(self.file_a), original)
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.as_user(self.file_a).write({'directory_id': False})
+        self.assertEqual(self.file_identity(self.file_a), original)
+        nonexistent_id = self.env['dms.directory'].search([], order='id desc', limit=1).id + 1000
+        with self.assertRaises(AccessError):
+            self.as_user(self.file_a).write({'directory_id': nonexistent_id})
+        self.assertEqual(self.file_identity(self.file_a), original)
+
+    def test_child_destination_own_create_is_used_instead_of_parent_create(self):
+        # Target child grants create even though its parent grants only read/write.
+        self.assertFalse(self.as_user(self.readonly_root).permission_create)
+        self.as_user(self.file_a).write({'directory_id': self.writable_child.id})
+        self.assertEqual(self.file_a.directory_id, self.writable_child)
+        self.assertEqual(self.file_a.content, self.payload)
+        self.as_user(self.movable_child).write({'parent_id': self.writable_child.id})
+        self.assertEqual(self.movable_child.parent_id, self.writable_child)
+        self.assertEqual(self.movable_child.company_id, self.company_a)
+
+    def test_directory_parent_and_root_storage_destination_checks_precede_native_limits(self):
+        original_parent = self.movable_child.parent_id
+        original_storage = self.dir_a.storage_id
+        for destination in (self.dir_b, self.other_root, self.readonly_root, self.readonly_child):
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                self.as_user(self.movable_child).write({'parent_id': destination.id})
+            self.assertEqual(self.movable_child.parent_id, original_parent)
+            self.assertEqual(self.movable_child.company_id, self.company_a)
+        with self.assertRaises((AccessError, UserError)), self.cr.savepoint():
+            self.as_user(self.dir_a).write({'storage_id': self.dir_b.storage_id.id})
+        self.assertEqual(self.dir_a.storage_id, original_storage)
+        self.as_user(self.dir_a).write({'parent_id': False})
+        self.assertFalse(self.dir_a.parent_id)
+        self.assertEqual(self.dir_a.storage_id, original_storage)
+        # Authorization does not remove native cross-storage directory limits.
+        with self.assertRaises(UserError), self.cr.savepoint():
+            self.allow_both_companies(self.movable_child).write({'parent_id': self.dir_b.id})
+        with self.assertRaises(UserError), self.cr.savepoint():
+            self.allow_both_companies(self.dir_a).write({'storage_id': self.dir_b.storage_id.id})
+        self.assertEqual(self.movable_child.parent_id, original_parent)
+        self.assertEqual(self.dir_a.storage_id, original_storage)
+
+    def test_batch_source_and_destination_denial_roll_back_all_files(self):
+        second = self.env['dms.file'].create({
+            'name': 'second-source.txt', 'directory_id': self.dir_a.id, 'content': self.payload,
+        })
+        for batch, destination in ((self.file_a | second, self.readonly_child),
+                                   (self.file_a | self.file_b, self.dir_a)):
+            originals = {record.id: self.file_identity(record) for record in batch}
+            with self.assertRaises(AccessError):
+                self.as_user(batch).write({'directory_id': destination.id})
+            for record in batch:
+                self.assertEqual(self.file_identity(record), originals[record.id])
+
+    def test_destination_post_write_denial_restores_original_content_and_location(self):
+        original = self.file_identity(self.file_a)
+        # Deliberately no caller savepoint: the implementation must undo its
+        # own write when destination post-validation denies the operation.
+        with self.assertRaises(AccessError):
+            self.as_user(self.file_a).write({'directory_id': self.create_only_root.id})
+        self.assertEqual(self.file_identity(self.file_a), original)
+
+
+@tagged('post_install', '-at_install', 'baseer_dms_trial')
+class TestDmsDestinationRpc(DestinationFixtures, HttpCase):
+    def test_authenticated_move_rpc_denies_single_company_and_allows_authorized_both(self):
+        self.editor.company_ids |= self.company_b
+        self.authenticate(self.editor.login, 'trial')
+        def move(companies):
+            response = self.url_open(
+                '/web/dataset/call_kw/dms.file/write',
+                data=json.dumps({
+                    'jsonrpc': '2.0', 'method': 'call', 'id': 1,
+                    'params': {
+                        'model': 'dms.file', 'method': 'write',
+                        'args': [self.file_a.ids, {'name': 'rpc-moved.txt', 'directory_id': self.dir_b.id}],
+                        'kwargs': {'context': {'allowed_company_ids': companies}},
+                    },
+                }), headers={'Content-Type': 'application/json'},
+            )
+            self.assertEqual(response.status_code, 200)
+            return response.json()
+        denied = move(self.company_a.ids)
+        self.assertIn('error', denied)
+        self.assertEqual(denied['error']['data']['name'], 'odoo.exceptions.AccessError')
+        self.file_a.invalidate_recordset()
+        self.assertEqual(self.file_a.directory_id, self.dir_a)
+        self.assertEqual(self.file_a.name, 'synthetic-contract.txt')
+        self.assertEqual(self.file_a.content, self.payload)
+        allowed = move((self.company_a | self.company_b).ids)
+        self.assertNotIn('error', allowed, allowed)
+        self.assertTrue(allowed['result'])
+        self.file_a.invalidate_recordset()
+        self.assertEqual(self.file_a.directory_id, self.dir_b)
+        self.assertEqual(self.file_a.company_id, self.company_b)
+        self.assertEqual(self.file_a.content, self.payload)
 
 
 class PrivateFixtures(TrialFixtures):

@@ -1,0 +1,12 @@
+<odoo>
+    <record id="company_bill_document_root" model="ir.ui.view">
+        <field name="name">res.company.vendor.bill.document.root</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='currency_id']" position="after">
+                <field name="dms_bill_root_id" groups="dms.group_dms_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

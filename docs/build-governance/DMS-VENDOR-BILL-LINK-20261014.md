@@ -1,0 +1,91 @@
+# DMS vendor-bill attachment bridge — QA only
+
+## G0–G3 proposed contract
+
+User authorizes automatic QA indexing of vendor-bill images, company isolation,
+and DMS deletion without deleting the bill original. LIVE and other integrations
+are out of scope. Previous owner-only trial restriction remains; this request
+authorizes the bill attachment journey on QA, not access for other users.
+
+G0: account.move (in_invoice/in_refund) remains accounting source of truth.
+No posting, amounts, journal entries, original attachment content or ownership
+are changed. New invoice binary attachments are indexed automatically; existing
+attachments are not bulk imported. Synthetic draft bills in two companies test
+the journey; no real document extraction or content copying.
+
+G1: owner personal multi-company use; volume unknown. Small bounded CI fixture,
+no QA load, no bulk historical migration. New CI run justified by new attachment
+hook/deletion and cross-company risk absent from prior trial evidence. Use indexed
+attachment relation and unique link, transaction-atomic idempotency; no queue/cache.
+Protected QA backup/recovery remains mandatory.
+
+G2: original ir.attachment owns bytes; DMS stores a reference, not a second binary.
+Use an opt-in company-specific bill storage/root. Restrict source to vendor bills,
+binary non-field attachments. Source record company is authoritative, not context
+company or a sudo root search. Exactly one index per source attachment; repeated
+events idempotent. DMS unlink removes index only, source unlink removes index.
+Re-link/replace/move must never point across company; prevent linked file content
+edits from mutating original. Source ACL/rules must constrain linked read/download
+in addition to DMS rules. Public token sharing not enabled for linked originals.
+Deleting DMS index is not a financial deletion; no silent writeback to bill.
+Native unscoped OCA auto-link for account.move remains disabled; intercept only
+opt-in bridge. QA retains owner-only rules. Tests include single-company users
+with private trial rules temporarily disabled only in isolated test transaction.
+
+G3: reuse installed Odoo19/pinned OCA DMS, custom additive module or narrow existing
+trial extension; no upstream runtime edits or new libraries. Use native file UI,
+AR/EN labels. Direct path is a safe reference bridge instead of enabling native
+autoattachment hook that deletes originals and lacks company-filtered root lookup.
+Independent reviewer must approve concrete implementation boundary before code.
+
+## Gates and operations
+
+G0–G3: pending independent review. G4: native DMS UI, no redesign. G5: integration
+and access tests plus HTTP download cases; G8 independent release review.
+Read existing registry/trial evidence, OCA ir_attachment/dms_file and native private
+rules; prior 13-test result reused for unchanged trial, new tests required for bridge.
+Branch codex/dms-vendor-bill-link-20261014 from main9dbefe70; unrelated dirty docs preserved.
+Official Odoo19 Documents documentation confirms accounting journal centralization
+and HR employee folders/contracts/payslips; full installed integration inventory
+requires source inventory, not assuming all Enterprise modules are on Community.
+
+### Concrete boundary revision for reviewer
+
+Implementation proposes separate `baseer_dms_bill_link` (account+dms) with
+`bill_attachment_id`, leaving native `attachment_id` empty. This eliminates native
+OCA original-unlink branch by construction. Nonstored content dereferences source;
+no persistent image thumbnails for linked files. Owner confinement remains in
+installed `baseer_dms_trial`; no new access granted. Freeze linked source, names,
+content, directory, copy and tokens. Freeze configured root/ancestor ancestry and
+storage company/save_type/model_ids/access inheritance. Global source permission
+AND rule and direct original/bill checks must cover metadata and bytes; no token
+on bill root/ancestor can bypass source rights. One unique source relation and row
+lock enforce repeat safety. Source reassociation removes stale index/re-evaluates;
+source deletion cascades only index. Reviewer considering this revision before code.
+
+### Read-only evidence
+
+2026-10-14: QA current87bbe0d5 unchanged; free2014269440bytes. LIVE currentf894b892
+unchanged. Native OCA destructive attachment_id.unlink/root sudo observations
+confirmed. User authorizes QA new attachment journey; no old-file bulk backfill.
+Official reference https://www.odoo.com/documentation/19.0/applications/productivity/documents.html
+confirms accounting and HR contracts/payslips. Official Odoo source PR74571
+https://mergebot.odoo.com/odoo/enterprise/pull/74571 confirms project/fleet folders;
+official translation catalog https://translate.odoo.com/projects/odoo-19/documents_product/
+confirms product integration exists. No claim all Enterprise integrations are a
+single generic toggle or automatically supported by OCA; HR/other connectors remain
+future separately permission-tested work, not enabled here.
+
+Read-only QA baseline08:41UTC: summary669/3cc77fb1c40cfe645ff5722a75ee6f33;
+POS718/5047663e50f54c0c48e7e8e7481c092e; payments1896/a650b5b054949864dca0665892438149;
+Sales0/null; moves8590/22aac86abae3b9baca21ec0a2f2c5c11;
+lines21291/e581ce43bc158bebbc2ed880eb43a9d9. Existing private owner2 active.
+No accounting mutations made by this task; same isolated sample modules installed.
+
+Independent dms_bridge_gate revised G0–G3 GO: separate source relation/module
+approved as safer original-unlink boundary. Conditions above mandatory, especially
+direct attachment permission in addition to account.move query, acting-user checks
+under token/sudo, no persistent derivatives, provenance not caller context, and
+frozen source/topology. Implementation/runtime owner dms_bridge_implementation;
+tests/workflow owner dms_bridge_tests; leader owns docs and protected QA operations.
+G5/G8 still pending; no code approval implies release acceptance.

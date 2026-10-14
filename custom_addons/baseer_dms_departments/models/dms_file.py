@@ -2,6 +2,15 @@ from odoo import api, fields, models
 from odoo.exceptions import AccessError
 from odoo.fields import Domain
 
+from odoo.addons.dms.models.dms_file import DMSFile as NativeDMSFile
+
+
+def _dms_search_panel_parent_id(value):
+    """Odoo 19 returns an ID; older classic_read returns (ID, label)."""
+    if isinstance(value, (tuple, list)):
+        value = value[0] if value else False
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else False
+
 
 class DmsFile(models.Model):
     _inherit = "dms.file"
@@ -82,3 +91,66 @@ class DmsFile(models.Model):
     @api.constrains("source_purchase_order_id", "source_employee_id", "source_version_id")
     def _check_department_reference(self):
         self._check_bill_reference()
+
+    @api.model
+    def search_panel_select_range(self, field_name, **kwargs):
+        if field_name != "directory_id":
+            return super().search_panel_select_range(field_name, **kwargs)
+
+        # Keep native DMS's empty-folder listing, but never read a hidden parent's
+        # name to normalize a Many2one. Odoo 19 search_read returns bare IDs.
+        records = self.env["dms.directory"].with_context(directory_short_name=True).search_read(
+            [("is_hidden", "=", False)], ["display_name", "parent_id"]
+        )
+        visible_ids = {record["id"] for record in records}
+        parents = {
+            record["id"]: _dms_search_panel_parent_id(record["parent_id"]) for record in records
+        }
+        selected_ids = visible_ids
+        if self.env.context.get("active_model") == "dms.directory":
+            files = self.search([
+                ("directory_id", "child_of", self.env.context.get("active_id"))
+            ])
+            selected_ids = set()
+            for directory_id in files.mapped("directory_id").ids:
+                seen = set()
+                while directory_id in visible_ids and directory_id not in seen:
+                    seen.add(directory_id)
+                    selected_ids.add(directory_id)
+                    directory_id = parents[directory_id]
+
+        enable_counters = kwargs.get("enable_counters")
+        values = {}
+        for record in records:
+            record_id = record["id"]
+            if record_id not in selected_ids:
+                continue
+            parent_id = parents[record_id]
+            values[record_id] = {
+                "id": record_id, "display_name": record["display_name"],
+                "parent_id": parent_id if parent_id in selected_ids else False,
+            }
+            if enable_counters:
+                values[record_id]["__count"] = 0
+
+        if enable_counters:
+            # Skip only the incompatible native DMS override. Its abstract mixin
+            # and Odoo core still compute counters under the acting user's rules.
+            result = super(NativeDMSFile, self).search_panel_select_range(field_name, **kwargs)
+            for item in result["values"]:
+                if item["id"] in values:
+                    values[item["id"]]["__count"] = item["__count"]
+        return {"parent_field": "parent_id", "values": list(values.values())}
+
+    def _search_panel_sanitized_parent_hierarchy(self, records, parent_name, ids):
+        if not self.env.context.get("skip_sanitized_parent_hierarchy"):
+            return super()._search_panel_sanitized_parent_hierarchy(records, parent_name, ids)
+        if parent_name:
+            visible_ids = {record["id"] for record in records}
+            for record in records:
+                parent_id = _dms_search_panel_parent_id(record.get(parent_name))
+                # The installed core counter reader still indexes value[0].
+                # Provide its legacy shape without reading any parent label;
+                # the public directory range above continues to return IDs.
+                record[parent_name] = (parent_id, "") if parent_id in visible_ids else False
+        return records

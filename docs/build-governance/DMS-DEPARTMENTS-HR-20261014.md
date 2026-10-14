@@ -183,3 +183,25 @@ company deletion/archive synchronization or manual legacy-file reorganization.
 Visual browser/click/mobile acceptance unverified (earlier runtime EPERM), not claimed.
 Existing image/PDF preview sources unchanged, prior visual limitation retained.
 LIVE current still f894b8927bce-run-38252387973-20261012T125758Z.
+
+## Reopened G5 — native search-panel compatibility defect
+User actual browser RPC at11:22:58Z: dms.file.search_panel_select_range raises
+TypeError at OCA dms_file.py357 indexing parent[0]. Readonly owner/company1
+reproduction11:26:32 confirms search_read parent values bool/int and both counter
+modes fail identically. Native OCA assumes legacy Many2one tuple; web client was
+not observed in prior conditional acceptance, missing actual panel-call coverage.
+Historical same-context success is unproven; classify native compatibility defect
+exposed by hierarchy, not an invented data or permissions failure.
+CONTROLLED adapter in additive module only, no vendor/core/bridge/auth/schema
+changes; version19.0.1.0.1. Preserve empty folders, active-directory behavior,
+visible-parent sanitization, counters, other-field delegation, source/global rules.
+Add direct native model and authenticated RPC regression for folder tree/company/HR
+privacy. SameCI fixture, no new environment/load. Prior overall visual acceptance
+not granted; folder-list journey now NO-GO until this exact path passes on QA.
+
+PR333/frozen6b8fe804: source38557203378 PASS; Odoo38557203401 failed1/1errors
+of46. Exact authenticated RPC test caught countercore requiring tuple AFTER
+sanitization (web/models/models.py1719/1768), not an authorization fault.
+Local helper now returns visible internal(parent_id,emptylabel) / hiddenFalse;
+outer RPC values remain int/False. No parent name read/sudo, assertions unchanged.
+Independent targeted source CONDITIONAL GO pending corrected46-case CI.

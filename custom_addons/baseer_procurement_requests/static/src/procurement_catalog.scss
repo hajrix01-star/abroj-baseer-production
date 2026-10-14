@@ -385,3 +385,19 @@
     .o_prc_product_card, .o_prc_recent_card, .o_prc_category, .o_prc_cart_actions .btn, .o_prc_mobile_nav button, .o_prc_favorite_button { transition: none; }
     .o_prc_inline_loader, .o_prc_button_spinner { animation-duration: 1.2s; }
 }
+.o_prc_purchase_routes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    button {
+        flex: 1 1 110px;
+        min-height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: .5rem;
+        background: #fff;
+        padding: .5rem;
+        &[aria-pressed="true"] { background: #e8f4f1; border-color: #147d64; color: #115e4c; }
+        &:focus-visible { outline: 2px solid #147d64; outline-offset: 2px; }
+    }
+}
+.o_prc_route_badge { font-size: .85rem; color: #475569; }

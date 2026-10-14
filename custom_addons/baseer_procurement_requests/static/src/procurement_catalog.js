@@ -43,7 +43,7 @@ export class ProcurementCatalog extends Component {
         this.state = useState({
             options: [], categories: [], warehouses: [], representatives: [], cart: [],
             quote: this.emptyQuote(), search: "", selectedCategoryId: false, offset: 0, hasMore: false,
-            warehouseId: false, representativePartnerId: false, whatsappNumber: "", saving: false,
+            warehouseId: false, representativePartnerId: false, purchaseRoute: "representative", whatsappNumber: "", saving: false,
             loadingOptions: true, loadingMore: false, quotePending: false, catalogueError: false,
             mobilePane: "products", clientToken: newClientToken(), workspaceTab: "new",
             recentRequests: [], recentSearch: "", recentState: "all", recentOffset: 0,
@@ -74,6 +74,7 @@ export class ProcurementCatalog extends Component {
                     this.state.existingRequest = request;
                     this.state.warehouseId = request.warehouse_id;
                     this.state.representativePartnerId = request.representative_partner_id || false;
+                    this.state.purchaseRoute = request.purchase_route || "representative";
                     this.state.cart = request.items.map((line) => ({
                         ...line, requested_quantity: line.quantity, actual_price: line.last_price,
                     }));
@@ -597,10 +598,16 @@ export class ProcurementCatalog extends Component {
     }
 
     get canSave() {
-        const representativeReady = this.state.existingRequest || this.state.representativePartnerId;
+        const representativeReady = this.state.existingRequest || this.state.purchaseRoute !== "representative" || this.state.representativePartnerId;
         return Boolean(this.state.warehouseId && representativeReady && this.state.cart.length &&
             !this.state.saving && !this.state.quotePending && !this.state.quoteError && !this.unpricedReceivedLines.length &&
             this.state.quote.lines.length === this.state.cart.length);
+    }
+
+    setPurchaseRoute(route) {
+        if (this.state.existingRequest || !["representative", "cash", "bank_transfer"].includes(route)) return;
+        this.state.purchaseRoute = route;
+        if (route !== "representative") this.state.representativePartnerId = false;
     }
 
     async saveDraft(openWhatsApp = false) {
@@ -628,12 +635,16 @@ export class ProcurementCatalog extends Component {
             }
             const id = await this.orm.call("baseer.procurement.request", "create_from_catalog", [
                 this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity })),
-                this.state.warehouseId, false, false, this.state.clientToken, this.state.representativePartnerId,
+                this.state.warehouseId, false, false, this.state.clientToken, this.state.representativePartnerId, this.state.purchaseRoute,
             ]);
             this.state.clientToken = newClientToken();
             if (openWhatsApp) {
-                const whatsappAction = await this.orm.call("baseer.procurement.request", "action_open_whatsapp", [[id]]);
-                await this.action.doAction(whatsappAction);
+                if (this.state.purchaseRoute === "representative") {
+                    const whatsappAction = await this.orm.call("baseer.procurement.request", "action_open_whatsapp", [[id]]);
+                    await this.action.doAction(whatsappAction);
+                } else {
+                    await this.orm.call("baseer.procurement.request", "action_mark_sent", [[id]]);
+                }
             }
             await this.action.doAction({ type: "ir.actions.act_window", res_model: "baseer.procurement.request",
                 res_id: id, views: [[false, "form"]], view_mode: "form" });

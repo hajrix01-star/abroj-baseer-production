@@ -463,6 +463,7 @@
     <string name="auth_native_unavailable">"تعذّر إكمال الدخول. حاول مرة أخرى."</string>
     <string name="chat_v2_rooms">"المحادثات"</string>
     <string name="bchat_group_create">مجموعة جديدة</string>
+    <string name="bchat_group_company_context">شركة المجموعة الجديدة: %1$s</string>
     <string name="bchat_group_ok">حسنًا</string>
     <string name="bchat_group_info">معلومات المجموعة</string>
     <string name="bchat_room_info">معلومات المحادثة</string>

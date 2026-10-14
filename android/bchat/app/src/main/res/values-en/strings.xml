@@ -463,6 +463,7 @@
     <string name="auth_native_unavailable">"Could not complete sign-in. Try again."</string>
     <string name="chat_v2_rooms">"Chats"</string>
     <string name="bchat_group_create">New group</string>
+    <string name="bchat_group_company_context">Company for new group: %1$s</string>
     <string name="bchat_group_ok">OK</string>
     <string name="bchat_group_info">Group info</string>
     <string name="bchat_room_info">Chat info</string>

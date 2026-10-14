@@ -1158,6 +1158,11 @@ public final class OdooIdentityActivity extends Activity {
         companies.sort(Long::compareTo);
         if (companies.size() == 1) { showGroupCreateForm(companies.get(0)); return; }
         if (companies.isEmpty()) return;
+        // The header chooses the company for a new group; it never hides existing rooms.
+        if (companyNames.containsKey(selectedChatCompanyId)) {
+            showGroupCreateForm(selectedChatCompanyId);
+            return;
+        }
         String[] labels = new String[companies.size()];
         for (int i = 0; i < companies.size(); i++) labels[i] = companyNames.get(companies.get(i));
         Ui.decorateDialog(new AlertDialog.Builder(this)
@@ -1892,7 +1897,8 @@ public final class OdooIdentityActivity extends Activity {
         String name = localizedCompanyName(selected);
         boolean canSwitch = companies.length() > 1;
         chatHeaderCompanyButton.setText(name + (canSwitch ? " ⌄" : ""));
-        chatHeaderCompanyButton.setContentDescription(name);
+        chatHeaderCompanyButton.setContentDescription(getString(
+                R.string.bchat_group_company_context, name));
         chatHeaderCompanyButton.setEnabled(canSwitch);
         chatHeaderCompanyButton.setVisibility("chats".equals(visibleSection)
                 ? View.VISIBLE : View.GONE);
@@ -3886,9 +3892,11 @@ public final class OdooIdentityActivity extends Activity {
         String query = roomSearchInput == null ? "" : roomSearchInput.getText().toString().trim()
                 .toLowerCase(Locale.ROOT);
         int shown = 0;
+        boolean showCompany = v1Companies.size() > 1;
         for (Room room : rooms) {
-            if (selectedChatCompanyId > 0 && room.companyId != selectedChatCompanyId) continue;
-            if (!query.isEmpty() && !room.name.toLowerCase(Locale.ROOT).contains(query)) continue;
+            String companyName = showCompany ? companyNameForId(room.companyId, "") : "";
+            if (!query.isEmpty() && !room.name.toLowerCase(Locale.ROOT).contains(query)
+                    && !companyName.toLowerCase(Locale.ROOT).contains(query)) continue;
             shown++;
             LinearLayout entry = Ui.row(this);
             Ui.pad(entry, 14, 8);
@@ -3932,10 +3940,20 @@ public final class OdooIdentityActivity extends Activity {
                 subtitleRow.addView(badge, badgeSize);
             }
             labelColumn.addView(subtitleRow, new LinearLayout.LayoutParams(-1, -2));
+            if (showCompany && !companyName.isEmpty()) {
+                TextView companyLabel = Ui.text(this, companyName, Ui.CHAT_META_SP,
+                        Ui.MUTED, false);
+                companyLabel.setSingleLine(true);
+                companyLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                LinearLayout.LayoutParams companySize = new LinearLayout.LayoutParams(-1, -2);
+                companySize.topMargin = dp(2);
+                labelColumn.addView(companyLabel, companySize);
+            }
             LinearLayout.LayoutParams labelSize = new LinearLayout.LayoutParams(0, -2, 1);
             labelSize.setMarginStart(dp(10));
             entry.addView(labelColumn, labelSize);
-            entry.setContentDescription(room.name);
+            entry.setContentDescription(companyName.isEmpty() ? room.name
+                    : room.name + ", " + companyName);
             Ui.clickable(entry);
             entry.setOnClickListener(v -> selectRoom(room));
             roomItems.addView(entry, new LinearLayout.LayoutParams(-1, -2));

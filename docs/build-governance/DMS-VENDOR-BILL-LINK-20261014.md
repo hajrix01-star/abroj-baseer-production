@@ -101,3 +101,10 @@ Final candidate adds AR labels/errors and bridge-only exemptions from DMS upload
 size/extension constraints: a reference is not a second upload, original Accounting
 policy remains authoritative. Normal DMS upload constraints unchanged; targeted
 test required before finalCI. No originalcontent/name mutation by index.
+
+Final cc564521: Source38538189453PASS; Odoo38538189483PASS19tests/0fail/0error.
+IndependentG8 approved QA contingentbackup/provenance/activation. PR323 squash
+sourceab0aa23d8315747447eb9e0bb370ab1ab5f81777. Policy installs
+baseer_dms_bill_link only; THIRD_PARTY_MODULES empty retains exact installed OCA
+and private trial, no othermodule upgrade. Protected request next; successqueue
+is not serveracceptance. QAprobe persists configonly after rollback assertions.

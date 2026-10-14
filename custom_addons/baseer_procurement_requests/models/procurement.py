@@ -356,6 +356,28 @@ class ProcurementRequest(models.Model):
         domain="[('is_purchase_representative', '=', True), ('is_company', '=', False), ('parent_id', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         help='A standalone contact enabled as a purchase representative in this company.',
     )
+    purchase_route = fields.Selection([
+        ('representative', 'Purchase Representative'),
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+    ], string='Purchase route', default='representative', required=True, index=True, tracking=True)
+
+    @api.constrains('purchase_route', 'representative_partner_id', 'purchaser_id')
+    def _check_purchase_route(self):
+        for request in self:
+            if request.purchase_route != 'representative' and (request.representative_partner_id or request.purchaser_id):
+                raise ValidationError(_('Cash and bank-transfer requests cannot have a purchase representative.'))
+
+    @api.onchange('purchase_route')
+    def _onchange_purchase_route(self):
+        for request in self:
+            if request.purchase_route != 'representative':
+                request.representative_partner_id = False
+                request.purchaser_id = False
+
+    def _purchase_route_label(self):
+        self.ensure_one()
+        return dict(self._fields['purchase_route']._description_selection(self.env))[self.purchase_route]
     requester_id = fields.Many2one('res.users', required=True, default=lambda self: self.env.user,
                                    ondelete='restrict', tracking=True)
     request_date = fields.Datetime(required=True, default=fields.Datetime.now, tracking=True)
@@ -504,7 +526,7 @@ class ProcurementRequest(models.Model):
         self._require_state('draft')
         if not self.line_ids:
             raise UserError(_('Add at least one raw material before sending the request.'))
-        if not self.representative_partner_id and not self.purchaser_id:
+        if self.purchase_route == 'representative' and not self.representative_partner_id and not self.purchaser_id:
             raise UserError(_('Choose the purchase representative before sending the request.'))
         super(ProcurementRequest, self).write({'state': 'sent', 'whatsapp_sent_at': fields.Datetime.now()})
         return True
@@ -1207,6 +1229,8 @@ class ProcurementRequest(models.Model):
                 'name': record.name,
                 'state': record.state,
                 'state_label': labels.get(record.state, record.state),
+                'purchase_route': record.purchase_route,
+                'purchase_route_label': record._purchase_route_label(),
                 'request_date': fields.Datetime.to_string(record.request_date),
                 'line_count': len(record.line_ids),
                 'representative_name': (
@@ -1265,6 +1289,8 @@ class ProcurementRequest(models.Model):
         currency = self.env.company.currency_id
         return {
             'id': request.id, 'name': request.name, 'state': request.state,
+            'purchase_route': request.purchase_route,
+            'purchase_route_label': request._purchase_route_label(),
             'warehouse_id': request.warehouse_id.id,
             'representative_partner_id': request.representative_partner_id.id or False,
             'representative_name': (
@@ -1607,7 +1633,7 @@ class ProcurementRequest(models.Model):
                 raise UserError(_('A cancellation reason can only be entered before the manager receipt.'))
         if any(request.state != 'draft' for request in self) and {
             'company_id', 'warehouse_id', 'purchaser_id', 'representative_partner_id',
-            'request_date', 'whatsapp_number', 'requester_id',
+            'request_date', 'whatsapp_number', 'requester_id', 'purchase_route',
         } & set(vals):
             raise UserError(_('Request header details can only be changed while the request is a draft.'))
         return super().write(vals)
@@ -1620,13 +1646,17 @@ class ProcurementRequest(models.Model):
 
     @api.model
     def create_from_catalog(self, lines, warehouse_id=False, purchaser_id=False, whatsapp_number=False,
-                            client_token=False, representative_partner_id=False):
+                            client_token=False, representative_partner_id=False, purchase_route='representative'):
         """Narrow RPC boundary used by the standalone POS-style catalogue."""
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to create procurement requests.'))
         if not isinstance(lines, list) or not lines or len(lines) > MAX_CATALOG_LINES:
             raise ValidationError(_('Add at least one material to the cart.'))
-        if not representative_partner_id and not purchaser_id:
+        if purchase_route not in ('representative', 'cash', 'bank_transfer'):
+            raise ValidationError(_('Choose a valid purchase route.'))
+        if purchase_route != 'representative' and (representative_partner_id or purchaser_id):
+            raise ValidationError(_('Cash and bank-transfer requests cannot have a purchase representative.'))
+        if purchase_route == 'representative' and not representative_partner_id and not purchaser_id:
             raise ValidationError(_('Choose the purchasing representative before saving the request.'))
         token = False
         if client_token:
@@ -1692,6 +1722,9 @@ class ProcurementRequest(models.Model):
             'whatsapp_number': whatsapp_number or '',
             'lines': sorted(canonical_lines, key=lambda row: row['option_id']),
         }
+        # Keep historical representative-token fingerprints byte-compatible.
+        if purchase_route != 'representative':
+            payload['purchase_route'] = purchase_route
         payload_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         request_model = self.sudo().with_company(self.env.company).with_context(**{REQUEST_CREATE_INTERNAL: True})
         if token:
@@ -1705,6 +1738,7 @@ class ProcurementRequest(models.Model):
                 return existing.id
         create_values = {
             'company_id': self.env.company.id, 'warehouse_id': warehouse.id,
+            'purchase_route': purchase_route,
             'purchaser_id': purchaser.id or False,
             'representative_partner_id': representative.id or False,
             'requester_id': self.env.user.id, 'whatsapp_number': whatsapp_number or False, 'line_ids': values,

@@ -3,6 +3,8 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from datetime import timedelta
 from uuid import uuid4
+import hashlib
+import json
 
 
 class ProcurementFlowCase(TransactionCase):
@@ -56,6 +58,121 @@ class ProcurementFlowCase(TransactionCase):
             'purchaser_id': self.purchaser.id,
             'line_ids': [(0, 0, {'option_id': self.option.id, 'requested_qty': 5, 'requested_price': 4})],
         })
+
+    def _route_requester(self):
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC route requester', 'login': 'prc-route-%s' % uuid4(),
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_user').id,
+            ])],
+        })
+        Request = self.env['baseer.procurement.request'].with_user(user).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        self.assertFalse(Request.env.su)
+        return Request
+
+    def test_purchase_route_direct_catalog_save_send_without_accounting(self):
+        Request = self._route_requester()
+        counts = {model: self.env[model].search_count([])
+                  for model in ('account.move', 'account.payment')}
+        for route in ('cash', 'bank_transfer'):
+            token = str(uuid4())
+            rows = [{'option_id': self.option.id, 'quantity': '2.00'}]
+            request_id = Request.create_from_catalog(
+                rows, self.warehouse.id, False, False, token, False, route,
+            )
+            request = Request.browse(request_id)
+            self.assertEqual(request.purchase_route, route)
+            self.assertFalse(request.purchaser_id)
+            self.assertFalse(request.representative_partner_id)
+            self.assertEqual(request.requester_id, Request.env.user)
+            self.assertEqual(Request.create_from_catalog(
+                rows, self.warehouse.id, False, False, token, False, route,
+            ), request_id)
+            other_route = 'bank_transfer' if route == 'cash' else 'cash'
+            with self.assertRaises(ValidationError):
+                Request.create_from_catalog(
+                    rows, self.warehouse.id, False, False, token, False, other_route,
+                )
+            request.action_mark_sent()
+            self.assertEqual(request.state, 'sent')
+            with self.assertRaises(UserError):
+                request.write({'purchase_route': other_route})
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+
+    def test_purchase_route_representative_legacy_fingerprint_and_validation(self):
+        Request = self._route_requester()
+        representative = self.env['res.partner'].with_company(self.company).create({
+            'name': 'PRC route representative', 'is_purchase_representative': True,
+        })
+        rows = [{'option_id': self.option.id, 'quantity': '2.00'}]
+        token = str(uuid4())
+        args = (rows, self.warehouse.id, False, False, token, representative.id)
+        request_id = Request.create_from_catalog(*args)
+        request = Request.browse(request_id)
+        self.assertEqual(request.purchase_route, 'representative')
+        legacy_payload = {
+            'warehouse_id': self.warehouse.id, 'purchaser_id': False,
+            'representative_partner_id': representative.id, 'whatsapp_number': '',
+            'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
+        }
+        expected = hashlib.sha256(json.dumps(
+            legacy_payload, sort_keys=True, separators=(',', ':'),
+        ).encode()).hexdigest()
+        self.assertEqual(request.client_payload_hash, expected)
+        self.assertEqual(Request.create_from_catalog(*args), request_id)
+        self.assertEqual(Request.create_from_catalog(*args, purchase_route='representative'), request_id)
+        request.action_mark_sent()
+        for route in ('invalid', 'representative'):
+            with self.assertRaises(ValidationError):
+                Request.create_from_catalog(rows, self.warehouse.id, purchase_route=route)
+        for route in ('cash', 'bank_transfer'):
+            with self.assertRaises(ValidationError):
+                Request.create_from_catalog(rows, self.warehouse.id,
+                                            representative_partner_id=representative.id, purchase_route=route)
+            with self.assertRaises(ValidationError):
+                Request.create_from_catalog(rows, self.warehouse.id,
+                                            purchaser_id=self.purchaser.id, purchase_route=route)
+
+    def test_purchase_route_orm_constraint_and_readonly_accountant_annotation(self):
+        draft = self.env['baseer.procurement.request'].new({
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'purchaser_id': self.purchaser.id, 'purchase_route': 'representative',
+        })
+        draft.purchase_route = 'cash'
+        draft._onchange_purchase_route()
+        self.assertFalse(draft.purchaser_id)
+        self.assertFalse(draft.representative_partner_id)
+        for route in ('cash', 'bank_transfer'):
+            with self.assertRaises(ValidationError):
+                self.env['baseer.procurement.request'].create({
+                    'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+                    'purchaser_id': self.purchaser.id, 'purchase_route': route,
+                })
+        field = self.env['baseer.purchase.batch']._fields['procurement_purchase_route']
+        self.assertEqual(field.related, ('procurement_request_id', 'purchase_route'))
+        self.assertTrue(field.readonly)
+        Request = self._route_requester()
+        request_id = Request.create_from_catalog(
+            [{'option_id': self.option.id, 'quantity': '1.00'}],
+            self.warehouse.id, purchase_route='cash',
+        )
+        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC route accountant', 'login': 'prc-route-accountant-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_accountant').id,
+            ])],
+        })
+        request = Request.browse(request_id).with_user(accountant)
+        self.assertFalse(request.env.su)
+        self.assertEqual(request.read(['purchase_route'])[0]['purchase_route'], 'cash')
+        with self.assertRaises(AccessError):
+            request.write({'purchase_route': 'bank_transfer'})
 
     def _native_batch_accounting_fixture(self, company, expense, supplier):
         """Supply native journal/account and analytics for productless bills."""

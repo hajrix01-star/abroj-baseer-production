@@ -1248,6 +1248,9 @@ class BaseerPurchaseBatch(models.Model):
         related='procurement_request_id.actual_total', string='Received request total',
         currency_field='currency_id', readonly=True,
     )
+    procurement_purchase_route = fields.Selection(
+        related='procurement_request_id.purchase_route', string='Purchase route', readonly=True,
+    )
     procurement_representative_balance = fields.Monetary(
         compute='_compute_procurement_representative_balance',
         string='Representative Petty Cash balance', currency_field='currency_id', readonly=True,

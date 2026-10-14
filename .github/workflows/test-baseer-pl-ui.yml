@@ -1,0 +1,97 @@
+name: Test Baseer profit and loss UI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_profit_loss_report/**
+      - .github/workflows/test-baseer-pl-ui.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hoot-report-tests:
+    name: Odoo 19 Hoot report tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the runner's headless Chrome
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v google-chrome
+          google-chrome --version
+      - name: Install the pinned Odoo 19 package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --silent --show-error \
+            https://nightly.odoo.com/19.0/nightly/deb/odoo_19.0.20260926_all.deb \
+            --output "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          printf '%s  %s\n' \
+            cb9d876779edc8d5f0394ddd3936a387e349077c \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" | sha1sum --check
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          sudo apt-get install -y --no-install-recommends python3-websocket
+          /usr/bin/python3 -c 'import websocket; print(websocket.__version__)'
+          odoo --version
+      - name: Compile the shipped profit and loss SCSS with Odoo LibSass
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          /usr/bin/python3 - "$GITHUB_WORKSPACE/custom_addons/baseer_profit_loss_report/static/src/profit_loss.scss" <<'PY'
+          from pathlib import Path
+          import sass
+          import sys
+
+          source_path = Path(sys.argv[1])
+          source = source_path.read_text(encoding='utf-8')
+          assert 'width: 22rem;\n        max-width: 90vw;' in source
+          assert 'max-width: min(22rem, 90vw)' not in source
+          compiled = sass.compile(filename=str(source_path))
+          assert '.o_baseer_pl_journal_list' in compiled
+          print('BASEER_PL_SCSS_COMPILE=PASS')
+          PY
+      - name: Run only Baseer profit and loss Hoot tests at desktop and 375px
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          odoo --db_host=127.0.0.1 --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons" \
+            -d baseer_pl_ui_ci -i baseer_profit_loss_report --without-demo=all \
+            '--test-tags=/web:WebSuite.test_unit_desktop[@baseer_profit_loss_report/profit_loss],/web:MobileWebSuite.test_unit_mobile[@baseer_profit_loss_report/profit_loss]' \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-pl-hoot.log"
+          # A green Odoo process is insufficient if the URL filter selected zero tests.
+          test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-pl-hoot.log")" -ge 2
+          grep -Fq '[HOOT] Running test "@baseer_profit_loss_report/profit_loss/' "$RUNNER_TEMP/baseer-pl-hoot.log"
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-profit-loss-ui-diagnostics
+          path: |
+            ${{ runner.temp }}/baseer-pl-hoot.log
+            /tmp/odoo_tests/baseer_pl_ui_ci/screenshots/
+          retention-days: 7

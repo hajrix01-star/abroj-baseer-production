@@ -1,4 +1,13 @@
 .o_baseer_vat_report {
+    .o_baseer_report.o_baseer_vat_paper {
+        max-width: 840px;
+    }
+
+    .o_baseer_vat_currency {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
     .o_baseer_vat_year input {
         width: 5.6rem;
         min-height: 2rem;
@@ -51,21 +60,39 @@
     }
     .o_baseer_vat_table {
         width: 100%;
-        margin-top: 0.7rem;
+        margin-top: 0.85rem;
         border-collapse: collapse;
         table-layout: fixed;
         font-size: 0.8rem;
+        line-height: 1.4;
 
-        th, td { padding: 0.4rem 0.4rem; border-bottom: 1px solid var(--baseer-report-line); }
-        thead th { color: #24303d; font-weight: 600; }
+        th, td {
+            padding: 0.38rem 0.55rem;
+            border-bottom: 1px solid var(--baseer-report-line);
+            vertical-align: middle;
+        }
+        thead th {
+            padding-block: 0.55rem;
+            border-bottom-color: #c6cdd3;
+            color: #24303d;
+            font-weight: 600;
+        }
         thead th:first-child { width: 58%; text-align: start; }
         thead th:not(:first-child) { width: 21%; text-align: end; }
         tbody tr:has(.o_baseer_vat_cell_button):not(.o_baseer_vat_components):hover { background: #f5f8f8; }
         .o_baseer_vat_total { font-weight: 700; }
-        .o_baseer_vat_total th, .o_baseer_vat_total td { border-top: 1px solid #c6cdd3; }
+        .o_baseer_vat_total th, .o_baseer_vat_total td {
+            border-top: 1px solid #c6cdd3;
+        }
     }
     .o_baseer_vat_name { text-align: start; font-weight: inherit; overflow-wrap: anywhere; }
-    .o_baseer_vat_value { text-align: end; font-variant-numeric: tabular-nums; }
+    .o_baseer_vat_row_number { color: var(--baseer-report-muted); font-variant-numeric: tabular-nums; }
+    .o_baseer_vat_total .o_baseer_vat_row_number { color: inherit; }
+    .o_baseer_vat_value {
+        background: #fafbfc;
+        text-align: end;
+        font-variant-numeric: tabular-nums;
+    }
     .o_baseer_vat_column_label { display: none; }
     .o_baseer_vat_cell_button,
     .o_baseer_vat_warning_link {
@@ -76,7 +103,13 @@
         text-decoration: none;
         cursor: pointer;
     }
-    .o_baseer_vat_cell_button { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+    .o_baseer_vat_cell_button {
+        min-height: 1.5rem;
+        direction: ltr;
+        unicode-bidi: isolate;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
     .o_baseer_vat_cell_button.is-zero { color: var(--baseer-report-zero); }
     .o_baseer_vat_cell_button.is-negative { color: var(--baseer-report-negative); }
     .o_baseer_vat_cell_button:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -115,6 +148,7 @@
     .o_baseer_vat_warning_link { margin-inline-start: 0.5rem; }
 
     @media (max-width: 560px) {
+        .o_baseer_vat_currency { margin-top: 0.15rem; }
         .o_baseer_vat_journals { flex: 1 1 42%; }
         .o_baseer_vat_journals summary { width: 100%; }
         .o_baseer_vat_table {
@@ -124,10 +158,21 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 border-bottom: 1px solid var(--baseer-report-line);
             }
-            th, td { border: 0; padding: 0.35rem; }
+            th, td { border: 0; padding: 0.35rem 0.25rem; }
             .o_baseer_vat_name { grid-column: 1 / -1; }
-            .o_baseer_vat_value { display: flex; justify-content: space-between; gap: 0.35rem; }
-            .o_baseer_vat_column_label { display: inline; color: var(--baseer-report-muted); }
+            .o_baseer_vat_value {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 0.35rem;
+                min-width: 0;
+                background: transparent;
+            }
+            .o_baseer_vat_column_label {
+                display: inline;
+                color: var(--baseer-report-muted);
+                font-size: 0.75rem;
+            }
             .o_baseer_vat_components td { display: block; }
         }
     }

@@ -71,6 +71,13 @@
 .o_baseer_report_canvas > .o_baseer_report { margin: 0 auto; }
 
 .o_baseer_reports_hub { min-height: 100%; background: #f6f7f9; color: #24303d; font-family: inherit; }
+// The action manager clips client actions; the hub itself owns vertical scrolling.
+.o_web_client > .o_action_manager > .o_baseer_reports_hub.o_action {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+.o_baseer_reports_hub.o_action:focus-visible { outline: 2px solid #087d84; outline-offset: -2px; }
 .o_baseer_reports_hub_brand { color: #697783; font-size: 0.8rem; }
 .o_baseer_reports_hub_body { width: 100%; margin: 0; padding: 0 0 3rem; }
 .o_baseer_reports_hub_status { padding: 2.5rem 1rem; color: #697783; text-align: center; }

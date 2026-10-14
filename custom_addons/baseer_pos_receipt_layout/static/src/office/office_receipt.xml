@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_receipt_layout.OfficeReceipt">
+        <div class="baseer-office-receipt">
+            <div class="baseer-office-toolbar p-3 text-center">
+                <button type="button" class="btn btn-primary" t-on-click="print">Print / Save PDF</button>
+                <p class="mt-2 mb-0">Choose your local printer or Save as PDF in the print window.</p>
+            </div>
+            <div class="baseer-office-paper">
+                <img t-if="props.image" t-att-src="props.image" alt="Original customer receipt" class="baseer-office-original"/>
+                <OrderReceipt t-else="" order="props.order" basic_receipt="false"/>
+            </div>
+        </div>
+    </t>
+</templates>

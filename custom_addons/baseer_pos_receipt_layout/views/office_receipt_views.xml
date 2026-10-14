@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_office_receipt" model="ir.actions.server">
+        <field name="name">Print Customer Receipt</field>
+        <field name="model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_view_types">form</field>
+        <field name="group_ids" eval="[(4, ref('point_of_sale.group_pos_user'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_baseer_office_receipt()</field>
+    </record>
+    <template id="office_receipt_page" name="Customer Receipt">
+        &lt;!DOCTYPE html&gt;
+        <html t-att-lang="request.env.lang" t-att-dir="'rtl' if request.env.lang.startswith('ar') else 'ltr'">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title><t t-out="order.pos_reference or order.name"/></title>
+                <script type="text/javascript">var odoo = <t t-out="bootstrap_json"/>; odoo.loadMenusPromise = Promise.resolve();</script>
+                <t t-call-assets="baseer_pos_receipt_layout.assets_office_receipt"/>
+            </head>
+            <body class="pos baseer-office-receipt-page">
+                <main id="baseer-office-receipt-root">
+                    <p class="p-3" role="status">Loading receipt…</p>
+                </main>
+            </body>
+        </html>
+    </template>
+</odoo>

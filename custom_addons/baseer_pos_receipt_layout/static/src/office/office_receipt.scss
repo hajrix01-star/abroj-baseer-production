@@ -1,0 +1,46 @@
+.baseer-office-receipt-page {
+    height: auto;
+    overflow: auto;
+    background: #f4f5f7;
+    #baseer-office-receipt-root { width: 100%; }
+    .baseer-office-paper {
+        width: 80mm;
+        max-width: 100%;
+        margin: 0 auto 24px;
+        background: white;
+        color: black;
+        .pos-receipt { width: 100%; }
+    }
+    .baseer-office-original { display: block; width: 100%; height: auto; }
+}
+
+@media print {
+    @page { size: auto; margin: 8mm; }
+    html, body.baseer-office-receipt-page {
+        background: white !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    .baseer-office-toolbar { display: none !important; }
+    body.baseer-office-receipt-page > #baseer-office-receipt-root {
+        display: block !important;
+    }
+    .baseer-office-receipt-page .pos-receipt { contain: none !important; }
+    .baseer-office-receipt-page .baseer-office-paper {
+        width: 80mm;
+        max-width: 100%;
+        margin: 0 auto;
+        box-shadow: none;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+@media print {
+    .baseer-office-receipt-page .baseer-office-original {
+        width: auto;
+        max-width: 80mm;
+        max-height: 270mm;
+        margin: 0 auto;
+    }
+}

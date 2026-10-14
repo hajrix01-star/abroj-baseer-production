@@ -1,0 +1,44 @@
+name: Test vendor bill DMS reference bridge
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_dms_bill_link/**
+      - custom_addons/baseer_dms_departments/**
+      - custom_addons/baseer_dms_trial/**
+      - third_party_addons/oca_dms_19/**
+      - .github/workflows/test-baseer-dms-bill-link.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dms-bill-link:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated bill, purchase and private HR reference lifecycle and access
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/oca_dms_19",dst=/mnt/oca-dms,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/oca-dms \
+            -d baseer_dms_bill_link_ci -i baseer_dms_trial,baseer_dms_departments --without-demo=all \
+            --test-enable --test-tags=/baseer_dms_bill_link,/baseer_dms_departments \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

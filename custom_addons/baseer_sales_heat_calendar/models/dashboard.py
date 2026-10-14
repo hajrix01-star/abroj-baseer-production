@@ -131,23 +131,27 @@ class SalesHeatCalendarDashboard(models.Model):
             raise ValidationError(_('This calendar supports SAR sales configurations only.'))
 
         Summary = self.env['baseer.pos.summary']
-        summaries = Summary.search([
+        dated_summaries = Summary.search([
             ('company_id', '=', company.id), ('state', '=', 'approved'),
             ('business_date', '>=', first), ('business_date', '<=', last),
+        ])
+        source_orders = self.env['pos.order'].search(self._baseer_executive_domain(period, now))
+        # Linked metadata must remain visible even when its stored date differs
+        # from the session day. Never rewrite or silently drop its native money.
+        summaries = dated_summaries | Summary.search([
+            ('company_id', '=', company.id), ('state', '=', 'approved'),
+            ('id', 'in', source_orders.baseer_summary_id.ids),
         ])
         nonzero = summaries.filtered(lambda item: not item.zero_sales)
         visible_orders = self.env['pos.order'].search(self._baseer_executive_source() + [
             ('id', 'in', nonzero.order_id.ids), ('source', '=', 'baseer_summary'),
-            ('date_order', '<', now), ('date_order', '>=', _utc_at(first, 7)),
-            ('date_order', '<', _utc_at(last + timedelta(days=1), 5)),
+            ('date_order', '<=', now),
         ])
         visible_ids = set(visible_orders.ids)
         for summary in nonzero:
             order = summary.order_id
             if (not order or order.id not in visible_ids or order.baseer_summary_id != summary
-                    or order.session_id != summary.session_id
-                    or order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).date() != summary.business_date
-                    or order.date_order.replace(tzinfo=timezone.utc).astimezone(RIYADH).hour < 7):
+                    or order.session_id != summary.session_id):
                 raise ValidationError(_('An approved summary has no matching accessible POS order. Review its source before evaluating this calendar.'))
 
         # Include only generated orders whose approved metadata is visible.
@@ -165,8 +169,8 @@ class SalesHeatCalendarDashboard(models.Model):
         session = SQL.identifier(orders._table, 'session_id')
         if self.env.execute_query(query.select(SQL('COUNT(DISTINCT %s)', session)))[0][0] > MAX_HEAT_SESSIONS:
             raise ValidationError(_('This calendar exceeds 1,000 contributing sessions. No sales have been omitted.'))
-        stamp = SQL.identifier(orders._table, 'date_order')
-        business_day = SQL("CAST((%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh') - INTERVAL '7 hours' AS DATE)", stamp)
+        stamp = self._baseer_executive_session_stamp()
+        business_day = SQL("CAST(%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh' AS DATE)", stamp)
         generated = SQL('(%s IS NOT NULL)', summary_id)
         query.groupby = SQL('%s, %s, %s', business_day, generated, session)
         grouped = {}
@@ -177,9 +181,19 @@ class SalesHeatCalendarDashboard(models.Model):
             bucket['sales'] += Decimal(amount)
             bucket['count'] += count
             bucket['sessions'].add(session_id)
-        outside_query = self._baseer_executive_query(period, now, outside=True)
-        outside_query.groupby = business_day
-        outside = dict(self.env.execute_query(outside_query.select(business_day, SQL('COUNT(*)'))))
+        sessions = self.env['pos.session'].browse(sorted({
+            sid for native in grouped.values() for bucket in native.values() for sid in bucket['sessions']}))
+        open_ids = set(sessions.filtered(lambda record: record.state != 'closed').ids)
+        mismatched_days = set()
+        summary_customers = {}
+        for summary in nonzero:
+            opening = summary.session_id.start_at
+            if not opening:
+                raise ValidationError(_('A confirmed POS order has no session opening time; its operating day cannot be determined.'))
+            session_day = opening.replace(tzinfo=timezone.utc).astimezone(RIYADH).date()
+            if summary.business_date != session_day:
+                mismatched_days.update((summary.business_date, session_day))
+            summary_customers[session_day] = summary_customers.get(session_day, 0) + summary.customer_count
 
         rows = self.env['baseer.pos.daily.report']._aggregate_days(company, first, last)['days']
         for row in rows:
@@ -189,29 +203,41 @@ class SalesHeatCalendarDashboard(models.Model):
             direct = native.get('direct')
             has_summary = row['has_sales']
             row.update(sales=ZERO, source_kind='none', order_count=0,
-                       outside_count=outside.get(day, 0), source_action=None)
-            if direct and (has_summary or row['status'] == 'closed'):
-                row.update(status='conflict', has_sales=False, customers=0, source_kind='conflict')
-                continue
-            if has_summary:
+                       outside_count=0, source_action=None)
+            if has_summary or summary:
                 row.update(sales=money(summary['sales']) if summary else ZERO, source_kind='summary',
-                           order_count=summary['count'] if summary else 0)
-            elif direct:
-                row.update(sales=money(direct['sales']), customers=direct['count'], has_sales=True,
-                           order_count=direct['count'], source_kind='direct',
-                           status='complete' if _utc_at(day + timedelta(days=1), 5) <= now else 'incomplete')
+                           order_count=summary['count'] if summary else 0,
+                           customers=summary_customers.get(day, row['customers']), has_sales=True)
+            if direct:
+                row.update(sales=money(row['sales'] + direct['sales']),
+                           customers=row['customers'] + direct['count'] if summary else direct['count'], has_sales=True,
+                           order_count=row['order_count'] + direct['count'], source_kind='direct' if not summary else 'conflict')
+            if native:
+                contributing = set().union(*(bucket['sessions'] for bucket in native.values()))
+                row['status'] = ('incomplete' if contributing & open_ids
+                                 or (has_summary and row['status'] == 'incomplete') else 'complete')
+            conflict = (day in mismatched_days or (direct and (has_summary or summary or row['closure_ids']))
+                        or (summary and row['closure_ids']))
+            if conflict:
+                row.update(status='conflict', source_kind='conflict')
             if row['source_kind'] == 'summary' and not summary:
                 # Explicit zero-day summaries have no order by design.
                 row['source_action'] = self._baseer_source_action(company, day, day)
-            elif row['has_sales']:
-                bucket = summary or direct
+                row['source_action']['views'] = [(False, 'list'), (False, 'form')]
+            elif native:
+                contributing = set().union(*(bucket['sessions'] for bucket in native.values()))
                 row['source_action'] = {
                     'type': 'ir.actions.act_window', 'name': _('POS sales sources'),
                     'res_model': 'pos.order', 'view_mode': 'list,form',
-                    'domain': [('company_id', '=', company.id), ('state', 'in', ['paid', 'done', 'invoiced']),
-                               ('session_id', 'in', sorted(bucket['sessions'])),
-                               ('date_order', '>=', fields.Datetime.to_string(_utc_at(day, 7))),
-                               ('date_order', '<', fields.Datetime.to_string(min(_utc_at(day + timedelta(days=1), 5), now)))],
+                    'views': [(False, 'list'), (False, 'form')],
+                    'domain': [('company_id', '=', company.id),
+                               ('session_id.company_id', '=', company.id),
+                               ('state', 'in', ['paid', 'done', 'invoiced']),
+                               ('session_id', 'in', sorted(contributing)),
+                               ('session_id.start_at', '>=', fields.Datetime.to_string(_utc_at(day, 0))),
+                               ('session_id.start_at', '<', fields.Datetime.to_string(_utc_at(day + timedelta(days=1), 0))),
+                               ('session_id.start_at', '<=', fields.Datetime.to_string(now)),
+                               ('date_order', '<=', fields.Datetime.to_string(now))],
                     'context': {'allowed_company_ids': [company.id], 'create': False, 'edit': False, 'delete': False},
                 }
         return rows
@@ -351,7 +377,7 @@ class SalesHeatCalendarDashboard(models.Model):
                 'source_kind': source_kind,
                 'source_label': source_label,
                 'count_label': count_label,
-                'warning': (_('A summary and direct POS sales, or a closure and sales, overlap on this day. Totals and performance are withheld to avoid double counting.')
+                'warning': (_('Daily metadata conflicts with session sales. Original POS sales remain visible; performance evaluation is withheld pending review.')
                             if status == 'conflict' else ''),
                 'outside_count': raw.get('outside_count', 0),
                 'outside_warning': (_('Sales between 05:00 and 07:00 Riyadh time are outside the operating day and are not included.')

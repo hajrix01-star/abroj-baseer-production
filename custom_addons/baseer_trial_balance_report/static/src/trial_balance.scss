@@ -1,0 +1,23 @@
+.o_baseer_tb_report {
+    .o_baseer_gl_paper { max-width: 1080px; }
+    .o_baseer_tb_table {
+        table-layout: fixed;
+        th:first-child { width: 34%; }
+        th:not(:first-child) { width: 11%; }
+        thead tr:first-child th:not(:first-child) { text-align: center; background: #f4f6f7; }
+        thead tr:last-child th { text-align: end; background: #f8f9fa; }
+        td.is-number { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        td.is-number.is-zero { color: var(--baseer-report-zero); }
+        td.is-number.is-negative { color: #c72634; }
+        .o_baseer_gl_rbf { background: #dfe3e7; }
+    }
+    @media (max-width: 560px) {
+        .o_baseer_tb_table {
+            th:first-child { width: 100%; }
+            tr.o_baseer_gl_account, tr.o_baseer_gl_rbf, tr.o_baseer_gl_total {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            tr > td.is-number { overflow-wrap: anywhere; }
+        }
+    }
+}

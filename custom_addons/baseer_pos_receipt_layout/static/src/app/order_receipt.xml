@@ -19,12 +19,29 @@
                 <span class="baseer-receipt-summary-label-en">Invoice Summary</span>
             </div>
         </xpath>
-        <!-- A tobacco service fee can be a 100% levy subject to a minimum.
-             Keep the Odoo-generated fee amount and label, but do not print its
-             calculation base (for example: "on SR 22.83") in the professional
-             customer layout. Native Odoo receipts remain completely unchanged. -->
+        <!-- Display-only ordering: copy the native groups; never mutate tax data. -->
+        <xpath expr="//div[hasclass('pos-receipt-taxes')]/t/div[not(@t-foreach)]/span[1]" position="replace">
+            <span t-if="order.config.baseer_receipt_layout_mode === 'baseer_80'" class="text-nowrap mw-100">المجموع الفرعي</span>
+            <span t-else="" class="text-nowrap mw-100">Subtotal</span>
+        </xpath>
+        <xpath expr="//div[@t-foreach='subtotal.tax_groups']" position="before">
+            <t t-set="isBaseerReceipt" t-value="order.config.baseer_receipt_layout_mode === 'baseer_80'"/>
+            <t t-set="isTobaccoGroup" t-value="(group) => (group.group_name || '').toLowerCase().includes('tobacco') || (group.group_name || '').includes('تبغ')"/>
+            <t t-set="receiptTaxGroups" t-value="isBaseerReceipt ? [...subtotal.tax_groups.filter(isTobaccoGroup), ...subtotal.tax_groups.filter((group) => !isTobaccoGroup(group))] : subtotal.tax_groups"/>
+        </xpath>
+        <xpath expr="//div[@t-foreach='subtotal.tax_groups']" position="attributes">
+            <attribute name="t-foreach">receiptTaxGroups</attribute>
+        </xpath>
+        <xpath expr="//span[@t-esc='tax_group.group_name']" position="replace">
+            <t t-set="isVatGroup" t-value="(tax_group.group_name || '').toUpperCase().startsWith('VAT') || (tax_group.group_name || '').includes('القيمة المضافة')"/>
+            <span t-if="isBaseerReceipt &amp;&amp; isVatGroup">VAT</span>
+            <span t-else="" t-esc="tax_group.group_name"/>
+        </xpath>
+        <xpath expr="//t[@t-if='showTaxGroupLabels']" position="attributes">
+            <attribute name="t-if">showTaxGroupLabels &amp;&amp; !(isBaseerReceipt &amp;&amp; (isVatGroup || isTobaccoGroup(tax_group)))</attribute>
+        </xpath>
         <xpath expr="//t[@id='tax_base']" position="attributes">
-            <attribute name="t-if">!taxTotals.same_tax_base &amp;&amp; (order.config.baseer_receipt_layout_mode !== 'baseer_80' || (!((tax_group.group_name || '').includes('تبغ')) &amp;&amp; !((tax_group.group_name || '').toLowerCase().includes('tobacco'))))</attribute>
+            <attribute name="t-if">!taxTotals.same_tax_base &amp;&amp; !(isBaseerReceipt &amp;&amp; (isVatGroup || isTobaccoGroup(tax_group)))</attribute>
         </xpath>
     </t>
 

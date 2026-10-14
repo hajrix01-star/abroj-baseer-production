@@ -13,3 +13,93 @@ msgstr "تصميم إيصال 80 مم"
 #: model:ir.module.module,summary:base.module_baseer_pos_receipt_layout
 msgid "Optional 80 mm layout for the original POS receipt"
 msgstr "ينسق إيصال أودو الأصلي للطابعة الحرارية 80 مم."
+
+#. module: baseer_pos_receipt_layout
+#: model:ir.actions.server,name:baseer_pos_receipt_layout.action_office_receipt
+msgid "Print Customer Receipt"
+msgstr "طباعة الإيصال"
+
+#. module: baseer_pos_receipt_layout
+#. odoo-javascript
+#: code:addons/baseer_pos_receipt_layout/static/src/office/office_receipt.xml:0
+msgid "Print / Save PDF"
+msgstr "طباعة / حفظ PDF"
+
+#. module: baseer_pos_receipt_layout
+#. odoo-javascript
+#: code:addons/baseer_pos_receipt_layout/static/src/office/office_receipt.xml:0
+msgid "Choose your local printer or Save as PDF in the print window."
+msgstr "اختر طابعة جهازك أو الحفظ بصيغة PDF من نافذة الطباعة."
+
+#. module: baseer_pos_receipt_layout
+#. odoo-javascript
+#: code:addons/baseer_pos_receipt_layout/static/src/office/office_receipt.xml:0
+msgid "Original customer receipt"
+msgstr "إيصال العميل الأصلي"
+
+#. module: baseer_pos_receipt_layout
+#: model_terms:ir.ui.view,arch_db:baseer_pos_receipt_layout.office_receipt_page
+msgid "Loading receipt…"
+msgstr "جارٍ تحميل الإيصال…"
+
+#. module: baseer_pos_receipt_layout
+#. odoo-javascript
+#: code:addons/baseer_pos_receipt_layout/static/src/office/office_receipt.js:0
+msgid "The receipt could not be displayed. Please try again."
+msgstr "تعذر عرض الإيصال. يرجى المحاولة مجددًا."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "Only a Point of Sale user can view customer receipts."
+msgstr "عرض إيصالات العملاء متاح لمستخدمي نقاط البيع فقط."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The Point of Sale order no longer exists."
+msgstr "طلب نقطة البيع لم يعد موجودًا."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The receipt belongs to a company that is not selected."
+msgstr "الإيصال يخص شركة غير محددة في الشركات الحالية."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "Complete payment before printing the customer receipt."
+msgstr "أكمل الدفع قبل طباعة إيصال العميل."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "This receipt is too large to preview safely."
+msgstr "الإيصال كبير جدًا للمعاينة الآمنة."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The receipt contains too many nested details to preview safely."
+msgstr "تفاصيل الإيصال المتداخلة تتجاوز حد المعاينة الآمنة."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "Invalid receipt details."
+msgstr "تفاصيل الإيصال غير صالحة."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The receipt does not contain all original order lines."
+msgstr "الإيصال لا يحتوي جميع أصناف الطلب الأصلي."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The current receipt amounts differ from the saved order. The original receipt is required."
+msgstr "مبالغ الإيصال الحالي تختلف عن الطلب المحفوظ. يلزم الرجوع إلى الإيصال الأصلي."
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The original receipt image could not be verified."
+msgstr "تعذر التحقق من سلامة صورة الإيصال الأصلي."
+
+
+#. module: baseer_pos_receipt_layout
+#: code:addons/baseer_pos_receipt_layout/models/office_receipt.py:0
+msgid "The Saudi electronic invoice is not complete; the receipt cannot be printed yet."
+msgstr "الفاتورة الإلكترونية السعودية غير مكتملة؛ لا يمكن طباعة الإيصال الآن."

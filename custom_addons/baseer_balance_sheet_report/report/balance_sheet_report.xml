@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_balance_sheet" model="report.paperformat">
+        <field name="name">Baseer Balance Sheet A4 Portrait</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field><field name="orientation">Portrait</field>
+        <field name="margin_top">12</field><field name="margin_bottom">16</field>
+        <field name="margin_left">12</field><field name="margin_right">12</field>
+        <field name="header_line" eval="False"/><field name="header_spacing">0</field>
+    </record>
+    <record id="action_balance_sheet_pdf" model="ir.actions.report">
+        <field name="name">Balance Sheet / الميزانية العمومية</field>
+        <field name="model">baseer.balance.sheet.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_balance_sheet_report.balance_sheet_pdf</field>
+        <field name="report_file">baseer_balance_sheet_report.balance_sheet_pdf</field>
+        <field name="paperformat_id" ref="paperformat_balance_sheet"/>
+    </record>
+    <template id="balance_sheet_pdf">
+        <t t-set="o" t-value="company_record"/>
+        <t t-call="web.basic_layout">
+            <div class="page bbs-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .bbs-pdf {font-family: DejaVu Sans, Arial, sans-serif; color: #25364b; font-size: 10px;}
+                    .bbs-pdf h1 {font-size: 16px; margin: 0 0 5px; font-weight: 700;}
+                    .bbs-pdf .meta {color: #657487; line-height: 1.5; margin-bottom: 9px; border-bottom: 1px solid #d7dde2; padding-bottom: 7px;}
+                    .bbs-pdf .notice {color: #566a75; background: #d9eef2; padding: 5px 7px; margin: 6px 0 9px;}
+                    .bbs-pdf table {width: 100%; border-collapse: collapse; table-layout: fixed;}
+                    .bbs-pdf thead {display: table-header-group;}
+                    .bbs-pdf tr {page-break-inside: avoid;}
+                    .bbs-pdf th, .bbs-pdf td {padding: 4px 6px; border-bottom: 1px solid #e1e5e9; vertical-align: middle;}
+                    .bbs-pdf th {font-weight: 400; text-align: left;}
+                    .bbs-pdf[dir="rtl"] th {text-align: right;}
+                    .bbs-pdf .numeric {direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;}
+                    .bbs-pdf .negative {color: #cf2732;}
+                    .bbs-pdf .zero {color: #b8c1ca;}
+                    .bbs-pdf .section th, .bbs-pdf .section td {background: #d9dde0; font-weight: 700;}
+                    .bbs-pdf .account th {padding-left: 23px;}
+                    .bbs-pdf[dir="rtl"] .account th {padding-left: 6px; padding-right: 23px;}
+                    .bbs-pdf .total th, .bbs-pdf .total td {border-top: 1px solid #c6cdd3; font-weight: 700;}
+                </style>
+                <h1 t-esc="'الميزانية العمومية' if arabic else 'Balance Sheet'"/>
+                <div class="meta">
+                    <div><span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/></div>
+                    <div><span t-esc="'كما في' if arabic else 'As of'"/>: <span dir="ltr" t-esc="report['period']['date_to']"/></div>
+                    <div><span t-esc="'الدفاتر' if arabic else 'Journals'"/>: <span t-esc="journals if report['is_partial_journals'] else ('جميع الدفاتر' if arabic else 'All journals')"/></div>
+                    <div><span t-esc="'أُعيد حسابه عند الطباعة' if arabic else 'Recalculated at print time'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
+                </div>
+                <div class="notice" t-esc="'قيود مرحلة حسب التاريخ المحاسبي؛ ليست لقطة تاريخية مجمدة.' if arabic else 'Posted entries by accounting date; not a frozen historical snapshot.'"/>
+                <table>
+                    <thead><tr>
+                        <th style="width: 72%;" t-esc="'الحساب' if arabic else 'Account'"/>
+                        <th class="numeric" t-esc="'الرصيد' if arabic else 'Balance'"/>
+                    </tr></thead>
+                    <tbody>
+                        <t t-foreach="report['sections']" t-as="section">
+                            <tr class="section"><th t-esc="({'assets': 'الأصول', 'liabilities': 'الالتزامات', 'equity': 'حقوق الملكية', 'brought_forward': 'نتيجة مرحلة من السنة السابقة', 'current_result': 'نتيجة السنة الحالية'} if arabic else {'assets': 'Assets', 'liabilities': 'Liabilities', 'equity': 'Equity', 'brought_forward': 'Result Brought Forward', 'current_result': 'Current Year Result'})[section['key']]"/>
+                                <td t-att-class="'numeric negative' if section['negative'] else 'numeric'" t-esc="section['amount']"/></tr>
+                            <tr t-foreach="report['section_accounts'][section['key']]" t-as="account" class="account">
+                                <th><span t-esc="account['code']"/> <span t-esc="account['name']"/></th>
+                                <td t-att-class="'numeric negative' if account['negative'] else 'numeric'" t-esc="account['amount']"/></tr>
+                        </t>
+                        <tr class="total"><th t-esc="'إجمالي الأصول' if arabic else 'Total Assets'"/>
+                            <td class="numeric" t-esc="report['equation']['assets']"/></tr>
+                        <tr class="total"><th t-esc="'إجمالي الالتزامات والحقوق والنتائج' if arabic else 'Total Liabilities, Equity and Results'"/>
+                            <td class="numeric" t-esc="report['equation']['liabilities_equity_results']"/></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="footer" style="font-family: DejaVu Sans, Arial, sans-serif; font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                <span t-esc="report['company']['name']"/> · <span t-esc="report['company']['currency_code']"/>
+                <span style="float: right;"><span t-esc="'صفحة' if arabic else 'Page'"/> <span class="page"/> / <span class="topage"/></span>
+            </div>
+        </t>
+    </template>
+</odoo>

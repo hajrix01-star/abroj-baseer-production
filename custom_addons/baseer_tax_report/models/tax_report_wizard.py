@@ -166,6 +166,13 @@ class BaseerTaxReportWizard(models.TransientModel):
                     & Domain('tax_tag_ids', '=', False))
         domain = untagged & Domain('tax_line_id.tax_group_id', 'in', tax_groups.ids)
         other_domain = untagged & Domain('tax_line_id.tax_group_id', 'not in', tax_groups.ids)
+        # The municipal tobacco fee has its own report, not a VAT exception.
+        # Use the company-specific account code already used by that report.
+        tobacco_accounts = self.env['account.account'].with_company(self.company_id).search([
+            ('company_ids', 'in', self.company_id.id), ('code', '=', '201021'),
+        ])
+        if tobacco_accounts:
+            other_domain &= Domain('account_id', 'not in', tobacco_accounts.ids)
         aml = self.env['account.move.line']
         grouped = aml._read_group(domain, [], ['balance:sum'])
         other_grouped = aml._read_group(other_domain, [], ['balance:sum'])
@@ -293,8 +300,9 @@ class BaseerTaxReportWizard(models.TransientModel):
             'companies': [{'id': company.id, 'name': company.name} for company in companies],
             'journals': [{'id': journal.id, 'name': journal.display_name,
                           'company_id': journal.company_id.id} for journal in journals],
-            'default_company_id': self.env.company.id if self.env.company in companies else (
-                companies[0].id if companies else False),
+            # The report follows Odoo's active company.  Never silently switch a
+            # non-Saudi active company to another Saudi company in the toolbar.
+            'default_company_id': self.env.company.id if self.env.company in companies else False,
             'default_year': year, 'default_quarter': quarter,
         }
 
@@ -339,6 +347,7 @@ class BaseerTaxReportWizard(models.TransientModel):
         return {
             'company': data['company'].name,
             'currency': data['currency'].name,
+            'period_type': data['wizard'].period_type,
             'date_from': data['date_from'].isoformat(),
             'date_to': data['date_to'].isoformat(),
             'journal_names': data['journal_names'],

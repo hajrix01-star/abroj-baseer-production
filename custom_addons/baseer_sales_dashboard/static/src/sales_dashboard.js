@@ -52,17 +52,15 @@ export class BaseerSalesDashboard extends Component {
 
     get cards() {
         const values = this.state.payload?.cards || {};
-        // Display-only examples for an empty dashboard; never part of the payload or calculations.
-        const preview = { sales: "240,000", customers: "4,000", daily_sales: "8,000", daily_customers: "133", average_bill: "60" };
         return [
             { key: "sales", title: _t("Total sales"), note: _t("Tax included"), icon: "fa-line-chart" },
-            { key: "customers", title: _t("Registered customers"), note: _t("From approved summaries"), icon: "fa-users" },
-            { key: "daily_sales", title: _t("Average daily sales"), note: _t("Completed operating days"), icon: "fa-calendar" },
-            { key: "daily_customers", title: _t("Average daily customers"), note: _t("Completed operating days"), icon: "fa-user" },
+            { key: "customers", title: _t("Recorded customers"), note: _t("Known guest counts; missing counts are not zero"), icon: "fa-users" },
+            { key: "daily_sales", title: this.state.payload?.unified_sources ? _t("Average sales per recorded day") : _t("Average daily sales"), note: _t("Days with recorded sales"), icon: "fa-calendar" },
+            { key: "daily_customers", title: _t("Average daily customers"), note: _t("Days with positive recorded sales"), icon: "fa-user" },
             { key: "average_bill", title: _t("Average bill"), note: _t("Per registered customer"), icon: "fa-credit-card" },
         ].map((spec) => ({
             ...spec, ...values[spec.key],
-            display: this.hasRecordedData ? values[spec.key]?.display : preview[spec.key],
+            display: values[spec.key]?.available ? values[spec.key].display : "—",
             currency: ["sales", "daily_sales", "average_bill"].includes(spec.key),
         }));
     }
@@ -84,39 +82,52 @@ export class BaseerSalesDashboard extends Component {
 
     get points() { return this.state.payload?.timeline?.points || []; }
     get hasRecordedData() { return this.state.payload?.has_data === true; }
-    get title() { return _t("Sales summaries"); }
+    get title() { return _t("Sales overview"); }
+    get sourceRows() { return this.state.payload?.source_breakdown || []; }
+    openSalesSource(row) {
+        if (row.source_action) { return this.action.doAction(row.source_action); }
+    }
     get combinedChartLabel() { return _t("Sales as bars and registered customers as a line over the selected period"); }
     get salesAxisLabel() { return `${_t("Sales")} (${this.state.payload?.company.currency || ""})`; }
     get customersAxisLabel() { return _t("Customers (count)"); }
     get labels() {
         return {
-            subtitle: _t("Approved sales and registered customers"),
+            subtitle: _t("Unified sales sources"),
+            sourceBreakdown: _t("Sales by source"),
+            sourceDateBasis: _t("Summaries: business date · POS: session opening day · Sales: invoice date"),
+            manualScope: _t("Approved summaries only"),
             refresh: _t("Refresh"), sources: _t("View approved summaries"),
             loading: _t("Loading the selected period…"), retry: _t("Try again"),
             comparison: _t("Compared with"), previous: _t("Previous"),
             sales: _t("Sales"), customers: _t("Customers"),
             chartTitle: _t("Sales and customers"),
-            shifts: _t("Shift performance"), shift: _t("Shift"),
+            shifts: _t("Summary shift performance"), shift: _t("Shift"),
             metric: _t("Metric"), averageBill: _t("Average bill"),
             shiftEmpty: _t("No recorded shifts in this period"),
             shiftUnavailable: _t("This metric is unavailable for the recorded shifts"),
-            payments: _t("Sales by payment method"), paymentMethod: _t("Payment method"),
+            payments: _t("Sales by payment category"), paymentMethod: _t("Payment category"),
+            paymentScope: _t("Summary allocations and POS payments; invoice receipts are not inferred"),
+            knownCustomers: _t("Recorded customer counts are partial when source rows have no guest count."),
+            missingCustomerRows: _t("Source rows without guest counts"),
+            invoiceTenderUnknown: _t("Invoice sales with unknown payment category"),
+            settlementDifference: _t("Sale and tender difference"),
+            unclassifiedSales: _t("Unclassified payment amounts"),
             paymentShare: _t("Share of total sales (%)"),
-            categorySales: _t("Sales by category"),
-            categoryDistribution: _t("Sales distribution by category"),
+            categorySales: _t("Approved summaries only"),
+            categoryDistribution: _t("Summary sales by category"),
             highestCategory: _t("Highest category"), lowestCategory: _t("Lowest category"),
             categoryShare: _t("Share (%)"), categoryAmounts: _t("Category amounts"),
             categoryUnavailable: _t("Category percentages and rankings are unavailable until all payment allocations are complete."),
             paymentEmpty: _t("No payment allocations recorded in this period"),
-            paymentIncomplete: _t("Some approved summaries have missing or inconsistent payment allocations. The breakdown is partial and percentages are unavailable."),
+            paymentIncomplete: _t("Payment coverage is incomplete or inconsistent. Amounts remain visible; full-sales percentages are unavailable."),
             applicationShare: _t("Applications share of total sales (%)"),
-            coveredSales: _t("Covered sales"), uncoveredSales: _t("Sales excluded from payment breakdown"),
+            coveredSales: _t("Sales with matched payment allocation"), uncoveredSales: _t("Sales excluded from payment breakdown"),
             coveredSummaries: _t("Covered summaries"), missingAllocations: _t("Missing allocations"),
             mismatchedAllocations: _t("Inconsistent allocations"),
-            preview: _t("No data yet — illustrative preview"),
+            preview: _t("No recorded sales in this period"),
             unavailable: _t("Unavailable"), partial: _t("Partial period"),
-            empty: _t("No approved sales summaries in this period"),
-            emptyNote: _t("Approved summaries will appear here. Unrecorded and closed periods are shown as gaps."),
+            empty: _t("No recorded sales in this period"),
+            emptyNote: _t("Recorded sales appear here. Unavailable values are shown as —."),
             completedDays: _t("Completed days"), partialDays: _t("Partial days"),
             closedDays: _t("Closed days"), missingDays: _t("Unrecorded days"),
             customerWarning: _t("Some approved sales have no registered customers. Affected averages are unavailable."),
@@ -126,6 +137,7 @@ export class BaseerSalesDashboard extends Component {
 
     statusLabel(status) {
         return {
+            recorded: _t("Recorded sales"),
             complete: _t("Complete"), incomplete: _t("Partial"),
             closed: _t("Closed"), missing: _t("Not recorded"),
         }[status] || _t("Not recorded");
@@ -187,8 +199,9 @@ export class BaseerSalesDashboard extends Component {
         if (row.has_data && row.source_action) { return this.action.doAction(row.source_action); }
     }
 
-    get paymentRows() { return this.state.payload?.payment_performance?.rows || []; }
+    get paymentRows() { return this.state.payload?.payment_performance?.categories || []; }
     get paymentCoverage() { return this.state.payload?.payment_performance?.coverage; }
+    get paymentPerformance() { return this.state.payload?.payment_performance; }
     get applicationShare() { return this.state.payload?.payment_performance?.application_share; }
     get categoryRows() { return this.state.payload?.payment_performance?.categories || []; }
     get categoryChartRows() { return this.state.payload?.payment_performance?.chart_categories || []; }
@@ -216,6 +229,10 @@ export class BaseerSalesDashboard extends Component {
 
     openPaymentSources(row) {
         if (row.source_action) { return this.action.doAction(row.source_action); }
+    }
+
+    openCategorySource(action) {
+        if (action?.action) { return this.action.doAction(action.action); }
     }
 
     openSources() {
@@ -307,7 +324,6 @@ export class BaseerSalesDashboard extends Component {
             this.charts.push(chart);
         this.drawShiftChart(font, rtl);
         this.drawPaymentChart(font, rtl);
-        this.drawCategoryChart(font, rtl);
     }
 
     drawShiftChart(font, rtl) {

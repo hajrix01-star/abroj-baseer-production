@@ -1,0 +1,150 @@
+name: Benchmark Baseer general ledger capacity
+
+on:
+  workflow_dispatch:
+    inputs:
+      diagnostic_ten:
+        description: Measure ten readers even when latency gates fail (never G6 GO)
+        type: boolean
+        default: false
+      http_two_workers:
+        description: Measure authenticated HTTP sessions on two pinned Odoo workers
+        type: boolean
+        default: false
+      stage_profile:
+        description: Profile one authenticated Odoo report read in a fresh shell
+        type: boolean
+        default: false
+      qa_pilot:
+        description: Isolated 30k lines / 2k accounts / 2-reader QA pilot gate
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baseer-gl-capacity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-capacity:
+    name: Isolated Odoo 19 general ledger capacity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a valid capacity diagnostic mode
+        if: ${{ (inputs.http_two_workers && inputs.stage_profile) || (inputs.qa_pilot && (!inputs.http_two_workers || inputs.diagnostic_ten)) }}
+        run: exit 1
+      - name: Install report in throwaway database
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci -i baseer_general_ledger_report --without-demo=all \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=warn
+      - name: Seed balanced posted lines in ephemeral database
+        shell: bash
+        env:
+          BASEER_GL_QA_PILOT: ${{ inputs.qa_pilot }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_GL_BENCH_PHASE=seed \
+            -e BASEER_GL_QA_PILOT \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci \
+            < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_capacity.py"
+      - name: Measure report reads as non-superuser in fresh process
+        if: ${{ !inputs.http_two_workers && !inputs.stage_profile }}
+        shell: bash
+        env:
+          BASEER_GL_DIAG_TEN: ${{ inputs.diagnostic_ten }}
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_GL_BENCH_PHASE=measure \
+            -e BASEER_GL_DIAG_TEN="$BASEER_GL_DIAG_TEN" \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci \
+            < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_capacity.py"
+      - name: Profile one read by a non-superuser in a fresh process
+        if: ${{ inputs.stage_profile }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo -e BASEER_GL_PROFILE_PHASE=profile \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci \
+            < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_profile.py"
+      - name: Measure authenticated HTTP reads on two pinned workers
+        if: ${{ inputs.http_two_workers }}
+        shell: bash
+        env:
+          BASEER_GL_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+          BASEER_GL_QA_PILOT: ${{ inputs.qa_pilot }}
+        run: |
+          set -Eeuo pipefail
+          cpu_set="$(python3 -c 'import os; allowed=sorted(os.sched_getaffinity(0)); assert len(allowed)>=2, "Two CPUs required"; print(",".join(map(str, allowed[:2])))')"
+          echo "BASEER_GL_HTTP_CPUSET=$cpu_set"
+          test -n "$BASEER_GL_POSTGRES_CONTAINER"
+          docker update --cpuset-cpus "$cpu_set" "$BASEER_GL_POSTGRES_CONTAINER" >/dev/null
+          export BASEER_GL_HTTP_PASSWORD="$(openssl rand -hex 32)"
+          export BASEER_GL_HTTP_CPUSET="$cpu_set"
+          export BASEER_GL_HTTP_PREPARED_PATH="$RUNNER_TEMP/baseer-gl-http-prepared.json"
+          export BASEER_GL_HTTP_POSTGRES_CONTAINER="$BASEER_GL_POSTGRES_CONTAINER"
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e BASEER_GL_HTTP_PHASE=prepare -e BASEER_GL_HTTP_PASSWORD -e BASEER_GL_QA_PILOT \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci \
+            < "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_http.py" \
+            > "$RUNNER_TEMP/baseer-gl-http-preparation.log" 2>&1
+          grep '^BASEER_GL_HTTP_PREPARED=' "$RUNNER_TEMP/baseer-gl-http-preparation.log" \
+            | tail -n 1 | sed 's/^BASEER_GL_HTTP_PREPARED=//' > "$BASEER_GL_HTTP_PREPARED_PATH"
+          test -s "$BASEER_GL_HTTP_PREPARED_PATH"
+          trap 'docker logs --tail 80 baseer-gl-http 2>/dev/null || true; docker rm -f baseer-gl-http >/dev/null 2>&1 || true' EXIT
+          docker run -d --name baseer-gl-http --network host --cpuset-cpus "$cpu_set" --memory 5g \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d baseer_gl_capacity_ci --db-filter='^baseer_gl_capacity_ci$' \
+            --workers=2 --max-cron-threads=0 --http-interface=127.0.0.1 --http-port=8079 \
+            --log-level=warn >/dev/null
+          BASEER_GL_HTTP_PHASE=client python3 \
+            "$GITHUB_WORKSPACE/custom_addons/baseer_general_ledger_report/tests/bench_general_ledger_http.py"

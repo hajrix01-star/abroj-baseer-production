@@ -2936,3 +2936,38 @@ msgstr "لم تُضبط طرق الدفع لهذه الشركة."
 #: code:addons/baseer_pos_summary/models/summary.py:0
 msgid "The sales date cannot be in the future. Choose today or an earlier date."
 msgstr "لا يمكن أن يكون تاريخ المبيعات في المستقبل. اختر تاريخ اليوم أو تاريخًا سابقًا."
+
+#. module: baseer_pos_summary
+#: model:ir.model.fields,field_description:baseer_pos_summary.field_report_pos_order__baseer_root_pos_categ_id
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_report_pos_order_search_root_category
+msgid "Main POS Category"
+msgstr "الفئة الرئيسية لنقطة البيع"
+
+#. module: baseer_pos_summary
+#: model:ir.model.fields,help:baseer_pos_summary.field_report_pos_order__baseer_root_pos_categ_id
+msgid "Top-level ancestor of the native POS category, using the current category hierarchy."
+msgstr "أعلى فئة أم لفئة نقطة البيع الأصلية، وفق شجرة الفئات الحالية."
+
+#. module: baseer_pos_summary
+#: model:ir.actions.act_window,name:baseer_pos_summary.action_pos_payment_category
+#: model:ir.ui.menu,name:baseer_pos_summary.menu_pos_payment_category
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_pos_payment_category_pivot
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_pos_payment_category_graph
+msgid "Settlement by Category"
+msgstr "السداد حسب الفئة"
+
+#. module: baseer_pos_summary
+#: model:ir.model.fields,field_description:baseer_pos_summary.field_pos_payment__baseer_payment_category_id
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_pos_payment_search_category
+msgid "Payment Category"
+msgstr "فئة طريقة السداد"
+
+#. module: baseer_pos_summary
+#: model_terms:ir.ui.view,arch_db:baseer_pos_summary.view_pos_payment_search_category
+msgid "Payment Date"
+msgstr "تاريخ السداد"
+
+#. module: baseer_pos_summary
+#: model:ir.model.fields,help:baseer_pos_summary.field_pos_payment__baseer_payment_category_id
+msgid "Current configured settlement category; not proof of bank collection."
+msgstr "فئة السداد المضبوطة حاليًا؛ لا تُثبت وصول المبلغ إلى البنك."

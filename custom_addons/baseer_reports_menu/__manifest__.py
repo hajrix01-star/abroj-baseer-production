@@ -1,7 +1,7 @@
 {
     "name": "Baseer Reports Menu",
     "summary": "Unified Invoicing report page for Baseer-owned financial reports",
-    "version": "19.0.1.0.5",
+    "version": "19.0.1.0.6",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

@@ -5,7 +5,7 @@ at the matched session receivable: expanding every session counterpart once
 per payment would count the same sale repeatedly. Native order/payment totals
 and their posted sales family provide the same boundary for ordinary sessions.
 """
-from decimal import localcontext, ROUND_HALF_UP
+from decimal import Decimal, localcontext, ROUND_HALF_UP
 
 from odoo import _, models
 from odoo.exceptions import AccessError
@@ -16,6 +16,20 @@ from odoo.addons.baseer_cash_categories.models.cash_categories import (
 
 class PosSummaryCashReport(models.AbstractModel):
     _inherit = 'eh.account.dynamic.report.handler.baseer_cash_categories'
+
+    @staticmethod
+    def _baseer_native_pos_rounded_net(gross, tax, line_net, line_gross, rounding):
+        """Use header tax settlement only within one currency rounding unit.
+
+        Native global tax rounding can leave line subtotals one cent away.
+        This is not an allocation tolerance: the resulting session net/tax
+        must still reconcile exactly to its posted accounting below.
+        ``tax`` retains the native definition, including municipal fee taxes.
+        """
+        if rounding <= ZERO or line_gross != gross:
+            return None
+        net = gross - tax
+        return net if abs(line_net - net) <= rounding else None
 
     def _baseer_pos_exact_reversal(self, original, reversal, state):
         cache = state.setdefault('baseer_pos_reversal_evidence', {})
@@ -44,7 +58,10 @@ class PosSummaryCashReport(models.AbstractModel):
         error = {'error': _('Native POS accounting evidence is incomplete; its full cash amount is retained.')}
         cache[session.id] = error
         session.check_access('read')
-        orders, payments = session.order_ids, session.order_ids.payment_ids
+        # Cancelled orders do not contribute to the native closed-session
+        # journal. Keep all other states visible to the strict done-state gate.
+        orders = session.order_ids.filtered(lambda order: order.state != 'cancel')
+        payments = orders.payment_ids
         order_lines = orders.lines
         for records in (orders, payments, order_lines):
             records.check_access('read')
@@ -74,10 +91,13 @@ class PosSummaryCashReport(models.AbstractModel):
             # orientation (_compute_amount_line_all multiplies qty by -1).
             # Restore the ledger sign before comparing the native proof.
             sign = -1 if order.is_refund else 1
-            order_net = sign * sum((money(line.price_subtotal) for line in order.lines), ZERO)
+            line_net = sign * sum((money(line.price_subtotal) for line in order.lines), ZERO)
             order_tax = money(order.amount_tax)
-            if (sign * sum((money(line.price_subtotal_incl) for line in order.lines), ZERO) != order_gross
-                    or order_net + order_tax != order_gross
+            order_net = self._baseer_native_pos_rounded_net(
+                order_gross, order_tax, line_net,
+                sign * sum((money(line.price_subtotal_incl) for line in order.lines), ZERO),
+                Decimal(str(session.company_id.currency_id.rounding)))
+            if (order_net is None
                     or sum((money(payment.amount) for payment in order.payment_ids), ZERO) != order_gross):
                 return error
             if not order_gross and (order_net or order_tax or any(money(payment.amount) for payment in order.payment_ids)):

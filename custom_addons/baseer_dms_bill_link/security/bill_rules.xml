@@ -1,0 +1,8 @@
+<odoo>
+    <!-- Global: source permissions INTERSECT native DMS and QA owner rules. -->
+    <record id="bill_source_access" model="ir.rule">
+        <field name="name">Vendor bill documents: original source access</field>
+        <field name="model_id" ref="dms.model_dms_file"/>
+        <field name="domain_force">[('bill_source_permission', '=', True)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,122 @@
+name: Test Baseer limited operations report
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_operations_report/**
+      - .github/workflows/test-baseer-operations-report.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  odoo-operations-tests:
+    name: Odoo 19 limited operations tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and test only the limited operations calculator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/heritage-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/payroll-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
+            -d baseer_operations_report_ci -i baseer_operations_report --without-demo=all \
+            --test-enable --test-tags=/baseer_operations_report,-operations_browser \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test
+
+  hoot-operations-preview:
+    name: Odoo 19 operations adapter Hoot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned Odoo 19 package and browser dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          command -v google-chrome
+          curl --fail --location --silent --show-error \
+            https://nightly.odoo.com/19.0/nightly/deb/odoo_19.0.20260926_all.deb \
+            --output "$RUNNER_TEMP/odoo_19.0.20260926_all.deb"
+          printf '%s  %s\n' \
+            cb9d876779edc8d5f0394ddd3936a387e349077c \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" | sha1sum --check
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" python3-websocket
+      - name: Test only the operations amount adapter at desktop and mobile width
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          odoo --db_host=127.0.0.1 --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons","$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19","$GITHUB_WORKSPACE/third_party_addons/odoomates_19" \
+            -d baseer_operations_ui_ci -i baseer_operations_report --without-demo=all \
+            '--test-tags=/web:WebSuite.test_unit_desktop[@baseer_operations_report/operations],/web:MobileWebSuite.test_unit_mobile[@baseer_operations_report/operations]' \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-operations-hoot.log"
+          test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-operations-hoot.log")" -ge 2
+          grep -Fq '[HOOT] Running test "@baseer_operations_report/operations/' "$RUNNER_TEMP/baseer-operations-hoot.log"
+      - name: Exercise the unactivated preview at desktop and mobile width
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          odoo --db_host=127.0.0.1 --db_port=5432 \
+            --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons","$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19","$GITHUB_WORKSPACE/third_party_addons/odoomates_19" \
+            -d baseer_operations_ui_ci -u baseer_operations_report --without-demo=all \
+            '--test-tags=/baseer_operations_report:TestOperationsBrowser.test_preview_filters_detail_and_scroll,/baseer_operations_report:TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll' \
+            --test-enable --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq '0 failed, 0 error' "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq 'test_preview_filters_detail_and_scroll' "$RUNNER_TEMP/baseer-operations-browser.log"
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseer-operations-preview-diagnostics
+          path: |
+            ${{ runner.temp }}/baseer-operations-hoot.log
+            ${{ runner.temp }}/baseer-operations-browser.log
+            /tmp/odoo_tests/baseer_operations_ui_ci/screenshots/
+          retention-days: 7

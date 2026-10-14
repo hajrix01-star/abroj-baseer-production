@@ -1,0 +1,177 @@
+msgid ""
+msgstr ""
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_dms_bill_link
+#: model:ir.model.fields,field_description:baseer_dms_bill_link.field_res_company__dms_bill_root_id
+msgid "Vendor Bill Document Root"
+msgstr "مجلد مستندات فواتير الموردين"
+
+#. module: baseer_dms_bill_link
+#: model:ir.model.fields,help:baseer_dms_bill_link.field_res_company__dms_bill_root_id
+msgid "Automatically index new vendor bill attachments here without copying originals."
+msgstr "فهرسة مرفقات فواتير الموردين الجديدة هنا تلقائيًا دون نسخ الأصول."
+
+#. module: baseer_dms_bill_link
+#: model:ir.model.fields,field_description:baseer_dms_bill_link.field_dms_file__bill_attachment_id
+msgid "Original Vendor Bill Attachment"
+msgstr "المرفق الأصلي لفاتورة المورد"
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/configuration.py:0
+msgid "Select a private, unlinked database or filestore root belonging to this company."
+msgstr "اختر مجلدًا رئيسيًا خاصًا بهذه الشركة وغير مرتبط بسجل، بتخزين قاعدة بيانات أو ملفات."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/configuration.py:0
+msgid "Remove document references before changing their root."
+msgstr "احذف مراجع المستندات قبل تغيير مجلدها الرئيسي."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/configuration.py:0
+msgid "Native accounting attachment indexing must remain disabled."
+msgstr "يجب إبقاء الفهرسة الأصلية للمرفقات المحاسبية معطلة."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/configuration.py:0
+msgid "The configured vendor bill document storage is protected."
+msgstr "إعدادات تخزين مستندات فواتير الموردين محمية."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/configuration.py:0
+msgid "The vendor bill document root and its association are protected."
+msgstr "مجلد مستندات فواتير الموردين الرئيسي وارتباطه محميان."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/configuration.py:0
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Vendor bill documents cannot be shared with public tokens."
+msgstr "لا يمكن مشاركة مستندات فواتير الموردين بروابط عامة."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/account_move.py:0
+msgid "Remove document references before changing the bill company or type."
+msgstr "احذف مراجع المستندات قبل تغيير شركة الفاتورة أو نوعها."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "An original attachment can have only one document reference."
+msgstr "يمكن إنشاء مرجع مستند واحد فقط لكل مرفق أصلي."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "The original bill belongs to another company."
+msgstr "الفاتورة الأصلية تابعة لشركة أخرى."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Accounting originals cannot use native attachment links."
+msgstr "لا يمكن ربط الأصول المحاسبية عبر روابط المرفقات الأصلية."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Invalid vendor bill document reference."
+msgstr "مرجع مستند فاتورة المورد غير صالح."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Bill document references are created automatically from originals."
+msgstr "تُنشأ مراجع مستندات الفواتير تلقائيًا من المرفقات الأصلية."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Original bill document content and association are protected."
+msgstr "محتوى مستند الفاتورة الأصلي وارتباطه محميان."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Bill document references cannot be reassigned."
+msgstr "لا يمكن تغيير ارتباط مراجع مستندات الفواتير."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Original bill document references cannot be copied."
+msgstr "لا يمكن نسخ مراجع مستندات الفواتير الأصلية."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Original bill documents are read only in Documents."
+msgstr "مستندات الفواتير الأصلية متاحة للقراءة فقط في المستندات."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Original bill document references cannot be migrated."
+msgstr "لا يمكن نقل تخزين مراجع مستندات الفواتير الأصلية."
+
+#. module: baseer_dms_bill_link
+#. odoo-python
+#: code:addons/baseer_dms_bill_link/models/dms_file.py:0
+msgid "Original attachment reference"
+msgstr "مرجع المرفق الأصلي"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Document preview"
+msgstr "معاينة المستند"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Preview document"
+msgstr "معاينة المستند"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Download document"
+msgstr "تنزيل المستند"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Loading preview…"
+msgstr "تحميل المعاينة…"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "The preview could not be loaded. You can download the document."
+msgstr "تعذرت المعاينة. يمكنك تنزيل المستند."
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "PDF preview"
+msgstr "معاينة PDF"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Close"
+msgstr "إغلاق"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Download"
+msgstr "تنزيل"

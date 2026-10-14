@@ -10,9 +10,12 @@ for script in \
     ops/qa/baseer-qa-approve-release \
     ops/qa/baseer-qa-deploy \
     ops/qa/baseer-qa-release-poller \
-    ops/qa/install-qa-release-poller.sh; do
+    ops/qa/install-qa-release-poller.sh \
+    ops/qa/test-qa-deploy-guard.sh; do
     bash -n "$script"
 done
+
+bash ops/qa/test-qa-deploy-guard.sh
 
 for policy in ops/qa/release-policies/*.env; do
     [ -f "$policy" ] || continue
@@ -37,7 +40,7 @@ for policy in ops/qa/release-policies/*.env; do
         $1 == "THIRD_PARTY_MODULES" {
             third_party++
             external=$2
-            if (external != "eh_account_dynamic_reports") valid=0
+            if (external != "eh_account_dynamic_reports" && external != "dms") valid=0
             next
         }
         { valid=0 }

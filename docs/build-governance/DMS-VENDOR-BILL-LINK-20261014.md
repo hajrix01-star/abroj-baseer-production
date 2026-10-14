@@ -141,3 +141,44 @@ with different policy (approval binds runid too). No install orDBwrite; current8
 unchanged. Correct retry uses fresh releaseidbaseer-2026-10-14-dms-bill-link-r2,
 sameab0aa23d and singlemodule, never overrides immutableapproval orprocessedmarker.
 No further Odoo testneeded: deploymentpolicy only, unchanged19-case candidate.
+
+## QA actual result — 2026-10-14
+
+PR325/9fb5fe9c source38540289088PASS approved fresh-r2 policy. Request38540478688
+queuePASS, QA_POLLER=GO, result.env QA_DEPLOY=GO source
+ab0aa23d8315747447eb9e0bb370ab1ab5f81777. Current
+/srv/baseer-qa/releases/ab0aa23d8315-run-38540478688-20261014T091209Z;
+backup /srv/baseer-qa/backups/pre-ab0aa23d8315-38540478688-20261014T091209Z.
+recovery.sha256 database.dump/filestore.tar verifiedOK; modulelog loaded
+baseer_dms_bill_link and its XML, Modulesloaded, no othermoduleupgrade requested.
+All12trackedmodulefileSHA256 matched Git sourceab0aa23d exactly.
+
+Reviewedprobe executed09:14UTC non-sudo owner2, approved companyIDs1/2;
+DMS_BILL_LINK_QA=PASS: roots8/9, oneoriginal, originalsurvivesindexunlink,
+sourceunlinkremovesindex, repeatidempotent, linkedmove/content/copy/tokendenied.
+Both syntheticemptydraftbills/JPGattachments/indexes rolledback beforecommit;
+onlystorage/root/companyconfiguration persisted. Currentroot8ARZ/root9AlMoallem;
+ownertrial sixrules kept, nopublictokens, no historicalattachmentbackfill.
+
+Finalread09:15UTC sixfullrowtablefingerprints match08:41baseline EXACTLY:
+summary669/3cc77fb1c40cfe645ff5722a75ee6f33;
+POS718/5047663e50f54c0c48e7e8e7481c092e;
+payments1896/a650b5b054949864dca0665892438149; Sales0/null;
+moves8590/22aac86abae3b9baca21ec0a2f2c5c11;
+lines21291/e581ce43bc158bebbc2ed880eb43a9d9. No financialrecordchanged by this task.
+LIVEstillf894b8927bce-run-38252387973-20261012T125758Z, untouched.
+
+Acceptance scope: backendQAactivation+lifecycle, isolatedCI19ORM/HTTPtests. No
+authenticatedQAUI/mobile/visualacceptance claim. User can upload a NEW supplier
+billattachment in company1/2 and find it in Documents955→فواتير المشتريات.
+Oneir.attachmentownsbytes; DMSbill_attachment_id is metadata/reference only,
+no binary or persistentthumbnailcopy. HR/projects/products/fleet/approvals are
+not enabled here, not a parity claim for OCR/AI/Sign or allEnterpriseapps.
+Conditionalowner-onlyQAapproval of originalDMS trial remains; this bridge freezes
+linkedindexes and does not fix native movement of unrelated manualdocuments.
+
+Independentfinal dms_bridge_gate: CONDITIONAL GO deployedowner-onlyQA journey.
+Mergedab0aa23d matches reviewedcc564521runtime/tests/workflow/probe; operations
+evidence closes backup/provenance/install/activation/financialpreservation.
+Companyroots8/9 only; noUI/mobile/QAauthenticatedHTTPcertification, noLIVE,
+additionalusers, HR orbackfill. CIHTTPacceptance is distinct from QAUI acceptance.

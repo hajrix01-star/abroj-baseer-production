@@ -268,7 +268,12 @@ class TestDmsDestinationAccess(DestinationFixtures, TransactionCase):
 
     def test_child_destination_own_create_is_used_instead_of_parent_create(self):
         # Target child grants create even though its parent grants only read/write.
-        self.assertFalse(self.as_user(self.readonly_root).permission_create)
+        self.assertFalse(self.readonly_group.perm_create)
+        root_model = self.as_user(self.env['dms.directory'])
+        self.assertFalse(root_model.search([
+            ('id', '=', self.readonly_root.id),
+            ('id', 'in', root_model._get_access_groups_query('create')),
+        ]))
         self.as_user(self.file_a).write({'directory_id': self.writable_child.id})
         self.assertEqual(self.file_a.directory_id, self.writable_child)
         self.assertEqual(self.file_a.content, self.payload)
@@ -284,7 +289,7 @@ class TestDmsDestinationAccess(DestinationFixtures, TransactionCase):
                 self.as_user(self.movable_child).write({'parent_id': destination.id})
             self.assertEqual(self.movable_child.parent_id, original_parent)
             self.assertEqual(self.movable_child.company_id, self.company_a)
-        with self.assertRaises((AccessError, UserError)), self.cr.savepoint():
+        with self.assertRaises(UserError), self.cr.savepoint():
             self.as_user(self.dir_a).write({'storage_id': self.dir_b.storage_id.id})
         self.assertEqual(self.dir_a.storage_id, original_storage)
         self.as_user(self.dir_a).write({'parent_id': False})
@@ -313,9 +318,14 @@ class TestDmsDestinationAccess(DestinationFixtures, TransactionCase):
     def test_destination_post_write_denial_restores_original_content_and_location(self):
         original = self.file_identity(self.file_a)
         # Deliberately no caller savepoint: the implementation must undo its
-        # own write when destination post-validation denies the operation.
-        with self.assertRaises(AccessError):
+        # own write. Odoo assertRaises also installs a savepoint, so catch the
+        # access error directly before inspecting the unchanged original.
+        try:
             self.as_user(self.file_a).write({'directory_id': self.create_only_root.id})
+        except AccessError:
+            pass
+        else:
+            self.fail('A destination granting create without write must deny the move')
         self.assertEqual(self.file_identity(self.file_a), original)
 
 

@@ -249,6 +249,14 @@ class TestDmsPrivate(PrivateFixtures, TransactionCase):
 
 @tagged("post_install", "-at_install", "baseer_dms_trial")
 class TestDmsPrivateDownload(PrivateFixtures, HttpCase):
+    def test_private_owner_download_allowed(self):
+        # Isolated CI fixture only; never change credentials on QA.
+        self.owner.write({"company_id": self.company_a.id, "password": "admin"})
+        self.authenticate(self.owner.login, "admin")
+        response = self.url_open(f"/my/dms/file/{self.file_a.id}/download")
+        self.assertEqual(response.content, base64.b64decode(self.payload))
+        self.assertFalse(self.file_a.access_token)
+
     def test_private_download_denied_even_for_manager(self):
         path = f"/my/dms/file/{self.file_a.id}/download"
         for login in (None, "dms-private-manager"):

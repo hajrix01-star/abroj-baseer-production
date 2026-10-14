@@ -4,35 +4,35 @@
     <record id="private_storage" model="ir.rule">
         <field name="name">QA DMS private owner: storage</field>
         <field name="model_id" ref="dms.model_dms_storage"/>
-        <field name="domain_force" eval="'[(1, \'=\', 1)] if user.id == %s else [(1, \'=\', 0)]' % ref('base.user_admin')"/>
+        <field name="domain_force" eval="'[] if user.id == %s else [(\'id\', \'=\', 0)]' % ref('base.user_admin')"/>
         <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
         <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
     </record>
     <record id="private_directory" model="ir.rule">
         <field name="name">QA DMS private owner: directory</field>
         <field name="model_id" ref="dms.model_dms_directory"/>
-        <field name="domain_force" eval="'[(1, \'=\', 1)] if user.id == %s else [(1, \'=\', 0)]' % ref('base.user_admin')"/>
+        <field name="domain_force" eval="'[] if user.id == %s else [(\'id\', \'=\', 0)]' % ref('base.user_admin')"/>
         <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
         <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
     </record>
     <record id="private_file" model="ir.rule">
         <field name="name">QA DMS private owner: file</field>
         <field name="model_id" ref="dms.model_dms_file"/>
-        <field name="domain_force" eval="'[(1, \'=\', 1)] if user.id == %s else [(1, \'=\', 0)]' % ref('base.user_admin')"/>
+        <field name="domain_force" eval="'[] if user.id == %s else [(\'id\', \'=\', 0)]' % ref('base.user_admin')"/>
         <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
         <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
     </record>
     <record id="private_group" model="ir.rule">
         <field name="name">QA DMS private owner: access group</field>
         <field name="model_id" ref="dms.model_dms_access_group"/>
-        <field name="domain_force" eval="'[(1, \'=\', 1)] if user.id == %s else [(1, \'=\', 0)]' % ref('base.user_admin')"/>
+        <field name="domain_force" eval="'[] if user.id == %s else [(\'id\', \'=\', 0)]' % ref('base.user_admin')"/>
         <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
         <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
     </record>
     <record id="private_share" model="ir.rule">
         <field name="name">QA DMS private owner: sharing wizard</field>
         <field name="model_id" ref="dms.model_wizard_dms_share"/>
-        <field name="domain_force" eval="'[(1, \'=\', 1)] if user.id == %s else [(1, \'=\', 0)]' % ref('base.user_admin')"/>
+        <field name="domain_force" eval="'[] if user.id == %s else [(\'id\', \'=\', 0)]' % ref('base.user_admin')"/>
         <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
         <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
     </record>

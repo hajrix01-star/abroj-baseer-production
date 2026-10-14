@@ -177,6 +177,6 @@ flowchart LR
 
 ### مرشح APK v49 لمسارات الشراء — 2026-10-14
 
-- ملف واحد للهاتف والمحاكي: `android/bchat/artifacts/BChat-phone-v49-unified.apk`، SHA-256 `5F618D2DD563829E3B6F4038C5D29AB66638635E5D696268B84BB40C327B8AC2`. أثبت `aapt` الحزمة `com.baseer.bchat.preview` والإصدار `49 / 0.7.33-purchase-routes`؛ أثبت `apksigner` الشهادة السابقة نفسها `f4a5a07e49fdcf9f0e5d5112bbd318636a2bc566329163aec7bcd71b44e3158c`. إعداد Firebase مفعّل في build.
+- ملف واحد للهاتف والمحاكي: `android/bchat/artifacts/BChat-phone-v49-unified.apk`، الحجم 4,201,883 بايت، SHA-256 `BF9F257DD02E87F7099F93E1297ED25058C4015D4EC92D1DEC3E949EBF695CB7` بعد إصلاح تنبيه المندوب وإعادة البناء. أثبت `aapt` الحزمة `com.baseer.bchat.preview` والإصدار `49 / 0.7.33-purchase-routes`؛ أثبت `apksigner` الشهادة السابقة نفسها `f4a5a07e49fdcf9f0e5d5112bbd318636a2bc566329163aec7bcd71b44e3158c`. إعداد Firebase مفعّل في build.
 - لا يوجد جهاز في `adb devices` ولا AVD في `emulator -list-avds` وقت البناء؛ لذلك لم يُثبَّت الملف على محاكي أو هاتف ولم يُختبر إرسال الطلب عبر الشاشة. لا ادعاء بمطابقة APK مثبت حتى يوفَّر جهاز، رغم أن الملف المرشح واحد للطرفين.
 - المسار لا يسجل دفعاً نقدياً أو حوالة مالية؛ هو تصنيف الطلب في سجل أودو ورسالة الغرفة. QA وLive خارج نطاق هذا المرشح.

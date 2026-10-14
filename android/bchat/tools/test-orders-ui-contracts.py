@@ -36,6 +36,9 @@ class OrdersUiContracts(unittest.TestCase):
         self.assertIn('payload.has("purchase_route")', pending)
         self.assertIn('"representative"', pending)
         self.assertIn('pending.purchaseRoute.equals(created.purchaseRoute)', method('sendPendingOrder'))
+        route_choice = method('chooseOrderPurchaseRoute')
+        self.assertIn('orderRepresentatives.isEmpty()', route_choice)
+        self.assertIn('contentEquals(orderNotice.getText())', route_choice)
 
     def test_tabs_are_outside_notice_overlay_and_have_fixed_underline(self):
         self.assertIn('orderContent.addView(orderNotice, orderNoticeSize);', SOURCE)

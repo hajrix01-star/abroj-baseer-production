@@ -10170,6 +10170,11 @@ public final class OdooIdentityActivity extends Activity {
                     if (!"representative".equals(orderPurchaseRoute)) orderRepresentativeId = 0;
                     orderDetailsPanel.setVisibility(View.GONE);
                     updateOrderSelectors();
+                    if ("representative".equals(orderPurchaseRoute)
+                            && orderRepresentatives.isEmpty())
+                        orderNotice.setText(R.string.order_no_representative);
+                    else if (getString(R.string.order_no_representative)
+                            .contentEquals(orderNotice.getText())) orderNotice.setText("");
                     dialog.dismiss();
                 }).setNegativeButton(R.string.chat_v2_cancel, null).show();
     }

@@ -221,3 +221,18 @@ All9220 regular-file SHA256 matched source manifest; gzip passed. Under deployme
 lock current7e42/latestfive/identities/hashes rechecked, exact six old code releases
 and temporary remote archive removed, recoverable local. No DB/filestore backups
 or LIVE touched. Available2331033600 bytes; new request pending, no sourceCI repeat.
+
+### Search-panel repair actual QA acceptance
+Policy PR334/af05a058 source38558518532 PASS, merged8fd60564;
+protected request38558653864 QA_DEPLOY=GO and QA_POLLER=GO. Current release
+/srv/baseer-qa/releases/470fbf819c00-run-38558653864-20261014T114456Z,
+recovery pre-470fbf819c00-38558653864-20261014T114456Z database.dump/filestore.tar
+SHA256 OK. Upgrade log loaded departments19.0.1.0.1 only, Modules loaded.
+All29 module hashes match (departments13 from470fbf81, bridge16 unchanged7e42).
+The SAME readonly owner2/company1 reproduction now passes both countersFalse/True,
+11 values each; raw parent values still bool/int, adapter handles them correctly.
+Readonly preservation check passes seven root IDs and topology,56 managed folders,
+original5840 checksum/full-rowMD5 unchanged, DMS10/leaf8/count1, six private-owner
+and two HR global rules active unchanged. No hierarchy reconfiguration or original
+write; no browser visual claim or LIVE. Independent CONDITIONAL GO accepts deployed
+backend RPC repair, with visual/click/mobile verification still excluded.

@@ -119,8 +119,14 @@ public final class OdooIdentityActivity extends Activity {
     private static final String PREFS = "bchat-employee-auth-v1";
     private static final String TASK_CREATE_PREFS = "bchat-task-create-pending-v1";
     private static final String ORDER_CREATE_PREFS = "bchat-order-create-pending-v1";
+    private static final String ORDER_COMPANY_PREFS = "bchat-order-company-v1";
+    private static final String ORDER_COMPANY_OWNER = "account-key";
+    private static final String ORDER_COMPANY_SELECTED = "company-id";
     private static final String RECEIPT_CONFIRM_PREFS = "bchat-receipt-confirm-pending-v1";
+    private static final String RECEIPT_SHARE_PREFS = "bchat-receipt-share-pending-v1";
     private static final String GROUP_CREATE_PREFS = "bchat-group-create-pending-v1";
+    private static final String PERMISSION_PREFS = "bchat-permissions-v1";
+    private static final String ORDER_PERMISSION_PREFS = "bchat-order-permissions-v1";
     private static final String REMEMBER = "remember-session";
     private static final String PUSH_PERMISSION_ASKED = "push-permission-asked";
     private static final int PUSH_PERMISSION_REQUEST = 1204;
@@ -184,6 +190,10 @@ public final class OdooIdentityActivity extends Activity {
     private final Set<Long> v1Companies = new HashSet<>();
     private BChatV2Outbox outbox;
     private ConnectedHistoryCache historyCache;
+    private PermissionSet permissionSet = PermissionSet.legacy();
+    private AccountScope permissionAccount;
+    private boolean permissionRefreshScheduled;
+    private long lastPermissionRefreshAt;
     private static final Object historyStorageLock = new Object();
     private static volatile int historyGlobalGeneration;
     private final ExecutorService historyWrites = Executors.newSingleThreadExecutor();
@@ -276,6 +286,7 @@ public final class OdooIdentityActivity extends Activity {
     private LinearLayout roomListHeader;
     private LinearLayout roomSearchSurface;
     private View roomPendingButton;
+    private View createGroupButton;
     private FrameLayout roomAvatarSlot;
     private TextView roomSubtitle;
     private LinearLayout modulePane;
@@ -291,16 +302,21 @@ public final class OdooIdentityActivity extends Activity {
     private boolean orderLoadingVisible;
     private LinearLayout orderDetailsPanel, orderFiltersRow, orderPagingRow;
     private Button orderDetailsButton, orderPreviousButton;
-    private Button orderWarehouseButton, orderRepresentativeButton;
+    private Button orderWarehouseButton, orderRepresentativeButton, orderCartRouteButton,
+            orderCartRepresentativeButton;
+    private TextView orderCartContextView;
     private TextView orderHeaderCompanyButton;
     private TextView chatHeaderCompanyButton;
     private long selectedChatCompanyId;
     private Button orderCatalogButton, orderMineButton, orderReceiptButton, orderCategoryButton;
-    private Button orderCartButton, orderPendingButton, receiptPendingButton, orderOlderButton;
+    private Button orderCartButton, orderPendingButton, receiptPendingButton,
+            receiptSharePendingButton, orderOlderButton;
     private EditText orderSearch;
     private final List<TaskChoice> orderCompanies = new ArrayList<>();
+    private final Set<Long> deniedOrderCompanyIds = new HashSet<>();
     private final List<TaskChoice> orderWarehouses = new ArrayList<>();
     private final List<TaskChoice> orderRepresentatives = new ArrayList<>();
+    private final List<String> orderPurchaseRoutes = new ArrayList<>();
     private final List<TaskChoice> orderCategories = new ArrayList<>();
     private final List<OrderOption> orderOptions = new ArrayList<>();
     private final List<OrderSummary> orderSummaries = new ArrayList<>();
@@ -317,12 +333,24 @@ public final class OdooIdentityActivity extends Activity {
     private TextView orderCartTotalView;
     private OrderCartLine lastRemovedOrderLine;
     private long orderCompanyId, orderWarehouseId, orderRepresentativeId, orderCategoryId;
+    private String orderPurchaseRoute = "representative";
     private long orderCatalogAfterId, orderListBeforeId;
     private long receiptBeforeId;
     private long orderCurrentPageStartId;
     private final List<Long> orderPageHistory = new ArrayList<>();
     private int orderViewSerial;
     private boolean ordersAvailable, ordersDenied, orderMine, orderReceiving;
+    private boolean orderCanView, orderCanCreate, orderCanReceive;
+    private String orderAccess = "";
+    private long lastOrderCapabilityProbeAt;
+    private boolean orderCapabilityProbeScheduled;
+    private int orderCapabilityProbeFailures;
+    private JSONObject orderCapabilityOptions;
+    private AccountScope orderCapabilityAccount;
+    private long orderCapabilityOptionsAt;
+    private Runnable queuedOrderLoad;
+    private boolean allOrdersRecoveryAttempted;
+    private boolean orderCompanyOptionsLoaded;
     private Runnable orderSearchTask;
     private WebMessagePort orderImagePort;
     private int orderImageNonce;
@@ -442,8 +470,37 @@ public final class OdooIdentityActivity extends Activity {
     private SharedPreferences orderCreatePreferences() {
         return getSharedPreferences(ORDER_CREATE_PREFS, MODE_PRIVATE);
     }
+    private SharedPreferences orderCompanyPreferences() {
+        return getSharedPreferences(ORDER_COMPANY_PREFS, MODE_PRIVATE);
+    }
+
+    private void prepareOrderCompanyAccount(AccountScope scope) {
+        SharedPreferences stored = orderCompanyPreferences();
+        if (!scope.key.equals(stored.getString(ORDER_COMPANY_OWNER, null)))
+            stored.edit().clear().putString(ORDER_COMPANY_OWNER, scope.key).commit();
+    }
+
+    private long savedOrderCompany(AccountScope scope) {
+        SharedPreferences stored = orderCompanyPreferences();
+        if (!scope.key.equals(stored.getString(ORDER_COMPANY_OWNER, null))) return 0;
+        long id = stored.getLong(ORDER_COMPANY_SELECTED, 0);
+        if (id > 0 && v1Companies.contains(id)) return id;
+        if (id != 0) stored.edit().remove(ORDER_COMPANY_SELECTED).apply();
+        return 0;
+    }
+
+    private void saveOrderCompany(long companyId) {
+        if (account != null && companyId > 0 && v1Companies.contains(companyId))
+            orderCompanyPreferences().edit()
+                    .putString(ORDER_COMPANY_OWNER, account.key)
+                    .putLong(ORDER_COMPANY_SELECTED, companyId).apply();
+    }
+
     private SharedPreferences receiptConfirmPreferences() {
         return getSharedPreferences(RECEIPT_CONFIRM_PREFS, MODE_PRIVATE);
+    }
+    private SharedPreferences receiptSharePreferences() {
+        return getSharedPreferences(RECEIPT_SHARE_PREFS, MODE_PRIVATE);
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private LinearLayout.LayoutParams fieldSize(int top) {
@@ -701,7 +758,7 @@ public final class OdooIdentityActivity extends Activity {
         roomSearchButton.setOnClickListener(v -> toggleRoomSearch());
         roomHeadingRow.addView(roomSearchButton,
                 new LinearLayout.LayoutParams(dp(48), dp(48)));
-        View createGroupButton = Ui.iconButton(this, "plus", getString(R.string.bchat_group_create));
+        createGroupButton = Ui.iconButton(this, "plus", getString(R.string.bchat_group_create));
         createGroupButton.setOnClickListener(v -> chooseGroupCompany());
         roomHeadingRow.addView(createGroupButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
         roomListHeader.addView(roomHeadingRow, new LinearLayout.LayoutParams(-1, -2));
@@ -1011,6 +1068,10 @@ public final class OdooIdentityActivity extends Activity {
                 this::reviewPendingReceipt);
         modulePane.addView(receiptPendingButton, new LinearLayout.LayoutParams(-1, dp(48)));
         receiptPendingButton.setVisibility(View.GONE);
+        receiptSharePendingButton = orderChoiceButton(R.string.receipt_share_review_pending,
+                this::reviewPendingReceiptShares);
+        modulePane.addView(receiptSharePendingButton, new LinearLayout.LayoutParams(-1, dp(48)));
+        receiptSharePendingButton.setVisibility(View.GONE);
         modulePane.setVisibility(View.GONE);
         chatRoot.addView(modulePane, new LinearLayout.LayoutParams(-1, 0, 1));
         taskPane = Ui.column(this);
@@ -1095,7 +1156,17 @@ public final class OdooIdentityActivity extends Activity {
         if (offlineHistory) { retryOnlineSession(); return; }
         if (!verified || v2Busy) return;
         if ("orders".equals(visibleSection)) {
-            if (!ordersAvailable) discoverOrders();
+            if (orderMine) {
+                allOrdersRecoveryAttempted = false;
+                if (ordersAvailable) loadOrderSummaries(0);
+                else { ordersDenied = false; discoverOrders(); }
+            }
+            else if (orderCompanyId == 0) {
+                deniedOrderCompanyIds.clear();
+                ordersDenied = false;
+                discoverOrders();
+            }
+            else if (!ordersAvailable) discoverOrders();
             else if (orderReceiving) loadReceipts(0);
             else if (orderMine) loadOrderSummaries(0);
             else {
@@ -1132,8 +1203,9 @@ public final class OdooIdentityActivity extends Activity {
         entries.add(AnchoredMenu.Entry.action(getString(room.isGroup
                 ? R.string.bchat_group_info : R.string.bchat_room_info), "group",
                 () -> showGroupInfo(room)));
-        entries.add(AnchoredMenu.Entry.action(getString(R.string.task_room_tasks), "clock",
-                () -> openTasks(room.id)));
+        if (permissionSet.taskView)
+            entries.add(AnchoredMenu.Entry.action(getString(R.string.task_room_tasks), "clock",
+                    () -> openTasks(room.id)));
         entries.add(AnchoredMenu.Entry.action(getString(R.string.chat_v2_refresh), "refresh",
                 this::refreshCurrentSection));
         roomActionMenu.show(anchor, getString(R.string.chat_v2_room_actions),
@@ -1142,6 +1214,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void chooseGroupCompany() {
+        if (!permissionSet.groupCreate) return;
         if (!verified || offlineHistory) {
             chatNotice.setText(offlineNotice()); return;
         }
@@ -1467,7 +1540,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void submitGroupCreate(String raw) {
-        if (!verified || account == null || v2Busy) return;
+        if (!permissionSet.groupCreate || !verified || account == null || v2Busy) return;
         final AccountScope scoped = account;
         if (!getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit()
                 .putString(scoped.key, raw).commit()) {
@@ -1523,7 +1596,8 @@ public final class OdooIdentityActivity extends Activity {
                 if (members.length() > 50) throw new IllegalArgumentException();
                 boolean managedGroup = result.getJSONObject("room").getBoolean("is_group");
                 if (managedGroup != room.isGroup) throw new IllegalArgumentException();
-                boolean canManage = managedGroup && result.getBoolean("can_manage");
+                boolean canManage = permissionSet.groupManage && managedGroup
+                        && result.getBoolean("can_manage");
                 showGroupInfoPage(room, result.getJSONObject("room"), members, canManage);
             } catch (Exception invalid) {
                 if (status == 403 || status == 409) loadRooms();
@@ -1900,29 +1974,29 @@ public final class OdooIdentityActivity extends Activity {
     private void refreshChatCompanySelector() {
         if (chatHeaderCompanyButton == null) return;
         JSONArray companies = profileSnapshot == null ? null : profileSnapshot.optJSONArray("companies");
-        if (companies == null || companies.length() == 0 || !verified) {
+        if (companies == null || companies.length() == 0 || !verified || v1Companies.isEmpty()) {
             chatHeaderCompanyButton.setVisibility(View.GONE);
             selectedChatCompanyId = 0;
             return;
         }
         JSONObject selected = null;
+        JSONObject firstAllowed = null;
+        int allowedCount = 0;
         for (int i = 0; i < companies.length(); i++) {
             JSONObject candidate = companies.optJSONObject(i);
-            if (candidate != null && candidate.optLong("id") == selectedChatCompanyId) {
-                selected = candidate;
-                break;
-            }
+            if (candidate == null || !v1Companies.contains(candidate.optLong("id"))) continue;
+            ++allowedCount;
+            if (firstAllowed == null) firstAllowed = candidate;
+            if (candidate.optLong("id") == selectedChatCompanyId) selected = candidate;
         }
-        if (selected == null) {
-            selected = companies.optJSONObject(0);
-            selectedChatCompanyId = selected == null ? 0 : selected.optLong("id");
-        }
+        if (selected == null) selected = firstAllowed;
+        selectedChatCompanyId = selected == null ? 0 : selected.optLong("id");
         if (selected == null || selectedChatCompanyId == 0) {
             chatHeaderCompanyButton.setVisibility(View.GONE);
             return;
         }
         String name = localizedCompanyName(selected);
-        boolean canSwitch = companies.length() > 1;
+        boolean canSwitch = allowedCount > 1;
         chatHeaderCompanyButton.setText(name + (canSwitch ? " ⌄" : ""));
         chatHeaderCompanyButton.setContentDescription(getString(
                 R.string.bchat_group_company_context, name));
@@ -2168,6 +2242,17 @@ public final class OdooIdentityActivity extends Activity {
         handler.postDelayed(orderLoadingTask, 220);
     }
 
+    private void queueOrderLoadWhenIdle(Runnable load) {
+        queuedOrderLoad = load;
+    }
+
+    private void runQueuedOrderLoad() {
+        if (v2Busy || queuedOrderLoad == null) return;
+        Runnable load = queuedOrderLoad;
+        queuedOrderLoad = null;
+        if (verified && "orders".equals(visibleSection)) load.run();
+    }
+
     private void finishOrderLoading() {
         if (orderLoadingTask != null) handler.removeCallbacks(orderLoadingTask);
         orderLoadingTask = null;
@@ -2200,6 +2285,9 @@ public final class OdooIdentityActivity extends Activity {
         String[] icons = {"chat", "orders", "tasks"};
         for (int i = 0; i < sections.length; i++) {
             final String section = sections[i];
+            if ("chats".equals(section) && !chatAllowed()) continue;
+            if ("tasks".equals(section) && !permissionSet.taskView) continue;
+            if ("orders".equals(section) && !orderCanView) continue;
             boolean selected = section.equals(visibleSection);
             LinearLayout tab = Ui.column(this);
             tab.setGravity(Gravity.CENTER);
@@ -2228,8 +2316,6 @@ public final class OdooIdentityActivity extends Activity {
                     taskRoomFilter = 0;
                     if ("tasks".equals(visibleSection)) discoverTasks();
                     else switchSection(section);
-                } else if ("orders".equals(section) && "orders".equals(visibleSection)) {
-                    discoverOrders();
                 } else switchSection(section);
             });
             LinearLayout.LayoutParams tabSize = new LinearLayout.LayoutParams(0, -2, 1);
@@ -2240,6 +2326,9 @@ public final class OdooIdentityActivity extends Activity {
 
     private void switchSection(String section) {
         if (!"chats".equals(section) && !"orders".equals(section) && !"tasks".equals(section)) return;
+        if ("chats".equals(section) && !chatAllowed()) return;
+        if ("tasks".equals(section) && !permissionSet.taskView) return;
+        if ("orders".equals(section) && !orderCanView) return;
         if (section.equals(visibleSection) && ("chats".equals(section) ? chatPane.getVisibility() == View.VISIBLE
                 : "tasks".equals(section) ? taskPane.getVisibility() == View.VISIBLE
                 : modulePane.getVisibility() == View.VISIBLE)) return;
@@ -2250,6 +2339,7 @@ public final class OdooIdentityActivity extends Activity {
         flushDraftSave();
         if ("tasks".equals(visibleSection) && !"tasks".equals(section)) ++taskViewSerial;
         if ("orders".equals(visibleSection) && !"orders".equals(section)) {
+            queuedOrderLoad = null;
             if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
             ++orderViewSerial;
             resetOrderImages(false);
@@ -2258,7 +2348,8 @@ public final class OdooIdentityActivity extends Activity {
         if (pendingDialog != null) { pendingDialog.dismiss(); pendingDialog = null; }
         visibleSection = section;
         orderHeaderCompanyButton.setVisibility("orders".equals(section)
-                && !orderCompanies.isEmpty() ? View.VISIBLE : View.GONE);
+                && (orderCanCreate || orderCanReceive) && !orderCompanies.isEmpty()
+                ? View.VISIBLE : View.GONE);
         refreshChatCompanySelector();
         boolean chats = "chats".equals(section);
         chatPane.setVisibility(chats ? View.VISIBLE : View.GONE);
@@ -2268,13 +2359,27 @@ public final class OdooIdentityActivity extends Activity {
         brandBar.setVisibility(insideRoom ? View.GONE : View.VISIBLE);
         bottomTabs.setVisibility(insideRoom ? View.GONE : View.VISIBLE);
         if ("orders".equals(section)) {
-            // A server-side role grant may happen while this session is still open.
-            // Keep the tab visible, but fetch authorization afresh before any order data.
+            // A denied role can be granted during this session. Otherwise the scoped
+            // content request still checks authorization without repeating both options calls.
+            boolean needsDiscovery = !ordersAvailable || ordersDenied
+                    || (!orderMine && orderCompanies.isEmpty());
             ordersDenied = false;
-            discoverOrders();
+            if (needsDiscovery) discoverOrders();
+            else if (orderMine) loadOrderSummaries(0);
+            else if (!orderReceiving && !orderMine && orderCompanyId > 0 && !orderCompanyOptionsLoaded)
+                loadOrderCompanyOptions();
+            else if (orderCompanyId > 0) {
+                if (orderReceiving) loadReceipts(0);
+                else if (orderMine) loadOrderSummaries(0);
+                else {
+                    loadOrderCatalog(0);
+                    if (!orderCart.isEmpty()) scheduleOrderQuote();
+                }
+            }
         }
         if ("tasks".equals(section)) discoverTasks();
         renderBottomTabs();
+        if (!"orders".equals(section)) handler.post(this::maybeProbeOrderCapability);
         handler.post(this::flushLiveUi);
     }
 
@@ -2662,6 +2767,7 @@ public final class OdooIdentityActivity extends Activity {
                     historyCache = null;
                 }
             }
+            prepareOrderCompanyAccount(nextAccount);
             clearChatView();
             account = nextAccount; // The server authorizes all work.
             v1Companies.clear();
@@ -2759,6 +2865,8 @@ public final class OdooIdentityActivity extends Activity {
                 v2Port = null;
                 v2Busy = false;
                 callback.complete(statusCode, body);
+                handler.post(OdooIdentityActivity.this::runQueuedOrderLoad);
+                handler.post(OdooIdentityActivity.this::maybeProbeOrderCapability);
                 scheduleOrderImagePump();
                 handler.post(OdooIdentityActivity.this::flushLiveUi);
             }
@@ -2799,6 +2907,8 @@ public final class OdooIdentityActivity extends Activity {
             if (!closed && v2Busy && request == v2Nonce) {
                 closeV2Port();
                 callback.complete(0, null);
+                handler.post(this::runQueuedOrderLoad);
+                handler.post(this::maybeProbeOrderCapability);
                 scheduleOrderImagePump();
                 handler.post(this::flushLiveUi);
             }
@@ -2975,7 +3085,8 @@ public final class OdooIdentityActivity extends Activity {
         final AccountScope scope = account;
         final long requestedAfter = feedCursor;
         feedQueued = true;
-        enqueueLive("GET", V2_CHANGES + "?after=" + requestedAfter + "&limit=100", null, null,
+        enqueueLive("GET", V2_CHANGES + "?after=" + requestedAfter
+                + "&limit=100&permissions_version=1", null, null,
                 (statusCode, result) -> {
                     feedQueued = false;
                     if (!liveReady(scope)) return;
@@ -3049,6 +3160,9 @@ public final class OdooIdentityActivity extends Activity {
             liveTasksDirty = true;
         } else if ("order".equals(kind)) {
             liveOrdersDirty = true;
+        } else if ("permissions".equals(kind) || "permission".equals(kind)) {
+            lastPermissionRefreshAt = 0;
+            handler.post(this::refreshPermissionSet);
         } else throw new IllegalArgumentException("Unknown BChat change kind");
     }
 
@@ -3178,6 +3292,7 @@ public final class OdooIdentityActivity extends Activity {
         JSONArray companies = profile.optJSONArray("companies");
         if (companies == null || companies.length() != authorizedCompanies.size()) return null;
         Set<Long> seen = new HashSet<>();
+        List<JSONObject> sortedCompanies = new ArrayList<>();
         try {
             for (int i = 0; i < companies.length(); i++) {
                 JSONObject company = companies.getJSONObject(i);
@@ -3189,13 +3304,422 @@ public final class OdooIdentityActivity extends Activity {
                 JSONArray titles = company.getJSONArray("job_titles");
                 for (int j = 0; j < titles.length(); j++)
                     if (!(titles.get(j) instanceof String)) return null;
+                sortedCompanies.add(company);
             }
+            sortedCompanies.sort((first, second) -> Long.compare(
+                    first.optLong("id"), second.optLong("id")));
+            JSONArray ordered = new JSONArray();
+            for (JSONObject company : sortedCompanies) ordered.put(company);
+            profile.put("companies", ordered);
         } catch (Exception invalid) { return null; }
         return profile;
     }
 
     private static final class SessionRedirect extends RuntimeException { }
     private static final class OptionalModuleUnavailable extends RuntimeException { }
+
+    /** Additive v2 contract: old servers omit permissions, not legacy capabilities. */
+    private static final class PermissionSet {
+        final long revision;
+        final boolean chatView, chatSend, media, groupCreate, groupManage;
+        final boolean taskView, taskManage, roomAdmin;
+        final boolean ordersIncluded, orderView, orderCreate, orderReceive;
+
+        private PermissionSet(long revision, boolean chatView, boolean chatSend, boolean media,
+                boolean groupCreate, boolean groupManage, boolean taskView,
+                boolean taskManage, boolean roomAdmin, boolean ordersIncluded,
+                boolean orderView, boolean orderCreate, boolean orderReceive) {
+            this.revision = revision;
+            this.chatView = chatView;
+            this.chatSend = chatSend && chatView;
+            this.media = media && this.chatView;
+            this.groupCreate = groupCreate && chatView;
+            this.groupManage = groupManage && chatView;
+            this.taskView = taskView;
+            this.taskManage = taskManage && taskView;
+            this.roomAdmin = roomAdmin && chatView;
+            this.ordersIncluded = ordersIncluded;
+            this.orderView = ordersIncluded && orderView;
+            this.orderCreate = this.orderView && orderCreate;
+            this.orderReceive = this.orderView && orderReceive;
+        }
+
+        static PermissionSet legacy() {
+            return new PermissionSet(-1, true, true, true, true, true,
+                    true, true, true, false, false, false, false);
+        }
+
+        static PermissionSet parse(JSONObject source) throws Exception {
+            if (source == null || source.getInt("version") != 1)
+                throw new IllegalArgumentException("Unknown permissions contract");
+            Object value = source.get("revision");
+            if (!(value instanceof Number))
+                throw new IllegalArgumentException("Invalid permissions revision");
+            long revision = ((Number) value).longValue();
+            if (revision < 0 || ((Number) value).doubleValue() != (double) revision)
+                throw new IllegalArgumentException("Invalid permissions revision");
+            boolean orderView = source.has("order_view");
+            boolean orderCreate = source.has("order_create");
+            boolean orderReceive = source.has("order_receive");
+            if ((orderView || orderCreate || orderReceive)
+                    && !(orderView && orderCreate && orderReceive))
+                throw new IllegalArgumentException("Incomplete order permissions");
+            return new PermissionSet(revision,
+                    requiredFlag(source, "chat_view"), requiredFlag(source, "chat_send"),
+                    requiredFlag(source, "media"), requiredFlag(source, "group_create"),
+                    requiredFlag(source, "group_manage"), requiredFlag(source, "task_view"),
+                    requiredFlag(source, "task_manage"), requiredFlag(source, "room_admin"),
+                    orderView, orderView && requiredFlag(source, "order_view"),
+                    orderView && requiredFlag(source, "order_create"),
+                    orderView && requiredFlag(source, "order_receive"));
+        }
+
+        private static boolean requiredFlag(JSONObject source, String key) throws Exception {
+            Object value = source.get(key);
+            if (!(value instanceof Boolean)) throw new IllegalArgumentException("Invalid permission flag");
+            return (Boolean) value;
+        }
+
+        boolean sameAs(PermissionSet other) {
+            return other != null && revision == other.revision
+                    && chatView == other.chatView && chatSend == other.chatSend
+                    && media == other.media && groupCreate == other.groupCreate
+                    && groupManage == other.groupManage && taskView == other.taskView
+                    && taskManage == other.taskManage && roomAdmin == other.roomAdmin
+                    && ordersIncluded == other.ordersIncluded && orderView == other.orderView
+                    && orderCreate == other.orderCreate && orderReceive == other.orderReceive;
+        }
+
+        JSONObject toJson() throws Exception {
+            JSONObject value = new JSONObject();
+            value.put("version", 1).put("revision", revision)
+                    .put("chat_view", chatView).put("chat_send", chatSend)
+                    .put("media", media).put("group_create", groupCreate)
+                    .put("group_manage", groupManage).put("task_view", taskView)
+                    .put("task_manage", taskManage).put("room_admin", roomAdmin);
+            if (ordersIncluded) value.put("order_view", orderView)
+                    .put("order_create", orderCreate).put("order_receive", orderReceive);
+            return value;
+        }
+    }
+
+    private PermissionSet rememberedPermissions(AccountScope scope) {
+        if (scope == null) return null;
+        String raw = getSharedPreferences(PERMISSION_PREFS, MODE_PRIVATE).getString(scope.key, null);
+        if (raw == null) return null;
+        try { return PermissionSet.parse(new JSONObject(raw)); }
+        catch (Exception invalid) { return null; }
+    }
+
+    private PermissionSet permissionContract(JSONObject bootstrap, AccountScope scope) throws Exception {
+        JSONObject supplied = bootstrap.optJSONObject("permissions");
+        if (supplied != null) return PermissionSet.parse(supplied);
+        if (bootstrap.has("permissions")) throw new IllegalArgumentException("Invalid permissions");
+        // A downgraded/old server must not silently regrant rights revoked by a newer one.
+        PermissionSet saved = rememberedPermissions(scope);
+        return saved == null ? PermissionSet.legacy() : saved;
+    }
+
+    private boolean chatAllowed() { return permissionSet.chatView; }
+    private boolean sendAllowed() { return permissionSet.chatSend; }
+    private boolean mediaAllowed() { return permissionSet.media && mediaAvailable; }
+    private boolean mediaUploadAllowed() { return sendAllowed() && mediaAllowed(); }
+
+    private void showPermittedRoot() {
+        if (shell != null) shell.setVisibility(View.GONE);
+        if (chatRoot != null) chatRoot.setVisibility(View.VISIBLE);
+        if (layout != null) layout.setPadding(0, 0, 0, 0);
+    }
+
+    private void cancelRevokedMediaSending(AccountScope scope) {
+        ++mediaSessionGeneration;
+        closeMediaUpload();
+        mediaStageBusy = false;
+        mediaConfirmBusy = false;
+        mediaConfirmRoom = null;
+        if (cameraCaptureFile != null) { cameraCaptureFile.delete(); cameraCaptureFile = null; }
+        mediaPickerAccount = null;
+        mediaPickerRoom = null;
+        stopRecordingBadge();
+        clearVoicePreview();
+        if (connectedVoiceRecorder != null) {
+            connectedVoiceRecorder.cancel(); connectedVoiceRecorder = null;
+        }
+        if (mediaStore != null) try { mediaStore.purgeAccount(scope); }
+        catch (IOException unavailable) {
+            // A failed private-file purge must not retain a cold-start offline session.
+            preferences().edit().putBoolean(REMEMBER, false).commit();
+        }
+    }
+
+    private void purgeRevokedMedia(AccountScope scope) {
+        cancelRevokedMediaSending(scope);
+        closeMediaRead();
+        clearPendingPdf();
+        clearMediaReadCache();
+        mediaThumbnailQueue.clear();
+        mediaThumbnailCache.evictAll();
+        if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
+        stopInlineAudio();
+    }
+
+    private void applyPermissionSet(AccountScope scope, PermissionSet next) {
+        if (permissionAccount != scope || permissionSet.revision != next.revision) {
+            orderCapabilityOptions = null;
+            orderCapabilityAccount = null;
+            orderCapabilityOptionsAt = 0;
+            lastOrderCapabilityProbeAt = 0;
+        }
+        permissionSet = next;
+        permissionAccount = scope;
+        if (next.ordersIncluded) setOrderRights(scope, next.orderView,
+                next.orderCreate, next.orderReceive);
+        else if (next.revision >= 0) setOrderRights(scope, false, false, false);
+        try {
+            if (next.revision >= 0 && !getSharedPreferences(PERMISSION_PREFS, MODE_PRIVATE).edit()
+                    .putString(scope.key, next.toJson().toString()).commit())
+                throw new IllegalStateException("Cannot save permission snapshot");
+        } catch (Exception storage) {
+            // Never offer stale offline history when the newer revocation cannot be persisted.
+            purgeHistory();
+        }
+        if (!next.chatView) {
+            ++historyWriteGeneration;
+            ++historyGlobalGeneration;
+            try { synchronized (historyStorageLock) {
+                if (historyCache != null) historyCache.purgeAccount(scope);
+            } } catch (RuntimeException damaged) { purgeHistory(); }
+            rooms.clear();
+            selectedRoom = null;
+            displayedMessages.clear();
+            if (roomItems != null) roomItems.removeAllViews();
+            if (messageAdapter != null) messageAdapter.notifyDataSetChanged();
+            closeLiveSync();
+        }
+        if (!next.chatSend || !next.chatView) {
+            flushDraftSave();
+            try { if (outbox != null) outbox.purgeAccount(scope); }
+            catch (RuntimeException damaged) { preferences().edit().putBoolean(REMEMBER, false).commit(); }
+            getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit().remove(scope.key).commit();
+            if (messageInput != null) {
+                suppressDraftChanges = true;
+                messageInput.setText("");
+                suppressDraftChanges = false;
+            }
+        }
+        if (!next.media || !next.chatView) purgeRevokedMedia(scope);
+        else if (!next.chatSend) cancelRevokedMediaSending(scope);
+        if (!next.groupCreate)
+            getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit().remove(scope.key).commit();
+        if ((!next.groupManage || !next.chatView) && groupInfoDialog != null)
+            groupInfoDialog.dismiss();
+        if (!next.taskView) {
+            ++taskViewSerial;
+            tasksAvailable = false;
+            tasks.clear();
+            taskCompanies.clear();
+            if (taskItems != null) taskItems.removeAllViews();
+        }
+        if (!next.taskManage)
+            taskCreatePreferences().edit().remove(scope.key).commit();
+        if (createGroupButton != null) createGroupButton.setVisibility(
+                next.groupCreate ? View.VISIBLE : View.GONE);
+        if (selectedRoom != null) {
+            if (composerRow != null) composerRow.setVisibility(next.chatSend ? View.VISIBLE : View.GONE);
+            if (mediaPickButton != null) mediaPickButton.setVisibility(mediaUploadAllowed()
+                    ? View.VISIBLE : View.GONE);
+            if (mediaVoiceButton != null) mediaVoiceButton.setVisibility(mediaUploadAllowed()
+                    ? View.VISIBLE : View.GONE);
+        }
+        if (taskNewButton != null) taskNewButton.setVisibility(next.taskManage && tasksAvailable
+                && !taskCompanies.isEmpty() ? View.VISIBLE : View.GONE);
+        if (visibleSection.equals("chats") && !next.chatView) {
+            if (next.taskView) { showPermittedRoot(); switchSection("tasks"); }
+            else if (orderCanView) { showPermittedRoot(); switchSection("orders"); }
+            else if (chatRoot != null) {
+                showShell();
+                shellNotice.setText(R.string.chat_v2_denied);
+            }
+        } else if (visibleSection.equals("tasks") && !next.taskView) {
+            if (next.chatView) { showPermittedRoot(); switchSection("chats"); }
+            else if (orderCanView) { showPermittedRoot(); switchSection("orders"); }
+            else { showShell(); shellNotice.setText(R.string.task_denied); }
+        }
+        renderBottomTabs();
+    }
+
+    /** A v2 bootstrap can revoke companies while this Activity stays open. */
+    private void restrictCompanyScope(AccountScope scope, Set<Long> allowed) {
+        if (scope != account || allowed.equals(v1Companies)) return;
+        if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
+        ++historyWriteGeneration;
+        ++historyGlobalGeneration;
+        ++mediaSessionGeneration;
+        Set<Long> retainedRooms = new HashSet<>();
+        for (Room room : rooms) if (allowed.contains(room.companyId)) retainedRooms.add(room.id);
+        if (historyCache != null) try { synchronized (historyStorageLock) {
+            for (ConnectedHistoryCache.RoomRecord room : historyCache.rooms(scope)) {
+                if (allowed.contains(room.companyId)) retainedRooms.add(room.id);
+                else historyCache.purgeRoom(scope, room.id);
+            }
+        } } catch (RuntimeException damaged) { purgeHistory(); }
+        if (selectedRoom != null && !allowed.contains(selectedRoom.companyId)) showRooms();
+        rooms.removeIf(room -> !allowed.contains(room.companyId));
+        displayedMessages.removeIf(message -> selectedRoom == null
+                || !allowed.contains(selectedRoom.companyId));
+        try { if (outbox != null) outbox.purgeExceptRooms(scope, retainedRooms); }
+        catch (RuntimeException damaged) { preferences().edit().putBoolean(REMEMBER, false).commit(); }
+        try { if (mediaStore != null) mediaStore.purgeCompaniesNotIn(scope, allowed); }
+        catch (IOException damaged) {
+            try { if (mediaStore != null) mediaStore.purgeAccount(scope); }
+            catch (IOException ignored) { preferences().edit().putBoolean(REMEMBER, false).commit(); }
+        }
+        try {
+            String pendingGroup = getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE)
+                    .getString(scope.key, null);
+            if (pendingGroup != null && !allowed.contains(
+                    positiveId(new JSONObject(pendingGroup).get("company_id"))))
+                getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit()
+                        .remove(scope.key).commit();
+        } catch (Exception invalid) {
+            getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit().remove(scope.key).commit();
+        }
+        try {
+            String pendingTask = taskCreatePreferences().getString(scope.key, null);
+            if (pendingTask != null && !allowed.contains(new PendingTaskCreate(scope, pendingTask).companyId))
+                taskCreatePreferences().edit().remove(scope.key).commit();
+        } catch (Exception invalid) { taskCreatePreferences().edit().remove(scope.key).commit(); }
+        try {
+            String pendingOrder = orderCreatePreferences().getString(scope.key, null);
+            if (pendingOrder != null && !allowed.contains(new PendingOrder(scope, pendingOrder).companyId))
+                orderCreatePreferences().edit().remove(scope.key).commit();
+        } catch (Exception invalid) { orderCreatePreferences().edit().remove(scope.key).commit(); }
+        try {
+            String pendingReceipt = receiptConfirmPreferences().getString(scope.key, null);
+            if (pendingReceipt != null && !allowed.contains(new PendingReceipt(scope, pendingReceipt).companyId))
+                receiptConfirmPreferences().edit().remove(scope.key).commit();
+        } catch (Exception invalid) { receiptConfirmPreferences().edit().remove(scope.key).commit(); }
+        SharedPreferences shares = receiptSharePreferences();
+        SharedPreferences.Editor sharesEdit = shares.edit();
+        for (Map.Entry<String, ?> item : shares.getAll().entrySet())
+            if (item.getKey().startsWith(scope.key + ":")
+                    && (!(item.getValue() instanceof Number)
+                    || !allowed.contains(((Number) item.getValue()).longValue())))
+                sharesEdit.remove(item.getKey());
+        sharesEdit.commit();
+        closeMediaRead();
+        clearPendingPdf();
+        clearMediaReadCache();
+        stopInlineAudio();
+        mediaThumbnailQueue.clear();
+        mediaThumbnailCache.evictAll();
+        if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
+        v1Companies.clear();
+        v1Companies.addAll(allowed);
+        JSONObject updatedProfile = null;
+        if (profileSnapshot != null) try {
+            updatedProfile = new JSONObject(profileSnapshot.toString());
+            JSONArray old = updatedProfile.optJSONArray("companies");
+            JSONArray kept = new JSONArray();
+            if (old != null) for (int i = 0; i < old.length(); i++) {
+                JSONObject company = old.optJSONObject(i);
+                if (company != null && allowed.contains(company.optLong("id"))) kept.put(company);
+            }
+            updatedProfile.put("companies", kept);
+        } catch (Exception damaged) { updatedProfile = null; }
+        profileSnapshot = updatedProfile;
+        refreshChatCompanySelector();
+        if (orderCompanyId > 0 && !allowed.contains(orderCompanyId)) {
+            orderCompanyId = 0;
+            orderCompanyPreferences().edit().remove(ORDER_COMPANY_SELECTED).apply();
+        }
+        ++taskViewSerial;
+        tasks.clear();
+        taskCompanies.clear();
+        taskBeforeId = 0;
+        if (taskItems != null) taskItems.removeAllViews();
+        if (taskRoomFilter > 0 && !retainedRooms.contains(taskRoomFilter)) taskRoomFilter = 0;
+        ++orderViewSerial;
+        orderSummaries.clear();
+        receiptSummaries.clear();
+        orderCompanies.clear();
+        orderOptions.clear();
+        orderCart.clear();
+        if (orderItems != null) orderItems.removeAllViews();
+        if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
+        if (orderCartDialog != null) orderCartDialog.dismiss();
+        if (roomItems != null && "chats".equals(visibleSection) && selectedRoom == null) renderRooms();
+        if (chatAllowed()) handler.post(() -> {
+            if (verified && account == scope) loadRooms();
+        });
+        if ("tasks".equals(visibleSection)) handler.post(() -> {
+            if (verified && account == scope) discoverTasks();
+        });
+        if ("orders".equals(visibleSection)) handler.post(() -> {
+            if (verified && account == scope) discoverOrders();
+        });
+    }
+
+    private void revalidateCompanyIdentity(AccountScope scope) {
+        if (account != scope || !verified) return;
+        // A v2 grant never widens the v1-verified company set. Reuse the Odoo cookie
+        // to verify v1 again without a logout or a second password prompt.
+        verified = false;
+        probing = false;
+        csrfToken = null;
+        clearChatView();
+        showShell();
+        shellNotice.setText(R.string.auth_verifying);
+        openWeb(BRIDGE);
+    }
+
+    private void refreshPermissionSet() {
+        if (!verified || offlineHistory || account == null || web == null) return;
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastPermissionRefreshAt < 10000 && lastPermissionRefreshAt > 0) return;
+        if (v2Busy) {
+            if (!permissionRefreshScheduled) {
+                permissionRefreshScheduled = true;
+                handler.postDelayed(() -> {
+                    permissionRefreshScheduled = false;
+                    refreshPermissionSet();
+                }, 500);
+            }
+            return;
+        }
+        lastPermissionRefreshAt = now;
+        final AccountScope scoped = account;
+        fetchV2("GET", V2_BOOTSTRAP, null, (status, result) -> {
+            if (scoped != account || !verified) return;
+            if (handleV2TransportFailure(status)) return;
+            try {
+                if (status != 200 || result == null || positiveId(result.get("api_version")) != 2
+                        || positiveId(result.get("user_id")) != scoped.userId
+                        || !DATABASE.equals(result.getString("database"))) return;
+                JSONArray listed = result.getJSONArray("company_ids");
+                Set<Long> validCompanies = new HashSet<>();
+                for (int i = 0; i < listed.length(); i++)
+                    validCompanies.add(positiveId(listed.get(i)));
+                if (listed.length() != validCompanies.size()) return;
+                if (!validCompanies.equals(v1Companies)) {
+                    Set<Long> stillVerified = new HashSet<>(v1Companies);
+                    stillVerified.retainAll(validCompanies);
+                    boolean newCompanies = !v1Companies.containsAll(validCompanies);
+                    restrictCompanyScope(scoped, stillVerified);
+                    if (newCompanies) {
+                        revalidateCompanyIdentity(scoped);
+                        return;
+                    }
+                }
+                PermissionSet next = permissionContract(result, scoped);
+                boolean gainedChat = !permissionSet.chatView && next.chatView;
+                if (permissionAccount != scoped || !next.sameAs(permissionSet))
+                    applyPermissionSet(scoped, next);
+                if (gainedChat) loadRooms();
+                maybeProbeOrderCapability();
+            } catch (Exception invalid) { /* A malformed refresh must not grant rights. */ }
+        });
+    }
 
     private void verifyV2() {
         fetchV2("GET", V2_BOOTSTRAP, null, (statusCode, result) -> {
@@ -3230,6 +3754,7 @@ public final class OdooIdentityActivity extends Activity {
                 }
                 JSONObject verifiedProfile = verifiedProfile(result, v2Companies);
                 boolean canUseMedia = flag(caps, "attachments", true);
+                PermissionSet granted = permissionContract(result, account);
                 csrfToken = token;
                 BChatPushState.verifiedAccount(this, account);
                 requestFirebaseToken();
@@ -3237,14 +3762,29 @@ public final class OdooIdentityActivity extends Activity {
                 if (mediaStore == null) mediaStore = new BChatConnectedMediaStore(this);
                 clearChatView();
                 mediaAvailable = canUseMedia;
+                applyPermissionSet(account, granted);
                 profileSnapshot = verifiedProfile;
                 selectedChatCompanyId = v2Companies.contains(result.optLong("current_company_id"))
                         ? result.optLong("current_company_id") : 0;
                 refreshChatCompanySelector();
+                long rememberedOrderCompany = savedOrderCompany(account);
+                orderCompanyId = rememberedOrderCompany > 0
+                        ? rememberedOrderCompany : selectedChatCompanyId;
                 receiptsAvailable = flag(caps, "delivery_receipts", true)
                         && flag(caps, "read_receipts", true);
                 shellNotice.setText(R.string.chat_v2_loading);
-                loadRooms();
+                if (chatAllowed()) loadRooms();
+                else {
+                    shell.setVisibility(View.GONE);
+                    chatRoot.setVisibility(View.VISIBLE);
+                    layout.setPadding(0, 0, 0, 0);
+                    if (permissionSet.taskView) switchSection("tasks");
+                    else {
+                        showShell();
+                        shellNotice.setText(R.string.chat_v2_denied);
+                    }
+                    maybeProbeOrderCapability();
+                }
             } catch (Exception invalid) {
                 // v1's disabled shell is the safe fallback. Never expose demo data.
                 BChatPushState.clearAccount(this);
@@ -3633,6 +4173,8 @@ public final class OdooIdentityActivity extends Activity {
         try {
             snapshot = historyCache.remembered(ORIGIN, DATABASE);
             if (snapshot == null) return false;
+            PermissionSet saved = rememberedPermissions(snapshot.account);
+            if (saved != null && !saved.chatView) return false;
         } catch (Exception unavailable) { return false; }
         ++epoch;
         probing = false;
@@ -3827,8 +4369,18 @@ public final class OdooIdentityActivity extends Activity {
         orderCurrentPageStartId = 0;
         orderPageHistory.clear();
         orderCompanies.clear();
+        queuedOrderLoad = null;
+        orderCapabilityOptions = null;
+        orderCapabilityAccount = null;
+        orderCapabilityOptionsAt = 0;
+        orderCapabilityProbeFailures = 0;
+        deniedOrderCompanyIds.clear();
+        allOrdersRecoveryAttempted = false;
+        orderCompanyOptionsLoaded = false;
         orderWarehouses.clear();
         orderRepresentatives.clear();
+        orderPurchaseRoutes.clear();
+        orderPurchaseRoute = "representative";
         orderCategories.clear();
         orderOptions.clear();
         orderSummaries.clear();
@@ -3840,6 +4392,9 @@ public final class OdooIdentityActivity extends Activity {
         invalidateOrderQuote();
         ordersAvailable = false;
         ordersDenied = false;
+        orderAccess = "";
+        orderCanView = orderCanCreate = orderCanReceive = false;
+        lastOrderCapabilityProbeAt = 0;
         orderMine = false;
         orderReceiving = false;
         receiptBeforeId = 0;
@@ -3849,6 +4404,7 @@ public final class OdooIdentityActivity extends Activity {
         if (orderSearch != null) orderSearch.setText("");
         if (orderPendingButton != null) orderPendingButton.setVisibility(View.GONE);
         if (receiptPendingButton != null) receiptPendingButton.setVisibility(View.GONE);
+        if (receiptSharePendingButton != null) receiptSharePendingButton.setVisibility(View.GONE);
         if (taskPane != null) {
             taskPane.setVisibility(View.GONE);
             taskItems.removeAllViews();
@@ -3918,6 +4474,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void showRooms() {
+        if (!chatAllowed() && !offlineHistory) return;
         if (roomActionMenu != null) roomActionMenu.dismiss();
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
         ++mediaSessionGeneration;
@@ -3976,7 +4533,7 @@ public final class OdooIdentityActivity extends Activity {
         roomItems.removeAllViews();
         roomItems.setGravity(Gravity.TOP);
         try {
-            boolean hasPending = verified && account != null && outbox != null
+            boolean hasPending = sendAllowed() && verified && account != null && outbox != null
                     && !outbox.pageForAccount(account, 0).isEmpty();
             roomPendingButton.setVisibility(hasPending ? View.VISIBLE : View.GONE);
         } catch (Exception storage) {
@@ -4073,6 +4630,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void loadRooms() {
+        if (!chatAllowed()) return;
         boolean initial = chatRoot.getVisibility() != View.VISIBLE;
         if (initial) shellNotice.setText(R.string.chat_v2_loading);
         else chatNotice.setText(R.string.chat_v2_loading);
@@ -4176,17 +4734,28 @@ public final class OdooIdentityActivity extends Activity {
                     unresolvedSendNotice = false;
                 }
                 processPendingPush();
+                // Resolve the orders capability before optional push registration can
+                // occupy the single v2 request channel with a retry.
+                maybeProbeOrderCapability();
                 maybeRegisterPush();
                 startLiveSync();
             } catch (Exception invalid) {
-                if (statusCode == 403) purgeHistory();
+                if (statusCode == 403) {
+                    purgeHistory();
+                    clearChatView();
+                    showShell();
+                    shellNotice.setText(R.string.chat_v2_denied);
+                    lastPermissionRefreshAt = 0;
+                    refreshPermissionSet();
+                    return;
+                }
                 boolean uncertain = unresolvedSendNotice;
                 clearChatView();
-                if (initial || statusCode == 403) {
+                if (initial) {
                     releaseWeb();
                     showShell();
                     shellNotice.setText(uncertain ? R.string.chat_v2_uncertain
-                            : statusCode == 403 ? R.string.chat_v2_denied : R.string.chat_v2_load_failed);
+                            : R.string.chat_v2_load_failed);
                     shellRetry.setVisibility(View.VISIBLE);
                 } else {
                     chatRoot.setVisibility(View.VISIBLE);
@@ -4198,11 +4767,13 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void selectRoom(Room room) {
+        if (!chatAllowed()) return;
         selectRoom(room, 0);
     }
 
     private void selectRoom(Room room, long notifiedMessageId) {
-        if (room == null || !rooms.contains(room) || v2Busy || (!offlineHistory && csrfToken == null)) return;
+        if ((!chatAllowed() && !offlineHistory) || room == null || !rooms.contains(room)
+                || v2Busy || (!offlineHistory && csrfToken == null)) return;
         ++mediaSessionGeneration;
         stopInlineAudio();
         closeMediaUpload();
@@ -4250,8 +4821,9 @@ public final class OdooIdentityActivity extends Activity {
         messageFrame.setVisibility(View.VISIBLE);
         olderButton.setText(offlineHistory ? R.string.chat_v2_older_saved : R.string.chat_v2_older);
         composerRow.setVisibility(View.VISIBLE);
-        mediaPickButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaAvailable ? View.VISIBLE : View.GONE);
-        mediaVoiceButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaAvailable ? View.VISIBLE : View.GONE);
+        composerRow.setVisibility(sendAllowed() ? View.VISIBLE : View.GONE);
+        mediaPickButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaUploadAllowed() ? View.VISIBLE : View.GONE);
+        mediaVoiceButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaUploadAllowed() ? View.VISIBLE : View.GONE);
         displayedMessages.clear();
         olderPageLoading = false;
         olderPageFailed = false;
@@ -4305,6 +4877,15 @@ public final class OdooIdentityActivity extends Activity {
 
     private void updatePendingUi() {
         if (selectedRoom == null || outbox == null || account == null) return;
+        if (!sendAllowed()) {
+            retryButton.setVisibility(View.GONE);
+            resolvePendingButton.setVisibility(View.GONE);
+            pendingActionsRow.setVisibility(View.GONE);
+            stalePendingButton.setVisibility(View.GONE);
+            mediaReviewButton.setVisibility(View.GONE);
+            sendButton.setEnabled(false);
+            return;
+        }
         BChatV2Outbox.Entry pending = outbox.first(account, selectedRoom.id, selectedRoom.membershipId);
         BChatV2Outbox.Entry stale = outbox.firstStale(account, selectedRoom.id, selectedRoom.membershipId);
         retryButton.setVisibility(pending == null || pending.reviewCode == 1 ? View.GONE : View.VISIBLE);
@@ -4322,9 +4903,10 @@ public final class OdooIdentityActivity extends Activity {
         } catch (IOException damaged) { chatNotice.setText(R.string.chat_v2_save_failed); mediaPending = true; }
         boolean inFlight = mediaStageBusy || mediaUploadBusy || mediaConfirmBusy
                 && mediaConfirmRoom != null && mediaConfirmRoom.sameMembership(selectedRoom);
-        mediaReviewButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaPending && !inFlight
+        mediaReviewButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaUploadAllowed()
+                && mediaPending && !inFlight
                 ? View.VISIBLE : View.GONE);
-        sendButton.setEnabled(pending == null && !mediaPending && !v2Busy
+        sendButton.setEnabled(sendAllowed() && pending == null && !mediaPending && !v2Busy
                 && !inFlight);
         // The actionable review controls already explain pending messages below the thread.
         // Keep the conversation area free of a duplicate, non-actionable banner.
@@ -4579,7 +5161,7 @@ public final class OdooIdentityActivity extends Activity {
             picture.setScaleType(ImageView.ScaleType.CENTER_CROP);
             picture.setBackground(Ui.bg(0xffe8edf2, 8, this));
             card.addView(picture, new LinearLayout.LayoutParams(Math.min(width, dp(240)), dp(132)));
-            if (CONNECTED_MEDIA_UI_ENABLED && mediaAvailable && media.thumbnailAvailable) {
+        if (CONNECTED_MEDIA_UI_ENABLED && mediaAllowed() && media.thumbnailAvailable) {
                 Bitmap cached = mediaThumbnailCache.get(mediaThumbKey(room, media));
                 if (cached != null) picture.setImageBitmap(cached);
                 else mediaThumbnailQueue.add(new MediaThumbTarget(room, media, picture));
@@ -4761,7 +5343,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void toggleInlineAudio(Room room, MediaRecord media, TextView play,
                                    SeekBar seek, WaveformView wave, TextView time) {
-        if (!stillCurrent(account, room) || !mediaAvailable) return;
+        if (!stillCurrent(account, room) || !mediaAllowed()) return;
         if (inlineAudioRoom == room && inlineAudioMediaId == media.id) {
             if (inlineAudioPlayer == null) { stopInlineAudio(); closeMediaRead(); return; }
             if (!inlineAudioPrepared) return;
@@ -4869,7 +5451,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void saveConnectedAudio(Room room, MediaRecord media) {
-        if (!stillCurrent(account, room) || !mediaAvailable) return;
+        if (!stillCurrent(account, room) || !mediaAllowed()) return;
         stopInlineAudio();
         closeMediaRead();
         final AccountScope scopedAccount = account;
@@ -4883,7 +5465,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void pumpMediaThumbnails() {
-        if (mediaReadBusy || !CONNECTED_MEDIA_UI_ENABLED || !mediaAvailable
+        if (mediaReadBusy || !CONNECTED_MEDIA_UI_ENABLED || !mediaAllowed()
                 || account == null || selectedRoom == null
                 || web == null || mediaThumbnailQueue.isEmpty()) return;
         for (int i = 0; i < mediaThumbnailQueue.size(); i++) {
@@ -4927,7 +5509,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void openConnectedMedia(Room room, MediaRecord media) {
-        if (!CONNECTED_MEDIA_UI_ENABLED || room != selectedRoom || !mediaAvailable || account == null) {
+        if (!CONNECTED_MEDIA_UI_ENABLED || room != selectedRoom || !mediaAllowed() || account == null) {
             chatNotice.setText(R.string.bchat_media_unavailable); return;
         }
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
@@ -5156,7 +5738,7 @@ public final class OdooIdentityActivity extends Activity {
     private void readConnectedMedia(Room room, MediaRecord media, boolean thumbnail,
                                     MediaReadCallback callback) {
         AccountScope scopedAccount = account;
-        if (!stillCurrent(scopedAccount, room) || !mediaAvailable || mediaReadBusy || web == null
+        if (!stillCurrent(scopedAccount, room) || !mediaAllowed() || mediaReadBusy || web == null
                 || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) {
             callback.complete(null, 0); return;
         }
@@ -5318,7 +5900,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void loadMessages(long beforeId) {
         Room room = selectedRoom;
-        if (room == null || v2Busy) return;
+        if ((!chatAllowed() && !offlineHistory) || room == null || v2Busy) return;
         if (offlineHistory) { showCachedMessages(room, beforeId, false); return; }
         if (beforeId > 0) {
             if (olderPageLoading) return;
@@ -6199,7 +6781,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private void sendText() {
         Room room = selectedRoom;
-        if (room == null || v2Busy || account == null || outbox == null || mediaStageBusy) return;
+        if (!sendAllowed() || room == null || v2Busy || account == null
+                || outbox == null || mediaStageBusy) return;
         try {
             if (mediaStore != null && mediaStore.pending(account, room.id, room.membershipId) != null) {
                 chatNotice.setText(R.string.bchat_media_pending); return;
@@ -6228,7 +6811,7 @@ public final class OdooIdentityActivity extends Activity {
             finishConnectedVoice(); return;
         }
         Room room = selectedRoom;
-        if (!CONNECTED_MEDIA_UI_ENABLED || !mediaAvailable || !stillCurrent(account, room)
+        if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed() || !stillCurrent(account, room)
                 || mediaStageBusy || voicePreviewFile != null || mediaUploadBusy || v2Busy) return;
         try {
             if (mediaStore.pending(account, room.id, room.membershipId) != null
@@ -6272,7 +6855,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void startConnectedVoice(AccountScope scopedAccount, Room room) {
-        if (!stillCurrent(scopedAccount, room) || !mediaAvailable || connectedVoiceRecorder != null
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || connectedVoiceRecorder != null
                 || voicePreviewFile != null) return;
         final VoiceRecorder[] current = new VoiceRecorder[1];
         VoiceRecorder recorder = new VoiceRecorder(this, new VoiceRecorder.Listener() {
@@ -6448,7 +7031,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void chooseConnectedMedia() {
         Room room = selectedRoom;
-        if (!CONNECTED_MEDIA_UI_ENABLED || !mediaAvailable || room == null || account == null
+        if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed() || room == null || account == null
                 || mediaStore == null || mediaUploadBusy || mediaStageBusy || v2Busy) return;
         try {
             if (mediaStore.pending(account, room.id, room.membershipId) != null
@@ -6569,7 +7152,7 @@ public final class OdooIdentityActivity extends Activity {
                 : data == null ? null : data.getData();
         if (resultCode != RESULT_OK || selected == null
                 || !stillCurrent(scopedAccount, room) || generation != mediaSessionGeneration
-                || !mediaAvailable) {
+                || !mediaUploadAllowed()) {
             if (captured != null) captured.delete();
             return;
         }
@@ -6645,7 +7228,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private void stageConnectedMedia(AccountScope scopedAccount, Room room, int generation, Uri selected,
                                      File temporary, String documentType, long invoiceCaseId) {
-        if (!stillCurrent(scopedAccount, room) || generation != mediaSessionGeneration) {
+        if (!stillCurrent(scopedAccount, room) || generation != mediaSessionGeneration
+                || !mediaUploadAllowed()) {
             if (temporary != null) temporary.delete(); return;
         }
         String text = messageInput.getText().toString();
@@ -6680,7 +7264,11 @@ public final class OdooIdentityActivity extends Activity {
                     return;
                 }
                 mediaStageBusy = false;
-                if (!mediaAvailable) return;
+                if (!mediaUploadAllowed()) {
+                    if (finalStaged != null) try { mediaStore.discard(scopedAccount, finalStaged); }
+                    catch (IOException ignored) { /* Sending was revoked after staging. */ }
+                    return;
+                }
                 if (finalStaged == null) { chatNotice.setText(R.string.bchat_media_invalid); return; }
                 flushDraftSave();
                 if (text.equals(messageInput.getText().toString())) {
@@ -6700,7 +7288,8 @@ public final class OdooIdentityActivity extends Activity {
     private void reviewConnectedMedia() {
         Room room = selectedRoom;
         AccountScope scopedAccount = account;
-        if (!CONNECTED_MEDIA_UI_ENABLED || !stillCurrent(scopedAccount, room) || mediaStore == null) return;
+        if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed()
+                || !stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
             BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id, room.membershipId);
             if (entry == null) { updatePendingUi(); return; }
@@ -6790,7 +7379,7 @@ public final class OdooIdentityActivity extends Activity {
     private void retryConnectedMedia() {
         AccountScope scopedAccount = account;
         Room room = selectedRoom;
-        if (!stillCurrent(scopedAccount, room) || !mediaAvailable || mediaStore == null
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaStore == null
                 || mediaUploadBusy || v2Busy || csrfToken == null) return;
         try {
             BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id, room.membershipId);
@@ -6895,7 +7484,7 @@ public final class OdooIdentityActivity extends Activity {
     private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
                                       BChatConnectedMediaStore.Entry entry,
                                       boolean renewedThisAttempt) throws IOException {
-        if (!stillCurrent(scopedAccount, room) || !mediaAvailable || mediaUploadBusy || web == null
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy || web == null
                 || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
         File staged = mediaStore.file(scopedAccount, entry);
         mediaUploadInput = new FileInputStream(staged);
@@ -6987,7 +7576,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private void sendConnectedMedia(AccountScope scopedAccount, Room room,
                                     BChatConnectedMediaStore.Entry entry) {
-        if (!stillCurrent(scopedAccount, room) || entry.mediaId <= 0 || v2Busy) return;
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed()
+                || entry.mediaId <= 0 || v2Busy) return;
         try {
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
@@ -7045,7 +7635,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void retryPending() {
         Room room = selectedRoom;
-        if (room == null || v2Busy || account == null || outbox == null) return;
+        if (!sendAllowed() || room == null || v2Busy || account == null || outbox == null) return;
         BChatV2Outbox.Entry entry = outbox.first(account, room.id, room.membershipId);
         if (entry == null) { updatePendingUi(); return; }
         try {
@@ -7158,6 +7748,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void openTasks(long roomId) {
+        if (!permissionSet.taskView) return;
         ++taskViewSerial;
         if (taskRoomFilter != roomId) taskStateFilter = null;
         taskRoomFilter = roomId;
@@ -7166,7 +7757,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void discoverTasks() {
-        if (!"tasks".equals(visibleSection) || !verified) return;
+        if (!permissionSet.taskView || !"tasks".equals(visibleSection) || !verified) return;
         final int serial = ++taskViewSerial;
         final AccountScope scopedAccount = account;
         updatePendingTaskUi();
@@ -7190,6 +7781,13 @@ public final class OdooIdentityActivity extends Activity {
                 taskNotice.setText(R.string.task_unavailable);
                 return;
             }
+            if (statusCode == 403) {
+                clearDeniedTaskList();
+                taskNotice.setText(R.string.task_denied);
+                lastPermissionRefreshAt = 0;
+                refreshPermissionSet();
+                return;
+            }
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
@@ -7198,7 +7796,8 @@ public final class OdooIdentityActivity extends Activity {
                 taskCompanies.clear();
                 taskCompanies.addAll(companies);
                 tasksAvailable = true;
-                taskNewButton.setVisibility(companies.isEmpty() ? View.GONE : View.VISIBLE);
+                taskNewButton.setVisibility(permissionSet.taskManage && !companies.isEmpty()
+                        ? View.VISIBLE : View.GONE);
                 taskFilterButton.setVisibility(View.VISIBLE);
                 updatePendingTaskUi();
                 taskHeading.setText(roomFilter > 0 ? R.string.task_room_tasks : R.string.chat_v2_tasks);
@@ -7380,7 +7979,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void createTaskDialog() {
-        if (!tasksAvailable || v2Busy || taskCompanies.isEmpty()) return;
+        if (!permissionSet.taskManage || !tasksAvailable || v2Busy || taskCompanies.isEmpty()) return;
         if (hasPendingTaskCreate()) { reviewPendingTaskCreate(); return; }
         if (taskRoomFilter > 0) {
             for (Room room : rooms) if (room.id == taskRoomFilter) {
@@ -7798,7 +8397,8 @@ public final class OdooIdentityActivity extends Activity {
                 displayTaskDue(task.dueAt));
         AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle(task.title).setMessage(detail)
                 .setNegativeButton(R.string.task_close, null);
-        if (!actions.isEmpty()) builder.setPositiveButton(R.string.task_actions,
+        if (permissionSet.taskManage && !actions.isEmpty())
+            builder.setPositiveButton(R.string.task_actions,
                 (dialog, which) -> {
                     if (account == scopedAccount && verified) showTaskActionMenu(task, actions, labels);
                 });
@@ -7853,7 +8453,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void transitionTask(Task task, String action, long assigneeId, String reason) {
-        if (v2Busy || !tasksAvailable) return;
+        if (!permissionSet.taskManage || v2Busy || !tasksAvailable) return;
         try {
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
@@ -8135,16 +8735,25 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private static final class OrderSummary {
-        final long id, representativeId, roomId;
-        final String name, state, representative, total, currency, submittedAt;
-        OrderSummary(JSONObject item) throws Exception {
+        final long id, representativeId, roomId, companyId, requesterId;
+        final String name, state, representative, purchaseRoute, total, currency, submittedAt,
+                companyName, requesterName;
+        OrderSummary(JSONObject item) throws Exception { this(item, false); }
+        OrderSummary(JSONObject item, boolean allScope) throws Exception {
             id = positiveId(item.get("id"));
+            companyId = allScope ? positiveId(item.get("company_id")) : 0;
+            requesterId = allScope ? positiveId(item.get("requester_id")) : 0;
+            companyName = allScope ? boundedTaskText(item.getString("company_name"), 256, true) : "";
+            requesterName = allScope ? boundedTaskText(item.getString("requester_name"), 256, true) : "";
             name = boundedTaskText(item.getString("name"), 160, true);
             state = boundedTaskText(item.getString("state"), 40, true);
             if (!("draft".equals(state) || "sent".equals(state) || "received".equals(state)
                     || "purchased".equals(state) || "cancel".equals(state)))
                 throw new IllegalArgumentException();
             representative = boundedTaskText(item.optString("representative_name", ""), 256, false);
+            purchaseRoute = item.optString("purchase_route", "representative");
+            if (!("representative".equals(purchaseRoute) || "cash".equals(purchaseRoute)
+                    || "bank_transfer".equals(purchaseRoute))) throw new IllegalArgumentException();
             Object repId = item.opt("representative_id");
             representativeId = repId == null || repId == JSONObject.NULL ? 0 : positiveId(repId);
             Object rawRoom = item.opt("room_id");
@@ -8326,7 +8935,7 @@ public final class OdooIdentityActivity extends Activity {
                         || viewSerial != orderViewSerial || orderMine || orderReceiving
                         || !"orders".equals(visibleSection)
                         || !fingerprint.equals(orderCartFingerprint())) return;
-                if (status == 403) { denyOrdersForSession(); return; }
+                if (status == 403) { recoverOrderCompanyAccess(companyId); return; }
                 orderQuoteLoading = false;
                 orderQuoteTotal = orderQuoteCurrency = null;
                 try {
@@ -8375,7 +8984,7 @@ public final class OdooIdentityActivity extends Activity {
         orderHeaderCompanyButton.setText(companyName + (companyChoice ? " ⌄" : ""));
         orderHeaderCompanyButton.setContentDescription(companyName);
         orderHeaderCompanyButton.setEnabled(companyChoice);
-        orderHeaderCompanyButton.setVisibility(!orderCompanies.isEmpty()
+        orderHeaderCompanyButton.setVisibility((orderCanCreate || orderCanReceive) && !orderCompanies.isEmpty()
                 && "orders".equals(visibleSection) ? View.VISIBLE : View.GONE);
         orderWarehouseButton.setText(orderChoiceName(orderWarehouses, orderWarehouseId,
                 R.string.order_choose_warehouse));
@@ -8385,7 +8994,8 @@ public final class OdooIdentityActivity extends Activity {
                 ? getString(R.string.order_auto_representative, orderRepresentatives.get(0).name)
                 : orderChoiceName(orderRepresentatives, orderRepresentativeId,
                         R.string.order_choose_representative));
-        boolean representativeChoice = orderCompanyId > 0 && orderRepresentatives.size() > 1;
+        boolean representativeChoice = orderCompanyId > 0
+                && "representative".equals(orderPurchaseRoute) && orderRepresentatives.size() > 1;
         orderRepresentativeButton.setVisibility(representativeChoice ? View.VISIBLE : View.GONE);
         orderRepresentativeButton.setEnabled(orderRepresentatives.size() > 1);
         orderDetailsButton.setVisibility(warehouseChoice || representativeChoice
@@ -8397,40 +9007,216 @@ public final class OdooIdentityActivity extends Activity {
                 : representativeChoice && orderRepresentativeId == 0
                 ? getString(R.string.order_choose_representative)
                 : getString(R.string.order_details));
+        refreshOrderCartRoute();
         orderCategoryButton.setText(orderChoiceName(orderCategories, orderCategoryId,
                 R.string.order_all_categories));
         orderCategoryButton.setContentDescription(orderChoiceName(orderCategories, orderCategoryId,
                 R.string.order_all_categories));
         boolean catalog = !orderMine && !orderReceiving;
+        boolean operator = orderCanCreate;
+        ((View) orderCatalogButton.getParent()).setVisibility(orderCanCreate ? View.VISIBLE : View.GONE);
+        ((View) orderReceiptButton.getParent()).setVisibility(orderCanReceive ? View.VISIBLE : View.GONE);
         Ui.styleSegment(orderCatalogButton, catalog);
         Ui.styleSegment(orderMineButton, orderMine);
         Ui.styleSegment(orderReceiptButton, orderReceiving);
         orderCatalogLine.setBackgroundColor(catalog ? Ui.GREEN : Color.TRANSPARENT);
         orderMineLine.setBackgroundColor(orderMine ? Ui.GREEN : Color.TRANSPARENT);
         orderReceiptLine.setBackgroundColor(orderReceiving ? Ui.GREEN : Color.TRANSPARENT);
-        orderFiltersRow.setVisibility(catalog ? View.VISIBLE : View.GONE);
+        orderFiltersRow.setVisibility(catalog && operator ? View.VISIBLE : View.GONE);
         orderPreviousButton.setVisibility(catalog && !orderPageHistory.isEmpty()
                 ? View.VISIBLE : View.GONE);
-        orderCartBar.setVisibility(catalog ? View.VISIBLE : View.GONE);
+        orderCartBar.setVisibility(catalog && operator ? View.VISIBLE : View.GONE);
         refreshOrderQuoteLabels();
         orderCartButton.setEnabled(!orderCart.isEmpty() && !hasPendingOrder());
-        orderPendingButton.setVisibility(catalog && hasPendingOrder() ? View.VISIBLE : View.GONE);
-        receiptPendingButton.setVisibility(orderReceiving && hasPendingReceipt()
+        orderPendingButton.setVisibility(catalog && operator && hasPendingOrder() ? View.VISIBLE : View.GONE);
+        receiptPendingButton.setVisibility(orderCanReceive && orderReceiving && hasPendingReceipt()
                 ? View.VISIBLE : View.GONE);
+        receiptSharePendingButton.setVisibility(orderCanReceive && hasPendingReceiptShare()
+                ? View.VISIBLE : View.GONE);
+    }
+
+    private void recoverOrderCompanyAccess(long deniedCompanyId) {
+        if (!verified || !ordersAvailable || deniedCompanyId != orderCompanyId
+                || !"orders".equals(visibleSection)) return;
+        boolean firstFailure = deniedOrderCompanyIds.add(deniedCompanyId);
+        ++orderViewSerial;
+        if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
+        if (orderCartDialog != null) orderCartDialog.dismiss();
+        resetOrderImages(true);
+        finishOrderLoading();
+        clearOrderRetry();
+        ordersAvailable = false;
+        orderCompanyOptionsLoaded = false;
+        orderCompanyId = orderWarehouseId = orderRepresentativeId = orderCategoryId = 0;
+        orderCompanies.clear();
+        orderWarehouses.clear();
+        orderRepresentatives.clear();
+        orderPurchaseRoutes.clear();
+        orderPurchaseRoute = "representative";
+        orderCategories.clear();
+        orderOptions.clear();
+        orderSummaries.clear();
+        receiptSummaries.clear();
+        orderCart.clear();
+        lastRemovedOrderLine = null;
+        orderCatalogAfterId = orderListBeforeId = orderCurrentPageStartId = receiptBeforeId = 0;
+        orderPageHistory.clear();
+        orderRenderedKey = null;
+        orderItems.removeAllViews();
+        orderOlderButton.setVisibility(View.GONE);
+        orderPreviousButton.setVisibility(View.GONE);
+        orderCompanyPreferences().edit().remove(ORDER_COMPANY_SELECTED).apply();
+        if (orderSearchTask != null) handler.removeCallbacks(orderSearchTask);
+        orderSearchTask = null;
+        orderSearch.setText("");
+        invalidateOrderQuote();
+        updateOrderSelectors();
+        if (firstFailure) discoverOrders();
+        else showOrderLoadError(R.string.order_denied, () -> {
+            deniedOrderCompanyIds.clear();
+            discoverOrders();
+        });
+    }
+
+    private void recoverAllOrdersAccess() {
+        if (!verified || !orderMine || !"orders".equals(visibleSection)) return;
+        ++orderViewSerial;
+        finishOrderLoading();
+        clearOrderRetry();
+        ordersAvailable = false;
+        orderSummaries.clear();
+        orderListBeforeId = 0;
+        orderRenderedKey = null;
+        renderOrderSummaries();
+        orderOlderButton.setVisibility(View.GONE);
+        if (!allOrdersRecoveryAttempted) {
+            allOrdersRecoveryAttempted = true;
+            discoverOrders();
+        } else {
+            showOrderLoadError(R.string.order_denied, () -> {
+                allOrdersRecoveryAttempted = false;
+                discoverOrders();
+            });
+        }
+    }
+
+    private void applyOrderRights(JSONObject options, AccountScope scope) throws Exception {
+        String access = options.getString("access");
+        if (!"viewer".equals(access) && !"operator".equals(access))
+            throw new IllegalArgumentException("Invalid order access");
+        boolean hasView = options.has("can_view");
+        boolean hasCreate = options.has("can_create");
+        boolean hasReceive = options.has("can_receive");
+        if ((hasView || hasCreate || hasReceive) && !(hasView && hasCreate && hasReceive))
+            throw new IllegalArgumentException("Incomplete order permissions");
+        boolean view, create, receive;
+        if (hasView) {
+            if (!(options.get("can_view") instanceof Boolean)
+                    || !(options.get("can_create") instanceof Boolean)
+                    || !(options.get("can_receive") instanceof Boolean))
+                throw new IllegalArgumentException("Invalid order permissions");
+            view = options.getBoolean("can_view");
+            create = options.getBoolean("can_create");
+            receive = options.getBoolean("can_receive");
+        } else {
+            String saved = getSharedPreferences(ORDER_PERMISSION_PREFS, MODE_PRIVATE)
+                    .getString(scope.key, null);
+            if (saved != null) {
+                JSONObject old = new JSONObject(saved);
+                view = old.getBoolean("can_view");
+                create = old.getBoolean("can_create");
+                receive = old.getBoolean("can_receive");
+            } else {
+                view = true;
+                create = receive = "operator".equals(access);
+            }
+        }
+        if (!view && (create || receive))
+            throw new IllegalArgumentException("Write permission without view");
+        if (hasView) {
+            JSONObject saved = new JSONObject().put("can_view", view)
+                    .put("can_create", create).put("can_receive", receive);
+            getSharedPreferences(ORDER_PERMISSION_PREFS, MODE_PRIVATE).edit()
+                    .putString(scope.key, saved.toString()).commit();
+        }
+        if (permissionSet.revision >= 0) {
+            view &= permissionSet.orderView;
+            create &= permissionSet.orderCreate;
+            receive &= permissionSet.orderReceive;
+        }
+        orderAccess = access;
+        setOrderRights(scope, view, create, receive);
+    }
+
+    private void setOrderRights(AccountScope scope, boolean view, boolean create,
+            boolean receive) {
+        boolean lostView = orderCanView && !view;
+        orderCanView = view;
+        orderCanCreate = view && create;
+        orderCanReceive = view && receive;
+        boolean modeRevoked = (!orderMine && !orderReceiving && !orderCanCreate)
+                || (orderReceiving && !orderCanReceive);
+        if (modeRevoked) {
+            orderReceiving = !orderMine && orderCanReceive;
+            orderMine = !orderReceiving;
+            ++orderViewSerial;
+            orderRenderedKey = null;
+            if (orderItems != null) orderItems.removeAllViews();
+        }
+        if (!orderCanCreate || lostView) {
+            orderCreatePreferences().edit().remove(scope.key).commit();
+            orderCart.clear();
+            orderOptions.clear();
+            invalidateOrderQuote();
+            if (orderCartDialog != null) orderCartDialog.dismiss();
+        }
+        if (!orderCanReceive || lostView) {
+            receiptConfirmPreferences().edit().remove(scope.key).commit();
+            if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
+            SharedPreferences shares = receiptSharePreferences();
+            SharedPreferences.Editor edit = shares.edit();
+            for (String key : shares.getAll().keySet())
+                if (key.startsWith(scope.key + ":")) edit.remove(key);
+            edit.commit();
+        }
+        if (lostView) {
+            orderSummaries.clear();
+            receiptSummaries.clear();
+            orderOptions.clear();
+            if (orderItems != null) orderItems.removeAllViews();
+            resetOrderImages(true);
+            if ("orders".equals(visibleSection)) {
+                if (chatAllowed()) showRooms();
+                else if (permissionSet.taskView) switchSection("tasks");
+                else { showShell(); shellNotice.setText(R.string.order_denied); }
+            }
+        } else if ("orders".equals(visibleSection)) updateOrderSelectors();
+        if (modeRevoked && view && "orders".equals(visibleSection)) {
+            orderCapabilityOptions = null;
+            orderCapabilityAccount = null;
+            handler.post(() -> { if (verified && "orders".equals(visibleSection)) discoverOrders(); });
+        }
     }
 
     private void denyOrdersForSession() {
         if (ordersDenied) return;
         ordersDenied = true;
         ordersAvailable = false;
+        orderAccess = "";
+        orderCanView = orderCanCreate = orderCanReceive = false;
         ++orderViewSerial;
         if (orderCartDialog != null) orderCartDialog.dismiss();
         if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
         if (orderCompanyMenu != null) orderCompanyMenu.dismiss();
         resetOrderImages(true);
         orderCompanies.clear();
+        deniedOrderCompanyIds.clear();
+        allOrdersRecoveryAttempted = false;
+        orderCompanyOptionsLoaded = false;
         orderWarehouses.clear();
         orderRepresentatives.clear();
+        orderPurchaseRoutes.clear();
+        orderPurchaseRoute = "representative";
         orderCategories.clear();
         orderOptions.clear();
         orderSummaries.clear();
@@ -8450,10 +9236,78 @@ public final class OdooIdentityActivity extends Activity {
         orderHeaderCompanyButton.setVisibility(View.GONE);
         orderPendingButton.setVisibility(View.GONE);
         receiptPendingButton.setVisibility(View.GONE);
-        if ("orders".equals(visibleSection)) showRooms();
-        else renderBottomTabs();
+        receiptSharePendingButton.setVisibility(View.GONE);
+        if ("orders".equals(visibleSection)) {
+            if (chatAllowed()) showRooms();
+            else if (permissionSet.taskView) switchSection("tasks");
+            else { showShell(); shellNotice.setText(R.string.order_denied); }
+        } else renderBottomTabs();
         android.widget.Toast.makeText(this, R.string.order_operator_only,
                 android.widget.Toast.LENGTH_LONG).show();
+    }
+
+    private void maybeProbeOrderCapability() {
+        if (!verified || account == null || offlineHistory) return;
+        // The v2 completion callback wakes this probe once the shared channel is free.
+        if (v2Busy) return;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (lastOrderCapabilityProbeAt > 0
+                && now - lastOrderCapabilityProbeAt < 15000) return;
+        lastOrderCapabilityProbeAt = now;
+        final AccountScope scopedAccount = account;
+        fetchV2("GET", V2_ORDERS + "/options", null, (status, body) -> {
+            if (scopedAccount != account || !verified) return;
+            if (status == 401) { logout(); return; }
+            if (status == 403) {
+                orderCapabilityOptions = null;
+                orderCapabilityAccount = null;
+                if (orderCanView || "orders".equals(visibleSection)) denyOrdersForSession();
+                else {
+                    orderAccess = "";
+                    orderCanView = orderCanCreate = orderCanReceive = false;
+                    ordersAvailable = false;
+                    ordersDenied = true;
+                    renderBottomTabs();
+                }
+                return;
+            }
+            try {
+                if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
+                    throw new IllegalArgumentException();
+                String access = body.getString("access");
+                if (!"viewer".equals(access) && !"operator".equals(access))
+                    throw new IllegalArgumentException();
+                List<TaskChoice> companies = choices(body.getJSONArray("companies"), 100, true);
+                for (TaskChoice choice : companies)
+                    if (!v1Companies.contains(choice.id)) throw new IllegalArgumentException();
+                orderCapabilityOptions = body;
+                orderCapabilityAccount = scopedAccount;
+                orderCapabilityOptionsAt = android.os.SystemClock.elapsedRealtime();
+                orderCapabilityProbeFailures = 0;
+                applyOrderRights(body, scopedAccount);
+                ordersDenied = false;
+                renderBottomTabs();
+                if (!chatAllowed() && !permissionSet.taskView && orderCanView
+                        && chatRoot.getVisibility() != View.VISIBLE) {
+                    shell.setVisibility(View.GONE);
+                    chatRoot.setVisibility(View.VISIBLE);
+                    layout.setPadding(0, 0, 0, 0);
+                    switchSection("orders");
+                }
+            } catch (Exception invalid) {
+                if (status != 0 && status != 429 && status < 500)
+                    return;
+                if (orderCapabilityProbeFailures >= 3 || orderCapabilityProbeScheduled) return;
+                int backoff = 500 << orderCapabilityProbeFailures++;
+                orderCapabilityProbeScheduled = true;
+                handler.postDelayed(() -> {
+                    orderCapabilityProbeScheduled = false;
+                    if (scopedAccount != account || !verified) return;
+                    lastOrderCapabilityProbeAt = 0;
+                    maybeProbeOrderCapability();
+                }, backoff);
+            }
+        });
     }
 
     private void discoverOrders() {
@@ -8463,14 +9317,14 @@ public final class OdooIdentityActivity extends Activity {
         updateOrderSelectors();
         if (v2Busy) {
             beginOrderLoading(serial, R.string.order_loading);
-            handler.postDelayed(() -> {
-                if (verified && "orders".equals(visibleSection) && serial == orderViewSerial)
+            queueOrderLoadWhenIdle(() -> {
+                if (scopedAccount == account && serial == orderViewSerial)
                     discoverOrders();
-            }, 500);
+            });
             return;
         }
         beginOrderLoading(serial, R.string.order_loading);
-        fetchV2("GET", V2_ORDERS + "/options", null, (status, body) -> {
+        V2Callback discovery = (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (scopedAccount != account || serial != orderViewSerial
                     || !"orders".equals(visibleSection)) return;
@@ -8479,16 +9333,47 @@ public final class OdooIdentityActivity extends Activity {
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
+                String access = body.getString("access");
+                if (!"viewer".equals(access) && !"operator".equals(access))
+                    throw new IllegalArgumentException();
+                applyOrderRights(body, scopedAccount);
+                if (serial != orderViewSerial) return;
                 List<TaskChoice> companies = choices(body.getJSONArray("companies"), 100, true);
+                companies.sort((first, second) -> Long.compare(first.id, second.id));
                 orderCompanies.clear();
                 orderCompanies.addAll(companies);
                 ordersAvailable = true;
+                renderBottomTabs();
+                if (!orderCanCreate && !orderCanReceive) {
+                    orderMine = true;
+                    orderReceiving = false;
+                } else if (!orderCanCreate && !orderMine) {
+                    orderReceiving = true;
+                } else if (!orderCanReceive && orderReceiving) {
+                    orderReceiving = false;
+                    orderMine = !orderCanCreate;
+                }
+                if (!orderCanCreate) {
+                    orderCompanyOptionsLoaded = false;
+                    orderWarehouses.clear();
+                    orderRepresentatives.clear();
+                    orderPurchaseRoutes.clear();
+                    orderPurchaseRoute = "representative";
+                    orderCategories.clear();
+                    orderOptions.clear();
+                    orderCart.clear();
+                    invalidateOrderQuote();
+                }
                 boolean stillAllowed = false;
                 for (TaskChoice choice : companies)
                     if (choice.id == orderCompanyId) stillAllowed = true;
                 if (!stillAllowed) {
                     orderCompanyId = 0;
+                    orderCompanyOptionsLoaded = false;
+                    orderCompanyPreferences().edit().remove(ORDER_COMPANY_SELECTED).apply();
                     orderWarehouseId = orderRepresentativeId = orderCategoryId = 0;
+                    orderPurchaseRoutes.clear();
+                    orderPurchaseRoute = "representative";
                     orderCart.clear();
                     lastRemovedOrderLine = null;
                     invalidateOrderQuote();
@@ -8502,15 +9387,35 @@ public final class OdooIdentityActivity extends Activity {
                     resetOrderImages(true);
                     orderRenderedKey = null;
                 }
-                if (companies.size() == 1 && orderCompanyId == 0)
-                    orderCompanyId = companies.get(0).id;
+                if (orderCompanyId == 0 && !companies.isEmpty()) {
+                    for (TaskChoice choice : companies)
+                        if (choice.id == selectedChatCompanyId
+                                && !deniedOrderCompanyIds.contains(choice.id))
+                            orderCompanyId = choice.id;
+                    if (orderCompanyId == 0) for (TaskChoice choice : companies)
+                        if (!deniedOrderCompanyIds.contains(choice.id)) {
+                            orderCompanyId = choice.id;
+                            break;
+                        }
+                }
                 updateOrderSelectors();
-                if (orderCompanyId > 0) loadOrderCompanyOptions();
+                if (orderMine) loadOrderSummaries(0);
+                else if (orderCompanyId > 0) {
+                    saveOrderCompany(orderCompanyId);
+                    if (orderReceiving) loadReceipts(0);
+                    else if (orderCompanyOptionsLoaded) loadOrderCatalog(0);
+                    else loadOrderCompanyOptions();
+                }
                 else {
                     orderItems.removeAllViews();
                     orderRenderedKey = null;
-                    orderNotice.setText(companies.isEmpty()
-                            ? getString(R.string.order_no_companies) : "");
+                    if (companies.isEmpty()) orderNotice.setText(R.string.order_no_companies);
+                    else if (!deniedOrderCompanyIds.isEmpty())
+                        showOrderLoadError(R.string.order_denied, () -> {
+                            deniedOrderCompanyIds.clear();
+                            discoverOrders();
+                        });
+                    else orderNotice.setText("");
                 }
             } catch (Exception invalid) {
                 ordersAvailable = false;
@@ -8520,16 +9425,50 @@ public final class OdooIdentityActivity extends Activity {
                         ? R.string.order_unavailable : R.string.order_load_failed,
                         this::discoverOrders);
             }
-        });
+        };
+        JSONObject cached = orderCapabilityAccount == scopedAccount
+                && android.os.SystemClock.elapsedRealtime() - orderCapabilityOptionsAt < 30000
+                ? orderCapabilityOptions : null;
+        orderCapabilityOptions = null;
+        orderCapabilityAccount = null;
+        if (cached != null) discovery.complete(200, cached);
+        else fetchV2("GET", V2_ORDERS + "/options", null, discovery);
     }
 
     private void selectOrderCompany(long companyId) {
+        boolean allowed = false;
+        for (TaskChoice choice : orderCompanies) if (choice.id == companyId) allowed = true;
+        if (!verified || !allowed) return;
         if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
         orderDetailsPanel.setVisibility(View.GONE);
+        if (orderMine) {
+            if (orderCompanyId == companyId) return;
+            resetOrderImages(true);
+            orderCompanyId = companyId;
+            orderCompanyOptionsLoaded = false;
+            orderWarehouseId = orderRepresentativeId = orderCategoryId = 0;
+            orderCart.clear();
+            lastRemovedOrderLine = null;
+            invalidateOrderQuote();
+            orderOptions.clear();
+            receiptSummaries.clear();
+            receiptBeforeId = orderCurrentPageStartId = orderCatalogAfterId = 0;
+            orderPageHistory.clear();
+            orderSearch.setText("");
+            if (orderSearchTask != null) handler.removeCallbacks(orderSearchTask);
+            orderSearchTask = null;
+            saveOrderCompany(companyId);
+            updateOrderSelectors();
+            return;
+        }
+        if (orderCompanyId == companyId && orderCompanyOptionsLoaded) return;
         if (orderCompanyId != companyId) {
             resetOrderImages(true);
             orderCompanyId = companyId;
+            orderCompanyOptionsLoaded = false;
             orderWarehouseId = orderRepresentativeId = orderCategoryId = 0;
+            orderPurchaseRoute = "representative";
+            orderPurchaseRoutes.clear();
             orderCart.clear();
             lastRemovedOrderLine = null;
             invalidateOrderQuote();
@@ -8548,17 +9487,24 @@ public final class OdooIdentityActivity extends Activity {
             }
             orderItems.removeAllViews();
         }
+        saveOrderCompany(companyId);
         ++orderViewSerial;
         updateOrderSelectors();
-        loadOrderCompanyOptions();
+        if (orderReceiving) loadReceipts(0);
+        else loadOrderCompanyOptions();
     }
 
     private void loadOrderCompanyOptions() {
         if (!verified || orderCompanyId == 0 || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
-            handler.postDelayed(() -> {
-                if (verified && "orders".equals(visibleSection)) loadOrderCompanyOptions();
-            }, 500);
+            final AccountScope scopedAccount = account;
+            final int serial = orderViewSerial;
+            final long companyId = orderCompanyId;
+            queueOrderLoadWhenIdle(() -> {
+                if (scopedAccount == account && serial == orderViewSerial
+                        && companyId == orderCompanyId && !orderReceiving)
+                    loadOrderCompanyOptions();
+            });
             return;
         }
         final AccountScope scopedAccount = account;
@@ -8570,17 +9516,46 @@ public final class OdooIdentityActivity extends Activity {
             if (scopedAccount != account || serial != orderViewSerial
                     || companyId != orderCompanyId || !"orders".equals(visibleSection)) return;
             finishOrderLoading();
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403) { recoverOrderCompanyAccess(companyId); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
                 List<TaskChoice> warehouses = choices(body.getJSONArray("warehouses"), 100, false);
                 List<TaskChoice> representatives = choices(body.getJSONArray("representatives"), 100, false);
                 List<TaskChoice> categories = choices(body.getJSONArray("categories"), 100, false);
+                List<String> routes = new ArrayList<>();
+                JSONArray advertisedRoutes = body.optJSONArray("purchase_routes");
+                if (body.has("purchase_routes") && advertisedRoutes == null)
+                    throw new IllegalArgumentException();
+                if (advertisedRoutes == null) {
+                    routes.add("representative"); // Older BChat servers only support this route.
+                } else {
+                    if (advertisedRoutes.length() < 1 || advertisedRoutes.length() > 3)
+                        throw new IllegalArgumentException();
+                    for (int i = 0; i < advertisedRoutes.length(); i++) {
+                        JSONObject route = advertisedRoutes.getJSONObject(i);
+                        if (route.length() != 2 || !route.has("name"))
+                            throw new IllegalArgumentException();
+                        String code = route.getString("code");
+                        boundedTaskText(route.getString("name"), 80, true);
+                        if (!("representative".equals(code) || "cash".equals(code)
+                                || "bank_transfer".equals(code)) || routes.contains(code))
+                            throw new IllegalArgumentException();
+                        routes.add(code);
+                    }
+                }
+                orderCompanyOptionsLoaded = true;
                 orderWarehouses.clear();
                 orderWarehouses.addAll(warehouses);
                 orderRepresentatives.clear();
                 orderRepresentatives.addAll(representatives);
+                orderPurchaseRoutes.clear();
+                orderPurchaseRoutes.addAll(routes);
+                if (!orderPurchaseRoutes.contains(orderPurchaseRoute)) {
+                    orderPurchaseRoute = orderPurchaseRoutes.contains("representative")
+                            ? "representative" : orderPurchaseRoutes.get(0);
+                    orderRepresentativeId = 0;
+                }
                 orderCategories.clear();
                 orderCategories.addAll(categories);
                 boolean warehouseValid = false, representativeValid = false, categoryValid = false;
@@ -8595,12 +9570,14 @@ public final class OdooIdentityActivity extends Activity {
                 updateOrderSelectors();
                 if (!orderCart.isEmpty() && orderQuoteTotal == null) scheduleOrderQuote();
                 if (warehouses.isEmpty()) orderNotice.setText(R.string.order_no_warehouse);
-                else if (representatives.isEmpty()) orderNotice.setText(R.string.order_no_representative);
+                else if ("representative".equals(orderPurchaseRoute) && representatives.isEmpty())
+                    orderNotice.setText(R.string.order_no_representative);
                 else orderNotice.setText("");
                 if (orderReceiving) loadReceipts(0);
                 else if (orderMine) loadOrderSummaries(0);
                 else loadOrderCatalog(0);
             } catch (Exception invalid) {
+                orderCompanyOptionsLoaded = false;
                 orderItems.removeAllViews();
                 orderRenderedKey = null;
                 showOrderLoadError(status == 403 ? R.string.order_denied : R.string.order_load_failed,
@@ -8630,28 +9607,33 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void showOrderMode(boolean mine) {
+        if (!mine && !orderCanCreate) return;
         if (!ordersAvailable || (!orderReceiving && orderMine == mine)) return;
         resetOrderImages(false);
         orderMine = mine;
         orderReceiving = false;
         ++orderViewSerial;
         if (!mine && !orderCart.isEmpty()) invalidateOrderQuote();
-        prepareOrderContent(orderContentKey(mine ? "mine" : "catalog", orderCompanyId,
+        queuedOrderLoad = null;
+        prepareOrderContent(orderContentKey(mine ? "all" : "catalog", mine ? 0 : orderCompanyId,
                 mine ? 0 : orderCategoryId,
                 mine ? "" : orderSearch.getText().toString().trim(), 0));
         orderOlderButton.setVisibility(View.GONE);
         updateOrderSelectors();
-        if (orderCompanyId > 0) {
-            if (mine) loadOrderSummaries(0);
-            else loadOrderCatalog(0);
+        if (mine) loadOrderSummaries(0);
+        else if (orderCompanyId > 0) {
+            if (orderCompanyOptionsLoaded) loadOrderCatalog(0);
+            else loadOrderCompanyOptions();
         }
     }
 
     private void showReceiptMode() {
+        if (!orderCanReceive) return;
         if (!ordersAvailable || orderReceiving) return;
         resetOrderImages(false);
         orderReceiving = true;
         orderMine = false;
+        queuedOrderLoad = null;
         ++orderViewSerial;
         prepareOrderContent(orderContentKey("receiving", orderCompanyId, 0, "", 0));
         orderOlderButton.setVisibility(View.GONE);
@@ -8664,14 +9646,19 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void loadOrderCatalog(long afterId, int navigation) {
-        if (!verified || !ordersAvailable || orderCompanyId == 0 || orderMine || orderReceiving
+        if (!verified || !ordersAvailable || !orderCanCreate || orderCompanyId == 0
+                || orderMine || orderReceiving
                 || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
             beginOrderLoading(orderViewSerial, R.string.order_loading);
-            handler.postDelayed(() -> {
-                if (verified && !orderMine && !orderReceiving && "orders".equals(visibleSection))
+            final AccountScope scopedAccount = account;
+            final int serial = orderViewSerial;
+            final long companyId = orderCompanyId;
+            queueOrderLoadWhenIdle(() -> {
+                if (scopedAccount == account && serial == orderViewSerial
+                        && companyId == orderCompanyId && !orderMine && !orderReceiving)
                     loadOrderCatalog(afterId, navigation);
-            }, 500);
+            });
             return;
         }
         final AccountScope scopedAccount = account;
@@ -8700,7 +9687,7 @@ public final class OdooIdentityActivity extends Activity {
                     || !query.equals(orderSearch.getText().toString().trim())
                     || !"orders".equals(visibleSection)) return;
             finishOrderLoading();
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403) { recoverOrderCompanyAccess(companyId); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
@@ -8774,10 +9761,13 @@ public final class OdooIdentityActivity extends Activity {
             return;
         }
         String lastCategory = null;
-        final boolean tablet = getResources().getConfiguration().screenWidthDp >= 600;
+        final int viewportWidthDp = orderScroll.getWidth() > 0
+                ? Math.round(orderScroll.getWidth() / getResources().getDisplayMetrics().density)
+                : getResources().getConfiguration().screenWidthDp;
+        final boolean tablet = viewportWidthDp >= 600;
         GridLayout grid = null;
-        final int cardWidth = dp(Math.max(220,
-                (getResources().getConfiguration().screenWidthDp - 56) / 2));
+        final int cardWidthDp = Math.max(220, (viewportWidthDp - 56) / 2);
+        final int cardWidth = dp(cardWidthDp);
         for (int index = 0; index < orderOptions.size();) {
             List<OrderOption> choices = new ArrayList<>();
             OrderOption option = orderOptions.get(index);
@@ -8830,31 +9820,29 @@ public final class OdooIdentityActivity extends Activity {
             if (selected != null && choices.size() > 1)
                 details.addView(Ui.text(this, orderOptionLabel(selected.option), 12, Ui.GREEN, true));
             cardTop.addView(details, new LinearLayout.LayoutParams(0, -2, 1));
-            Button add = new Button(this);
-            add.setText(choices.size() == 1 ? (selected == null ? "+" : "") : "⋯");
-            styleAction(add, false);
-            add.setTextSize(22);
-            add.setContentDescription(getString(choices.size() == 1
-                    ? R.string.order_add : R.string.order_choose_product_option) + " " + option.product);
-            add.setOnClickListener(v -> chooseOrAddOrderProduct(choices));
-            add.setVisibility(choices.size() == 1 && selected != null ? View.GONE : View.VISIBLE);
-            cardTop.addView(add, new LinearLayout.LayoutParams(dp(48), dp(48)));
+            LinearLayout stepper = selected == null ? null : orderQuantityStepper(selected);
+            int availableNameDp = (tablet ? cardWidthDp : viewportWidthDp) - 20
+                    - (option.imagePath == null ? 0 : 60) - 154;
+            boolean compactStepper = selected != null && availableNameDp < 168;
+            if (stepper != null && !compactStepper)
+                cardTop.addView(stepper, new LinearLayout.LayoutParams(-2, dp(48)));
+            if (selected == null) {
+                Button add = new Button(this);
+                add.setText(choices.size() == 1 ? "+" : "⋯");
+                Ui.styleIconAction(add, Ui.IconTone.TONAL);
+                add.setTextSize(21);
+                add.setTextColor(Ui.GREEN);
+                add.setContentDescription(getString(choices.size() == 1
+                        ? R.string.order_add : R.string.order_choose_product_option) + " " + option.product);
+                add.setOnClickListener(v -> chooseOrAddOrderProduct(choices));
+                cardTop.addView(add, new LinearLayout.LayoutParams(dp(48), dp(48)));
+            }
             card.addView(cardTop);
-            if (selected != null) {
-                LinearLayout controls = Ui.row(this);
-                Button decrement = orderQuantityAction("−", R.string.order_decrease,
-                        selected.option.product, () -> stepOrderQuantity(selected.option, -1));
-                controls.addView(decrement, new LinearLayout.LayoutParams(dp(48), dp(48)));
-                Button quantity = orderQuantityAction(selected.quantity, R.string.order_change_quantity,
-                        selected.option.product, () -> editOrderQuantity(selected.option));
-                controls.addView(quantity, new LinearLayout.LayoutParams(0, dp(48), 1));
-                Button increment = orderQuantityAction("+", R.string.order_increase,
-                        selected.option.product, () -> stepOrderQuantity(selected.option, 1));
-                controls.addView(increment, new LinearLayout.LayoutParams(dp(48), dp(48)));
-                Button remove = orderQuantityAction("×", R.string.order_remove,
-                        selected.option.product, () -> removeOrderOption(selected.option.id));
-                controls.addView(remove, new LinearLayout.LayoutParams(dp(48), dp(48)));
-                card.addView(controls);
+            if (compactStepper) {
+                LinearLayout.LayoutParams stepperSize = new LinearLayout.LayoutParams(-2, dp(48));
+                stepperSize.gravity = Gravity.END;
+                stepperSize.topMargin = dp(4);
+                card.addView(stepper, stepperSize);
             }
             card.setContentDescription(option.product + ", " + (choices.size() == 1
                     ? orderOptionLabel(option)
@@ -8882,6 +9870,49 @@ public final class OdooIdentityActivity extends Activity {
         if (!option.packaging.isEmpty() && !option.packaging.equals(option.option))
             label += " · " + option.packaging;
         return label + " · " + option.uom;
+    }
+
+    private LinearLayout orderQuantityStepper(OrderCartLine selected) {
+        LinearLayout stepper = Ui.row(this);
+        stepper.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
+        stepper.setClipToOutline(true);
+        stepper.addView(orderStepperAction("−", 19, R.string.order_decrease,
+                selected.option.product, () -> stepOrderQuantity(selected.option, -1)),
+                new LinearLayout.LayoutParams(dp(48), dp(48)));
+        View firstDivider = new View(this);
+        firstDivider.setBackgroundColor(Ui.LINE);
+        LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(dp(1), dp(24));
+        dividerSize.gravity = Gravity.CENTER_VERTICAL;
+        stepper.addView(firstDivider, dividerSize);
+        TextView quantity = orderStepperAction(selected.quantity, 14,
+                R.string.order_change_quantity, selected.option.product,
+                () -> editOrderQuantity(selected.option));
+        quantity.setContentDescription(getString(R.string.order_change_quantity)
+                + " " + selected.option.product + ": " + selected.quantity);
+        quantity.setSingleLine(true);
+        quantity.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        stepper.addView(quantity, new LinearLayout.LayoutParams(dp(56), dp(48)));
+        View secondDivider = new View(this);
+        secondDivider.setBackgroundColor(Ui.LINE);
+        LinearLayout.LayoutParams secondDividerSize = new LinearLayout.LayoutParams(dp(1), dp(24));
+        secondDividerSize.gravity = Gravity.CENTER_VERTICAL;
+        stepper.addView(secondDivider, secondDividerSize);
+        stepper.addView(orderStepperAction("+", 19, R.string.order_increase,
+                selected.option.product, () -> stepOrderQuantity(selected.option, 1)),
+                new LinearLayout.LayoutParams(dp(48), dp(48)));
+        return stepper;
+    }
+
+    private TextView orderStepperAction(String label, int textSize, int accessibilityLabel,
+            String product, Runnable action) {
+        TextView button = Ui.text(this, label, textSize, Ui.GREEN, true);
+        button.setGravity(Gravity.CENTER);
+        button.setMinWidth(dp(48));
+        button.setMinHeight(dp(48));
+        button.setContentDescription(getString(accessibilityLabel) + " " + product);
+        Ui.clickable(button);
+        button.setOnClickListener(v -> action.run());
+        return button;
     }
 
     private OrderCartLine orderLineForProduct(long productId) {
@@ -9056,40 +10087,42 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void loadOrderSummaries(long beforeId) {
-        if (!verified || !ordersAvailable || orderCompanyId == 0 || !orderMine
+        if (!verified || !ordersAvailable || !orderMine
                 || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
-            handler.postDelayed(() -> {
-                if (verified && orderMine && "orders".equals(visibleSection))
+            final AccountScope scopedAccount = account;
+            final int serial = orderViewSerial;
+            queueOrderLoadWhenIdle(() -> {
+                if (scopedAccount == account && serial == orderViewSerial && orderMine)
                     loadOrderSummaries(beforeId);
-            }, 500);
+            });
             return;
         }
         final AccountScope scopedAccount = account;
         final int serial = ++orderViewSerial;
-        final long companyId = orderCompanyId;
-        final String contentKey = orderContentKey("mine", companyId, 0, "", beforeId);
+        final String contentKey = orderContentKey("all", 0, 0, "", beforeId);
         prepareOrderContent(contentKey);
-        String path = V2_ORDERS + "?company_id=" + companyId;
+        String path = V2_ORDERS + "?scope=all";
         if (beforeId > 0) path += "&before_id=" + beforeId;
         beginOrderLoading(serial, R.string.order_loading);
         orderOlderButton.setEnabled(false);
         fetchV2("GET", path, null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (scopedAccount != account || serial != orderViewSerial || !orderMine
-                    || companyId != orderCompanyId || !"orders".equals(visibleSection)) return;
+                    || !"orders".equals(visibleSection)) return;
             finishOrderLoading();
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403 || status == 404) { recoverAllOrdersAccess(); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
                 JSONArray array = body.getJSONArray("orders");
-                if (array.length() > 50) throw new IllegalArgumentException();
+                if (array.length() > 30) throw new IllegalArgumentException();
                 List<OrderSummary> page = new ArrayList<>();
                 long previous = beforeId == 0 ? Long.MAX_VALUE : beforeId;
                 for (int i = 0; i < array.length(); i++) {
-                    OrderSummary order = new OrderSummary(array.getJSONObject(i));
-                    if (order.id >= previous) throw new IllegalArgumentException();
+                    OrderSummary order = new OrderSummary(array.getJSONObject(i), true);
+                    if (order.id >= previous || !v1Companies.contains(order.companyId))
+                        throw new IllegalArgumentException();
                     previous = order.id;
                     page.add(order);
                 }
@@ -9109,11 +10142,10 @@ public final class OdooIdentityActivity extends Activity {
                 orderOlderButton.setVisibility(cursor > 0 ? View.VISIBLE : View.GONE);
                 orderOlderButton.setEnabled(cursor > 0);
                 orderNotice.setText("");
+                allOrdersRecoveryAttempted = false;
             } catch (Exception invalid) {
-                if (status == 403) { orderSummaries.clear(); renderOrderSummaries(); }
                 orderOlderButton.setEnabled(orderListBeforeId > 0);
-                showOrderLoadError(status == 403 ? R.string.order_denied : R.string.order_load_failed,
-                        () -> loadOrderSummaries(beforeId));
+                showOrderLoadError(R.string.order_load_failed, () -> loadOrderSummaries(beforeId));
             }
         });
     }
@@ -9145,6 +10177,12 @@ public final class OdooIdentityActivity extends Activity {
             stateSize.setMarginStart(dp(8));
             heading.addView(state, stateSize);
             card.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+            card.addView(Ui.text(this, getString(R.string.order_summary_company,
+                    companyNameForId(order.companyId, order.companyName)), 12, Ui.MUTED, false));
+            card.addView(Ui.text(this, getString(R.string.order_summary_requester,
+                    order.requesterName), 12, Ui.MUTED, false));
+            card.addView(Ui.text(this, getString(R.string.order_purchase_route_value,
+                    orderRouteLabel(order.purchaseRoute)), 12, Ui.MUTED, false));
             if (!order.representative.isEmpty()) {
                 TextView representative = Ui.text(this,
                         getString(R.string.order_summary_representative, order.representative),
@@ -9176,19 +10214,24 @@ public final class OdooIdentityActivity extends Activity {
 
     private boolean receiptContext(AccountScope scopedAccount, long companyId, int serial) {
         return verified && scopedAccount == account && ordersAvailable && !ordersDenied
+                && orderCanReceive
                 && orderReceiving && "orders".equals(visibleSection)
                 && orderCompanyId == companyId && orderViewSerial == serial;
     }
 
     private void loadReceipts(long beforeId) {
-        if (!verified || !ordersAvailable || ordersDenied || !orderReceiving
+        if (!verified || !ordersAvailable || ordersDenied || !orderCanReceive || !orderReceiving
                 || orderCompanyId == 0 || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
             beginOrderLoading(orderViewSerial, R.string.receipt_loading);
-            handler.postDelayed(() -> {
-                if (verified && orderReceiving && "orders".equals(visibleSection))
+            final AccountScope scopedAccount = account;
+            final int serial = orderViewSerial;
+            final long companyId = orderCompanyId;
+            queueOrderLoadWhenIdle(() -> {
+                if (scopedAccount == account && serial == orderViewSerial
+                        && companyId == orderCompanyId && orderReceiving)
                     loadReceipts(beforeId);
-            }, 500);
+            });
             return;
         }
         final AccountScope scopedAccount = account;
@@ -9204,7 +10247,7 @@ public final class OdooIdentityActivity extends Activity {
             if (handleV2TransportFailure(status)) return;
             if (!receiptContext(scopedAccount, companyId, serial)) return;
             finishOrderLoading();
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403) { recoverOrderCompanyAccess(companyId); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
@@ -9298,7 +10341,7 @@ public final class OdooIdentityActivity extends Activity {
                 + "?company_id=" + companyId, null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (!receiptContext(scopedAccount, companyId, serial)) return;
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403) { recoverOrderCompanyAccess(companyId); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
@@ -9354,6 +10397,28 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showReceiptForm(ReceiptSummary detail, List<ReceiptLine> lines,
             AccountScope scopedAccount, long companyId, int serial) {
+        showReceiptForm(detail, lines, scopedAccount, companyId, serial, null);
+    }
+
+    private void showReceiptForm(ReceiptSummary detail, List<ReceiptLine> lines,
+            AccountScope scopedAccount, long companyId, int serial, PendingReceipt replacing) {
+        Map<Long, String[]> previousValues = new LinkedHashMap<>();
+        if (replacing != null) {
+            try {
+                JSONArray previous = new JSONObject(replacing.raw).getJSONArray("lines");
+                if (previous.length() != lines.size()) throw new IllegalArgumentException();
+                for (int i = 0; i < previous.length(); i++) {
+                    JSONObject value = previous.getJSONObject(i);
+                    previousValues.put(positiveId(value.get("line_id")), new String[] {
+                            value.getString("actual_qty"), value.getString("actual_price")});
+                }
+                for (ReceiptLine line : lines)
+                    if (!previousValues.containsKey(line.id)) throw new IllegalArgumentException();
+            } catch (Exception changed) {
+                orderNotice.setText(R.string.receipt_conflict);
+                return;
+            }
+        }
         LinearLayout content = Ui.column(this);
         Ui.pad(content, 12, 4);
         content.addView(Ui.text(this, getString(R.string.receipt_context,
@@ -9383,9 +10448,11 @@ public final class OdooIdentityActivity extends Activity {
             LinearLayout fields = Ui.row(this);
             EditText quantity = receiptNumberInput(R.string.receipt_actual_qty);
             quantity.setContentDescription(getString(R.string.receipt_actual_qty) + " " + line.product);
+            if (replacing != null) quantity.setText(previousValues.get(line.id)[0]);
             fields.addView(quantity, new LinearLayout.LayoutParams(0, dp(48), 1));
             EditText price = receiptNumberInput(R.string.receipt_actual_price);
             price.setContentDescription(getString(R.string.receipt_actual_price) + " " + line.product);
+            if (replacing != null) price.setText(previousValues.get(line.id)[1]);
             LinearLayout.LayoutParams priceSize = new LinearLayout.LayoutParams(0, dp(48), 1);
             priceSize.setMarginStart(dp(8));
             fields.addView(price, priceSize);
@@ -9412,9 +10479,15 @@ public final class OdooIdentityActivity extends Activity {
                     orderNotice.setText(R.string.order_previous_context_changed);
                     return;
                 }
-                if (hasPendingReceipt()) {
+                if (replacing == null && hasPendingReceipt()) {
                     dialog.dismiss();
                     reviewPendingReceipt();
+                    return;
+                }
+                if (replacing != null && !replacing.stored.equals(receiptConfirmPreferences()
+                        .getString(replacing.scope, null))) {
+                    dialog.dismiss();
+                    orderNotice.setText(R.string.order_previous_context_changed);
                     return;
                 }
                 JSONArray payloadLines = new JSONArray();
@@ -9446,7 +10519,7 @@ public final class OdooIdentityActivity extends Activity {
                     }
                     dialog.dismiss();
                     confirmReceiptReview(detail, payloadLines, review.toString(),
-                            scopedAccount, companyId, serial);
+                            scopedAccount, companyId, serial, replacing);
                 } catch (Exception invalid) {
                     orderNotice.setText(R.string.receipt_invalid_value);
                 }
@@ -9460,12 +10533,14 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void confirmReceiptReview(ReceiptSummary detail, JSONArray lines, String review,
-            AccountScope scopedAccount, long companyId, int serial) {
+            AccountScope scopedAccount, long companyId, int serial, PendingReceipt replacing) {
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.receipt_confirm)
                 .setMessage(review)
                 .setPositiveButton(R.string.receipt_confirm, (ignoredDialog, which) -> {
                     if (!receiptContext(scopedAccount, companyId, serial)
-                            || hasPendingReceipt()) {
+                            || (replacing == null ? hasPendingReceipt()
+                            : !replacing.stored.equals(receiptConfirmPreferences()
+                                    .getString(replacing.scope, null)))) {
                         orderNotice.setText(R.string.order_previous_context_changed);
                         return;
                     }
@@ -9473,7 +10548,10 @@ public final class OdooIdentityActivity extends Activity {
                         JSONObject payload = new JSONObject();
                         payload.put("api_version", 2);
                         payload.put("company_id", companyId);
-                        payload.put("client_uuid", UUID.randomUUID().toString());
+                        // A validation-rejected attempt is edited under its original UUID;
+                        // a later replay can never create a second receipt for this operation.
+                        payload.put("client_uuid", replacing == null
+                                ? UUID.randomUUID().toString() : replacing.uuid);
                         payload.put("lines", lines);
                         PendingReceipt pending = new PendingReceipt(scopedAccount,
                                 detail.id, payload.toString());
@@ -9497,29 +10575,36 @@ public final class OdooIdentityActivity extends Activity {
 
     private void loadPreviousOrder(OrderSummary selected) {
         if (!verified || account == null || !ordersAvailable || !orderMine
-                || orderCompanyId == 0 || !"orders".equals(visibleSection)) return;
+                || selected == null || !v1Companies.contains(selected.companyId)
+                || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
             orderNotice.setText(R.string.order_previous_loading);
             return;
         }
         final AccountScope scopedAccount = account;
         final int serial = orderViewSerial;
-        final long companyId = orderCompanyId;
+        final long companyId = selected.companyId;
         orderNotice.setText(R.string.order_previous_loading);
-        fetchV2("GET", V2_ORDERS + "/" + selected.id + "?company_id=" + companyId,
+        fetchV2("GET", V2_ORDERS + "/" + selected.id + "?company_id=" + companyId
+                        + "&scope=all",
                 null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (scopedAccount != account || serial != orderViewSerial || !orderMine
-                    || companyId != orderCompanyId || !"orders".equals(visibleSection)) return;
-            if (status == 403) { denyOrdersForSession(); return; }
+                    || !"orders".equals(visibleSection)) return;
+            if (status == 403) { recoverAllOrdersAccess(); return; }
+            if (status == 404) {
+                recoverAllOrdersAccess();
+                return;
+            }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
                 JSONObject rawOrder = body.getJSONObject("order");
-                if (positiveId(rawOrder.get("id")) != selected.id
-                        || positiveId(rawOrder.get("company_id")) != companyId)
+                OrderSummary detail = new OrderSummary(rawOrder, true);
+                if (detail.id != selected.id || detail.companyId != companyId
+                        || detail.requesterId != selected.requesterId
+                        || !v1Companies.contains(detail.companyId))
                     throw new IllegalArgumentException();
-                OrderSummary detail = new OrderSummary(rawOrder);
                 JSONArray rawLines = body.getJSONArray("lines");
                 if (rawLines.length() == 0 || rawLines.length() > 100)
                     throw new IllegalArgumentException();
@@ -9547,6 +10632,12 @@ public final class OdooIdentityActivity extends Activity {
         TextView summary = Ui.text(this, getString(orderStateLabel(detail.state)),
                 13, Ui.GREEN, true);
         content.addView(summary);
+        content.addView(Ui.text(this, getString(R.string.order_summary_company,
+                companyNameForId(detail.companyId, detail.companyName)), 12, Ui.MUTED, false));
+        content.addView(Ui.text(this, getString(R.string.order_summary_requester,
+                detail.requesterName), 12, Ui.MUTED, false));
+        content.addView(Ui.text(this, getString(R.string.order_purchase_route_value,
+                orderRouteLabel(detail.purchaseRoute)), 12, Ui.MUTED, false));
         if (!detail.submittedAt.isEmpty()) {
             TextView date = Ui.text(this, formatMessageTime(detail.submittedAt),
                     12, Ui.MUTED, false);
@@ -9587,39 +10678,49 @@ public final class OdooIdentityActivity extends Activity {
             OutboxPolicy.requireText(shareText);
         } catch (IllegalArgumentException tooLong) { /* Detail remains readable. */ }
         final String readyText = shareText;
-        TextView hint = Ui.text(this, getString(readyText == null
+        boolean ownOrder = detail.requesterId == scopedAccount.userId && orderCanCreate;
+        TextView hint = Ui.text(this, getString(!ownOrder
+                        ? R.string.order_other_requester_readonly : readyText == null
                         ? R.string.order_share_too_long : R.string.order_share_history_notice),
                 12, Ui.MUTED, false);
         Ui.pad(hint, 0, 10);
         content.addView(hint);
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(detail.name)
-                .setView(content).setPositiveButton(R.string.order_share_chat, null)
-                .setNegativeButton(R.string.task_close, null).create();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle(detail.name)
+                .setView(content).setNegativeButton(R.string.task_close, null);
+        if (ownOrder) builder.setPositiveButton(R.string.order_share_chat, null);
+        AlertDialog dialog = builder.create();
         dialog.setOnShowListener(ignored -> {
             Ui.decorateDialog(dialog);
+            if (!ownOrder) return;
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(readyText != null);
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                if (!validPreviousOrderContext(scopedAccount, companyId, serial)) {
+                if (!validPreviousOrderContext(scopedAccount, companyId,
+                        detail.requesterId, serial)) {
                     dialog.dismiss();
                     orderNotice.setText(R.string.order_previous_context_changed);
                     return;
                 }
                 dialog.dismiss();
-                choosePreviousOrderRoom(readyText, scopedAccount, companyId, serial);
+                choosePreviousOrderRoom(readyText, scopedAccount, companyId,
+                        detail.requesterId, serial);
             });
         });
         dialog.show();
     }
 
     private boolean validPreviousOrderContext(AccountScope scopedAccount,
-            long companyId, int serial) {
+            long companyId, long requesterId, int serial) {
         return verified && account == scopedAccount && ordersAvailable && orderMine
-                && "orders".equals(visibleSection) && orderCompanyId == companyId
+                && orderCanCreate
+                && "orders".equals(visibleSection) && v1Companies.contains(companyId)
+                && requesterId == scopedAccount.userId
                 && orderViewSerial == serial;
     }
 
     private String previousOrderShareText(OrderSummary detail, List<PreviousOrderLine> lines) {
         StringBuilder text = new StringBuilder(getString(R.string.order_share_heading, detail.name));
+        text.append('\n').append(getString(R.string.order_purchase_route_value,
+                orderRouteLabel(detail.purchaseRoute)));
         for (PreviousOrderLine line : lines)
             text.append('\n').append(getString(R.string.order_share_line,
                     line.product, line.option, line.quantity));
@@ -9630,15 +10731,15 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void choosePreviousOrderRoom(String shareText, AccountScope scopedAccount,
-            long companyId, int serial) {
-        if (!validPreviousOrderContext(scopedAccount, companyId, serial) || v2Busy) {
+            long companyId, long requesterId, int serial) {
+        if (!validPreviousOrderContext(scopedAccount, companyId, requesterId, serial) || v2Busy) {
             orderNotice.setText(R.string.order_previous_context_changed);
             return;
         }
         orderNotice.setText(R.string.order_room_loading);
         fetchV2("GET", V2_ROOMS, null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
-            if (!validPreviousOrderContext(scopedAccount, companyId, serial)) return;
+            if (!validPreviousOrderContext(scopedAccount, companyId, requesterId, serial)) return;
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
                     throw new IllegalArgumentException();
@@ -9674,7 +10775,8 @@ public final class OdooIdentityActivity extends Activity {
                 orderNotice.setText("");
                 new AlertDialog.Builder(this).setTitle(R.string.order_share_choose_room)
                         .setItems(names, (dialog, index) -> {
-                            if (!validPreviousOrderContext(scopedAccount, companyId, serial)) {
+                            if (!validPreviousOrderContext(scopedAccount, companyId,
+                                    requesterId, serial)) {
                                 orderNotice.setText(R.string.order_previous_context_changed);
                                 return;
                             }
@@ -9712,6 +10814,65 @@ public final class OdooIdentityActivity extends Activity {
         return R.string.order_state_cancel;
     }
 
+    private String orderRouteLabel(String route) {
+        if ("cash".equals(route)) return getString(R.string.order_route_cash);
+        if ("bank_transfer".equals(route)) return getString(R.string.order_route_bank_transfer);
+        return getString(R.string.order_route_representative);
+    }
+
+    private void refreshOrderCartRoute() {
+        if (orderCartRouteButton != null) {
+            orderCartRouteButton.setText(getString(R.string.order_purchase_route_value,
+                    orderRouteLabel(orderPurchaseRoute)));
+            orderCartRouteButton.setVisibility(orderPurchaseRoutes.size() > 1
+                    ? View.VISIBLE : View.GONE);
+        }
+        if (orderCartRepresentativeButton != null) {
+            boolean chooseRepresentative = "representative".equals(orderPurchaseRoute)
+                    && orderRepresentatives.size() > 1;
+            orderCartRepresentativeButton.setVisibility(chooseRepresentative
+                    ? View.VISIBLE : View.GONE);
+            if (chooseRepresentative) orderCartRepresentativeButton.setText(
+                    orderChoiceName(orderRepresentatives, orderRepresentativeId,
+                            R.string.order_choose_representative));
+        }
+        if (orderCartContextView != null) {
+            String route = orderRouteLabel(orderPurchaseRoute);
+            if ("representative".equals(orderPurchaseRoute)) {
+                String representative = orderRepresentatives.size() == 1
+                        ? orderRepresentatives.get(0).name
+                        : orderChoiceName(orderRepresentatives, orderRepresentativeId,
+                                R.string.order_choose_representative);
+                route += " · " + representative;
+            }
+            orderCartContextView.setText(getString(R.string.order_cart_context,
+                    orderChoiceName(orderCompanies, orderCompanyId, R.string.order_choose_company),
+                    orderChoiceName(orderWarehouses, orderWarehouseId, R.string.order_choose_warehouse),
+                    route));
+        }
+    }
+
+    private void chooseOrderPurchaseRoute() {
+        if (orderPurchaseRoutes.size() < 2) return;
+        String[] labels = new String[orderPurchaseRoutes.size()];
+        for (int i = 0; i < labels.length; i++)
+            labels[i] = orderRouteLabel(orderPurchaseRoutes.get(i));
+        int selected = orderPurchaseRoutes.indexOf(orderPurchaseRoute);
+        new AlertDialog.Builder(this).setTitle(R.string.order_purchase_route)
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    orderPurchaseRoute = orderPurchaseRoutes.get(which);
+                    if (!"representative".equals(orderPurchaseRoute)) orderRepresentativeId = 0;
+                    orderDetailsPanel.setVisibility(View.GONE);
+                    updateOrderSelectors();
+                    if ("representative".equals(orderPurchaseRoute)
+                            && orderRepresentatives.isEmpty())
+                        orderNotice.setText(R.string.order_no_representative);
+                    else if (getString(R.string.order_no_representative)
+                            .contentEquals(orderNotice.getText())) orderNotice.setText("");
+                    dialog.dismiss();
+                }).setNegativeButton(R.string.chat_v2_cancel, null).show();
+    }
+
     private void reviewOrderCart() {
         if (orderMine || orderReceiving) return;
         if (orderCart.isEmpty()) { orderNotice.setText(R.string.order_empty_cart); return; }
@@ -9719,13 +10880,16 @@ public final class OdooIdentityActivity extends Activity {
         if (orderCartDialog != null && orderCartDialog.isShowing()) return;
         LinearLayout content = Ui.column(this);
         Ui.pad(content, 12, 4);
-        TextView context = Ui.text(this, getString(R.string.order_cart_context,
-                orderChoiceName(orderCompanies, orderCompanyId, R.string.order_choose_company),
-                orderChoiceName(orderWarehouses, orderWarehouseId, R.string.order_choose_warehouse),
-                orderRepresentatives.size() == 1 ? orderRepresentatives.get(0).name
-                        : orderChoiceName(orderRepresentatives, orderRepresentativeId,
-                                R.string.order_choose_representative)), 12, Ui.MUTED, false);
-        content.addView(context);
+        orderCartContextView = Ui.text(this, "", 12, Ui.MUTED, false);
+        content.addView(orderCartContextView);
+        orderCartRouteButton = orderChoiceButton(R.string.order_purchase_route,
+                this::chooseOrderPurchaseRoute);
+        content.addView(orderCartRouteButton, fieldSize(4));
+        orderCartRepresentativeButton = orderChoiceButton(R.string.order_choose_representative,
+                () -> chooseOrderChoice(orderRepresentatives, R.string.order_choose_representative,
+                        choice -> { orderRepresentativeId = choice.id; updateOrderSelectors(); }));
+        content.addView(orderCartRepresentativeButton, fieldSize(4));
+        refreshOrderCartRoute();
         ScrollView scroll = new ScrollView(this);
         orderCartLinesView = Ui.column(this);
         scroll.addView(orderCartLinesView);
@@ -9748,6 +10912,9 @@ public final class OdooIdentityActivity extends Activity {
             orderCartDialog = null;
             orderCartLinesView = null;
             orderCartTotalView = null;
+            orderCartContextView = null;
+            orderCartRouteButton = null;
+            orderCartRepresentativeButton = null;
         });
         renderOrderCartLines();
         orderCartDialog.show();
@@ -9834,7 +11001,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void chooseOrderRoom() {
-        if (!verified || account == null || hasPendingOrder() || orderCompanyId == 0
+        if (!orderCanCreate || !verified || account == null || hasPendingOrder() || orderCompanyId == 0
                 || orderMine || orderReceiving || orderCart.isEmpty()
                 || !"orders".equals(visibleSection)) {
             orderNotice.setText(R.string.order_pending_blocks_new);
@@ -9895,14 +11062,15 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private static final class PendingOrder {
-        final String scope, raw, uuid;
+        final String scope, raw, uuid, purchaseRoute;
         final long companyId, warehouseId, representativeId, roomId;
         PendingOrder(AccountScope account, String raw) throws Exception {
             if (account == null || raw == null || raw.length() > 24000)
                 throw new IllegalArgumentException();
             JSONObject payload = new JSONObject(raw);
             boolean hasRoom = payload.has("room_id");
-            if (payload.length() != (hasRoom ? 7 : 6)
+            boolean hasRoute = payload.has("purchase_route");
+            if (payload.length() != 6 + (hasRoom ? 1 : 0) + (hasRoute ? 1 : 0)
                     || positiveId(payload.get("api_version")) != 2)
                 throw new IllegalArgumentException();
             scope = account.key;
@@ -9914,6 +11082,11 @@ public final class OdooIdentityActivity extends Activity {
             warehouseId = positiveId(payload.get("warehouse_id"));
             Object rep = payload.get("representative_partner_id");
             representativeId = rep == JSONObject.NULL ? 0 : positiveId(rep);
+            purchaseRoute = hasRoute ? payload.getString("purchase_route") : "representative";
+            if (!("representative".equals(purchaseRoute) || "cash".equals(purchaseRoute)
+                    || "bank_transfer".equals(purchaseRoute))
+                    || (!"representative".equals(purchaseRoute) && representativeId != 0))
+                throw new IllegalArgumentException();
             Object room = hasRoom ? payload.get("room_id") : JSONObject.NULL;
             roomId = room == JSONObject.NULL ? 0 : positiveId(room);
             JSONArray lines = payload.getJSONArray("lines");
@@ -9979,8 +11152,119 @@ public final class OdooIdentityActivity extends Activity {
         return account != null && receiptConfirmPreferences().contains(account.key);
     }
 
+    private String receiptShareKey(AccountScope scope, long orderId) {
+        return scope.key + ":" + orderId;
+    }
+
+    private long pendingReceiptShareCompany(AccountScope scope, long orderId) {
+        try { return receiptSharePreferences().getLong(receiptShareKey(scope, orderId), 0); }
+        catch (ClassCastException invalid) { return 0; }
+    }
+
+    private boolean hasPendingReceiptShare() {
+        if (account == null) return false;
+        String prefix = account.key + ":";
+        for (Map.Entry<String, ?> entry : receiptSharePreferences().getAll().entrySet()) {
+            if (!entry.getKey().startsWith(prefix)) continue;
+            try {
+                positiveId(Long.parseLong(entry.getKey().substring(prefix.length())));
+                if (entry.getValue() instanceof Long) {
+                    positiveId(entry.getValue());
+                    return true;
+                }
+            } catch (Exception invalid) { /* Ignore malformed local marker. */ }
+        }
+        return false;
+    }
+
+    private void reviewPendingReceiptShares() {
+        if (account == null || !verified || !orderCanReceive) return;
+        final AccountScope scopedAccount = account;
+        String prefix = scopedAccount.key + ":";
+        List<long[]> pending = new ArrayList<>();
+        for (Map.Entry<String, ?> entry : receiptSharePreferences().getAll().entrySet()) {
+            if (!entry.getKey().startsWith(prefix)) continue;
+            try {
+                long orderId = positiveId(Long.parseLong(entry.getKey().substring(prefix.length())));
+                if (!(entry.getValue() instanceof Long)) continue;
+                long companyId = positiveId(entry.getValue());
+                pending.add(new long[] {orderId, companyId});
+            } catch (Exception invalid) { /* Corrupt local marker is never sent. */ }
+        }
+        pending.sort((first, second) -> Long.compare(first[0], second[0]));
+        if (pending.isEmpty()) {
+            orderNotice.setText(R.string.receipt_share_failed);
+            return;
+        }
+        String[] labels = new String[pending.size()];
+        for (int i = 0; i < pending.size(); i++)
+            labels[i] = getString(R.string.receipt_share_pending_item,
+                    String.valueOf(pending.get(i)[0]));
+        Ui.decorateDialog(new AlertDialog.Builder(this)
+                .setTitle(R.string.receipt_share_review_pending)
+                .setItems(labels, (dialog, index) -> {
+                    if (account != scopedAccount) return;
+                    long[] selected = pending.get(index);
+                    shareConfirmedReceipt(selected[0], selected[1], scopedAccount);
+                }).setNegativeButton(R.string.task_close, null).show());
+    }
+
+    private static String receiptErrorCode(int status, JSONObject body) {
+        JSONObject error = status == 409 && body != null ? body.optJSONObject("error") : null;
+        return error == null ? "" : error.optString("code", "");
+    }
+
+    private int receiptFailureMessage(int status, String code) {
+        if (status != 409) return R.string.receipt_uncertain;
+        if ("invalid_quantity".equals(code)) return R.string.receipt_invalid_quantity;
+        if ("receipt_invalid".equals(code)) return R.string.receipt_invalid_odoo;
+        if ("receipt_closed".equals(code)) return R.string.receipt_closed;
+        if ("retry".equals(code)) return R.string.receipt_retry_same;
+        if ("receipt_unavailable".equals(code)) return R.string.receipt_unavailable_state;
+        return R.string.receipt_conflict;
+    }
+
+    private void editRejectedPendingReceipt(PendingReceipt pending, AccountScope scopedAccount) {
+        if (!verified || account != scopedAccount || !orderCanReceive
+                || !orderReceiving || orderCompanyId != pending.companyId || v2Busy
+                || !pending.stored.equals(receiptConfirmPreferences()
+                        .getString(pending.scope, null))) return;
+        final int serial = orderViewSerial;
+        orderNotice.setText(R.string.receipt_loading);
+        fetchV2("GET", V2_ORDERS + "/receipts/" + pending.orderId
+                + "?company_id=" + pending.companyId, null, (status, body) -> {
+            if (handleV2TransportFailure(status)) return;
+            if (!receiptContext(scopedAccount, pending.companyId, serial)
+                    || !pending.stored.equals(receiptConfirmPreferences()
+                            .getString(pending.scope, null))) return;
+            if (status == 403) { recoverOrderCompanyAccess(pending.companyId); return; }
+            try {
+                if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
+                    throw new IllegalArgumentException();
+                ReceiptSummary detail = new ReceiptSummary(body.getJSONObject("order"));
+                if (detail.id != pending.orderId || detail.companyId != pending.companyId)
+                    throw new IllegalArgumentException();
+                JSONArray raw = body.getJSONArray("lines");
+                if (raw.length() == 0 || raw.length() > 100) throw new IllegalArgumentException();
+                List<ReceiptLine> lines = new ArrayList<>();
+                Set<Long> seen = new HashSet<>();
+                for (int i = 0; i < raw.length(); i++) {
+                    ReceiptLine line = new ReceiptLine(raw.getJSONObject(i));
+                    if (!seen.add(line.id)) throw new IllegalArgumentException();
+                    lines.add(line);
+                }
+                orderNotice.setText("");
+                showReceiptForm(detail, lines, scopedAccount, pending.companyId, serial, pending);
+            } catch (Exception unavailable) {
+                orderNotice.setText(status == 404 || status == 409
+                        ? R.string.receipt_conflict : R.string.receipt_load_failed);
+            }
+        });
+    }
+
     private void sendPendingReceipt(PendingReceipt pending) {
         if (!verified || account == null || v2Busy || ordersDenied
+                || !orderCanReceive
                 || !account.key.equals(pending.scope)
                 || !pending.stored.equals(receiptConfirmPreferences()
                         .getString(pending.scope, null))) return;
@@ -9992,7 +11276,12 @@ public final class OdooIdentityActivity extends Activity {
             receiptPendingButton.setEnabled(true);
             if (handleV2TransportFailure(status, true)) return;
             if (scopedAccount != account) return;
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403) {
+                orderCapabilityOptions = null;
+                orderCapabilityAccount = null;
+                discoverOrders();
+                return;
+            }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2
                         || !pending.uuid.equals(body.getString("client_uuid"))
@@ -10008,6 +11297,9 @@ public final class OdooIdentityActivity extends Activity {
                 if (!total.matches("[0-9]{1,14}\\.[0-9]{2}")
                         || !pending.stored.equals(receiptConfirmPreferences()
                                 .getString(pending.scope, null))
+                        || !receiptSharePreferences().edit()
+                                .putLong(receiptShareKey(scopedAccount, pending.orderId),
+                                        pending.companyId).commit()
                         || !receiptConfirmPreferences().edit().remove(pending.scope).commit())
                     throw new IllegalArgumentException();
                 updateOrderSelectors();
@@ -10015,14 +11307,91 @@ public final class OdooIdentityActivity extends Activity {
                         boundedTaskText(receipt.getString("name"), 160, true), total, currency);
                 orderNotice.setText(message);
                 new AlertDialog.Builder(this).setTitle(R.string.receipt_confirm)
-                        .setMessage(message).setPositiveButton(R.string.task_close, null).show();
+                        .setMessage(message)
+                        .setPositiveButton(R.string.receipt_share_result,
+                                (dialog, which) -> shareConfirmedReceipt(pending.orderId,
+                                        pending.companyId, scopedAccount))
+                        .setNegativeButton(R.string.task_close, null).show();
                 if (orderReceiving && "orders".equals(visibleSection)) loadReceipts(0);
             } catch (Exception invalid) {
-                orderNotice.setText(status == 409 ? R.string.receipt_conflict
-                        : R.string.receipt_uncertain);
+                String code = receiptErrorCode(status, body);
+                int message = receiptFailureMessage(status, code);
+                orderNotice.setText(message);
                 updateOrderSelectors();
+                if (status == 409 && ("invalid_quantity".equals(code)
+                        || "receipt_invalid".equals(code))) {
+                    Ui.decorateDialog(new AlertDialog.Builder(this)
+                            .setTitle(R.string.receipt_review_pending)
+                            .setMessage(message)
+                            .setPositiveButton(R.string.receipt_edit_values,
+                                    (dialog, which) -> editRejectedPendingReceipt(pending, scopedAccount))
+                            .setNegativeButton(R.string.task_close, null).show());
+                }
             }
         });
+    }
+
+    private void shareConfirmedReceipt(long orderId, long companyId,
+            AccountScope scopedAccount) {
+        if (!verified || account != scopedAccount || !orderCanReceive
+                || !v1Companies.contains(companyId) || v2Busy
+                || pendingReceiptShareCompany(scopedAccount, orderId) != companyId) {
+            showReceiptShareRetry(orderId, companyId, scopedAccount,
+                    R.string.receipt_share_failed);
+            return;
+        }
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("api_version", 2);
+            payload.put("company_id", companyId);
+            orderNotice.setText(R.string.receipt_share_sending);
+            fetchV2("POST", V2_ORDERS + "/receipts/" + orderId + "/share",
+                    payload.toString(), (status, body) -> {
+                if (account != scopedAccount) return;
+                if (status == 401) { logout(); return; }
+                if (status == 0) handleV2TransportFailure(status, true);
+                try {
+                    if (status != 200 || body == null
+                            || positiveId(body.get("api_version")) != 2
+                            || positiveId(body.get("order_id")) != orderId
+                            || positiveId(body.get("room_id")) <= 0
+                            || positiveId(body.get("message_id")) <= 0
+                            || !body.getBoolean("shared")
+                            || !(body.get("replayed") instanceof Boolean)
+                            || pendingReceiptShareCompany(scopedAccount, orderId) != companyId
+                            || !receiptSharePreferences().edit()
+                                    .remove(receiptShareKey(scopedAccount, orderId)).commit())
+                        throw new IllegalArgumentException();
+                    updateOrderSelectors();
+                    orderNotice.setText(R.string.receipt_share_sent);
+                    Ui.decorateDialog(new AlertDialog.Builder(this)
+                            .setMessage(R.string.receipt_share_sent)
+                            .setPositiveButton(R.string.task_close, null).show());
+                } catch (Exception failed) {
+                    JSONObject error = body == null ? null : body.optJSONObject("error");
+                    String code = error == null ? "" : error.optString("code", "");
+                    showReceiptShareRetry(orderId, companyId, scopedAccount,
+                            "room_unavailable".equals(code)
+                                    ? R.string.receipt_share_room_unavailable
+                                    : R.string.receipt_share_failed);
+                }
+            });
+        } catch (Exception invalid) {
+            showReceiptShareRetry(orderId, companyId, scopedAccount,
+                    R.string.receipt_share_failed);
+        }
+    }
+
+    private void showReceiptShareRetry(long orderId, long companyId,
+            AccountScope scopedAccount, int messageId) {
+        if (account != scopedAccount) return;
+        if (orderNotice != null) orderNotice.setText(messageId);
+        Ui.decorateDialog(new AlertDialog.Builder(this).setTitle(R.string.receipt_share_result)
+                .setMessage(messageId)
+                .setPositiveButton(R.string.receipt_share_retry,
+                        (dialog, which) -> shareConfirmedReceipt(orderId,
+                                companyId, scopedAccount))
+                .setNegativeButton(R.string.task_close, null).show());
     }
 
     private void reviewPendingReceipt() {
@@ -10069,7 +11438,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void submitOrder(long roomId) {
-        if (!verified || v2Busy || account == null || hasPendingOrder()
+        if (!orderCanCreate || !verified || v2Busy || account == null || hasPendingOrder()
                 || orderMine || orderReceiving) {
             orderNotice.setText(R.string.order_pending_blocks_new);
             return;
@@ -10078,11 +11447,16 @@ public final class OdooIdentityActivity extends Activity {
             orderNotice.setText(R.string.order_missing_fields);
             return;
         }
-        if (orderRepresentatives.isEmpty()) {
+        if (!orderPurchaseRoutes.contains(orderPurchaseRoute)) {
+            orderNotice.setText(R.string.order_load_failed);
+            return;
+        }
+        if ("representative".equals(orderPurchaseRoute) && orderRepresentatives.isEmpty()) {
             orderNotice.setText(R.string.order_no_representative);
             return;
         }
-        if (orderRepresentatives.size() > 1 && orderRepresentativeId == 0) {
+        if ("representative".equals(orderPurchaseRoute)
+                && orderRepresentatives.size() > 1 && orderRepresentativeId == 0) {
             orderNotice.setText(R.string.order_choose_representative);
             return;
         }
@@ -10099,7 +11473,11 @@ public final class OdooIdentityActivity extends Activity {
             payload.put("company_id", orderCompanyId);
             payload.put("warehouse_id", orderWarehouseId);
             payload.put("representative_partner_id",
-                    orderRepresentatives.size() == 1 ? JSONObject.NULL : orderRepresentativeId);
+                    !"representative".equals(orderPurchaseRoute)
+                            || orderRepresentatives.size() == 1
+                            ? JSONObject.NULL : orderRepresentativeId);
+            if (!"representative".equals(orderPurchaseRoute))
+                payload.put("purchase_route", orderPurchaseRoute);
             payload.put("client_uuid", UUID.randomUUID().toString());
             payload.put("lines", lines);
             payload.put("room_id", roomId == 0 ? JSONObject.NULL : roomId);
@@ -10114,7 +11492,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void sendPendingOrder(PendingOrder pending) {
-        if (!verified || v2Busy || account == null || !account.key.equals(pending.scope)
+        if (!orderCanCreate || !verified || v2Busy || account == null || !account.key.equals(pending.scope)
                 || !pending.raw.equals(orderCreatePreferences().getString(pending.scope, null))) return;
         orderNotice.setText(R.string.order_sending);
         orderPendingButton.setEnabled(false);
@@ -10123,7 +11501,12 @@ public final class OdooIdentityActivity extends Activity {
             orderPendingButton.setEnabled(true);
             if (handleV2TransportFailure(status, true)) return;
             if (scopedAccount != account) return;
-            if (status == 403) { denyOrdersForSession(); return; }
+            if (status == 403) {
+                orderCapabilityOptions = null;
+                orderCapabilityAccount = null;
+                discoverOrders();
+                return;
+            }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2
                         || !(body.get("replayed") instanceof Boolean)
@@ -10131,6 +11514,7 @@ public final class OdooIdentityActivity extends Activity {
                     throw new IllegalArgumentException();
                 OrderSummary created = new OrderSummary(body.getJSONObject("order"));
                 if ((!body.getBoolean("replayed") && !"sent".equals(created.state))
+                        || !pending.purchaseRoute.equals(created.purchaseRoute)
                         || (pending.representativeId > 0
                                 && created.representativeId != pending.representativeId)
                         || created.roomId != pending.roomId
@@ -10195,7 +11579,7 @@ public final class OdooIdentityActivity extends Activity {
                             orderChoiceName(orderCompanies, pending.companyId,
                                     R.string.order_choose_company),
                             String.valueOf(pending.warehouseId),
-                            String.valueOf(pending.representativeId),
+                            orderRouteLabel(pending.purchaseRoute),
                             pending.uuid))
                     .setPositiveButton(R.string.task_retry_same, (dialog, which) ->
                             sendPendingOrder(pending))
@@ -10413,6 +11797,10 @@ public final class OdooIdentityActivity extends Activity {
             openWeb(BRIDGE);
         } else {
             processPendingPush();
+            if (verified) {
+                lastPermissionRefreshAt = 0;
+                handler.post(this::refreshPermissionSet);
+            }
             if (verified && chatRoot != null && chatRoot.getVisibility() == View.VISIBLE) {
                 startLiveSync();
                 messageScroll.post(this::scanVisibleMessageReceipts);

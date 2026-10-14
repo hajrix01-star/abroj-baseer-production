@@ -17,6 +17,7 @@ REQUEST_CREATE_INTERNAL = '_baseer_procurement_request_create_internal'
 OPTION_SYSTEM_WRITE = '_baseer_procurement_option_system_write'
 FAVORITE_SYSTEM_WRITE = '_baseer_procurement_favorite_system_write'
 IDENTITY_SYSTEM_WRITE = '_baseer_procurement_identity_system_write'
+BCHAT_RECEIPT_INTERNAL = 'bchat_receipt_internal'
 MONEY_QUANTUM = Decimal('0.01')
 MAX_CATALOG_LINES = 200
 MAX_CATALOG_HIGHLIGHTS = 12
@@ -52,6 +53,23 @@ def _decimal_total(quantity, price):
 
 def _decimal_text(value):
     return format(Decimal(value).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP), ',.2f')
+
+
+def _is_bchat_receipt_internal(env):
+    """Only the sudoed BChat bridge may reuse receipt logic after its checks."""
+    return bool(env.su and env.context.get(BCHAT_RECEIPT_INTERNAL))
+
+
+def _bchat_receipt_overage_allowed(request):
+    """Keep an actual over-receipt exclusive to the guarded BChat bridge.
+
+    The native manager and cashier paths retain their quantity caps.  BChat
+    authorizes the actual quantity after locking the request and records it
+    against the unchanged requested quantity for later variance/audit review.
+    """
+    return bool(_is_bchat_receipt_internal(request.env)
+                and 'source_channel' in request._fields
+                and request.source_channel == 'bchat')
 
 
 def _whatsapp_product_label(product):
@@ -356,6 +374,28 @@ class ProcurementRequest(models.Model):
         domain="[('is_purchase_representative', '=', True), ('is_company', '=', False), ('parent_id', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         help='A standalone contact enabled as a purchase representative in this company.',
     )
+    purchase_route = fields.Selection([
+        ('representative', 'Purchase Representative'),
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+    ], string='Purchase route', default='representative', required=True, index=True, tracking=True)
+
+    @api.constrains('purchase_route', 'representative_partner_id', 'purchaser_id')
+    def _check_purchase_route(self):
+        for request in self:
+            if request.purchase_route != 'representative' and (request.representative_partner_id or request.purchaser_id):
+                raise ValidationError(_('Cash and bank-transfer requests cannot have a purchase representative.'))
+
+    @api.onchange('purchase_route')
+    def _onchange_purchase_route(self):
+        for request in self:
+            if request.purchase_route != 'representative':
+                request.representative_partner_id = False
+                request.purchaser_id = False
+
+    def _purchase_route_label(self):
+        self.ensure_one()
+        return dict(self._fields['purchase_route']._description_selection(self.env))[self.purchase_route]
     requester_id = fields.Many2one('res.users', required=True, default=lambda self: self.env.user,
                                    ondelete='restrict', tracking=True)
     request_date = fields.Datetime(required=True, default=fields.Datetime.now, tracking=True)
@@ -504,7 +544,7 @@ class ProcurementRequest(models.Model):
         self._require_state('draft')
         if not self.line_ids:
             raise UserError(_('Add at least one raw material before sending the request.'))
-        if not self.representative_partner_id and not self.purchaser_id:
+        if self.purchase_route == 'representative' and not self.representative_partner_id and not self.purchaser_id:
             raise UserError(_('Choose the purchase representative before sending the request.'))
         super(ProcurementRequest, self).write({'state': 'sent', 'whatsapp_sent_at': fields.Datetime.now()})
         return True
@@ -716,7 +756,9 @@ class ProcurementRequest(models.Model):
 
     def action_confirm_actual_purchase(self):
         self.ensure_one()
-        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+        if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ):
             raise AccessError(_('Only a procurement cashier can confirm the quantity receipt.'))
         self._require_active_company_for_cashier()
         if self.state == 'purchased':
@@ -737,7 +779,8 @@ class ProcurementRequest(models.Model):
         picking_type = self.warehouse_id.in_type_id
         moves = []
         for line in purchased_lines:
-            if line.actual_qty > line.manager_received_qty:
+            if (line.actual_qty > line.manager_received_qty
+                    and not _bchat_receipt_overage_allowed(self)):
                 raise UserError(_('Actual quantity for %s cannot exceed the manager receipt.') % line.option_id.product_id.display_name)
             if not line.option_id.product_id.is_storable:
                 continue
@@ -1207,6 +1250,8 @@ class ProcurementRequest(models.Model):
                 'name': record.name,
                 'state': record.state,
                 'state_label': labels.get(record.state, record.state),
+                'purchase_route': record.purchase_route,
+                'purchase_route_label': record._purchase_route_label(),
                 'request_date': fields.Datetime.to_string(record.request_date),
                 'line_count': len(record.line_ids),
                 'representative_name': (
@@ -1265,6 +1310,8 @@ class ProcurementRequest(models.Model):
         currency = self.env.company.currency_id
         return {
             'id': request.id, 'name': request.name, 'state': request.state,
+            'purchase_route': request.purchase_route,
+            'purchase_route_label': request._purchase_route_label(),
             'warehouse_id': request.warehouse_id.id,
             'representative_partner_id': request.representative_partner_id.id or False,
             'representative_name': (
@@ -1511,7 +1558,9 @@ class ProcurementRequest(models.Model):
     @api.model
     def confirm_actual_from_catalog(self, request_id, lines):
         """Narrow cashier boundary for the POS-like actual-quantity screen."""
-        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+        if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+            'baseer_procurement_requests.group_procurement_cashier'
+        ):
             raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
         request = self.browse(int(request_id)).exists()
         if not request:
@@ -1541,7 +1590,8 @@ class ProcurementRequest(models.Model):
             except ValidationError:
                 raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
             maximum = line.requested_qty if cashier_receipt else line.manager_received_qty
-            if quantity > _decimal_input(maximum, _('Received quantity')):
+            if (quantity > _decimal_input(maximum, _('Received quantity'))
+                    and not _bchat_receipt_overage_allowed(request)):
                 raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
             if cashier_receipt:
                 line.sudo().with_context(cashier_receipt_internal=True).write({
@@ -1607,7 +1657,7 @@ class ProcurementRequest(models.Model):
                 raise UserError(_('A cancellation reason can only be entered before the manager receipt.'))
         if any(request.state != 'draft' for request in self) and {
             'company_id', 'warehouse_id', 'purchaser_id', 'representative_partner_id',
-            'request_date', 'whatsapp_number', 'requester_id',
+            'request_date', 'whatsapp_number', 'requester_id', 'purchase_route',
         } & set(vals):
             raise UserError(_('Request header details can only be changed while the request is a draft.'))
         return super().write(vals)
@@ -1620,13 +1670,17 @@ class ProcurementRequest(models.Model):
 
     @api.model
     def create_from_catalog(self, lines, warehouse_id=False, purchaser_id=False, whatsapp_number=False,
-                            client_token=False, representative_partner_id=False):
+                            client_token=False, representative_partner_id=False, purchase_route='representative'):
         """Narrow RPC boundary used by the standalone POS-style catalogue."""
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to create procurement requests.'))
         if not isinstance(lines, list) or not lines or len(lines) > MAX_CATALOG_LINES:
             raise ValidationError(_('Add at least one material to the cart.'))
-        if not representative_partner_id and not purchaser_id:
+        if purchase_route not in ('representative', 'cash', 'bank_transfer'):
+            raise ValidationError(_('Choose a valid purchase route.'))
+        if purchase_route != 'representative' and (representative_partner_id or purchaser_id):
+            raise ValidationError(_('Cash and bank-transfer requests cannot have a purchase representative.'))
+        if purchase_route == 'representative' and not representative_partner_id and not purchaser_id:
             raise ValidationError(_('Choose the purchasing representative before saving the request.'))
         token = False
         if client_token:
@@ -1692,6 +1746,9 @@ class ProcurementRequest(models.Model):
             'whatsapp_number': whatsapp_number or '',
             'lines': sorted(canonical_lines, key=lambda row: row['option_id']),
         }
+        # Keep historical representative-token fingerprints byte-compatible.
+        if purchase_route != 'representative':
+            payload['purchase_route'] = purchase_route
         payload_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         request_model = self.sudo().with_company(self.env.company).with_context(**{REQUEST_CREATE_INTERNAL: True})
         if token:
@@ -1705,6 +1762,7 @@ class ProcurementRequest(models.Model):
                 return existing.id
         create_values = {
             'company_id': self.env.company.id, 'warehouse_id': warehouse.id,
+            'purchase_route': purchase_route,
             'purchaser_id': purchaser.id or False,
             'representative_partner_id': representative.id or False,
             'requester_id': self.env.user.id, 'whatsapp_number': whatsapp_number or False, 'line_ids': values,
@@ -1764,7 +1822,8 @@ class ProcurementRequestLine(models.Model):
                 raise ValidationError(_('Quantities and prices must be finite numbers.'))
             if line.requested_qty <= 0 or min(line.manager_received_qty, line.actual_qty, line.requested_price, line.actual_price) < 0:
                 raise ValidationError(_('Quantities must be positive and prices cannot be negative.'))
-            if line.manager_received_qty > line.requested_qty:
+            if (line.manager_received_qty > line.requested_qty
+                    and not _bchat_receipt_overage_allowed(line.request_id)):
                 raise ValidationError(_('Manager-received quantity cannot exceed the requested quantity.'))
             if line.actual_qty and not line.actual_price:
                 raise ValidationError(_('Every purchased material needs a positive actual price.'))
@@ -1806,7 +1865,9 @@ class ProcurementRequestLine(models.Model):
                 if any(line.request_id.state != 'sent' for line in self):
                     raise UserError(_('Received quantities can only be entered after sending the request.'))
             if {'actual_qty', 'actual_price'} & set(vals):
-                if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+                if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+                    'baseer_procurement_requests.group_procurement_cashier'
+                ):
                     raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
                 if any(line.request_id.state != 'received' for line in self):
                     raise UserError(_('Actual purchase details can only be entered after manager receipt.'))

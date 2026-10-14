@@ -118,7 +118,7 @@ class BChatTaskService(models.AbstractModel):
 
     @api.model
     def _v2_task_options(self, company_id=None, room_id=None):
-        user = self._require_user()
+        user = self._require_bchat_permission('task_view')
         companies = user.company_ids
         if len(companies) > 20:
             raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
@@ -154,7 +154,7 @@ class BChatTaskService(models.AbstractModel):
 
     @api.model
     def _v2_tasks(self, before_id=None, room_id=None, state=None):
-        user = self._require_user()
+        user = self._require_bchat_permission('task_view')
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
         if room_id is not None:
@@ -224,6 +224,7 @@ class BChatTaskService(models.AbstractModel):
 
     @api.model
     def _v2_task_detail(self, task_id):
+        self._require_bchat_permission('task_view')
         task_id = positive_id(task_id, 'task_id')
         task = self.env['baseer.bchat.task'].sudo().browse(task_id)
         self._task_visible(task)
@@ -231,6 +232,7 @@ class BChatTaskService(models.AbstractModel):
 
     @api.model
     def _v2_task_create(self, payload):
+        self._require_bchat_permission('task_manage')
         normalized = task_contracts.normalize_create(payload)
         scoped = self._task_company(normalized['company_id'])
         user = scoped._require_user()
@@ -279,6 +281,7 @@ class BChatTaskService(models.AbstractModel):
                 'allowed_company_ids': [normalized['company_id']],
             })
             service = fresh['baseer.bchat.service']
+            service._require_bchat_permission('task_manage')
             service._task_company(normalized['company_id'])
             existing = fresh['baseer.bchat.task'].sudo().search([
                 ('creator_id', '=', fresh.uid), ('client_uuid', '=', normalized['client_uuid']),
@@ -289,6 +292,7 @@ class BChatTaskService(models.AbstractModel):
 
     @api.model
     def _v2_task_transition(self, task_id, payload):
+        self._require_bchat_permission('task_manage')
         task_id = positive_id(task_id, 'task_id')
         normalized = task_contracts.normalize_transition(payload)
         user = self._require_user()

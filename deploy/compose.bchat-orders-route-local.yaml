@@ -1,0 +1,10 @@
+# Local BChat clone only. Layer after the existing TLS/FCM/OCA/v4 overlays.
+# The source is a frozen candidate: three modules from the reviewed Git commit
+# plus baseer_company_setup 19.0.3.1.0 matching this clone's installed version.
+services:
+  odoo:
+    volumes:
+      - ${BCHAT_ORDERS_CANDIDATE_DIR:?Frozen BChat orders source required}/baseer_bchat:/mnt/bchat-addons/baseer_bchat:ro
+      - ${BCHAT_ORDERS_CANDIDATE_DIR:?Frozen BChat orders source required}/baseer_bchat_procurement:/mnt/bchat-addons/baseer_bchat_procurement:ro
+      - ${BCHAT_ORDERS_CANDIDATE_DIR:?Frozen BChat orders source required}/baseer_procurement_requests:/mnt/baseer-addons/baseer_procurement_requests:ro
+      - ${BCHAT_ORDERS_CANDIDATE_DIR:?Frozen BChat orders source required}/baseer_company_setup:/mnt/baseer-addons/baseer_company_setup:ro

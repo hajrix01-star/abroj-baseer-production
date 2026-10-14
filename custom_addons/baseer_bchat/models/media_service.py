@@ -23,6 +23,8 @@ class BChatMediaService(models.AbstractModel):
     @api.model
     def _v2_upload_scope(self, room_id, metadata):
         """Cheap preflight before decoding an uploaded file; commit path checks again."""
+        self._require_bchat_permission('chat_send')
+        self._require_bchat_permission('media')
         normalized = media_contracts.normalize_metadata(metadata)
         user = self._require_user()
         room = self.env['baseer.bchat.room'].sudo().browse(positive_id(room_id, 'room_id')).exists()
@@ -224,7 +226,8 @@ class BChatMediaService(models.AbstractModel):
 
     @api.model
     def _v2_media_content(self, media_id, thumbnail=False):
-        self._require_user()
+        self._require_bchat_permission('chat_view')
+        self._require_bchat_permission('media')
         media_id = positive_id(media_id, 'media_id')
         media = self.env['baseer.bchat.media'].sudo().browse(media_id).exists()
         if not media or media.state != 'attached' or not media.message_id:

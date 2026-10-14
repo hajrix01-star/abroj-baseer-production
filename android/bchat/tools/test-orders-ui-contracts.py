@@ -20,6 +20,26 @@ def method(name):
 
 
 class OrdersUiContracts(unittest.TestCase):
+    def test_purchase_route_is_server_advertised_and_survives_pending_retry(self):
+        options = method('loadOrderCompanyOptions')
+        self.assertIn('body.optJSONArray("purchase_routes")', options)
+        self.assertIn('routes.add("representative")', options)
+        self.assertIn('orderPurchaseRoutes.contains(orderPurchaseRoute)', options)
+        self.assertIn('orderPurchaseRoute = "representative";', method('selectOrderCompany'))
+        submit = method('submitOrder')
+        self.assertIn('orderPurchaseRoutes.contains(orderPurchaseRoute)', submit)
+        self.assertIn('payload.put("purchase_route", orderPurchaseRoute)', submit)
+        self.assertIn('!"representative".equals(orderPurchaseRoute)', submit)
+        pending = SOURCE[SOURCE.index('private static final class PendingOrder'):
+                         SOURCE.index('private static final class PendingReceipt')]
+        self.assertIn('this.raw = raw;', pending)
+        self.assertIn('payload.has("purchase_route")', pending)
+        self.assertIn('"representative"', pending)
+        self.assertIn('pending.purchaseRoute.equals(created.purchaseRoute)', method('sendPendingOrder'))
+        route_choice = method('chooseOrderPurchaseRoute')
+        self.assertIn('orderRepresentatives.isEmpty()', route_choice)
+        self.assertIn('contentEquals(orderNotice.getText())', route_choice)
+
     def test_tabs_are_outside_notice_overlay_and_have_fixed_underline(self):
         self.assertIn('orderContent.addView(orderNotice, orderNoticeSize);', SOURCE)
         self.assertIn('modulePane.addView(orderTabs);', SOURCE)
@@ -63,6 +83,28 @@ class OrdersUiContracts(unittest.TestCase):
                       SOURCE[SOURCE.index('private void loadOrderCatalog(long afterId, int navigation)'):])
         self.assertIn('() -> loadOrderSummaries(beforeId)', method('loadOrderSummaries'))
         self.assertIn('() -> loadReceipts(beforeId)', method('loadReceipts'))
+
+    def test_catalog_has_one_compact_accessible_quantity_stepper(self):
+        catalog = method('renderOrderCatalog')
+        self.assertIn('orderQuantityStepper(selected)', catalog)
+        self.assertNotIn('Button decrement = orderQuantityAction(', catalog)
+        self.assertNotIn('Button remove = orderQuantityAction(', catalog)
+        self.assertIn('orderScroll.getWidth()', catalog)
+        self.assertIn('boolean compactStepper = selected != null && availableNameDp < 168;', catalog)
+        stepper = SOURCE[SOURCE.index('private LinearLayout orderQuantityStepper('):
+                         SOURCE.index('private TextView orderStepperAction(')]
+        self.assertIn('selected.quantity', stepper)
+        self.assertIn('editOrderQuantity(selected.option)', stepper)
+        self.assertIn('stepOrderQuantity(selected.option, -1)', stepper)
+        self.assertIn('stepOrderQuantity(selected.option, 1)', stepper)
+        self.assertIn('new LinearLayout.LayoutParams(dp(48), dp(48))', stepper)
+        self.assertIn('new LinearLayout.LayoutParams(dp(56), dp(48))', stepper)
+        self.assertIn('dividerSize.gravity = Gravity.CENTER_VERTICAL;', stepper)
+        self.assertIn('secondDividerSize.gravity = Gravity.CENTER_VERTICAL;', stepper)
+        action = SOURCE[SOURCE.index('private TextView orderStepperAction('):
+                        SOURCE.index('private OrderCartLine orderLineForProduct(')]
+        self.assertIn('setMinWidth(dp(48))', action)
+        self.assertIn('setMinHeight(dp(48))', action)
 
 
 if __name__ == '__main__':

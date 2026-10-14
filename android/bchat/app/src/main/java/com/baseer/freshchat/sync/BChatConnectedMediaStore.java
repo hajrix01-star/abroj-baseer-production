@@ -357,6 +357,46 @@ public final class BChatConnectedMediaStore {
         data(account, entry.uploadUuid).delete();
     }
 
+    /** Delete this account's staged media after upload permission is revoked. */
+    public synchronized void purgeAccount(AccountScope account) throws IOException {
+        File folder = scope(account);
+        File[] files = folder.listFiles();
+        if (files == null) throw new IOException("Cannot inspect media scope");
+        for (File file : files) {
+            if (!file.isFile() || !file.getName().matches(
+                    "[0-9a-fA-F-]{36}\\.(bin|json)(\\.new|\\.bak)?")) continue;
+            if (!file.delete()) throw new IOException("Cannot delete revoked media");
+        }
+    }
+
+    /** Remove staged uploads outside a freshly verified company scope. */
+    public synchronized void purgeCompaniesNotIn(AccountScope account,
+                                                  java.util.Set<Long> allowedCompanies)
+            throws IOException {
+        if (allowedCompanies == null) throw new IOException("Verified companies required");
+        File folder = scope(account);
+        File[] files = folder.listFiles();
+        if (files == null) throw new IOException("Cannot inspect media scope");
+        for (File file : files) {
+            String name = file.getName();
+            if (!file.isFile() || !name.matches("[0-9a-fA-F-]{36}\\.json")) continue;
+            Entry entry = read(account, name.substring(0, name.length() - 5));
+            if (!allowedCompanies.contains(entry.companyId)) discard(account, entry);
+        }
+        files = folder.listFiles();
+        if (files == null) throw new IOException("Cannot inspect media scope");
+        for (File file : files) {
+            String name = file.getName();
+            if (!file.isFile() || !name.matches("[0-9a-fA-F-]{36}\\.(bin|json)(\\.new|\\.bak)?"))
+                continue;
+            if (name.endsWith(".new") || name.endsWith(".bak")
+                    || name.endsWith(".bin")
+                    && !new File(folder, name.substring(0, name.length() - 4) + ".json").isFile()) {
+                if (!file.delete()) throw new IOException("Cannot remove orphan media");
+            }
+        }
+    }
+
     public File file(AccountScope account, Entry entry) throws IOException {
         Entry current = read(account, entry.uploadUuid);
         if (!current.sameRequest(entry)) throw new IOException("Media request changed");

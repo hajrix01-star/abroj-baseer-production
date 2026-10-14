@@ -225,3 +225,51 @@ msgstr "لا يمكن تعديل فترات العضوية."
 #: code:addons/baseer_bchat/models/storage.py:0
 msgid "An explicitly assigned BChat manager is required."
 msgstr "لا يمكنك إدارة BChat دون صلاحية المدير."
+
+#. module: baseer_bchat
+msgid "BChat: View conversations"
+msgstr "BChat: عرض المحادثات"
+
+#. module: baseer_bchat
+msgid "BChat: Send messages"
+msgstr "BChat: إرسال الرسائل"
+
+#. module: baseer_bchat
+msgid "BChat: Use images, audio and files"
+msgstr "BChat: استخدام الصور والصوت والملفات"
+
+#. module: baseer_bchat
+msgid "BChat: Create groups"
+msgstr "BChat: إنشاء مجموعات"
+
+#. module: baseer_bchat
+msgid "BChat: Manage assigned groups"
+msgstr "BChat: إدارة المجموعات المخوّل بها"
+
+#. module: baseer_bchat
+msgid "BChat: View tasks"
+msgstr "BChat: عرض المهام"
+
+#. module: baseer_bchat
+msgid "BChat: Create and update tasks"
+msgstr "BChat: إنشاء المهام وتحديثها"
+
+#. module: baseer_bchat
+msgid "BChat: Manage public rooms and members"
+msgstr "BChat: إدارة الغرف العامة وأعضائها"
+
+#. module: baseer_bchat
+msgid "This BChat action is not enabled for your user."
+msgstr "هذا الإجراء في BChat غير مفعّل لحسابك."
+
+#. module: baseer_bchat
+msgid "Only an administrator can change BChat permissions."
+msgstr "يمكن للمسؤول فقط تغيير صلاحيات BChat."
+
+#. module: baseer_bchat
+msgid "Only the admin account may manage BChat rooms."
+msgstr "يمكن لحساب المدير العام فقط إدارة غرف BChat."
+
+#. module: baseer_bchat
+msgid "BChat permission revisions are maintained by the service."
+msgstr "يتولى النظام تحديث إصدار صلاحيات BChat."

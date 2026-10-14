@@ -182,6 +182,20 @@ public final class ConnectedHistoryCache extends SQLiteOpenHelper {
         } finally { db.endTransaction(); }
     }
 
+    /** Revoke this account's offline room access without touching other account scopes. */
+    public void purgeAccount(AccountScope account) {
+        if (account == null) throw new IllegalArgumentException("Verified scope required");
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            String[] scope = {account.key};
+            db.delete("cached_message", "account_key=?", scope);
+            db.delete("cached_room", "account_key=?", scope);
+            db.delete("account_scope", "account_key=?", scope);
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
     public void purgeRoom(AccountScope account, long roomId) {
         if (account == null || roomId <= 0) return;
         SQLiteDatabase db = getWritableDatabase();

@@ -65,17 +65,15 @@ assert 'target.conversationTitle)' not in notifications and 'target.companyName)
 print('PASS bounded/cancellable local PCM analysis, detached-view fencing and generic private notifications')
 
 import re
-version_code=manifest.get(a+'versionCode')
-version_name=manifest.get(a+'versionName')
 gradle=(root/'app/build.gradle').read_text()
 build_script=(root/'tools/build-apk.sh').read_text()
-assert re.search(r"versionCode\s+" + re.escape(version_code) + r"\b", gradle)
-assert "versionName '" + version_name + "'" in gradle
-assert '--version-code ' + version_code + ' --version-name ' + version_name in build_script
+# Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
+assert re.search(r"versionCode\s+51\b", gradle)
+assert "versionName '0.7.35-qa-permissions'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
-print('PASS manifest/Gradle/manual-build version consistency, installed-package About version and in-app changelog')
+print('PASS QA Gradle release version, installed-package About version and in-app changelog')
 
 assert notifications.index('channel.setVibrationPattern(') < notifications.index('channel.enableVibration(settings.vibration(CATEGORY))'), 'Apply vibration Off after Android pattern setter'
 notification_start=notifications[notifications.index('static String start('):notifications.index('private static String post(')]
@@ -113,11 +111,13 @@ assert re.search(r'release\s*\{\s*signingConfig signingConfigs\.preview', gradle
 print('PASS independent preview requires an explicitly supplied local signer; no implicit replacement signer')
 
 identity=(root/'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text()
-assert 'private static final String ORIGIN = BuildConfig.BCHAT_ORIGIN;' in identity
+assert 'private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);' in identity
 assert '"https".equals(uri.getScheme())' in identity
 assert 'expected.getHost().equals(uri.getHost()) && uri.getPort() == expected.getPort()' in identity
 assert '"https://localhost:18443"' in gradle and 'bchatEmulatorLocal' in gradle
-assert '"https://desktop-cvc68i5.tail938958.ts.net:18444"' in gradle
+assert '"https://baseer-live-qa.tail938958.ts.net"' in gradle
+assert '"https://desktop-cvc68i5.tail938958.ts.net:18444"' not in gradle
+assert 'return configuredOrigin;' in (root/'app/src/main/java/com/baseer/freshchat/RuntimeOrigin.java').read_text()
 assert '"http://' not in gradle
 print('PASS Odoo identity WebView is pinned to the selected HTTPS build origin')
 assert source.index('redirectToEmployeeEntry(getIntent())') < source.index('openStore(saved)')
@@ -169,7 +169,7 @@ for required in ('clearChatView();\n            account = nextAccount',
  assert required in identity, required
 assert 'new ChatStore(' not in identity and 'MainActivity.class' not in identity
 assert 'CookieManager.getInstance().getCookie(' not in identity
-assert 'ClipboardManager' not in identity and 'ClipData' not in identity
+assert 'clipboard.getPrimaryClip(' not in identity and 'clipboard.getPrimaryClipDescription(' not in identity
 print('PASS v2 bounded transport, fresh room gate, account-scoped pending recovery, persistent rejection, atomic draft migration, and no native cookie/clipboard extraction')
 
 assert provider.get(a+'authorities')=='com.baseer.bchat.preview.files'

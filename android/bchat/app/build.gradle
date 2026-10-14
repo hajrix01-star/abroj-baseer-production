@@ -26,7 +26,7 @@ android {
  aaptOptions { cruncherEnabled = false }
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
-  versionCode 50; versionName '0.7.34-user-permissions'
+  versionCode 51; versionName '0.7.35-qa-permissions'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'
  }
  // Independent preview signer, supplied only through local environment paths.
@@ -46,13 +46,13 @@ android {
  buildTypes {
   debug {
    signingConfig signingConfigs.preview
-   // ADB reverse + the local TLS proxy are used only by an explicit emulator build.
+   // Local TLS is only an explicit debug opt-in; normal debug and release use QA.
    buildConfigField 'String', 'BCHAT_ORIGIN', project.findProperty('bchatEmulatorLocal') == 'true'
-      ? '"https://localhost:18443"' : '"https://desktop-cvc68i5.tail938958.ts.net:18444"'
+      ? '"https://localhost:18443"' : '"https://baseer-live-qa.tail938958.ts.net"'
   }
   release {
    signingConfig signingConfigs.preview
-   buildConfigField 'String', 'BCHAT_ORIGIN', '"https://desktop-cvc68i5.tail938958.ts.net:18444"'
+   buildConfigField 'String', 'BCHAT_ORIGIN', '"https://baseer-live-qa.tail938958.ts.net"'
   }
  }
  compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }

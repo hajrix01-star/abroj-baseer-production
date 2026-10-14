@@ -2,11 +2,13 @@ import com.baseer.freshchat.RuntimeOrigin;
 
 public final class RuntimeOriginTest {
     public static void main(String[] args) {
-        String phone = "https://desktop-cvc68i5.tail938958.ts.net:18444";
-        check("https://localhost:18443".equals(RuntimeOrigin.forHardware("ranchu", phone)), "ranchu");
-        check("https://localhost:18443".equals(RuntimeOrigin.forHardware("GOLDFISH", phone)), "goldfish");
-        check(phone.equals(RuntimeOrigin.forHardware("qcom", phone)), "phone hardware");
-        check(phone.equals(RuntimeOrigin.forHardware("", phone)), "unknown hardware");
+        String qa = "https://baseer-live-qa.tail938958.ts.net";
+        check(qa.equals(RuntimeOrigin.forHardware("ranchu", qa)), "QA emulator");
+        check(qa.equals(RuntimeOrigin.forHardware("GOLDFISH", qa)), "QA emulator variant");
+        check(qa.equals(RuntimeOrigin.forHardware("qcom", qa)), "QA phone");
+        check(qa.equals(RuntimeOrigin.forHardware("", qa)), "QA unknown hardware");
+        String localDebug = "https://localhost:18443";
+        check(localDebug.equals(RuntimeOrigin.forHardware("ranchu", localDebug)), "explicit local debug");
         System.out.println("RuntimeOriginTest PASS");
     }
 

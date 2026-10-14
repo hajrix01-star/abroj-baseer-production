@@ -1,15 +1,11 @@
 package com.baseer.freshchat;
 
-/** Keep one signed APK for phones and the local Android emulator. */
+/** Keep one signed APK on the configured server for phones and emulators. */
 public final class RuntimeOrigin {
-    private static final String EMULATOR_LOCAL_ORIGIN = "https://localhost:18443";
-
     private RuntimeOrigin() { }
 
-    public static String forHardware(String hardware, String phoneOrigin) {
-        if ("ranchu".equalsIgnoreCase(hardware) || "goldfish".equalsIgnoreCase(hardware)) {
-            return EMULATOR_LOCAL_ORIGIN;
-        }
-        return phoneOrigin;
+    public static String forHardware(String hardware, String configuredOrigin) {
+        // Hardware must not silently switch a QA release back to the local test server.
+        return configuredOrigin;
     }
 }

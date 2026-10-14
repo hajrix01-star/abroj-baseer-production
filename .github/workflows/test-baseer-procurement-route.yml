@@ -36,9 +36,10 @@ jobs:
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
             --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/odoomates,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/erp-heritage,readonly \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
-            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/odoomates \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/odoomates,/mnt/erp-heritage \
             -d baseer_procurement_route_ci -i baseer_procurement_requests --without-demo=all \
             --test-enable \
             --test-tags=/baseer_procurement_requests:ProcurementFlowCase.test_purchase_route_direct_catalog_save_send_without_accounting,/baseer_procurement_requests:ProcurementFlowCase.test_purchase_route_representative_legacy_fingerprint_and_validation,/baseer_procurement_requests:ProcurementFlowCase.test_purchase_route_orm_constraint_and_readonly_accountant_annotation,/baseer_procurement_requests:ProcurementFlowCase.test_pos_catalog_page_quote_and_idempotent_create,/baseer_procurement_requests:ProcurementFlowCase.test_catalog_representative_is_company_scoped_and_creates_request,/baseer_procurement_requests:ProcurementFlowCase.test_quantity_receipt_creates_one_picking_and_price_history \

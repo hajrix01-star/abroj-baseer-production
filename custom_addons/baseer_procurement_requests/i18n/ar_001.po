@@ -1654,3 +1654,13 @@ msgstr "اختر المواد ونوع الشراء، ثم راجع الطلب."
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Saved and sent purchase requests will appear here."
 msgstr "تظهر هنا طلبات الشراء المحفوظة والمرسلة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Choose a valid purchase route."
+msgstr "اختر نوع شراء صالحًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Cash and bank-transfer requests cannot have a purchase representative."
+msgstr "لا يمكن ربط طلب شراء نقدي أو تحويل بنكي بمندوب مشتريات."

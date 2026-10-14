@@ -1,0 +1,47 @@
+<odoo>
+    <record id="bill_file_preview_form" model="ir.ui.view">
+        <field name="name">dms.file.bill.preview.form</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <field name="bill_attachment_id" invisible="1"/>
+                <field name="checksum" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='image_1920']" position="attributes">
+                <attribute name="invisible">bool(bill_attachment_id)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="readonly">bool(bill_attachment_id)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='directory_id']" position="attributes">
+                <attribute name="readonly">bool(bill_attachment_id)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='content']" position="attributes">
+                <attribute name="readonly">bool(bill_attachment_id)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='content']" position="after">
+                <widget name="baseer_dms_bill_preview" invisible="not bill_attachment_id"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="bill_file_preview_kanban" model="ir.ui.view">
+        <field name="name">dms.file.bill.preview.kanban</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban/field[@name='icon_url']" position="after">
+                <field name="bill_attachment_id"/>
+                <field name="checksum"/>
+            </xpath>
+            <xpath expr="//a[hasclass('o_kanban_dms_file_preview')]" position="before">
+                <t t-if="record.bill_attachment_id.raw_value">
+                    <widget name="baseer_dms_bill_preview" thumbnail="true"/>
+                </t>
+            </xpath>
+            <xpath expr="//a[hasclass('o_kanban_dms_file_preview')]" position="attributes">
+                <attribute name="t-if">!record.bill_attachment_id.raw_value</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

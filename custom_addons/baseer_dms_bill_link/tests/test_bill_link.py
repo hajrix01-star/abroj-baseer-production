@@ -1,4 +1,8 @@
 import base64
+from io import BytesIO
+
+from lxml import etree
+from PIL import Image
 
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
@@ -83,6 +87,33 @@ class BillFixtures:
 
 @tagged('post_install', '-at_install', 'baseer_dms_bill_link')
 class TestBillLink(BillFixtures, TransactionCase):
+    def test_preview_backend_assets_compile_and_register_templates(self):
+        # Compile once in isolated CI: HTTP content checks cannot establish that
+        # the new widget, XML templates and SCSS reach a usable backend bundle.
+        bundle = self.env['ir.qweb']._get_asset_bundle(
+            'web.assets_backend', css=True, js=True, debug_assets=False,
+        )
+        javascript = bundle.js()
+        stylesheets = bundle.css()
+        self.assertTrue(javascript)
+        self.assertTrue(stylesheets)
+        self.assertFalse(bundle.css_errors, '\n'.join(bundle.css_errors))
+        compiled_js = javascript.raw.decode()
+        self.assertIn('baseer_dms_bill_link.PreviewDialog', compiled_js)
+        self.assertIn('baseer_dms_bill_preview', compiled_js)
+        compiled_css = b'\n'.join(stylesheets.mapped('raw')).decode()
+        self.assertIn('o_baseer_bill_preview_canvas', compiled_css)
+        templates = bundle.generate_xml_bundle()
+        self.assertIn('baseer_dms_bill_link.PreviewWidget', templates)
+        self.assertNotIn('throw new Error(', templates)
+
+    def test_native_views_use_linked_document_preview_widget(self):
+        for view_type in ('form', 'kanban'):
+            arch = self.actor(self.env['dms.file']).get_view(view_type=view_type)['arch']
+            document = etree.fromstring(arch.encode())
+            self.assertTrue(document.xpath("//widget[@name='baseer_dms_bill_preview']"))
+            self.assertTrue(document.xpath("//field[@name='bill_attachment_id']"))
+
     def test_single_reference_and_repeated_event(self):
         self.attachment_a._sync_dms_bill_links()
         self.attachment_a._sync_dms_bill_links()
@@ -321,3 +352,116 @@ class TestBillDownload(BillFixtures, HttpCase):
         )
         self.assertNotIn(base64.b64decode(self.payload), response.content)
         self.assertNotIn('attachment;', response.headers.get('Content-Disposition', ''))
+
+
+@tagged('post_install', '-at_install', 'baseer_dms_bill_link')
+class TestBillPreview(BillFixtures, HttpCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.preview_sources = cls.env['ir.attachment']
+        for image_format in ('PNG', 'JPEG'):
+            buffer = BytesIO()
+            Image.new('RGB', (256, 192), (23, 147, 211)).save(buffer, format=image_format)
+            cls.preview_sources |= cls.env['ir.attachment'].create({
+                'name': 'synthetic-preview.' + ('png' if image_format == 'PNG' else 'jpg'),
+                'datas': base64.b64encode(buffer.getvalue()), 'res_model': 'account.move',
+                'res_id': cls.bill_a.id, 'company_id': cls.company_a.id,
+            })
+        cls.png_source, cls.jpg_source = cls.preview_sources
+        # Minimal synthetic one-page PDF; no library, real invoice or extraction.
+        objects = [
+            b'<< /Type /Catalog /Pages 2 0 R >>',
+            b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Contents 4 0 R >>',
+            b'<< /Length 0 >>\nstream\n\nendstream',
+        ]
+        pdf = b'%PDF-1.4\n'
+        offsets = [0]
+        for number, body in enumerate(objects, start=1):
+            offsets.append(len(pdf))
+            pdf += str(number).encode() + b' 0 obj\n' + body + b'\nendobj\n'
+        xref = len(pdf)
+        pdf += b'xref\n0 5\n0000000000 65535 f \n'
+        pdf += b''.join(f'{offset:010d} 00000 n \n'.encode() for offset in offsets[1:])
+        pdf += f'trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode()
+        cls.pdf_source = cls.env['ir.attachment'].create({
+            'name': 'synthetic-preview.pdf', 'datas': base64.b64encode(pdf),
+            'res_model': 'account.move', 'res_id': cls.bill_a.id,
+            'company_id': cls.company_a.id, 'mimetype': 'application/pdf',
+        })
+        cls.foreign_source = cls.env['ir.attachment'].create({
+            'name': 'foreign-preview.png', 'datas': cls.png_source.datas,
+            'res_model': 'account.move', 'res_id': cls.bill_b.id,
+            'company_id': cls.company_b.id,
+        })
+
+    def preview_paths(self, source):
+        link = self.index(source)
+        return (
+            f'/web/image/dms.file/{link.id}/content/128x128',
+            f'/web/content?model=dms.file&id={link.id}&field=content&filename_field=name&download=false',
+        )
+
+    def assert_preview_denied(self, source):
+        thumbnail, content = self.preview_paths(source)
+        image_response = self.url_open(thumbnail)
+        self.assertNotEqual(image_response.content, base64.b64decode(source.datas))
+        if image_response.headers.get('Content-Type', '').startswith('image/'):
+            # /web/image may serve a public placeholder after denial. Prove the
+            # synthetic source's identifying pixels do not occur in that image.
+            image = Image.open(BytesIO(image_response.content)).convert('RGB')
+            pixel = image.getpixel((image.width // 2, image.height // 2))
+            self.assertGreater(sum(abs(a - b) for a, b in zip(pixel, (23, 147, 211))), 12)
+        response = self.url_open(content)
+        self.assertNotEqual(response.content, base64.b64decode(source.datas))
+        self.assertNotIn(base64.b64decode(source.datas), response.content)
+
+    def test_owner_raster_thumbnail_and_inline_original_pdf_without_derivatives(self):
+        self.owner.write({'password': 'bill-test', 'company_id': self.company_a.id})
+        self.authenticate(self.owner.login, 'bill-test')
+        for source in self.preview_sources:
+            thumbnail, content = self.preview_paths(source)
+            response = self.url_open(thumbnail)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.headers.get('Content-Type', '').startswith('image/'))
+            image = Image.open(BytesIO(response.content))
+            self.assertLessEqual(max(image.size), 128)
+            pixel = image.convert('RGB').getpixel((image.width // 2, image.height // 2))
+            self.assertLessEqual(sum(abs(a - b) for a, b in zip(pixel, (23, 147, 211))), 12)
+            self.assertEqual(self.url_open(content).content, base64.b64decode(source.datas))
+        response = self.url_open(self.preview_paths(self.pdf_source)[1])
+        self.assertEqual(response.content, base64.b64decode(self.pdf_source.datas))
+        self.assertTrue(response.headers.get('Content-Type', '').startswith('application/pdf'))
+        self.assertNotIn('attachment;', response.headers.get('Content-Disposition', ''))
+        all_sources = self.preview_sources | self.pdf_source
+        links = self.env['dms.file'].search([('bill_attachment_id', 'in', all_sources.ids)])
+        self.assertEqual(len(links), len(all_sources))
+        self.assertFalse(self.env['ir.attachment'].search([
+            ('res_model', '=', 'dms.file'), ('res_id', 'in', links.ids),
+        ]))
+        self.assertFalse(any(links.mapped('image_1920')))
+        self.assertFalse(any(links.mapped('content_file')))
+
+    def test_anonymous_and_nonaccount_cannot_preview_original(self):
+        self.assert_preview_denied(self.png_source)
+        self.authenticate(self.nonaccount.login, 'bill-test')
+        self.assert_preview_denied(self.png_source)
+        response = self.url_open(self.preview_paths(self.pdf_source)[1])
+        self.assertNotEqual(response.content, base64.b64decode(self.pdf_source.datas))
+
+    def test_other_company_cannot_preview_original(self):
+        self.authenticate(self.accountant.login, 'bill-test')
+        self.assert_preview_denied(self.foreign_source)
+
+    def test_source_rules_deny_preview_even_with_full_dms_access(self):
+        self.authenticate(self.accountant.login, 'bill-test')
+        for model, source_id in (('account.move', self.bill_a.id),
+                                 ('ir.attachment', self.png_source.id)):
+            rule = self.env['ir.rule'].create({
+                'name': 'Preview original denied: ' + model,
+                'model_id': self.env['ir.model']._get_id(model),
+                'domain_force': repr([('id', '!=', source_id)]),
+            })
+            self.assert_preview_denied(self.png_source)
+            rule.unlink()

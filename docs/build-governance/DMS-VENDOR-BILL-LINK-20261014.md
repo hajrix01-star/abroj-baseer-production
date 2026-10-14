@@ -182,3 +182,51 @@ Mergedab0aa23d matches reviewedcc564521runtime/tests/workflow/probe; operations
 evidence closes backup/provenance/install/activation/financialpreservation.
 Companyroots8/9 only; noUI/mobile/QAauthenticatedHTTPcertification, noLIVE,
 additionalusers, HR orbackfill. CIHTTPacceptance is distinct from QAUI acceptance.
+
+## Preview defect — 2026-10-14 (CONTROLLED UI repair)
+
+Owner screenshot confirms indexing works, but linked PNG has generic icon and
+plain binary download/edit controls; expects thumbnail and image/PDF opening
+inside Documents. Not a proven regression: preview was never delivered in the
+bridge. Source cause: linked image_1920 deliberately False to avoid persistent
+copies, native icon_url uses image_128, and native form content has no preview
+widget. Preserve this no-duplicate storage invariant; use authenticated transient
+/web/image/dms.file/id/content/128x128 plus inline /web/content model=dms.file.
+No new upload/storage/ACL/publictoken/controller policy; backend source access
+checks remain. Small OWL dialog widget reuses native Dialog, image/PDF viewer,
+AR/EN labels, linked fields read-only. No upstream edits or newlibraries.
+
+Scope: same owner-onlyQA/company1/2, noLIVE/backfill or accounting writes.
+Runtime/UI owner dms_bridge_implementation; focused HTTP/regression tests owner
+dms_bridge_tests; independent dms_bridge_gate reviews source permission and actual
+release. New CI justified by preview endpoint/widget change and image/PDF ACL
+risk not previously exercised; existing isolated fixture, no newenv/load.
+QA prior19-case lifecycle evidence reused, runs again only with changed module.
+Browser connection attempted once using documented skill; EPERM on browser runtime
+realpath before discovery. No alternate browser bypass or visualacceptance claim.
+Use screenshots and focused HTTP/static verification, declare visual limit.
+
+PreviewcandidatePR327/fdf54756: Source38546571533PASS and Odoo38546571600PASS24
+cases, zeroerrors/failures. Gate sourceCONDITIONALGO pending assetscompile proof.
+Verified installedOdoo19 assetAPI _get_asset_bundle/js/css and existingDialog
+bodyClass/widgetprops import; added test25 for JS/XML/SCSS compilation and widget
+registration (no browserclickclaim). Same CIfixture, test-onlydelta justifies next
+run, no duplicatedenvironment/load or sourcepermissionschange. UXAraby produced
+conciseArabicbuttons/status/errorlabels; no names or filenames translated.
+
+Candidateecf9453e: Source38547620927PASS, Odoo38547620713FAIL1/25,0errors.
+Test25 caught actualLibSass uniterror in newSCSS height:min(70vh,850px): incompatible
+px/vh. Replace with height70vh+max-height850px; same responsiveintent, assertion
+unchanged. No QAdeploy beforecorrectedCI. Prior24functionalcasesstillpass.
+
+Capacityprep: QAfree1585135616 before nextrelease. Priorownerarchivepermission
+used for fivecode-onlyoldreleases b1d94eb7183d/a673438ba252/b7a6b372e9b2/d66d4b8b8e69/1cd3f8dc07f3.
+Newestfiveab0aa23d/87bbe/f894/caf5/06a5 kept; alltargets resolvedunderQA/releases,
+notcurrent, exactRELEASE_COMMITs verified. Localarchive
+D:/Codex/Baseer-odoo/.worktrees/baseer-gl-qa-policy/tmp/dms-preview-code-archive/qa-code-preview-space-20261014.tar.gz
+SHA2567a73e9cecf2ab238734f023cf216f5da7626be9f29962c8eb4186cec21e786ad
+matchesremote; gzipintegrity and all7648regularfileSHA256 matched source manifest.
+Onlyverifiedoldcode+temporaryserverarchive removedunderQAdeployflock, recoverable
+localarchive/manifest remain. NoDB/filestorebackups orLIVEtouch. QAfree2196201472.
+Prepreview readonlyoriginal5840checksum74d64754a79987d2ccce685c06ef553cd8930931,
+fullrowMD5f5c49b2644b09fd6a4edbec26dc7c988; linkedDMSfile10/imagePNG currentlygenericicon.

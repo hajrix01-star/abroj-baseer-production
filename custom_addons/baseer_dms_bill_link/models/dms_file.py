@@ -168,6 +168,20 @@ class DmsFile(models.Model):
         for item in linked:
             item.image_1920 = False
 
+    @api.depends("image_128", "bill_attachment_id", "mimetype", "checksum")
+    def _compute_icon_url(self):
+        super()._compute_icon_url()
+        for item in self:
+            if item.bill_attachment_id and item.mimetype in {
+                "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/avif",
+            }:
+                # Transform the protected original only for this HTTP response.
+                # No thumbnail binary or derivative attachment is persisted.
+                item.icon_url = (
+                    f"/web/image/dms.file/{item.id}/content/128x128"
+                    f"?unique={item.checksum or ''}"
+                )
+
     def _inverse_content(self):
         if self.sudo().filtered("bill_attachment_id"):
             raise UserError(self.env._("Original bill documents are read only in Documents."))

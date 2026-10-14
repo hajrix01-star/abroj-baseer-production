@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <!-- The signed preview APK trusts the local development CA only for emulator loopback. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">localhost</domain>
+        <trust-anchors><certificates src="@raw/bchat_local_root" /></trust-anchors>
+    </domain-config>
+    <!-- User-installed local CA is accepted only when android:debuggable=true. -->
+    <debug-overrides>
+        <trust-anchors><certificates src="user" /></trust-anchors>
+    </debug-overrides>
+</network-security-config>

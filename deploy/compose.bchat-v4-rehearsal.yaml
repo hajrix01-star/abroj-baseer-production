@@ -1,0 +1,26 @@
+# Isolated BChat v4 rehearsal. Never point this profile at baseer_bchat_local.
+services:
+  odoo_test:
+    volumes:
+      - ${BCHAT_REHEARSAL_DATA_PATH:?Isolated Odoo data path required}:/var/lib/odoo
+      - ${BCHAT_V4_CANDIDATE_PATH:?Frozen BChat v4 source required}:/mnt/bchat-addons/baseer_bchat:ro
+      - C:/Users/hp/.codex/worktrees/bchat-local-continuation/Baseer-odoo/custom_addons/baseer_procurement_requests:/mnt/baseer-addons/baseer_procurement_requests:ro
+      - C:/Users/hp/.codex/worktrees/bchat-local-continuation/Baseer-odoo/custom_addons/baseer_access_roles:/mnt/baseer-addons/baseer_access_roles:ro
+      - ${BCHAT_OCA_SOURCE_DIR:?Pinned OCA checkout required}:/mnt/oca-dms:ro
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.conf
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/bchat-addons,/mnt/oca-dms,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=bchat_upgrade_rehearsal_20261013
+      - --no-database-list
+      - --max-cron-threads=0
+      - --workers=0
+      - --log-level=error
+      - --log-handler=odoo.tests.result:INFO
+      - --log-handler=odoo.tests.suite:INFO
+      - --http-port=8069
+      - --stop-after-init
+      - --test-enable
+      - --test-tags=/baseer_bchat:BChatTextCase.test_member_candidates_are_limited_to_caller_company,/baseer_bchat:BChatTextHttpCase.test_member_candidates_route_scopes_company_and_session
+      - -u
+      - baseer_bchat

@@ -1,0 +1,11 @@
+.gradle/
+local.properties
+build/
+app/build/
+app/google-services.json
+*service-account*.json
+*.keystore
+*.jks
+artifacts/
+.tools/
+.build-tmp/

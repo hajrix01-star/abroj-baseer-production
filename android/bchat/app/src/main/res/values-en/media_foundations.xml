@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_import_changed">The source size changed or the provider returned an incomplete file. Select the original again and retry.</string>
+    <string name="media_import_empty">This image, audio, video or PDF file is empty. Select a complete original and retry.</string>
+    <string name="media_export_partial">The copy was not completed. An empty or partial file may remain at the chosen destination. The private original was not changed. Retry using a new filename.</string>
+    <string name="media_integrity_changed">The stored original failed its integrity check. This copy was not exported. Keep the existing file and select a trusted original again.</string>
+    <string name="media_zoom_in">Zoom in</string>
+    <string name="media_zoom_out">Zoom out</string>
+    <string name="media_zoom_fit">Fit image</string>
+    <string name="media_zoom_help">Pinch or double-tap to zoom. Drag to inspect image details.</string>
+    <string name="media_detail_unavailable">Original-detail preview unavailable for this format. Save the original to inspect it in a compatible app.</string>
+    <string name="media_preview_timeout">Preview took too long. Close and reopen to retry. The original is unchanged.</string>
+    <string name="media_pdf_loading">Loading PDF preview…</string>
+    <string name="media_pdf_first_page">First page of %1$d. Save the original to view every page.</string>
+    <string name="media_pdf_unavailable">PDF preview unavailable. You can still try saving the original.</string>
+</resources>

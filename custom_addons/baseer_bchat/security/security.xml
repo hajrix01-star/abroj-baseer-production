@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- No user assignments, role-preset changes, or native project grants. -->
+    <record id="group_bchat_user" model="res.groups">
+        <field name="name">BChat API User (development)</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_bchat_manager" model="res.groups">
+        <field name="name">BChat Conversation Manager (development)</field>
+        <field name="implied_ids" eval="[(4, ref('group_bchat_user'))]"/>
+    </record>
+    <!-- Global intersections, not additive group rules. No admin exception. -->
+    <record id="receipt_company_rule" model="ir.rule">
+        <field name="name">BChat receipts: authorized active company</field>
+        <field name="model_id" ref="model_baseer_bchat_receipt"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="receipt_owner_rule" model="ir.rule">
+        <field name="name">BChat receipts: requesting user only</field>
+        <field name="model_id" ref="model_baseer_bchat_receipt"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+    <record id="receipt_membership_rule" model="ir.rule">
+        <field name="name">BChat receipts: native channel membership</field>
+        <field name="model_id" ref="model_baseer_bchat_receipt"/>
+        <field name="domain_force">[('channel_id.channel_member_ids.partner_id', '=', user.partner_id.id)]</field>
+    </record>
+    <record id="binding_company_rule" model="ir.rule">
+        <field name="name">BChat bindings: authorized active company</field>
+        <field name="model_id" ref="model_baseer_bchat_binding"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="binding_member_rule" model="ir.rule">
+        <field name="name">BChat bindings: explicit native group membership</field>
+        <field name="model_id" ref="model_baseer_bchat_binding"/>
+        <field name="domain_force">[('channel_id.channel_member_ids.partner_id', '=', user.partner_id.id)]</field>
+    </record>
+    <record id="room_company_rule" model="ir.rule">
+        <field name="name">BChat rooms: authorized company</field>
+        <field name="model_id" ref="model_baseer_bchat_room"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="membership_company_rule" model="ir.rule">
+        <field name="name">BChat membership: authorized company</field>
+        <field name="model_id" ref="model_baseer_bchat_membership"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

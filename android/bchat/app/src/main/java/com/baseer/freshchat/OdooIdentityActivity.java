@@ -282,6 +282,13 @@ public final class OdooIdentityActivity extends Activity {
     private LinearLayout orderItems;
     private ScrollView orderScroll;
     private TextView orderNotice;
+    private TextView orderCartSummary;
+    private LinearLayout orderCartBar;
+    private View orderCatalogLine, orderMineLine, orderReceiptLine;
+    private String orderRenderedKey;
+    private Runnable orderLoadingTask;
+    private Runnable orderRetryAction;
+    private boolean orderLoadingVisible;
     private LinearLayout orderDetailsPanel, orderFiltersRow, orderPagingRow;
     private Button orderDetailsButton, orderPreviousButton;
     private Button orderWarehouseButton, orderRepresentativeButton;
@@ -874,9 +881,10 @@ public final class OdooIdentityActivity extends Activity {
         chatRoot.addView(chatPane, new LinearLayout.LayoutParams(-1, 0, 1));
         modulePane = Ui.column(this);
         orderNotice = Ui.text(this, "", 14, Ui.INK, false);
-        Ui.pad(orderNotice, 12, 4);
+        Ui.pad(orderNotice, 14, 10);
+        orderNotice.setBackground(Ui.outline(0xffeaf4ff, 0xffd5e8f8, 12, this));
+        orderNotice.setElevation(dp(3));
         collapseWhenEmpty(orderNotice);
-        modulePane.addView(orderNotice);
         orderDetailsButton = orderChoiceButton(R.string.order_details, () ->
                 orderDetailsPanel.setVisibility(orderDetailsPanel.getVisibility() == View.VISIBLE
                         ? View.GONE : View.VISIBLE));
@@ -909,11 +917,10 @@ public final class OdooIdentityActivity extends Activity {
         orderMineButton = orderChoiceButton(R.string.order_mine, () -> showOrderMode(true));
         orderReceiptButton = orderChoiceButton(R.string.receipt_tab, this::showReceiptMode);
         LinearLayout orderSegments = Ui.row(this);
-        orderSegments.setBackground(Ui.bg(Ui.LIGHT, 12, this));
-        Ui.pad(orderSegments, 3, 3);
-        orderSegments.addView(orderCatalogButton, new LinearLayout.LayoutParams(0, dp(48), 1));
-        orderSegments.addView(orderMineButton, new LinearLayout.LayoutParams(0, dp(48), 1));
-        orderSegments.addView(orderReceiptButton, new LinearLayout.LayoutParams(0, dp(48), 1));
+        orderSegments.setBackgroundColor(Color.WHITE);
+        orderCatalogLine = addOrderTab(orderSegments, orderCatalogButton);
+        orderMineLine = addOrderTab(orderSegments, orderMineButton);
+        orderReceiptLine = addOrderTab(orderSegments, orderReceiptButton);
         orderTabs.addView(orderSegments, new LinearLayout.LayoutParams(0, -2, 1));
         modulePane.addView(orderTabs);
         LinearLayout.LayoutParams detailsSize = new LinearLayout.LayoutParams(-1, -2);
@@ -931,6 +938,8 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void afterTextChanged(Editable value) {
                 if (orderSearchTask != null) handler.removeCallbacks(orderSearchTask);
                 if (!ordersAvailable || orderMine || orderReceiving) return;
+                prepareOrderContent(orderContentKey("catalog", orderCompanyId,
+                        orderCategoryId, value.toString().trim(), 0));
                 orderSearchTask = () -> { orderSearchTask = null; loadOrderCatalog(0); };
                 handler.postDelayed(orderSearchTask, 350);
             }
@@ -959,7 +968,12 @@ public final class OdooIdentityActivity extends Activity {
         orderItems.addOnLayoutChangeListener((v, left, top, right, bottom,
                 oldLeft, oldTop, oldRight, oldBottom) -> scheduleOrderImagePump());
         orderScroll.addView(orderItems);
-        modulePane.addView(orderScroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        FrameLayout orderContent = new FrameLayout(this);
+        orderContent.addView(orderScroll, new FrameLayout.LayoutParams(-1, -1));
+        FrameLayout.LayoutParams orderNoticeSize = new FrameLayout.LayoutParams(-1, -2, Gravity.TOP);
+        orderNoticeSize.setMargins(dp(12), dp(8), dp(12), 0);
+        orderContent.addView(orderNotice, orderNoticeSize);
+        modulePane.addView(orderContent, new LinearLayout.LayoutParams(-1, 0, 1));
         orderOlderButton = orderChoiceButton(R.string.order_older, () -> {
             if (orderReceiving) loadReceipts(receiptBeforeId);
             else if (orderMine) loadOrderSummaries(orderListBeforeId);
@@ -976,7 +990,20 @@ public final class OdooIdentityActivity extends Activity {
         orderPreviousButton.setVisibility(View.GONE);
         orderOlderButton.setVisibility(View.GONE);
         orderCartButton = orderChoiceButton(R.string.order_cart, this::reviewOrderCart);
-        modulePane.addView(orderCartButton, new LinearLayout.LayoutParams(-1, dp(48)));
+        orderCartBar = Ui.row(this);
+        orderCartBar.setGravity(Gravity.CENTER_VERTICAL);
+        Ui.pad(orderCartBar, 12, 6);
+        orderCartBar.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 0, this));
+        orderCartSummary = Ui.text(this, "", 14, Ui.INK, true);
+        orderCartSummary.setMaxLines(2);
+        orderCartSummary.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        orderCartBar.addView(orderCartSummary, new LinearLayout.LayoutParams(0, -2, 1));
+        orderCartButton.setText(R.string.order_view_cart);
+        Ui.styleAction(orderCartButton, Ui.ActionTone.PRIMARY);
+        LinearLayout.LayoutParams cartActionSize = new LinearLayout.LayoutParams(-2, dp(48));
+        cartActionSize.setMarginStart(dp(10));
+        orderCartBar.addView(orderCartButton, cartActionSize);
+        modulePane.addView(orderCartBar);
         orderPendingButton = orderChoiceButton(R.string.order_review_pending, this::reviewPendingOrder);
         modulePane.addView(orderPendingButton, new LinearLayout.LayoutParams(-1, dp(48)));
         orderPendingButton.setVisibility(View.GONE);
@@ -2088,6 +2115,81 @@ public final class OdooIdentityActivity extends Activity {
         styleAction(button, false);
         button.setOnClickListener(v -> action.run());
         return button;
+    }
+
+    private View addOrderTab(LinearLayout tabs, Button button) {
+        LinearLayout cell = Ui.column(this);
+        cell.setGravity(Gravity.CENTER);
+        cell.addView(button, new LinearLayout.LayoutParams(-1, dp(48)));
+        View line = new View(this);
+        LinearLayout.LayoutParams lineSize = new LinearLayout.LayoutParams(-1, dp(3));
+        lineSize.setMargins(dp(12), 0, dp(12), 0);
+        cell.addView(line, lineSize);
+        tabs.addView(cell, new LinearLayout.LayoutParams(0, -2, 1));
+        return line;
+    }
+
+    private String orderContentKey(String mode, long companyId, long categoryId,
+                                   String search, long cursor) {
+        return mode + ':' + companyId + ':' + categoryId + ':' + search.length() + ':'
+                + search + ':' + cursor;
+    }
+
+    private void prepareOrderContent(String key) {
+        if (key.equals(orderRenderedKey)) return;
+        clearOrderRetry();
+        orderRenderedKey = null;
+        resetOrderImages(false);
+        orderItems.removeAllViews();
+        orderItems.setBackgroundColor(Color.WHITE);
+        // Neutral transition: never present another company/filter/page as current data.
+        View placeholder = new View(this);
+        placeholder.setBackground(Ui.bg(Ui.LIGHT, 12, this));
+        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(-1, dp(68));
+        size.setMargins(dp(12), dp(12), dp(12), 0);
+        orderItems.addView(placeholder, size);
+    }
+
+    private void beginOrderLoading(int serial, int label) {
+        boolean keepVisible = orderLoadingVisible
+                && getString(label).contentEquals(orderNotice.getText());
+        if (orderLoadingTask != null) handler.removeCallbacks(orderLoadingTask);
+        orderLoadingTask = null;
+        clearOrderRetry();
+        if (keepVisible) return;
+        orderLoadingVisible = false;
+        orderNotice.setText("");
+        orderLoadingTask = () -> {
+            orderLoadingTask = null;
+            if (serial != orderViewSerial || !"orders".equals(visibleSection)) return;
+            orderLoadingVisible = true;
+            orderNotice.setText(label);
+        };
+        handler.postDelayed(orderLoadingTask, 220);
+    }
+
+    private void finishOrderLoading() {
+        if (orderLoadingTask != null) handler.removeCallbacks(orderLoadingTask);
+        orderLoadingTask = null;
+        if (orderLoadingVisible) orderNotice.setText("");
+        orderLoadingVisible = false;
+    }
+
+    private void clearOrderRetry() {
+        orderRetryAction = null;
+        if (orderNotice != null) orderNotice.setOnClickListener(null);
+    }
+
+    private void showOrderLoadError(int label, Runnable retry) {
+        orderRetryAction = retry;
+        orderNotice.setText(getString(R.string.order_retry_message,
+                getString(label), getString(R.string.order_tap_retry)));
+        orderNotice.setOnClickListener(v -> {
+            Runnable action = orderRetryAction;
+            clearOrderRetry();
+            orderNotice.setText("");
+            if (action != null && verified && "orders".equals(visibleSection)) action.run();
+        });
     }
 
     private void renderBottomTabs() {
@@ -3732,6 +3834,8 @@ public final class OdooIdentityActivity extends Activity {
         orderSummaries.clear();
         receiptSummaries.clear();
         orderCart.clear();
+        orderRenderedKey = null;
+        finishOrderLoading();
         lastRemovedOrderLine = null;
         invalidateOrderQuote();
         ordersAvailable = false;
@@ -8157,10 +8261,10 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void refreshOrderQuoteLabels() {
-        if (orderCartButton != null) {
+        if (orderCartSummary != null) {
             String menuTotal = orderQuoteTotal == null ? orderQuoteLabel()
                     : getString(R.string.order_quote_short, orderQuoteTotal, orderQuoteCurrency);
-            orderCartButton.setText(orderCart.isEmpty()
+            orderCartSummary.setText(orderCart.isEmpty()
                     ? getString(R.string.order_cart_count, "0")
                     : getString(R.string.order_cart_bar,
                             String.valueOf(orderCart.size()), menuTotal));
@@ -8301,10 +8405,13 @@ public final class OdooIdentityActivity extends Activity {
         Ui.styleSegment(orderCatalogButton, catalog);
         Ui.styleSegment(orderMineButton, orderMine);
         Ui.styleSegment(orderReceiptButton, orderReceiving);
+        orderCatalogLine.setBackgroundColor(catalog ? Ui.GREEN : Color.TRANSPARENT);
+        orderMineLine.setBackgroundColor(orderMine ? Ui.GREEN : Color.TRANSPARENT);
+        orderReceiptLine.setBackgroundColor(orderReceiving ? Ui.GREEN : Color.TRANSPARENT);
         orderFiltersRow.setVisibility(catalog ? View.VISIBLE : View.GONE);
         orderPreviousButton.setVisibility(catalog && !orderPageHistory.isEmpty()
                 ? View.VISIBLE : View.GONE);
-        orderCartButton.setVisibility(catalog ? View.VISIBLE : View.GONE);
+        orderCartBar.setVisibility(catalog ? View.VISIBLE : View.GONE);
         refreshOrderQuoteLabels();
         orderCartButton.setEnabled(!orderCart.isEmpty() && !hasPendingOrder());
         orderPendingButton.setVisibility(catalog && hasPendingOrder() ? View.VISIBLE : View.GONE);
@@ -8335,6 +8442,8 @@ public final class OdooIdentityActivity extends Activity {
         orderPageHistory.clear();
         orderMine = false;
         orderReceiving = false;
+        orderRenderedKey = null;
+        finishOrderLoading();
         invalidateOrderQuote();
         orderItems.removeAllViews();
         orderNotice.setText("");
@@ -8353,18 +8462,19 @@ public final class OdooIdentityActivity extends Activity {
         final int serial = ++orderViewSerial;
         updateOrderSelectors();
         if (v2Busy) {
-            orderNotice.setText(R.string.order_loading);
+            beginOrderLoading(serial, R.string.order_loading);
             handler.postDelayed(() -> {
                 if (verified && "orders".equals(visibleSection) && serial == orderViewSerial)
                     discoverOrders();
             }, 500);
             return;
         }
-        orderNotice.setText(R.string.order_loading);
+        beginOrderLoading(serial, R.string.order_loading);
         fetchV2("GET", V2_ORDERS + "/options", null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (scopedAccount != account || serial != orderViewSerial
                     || !"orders".equals(visibleSection)) return;
+            finishOrderLoading();
             if (status == 403) { denyOrdersForSession(); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
@@ -8390,6 +8500,7 @@ public final class OdooIdentityActivity extends Activity {
                     orderCurrentPageStartId = orderCatalogAfterId = 0;
                     orderItems.removeAllViews();
                     resetOrderImages(true);
+                    orderRenderedKey = null;
                 }
                 if (companies.size() == 1 && orderCompanyId == 0)
                     orderCompanyId = companies.get(0).id;
@@ -8397,14 +8508,17 @@ public final class OdooIdentityActivity extends Activity {
                 if (orderCompanyId > 0) loadOrderCompanyOptions();
                 else {
                     orderItems.removeAllViews();
+                    orderRenderedKey = null;
                     orderNotice.setText(companies.isEmpty()
                             ? getString(R.string.order_no_companies) : "");
                 }
             } catch (Exception invalid) {
                 ordersAvailable = false;
                 orderItems.removeAllViews();
-                orderNotice.setText(status == 404 || status == 503
-                        ? R.string.order_unavailable : R.string.order_load_failed);
+                orderRenderedKey = null;
+                showOrderLoadError(status == 404 || status == 503
+                        ? R.string.order_unavailable : R.string.order_load_failed,
+                        this::discoverOrders);
             }
         });
     }
@@ -8422,6 +8536,8 @@ public final class OdooIdentityActivity extends Activity {
             orderOptions.clear();
             orderSummaries.clear();
             receiptSummaries.clear();
+            orderRenderedKey = null;
+            finishOrderLoading();
             receiptBeforeId = 0;
             orderPageHistory.clear();
             orderCurrentPageStartId = orderCatalogAfterId = 0;
@@ -8448,11 +8564,12 @@ public final class OdooIdentityActivity extends Activity {
         final AccountScope scopedAccount = account;
         final int serial = orderViewSerial;
         final long companyId = orderCompanyId;
-        orderNotice.setText(R.string.order_loading);
+        beginOrderLoading(serial, R.string.order_loading);
         fetchV2("GET", V2_ORDERS + "/options?company_id=" + companyId, null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (scopedAccount != account || serial != orderViewSerial
                     || companyId != orderCompanyId || !"orders".equals(visibleSection)) return;
+            finishOrderLoading();
             if (status == 403) { denyOrdersForSession(); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
@@ -8485,7 +8602,9 @@ public final class OdooIdentityActivity extends Activity {
                 else loadOrderCatalog(0);
             } catch (Exception invalid) {
                 orderItems.removeAllViews();
-                orderNotice.setText(status == 403 ? R.string.order_denied : R.string.order_load_failed);
+                orderRenderedKey = null;
+                showOrderLoadError(status == 403 ? R.string.order_denied : R.string.order_load_failed,
+                        this::loadOrderCompanyOptions);
                 if (status == 403) {
                     orderCart.clear();
                     lastRemovedOrderLine = null;
@@ -8504,6 +8623,8 @@ public final class OdooIdentityActivity extends Activity {
         chooseOrderChoice(options, R.string.order_category, choice -> {
             orderCategoryId = choice.id;
             updateOrderSelectors();
+            prepareOrderContent(orderContentKey("catalog", orderCompanyId,
+                    orderCategoryId, orderSearch.getText().toString().trim(), 0));
             loadOrderCatalog(0);
         });
     }
@@ -8515,7 +8636,9 @@ public final class OdooIdentityActivity extends Activity {
         orderReceiving = false;
         ++orderViewSerial;
         if (!mine && !orderCart.isEmpty()) invalidateOrderQuote();
-        orderItems.removeAllViews();
+        prepareOrderContent(orderContentKey(mine ? "mine" : "catalog", orderCompanyId,
+                mine ? 0 : orderCategoryId,
+                mine ? "" : orderSearch.getText().toString().trim(), 0));
         orderOlderButton.setVisibility(View.GONE);
         updateOrderSelectors();
         if (orderCompanyId > 0) {
@@ -8530,7 +8653,7 @@ public final class OdooIdentityActivity extends Activity {
         orderReceiving = true;
         orderMine = false;
         ++orderViewSerial;
-        orderItems.removeAllViews();
+        prepareOrderContent(orderContentKey("receiving", orderCompanyId, 0, "", 0));
         orderOlderButton.setVisibility(View.GONE);
         updateOrderSelectors();
         if (orderCompanyId > 0) loadReceipts(0);
@@ -8544,7 +8667,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!verified || !ordersAvailable || orderCompanyId == 0 || orderMine || orderReceiving
                 || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
-            orderNotice.setText(R.string.order_loading);
+            beginOrderLoading(orderViewSerial, R.string.order_loading);
             handler.postDelayed(() -> {
                 if (verified && !orderMine && !orderReceiving && "orders".equals(visibleSection))
                     loadOrderCatalog(afterId, navigation);
@@ -8561,11 +8684,13 @@ public final class OdooIdentityActivity extends Activity {
             orderNotice.setText(R.string.order_search_too_long);
             return;
         }
+        final String contentKey = orderContentKey("catalog", companyId, categoryId, query, afterId);
+        prepareOrderContent(contentKey);
         String path = V2_ORDERS + "/catalog?company_id=" + companyId;
         if (!query.isEmpty()) path += "&q=" + Uri.encode(query);
         if (categoryId > 0) path += "&category_id=" + categoryId;
         if (afterId > 0) path += "&after_id=" + afterId;
-        orderNotice.setText(R.string.order_loading);
+        beginOrderLoading(serial, R.string.order_loading);
         orderOlderButton.setEnabled(false);
         orderPreviousButton.setEnabled(false);
         fetchV2("POST", path, "{\"api_version\":2}", (status, body) -> {
@@ -8574,6 +8699,7 @@ public final class OdooIdentityActivity extends Activity {
                     || companyId != orderCompanyId || categoryId != orderCategoryId
                     || !query.equals(orderSearch.getText().toString().trim())
                     || !"orders".equals(visibleSection)) return;
+            finishOrderLoading();
             if (status == 403) { denyOrdersForSession(); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
@@ -8608,6 +8734,7 @@ public final class OdooIdentityActivity extends Activity {
                 orderOptions.addAll(page);
                 orderCatalogAfterId = cursor;
                 renderOrderCatalog();
+                orderRenderedKey = contentKey;
                 orderOlderButton.setText(R.string.order_more_products);
                 orderOlderButton.setVisibility(cursor > 0 ? View.VISIBLE : View.GONE);
                 orderOlderButton.setEnabled(cursor > 0);
@@ -8629,7 +8756,8 @@ public final class OdooIdentityActivity extends Activity {
                 }
                 orderOlderButton.setEnabled(orderCatalogAfterId > 0);
                 orderPreviousButton.setEnabled(!orderPageHistory.isEmpty());
-                orderNotice.setText(status == 403 ? R.string.order_denied : R.string.order_load_failed);
+                showOrderLoadError(status == 403 ? R.string.order_denied : R.string.order_load_failed,
+                        () -> loadOrderCatalog(afterId, navigation));
             }
         });
     }
@@ -8940,14 +9068,17 @@ public final class OdooIdentityActivity extends Activity {
         final AccountScope scopedAccount = account;
         final int serial = ++orderViewSerial;
         final long companyId = orderCompanyId;
+        final String contentKey = orderContentKey("mine", companyId, 0, "", beforeId);
+        prepareOrderContent(contentKey);
         String path = V2_ORDERS + "?company_id=" + companyId;
         if (beforeId > 0) path += "&before_id=" + beforeId;
-        orderNotice.setText(R.string.order_loading);
+        beginOrderLoading(serial, R.string.order_loading);
         orderOlderButton.setEnabled(false);
         fetchV2("GET", path, null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (scopedAccount != account || serial != orderViewSerial || !orderMine
                     || companyId != orderCompanyId || !"orders".equals(visibleSection)) return;
+            finishOrderLoading();
             if (status == 403) { denyOrdersForSession(); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
@@ -8973,6 +9104,7 @@ public final class OdooIdentityActivity extends Activity {
                     orderSummaries.subList(0, orderSummaries.size() - 200).clear();
                 orderListBeforeId = cursor;
                 renderOrderSummaries();
+                orderRenderedKey = contentKey;
                 orderOlderButton.setText(R.string.order_older);
                 orderOlderButton.setVisibility(cursor > 0 ? View.VISIBLE : View.GONE);
                 orderOlderButton.setEnabled(cursor > 0);
@@ -8980,7 +9112,8 @@ public final class OdooIdentityActivity extends Activity {
             } catch (Exception invalid) {
                 if (status == 403) { orderSummaries.clear(); renderOrderSummaries(); }
                 orderOlderButton.setEnabled(orderListBeforeId > 0);
-                orderNotice.setText(status == 403 ? R.string.order_denied : R.string.order_load_failed);
+                showOrderLoadError(status == 403 ? R.string.order_denied : R.string.order_load_failed,
+                        () -> loadOrderSummaries(beforeId));
             }
         });
     }
@@ -9051,7 +9184,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!verified || !ordersAvailable || ordersDenied || !orderReceiving
                 || orderCompanyId == 0 || !"orders".equals(visibleSection)) return;
         if (v2Busy) {
-            orderNotice.setText(R.string.receipt_loading);
+            beginOrderLoading(orderViewSerial, R.string.receipt_loading);
             handler.postDelayed(() -> {
                 if (verified && orderReceiving && "orders".equals(visibleSection))
                     loadReceipts(beforeId);
@@ -9061,13 +9194,16 @@ public final class OdooIdentityActivity extends Activity {
         final AccountScope scopedAccount = account;
         final long companyId = orderCompanyId;
         final int serial = ++orderViewSerial;
+        final String contentKey = orderContentKey("receiving", companyId, 0, "", beforeId);
+        prepareOrderContent(contentKey);
         String path = V2_ORDERS + "/receipts?company_id=" + companyId;
         if (beforeId > 0) path += "&before_id=" + beforeId;
-        orderNotice.setText(R.string.receipt_loading);
+        beginOrderLoading(serial, R.string.receipt_loading);
         orderOlderButton.setEnabled(false);
         fetchV2("GET", path, null, (status, body) -> {
             if (handleV2TransportFailure(status)) return;
             if (!receiptContext(scopedAccount, companyId, serial)) return;
+            finishOrderLoading();
             if (status == 403) { denyOrdersForSession(); return; }
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2)
@@ -9094,13 +9230,15 @@ public final class OdooIdentityActivity extends Activity {
                     receiptSummaries.subList(0, receiptSummaries.size() - 200).clear();
                 receiptBeforeId = cursor;
                 renderReceipts();
+                orderRenderedKey = contentKey;
                 orderOlderButton.setText(R.string.receipt_older);
                 orderOlderButton.setVisibility(cursor > 0 ? View.VISIBLE : View.GONE);
                 orderOlderButton.setEnabled(cursor > 0);
                 orderNotice.setText("");
             } catch (Exception invalid) {
                 orderOlderButton.setEnabled(receiptBeforeId > 0);
-                orderNotice.setText(R.string.receipt_load_failed);
+                showOrderLoadError(R.string.receipt_load_failed,
+                        () -> loadReceipts(beforeId));
             }
         });
     }

@@ -27,6 +27,14 @@ G0/G1/G2/G3: مسودة للمراجع المستقل؛ لا تنزيل تثبي
 
 ## ملخص التجربة وحد الدليل
 
+## استثناء المالك للتقييم الخاص (G2/G8 قيد المراجعة)
+
+بعد إبلاغه بمانع النقل، وافق المالك صراحة على QA بملفات وهمية وحسابه وحده، وتأجيل الإصلاح. الاستثناء صالح حتى نهاية التقييم الخاص فقط، وينتهي فور إضافة مستخدم آخر أو مستند حقيقي أو طلب LIVE. ليست موافقة إنتاج ولا ادعاء إصلاحP1؛ يبقى الاختبار الصارم موجودًا كفشل متوقع معلن بدل حذفه. حارس مستقل يراجع global owner-only rules لمخزن/مجلد/ملف/مجموعة DMS، groupownerلـbase.user_admin(2) فقط، لاtokens أوautoattachments. اختبارnativeفيCI يعطلrulesالتجربة ضمنfixturetransaction فقط، والاختبارالخاص الجديديثبت منعmanagerآخر وpublic. مصدرOCAتشغيليunchanged. لا financial/businesswrites أو حذف backups. القيودمرئيةللمالكوسجلIDs للعينة.
+
+تحديث التنفيذ: حارس مستقل أجازCONDITIONAL GO للحصرالخاصفقط. استُخدمتخمسglobalrulesلـstorage/directory/file/accessgroup/sharewizard، ownerIDمنXMLrefbase.user_admin(ثبتQA=2) لاgroup-specificOR. لاgroupownerجديدولاأدوارحقيقيةتغيرت. أبقيناassertAccessErrorلنقلnativeفيtestcaseمنفصلexpectedFailureمعلنكاستثناء، وأضيفprivateORM/HTTP/directattachment/sharewizardcoverage؛ ليستنتيجةPASSعلىصلاحياتOCAالأصلية. إعادةCIمبررةبتغييرعقدالحصرواختباراته وfixtureلاعلىفشلقديمبلاسبب.
+
+BootstrapQA محدود `ops/qa/enable-dms-trial-runtime.sh`: يضيفOCAaddonspathبالضبطلقائمةQAفقطويثبتapprove/deploywrappersالمراجعةمنrevisionمجمد؛ نسخconfig+wrappersمعrestoretrap قبلالتعديل، لاrestart/installفيbootstrap. لاLIVE أوpolicysubstitution. الفحصالفعليقبلالتثبيت: owner2active، dmsغيرمثبت؛ financialfullrowcounts/MD5 كلهاbaseline: summary669/3cc77fb1c40cfe645ff5722a75ee6f33; POS718/5047663e50f54c0c48e7e8e7481c092e; payments1896/a650b5b054949864dca0665892438149; Sales0/null; moves8589/bf48d80866e766c6b4156b6ec6de6348; lines21289/09841457d6a0309df89fd97decf62a4c. المتاح2475192320bytes؛ حارسالنشرلايتجاوز.
+
 حكم التسليم المستقل النهائي dms_trial_gate: NO-GO قبلQA، P1 نقل غير مصرح به وليس تسريب قراءة مثبتًا. مجموعة التحرير المشتركة في العينة مقصودة لإثبات أنcompanyruleهيالحاجز. لاخفضassertionولاإعادةاختباردونتغييرمعلل. بوابةألفاG5/G8أوقفتالنشر، وتحتاجالإصلاحاتنطاقًاواعتمادًاجديدًا.
 
 التجربة الفعلية نُفذت في قاعدة Odoo19 معزولة ضمنCI قبلQA، وليسعلىQA؛ أوقفت بوابة السلامة الانتقال إلىQA. ملفان صناعيان في شركتين مع أدوار قراءة/تعديل/غيرعضو وHTTP. لا ملفات حقيقية ولا روابط مشاركة عامة ولاتكاملinvoiceattachment. منعالاسمالمكررليسمنعالمحتوىالمكرر؛ نفسbytesباسمجديديسجلمستندينلكنfilestoreاستعملمسارًاواحدًا. الاستعمالللعقودالحقيقيةأوالنشرQAالآنNO-GOحتىإصلاحالخللوإعادةالفحصالخاصبه. قبولAR/RTL/جوالغيرمثبت؛ ليستسببالمانعالأمني.

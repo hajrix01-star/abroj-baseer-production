@@ -4,7 +4,7 @@
     "license": "LGPL-3",
     "summary": "Synthetic contracts/licenses acceptance tests; QA trial only, not LIVE",
     "depends": ["dms"],
-    "data": [],
+    "data": ["security/private_trial.xml"],
     "installable": True,
     "application": False,
 }

@@ -1,4 +1,5 @@
 """The employee-facing bridge must not confer procurement's broad ERP rights."""
+import hashlib
 import json
 from unittest.mock import patch
 from uuid import uuid4
@@ -314,6 +315,84 @@ class BChatOrderCase(TransactionCase):
         self.assertEqual(multiple.exception.code, 'representative_required')
         selected = self.service._v2_order_create(self._payload(representative=first))
         self.assertEqual(selected['order']['representative_id'], first.id)
+
+    def test_purchase_route_options_and_direct_orders_without_representative(self):
+        options = self.service._v2_order_options(self.company.id)
+        self.assertEqual([row['code'] for row in options['purchase_routes']],
+                         ['representative', 'cash', 'bank_transfer'])
+        self.assertTrue(all(row['name'] for row in options['purchase_routes']))
+        _, room, _ = self._room_for_employee()
+        for route in ('cash', 'bank_transfer'):
+            payload = {**self._payload(), 'purchase_route': route, 'room_id': room.id}
+            with patch.object(type(self.service), '_representatives', side_effect=AssertionError(
+                    'Direct purchases must not look up representatives')):
+                created = self.service._v2_order_create(payload)
+            order = self.env['baseer.procurement.request'].sudo().browse(created['order']['id'])
+            self.assertEqual(order.purchase_route, route)
+            self.assertFalse(order.representative_partner_id)
+            self.assertFalse(order.purchaser_id)
+            self.assertEqual(created['order']['purchase_route'], route)
+            self.assertEqual(created['order']['purchase_route_name'], order._purchase_route_label())
+            self.assertIsNone(created['order']['representative_id'])
+            self.assertEqual(created['order']['representative_name'], '')
+            self.assertIn(order._purchase_route_label(), order.bchat_message_id.text)
+            self.assertIn(created['order']['requested_total'], order.bchat_message_id.text)
+            detail = self.service._v2_order_detail(self.company.id, order.id)['order']
+            self.assertEqual(detail['purchase_route'], route)
+            self.assertEqual(detail['representative_id'], None)
+            self.assertTrue(self.service._v2_order_create(payload)['replayed'])
+        listed = self.service._v2_orders_all()['orders']
+        self.assertEqual([row['purchase_route'] for row in listed[:2]],
+                         ['bank_transfer', 'cash'])
+        self.assertEqual(self.env['baseer.bchat.message'].sudo().search_count([
+            ('room_id', '=', room.id), ('author_user_id', '=', self.user.id),
+        ]), 2)
+
+    def test_purchase_route_validation_and_changed_route_replay_conflict(self):
+        representative = self._representative('Route buyer')
+        for invalid in (None, False, '', 'credit', 3):
+            with self.assertRaises(ProtocolError) as error:
+                self.service._v2_order_create({**self._payload(), 'purchase_route': invalid})
+            self.assertEqual(error.exception.code, 'invalid_purchase_route')
+        for route in ('cash', 'bank_transfer'):
+            with self.assertRaises(ProtocolError) as error:
+                self.service._v2_order_create({
+                    **self._payload(representative=representative), 'purchase_route': route,
+                })
+            self.assertEqual(error.exception.code, 'invalid_representative')
+        token = str(uuid4())
+        payload = {**self._payload(token), 'purchase_route': 'cash'}
+        created = self.service._v2_order_create(payload)
+        with self.assertRaises(ProtocolError) as error:
+            self.service._v2_order_create({**payload, 'purchase_route': 'bank_transfer'})
+        self.assertEqual(error.exception.code, 'idempotency_conflict')
+        with self.assertRaises(ProtocolError) as error:
+            self.service._v2_order_create({**payload, 'purchase_route': 'representative'})
+        self.assertEqual(error.exception.code, 'idempotency_conflict')
+        self.assertEqual(self.service._v2_order_create(payload)['order']['id'],
+                         created['order']['id'])
+        self.assertEqual(self.env['baseer.procurement.request'].sudo().search_count([
+            ('client_token', '=', token),
+        ]), 1)
+
+    def test_legacy_representative_fingerprint_and_explicit_route_replay(self):
+        representative = self._representative('Legacy route buyer')
+        payload = self._payload(representative=representative)
+        created = self.service._v2_order_create(payload)
+        order = self.env['baseer.procurement.request'].sudo().browse(created['order']['id'])
+        legacy_intent = {
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'representative_partner_id': representative.id,
+            'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
+        }
+        expected_hash = hashlib.sha256(json.dumps(
+            legacy_intent, sort_keys=True, separators=(',', ':'),
+        ).encode()).hexdigest()
+        self.assertEqual(order.client_payload_hash, expected_hash)
+        replay = self.service._v2_order_create({**payload, 'purchase_route': 'representative'})
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(replay['order']['id'], order.id)
+        self.assertEqual(replay['order']['purchase_route'], 'representative')
 
     def test_replay_keeps_original_representative_after_catalog_change(self):
         representative = self._representative('Original Buyer')

@@ -670,6 +670,11 @@
     <string name="order_choose_warehouse">"اختر المخزن"</string>
     <string name="order_choose_representative">"اختر مندوب المشتريات"</string>
     <string name="order_auto_representative">"المندوب تلقائيًا: %1$s"</string>
+    <string name="order_purchase_route">"طريقة الشراء"</string>
+    <string name="order_purchase_route_value">"طريقة الشراء: %1$s"</string>
+    <string name="order_route_representative">"مع مندوب المشتريات"</string>
+    <string name="order_route_cash">"نقدي"</string>
+    <string name="order_route_bank_transfer">"تحويل بنكي"</string>
     <string name="order_catalog">"المنيو"</string>
     <string name="order_mine">"كل الطلبات"</string>
     <string name="order_search">"ابحث عن صنف"</string>
@@ -746,7 +751,7 @@
     <string name="order_sent">"أُرسل الطلب %1$s إلى المشتريات."</string>
     <string name="order_confirmed">"الطلب %1$s موجود بالفعل على الخادم. تظهر حالته الحالية في «طلباتي»."</string>
     <string name="order_create_uncertain">"تعذّر تأكيد الإرسال؛ ربما وصل الطلب. راجع الطلب المعلّق قبل إنشاء غيره."</string>
-    <string name="order_pending_detail">"الشركة: %1$s\nرقم المخزن: %2$s\nرقم المندوب: %3$s\nمعرّف الطلب: %4$s\n\nربما وصل الطلب إلى الخادم. راجع «طلباتي» ثم أعد إرسال الطلب نفسه فقط إذا لزم."</string>
+    <string name="order_pending_detail">"الشركة: %1$s\nرقم المخزن: %2$s\nطريقة الشراء: %3$s\nمعرّف الطلب: %4$s\n\nربما وصل الطلب إلى الخادم. راجع «كل الطلبات» ثم أعد إرسال الطلب نفسه فقط إذا لزم."</string>
     <string name="order_pending_unreadable">"تعذّر قراءة الطلب المحلي. قد يكون وصل للمشتريات؛ راجع «طلباتي» قبل حذفه."</string>
     <string name="order_delete_warning">"قد يكون الطلب وصل للمشتريات. حذف النسخة المحلية لا يحذفه من الخادم وقد يؤدي إنشاء طلب جديد إلى تكراره. هل تؤكد؟"</string>
     <string name="order_local_deleted">"حُذفت النسخة المحلية فقط؛ راجع «طلباتي» قبل إنشاء بديل."</string>

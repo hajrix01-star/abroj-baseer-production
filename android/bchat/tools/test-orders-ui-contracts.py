@@ -20,6 +20,23 @@ def method(name):
 
 
 class OrdersUiContracts(unittest.TestCase):
+    def test_purchase_route_is_server_advertised_and_survives_pending_retry(self):
+        options = method('loadOrderCompanyOptions')
+        self.assertIn('body.optJSONArray("purchase_routes")', options)
+        self.assertIn('routes.add("representative")', options)
+        self.assertIn('orderPurchaseRoutes.contains(orderPurchaseRoute)', options)
+        self.assertIn('orderPurchaseRoute = "representative";', method('selectOrderCompany'))
+        submit = method('submitOrder')
+        self.assertIn('orderPurchaseRoutes.contains(orderPurchaseRoute)', submit)
+        self.assertIn('payload.put("purchase_route", orderPurchaseRoute)', submit)
+        self.assertIn('!"representative".equals(orderPurchaseRoute)', submit)
+        pending = SOURCE[SOURCE.index('private static final class PendingOrder'):
+                         SOURCE.index('private static final class PendingReceipt')]
+        self.assertIn('this.raw = raw;', pending)
+        self.assertIn('payload.has("purchase_route")', pending)
+        self.assertIn('"representative"', pending)
+        self.assertIn('pending.purchaseRoute.equals(created.purchaseRoute)', method('sendPendingOrder'))
+
     def test_tabs_are_outside_notice_overlay_and_have_fixed_underline(self):
         self.assertIn('orderContent.addView(orderNotice, orderNoticeSize);', SOURCE)
         self.assertIn('modulePane.addView(orderTabs);', SOURCE)

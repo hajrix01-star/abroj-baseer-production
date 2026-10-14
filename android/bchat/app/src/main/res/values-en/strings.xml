@@ -670,6 +670,11 @@
     <string name="order_choose_warehouse">"Choose warehouse"</string>
     <string name="order_choose_representative">"Choose purchasing representative"</string>
     <string name="order_auto_representative">"Representative selected automatically: %1$s"</string>
+    <string name="order_purchase_route">"Purchase route"</string>
+    <string name="order_purchase_route_value">"Purchase route: %1$s"</string>
+    <string name="order_route_representative">"With purchasing representative"</string>
+    <string name="order_route_cash">"Cash"</string>
+    <string name="order_route_bank_transfer">"Bank transfer"</string>
     <string name="order_catalog">"Menu"</string>
     <string name="order_mine">"All orders"</string>
     <string name="order_search">"Search products"</string>
@@ -746,7 +751,7 @@
     <string name="order_sent">"Order %1$s was sent to purchasing."</string>
     <string name="order_confirmed">"Order %1$s already exists on the server. Its current status is shown in My orders."</string>
     <string name="order_create_uncertain">"Sending could not be confirmed. The order may have arrived. Review the pending request before creating another."</string>
-    <string name="order_pending_detail">"Company: %1$s\nWarehouse ID: %2$s\nRepresentative ID: %3$s\nRequest ID: %4$s\n\nThe server may have received this order. Check My orders, then retry only this same request if needed."</string>
+    <string name="order_pending_detail">"Company: %1$s\nWarehouse ID: %2$s\nPurchase route: %3$s\nRequest ID: %4$s\n\nThe server may have received this order. Check All orders, then retry only this same request if needed."</string>
     <string name="order_pending_unreadable">"The local request cannot be read. It may have reached purchasing. Check My orders before deleting it."</string>
     <string name="order_delete_warning">"This order may have reached purchasing. Deleting the local copy does not remove it from the server and a new order could duplicate it. Continue?"</string>
     <string name="order_local_deleted">"Only the local copy was deleted. Check My orders before creating a replacement."</string>

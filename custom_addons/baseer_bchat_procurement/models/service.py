@@ -22,6 +22,7 @@ MAX_CART_LINES = 100
 MAX_OPTIONS = 100
 MAX_RESPONSE_BYTES = 65536
 MAX_ROOM_MESSAGE_BYTES = 16384
+PURCHASE_ROUTES = ('representative', 'cash', 'bank_transfer')
 
 
 class BChatProcurementService(models.AbstractModel):
@@ -130,6 +131,13 @@ class BChatProcurementService(models.AbstractModel):
             {'id': company_id, 'name': self._label(scope.env.company.name)}
             for company_id, scope in scopes.items()
         ]}
+        if access == 'operator':
+            selection = dict(self.env['baseer.procurement.request']._fields[
+                'purchase_route']._description_selection(self.env))
+            result['purchase_routes'] = [
+                {'code': code, 'name': self._label(selection[code])}
+                for code in PURCHASE_ROUTES
+            ]
         if company_id is None:
             return result
         self._require_order_operator()
@@ -239,6 +247,7 @@ class BChatProcurementService(models.AbstractModel):
 
     @api.model
     def _order_data(self, order):
+        representative = order.representative_partner_id
         return {
             'id': order.id, 'name': self._label(order.name, 80),
             'company_id': order.company_id.id,
@@ -246,8 +255,10 @@ class BChatProcurementService(models.AbstractModel):
             'requester_id': order.requester_id.id,
             'requester_name': self._label(order.requester_id.name),
             'state': order.state,
-            'representative_id': order.representative_partner_id.id,
-            'representative_name': self._label(order.representative_partner_id.display_name),
+            'purchase_route': order.purchase_route,
+            'purchase_route_name': self._label(order._purchase_route_label()),
+            'representative_id': representative.id or None,
+            'representative_name': self._label(representative.display_name) if representative else '',
             'requested_total': self._money(order.requested_total),
             'currency_symbol': self._label(order.currency_id.symbol or order.currency_id.name, 16),
             'submitted_at': self._stamp(order.internal_submitted_at),
@@ -268,7 +279,7 @@ class BChatProcurementService(models.AbstractModel):
 
     @api.model
     def _order_room_text(self, order):
-        lines = [f'طلب شراء {self._label(order.name, 80)}']
+        lines = [f'طلب شراء {self._label(order.name, 80)} — {self._label(order._purchase_route_label())}']
         for line in order.line_ids.sorted('id'):
             option = line.option_id
             product_name = self._label(option.product_id.name)
@@ -477,13 +488,20 @@ class BChatProcurementService(models.AbstractModel):
         legacy_fields = {
                 'api_version', 'company_id', 'warehouse_id',
                 'representative_partner_id', 'client_uuid', 'lines'}
-        if type(payload) is not dict or set(payload) not in (legacy_fields, legacy_fields | {'room_id'}):
+        optional_fields = {'room_id', 'purchase_route'}
+        if (type(payload) is not dict or not legacy_fields <= set(payload)
+                or set(payload) - legacy_fields - optional_fields):
             raise ProtocolError('invalid_payload', 'Unexpected order fields.')
         if type(payload['api_version']) is not int or payload['api_version'] != 2:
             raise ProtocolError('invalid_payload', 'Unsupported order API version.')
         company_id = positive_id(payload['company_id'], 'company_id')
         warehouse_id = positive_id(payload['warehouse_id'], 'warehouse_id')
+        purchase_route = payload.get('purchase_route', 'representative')
+        if type(purchase_route) is not str or purchase_route not in PURCHASE_ROUTES:
+            raise ProtocolError('invalid_purchase_route', 'Choose a valid purchase route.')
         selected = payload['representative_partner_id']
+        if purchase_route != 'representative' and selected is not None:
+            raise ProtocolError('invalid_representative', 'This purchase route cannot have a representative.')
         if selected is not None:
             selected = positive_id(selected, 'representative_partner_id')
         token = canonical_uuid(payload['client_uuid'])
@@ -514,6 +532,9 @@ class BChatProcurementService(models.AbstractModel):
         normalized.sort(key=lambda row: row['option_id'])
         intent = {'company_id': company_id, 'warehouse_id': warehouse_id,
                   'representative_partner_id': selected, 'lines': normalized}
+        # Explicit representative matches old v48 fingerprints byte for byte.
+        if purchase_route != 'representative':
+            intent['purchase_route'] = purchase_route
         if 'room_id' in payload:
             intent['room_id'] = room_id
         digest = hashlib.sha256(json.dumps(intent, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
@@ -534,19 +555,21 @@ class BChatProcurementService(models.AbstractModel):
         warehouse = scoped.env['stock.warehouse'].sudo().browse(warehouse_id).exists()
         if not warehouse or warehouse.company_id.id != company_id or not warehouse.active:
             raise ProtocolError('invalid_warehouse', 'Choose a warehouse in this company.', 400)
-        representatives = scoped._representatives()
-        if not representatives:
-            raise ProtocolError('no_representative', 'No purchase representative is available in this company.', 409)
-        if len(representatives) == 1:
-            representative = representatives[0]
-            if selected is not None and selected != representative.id:
-                raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
-        else:
-            if selected is None:
-                raise ProtocolError('representative_required', 'Choose a purchase representative.', 409)
-            representative = representatives.filtered(lambda row: row.id == selected)
-            if not representative:
-                raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
+        representative = False
+        if purchase_route == 'representative':
+            representatives = scoped._representatives()
+            if not representatives:
+                raise ProtocolError('no_representative', 'No purchase representative is available in this company.', 409)
+            if len(representatives) == 1:
+                representative = representatives[0]
+                if selected is not None and selected != representative.id:
+                    raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
+            else:
+                if selected is None:
+                    raise ProtocolError('representative_required', 'Choose a purchase representative.', 409)
+                representative = representatives.filtered(lambda row: row.id == selected)
+                if not representative:
+                    raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
         options = scoped.env['baseer.procurement.purchase.option'].sudo().browse(
             [row['option_id'] for row in normalized]).exists()
         if len(options) != len(normalized):
@@ -560,7 +583,9 @@ class BChatProcurementService(models.AbstractModel):
             raise ProtocolError('invalid_option', 'A material appears twice in the cart.', 400)
         values = {
             'company_id': company_id, 'warehouse_id': warehouse_id,
-            'representative_partner_id': representative.id, 'requester_id': user_id,
+            'purchase_route': purchase_route,
+            'representative_partner_id': representative.id if representative else False,
+            'requester_id': user_id,
             'state': 'sent', 'source_channel': 'bchat',
             'internal_submitted_at': fields.Datetime.now(),
             'client_token': token, 'client_payload_hash': digest,

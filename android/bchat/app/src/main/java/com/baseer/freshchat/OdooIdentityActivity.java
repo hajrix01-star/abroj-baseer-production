@@ -295,7 +295,9 @@ public final class OdooIdentityActivity extends Activity {
     private boolean orderLoadingVisible;
     private LinearLayout orderDetailsPanel, orderFiltersRow, orderPagingRow;
     private Button orderDetailsButton, orderPreviousButton;
-    private Button orderWarehouseButton, orderRepresentativeButton;
+    private Button orderWarehouseButton, orderRepresentativeButton, orderCartRouteButton,
+            orderCartRepresentativeButton;
+    private TextView orderCartContextView;
     private TextView orderHeaderCompanyButton;
     private TextView chatHeaderCompanyButton;
     private long selectedChatCompanyId;
@@ -307,6 +309,7 @@ public final class OdooIdentityActivity extends Activity {
     private final Set<Long> deniedOrderCompanyIds = new HashSet<>();
     private final List<TaskChoice> orderWarehouses = new ArrayList<>();
     private final List<TaskChoice> orderRepresentatives = new ArrayList<>();
+    private final List<String> orderPurchaseRoutes = new ArrayList<>();
     private final List<TaskChoice> orderCategories = new ArrayList<>();
     private final List<OrderOption> orderOptions = new ArrayList<>();
     private final List<OrderSummary> orderSummaries = new ArrayList<>();
@@ -323,6 +326,7 @@ public final class OdooIdentityActivity extends Activity {
     private TextView orderCartTotalView;
     private OrderCartLine lastRemovedOrderLine;
     private long orderCompanyId, orderWarehouseId, orderRepresentativeId, orderCategoryId;
+    private String orderPurchaseRoute = "representative";
     private long orderCatalogAfterId, orderListBeforeId;
     private long receiptBeforeId;
     private long orderCurrentPageStartId;
@@ -3914,6 +3918,8 @@ public final class OdooIdentityActivity extends Activity {
         orderCompanyOptionsLoaded = false;
         orderWarehouses.clear();
         orderRepresentatives.clear();
+        orderPurchaseRoutes.clear();
+        orderPurchaseRoute = "representative";
         orderCategories.clear();
         orderOptions.clear();
         orderSummaries.clear();
@@ -8225,7 +8231,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private static final class OrderSummary {
         final long id, representativeId, roomId, companyId, requesterId;
-        final String name, state, representative, total, currency, submittedAt,
+        final String name, state, representative, purchaseRoute, total, currency, submittedAt,
                 companyName, requesterName;
         OrderSummary(JSONObject item) throws Exception { this(item, false); }
         OrderSummary(JSONObject item, boolean allScope) throws Exception {
@@ -8240,6 +8246,9 @@ public final class OdooIdentityActivity extends Activity {
                     || "purchased".equals(state) || "cancel".equals(state)))
                 throw new IllegalArgumentException();
             representative = boundedTaskText(item.optString("representative_name", ""), 256, false);
+            purchaseRoute = item.optString("purchase_route", "representative");
+            if (!("representative".equals(purchaseRoute) || "cash".equals(purchaseRoute)
+                    || "bank_transfer".equals(purchaseRoute))) throw new IllegalArgumentException();
             Object repId = item.opt("representative_id");
             representativeId = repId == null || repId == JSONObject.NULL ? 0 : positiveId(repId);
             Object rawRoom = item.opt("room_id");
@@ -8480,7 +8489,8 @@ public final class OdooIdentityActivity extends Activity {
                 ? getString(R.string.order_auto_representative, orderRepresentatives.get(0).name)
                 : orderChoiceName(orderRepresentatives, orderRepresentativeId,
                         R.string.order_choose_representative));
-        boolean representativeChoice = orderCompanyId > 0 && orderRepresentatives.size() > 1;
+        boolean representativeChoice = orderCompanyId > 0
+                && "representative".equals(orderPurchaseRoute) && orderRepresentatives.size() > 1;
         orderRepresentativeButton.setVisibility(representativeChoice ? View.VISIBLE : View.GONE);
         orderRepresentativeButton.setEnabled(orderRepresentatives.size() > 1);
         orderDetailsButton.setVisibility(warehouseChoice || representativeChoice
@@ -8492,6 +8502,7 @@ public final class OdooIdentityActivity extends Activity {
                 : representativeChoice && orderRepresentativeId == 0
                 ? getString(R.string.order_choose_representative)
                 : getString(R.string.order_details));
+        refreshOrderCartRoute();
         orderCategoryButton.setText(orderChoiceName(orderCategories, orderCategoryId,
                 R.string.order_all_categories));
         orderCategoryButton.setContentDescription(orderChoiceName(orderCategories, orderCategoryId,
@@ -8535,6 +8546,8 @@ public final class OdooIdentityActivity extends Activity {
         orderCompanies.clear();
         orderWarehouses.clear();
         orderRepresentatives.clear();
+        orderPurchaseRoutes.clear();
+        orderPurchaseRoute = "representative";
         orderCategories.clear();
         orderOptions.clear();
         orderSummaries.clear();
@@ -8598,6 +8611,8 @@ public final class OdooIdentityActivity extends Activity {
         orderCompanyOptionsLoaded = false;
         orderWarehouses.clear();
         orderRepresentatives.clear();
+        orderPurchaseRoutes.clear();
+        orderPurchaseRoute = "representative";
         orderCategories.clear();
         orderOptions.clear();
         orderSummaries.clear();
@@ -8705,6 +8720,8 @@ public final class OdooIdentityActivity extends Activity {
                     orderCompanyOptionsLoaded = false;
                     orderWarehouses.clear();
                     orderRepresentatives.clear();
+                    orderPurchaseRoutes.clear();
+                    orderPurchaseRoute = "representative";
                     orderCategories.clear();
                     orderOptions.clear();
                     orderCart.clear();
@@ -8718,6 +8735,8 @@ public final class OdooIdentityActivity extends Activity {
                     orderCompanyOptionsLoaded = false;
                     orderCompanyPreferences().edit().remove(ORDER_COMPANY_SELECTED).apply();
                     orderWarehouseId = orderRepresentativeId = orderCategoryId = 0;
+                    orderPurchaseRoutes.clear();
+                    orderPurchaseRoute = "representative";
                     orderCart.clear();
                     lastRemovedOrderLine = null;
                     invalidateOrderQuote();
@@ -8805,6 +8824,8 @@ public final class OdooIdentityActivity extends Activity {
             orderCompanyId = companyId;
             orderCompanyOptionsLoaded = false;
             orderWarehouseId = orderRepresentativeId = orderCategoryId = 0;
+            orderPurchaseRoute = "representative";
+            orderPurchaseRoutes.clear();
             orderCart.clear();
             lastRemovedOrderLine = null;
             invalidateOrderQuote();
@@ -8853,11 +8874,39 @@ public final class OdooIdentityActivity extends Activity {
                 List<TaskChoice> warehouses = choices(body.getJSONArray("warehouses"), 100, false);
                 List<TaskChoice> representatives = choices(body.getJSONArray("representatives"), 100, false);
                 List<TaskChoice> categories = choices(body.getJSONArray("categories"), 100, false);
+                List<String> routes = new ArrayList<>();
+                JSONArray advertisedRoutes = body.optJSONArray("purchase_routes");
+                if (body.has("purchase_routes") && advertisedRoutes == null)
+                    throw new IllegalArgumentException();
+                if (advertisedRoutes == null) {
+                    routes.add("representative"); // Older BChat servers only support this route.
+                } else {
+                    if (advertisedRoutes.length() < 1 || advertisedRoutes.length() > 3)
+                        throw new IllegalArgumentException();
+                    for (int i = 0; i < advertisedRoutes.length(); i++) {
+                        JSONObject route = advertisedRoutes.getJSONObject(i);
+                        if (route.length() != 2 || !route.has("name"))
+                            throw new IllegalArgumentException();
+                        String code = route.getString("code");
+                        boundedTaskText(route.getString("name"), 80, true);
+                        if (!("representative".equals(code) || "cash".equals(code)
+                                || "bank_transfer".equals(code)) || routes.contains(code))
+                            throw new IllegalArgumentException();
+                        routes.add(code);
+                    }
+                }
                 orderCompanyOptionsLoaded = true;
                 orderWarehouses.clear();
                 orderWarehouses.addAll(warehouses);
                 orderRepresentatives.clear();
                 orderRepresentatives.addAll(representatives);
+                orderPurchaseRoutes.clear();
+                orderPurchaseRoutes.addAll(routes);
+                if (!orderPurchaseRoutes.contains(orderPurchaseRoute)) {
+                    orderPurchaseRoute = orderPurchaseRoutes.contains("representative")
+                            ? "representative" : orderPurchaseRoutes.get(0);
+                    orderRepresentativeId = 0;
+                }
                 orderCategories.clear();
                 orderCategories.addAll(categories);
                 boolean warehouseValid = false, representativeValid = false, categoryValid = false;
@@ -8872,7 +8921,8 @@ public final class OdooIdentityActivity extends Activity {
                 updateOrderSelectors();
                 if (!orderCart.isEmpty() && orderQuoteTotal == null) scheduleOrderQuote();
                 if (warehouses.isEmpty()) orderNotice.setText(R.string.order_no_warehouse);
-                else if (representatives.isEmpty()) orderNotice.setText(R.string.order_no_representative);
+                else if ("representative".equals(orderPurchaseRoute) && representatives.isEmpty())
+                    orderNotice.setText(R.string.order_no_representative);
                 else orderNotice.setText("");
                 if (orderReceiving) loadReceipts(0);
                 else if (orderMine) loadOrderSummaries(0);
@@ -9476,6 +9526,8 @@ public final class OdooIdentityActivity extends Activity {
                     companyNameForId(order.companyId, order.companyName)), 12, Ui.MUTED, false));
             card.addView(Ui.text(this, getString(R.string.order_summary_requester,
                     order.requesterName), 12, Ui.MUTED, false));
+            card.addView(Ui.text(this, getString(R.string.order_purchase_route_value,
+                    orderRouteLabel(order.purchaseRoute)), 12, Ui.MUTED, false));
             if (!order.representative.isEmpty()) {
                 TextView representative = Ui.text(this,
                         getString(R.string.order_summary_representative, order.representative),
@@ -9889,6 +9941,8 @@ public final class OdooIdentityActivity extends Activity {
                 companyNameForId(detail.companyId, detail.companyName)), 12, Ui.MUTED, false));
         content.addView(Ui.text(this, getString(R.string.order_summary_requester,
                 detail.requesterName), 12, Ui.MUTED, false));
+        content.addView(Ui.text(this, getString(R.string.order_purchase_route_value,
+                orderRouteLabel(detail.purchaseRoute)), 12, Ui.MUTED, false));
         if (!detail.submittedAt.isEmpty()) {
             TextView date = Ui.text(this, formatMessageTime(detail.submittedAt),
                     12, Ui.MUTED, false);
@@ -9971,6 +10025,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private String previousOrderShareText(OrderSummary detail, List<PreviousOrderLine> lines) {
         StringBuilder text = new StringBuilder(getString(R.string.order_share_heading, detail.name));
+        text.append('\n').append(getString(R.string.order_purchase_route_value,
+                orderRouteLabel(detail.purchaseRoute)));
         for (PreviousOrderLine line : lines)
             text.append('\n').append(getString(R.string.order_share_line,
                     line.product, line.option, line.quantity));
@@ -10064,6 +10120,60 @@ public final class OdooIdentityActivity extends Activity {
         return R.string.order_state_cancel;
     }
 
+    private String orderRouteLabel(String route) {
+        if ("cash".equals(route)) return getString(R.string.order_route_cash);
+        if ("bank_transfer".equals(route)) return getString(R.string.order_route_bank_transfer);
+        return getString(R.string.order_route_representative);
+    }
+
+    private void refreshOrderCartRoute() {
+        if (orderCartRouteButton != null) {
+            orderCartRouteButton.setText(getString(R.string.order_purchase_route_value,
+                    orderRouteLabel(orderPurchaseRoute)));
+            orderCartRouteButton.setVisibility(orderPurchaseRoutes.size() > 1
+                    ? View.VISIBLE : View.GONE);
+        }
+        if (orderCartRepresentativeButton != null) {
+            boolean chooseRepresentative = "representative".equals(orderPurchaseRoute)
+                    && orderRepresentatives.size() > 1;
+            orderCartRepresentativeButton.setVisibility(chooseRepresentative
+                    ? View.VISIBLE : View.GONE);
+            if (chooseRepresentative) orderCartRepresentativeButton.setText(
+                    orderChoiceName(orderRepresentatives, orderRepresentativeId,
+                            R.string.order_choose_representative));
+        }
+        if (orderCartContextView != null) {
+            String route = orderRouteLabel(orderPurchaseRoute);
+            if ("representative".equals(orderPurchaseRoute)) {
+                String representative = orderRepresentatives.size() == 1
+                        ? orderRepresentatives.get(0).name
+                        : orderChoiceName(orderRepresentatives, orderRepresentativeId,
+                                R.string.order_choose_representative);
+                route += " · " + representative;
+            }
+            orderCartContextView.setText(getString(R.string.order_cart_context,
+                    orderChoiceName(orderCompanies, orderCompanyId, R.string.order_choose_company),
+                    orderChoiceName(orderWarehouses, orderWarehouseId, R.string.order_choose_warehouse),
+                    route));
+        }
+    }
+
+    private void chooseOrderPurchaseRoute() {
+        if (orderPurchaseRoutes.size() < 2) return;
+        String[] labels = new String[orderPurchaseRoutes.size()];
+        for (int i = 0; i < labels.length; i++)
+            labels[i] = orderRouteLabel(orderPurchaseRoutes.get(i));
+        int selected = orderPurchaseRoutes.indexOf(orderPurchaseRoute);
+        new AlertDialog.Builder(this).setTitle(R.string.order_purchase_route)
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    orderPurchaseRoute = orderPurchaseRoutes.get(which);
+                    if (!"representative".equals(orderPurchaseRoute)) orderRepresentativeId = 0;
+                    orderDetailsPanel.setVisibility(View.GONE);
+                    updateOrderSelectors();
+                    dialog.dismiss();
+                }).setNegativeButton(R.string.chat_v2_cancel, null).show();
+    }
+
     private void reviewOrderCart() {
         if (orderMine || orderReceiving) return;
         if (orderCart.isEmpty()) { orderNotice.setText(R.string.order_empty_cart); return; }
@@ -10071,13 +10181,16 @@ public final class OdooIdentityActivity extends Activity {
         if (orderCartDialog != null && orderCartDialog.isShowing()) return;
         LinearLayout content = Ui.column(this);
         Ui.pad(content, 12, 4);
-        TextView context = Ui.text(this, getString(R.string.order_cart_context,
-                orderChoiceName(orderCompanies, orderCompanyId, R.string.order_choose_company),
-                orderChoiceName(orderWarehouses, orderWarehouseId, R.string.order_choose_warehouse),
-                orderRepresentatives.size() == 1 ? orderRepresentatives.get(0).name
-                        : orderChoiceName(orderRepresentatives, orderRepresentativeId,
-                                R.string.order_choose_representative)), 12, Ui.MUTED, false);
-        content.addView(context);
+        orderCartContextView = Ui.text(this, "", 12, Ui.MUTED, false);
+        content.addView(orderCartContextView);
+        orderCartRouteButton = orderChoiceButton(R.string.order_purchase_route,
+                this::chooseOrderPurchaseRoute);
+        content.addView(orderCartRouteButton, fieldSize(4));
+        orderCartRepresentativeButton = orderChoiceButton(R.string.order_choose_representative,
+                () -> chooseOrderChoice(orderRepresentatives, R.string.order_choose_representative,
+                        choice -> { orderRepresentativeId = choice.id; updateOrderSelectors(); }));
+        content.addView(orderCartRepresentativeButton, fieldSize(4));
+        refreshOrderCartRoute();
         ScrollView scroll = new ScrollView(this);
         orderCartLinesView = Ui.column(this);
         scroll.addView(orderCartLinesView);
@@ -10100,6 +10213,9 @@ public final class OdooIdentityActivity extends Activity {
             orderCartDialog = null;
             orderCartLinesView = null;
             orderCartTotalView = null;
+            orderCartContextView = null;
+            orderCartRouteButton = null;
+            orderCartRepresentativeButton = null;
         });
         renderOrderCartLines();
         orderCartDialog.show();
@@ -10247,14 +10363,15 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private static final class PendingOrder {
-        final String scope, raw, uuid;
+        final String scope, raw, uuid, purchaseRoute;
         final long companyId, warehouseId, representativeId, roomId;
         PendingOrder(AccountScope account, String raw) throws Exception {
             if (account == null || raw == null || raw.length() > 24000)
                 throw new IllegalArgumentException();
             JSONObject payload = new JSONObject(raw);
             boolean hasRoom = payload.has("room_id");
-            if (payload.length() != (hasRoom ? 7 : 6)
+            boolean hasRoute = payload.has("purchase_route");
+            if (payload.length() != 6 + (hasRoom ? 1 : 0) + (hasRoute ? 1 : 0)
                     || positiveId(payload.get("api_version")) != 2)
                 throw new IllegalArgumentException();
             scope = account.key;
@@ -10266,6 +10383,11 @@ public final class OdooIdentityActivity extends Activity {
             warehouseId = positiveId(payload.get("warehouse_id"));
             Object rep = payload.get("representative_partner_id");
             representativeId = rep == JSONObject.NULL ? 0 : positiveId(rep);
+            purchaseRoute = hasRoute ? payload.getString("purchase_route") : "representative";
+            if (!("representative".equals(purchaseRoute) || "cash".equals(purchaseRoute)
+                    || "bank_transfer".equals(purchaseRoute))
+                    || (!"representative".equals(purchaseRoute) && representativeId != 0))
+                throw new IllegalArgumentException();
             Object room = hasRoom ? payload.get("room_id") : JSONObject.NULL;
             roomId = room == JSONObject.NULL ? 0 : positiveId(room);
             JSONArray lines = payload.getJSONArray("lines");
@@ -10558,11 +10680,16 @@ public final class OdooIdentityActivity extends Activity {
             orderNotice.setText(R.string.order_missing_fields);
             return;
         }
-        if (orderRepresentatives.isEmpty()) {
+        if (!orderPurchaseRoutes.contains(orderPurchaseRoute)) {
+            orderNotice.setText(R.string.order_load_failed);
+            return;
+        }
+        if ("representative".equals(orderPurchaseRoute) && orderRepresentatives.isEmpty()) {
             orderNotice.setText(R.string.order_no_representative);
             return;
         }
-        if (orderRepresentatives.size() > 1 && orderRepresentativeId == 0) {
+        if ("representative".equals(orderPurchaseRoute)
+                && orderRepresentatives.size() > 1 && orderRepresentativeId == 0) {
             orderNotice.setText(R.string.order_choose_representative);
             return;
         }
@@ -10579,7 +10706,11 @@ public final class OdooIdentityActivity extends Activity {
             payload.put("company_id", orderCompanyId);
             payload.put("warehouse_id", orderWarehouseId);
             payload.put("representative_partner_id",
-                    orderRepresentatives.size() == 1 ? JSONObject.NULL : orderRepresentativeId);
+                    !"representative".equals(orderPurchaseRoute)
+                            || orderRepresentatives.size() == 1
+                            ? JSONObject.NULL : orderRepresentativeId);
+            if (!"representative".equals(orderPurchaseRoute))
+                payload.put("purchase_route", orderPurchaseRoute);
             payload.put("client_uuid", UUID.randomUUID().toString());
             payload.put("lines", lines);
             payload.put("room_id", roomId == 0 ? JSONObject.NULL : roomId);
@@ -10611,6 +10742,7 @@ public final class OdooIdentityActivity extends Activity {
                     throw new IllegalArgumentException();
                 OrderSummary created = new OrderSummary(body.getJSONObject("order"));
                 if ((!body.getBoolean("replayed") && !"sent".equals(created.state))
+                        || !pending.purchaseRoute.equals(created.purchaseRoute)
                         || (pending.representativeId > 0
                                 && created.representativeId != pending.representativeId)
                         || created.roomId != pending.roomId
@@ -10675,7 +10807,7 @@ public final class OdooIdentityActivity extends Activity {
                             orderChoiceName(orderCompanies, pending.companyId,
                                     R.string.order_choose_company),
                             String.valueOf(pending.warehouseId),
-                            String.valueOf(pending.representativeId),
+                            orderRouteLabel(pending.purchaseRoute),
                             pending.uuid))
                     .setPositiveButton(R.string.task_retry_same, (dialog, which) ->
                             sendPendingOrder(pending))

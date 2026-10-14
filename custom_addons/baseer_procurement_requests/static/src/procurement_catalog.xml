@@ -7,7 +7,7 @@
                     <span class="o_prc_pos_mark" aria-hidden="true"><i class="fa fa-shopping-basket"/></span>
                     <div>
                         <h1><t t-if="state.existingRequest">Receipt confirmation cart</t><t t-else="">New procurement request</t></h1>
-                        <p><t t-if="state.existingRequest"><t t-esc="state.existingRequest.name"/> <span aria-hidden="true">·</span> <t>Update the quantities in the cart, then confirm receipt.</t></t><t t-else="">Choose raw materials, review the cart, then send it manually through WhatsApp.</t></p>
+                        <p><t t-if="state.existingRequest"><t t-esc="state.existingRequest.name"/> <span aria-hidden="true">·</span> <t>Update the quantities in the cart, then confirm receipt.</t></t><t t-else="">Choose raw materials, a purchase route, and review the cart.</t></p>
                     </div>
                 </div>
                 <div class="o_prc_pos_steps" aria-label="Request workflow">
@@ -45,11 +45,11 @@
                 </div>
                 <div t-if="state.recentLoading" class="o_prc_state_panel"><span class="o_prc_inline_loader"/><p>Loading previous requests…</p></div>
                 <div t-elif="state.recentError and !state.recentRequests.length" class="o_prc_state_panel"><h2>Could not load previous requests</h2><button type="button" class="btn btn-primary" t-on-click="loadRecentRequests">Try again</button></div>
-                <div t-elif="!state.recentRequests.length" class="o_prc_state_panel"><h2>No previous requests</h2><p>Saved requests and requests sent to a representative will appear here.</p></div>
+                <div t-elif="!state.recentRequests.length" class="o_prc_state_panel"><h2>No previous requests</h2><p>Saved and sent purchase requests will appear here.</p></div>
                 <div t-else="">
                     <div class="o_prc_recent_grid">
                         <button t-foreach="state.recentRequests" t-as="request" t-key="request.id" type="button" class="o_prc_recent_card" t-on-click="() => this.openRecentRequest(request)">
-                            <span class="o_prc_recent_state" t-esc="recentStateLabel(request)"/><strong t-esc="request.name"/><small><t t-esc="request.line_count"/> <t>items</t> <span aria-hidden="true">·</span> <t t-esc="request.request_date"/></small><b t-esc="recentMoneyText(request)"/>
+                            <span class="o_prc_recent_state" t-esc="recentStateLabel(request)"/><strong t-esc="request.name"/><span class="o_prc_route_badge" t-esc="request.purchase_route_label"/><small><t t-esc="request.line_count"/> <t>items</t> <span aria-hidden="true">·</span> <t t-esc="request.request_date"/></small><b t-esc="recentMoneyText(request)"/>
                         </button>
                     </div>
                     <p t-if="state.recentError" class="o_prc_recent_inline_error">Could not load more requests. Try again.</p>
@@ -195,6 +195,12 @@
                     </header>
 
                     <div class="o_prc_request_fields">
+                        <div t-if="!state.existingRequest" class="o_prc_purchase_routes" role="group" aria-label="Purchase route">
+                            <button type="button" t-att-aria-pressed="state.purchaseRoute === 'cash' ? 'true' : 'false'" t-on-click="() => this.setPurchaseRoute('cash')">Cash</button>
+                            <button type="button" t-att-aria-pressed="state.purchaseRoute === 'bank_transfer' ? 'true' : 'false'" t-on-click="() => this.setPurchaseRoute('bank_transfer')">Bank Transfer</button>
+                            <button type="button" t-att-aria-pressed="state.purchaseRoute === 'representative' ? 'true' : 'false'" t-on-click="() => this.setPurchaseRoute('representative')">Purchase Representative</button>
+                        </div>
+                        <p t-else="" class="o_prc_route_badge" t-esc="state.existingRequest.purchase_route_label"/>
                         <label t-if="!state.existingRequest and state.warehouses.length > 1">
                             <span>Warehouse <b>*</b></span>
                             <select t-att-value="state.warehouseId || ''" t-on-change="onWarehouseChange" aria-label="Warehouse">
@@ -203,14 +209,14 @@
                             </select>
                         </label>
                         <p t-elif="!state.existingRequest and !state.warehouses.length" class="o_prc_field_error" role="alert">No warehouse is configured for this company. Ask the company manager to add one before saving a purchase request.</p>
-                        <label t-if="!state.existingRequest">
+                        <label t-if="!state.existingRequest and state.purchaseRoute === 'representative'">
                             <span>Purchase representative <b>*</b></span>
                             <select t-att-value="state.representativePartnerId || ''" t-on-change="onRepresentativeChange" aria-label="Purchase representative">
                                 <option value="">Choose a representative</option>
                                 <option t-foreach="state.representatives" t-as="representative" t-key="representative.id" t-att-value="representative.id" t-esc="representative.name"/>
                             </select>
                         </label>
-                        <label t-else="">
+                        <label t-if="state.existingRequest and state.purchaseRoute === 'representative'">
                             <span>Purchase representative</span>
                             <select disabled="disabled" aria-label="Request purchase representative">
                                 <option t-if="state.existingRequest.representative_name" t-esc="state.existingRequest.representative_name"/>
@@ -263,7 +269,7 @@
                         <p t-elif="state.quoteError" class="o_prc_cart_warning">The total could not be calculated. Check the quantities and prices.</p>
                         <div class="o_prc_cart_actions">
                             <button t-if="!state.existingRequest" type="button" class="btn btn-light" t-on-click="() => this.saveDraft(false)" t-att-disabled="!canSave"><i class="fa fa-save" aria-hidden="true"/> Save request</button>
-                            <button type="button" class="btn btn-primary" t-on-click="() => this.saveDraft(!state.existingRequest)" t-att-disabled="!canSave"><i t-att-class="state.existingRequest ? 'fa fa-check' : 'fa fa-whatsapp'" aria-hidden="true"/> <t t-if="state.existingRequest">Confirm receipt</t><t t-else="">Save and open WhatsApp</t></button>
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.saveDraft(!state.existingRequest)" t-att-disabled="!canSave"><i t-att-class="state.existingRequest ? 'fa fa-check' : (state.purchaseRoute === 'representative' ? 'fa fa-whatsapp' : 'fa fa-paper-plane')" aria-hidden="true"/> <t t-if="state.existingRequest">Confirm receipt</t><t t-elif="state.purchaseRoute === 'representative'">Save and open WhatsApp</t><t t-else="">Save and send request</t></button>
                         </div>
                     </footer>
                 </aside>

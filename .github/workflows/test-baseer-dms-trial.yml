@@ -26,11 +26,10 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@v4
-      - name: Characterize company access and duplicate limits
+      - name: Verify destination access, atomic moves and existing private trial rules
         shell: bash
         run: |
           set -Eeuo pipefail
-          printf '%s\n' 'QA owner-only waiver: dms_known_defect retains the failing native move assertion; it is NOT fixed and is excluded only from this private evaluation gate.'
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
@@ -39,5 +38,5 @@ jobs:
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/oca-dms \
             -d baseer_dms_trial_ci -i baseer_dms_trial --without-demo=all \
-            --test-enable --test-tags=/baseer_dms_trial,-dms_known_defect \
+            --test-enable --test-tags=/baseer_dms_trial \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

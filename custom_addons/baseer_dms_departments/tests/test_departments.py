@@ -79,6 +79,56 @@ class DepartmentFixtures(BillFixtures):
 
 @tagged('post_install', '-at_install', 'baseer_dms_departments')
 class TestDepartments(DepartmentFixtures, TransactionCase):
+    def test_fresh_companies_create_distinct_private_groups_without_override(self):
+        companies = self.env['res.company'].create([
+            {'name': 'Synthetic fresh private company A'},
+            {'name': 'Synthetic fresh private company B'},
+        ])
+        self.owner.company_ids |= companies
+        scoped = companies.with_user(self.owner).with_context(allowed_company_ids=companies.ids)
+        self.assertFalse(scoped.env.su)
+        groups = self.env['dms.access.group']
+        storages = self.env['dms.storage']
+        directories = self.env['dms.directory']
+        before_group_ids = set(groups.search([]).ids)
+        before_storage_ids = set(storages.search([]).ids)
+        before_directory_ids = set(directories.search([]).ids)
+        # Exercise the actual first-install path: no shared fixture group.
+        topology = scoped._setup_dms_departments()
+        self.assertEqual(set(topology), set(companies.ids))
+        created_groups = groups.search([('id', 'not in', list(before_group_ids))])
+        created_storages = storages.search([('id', 'not in', list(before_storage_ids))])
+        created_directories = directories.search([('id', 'not in', list(before_directory_ids))])
+        self.assertEqual(len(created_groups), 2)
+        self.assertEqual(len(set(created_groups.mapped('name'))), 2)
+        self.assertEqual(len(created_storages), 2)
+        self.assertEqual(len(created_directories), 16)
+        root_ids, private_group_ids = set(), set()
+        for company in companies:
+            root = company.dms_company_root_id
+            root_ids.add(root.id)
+            self.assertEqual(root.id, topology[company.id]['root'])
+            self.assertFalse(root.parent_id)
+            self.assertEqual(root.company_id, company)
+            self.assertEqual(root.storage_id.company_id, company)
+            self.assertEqual(len(root.group_ids), 1)
+            private_group_ids.update(root.group_ids.ids)
+            self.assertEqual(set(root.group_ids.explicit_user_ids.ids), {self.owner.id})
+            self.assertIn(str(company.id), root.group_ids.name)
+            self.assertEqual(len(topology[company.id]), 8)
+            for directory in directories.browse(list(topology[company.id].values())):
+                self.assertEqual(directory.company_id, company)
+                self.assertEqual(directory.storage_id, root.storage_id)
+                self.assertEqual(set(directory.group_ids.explicit_user_ids.ids), {self.owner.id})
+                self.assertFalse(directory.access_token)
+        self.assertEqual(len(root_ids), 2)
+        self.assertEqual(private_group_ids, set(created_groups.ids))
+        after_ids = (set(groups.search([]).ids), set(storages.search([]).ids),
+                     set(directories.search([]).ids))
+        self.assertEqual(scoped._setup_dms_departments(), topology)
+        self.assertEqual((set(groups.search([]).ids), set(storages.search([]).ids),
+                          set(directories.search([]).ids)), after_ids)
+
     def test_directory_search_panel_handles_hierarchy_counters_and_private_metadata(self):
         empty_folders = self.env['dms.directory'].search([
             ('managed_key', 'in', [f'{self.company_a.id}:sales', f'{self.company_a.id}:administration']),

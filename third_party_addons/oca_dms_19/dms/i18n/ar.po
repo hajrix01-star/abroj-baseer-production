@@ -2300,3 +2300,27 @@ msgstr "mail.catchall.domain"
 
 #~ msgid "Vendor Bill"
 #~ msgstr "فاتورة المورد"
+
+#. module: dms
+#. odoo-python
+#: code:addons/dms/models/dms_security_mixin.py:0
+msgid "A document requires an accessible destination directory."
+msgstr "يجب اختيار مجلد وجهة مسموح للمستند."
+
+#. module: dms
+#. odoo-python
+#: code:addons/dms/models/dms_security_mixin.py:0
+msgid "The destination directory is not accessible."
+msgstr "لا يمكنك الوصول إلى مجلد الوجهة."
+
+#. module: dms
+#. odoo-python
+#: code:addons/dms/models/dms_security_mixin.py:0
+msgid "You cannot add documents to the destination directory."
+msgstr "ليست لديك صلاحية إضافة مستندات إلى مجلد الوجهة."
+
+#. module: dms
+#. odoo-python
+#: code:addons/dms/models/dms_security_mixin.py:0
+msgid "The destination storage is not accessible."
+msgstr "لا يمكنك الوصول إلى مخزن الوجهة."

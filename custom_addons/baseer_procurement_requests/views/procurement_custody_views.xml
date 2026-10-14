@@ -455,6 +455,7 @@
                 <field name="procurement_request_id" string="Received purchase request"
                        options="{'no_create': True}" readonly="state != 'draft'"
                        domain="[('company_id', '=', company_id), ('state', '=', 'purchased'), ('procurement_batch_ids', '=', False)]"/>
+                <field name="procurement_purchase_route" readonly="1" invisible="not procurement_request_id"/>
                 <field name="procurement_custody_id" string="Payment source"
                        options="{'no_create': True}" readonly="state != 'draft'"
                        domain="[('company_id', '=', company_id), ('is_company_pool', '=', True), ('state', '=', 'open')]"/>

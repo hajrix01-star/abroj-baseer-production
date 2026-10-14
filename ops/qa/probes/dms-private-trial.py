@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from odoo.exceptions import AccessError
-from odoo.modules.module import get_module_resource
+import odoo.addons.dms as dms_package
 
 assert env.cr.dbname == 'baseer_live_qa_clean_20260928'
 env.cr.rollback()
@@ -20,12 +20,15 @@ oe = env['dms.file'].with_user(owner).with_context(**scope).env
 assert not oe.su
 prefix = 'QA DMS 20261014'
 assert not env['dms.storage'].search([('name','=like',prefix+'%')])
-payload = base64.b64encode(Path(get_module_resource('dms','test','document01.pdf')).read_bytes())
+payload = base64.b64encode((Path(dms_package.__file__).parent / 'test' / 'document01.pdf').read_bytes())
 assert 0 < len(base64.b64decode(payload)) < 1048576
 group = oe['dms.access.group'].create({
     'name': prefix+' — Owner only','perm_create':True,'perm_write':True,'perm_unlink':True,
     'explicit_user_ids':[(6,0,[owner.id])],
 })
+# Native permission queries use stored group membership via SQL. Match the
+# separate UI group-save transaction while keeping this synthetic setup atomic.
+env.flush_all()
 storages, directories, files = [], [], []
 for company in companies:
     storage = oe['dms.storage'].create({
@@ -72,6 +75,7 @@ try:
         })
         # Prove confinement even with native group permission and both companies.
         group.write({'explicit_user_ids':[(4,manager.id)]})
+        env.flush_all()
         for record in (storages[0],directories[0],files[0],group):
             restricted = record.with_user(manager).with_context(**scope)
             assert not restricted.search([('id','=',record.id)])

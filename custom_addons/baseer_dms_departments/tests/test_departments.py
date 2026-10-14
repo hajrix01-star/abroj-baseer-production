@@ -1,4 +1,5 @@
 import base64
+import json
 from io import BytesIO
 
 from PIL import Image
@@ -7,6 +8,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
 
 from odoo.addons.baseer_dms_bill_link.tests.test_bill_link import BillFixtures
+from odoo.addons.baseer_dms_departments.models.dms_file import _dms_search_panel_parent_id
 
 
 class DepartmentFixtures(BillFixtures):
@@ -77,6 +79,49 @@ class DepartmentFixtures(BillFixtures):
 
 @tagged('post_install', '-at_install', 'baseer_dms_departments')
 class TestDepartments(DepartmentFixtures, TransactionCase):
+    def test_directory_search_panel_handles_hierarchy_counters_and_private_metadata(self):
+        empty_folders = self.env['dms.directory'].search([
+            ('managed_key', 'in', [f'{self.company_a.id}:sales', f'{self.company_a.id}:administration']),
+        ])
+        self.assertEqual(len(empty_folders), 2)
+        for user in (self.hr_user, self.accountant):
+            model = self.actor(self.env['dms.file'], user)
+            visible = self.actor(self.env['dms.directory'], user).search([('is_hidden', '=', False)])
+            for counters in (False, True):
+                panel = model.search_panel_select_range('directory_id', enable_counters=counters)
+                self.assertEqual(panel['parent_field'], 'parent_id')
+                values = panel['values']
+                ids = {value['id'] for value in values}
+                self.assertEqual(ids, set(visible.ids))
+                self.assertTrue(set(empty_folders.ids).issubset(ids))
+                for value in values:
+                    parent = value['parent_id']
+                    self.assertTrue(parent is False or type(parent) is int)
+                    self.assertTrue(parent is False or parent in ids)
+                    if counters:
+                        self.assertIsInstance(value['__count'], int)
+                        self.assertGreaterEqual(value['__count'], 0)
+                self.assertNotIn(self.company_b.dms_company_root_id.id, ids)
+                if user == self.accountant:
+                    self.assertNotIn(self.company_a.dms_hr_root_id.id, ids)
+                    self.assertFalse(ids.intersection(self.private_directories().ids))
+                    self.assertNotIn(self.employee_a.name, json.dumps(values, ensure_ascii=False))
+                scoped = model.with_context(
+                    active_model='dms.directory', active_id=self.company_a.dms_company_root_id.id,
+                ).search_panel_select_range('directory_id', enable_counters=counters)
+                scoped_ids = {value['id'] for value in scoped['values']}
+                self.assertIn(self.company_a.dms_company_root_id.id, scoped_ids)
+                self.assertTrue(scoped_ids.issubset(ids))
+                for value in scoped['values']:
+                    self.assertTrue(value['parent_id'] is False or value['parent_id'] in scoped_ids)
+            category = model.search_panel_select_range('category_id', enable_counters=False)
+            self.assertIsInstance(category['values'], list)
+
+    def test_search_panel_parent_normalization_accepts_odoo19_and_legacy_values(self):
+        for value, expected in ((False, False), (None, False), (17, 17),
+                                ((17, 'Legacy parent'), 17), ([17, 'Legacy parent'], 17)):
+            self.assertEqual(_dms_search_panel_parent_id(value), expected)
+
     def test_setup_and_attachment_retry_keep_unique_hierarchy_and_original(self):
         before = self.env['dms.directory'].search([('managed_key', '!=', False)])
         for company in (self.company_a, self.company_b):
@@ -326,6 +371,40 @@ class TestDepartmentPreview(DepartmentFixtures, HttpCase):
         return (f'/web/image/dms.file/{link.id}/content/128x128',
                 f'/web/content/dms.file/{link.id}/content?download=false',
                 f'/my/dms/file/{link.id}/download')
+
+    def test_search_panel_jsonrpc_returns_visible_hierarchy_in_both_counter_modes(self):
+        for user, password in ((self.accountant, 'bill-test'), (self.hr_user, 'department-test')):
+            self.authenticate(user.login, password)
+            expected_ids = set(self.actor(self.env['dms.directory'], user).search([
+                ('is_hidden', '=', False),
+            ]).ids)
+            for counters in (False, True):
+                response = self.url_open(
+                    '/web/dataset/call_kw/dms.file/search_panel_select_range',
+                    data=json.dumps({
+                        'jsonrpc': '2.0', 'method': 'call', 'id': 1,
+                        'params': {
+                            'model': 'dms.file', 'method': 'search_panel_select_range',
+                            'args': ['directory_id'], 'kwargs': {
+                                'enable_counters': counters,
+                                'context': {'allowed_company_ids': self.company_a.ids},
+                            },
+                        },
+                    }), headers={'Content-Type': 'application/json'},
+                )
+                self.assertEqual(response.status_code, 200)
+                payload = response.json()
+                self.assertNotIn('error', payload, payload)
+                panel = payload['result']
+                self.assertEqual(panel['parent_field'], 'parent_id')
+                ids = {value['id'] for value in panel['values']}
+                self.assertEqual(ids, expected_ids)
+                self.assertNotIn(self.company_b.dms_company_root_id.id, ids)
+                for value in panel['values']:
+                    self.assertTrue(value['parent_id'] is False or value['parent_id'] in ids)
+                if user == self.accountant:
+                    self.assertNotIn(self.employee_a.name,
+                                     json.dumps(panel['values'], ensure_ascii=False))
 
     def assert_denied(self, source):
         for path in self.paths(source):

@@ -118,3 +118,10 @@ Both catalogs now mark Python code rows. Added native rollback preserving SAME
 index ID, no-op association ID stability, and Arabic-context actual folder names;
 PO fixture follows native button_cancel. Independent targeted source CONDITIONAL
 GO pending corrected43-case CI; no weaker assertions or repeated environment.
+
+Corrected2dcd85a9: source38553210306 PASS and Odoo38553210316 PASS, explicit
+0 failures/0 errors of43. Independent G8 GO for protected owner-only QA and reviewed
+metadata activation, subject to result/backup/upgrade/hash/probe evidence.
+PR329 merged source7e42bd54dc891ab90f083fe4c044d5e78c5e88b4.
+Release policy scopes exactly baseer_dms_bill_link and baseer_dms_departments,
+retaining OCA/private rules/other modules; no LIVE. Activation still pending.

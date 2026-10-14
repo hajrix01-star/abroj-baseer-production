@@ -238,3 +238,17 @@ CONDITIONALGO forprotectedowner-onlyQA, no visual/mobileclaim. MergedPR327/sourc
 baseer_dms_bill_link19.0.1.0.1, retainsOCA/private unchanged; recovery/artifactproof,
 originalhashmatch andactualRTLweb.assets_webcompile requiredafterdeploy. Assetcode
 attachments may be generated; businessdocuments not changed. NoLIVE.
+
+Preview QA acceptance evidence 2026-10-14: protected request 38549083744
+deployed source 54de52fa7f5c65c895e04eb09dbeeddf0b508ba9, policy PR328;
+QA_DEPLOY=GO and QA_POLLER=GO. Upgrade log loaded file_preview.xml and module;
+recovery database.dump/filestore.tar SHA256 verified. All 16 tracked module files
+match Git source. Actual QA web.assets_web RTL compilation PASS (JS755c27e,
+CSS5207a69), installed version 19.0.1.0.1, widget/template registered, no CSS/XML
+asset errors. Original attachment5840 checksum74d64754a79987d2ccce685c06ef553cd8930931
+and full-row MD5f5c49b2644b09fd6a4edbec26dc7c988 unchanged before/after.
+DMS10 now returns protected transient /web/image/dms.file/10/content/128x128 URL.
+Prior 25 passing CI cases reused; no additional environment/load tests.
+Browser bootstrap EPERM prevents visual/click/mobile acceptance; not claimed.
+LIVE remains unchanged. Images have thumbnails; PDF opens in bundled PDF viewer,
+not a generated first-page thumbnail. No extra stored business-file copy.

@@ -26,16 +26,26 @@ class DmsFile(models.Model):
         actor = self.sudo(False)
         for item in self.sudo().filtered("bill_attachment_id"):
             source = item.bill_attachment_id.with_env(actor.env)
-            move = actor.env["account.move"].browse(source.sudo().res_id)
             source.check_access("read")
-            move.check_access("read")
-            if move.company_id.id not in actor.env.companies.ids:
+            record = source.sudo()._dms_source_record()
+            if not record:
+                raise AccessError(self.env._("Invalid vendor bill document reference."))
+            record = record.with_env(actor.env)
+            record.check_access("read")
+            if record.company_id.id not in actor.env.companies.ids:
                 raise AccessError(self.env._("The original bill belongs to another company."))
 
     @api.model
     def _search_bill_source_permission(self, operator, value):
         actor = self.sudo(False)
-        accessible = Domain("bill_attachment_id", "=", False)
+        accessible = Domain("bill_attachment_id", "=", False) | actor._dms_linked_source_domain()
+        # Odoo 19 normalizes Boolean search operators to in/not in.
+        return accessible if operator in ("in", "=") else ~accessible
+
+    @api.model
+    def _dms_linked_source_domain(self):
+        actor = self.sudo(False)
+        accessible = Domain.FALSE
         moves = actor.env["account.move"]
         attachments = actor.env["ir.attachment"]
         if moves.has_access("read") and attachments.has_access("read"):
@@ -51,8 +61,15 @@ class DmsFile(models.Model):
                 Domain("bill_move_id", "in", move_query),
                 Domain("bill_attachment_id", "in", attachment_query),
             ])
-        # Odoo 19 normalizes Boolean search operators to in/not in.
-        return accessible if operator in ("in", "=") else ~accessible
+        return accessible
+
+    @api.model
+    def _dms_reference_relation_fields(self):
+        return {"bill_move_id"}
+
+    @api.model
+    def _dms_reference_relation_vals(self, record):
+        return {"bill_move_id": record.id if record._name == "account.move" else False}
 
     def _compute_bill_source_permission(self):
         for item in self:
@@ -73,18 +90,16 @@ class DmsFile(models.Model):
 
     @api.constrains("bill_attachment_id", "bill_move_id", "directory_id", "attachment_id")
     def _check_bill_reference(self):
-        if any(item.attachment_id.res_model == "account.move" for item in self.sudo()):
+        managed = self.env["ir.attachment"]._dms_managed_models()
+        if any(item.attachment_id.res_model in managed for item in self.sudo()):
             raise ValidationError(self.env._("Accounting originals cannot use native attachment links."))
         for item in self.sudo().filtered("bill_attachment_id"):
             source = item.bill_attachment_id
-            move = self.env["account.move"].sudo().browse(source.res_id).exists()
+            record = source._dms_source_record()
             if (
-                source.res_model != "account.move" or source.res_field
-                or source.type != "binary" or not move
-                or move.move_type not in ("in_invoice", "in_refund")
-                or item.bill_move_id != move or item.attachment_id
-                or item.directory_id != move.company_id.dms_bill_root_id
-                or item.company_id != move.company_id
+                not record or not source._dms_reference_matches(item, record) or item.attachment_id
+                or item.directory_id != source._dms_reference_destination(record)
+                or item.company_id != record.company_id
                 or item.content_binary or item.content_file or item.image_1920
                 or item.access_token
             ):
@@ -92,10 +107,11 @@ class DmsFile(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(vals.get("bill_attachment_id") or vals.get("bill_move_id") for vals in vals_list):
+        relation_fields = self._dms_reference_relation_fields() | {"bill_attachment_id"}
+        if any(any(vals.get(field) for field in relation_fields) for vals in vals_list):
             raise UserError(self.env._("Bill document references are created automatically from originals."))
         # Explicit False values prevent forged context default_* provenance.
-        vals_list = [dict(vals, bill_attachment_id=False, bill_move_id=False) for vals in vals_list]
+        vals_list = [dict(vals, **dict.fromkeys(relation_fields, False)) for vals in vals_list]
         return super().create(vals_list)
 
     @api.model
@@ -103,13 +119,13 @@ class DmsFile(models.Model):
         # Private server method; RPC/context values never authorize provenance.
         source.ensure_one()
         source.check_access("read")
-        move = self.env["account.move"].browse(source.res_id)
-        move.check_access("read")
+        record = source._dms_source_record().with_env(self.env)
+        record.check_access("read")
         safe_name = (source.name or "attachment").replace("/", "_").replace("\\", "_")
         vals = {
             "name": f"{source.id} - {safe_name}", "directory_id": root.id,
             "attachment_id": False, "bill_attachment_id": source.id,
-            "bill_move_id": move.id, "size": source.file_size,
+            **self._dms_reference_relation_vals(record), "size": source.file_size,
             "checksum": source.checksum,
         }
         return super(DmsFile, self.sudo()).create([vals])
@@ -120,10 +136,10 @@ class DmsFile(models.Model):
             "storage_id", "res_model", "res_id", "name", "content", "content_binary",
             "content_file", "image_1920", "image_1024", "image_512", "image_256",
             "image_128", "access_token", "checksum", "size", "mimetype", "extension",
-        }
+        } | self._dms_reference_relation_fields()
         if (set(vals) & protected) and self.sudo().filtered("bill_attachment_id"):
             raise UserError(self.env._("Original bill document content and association are protected."))
-        if set(vals) & {"bill_attachment_id", "bill_move_id"}:
+        if set(vals) & ({"bill_attachment_id"} | self._dms_reference_relation_fields()):
             raise UserError(self.env._("Bill document references cannot be reassigned."))
         return super().write(vals)
 

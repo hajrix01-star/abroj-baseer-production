@@ -11,12 +11,15 @@ class Company(models.Model):
         help="Automatically index new vendor bill attachments here without copying originals.",
     )
 
+    def _dms_bill_root_parent_valid(self, root):
+        return not root.parent_id
+
     @api.constrains("dms_bill_root_id")
     def _check_dms_bill_root(self):
         for company in self:
             root = company.dms_bill_root_id
             if root and (
-                root.parent_id or root.company_id != company
+                not company._dms_bill_root_parent_valid(root) or root.company_id != company
                 or root.storage_id.save_type not in ("database", "file")
                 or root.storage_id.inherit_access_from_parent_record
                 or root.res_model or root.res_id or root.access_token
@@ -41,7 +44,8 @@ class Storage(models.Model):
 
     @api.constrains("model_ids")
     def _check_native_bill_link_disabled(self):
-        if any("account.move" in storage.model_ids.mapped("model") for storage in self):
+        managed = self.env["ir.attachment"]._dms_managed_models()
+        if any(managed.intersection(storage.model_ids.mapped("model")) for storage in self):
             raise ValidationError(self.env._("Native accounting attachment indexing must remain disabled."))
 
     def write(self, vals):

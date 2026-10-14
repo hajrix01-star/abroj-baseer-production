@@ -182,3 +182,26 @@ Mergedab0aa23d matches reviewedcc564521runtime/tests/workflow/probe; operations
 evidence closes backup/provenance/install/activation/financialpreservation.
 Companyroots8/9 only; noUI/mobile/QAauthenticatedHTTPcertification, noLIVE,
 additionalusers, HR orbackfill. CIHTTPacceptance is distinct from QAUI acceptance.
+
+## Preview defect — 2026-10-14 (CONTROLLED UI repair)
+
+Owner screenshot confirms indexing works, but linked PNG has generic icon and
+plain binary download/edit controls; expects thumbnail and image/PDF opening
+inside Documents. Not a proven regression: preview was never delivered in the
+bridge. Source cause: linked image_1920 deliberately False to avoid persistent
+copies, native icon_url uses image_128, and native form content has no preview
+widget. Preserve this no-duplicate storage invariant; use authenticated transient
+/web/image/dms.file/id/content/128x128 plus inline /web/content model=dms.file.
+No new upload/storage/ACL/publictoken/controller policy; backend source access
+checks remain. Small OWL dialog widget reuses native Dialog, image/PDF viewer,
+AR/EN labels, linked fields read-only. No upstream edits or newlibraries.
+
+Scope: same owner-onlyQA/company1/2, noLIVE/backfill or accounting writes.
+Runtime/UI owner dms_bridge_implementation; focused HTTP/regression tests owner
+dms_bridge_tests; independent dms_bridge_gate reviews source permission and actual
+release. New CI justified by preview endpoint/widget change and image/PDF ACL
+risk not previously exercised; existing isolated fixture, no newenv/load.
+QA prior19-case lifecycle evidence reused, runs again only with changed module.
+Browser connection attempted once using documented skill; EPERM on browser runtime
+realpath before discovery. No alternate browser bypass or visualacceptance claim.
+Use screenshots and focused HTTP/static verification, declare visual limit.

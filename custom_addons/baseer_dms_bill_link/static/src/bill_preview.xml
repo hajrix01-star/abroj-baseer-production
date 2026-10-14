@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_dms_bill_link.PreviewWidget">
+        <button t-if="canPreview" type="button"
+            t-att-class="props.thumbnail ? 'o_baseer_bill_thumbnail btn p-0 border-0' : 'btn btn-outline-primary o_baseer_bill_preview_button'"
+            t-att-title="labels.preview" t-att-aria-label="labels.preview" t-on-click.stop="preview">
+            <t t-if="props.thumbnail">
+                <img t-if="isImage and !state.thumbnailFailed" t-att-src="thumbnailUrl"
+                    t-att-alt="data.name" loading="lazy" t-on-error="thumbnailFailed"/>
+                <i t-else="" t-att-class="data.mimetype === 'application/pdf' ? 'fa fa-file-pdf-o' : 'fa fa-file-image-o'" aria-hidden="true"/>
+            </t>
+            <t t-else=""><i class="fa fa-eye me-1" aria-hidden="true"/><t t-esc="labels.preview"/></t>
+        </button>
+        <a t-else="" t-att-href="downloadUrl" t-att-title="labels.download"
+            t-att-aria-label="labels.download" class="btn btn-outline-secondary" t-on-click.stop="() => {}">
+            <i class="fa fa-download" aria-hidden="true"/>
+            <span t-if="!props.thumbnail" class="ms-1" t-esc="labels.download"/>
+        </a>
+    </t>
+    <t t-name="baseer_dms_bill_link.PreviewDialog">
+        <Dialog title="labels.title" size="'xl'" bodyClass="'p-0 o_baseer_bill_preview_body'">
+            <div class="o_baseer_bill_preview_name px-3 py-2 border-bottom" t-esc="props.name"/>
+            <div class="o_baseer_bill_preview_canvas">
+                <div t-if="state.loading" class="o_baseer_bill_preview_status" role="status">
+                    <i class="fa fa-spinner fa-spin me-2" aria-hidden="true"/><t t-esc="labels.loading"/>
+                </div>
+                <iframe t-if="isPdf" class="o_baseer_bill_preview_pdf" t-att-src="pdfUrl"
+                    t-att-title="labels.pdf" t-on-load="loaded" t-on-error="failed"/>
+                <img t-elif="!state.failed" class="o_baseer_bill_preview_image" t-att-src="props.contentUrl"
+                    t-att-alt="props.name" t-on-load="loaded" t-on-error="failed"/>
+                <div t-if="state.failed" class="alert alert-warning m-3" role="alert" t-esc="labels.failed"/>
+            </div>
+            <t t-set-slot="footer">
+                <a class="btn btn-outline-primary" t-att-href="props.downloadUrl"><i class="fa fa-download me-1" aria-hidden="true"/><t t-esc="labels.download"/></a>
+                <button type="button" class="btn btn-secondary" t-on-click="props.close" t-esc="labels.close"/>
+            </t>
+        </Dialog>
+    </t>
+</templates>

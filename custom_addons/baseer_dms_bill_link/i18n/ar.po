@@ -109,3 +109,51 @@ msgstr "لا يمكن نقل تخزين مراجع مستندات الفواتي
 #: code:addons/baseer_dms_bill_link/models/dms_file.py:0
 msgid "Original attachment reference"
 msgstr "مرجع المرفق الأصلي"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Document preview"
+msgstr "معاينة المستند"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Preview document"
+msgstr "معاينة المستند"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Download document"
+msgstr "تنزيل المستند"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Loading preview…"
+msgstr "تحميل المعاينة…"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "The preview could not be loaded. You can download the document."
+msgstr "تعذرت المعاينة. يمكنك تنزيل المستند."
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "PDF preview"
+msgstr "معاينة PDF"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Close"
+msgstr "إغلاق"
+
+#. module: baseer_dms_bill_link
+#. odoo-javascript
+#: code:addons/baseer_dms_bill_link/static/src/bill_preview.js:0
+msgid "Download"
+msgstr "تنزيل"

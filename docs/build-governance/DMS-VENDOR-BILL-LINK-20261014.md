@@ -205,3 +205,11 @@ QA prior19-case lifecycle evidence reused, runs again only with changed module.
 Browser connection attempted once using documented skill; EPERM on browser runtime
 realpath before discovery. No alternate browser bypass or visualacceptance claim.
 Use screenshots and focused HTTP/static verification, declare visual limit.
+
+PreviewcandidatePR327/fdf54756: Source38546571533PASS and Odoo38546571600PASS24
+cases, zeroerrors/failures. Gate sourceCONDITIONALGO pending assetscompile proof.
+Verified installedOdoo19 assetAPI _get_asset_bundle/js/css and existingDialog
+bodyClass/widgetprops import; added test25 for JS/XML/SCSS compilation and widget
+registration (no browserclickclaim). Same CIfixture, test-onlydelta justifies next
+run, no duplicatedenvironment/load or sourcepermissionschange. UXAraby produced
+conciseArabicbuttons/status/errorlabels; no names or filenames translated.

@@ -87,6 +87,26 @@ class BillFixtures:
 
 @tagged('post_install', '-at_install', 'baseer_dms_bill_link')
 class TestBillLink(BillFixtures, TransactionCase):
+    def test_preview_backend_assets_compile_and_register_templates(self):
+        # Compile once in isolated CI: HTTP content checks cannot establish that
+        # the new widget, XML templates and SCSS reach a usable backend bundle.
+        bundle = self.env['ir.qweb']._get_asset_bundle(
+            'web.assets_backend', css=True, js=True, debug_assets=False,
+        )
+        javascript = bundle.js()
+        stylesheets = bundle.css()
+        self.assertTrue(javascript)
+        self.assertTrue(stylesheets)
+        self.assertFalse(bundle.css_errors, '\n'.join(bundle.css_errors))
+        compiled_js = javascript.raw.decode()
+        self.assertIn('baseer_dms_bill_link.PreviewDialog', compiled_js)
+        self.assertIn('baseer_dms_bill_preview', compiled_js)
+        compiled_css = b'\n'.join(stylesheets.mapped('raw')).decode()
+        self.assertIn('o_baseer_bill_preview_canvas', compiled_css)
+        templates = bundle.generate_xml_bundle()
+        self.assertIn('baseer_dms_bill_link.PreviewWidget', templates)
+        self.assertNotIn('throw new Error(', templates)
+
     def test_native_views_use_linked_document_preview_widget(self):
         for view_type in ('form', 'kanban'):
             arch = self.actor(self.env['dms.file']).get_view(view_type=view_type)['arch']

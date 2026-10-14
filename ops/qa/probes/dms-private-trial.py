@@ -10,13 +10,13 @@ assert env.cr.dbname == 'baseer_live_qa_clean_20260928'
 env.cr.rollback()
 owner = env.ref('base.user_admin')
 assert owner.id == 2 and owner.active
-for suffix in ('private_storage','private_directory','private_file','private_group','private_share'):
+for suffix in ('private_storage','private_directory','private_file','private_group','private_share','private_attachment'):
     rule = env.ref('baseer_dms_trial.' + suffix)
-    assert rule.active and rule.global_
+    assert rule.active and not rule['groups']
 companies = owner.company_ids.sorted('id')[:2]
 assert len(companies) == 2
 scope = dict(allowed_company_ids=companies.ids, lang='ar_001')
-oe = env(user=owner, context=dict(env.context, **scope))
+oe = env['dms.file'].with_user(owner).with_context(**scope).env
 assert not oe.su
 prefix = 'QA DMS 20261014'
 assert not env['dms.storage'].search([('name','=like',prefix+'%')])

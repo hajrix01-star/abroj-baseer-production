@@ -36,4 +36,11 @@
         <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
         <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
     </record>
+    <record id="private_attachment" model="ir.rule">
+        <field name="name">QA DMS private owner: DMS attachments only</field>
+        <field name="model_id" ref="base.model_ir_attachment"/>
+        <field name="domain_force" eval="'[] if user.id == %s else [(\'res_model\', \'not in\', [\'dms.file\', \'dms.directory\'])]' % ref('base.user_admin')"/>
+        <field name="perm_read" eval="True"/><field name="perm_create" eval="True"/>
+        <field name="perm_write" eval="True"/><field name="perm_unlink" eval="True"/>
+    </record>
 </odoo>

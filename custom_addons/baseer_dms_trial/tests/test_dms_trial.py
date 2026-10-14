@@ -1,5 +1,4 @@
 import base64
-import unittest
 
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, new_test_user, tagged
@@ -13,7 +12,7 @@ class TrialFixtures:
         super().setUpClass()
         cls.private_rules = cls.env["ir.rule"].browse([
             cls.env.ref("baseer_dms_trial." + suffix).id
-            for suffix in ("private_storage", "private_directory", "private_file", "private_group", "private_share")
+            for suffix in ("private_storage", "private_directory", "private_file", "private_group", "private_share", "private_attachment")
         ])
         cls.private_rules.write({"active": cls.private})
         cls.company_a = cls.env["res.company"].create({"name": "DMS synthetic A"})
@@ -93,13 +92,6 @@ class TestDmsTrial(TrialFixtures, TransactionCase):
                 "content": self.payload,
             })
 
-    @unittest.expectedFailure
-    def test_native_cross_company_move_known_defect(self):
-        # Strict assertion retained: native write validates old record only.
-        # The private QA guard does not claim to repair this native defect.
-        with self.assertRaises(AccessError):
-            self.as_user(self.file_a).write({"directory_id": self.dir_b.id})
-
     def test_reader_and_no_group_access(self):
         self.assertEqual(self.as_user(self.file_a, self.reader).content, self.payload)
         with self.assertRaises(AccessError):
@@ -178,6 +170,15 @@ class TestDmsTrialDownload(TrialFixtures, HttpCase):
         self.assertNotIn(base64.b64decode(self.payload), foreign.content)
 
 
+@tagged("post_install", "-at_install", "dms_known_defect")
+class TestDmsKnownMoveDefect(TrialFixtures, TransactionCase):
+    def test_native_cross_company_move_known_defect(self):
+        # Strict reproducer, separately excluded under the private QA waiver.
+        # This is NOT fixed by the confinement rules or by upstream OCA.
+        with self.assertRaises(AccessError):
+            self.as_user(self.file_a).write({"directory_id": self.dir_b.id})
+
+
 class PrivateFixtures(TrialFixtures):
     private = True
 
@@ -196,6 +197,11 @@ class PrivateFixtures(TrialFixtures):
             ("res_model", "=", "dms.file"), ("res_id", "=", cls.file_a.id),
             ("res_field", "=", "content_file"),
         ])
+        partner = cls.env["res.partner"].create({"name": "Shared synthetic partner"})
+        cls.unrelated_attachment = cls.env["ir.attachment"].create({
+            "name": "unrelated.txt", "res_model": "res.partner", "res_id": partner.id,
+            "datas": cls.payload,
+        })
 
 
 @tagged("post_install", "-at_install", "baseer_dms_trial")
@@ -231,6 +237,7 @@ class TestDmsPrivate(PrivateFixtures, TransactionCase):
 
     def test_attachment_and_token_write_denied(self):
         self.assertEqual(len(self.attachment), 1)
+        self.assertEqual(self.attachment.with_user(self.owner).datas, self.payload)
         for user in (self.manager, self.env.ref("base.public_user")):
             with self.assertRaises(AccessError):
                 self.attachment.with_user(user).read(["datas"])
@@ -245,6 +252,14 @@ class TestDmsPrivate(PrivateFixtures, TransactionCase):
                 self.file_a.with_user(user).write({"access_token": "invalid-trial-token"})
         self.assertFalse(self.file_a.access_token)
         self.assertFalse(self.dir_a.access_token)
+
+    def test_guard_does_not_block_unrelated_attachment(self):
+        ordinary = self.unrelated_attachment.with_user(self.manager)
+        self.assertEqual(ordinary.datas, self.payload)
+        # Same observable access with the new rule disabled, transaction only.
+        self.env.ref("baseer_dms_trial.private_attachment").write({"active": False})
+        ordinary.invalidate_recordset()
+        self.assertEqual(ordinary.datas, self.payload)
 
 
 @tagged("post_install", "-at_install", "baseer_dms_trial")
@@ -265,4 +280,6 @@ class TestDmsPrivateDownload(PrivateFixtures, HttpCase):
             for suffix in ("", "?access_token=invalid-trial-token"):
                 response = self.url_open(path + suffix)
                 self.assertNotIn(base64.b64decode(self.payload), response.content)
+            direct = self.url_open(f"/web/content/{self.attachment.id}?download=true")
+            self.assertNotIn(base64.b64decode(self.payload), direct.content)
         self.assertFalse(self.file_a.access_token)

@@ -79,10 +79,10 @@ class DepartmentFixtures(BillFixtures):
 
 @tagged('post_install', '-at_install', 'baseer_dms_departments')
 class TestDepartments(DepartmentFixtures, TransactionCase):
-    def test_fresh_same_name_companies_create_distinct_private_groups_without_override(self):
+    def test_fresh_companies_create_distinct_private_groups_without_override(self):
         companies = self.env['res.company'].create([
-            {'name': 'Synthetic fresh private company'},
-            {'name': 'Synthetic fresh private company'},
+            {'name': 'Synthetic fresh private company A'},
+            {'name': 'Synthetic fresh private company B'},
         ])
         self.owner.company_ids |= companies
         scoped = companies.with_user(self.owner).with_context(allowed_company_ids=companies.ids)

@@ -154,13 +154,17 @@ class ProcurementFlowCase(TransactionCase):
                     'purchaser_id': self.purchaser.id, 'purchase_route': route,
                 })
         field = self.env['baseer.purchase.batch']._fields['procurement_purchase_route']
-        self.assertEqual(field.related, ('procurement_request_id', 'purchase_route'))
+        self.assertEqual(field.related, 'procurement_request_id.purchase_route')
         self.assertTrue(field.readonly)
         Request = self._route_requester()
         request_id = Request.create_from_catalog(
             [{'option_id': self.option.id, 'quantity': '1.00'}],
             self.warehouse.id, purchase_route='cash',
         )
+        batch = self.env['baseer.purchase.batch'].create({
+            'company_id': self.company.id, 'procurement_request_id': request_id,
+        })
+        self.assertEqual(batch.procurement_purchase_route, 'cash')
         accountant = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'PRC route accountant', 'login': 'prc-route-accountant-%s' % uuid4(),
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],

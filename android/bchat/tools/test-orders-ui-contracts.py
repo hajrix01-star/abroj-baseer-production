@@ -64,6 +64,28 @@ class OrdersUiContracts(unittest.TestCase):
         self.assertIn('() -> loadOrderSummaries(beforeId)', method('loadOrderSummaries'))
         self.assertIn('() -> loadReceipts(beforeId)', method('loadReceipts'))
 
+    def test_catalog_has_one_compact_accessible_quantity_stepper(self):
+        catalog = method('renderOrderCatalog')
+        self.assertIn('orderQuantityStepper(selected)', catalog)
+        self.assertNotIn('Button decrement = orderQuantityAction(', catalog)
+        self.assertNotIn('Button remove = orderQuantityAction(', catalog)
+        self.assertIn('orderScroll.getWidth()', catalog)
+        self.assertIn('boolean compactStepper = selected != null && availableNameDp < 168;', catalog)
+        stepper = SOURCE[SOURCE.index('private LinearLayout orderQuantityStepper('):
+                         SOURCE.index('private TextView orderStepperAction(')]
+        self.assertIn('selected.quantity', stepper)
+        self.assertIn('editOrderQuantity(selected.option)', stepper)
+        self.assertIn('stepOrderQuantity(selected.option, -1)', stepper)
+        self.assertIn('stepOrderQuantity(selected.option, 1)', stepper)
+        self.assertIn('new LinearLayout.LayoutParams(dp(48), dp(48))', stepper)
+        self.assertIn('new LinearLayout.LayoutParams(dp(56), dp(48))', stepper)
+        self.assertIn('dividerSize.gravity = Gravity.CENTER_VERTICAL;', stepper)
+        self.assertIn('secondDividerSize.gravity = Gravity.CENTER_VERTICAL;', stepper)
+        action = SOURCE[SOURCE.index('private TextView orderStepperAction('):
+                        SOURCE.index('private OrderCartLine orderLineForProduct(')]
+        self.assertIn('setMinWidth(dp(48))', action)
+        self.assertIn('setMinHeight(dp(48))', action)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

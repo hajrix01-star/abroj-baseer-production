@@ -439,6 +439,10 @@ Reference `BASEER-REPORT-SUITE-20261007`; last verified deployed source `4d4fa91
 
 الأثر `CONTROLLED`: تبويبات «المنيو / طلباتي / الاستلام» وحالة التحميل وشريط السلة داخل Android فقط. لا يتغير عقد أودو أو صلاحياته أو حساب الإجمالي أو المخزون. مفتاح المحتوى المرئي يجمع الشركة والوضع والبحث والفئة والمؤشر؛ التحديث المطابق يبقي النتائج، والاختلاف يعرض انتقالًا محايدًا. [عقد البناء ودليل الفحص](../../build-governance/BCHAT-ORDERS-UI-20261014.md). لا اعتماد لـQA/Live أو قبول بصري على جهاز بعد.
 
+## BCHAT-ORDERS-MULTICOMPANY-20261014 — ضبط واجهة الطلبات والاستلام (فرع محلي)
+
+الأثر `CONTROLLED` لواجهة Android واسم صنف الاستلام في API، و`ARCHITECTURAL` مؤجل لقائمة طلبات كل الشركات. أصبح اختيار شركة المنيو/الاستلام محفوظًا حسب حساب وخادم BChat مع إعادة تحقق من الشركات المخوّلة عند الدخول، وتوحّد ترتيب الشركات بالمعرّف. أُدخل موديول `baseer_bchat_procurement` المحلي غير المتتبع إلى الفرع ليتبع مسار Git/PR؛ إصلاح serializer فقط لا يغير الحساب أو الاستلام. جلب الطلبات الحالي لا يزال لشركة واحدة ولمنشئ الطلب فقط؛ لا توسيع API حتى حسم نطاق الرؤية وعقد العزل. [العقد والدليل والحدود](../../build-governance/BCHAT-ORDERS-MULTICOMPANY-20261014.md). لا APK أو QA/Live في هذه الجولة بعد.
+
 ## POS-CATEGORY-ANALYSIS-20261012 — native POS categories (QA + LIVE)
 
 `baseer_pos_summary` 19.0.1.6.4 / verified source `366059e3346b8e660cb167bc5bd18e1873085291`. Main POS product category extends native order analysis without changing row grain/measures. Settlement-by-category uses original `pos.payment.amount`, stored readonly method-category related FK, compute_sudo=False, native company/ACL and paid/done states. New scoped action only; native payment action unchanged. One derived column/index/backfill, all original payment fields including write_date and original report measures verified unchanged. No bank-arrival/cash-flow claim. CI13tests PASS, QA38228703203 GO, LIVE38229190553 GO, independent deliveryGO. [Contract, migration and release evidence](../../build-governance/POS-PAYMENT-CATEGORY-20261012.md).

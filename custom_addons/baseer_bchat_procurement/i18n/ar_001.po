@@ -1,0 +1,24 @@
+# Translation of Odoo Server.
+# Module: baseer_bchat_procurement
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: baseer_bchat_procurement
+#: model_terms:ir.ui.view,arch_db:baseer_bchat_procurement.view_users_form_bchat_capabilities
+msgid "BChat"
+msgstr "BChat"
+
+#. module: baseer_bchat_procurement
+#: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_can_order
+msgid "BChat: Send and receive purchase requests"
+msgstr "BChat: إرسال طلبات المشتريات واستلامها"
+
+#. module: baseer_bchat_procurement
+#: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_manage_rooms
+msgid "BChat: Manage rooms and members"
+msgstr "BChat: إدارة الغرف والأعضاء"

@@ -18,33 +18,41 @@ msgid "BChat API User"
 msgstr "مستخدم واجهة BChat البرمجية"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_chat_view
 msgid "View conversations"
 msgstr "عرض المحادثات"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_chat_send
 msgid "Send messages"
 msgstr "إرسال الرسائل"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_media
 msgid "Send media and files"
 msgstr "إرسال الصور والتسجيلات والملفات"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_group_create
 msgid "Create groups"
 msgstr "إنشاء مجموعات"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_group_manage
 msgid "Manage assigned groups"
 msgstr "إدارة المجموعات المصرّح بها"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_task_view
 msgid "View tasks"
 msgstr "عرض المهام"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_task_manage
 msgid "Create and update tasks"
 msgstr "إنشاء المهام وتحديثها"
 
 #. module: baseer_bchat
+#: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_manage_rooms
 msgid "Manage rooms and members"
 msgstr "إدارة الغرف والأعضاء"

@@ -10,7 +10,7 @@
             </xpath>
             <xpath expr="//list/field[@name='name']" position="after">
                 <field name="procurement_request_id" string="Receipt request" optional="show" width="165px"/>
-                <field name="procurement_purchase_route" string="Route" optional="show" width="135px"/>
+                <field name="procurement_entry_source" string="Source" optional="show" width="185px"/>
                 <field name="procurement_request_actual_total" string="Received total" optional="show" width="145px" class="text-end"/>
                 <field name="procurement_representative_funded_amount" string="Representative advance" optional="hide" width="165px" class="text-end"/>
             </xpath>
@@ -44,6 +44,11 @@
                 <div class="alert alert-info mb-3" role="status" invisible="state != 'draft' or not procurement_auto_draft">
                     This receipt is ready for invoice entry. Add the supplier invoice details, then save and approve it.
                 </div>
+                <group string="Entry source">
+                    <group>
+                        <field name="procurement_entry_source" string="Source" readonly="1"/>
+                    </group>
+                </group>
                 <group string="Receipt information" invisible="not procurement_request_id or procurement_purchase_route != 'representative'">
                     <group>
                         <field name="procurement_request_representative_id" string="Receipt representative" readonly="1" invisible="procurement_purchase_route != 'representative'"/>

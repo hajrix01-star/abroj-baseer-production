@@ -158,7 +158,7 @@ class BaseerPurchaseCategoryMap(models.Model):
 class BaseerPurchaseBatch(models.Model):
     _name = 'baseer.purchase.batch'
     _description = 'Purchase entry batch'
-    _order = 'id desc'
+    _order = 'entry_date desc, id desc'
     _check_company_auto = True
 
     name = fields.Char(required=True, readonly=True, default=lambda self: _('New'), copy=False)

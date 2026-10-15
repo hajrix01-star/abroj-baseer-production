@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_import_changed">تغيّر حجم المصدر أو أعاد موفّر الملفات نسخة غير مكتملة. اختر الأصل مجددًا وحاول مرة أخرى.</string>
+    <string name="media_import_empty">ملف الصورة أو الصوت أو الفيديو أو PDF فارغ. اختر الأصل الكامل وحاول مرة أخرى.</string>
+    <string name="media_export_partial">لم يكتمل حفظ النسخة. قد يبقى ملف فارغ أو غير مكتمل في الوجهة المختارة. لم يتغيّر الأصل داخل التطبيق. أعد المحاولة باسم ملف جديد.</string>
+    <string name="media_integrity_changed">لم يجتز الأصل المحفوظ فحص السلامة. لم تُصدّر هذه النسخة. احتفظ بالملف الحالي واختر أصلًا موثوقًا مجددًا.</string>
+    <string name="media_zoom_in">تكبير</string>
+    <string name="media_zoom_out">تصغير</string>
+    <string name="media_zoom_fit">احتواء الصورة</string>
+    <string name="media_zoom_help">باعد بين إصبعين أو انقر مرتين للتكبير. اسحب لفحص تفاصيل الصورة.</string>
+    <string name="media_detail_unavailable">معاينة التفاصيل الأصلية غير متاحة لهذه الصيغة. احفظ الأصل لفحصه في تطبيق متوافق.</string>
+    <string name="media_preview_timeout">استغرقت المعاينة وقتًا طويلًا. أغلقها وأعد فتحها للمحاولة. لم يتغيّر الأصل.</string>
+    <string name="media_pdf_loading">جارٍ تحميل معاينة PDF…</string>
+    <string name="media_pdf_first_page">الصفحة الأولى من %1$d. احفظ الأصل لعرض كل الصفحات.</string>
+    <string name="media_pdf_unavailable">معاينة PDF غير متاحة. يمكنك محاولة حفظ الأصل.</string>
+</resources>

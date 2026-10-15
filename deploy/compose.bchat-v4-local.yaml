@@ -1,0 +1,6 @@
+# Local BChat only: overlay the reviewed module without modifying the old C: checkout.
+# Keep the existing TLS, Firebase, OCA and procurement overlays in the compose command.
+services:
+  odoo:
+    volumes:
+      - ${BCHAT_V4_CANDIDATE_PATH:?Frozen BChat v4 source required}:/mnt/bchat-addons/baseer_bchat:ro

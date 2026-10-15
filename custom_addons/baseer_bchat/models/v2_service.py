@@ -399,11 +399,29 @@ class BChatTextService(models.AbstractModel):
                     'recipient_user_id': row.user_id.id,
                     'company_id': room.company_id.id,
                 } for row in recipients], _RECEIPT_TOKEN)
+                # Delivery remains best-effort: an FCM failure must never roll
+                # back an already verified, immutable message or its receipts.
+                self._message_queue_push(created, recipients)
             self._change_publish(members.mapped('user_id').ids, 'message',
                                  room_id=room.id, message_id=created.id,
                                  company_id=room.company_id.id,
                                  memberships={row.user_id.id: row.id for row in members})
             return v2_contracts.ack(room.id, normalized, created.id)
+
+    @api.model
+    def _v2_message(self, room_id, message_id):
+        self._require_bchat_permission('chat_view')
+        room = self._v2_lock_room(room_id)
+        member = self._v2_current_member(room)
+        message = self.env['baseer.bchat.message'].sudo().browse(
+            positive_id(message_id, 'message_id')).exists()
+        if (not message or message.room_id.id != room.id
+                or message.company_id.id != room.company_id.id
+                or message.id <= member.joined_after_message_id):
+            raise AccessError(self.env._('This BChat message is unavailable.'))
+        authors = self._v2_author_names([message])
+        payload = self._v2_history_payload([message], False, authors)
+        return {'api_version': 2, 'message': payload['messages'][0]}
 
     @api.model
     def _v2_receipt_ack(self, room_id, message_id, kind):

@@ -779,6 +779,8 @@
     <string name="bchat_task_empty_hint">"Create a task here or from a conversation."</string>
     <string name="bchat_task_people">"%1$s · Assigned to: %2$s"</string>
     <string name="bchat_push_chat">New message in BChat</string>
+    <string name="bchat_push_attachment">Sent an attachment</string>
+    <string name="bchat_push_channel_description">BChat messages and tasks</string>
     <string name="bchat_push_task">New task in BChat</string>
     <string name="bchat_push_order">New order in BChat</string>
     <string name="bchat_room_has_tasks">Tasks</string>

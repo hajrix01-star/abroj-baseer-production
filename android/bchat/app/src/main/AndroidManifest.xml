@@ -1,8 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.preview" android:versionCode="55" android:versionName="0.7.39-qa-task-notifications">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.preview" android:versionCode="57" android:versionName="0.7.41-qa-chat-notifications">
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
   <queries>
     <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>

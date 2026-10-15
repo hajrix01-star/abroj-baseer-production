@@ -247,6 +247,15 @@ class BChatTextApi(http.Controller):
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/rooms/<int:room_id>/messages/<int:message_id>',
+                type='http', auth='user', methods=['GET'], csrf=True, save_session=True)
+    def message(self, room_id, message_id, **kwargs):
+        try:
+            self._no_query()
+            return self._response(self._service()._v2_message(room_id, message_id))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/rooms/<int:room_id>/messages/<int:message_id>/receipts',
                 type='http', auth='user', methods=['POST'], csrf=True,
                 save_session=True, max_content_length=1024)

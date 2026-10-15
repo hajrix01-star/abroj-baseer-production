@@ -37,7 +37,9 @@ assert 'boolean refreshUnreadMetadata = false;' in ack
 assert 'refreshUnreadMetadata = true;' in ack
 assert 'if (refreshUnreadMetadata) {' in ack
 assert '++unreadMetadataGeneration;' in ack
-assert 'loadRooms();' in ack
+assert 'liveRoomsDirty = true;' in ack
+assert 'handler.post(this::flushLiveUi);' in ack
+assert 'loadRooms();' not in ack
 assert 'if ("read".equals(kind)) {' in ack
 assert 'room.unreadCount--' not in ack
 assert 'room.unreadCount = 0;' not in ack

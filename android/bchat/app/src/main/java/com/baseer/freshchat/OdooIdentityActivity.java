@@ -6793,7 +6793,11 @@ public final class OdooIdentityActivity extends Activity {
                     }
                     if (refreshUnreadMetadata) {
                         ++unreadMetadataGeneration;
-                        loadRooms();
+                        // The receipt runs on the live queue while a v2 request may still be
+                        // active. Defer the refresh through the existing v2-idle pump so a
+                        // synthetic busy status cannot be mistaken for a transport failure.
+                        liveRoomsDirty = true;
+                        handler.post(this::flushLiveUi);
                     }
                 }
             } catch (Exception invalid) {

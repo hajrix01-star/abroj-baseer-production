@@ -1,0 +1,8 @@
+<!-- Square original bitmap, uniformly scaled inside the adaptive safe zone.
+     Fractional insets follow actual drawable bounds at every launcher density. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="31%" android:insetTop="31%"
+    android:insetRight="31%" android:insetBottom="31%">
+  <bitmap android:src="@drawable/baseer_mark_b" android:gravity="fill"
+      android:filter="true" android:tint="#FFFFFF" />
+</inset>

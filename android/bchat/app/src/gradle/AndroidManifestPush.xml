@@ -1,0 +1,22 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="51" android:versionName="0.7.35-qa-permissions">
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <queries>
+    <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
+  </queries>
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+  <application android:label="BChat" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/AppTheme" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true" android:usesCleartextTraffic="false" android:networkSecurityConfig="@xml/bchat_network_security">
+    <activity android:name="com.baseer.freshchat.OdooIdentityActivity" android:exported="true" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:configChanges="keyboardHidden|orientation|screenSize">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+      <intent-filter><action android:name="android.intent.action.SEND"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="*/*"/></intent-filter>
+      <intent-filter><action android:name="android.intent.action.SEND_MULTIPLE"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="*/*"/></intent-filter>
+    </activity>
+    <activity android:name="com.baseer.freshchat.MainActivity" android:exported="false" android:windowSoftInputMode="adjustResize" android:configChanges="keyboardHidden|orientation|screenSize" />
+    <provider android:name="com.baseer.freshchat.DemoFileProvider" android:authorities="com.baseer.bchat.preview.files" android:exported="false" android:grantUriPermissions="true"/>
+    <service android:name="com.baseer.freshchat.BChatFirebaseMessagingService" android:exported="false">
+      <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
+    </service>
+  </application>
+</manifest>

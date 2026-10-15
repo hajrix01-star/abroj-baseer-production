@@ -6,6 +6,8 @@ from uuid import uuid4
 import hashlib
 import json
 
+from ..models.procurement import BCHAT_RECEIPT_INTERNAL
+
 
 class ProcurementFlowCase(TransactionCase):
     def setUp(self):
@@ -440,6 +442,43 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(request.state, 'purchased')
         self.assertEqual(request.picking_id.state, 'done')
         self.assertEqual(request.line_ids.actual_price, 7.25)
+
+    def test_bchat_receipt_internal_requires_sudo_and_keeps_real_actor(self):
+        """An RPC-forged context cannot reuse the BChat server receipt hook."""
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC BChat receipt actor',
+            'login': 'prc.bchat.receipt.actor',
+            'company_id': self.company.id,
+            'company_ids': [Command.set([self.company.id])],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        self.assertFalse(user.has_group('baseer_procurement_requests.group_procurement_cashier'))
+        request = self._request()
+        request.action_mark_sent()
+        lines = [{
+            'line_id': request.line_ids.id,
+            'actual_qty': '5.00',
+            'actual_price': '7.25',
+        }]
+        forged = request.with_user(user).with_context(**{BCHAT_RECEIPT_INTERNAL: True})
+        with self.assertRaises(AccessError):
+            forged.confirm_actual_from_catalog(request.id, lines)
+        with self.assertRaises(AccessError):
+            forged.action_confirm_actual_purchase()
+        with self.assertRaises(AccessError):
+            request.line_ids.with_user(user).with_context(**{BCHAT_RECEIPT_INTERNAL: True}).write({
+                'actual_qty': 5,
+                'actual_price': 7.25,
+            })
+        with self.assertRaises(AccessError):
+            request.with_user(user).sudo().confirm_actual_from_catalog(request.id, lines)
+
+        request.with_user(user).sudo().with_context(**{BCHAT_RECEIPT_INTERNAL: True}).confirm_actual_from_catalog(
+            request.id, lines,
+        )
+        self.assertEqual(request.state, 'purchased')
+        self.assertEqual(request.picking_id.state, 'done')
+        self.assertEqual(request.actual_confirmed_by_id, user)
 
     def test_cashier_confirmation_rejects_request_outside_active_company(self):
         """Allowed companies must not widen the cashier RPC's active company."""

@@ -100,10 +100,13 @@ import java.util.concurrent.Executors;
 public final class OdooIdentityActivity extends Activity {
     public static final String EXTRA_SHARE_UNAVAILABLE = "com.baseer.bchat.SHARE_UNAVAILABLE";
     private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);
-    private static final String DATABASE = "baseer_bchat_local";
+    private static final String DATABASE = BuildConfig.BCHAT_DATABASE;
     private static final String BRIDGE_PATH = "/bchat/app/bridge";
     private static final String BRIDGE = ORIGIN + BRIDGE_PATH;
-    private static final String LOGIN = ORIGIN + "/web/login?redirect=%2Fbchat%2Fapp%2Fbridge";
+    // QA hides its database selector. Pin the known QA database before submitting
+    // the official Odoo form, otherwise a fresh WebView is diverted to /web/database/selector.
+    private static final String LOGIN = ORIGIN + "/web/login?db=" + Uri.encode(DATABASE)
+            + "&redirect=%2Fbchat%2Fapp%2Fbridge";
     private static final String V1_BOOTSTRAP = "/bchat/api/v1/bootstrap";
     private static final String BOOTSTRAP = ORIGIN + V1_BOOTSTRAP;
     private static final String V2_BOOTSTRAP = "/bchat/api/v2/bootstrap";
@@ -115,7 +118,8 @@ public final class OdooIdentityActivity extends Activity {
     private static final String V2_PUSH_REGISTER = "/bchat/api/v2/notifications/register";
     private static final String V2_PUSH_UNREGISTER = "/bchat/api/v2/notifications/unregister";
     private static final String V2_PUSH_EVENTS = "/bchat/api/v2/notifications/";
-    private static final String LOGOUT = ORIGIN + "/web/session/logout?redirect=/web/login";
+    private static final String LOGOUT = ORIGIN + "/web/session/logout?redirect=%2Fweb%2Flogin%3Fdb%3D"
+            + Uri.encode(DATABASE);
     private static final String PREFS = "bchat-employee-auth-v1";
     private static final String TASK_CREATE_PREFS = "bchat-task-create-pending-v1";
     private static final String ORDER_CREATE_PREFS = "bchat-order-create-pending-v1";

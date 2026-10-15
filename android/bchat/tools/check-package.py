@@ -68,8 +68,8 @@ import re
 gradle=(root/'app/build.gradle').read_text()
 build_script=(root/'tools/build-apk.sh').read_text()
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
-assert re.search(r"versionCode\s+51\b", gradle)
-assert "versionName '0.7.35-qa-permissions'" in gradle
+assert re.search(r"versionCode\s+52\b", gradle)
+assert "versionName '0.7.36-qa-login'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
@@ -116,6 +116,7 @@ assert '"https".equals(uri.getScheme())' in identity
 assert 'expected.getHost().equals(uri.getHost()) && uri.getPort() == expected.getPort()' in identity
 assert '"https://localhost:18443"' in gradle and 'bchatEmulatorLocal' in gradle
 assert '"https://baseer-live-qa.tail938958.ts.net"' in gradle
+assert '"baseer_live_qa_clean_20260928"' in gradle
 assert '"https://desktop-cvc68i5.tail938958.ts.net:18444"' not in gradle
 assert 'return configuredOrigin;' in (root/'app/src/main/java/com/baseer/freshchat/RuntimeOrigin.java').read_text()
 assert '"http://' not in gradle
@@ -133,7 +134,8 @@ assert 'isLoginPath(path)' in identity and 'isLoginPath(page.getPath())' in iden
 assert 'location.pathname===\'/web/login\'' in identity and 'A-Za-z0-9_-' in identity
 assert 'navigationFailed = true;' in identity and 'currentWeb != webEpoch || navigationFailed' in identity
 for required in ('BRIDGE_PATH = "/bchat/app/bridge"',
-                 'LOGIN = ORIGIN + "/web/login?redirect=%2Fbchat%2Fapp%2Fbridge"',
+                 'LOGIN = ORIGIN + "/web/login?db=" + Uri.encode(DATABASE)',
+                 'private static final String DATABASE = BuildConfig.BCHAT_DATABASE;',
                  'private static boolean isBridgeUrl(Uri uri)',
                  'BRIDGE.equals(uri.toString())', 'private void divertErp(WebView view, int expectedWeb)',
                  'if (request.isForMainFrame() && isErpPath(path))',

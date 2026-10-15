@@ -6,7 +6,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from psycopg2.errors import UniqueViolation
 
 from odoo import api, fields, models
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, MissingError
 
 from .. import group_contracts
 from ..contracts import ProtocolError, positive_id
@@ -136,13 +136,21 @@ class BChatGroupService(models.AbstractModel):
     def _v2_group_fresh_replay_if_exists(self, user_id, company_id, client_uuid, digest):
         with self.env.registry.cursor() as fresh_cr:
             fresh = api.Environment(fresh_cr, user_id, {'allowed_company_ids': [company_id]})
-            fresh['baseer.bchat.service']._require_bchat_permission('group_create')
-            room = fresh['baseer.bchat.room'].sudo().search([
-                ('group_creator_user_id', '=', user_id), ('group_create_uuid', '=', client_uuid),
-            ], limit=1)
-            if not room:
+            try:
+                service = fresh['baseer.bchat.service']
+                service._require_bchat_permission('group_create')
+                room = fresh['baseer.bchat.room'].sudo().search([
+                    ('group_creator_user_id', '=', user_id), ('group_create_uuid', '=', client_uuid),
+                ], limit=1)
+                if not room:
+                    return None
+                return service._v2_group_replay(room, digest)
+            except MissingError:
+                # The caller can be a just-created, uncommitted test user.
+                # A separate cursor cannot see it, so there cannot be a
+                # committed replay to return. Preserve the original quota
+                # response instead of leaking a server error.
                 return None
-            return fresh['baseer.bchat.service']._v2_group_replay(room, digest)
 
     @api.model
     def _v2_group_detail(self, room_id):

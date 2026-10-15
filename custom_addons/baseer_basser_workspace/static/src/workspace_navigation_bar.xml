@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_basser_workspace.WorkspaceNavigationBar"
+       t-inherit="web.NavBar" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_navbar_breadcrumbs')]" position="before">
+            <button t-if="showBaseerWorkspaceHome" type="button"
+                    class="btn btn-sm o_baseer_workspace_home"
+                    title="Back to Baseer" aria-label="Back to Baseer"
+                    t-on-click="returnToBaseerWorkspace">
+                <i class="fa fa-th-large" aria-hidden="true"/>
+                <span class="d-none d-md-inline ms-1">Baseer</span>
+            </button>
+        </xpath>
+    </t>
+</templates>

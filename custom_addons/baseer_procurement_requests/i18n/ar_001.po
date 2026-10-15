@@ -1761,6 +1761,12 @@ msgid "Representative Petty Cash — "
 msgstr "عهدة مندوب المشتريات — "
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Request date:"
+msgstr "تاريخ الطلب:"
+
+#. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
 msgid "Credit — pay later"
 msgstr "آجل — الدفع لاحقًا"

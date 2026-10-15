@@ -139,6 +139,7 @@ public final class OdooIdentityActivity extends Activity {
     private static final int MAX_V2_RESPONSE = 131072;
     private static final int MAX_PROFILE_BYTES = 16 * 1024;
     private static final int MAX_ORDER_IMAGE_BYTES = 131072;
+    private static final long BRIDGE_NAVIGATION_TIMEOUT_MILLIS = 8000L;
     // The verified v2 attachment capability is the runtime gate.
     private static final boolean CONNECTED_MEDIA_UI_ENABLED = true;
     private static final int MEDIA_PICK_REQUEST = 1205;
@@ -380,7 +381,8 @@ public final class OdooIdentityActivity extends Activity {
     private TextView taskHeading;
     private Button taskNewButton;
     private Button taskPendingButton;
-    private Button taskFilterButton;
+    private Button taskAllButton, taskOpenButton, taskDoneButton;
+    private View taskAllLine, taskOpenLine, taskDoneLine;
     private Button taskOlderButton;
     private View roomTasksButton;
     private long taskRoomFilter;
@@ -450,6 +452,7 @@ public final class OdooIdentityActivity extends Activity {
     private boolean shareUnavailablePending;
     private boolean bridgeRecoveryUsed;
     private boolean bridgeRecoveryPending;
+    private Runnable bridgeNavigationTimeout;
 
     private static boolean isExternalShare(Intent intent) {
         return intent != null && (Intent.ACTION_SEND.equals(intent.getAction())
@@ -1097,20 +1100,25 @@ public final class OdooIdentityActivity extends Activity {
         Ui.pad(taskNotice, 12, 4);
         collapseWhenEmpty(taskNotice);
         taskPane.addView(taskNotice);
-        taskFilterButton = new Button(this);
-        taskFilterButton.setText(R.string.task_filter);
-        styleAction(taskFilterButton, false);
-        taskFilterButton.setOnClickListener(v -> chooseTaskFilter());
+        LinearLayout taskTabs = Ui.row(this);
+        Ui.pad(taskTabs, 8, 2);
+        LinearLayout taskSegments = Ui.row(this);
+        taskSegments.setBackgroundColor(Color.WHITE);
+        taskAllButton = orderChoiceButton(R.string.task_tab_all, () -> selectTaskState(null));
+        taskOpenButton = orderChoiceButton(R.string.task_tab_open, () -> selectTaskState("open"));
+        taskDoneButton = orderChoiceButton(R.string.task_tab_done, () -> selectTaskState("done"));
+        taskAllLine = addOrderTab(taskSegments, taskAllButton);
+        taskOpenLine = addOrderTab(taskSegments, taskOpenButton);
+        taskDoneLine = addOrderTab(taskSegments, taskDoneButton);
+        taskTabs.addView(taskSegments, new LinearLayout.LayoutParams(0, -2, 1));
+        taskPane.addView(taskTabs);
         taskNewButton = new Button(this);
         taskNewButton.setText(R.string.task_new);
         styleAction(taskNewButton, true);
         taskNewButton.setOnClickListener(v -> createTaskDialog());
         LinearLayout taskActions = Ui.row(this);
         Ui.pad(taskActions, 6, 4);
-        taskActions.addView(taskFilterButton, new LinearLayout.LayoutParams(0, dp(48), 1));
-        LinearLayout.LayoutParams newTaskSize = new LinearLayout.LayoutParams(0, dp(48), 1);
-        newTaskSize.setMarginStart(dp(6));
-        taskActions.addView(taskNewButton, newTaskSize);
+        taskActions.addView(taskNewButton, new LinearLayout.LayoutParams(-1, dp(48)));
         taskPane.addView(taskActions);
         taskPendingButton = new Button(this);
         taskPendingButton.setText(R.string.task_review_pending);
@@ -2471,6 +2479,24 @@ public final class OdooIdentityActivity extends Activity {
         web.setVisibility(View.VISIBLE);
     }
 
+    private void cancelBridgeNavigationTimeout() {
+        if (bridgeNavigationTimeout == null) return;
+        handler.removeCallbacks(bridgeNavigationTimeout);
+        bridgeNavigationTimeout = null;
+    }
+
+    private void scheduleBridgeNavigationTimeout(WebView expectedView, int expectedWeb) {
+        cancelBridgeNavigationTimeout();
+        bridgeNavigationTimeout = () -> {
+            if (closed || expectedView != web || expectedWeb != webEpoch || verified
+                    || navigationFailed || loggingOut) return;
+            navigationFailed = true;
+            expectedView.stopLoading();
+            if (!offerOfflineHistory()) fail(R.string.auth_network_error);
+        };
+        handler.postDelayed(bridgeNavigationTimeout, BRIDGE_NAVIGATION_TIMEOUT_MILLIS);
+    }
+
     private void openWeb(String url) {
         if (closed) return;
         final String intendedUrl = url;
@@ -2551,6 +2577,7 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 handler.cancel();
                 if (view == web && currentWeb == webEpoch) {
+                    cancelBridgeNavigationTimeout();
                     navigationFailed = true;
                     fail(R.string.auth_tls_error);
                 }
@@ -2558,6 +2585,7 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void onReceivedError(WebView view, WebResourceRequest request,
                     android.webkit.WebResourceError error) {
                 if (view == web && currentWeb == webEpoch && request.isForMainFrame()) {
+                    cancelBridgeNavigationTimeout();
                     navigationFailed = true;
                     int code = error.getErrorCode();
                     boolean transport = code == WebViewClient.ERROR_HOST_LOOKUP
@@ -2571,6 +2599,7 @@ public final class OdooIdentityActivity extends Activity {
                     WebResourceResponse response) {
                 if (view == web && currentWeb == webEpoch && request.isForMainFrame()
                         && response.getStatusCode() >= 400) {
+                    cancelBridgeNavigationTimeout();
                     navigationFailed = true;
                     if (response.getStatusCode() == 401 || response.getStatusCode() == 403)
                         purgeHistory();
@@ -2610,6 +2639,7 @@ public final class OdooIdentityActivity extends Activity {
                     shell.setVisibility(View.GONE);
                     showWebChallenge();
                 } else if (isBridgeUrl(Uri.parse(url))) {
+                    cancelBridgeNavigationTimeout();
                     hideWeb(); // Only the exact BChat bridge can initiate bootstrap.
                     if (!verified && !probing) verifySession();
                 } else if (isErpPath(path)) {
@@ -2623,6 +2653,7 @@ public final class OdooIdentityActivity extends Activity {
         layout.addView(web, new LinearLayout.LayoutParams(-1, dp(1)));
         hideWeb();
         web.loadUrl(url);
+        if (BRIDGE.equals(intendedUrl) && !loggingOut) scheduleBridgeNavigationTimeout(web, currentWeb);
         if (!loggingOut) status.setText(R.string.auth_loading);
     }
 
@@ -7927,7 +7958,7 @@ public final class OdooIdentityActivity extends Activity {
         }
         tasksAvailable = false;
         taskNewButton.setVisibility(View.GONE);
-        taskFilterButton.setVisibility(View.GONE);
+        setTaskTabsVisibility(View.GONE);
         taskOlderButton.setVisibility(View.GONE);
         taskItems.removeAllViews();
         taskNotice.setText(R.string.task_loading);
@@ -7950,14 +7981,15 @@ public final class OdooIdentityActivity extends Activity {
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
-                List<TaskChoice> companies = choices(result.getJSONArray("companies"), 20, true);
+                List<TaskChoice> companies = choices(result.getJSONArray("companies"), 100, true);
                 if (result.getJSONArray("assignees").length() != 0) throw new IllegalArgumentException();
                 taskCompanies.clear();
                 taskCompanies.addAll(companies);
                 tasksAvailable = true;
                 taskNewButton.setVisibility(permissionSet.taskManage && !companies.isEmpty()
                         ? View.VISIBLE : View.GONE);
-                taskFilterButton.setVisibility(View.VISIBLE);
+                setTaskTabsVisibility(View.VISIBLE);
+                updateTaskTabs();
                 updatePendingTaskUi();
                 taskHeading.setText(roomFilter > 0 ? R.string.task_room_tasks : R.string.chat_v2_tasks);
                 taskHeading.setVisibility(roomFilter > 0 ? View.VISIBLE : View.GONE);
@@ -7997,7 +8029,9 @@ public final class OdooIdentityActivity extends Activity {
                     Task task = new Task(items.getJSONObject(i));
                     if (task.id >= previous || !v1Companies.contains(task.companyId)
                             || (roomFilter > 0 && task.roomId != roomFilter)
-                            || (taskStateFilter != null && !taskStateFilter.equals(task.state)))
+                            || (taskStateFilter != null && !("open".equals(taskStateFilter)
+                            ? ("new".equals(task.state) || "in_progress".equals(task.state))
+                            : taskStateFilter.equals(task.state))))
                         throw new IllegalArgumentException();
                     previous = task.id;
                     page.add(task);
@@ -8026,7 +8060,7 @@ public final class OdooIdentityActivity extends Activity {
     private void showCachedTasks() {
         if (!offlineHistory || taskOfflineCache == null || account == null || !permissionSet.taskView) return;
         taskNewButton.setVisibility(View.GONE);
-        taskFilterButton.setVisibility(View.GONE);
+        setTaskTabsVisibility(View.VISIBLE);
         taskOlderButton.setVisibility(View.GONE);
         taskOlderButton.setEnabled(false);
         try {
@@ -8041,7 +8075,7 @@ public final class OdooIdentityActivity extends Activity {
                 taskNotice.setText(offlineNotice(true));
                 return;
             }
-            List<TaskChoice> companies = choices(cached.companies, 20, true);
+            List<TaskChoice> companies = choices(cached.companies, 100, true);
             Set<Long> companyIds = new HashSet<>();
             for (TaskChoice company : companies) companyIds.add(company.id);
             if (!companyIds.equals(v1Companies) || cached.tasks.length() > TaskOfflineCache.PAGE_SIZE)
@@ -8051,13 +8085,16 @@ public final class OdooIdentityActivity extends Activity {
                 Task task = new Task(cached.tasks.getJSONObject(index));
                 if (task.id >= previous || !v1Companies.contains(task.companyId)
                         || (taskRoomFilter > 0 && task.roomId != taskRoomFilter)
-                        || (taskStateFilter != null && !taskStateFilter.equals(task.state)))
+                        || (taskStateFilter != null && !("open".equals(taskStateFilter)
+                        ? ("new".equals(task.state) || "in_progress".equals(task.state))
+                        : taskStateFilter.equals(task.state))))
                     throw new IllegalArgumentException();
                 previous = task.id;
                 tasks.add(task);
             }
             taskCompanies.addAll(companies);
             tasksAvailable = true;
+            updateTaskTabs();
             taskHeading.setText(taskRoomFilter > 0 ? R.string.task_room_tasks : R.string.chat_v2_tasks);
             taskHeading.setVisibility(taskRoomFilter > 0 ? View.VISIBLE : View.GONE);
             renderTasks();
@@ -8079,17 +8116,31 @@ public final class OdooIdentityActivity extends Activity {
         taskOlderButton.setEnabled(false);
     }
 
-    private void chooseTaskFilter() {
-        if (!tasksAvailable || v2Busy) return;
-        String[] states = {null, "new", "in_progress", "done", "cancelled"};
-        String[] labels = {getString(R.string.task_filter_all), getString(R.string.task_state_new),
-                getString(R.string.task_state_progress), getString(R.string.task_state_done),
-                getString(R.string.task_state_cancelled)};
-        showChoiceDialog(getString(R.string.task_filter), labels, "clock", index -> {
-                    ++taskViewSerial;
-                    taskStateFilter = states[index];
-                    loadTasks(0);
-                });
+    private void selectTaskState(String state) {
+        if (!tasksAvailable || v2Busy || (state != null && !"open".equals(state) && !"done".equals(state))) return;
+        if (java.util.Objects.equals(taskStateFilter, state)) return;
+        ++taskViewSerial;
+        taskStateFilter = state;
+        updateTaskTabs();
+        if (offlineHistory) showCachedTasks(); else loadTasks(0);
+    }
+
+    private void setTaskTabsVisibility(int visibility) {
+        if (taskAllButton == null || taskOpenButton == null || taskDoneButton == null) return;
+        taskAllButton.setVisibility(visibility);
+        taskOpenButton.setVisibility(visibility);
+        taskDoneButton.setVisibility(visibility);
+        if (taskAllLine != null) taskAllLine.setVisibility(visibility);
+        if (taskOpenLine != null) taskOpenLine.setVisibility(visibility);
+        if (taskDoneLine != null) taskDoneLine.setVisibility(visibility);
+    }
+
+    private void updateTaskTabs() {
+        if (taskAllLine == null || taskOpenLine == null || taskDoneLine == null) return;
+        boolean all = taskStateFilter == null;
+        taskAllLine.setBackgroundColor(all ? Ui.GREEN : Color.TRANSPARENT);
+        taskOpenLine.setBackgroundColor("open".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
+        taskDoneLine.setBackgroundColor("done".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
     }
 
     private int taskStateLabel(String state) {
@@ -8186,7 +8237,7 @@ public final class OdooIdentityActivity extends Activity {
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
-                List<TaskChoice> companies = choices(result.getJSONArray("companies"), 20, true);
+                List<TaskChoice> companies = choices(result.getJSONArray("companies"), 100, true);
                 boolean companyFound = false;
                 for (TaskChoice choice : companies) if (choice.id == companyId) companyFound = true;
                 if (!companyFound) throw new IllegalArgumentException();
@@ -8214,7 +8265,8 @@ public final class OdooIdentityActivity extends Activity {
             return;
         }
         String[] labels = new String[taskCompanies.size()];
-        for (int i = 0; i < labels.length; i++) labels[i] = taskCompanies.get(i).name;
+        for (int i = 0; i < taskCompanies.size(); i++)
+            labels[i] = companyNameForId(taskCompanies.get(i).id, taskCompanies.get(i).name);
         showChoiceDialog(getString(R.string.task_choose_company), labels, "company",
                 index -> showTaskForm(taskCompanies.get(index).id, 0));
     }
@@ -11940,6 +11992,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void releaseWeb() {
+        cancelBridgeNavigationTimeout();
         closeLiveSync();
         closeMediaUpload();
         closeMediaRead();

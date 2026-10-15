@@ -217,6 +217,20 @@ class BChatTaskCase(TransactionCase):
         self.assertEqual([item['id'] for item in older['tasks']], list(reversed(created[:3])))
         self.assertIsNone(older['next_before_id'])
 
+    def test_list_open_state_includes_new_and_in_progress_only(self):
+        new_id = self._create()['task']['id']
+        started_id = self._create()['task']['id']
+        done_id = self._create()['task']['id']
+        self._change(self.assignee, started_id, 1, 'start')
+        self._change(self.assignee, done_id, 1, 'start')
+        self._change(self.assignee, done_id, 2, 'done')
+        open_tasks = self._service(self.creator)._v2_tasks(state='open')['tasks']
+        self.assertIn(new_id, [row['id'] for row in open_tasks])
+        self.assertIn(started_id, [row['id'] for row in open_tasks])
+        self.assertNotIn(done_id, [row['id'] for row in open_tasks])
+        with self.assertRaises(ProtocolError):
+            self._service(self.creator)._v2_tasks(state='not-a-state')
+
     def test_standalone_reassignment_emits_bounded_revocation_hint(self):
         created = self._create()
         task_id = created['task']['id']

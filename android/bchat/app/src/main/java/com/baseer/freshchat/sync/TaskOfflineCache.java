@@ -23,7 +23,7 @@ public final class TaskOfflineCache extends SQLiteOpenHelper {
     public static final int PAGE_SIZE = 30;
     private static final int MAX_PAGES_PER_ACCOUNT = 4;
     private static final long MAX_BYTES_PER_ACCOUNT = 2L * 1024 * 1024;
-    private static final int MAX_COMPANIES = 20;
+    private static final int MAX_COMPANIES = 100;
     private static final int MAX_TASK_BYTES = 8 * 1024;
     private static final String FILE = "bchat-v2-tasks-v1.db";
 
@@ -74,7 +74,7 @@ public final class TaskOfflineCache extends SQLiteOpenHelper {
         requireAccount(account);
         String companyKey = companyKey(companyIds);
         String filter = stateFilter == null ? "" : stateFilter;
-        if (!(filter.isEmpty() || "new".equals(filter) || "in_progress".equals(filter)
+        if (!(filter.isEmpty() || "open".equals(filter) || "new".equals(filter) || "in_progress".equals(filter)
                 || "done".equals(filter) || "cancelled".equals(filter)))
             throw new IllegalArgumentException("Invalid task state filter");
         if (roomId < 0 || nextBeforeId < 0 || now <= 0 || tasks == null || companies == null

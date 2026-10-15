@@ -120,8 +120,8 @@ class BChatTaskService(models.AbstractModel):
     def _v2_task_options(self, company_id=None, room_id=None):
         user = self._require_bchat_permission('task_view')
         companies = user.company_ids
-        if len(companies) > 20:
-            raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
+        if len(companies) > 100:
+            raise ProtocolError('too_many_companies', 'Company scope exceeds the supported limit.', 409)
         response = {'api_version': 2, 'companies': [
             {'id': company.id, 'name': self._task_label(company.name)} for company in companies
         ], 'assignees': []}
@@ -159,10 +159,10 @@ class BChatTaskService(models.AbstractModel):
             before_id = positive_id(before_id, 'before_id')
         if room_id is not None:
             room_id = positive_id(room_id, 'room_id')
-        if state is not None and state not in ('new', 'in_progress', 'done', 'cancelled'):
+        if state is not None and state not in ('open', 'new', 'in_progress', 'done', 'cancelled'):
             raise ProtocolError('invalid_payload', 'Unknown task state.')
-        if len(user.company_ids) > 20:
-            raise ProtocolError('too_many_companies', 'Task listing needs company selection.', 409)
+        if len(user.company_ids) > 100:
+            raise ProtocolError('too_many_companies', 'Company scope exceeds the supported limit.', 409)
         members = self.env['baseer.bchat.membership'].sudo().search([
             ('user_id', '=', user.id), ('active', '=', True),
             ('company_id', 'in', user.company_ids.ids),
@@ -189,7 +189,9 @@ class BChatTaskService(models.AbstractModel):
         else:
             domain += ['|', ('room_id', 'in', current_rooms), '&', ('room_id', '=', False),
                        '|', ('creator_id', '=', user.id), ('assignee_id', '=', user.id)]
-        if state is not None:
+        if state == 'open':
+            domain.append(('state', 'in', ('new', 'in_progress')))
+        elif state is not None:
             domain.append(('state', '=', state))
         if before_id is not None:
             domain.append(('id', '<', before_id))

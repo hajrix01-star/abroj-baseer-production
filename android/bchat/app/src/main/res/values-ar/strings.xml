@@ -618,6 +618,9 @@
     <string name="task_close">"إغلاق"</string>
     <string name="task_filter">"تصفية حسب الحالة"</string>
     <string name="task_filter_all">"جميع المهام"</string>
+    <string name="task_tab_all">"الكل"</string>
+    <string name="task_tab_open">"نشطة"</string>
+    <string name="task_tab_done">"منجزة"</string>
     <string name="task_loading">"جارٍ تحميل المهام…"</string>
     <string name="task_unavailable">"خدمة المهام غير متاحة على الخادم حاليًا."</string>
     <string name="task_load_failed">"تعذّر تحميل المهام. حاول التحديث."</string>

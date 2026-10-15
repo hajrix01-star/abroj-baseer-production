@@ -89,10 +89,25 @@ class PermissionContracts(unittest.TestCase):
         self.assertIn('MAX_PAGES_PER_ACCOUNT = 4', task_cache)
         self.assertIn('MAX_BYTES_PER_ACCOUNT = 2L * 1024 * 1024', task_cache)
         self.assertIn('account_key,room_id,state_filter,company_key', task_cache)
+        self.assertIn('companyIds.contains(companyId)', task_cache)
         self.assertIn('purgeExceptCompanySet', task_cache)
         self.assertIn('offlineNotice(true)', method('showCachedTasks'))
         self.assertIn('offlineChatVerifiedAt = snapshot == null ? 0 : snapshot.verifiedAt', SOURCE)
         self.assertIn('offlineTaskVerifiedAt = taskSnapshot == null ? 0 : taskSnapshot.verifiedAt', SOURCE)
+
+    def test_task_tabs_use_all_open_and_done_filters(self):
+        self.assertIn('selectTaskState("open")', SOURCE)
+        self.assertIn('selectTaskState("done")', SOURCE)
+        self.assertIn('"open".equals(taskStateFilter)', method('updateTaskTabs'))
+
+    def test_bridge_navigation_cannot_hang_before_bootstrap(self):
+        self.assertIn('BRIDGE_NAVIGATION_TIMEOUT_MILLIS', SOURCE)
+        watchdog = method('scheduleBridgeNavigationTimeout')
+        self.assertIn('offerOfflineHistory()', watchdog)
+        self.assertIn('fail(R.string.auth_network_error)', watchdog)
+        opened = method('openWeb')
+        self.assertIn('scheduleBridgeNavigationTimeout(web, currentWeb)', opened)
+        self.assertIn('cancelBridgeNavigationTimeout()', method('releaseWeb'))
 
     def test_read_only_media_can_play_and_view_but_cannot_upload(self):
         contract = SOURCE[SOURCE.index('private static final class PermissionSet'):

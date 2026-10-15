@@ -128,9 +128,11 @@ class BChatTextService(models.AbstractModel):
             return []
         if len(memberships) > 100:
             raise ProtocolError('too_many_rooms', 'Room listing needs pagination.', 409)
+        task_view = bool(self._require_user()._bchat_effective_permissions().get('task_view'))
         self.env.cr.execute('''
             SELECT membership.id, latest.id, latest.text, latest.create_date,
-                   media.kind, COALESCE(unread.total, 0), COALESCE(members.total, 0)
+                   media.kind, COALESCE(unread.total, 0), COALESCE(members.total, 0),
+                   COALESCE(tasks.has_active_task, FALSE)
             FROM baseer_bchat_membership AS membership
             LEFT JOIN LATERAL (
                 SELECT message.id, message.text, message.create_date, message.media_id
@@ -152,6 +154,14 @@ class BChatTextService(models.AbstractModel):
                 SELECT COUNT(*) AS total FROM baseer_bchat_membership AS other
                 WHERE other.room_id = membership.room_id AND other.active
             ) AS members ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT EXISTS(
+                    SELECT 1 FROM baseer_bchat_task AS task
+                    WHERE task.room_id = membership.room_id
+                      AND task.company_id = membership.company_id
+                      AND task.state IN ('new', 'in_progress')
+                ) AS has_active_task
+            ) AS tasks ON TRUE
             WHERE membership.id = ANY(%s) AND membership.active
         ''', [self.env.uid, memberships.ids])
         metadata = {row[0]: row[1:] for row in self.env.cr.fetchall()}
@@ -159,7 +169,7 @@ class BChatTextService(models.AbstractModel):
         for member in memberships:
             if member.id not in metadata:
                 continue
-            last_id, text, created_at, media_kind, unread_count, member_count = metadata[member.id]
+            last_id, text, created_at, media_kind, unread_count, member_count, has_active_task = metadata[member.id]
             preview = ' '.join((text or '').split())[:160]
             room = member.room_id
             result.append({
@@ -176,6 +186,8 @@ class BChatTextService(models.AbstractModel):
                 'last_message_kind': media_kind or None,
                 'last_message_at': fields.Datetime.to_string(created_at) if created_at else None,
                 'unread_count': unread_count,
+                # Neutral group indicator; never a task title or description.
+                'has_active_task': bool(has_active_task) if task_view else False,
             })
         return result
 
@@ -435,9 +447,33 @@ class BChatTextService(models.AbstractModel):
                                          room_id=room.id, message_id=message.id,
                                          company_id=room.company_id.id,
                                          memberships={message.author_user_id.id: author_member.id})
+            # The reader does not receive its own receipt hint.  Return the
+            # authoritative post-ack room count so a client never has to
+            # hide a badge optimistically or infer it from cached history.
+            self.env.cr.execute('''
+                SELECT COUNT(*)
+                FROM baseer_bchat_message_receipt AS receipt
+                JOIN baseer_bchat_message AS candidate ON candidate.id = receipt.message_id
+                WHERE receipt.membership_id = %s
+                  AND receipt.recipient_user_id = %s
+                  AND receipt.read_at IS NULL
+                  AND candidate.room_id = %s
+                  AND candidate.company_id = %s
+                  AND candidate.id > %s
+            ''', [member.id, self.env.uid, room.id, room.company_id.id,
+                  member.joined_after_message_id])
+            unread_count = self.env.cr.fetchone()[0]
+            self.env.cr.execute('''
+                SELECT COALESCE(MAX(id), 0)
+                FROM baseer_bchat_message
+                WHERE room_id = %s AND id > %s
+            ''', [room.id, member.joined_after_message_id])
+            last_message_id = self.env.cr.fetchone()[0]
             return {'api_version': 2, 'message_id': message.id,
                     'delivered_at': fields.Datetime.to_string(receipt.delivered_at),
                     'read_at': fields.Datetime.to_string(receipt.read_at) if receipt.read_at else None,
+                    'unread_count': unread_count,
+                    'last_message_id': last_message_id,
                     'replayed': not bool(values)}
 
     @api.model

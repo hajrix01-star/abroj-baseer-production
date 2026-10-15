@@ -618,6 +618,9 @@
     <string name="task_close">"إغلاق"</string>
     <string name="task_filter">"تصفية حسب الحالة"</string>
     <string name="task_filter_all">"جميع المهام"</string>
+    <string name="task_tab_all">"الكل"</string>
+    <string name="task_tab_open">"نشطة"</string>
+    <string name="task_tab_done">"منجزة"</string>
     <string name="task_loading">"جارٍ تحميل المهام…"</string>
     <string name="task_unavailable">"خدمة المهام غير متاحة على الخادم حاليًا."</string>
     <string name="task_load_failed">"تعذّر تحميل المهام. حاول التحديث."</string>
@@ -778,6 +781,7 @@
     <string name="bchat_push_chat">رسالة جديدة في BChat</string>
     <string name="bchat_push_task">مهمة جديدة في BChat</string>
     <string name="bchat_push_order">طلب جديد في BChat</string>
+    <string name="bchat_room_has_tasks">مهام</string>
     <string name="bchat_push_unavailable">لم يعد هذا التنبيه متاحًا لحسابك.</string>
     <string name="bchat_push_order_detail">تفاصيل الطلب</string>
     <string name="bchat_push_order_requester">الطالب: %1$s\nالإجمالي: %2$s %3$s</string>
@@ -845,6 +849,8 @@
     <string name="chat_v2_offline_prompt">الخادم غير متاح. يمكنك تصفح المحادثات المحفوظة للقراءة فقط.</string>
     <string name="chat_v2_offline_browse">تصفح المحادثات المحفوظة</string>
     <string name="chat_v2_offline_read_only">دون اتصال · رسائل محفوظة فقط وقد توجد فجوات · للقراءة</string>
+    <string name="chat_v2_offline_tasks_read_only">دون اتصال · مهام محفوظة فقط وقد تكون غير مكتملة · للقراءة</string>
+    <string name="chat_v2_offline_saved_at">آخر مزامنة محفوظة: %1$s</string>
     <string name="chat_v2_offline_media_unavailable">معاينة المرفق تحتاج إلى اتصال</string>
     <string name="chat_v2_new_messages">رسائل جديدة · اضغط للانتقال إلى الأحدث</string>
     <string name="chat_v2_older_saved">أقدم محفوظة</string>

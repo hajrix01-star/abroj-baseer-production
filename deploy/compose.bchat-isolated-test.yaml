@@ -28,7 +28,10 @@ services:
     restart: "no"
 
   odoo:
-    image: baseer-bchat-local-odoo-fcm@sha256:ab028f09c0f8c19c4442c6df2661ad3e8459fbf5154333c321bd8c890dec7f0f
+    # The historical FCM image remains the default.  Focused server tests can
+    # explicitly select the locally available Odoo base image; they do not load
+    # Android/FCM code and must never fetch an unpinned registry image.
+    image: ${BCHAT_TEST_ODOO_IMAGE:-baseer-bchat-local-odoo-fcm@sha256:ab028f09c0f8c19c4442c6df2661ad3e8459fbf5154333c321bd8c890dec7f0f}
     depends_on:
       db: {condition: service_healthy}
       odoo_data_init: {condition: service_completed_successfully}

@@ -24,12 +24,12 @@ assert activity.get(a+'windowSoftInputMode')=='adjustResize'
 assert activity.get(a+'exported')=='false' and not activity.findall('intent-filter')
 assert ET.parse(root/'app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml').getroot().tag=='adaptive-icon'
 for path in (root/'app/src/main/res').rglob('*.xml'): ET.parse(path)
-source=(root/'app/src/main/java/com/baseer/freshchat/MainActivity.java').read_text()
+source=(root/'app/src/main/java/com/baseer/freshchat/MainActivity.java').read_text(encoding='utf-8')
 for snippet in ['previewShareId', 'sendPendingShare(value.shareId, co, cv, value.text, value.files, value.sendToken)', 'cleanupAttachments()', 'if (isShare(intent)) handleIncomingShare(intent)','pickerSharing','previewCompany','sendPendingShare(', 'pickCompany','isDestroyed()', 'PdfPreviewView', 'LengthFilter(ChatStore.MAX_TEXT_LENGTH)']:
  assert snippet in source, snippet
 print('PASS manifest, isolated Odoo identity permission, adaptive icon, XML, and critical demo source contracts')
 
-notifications=(root/'app/src/main/java/com/baseer/freshchat/DemoNotifications.java').read_text()
+notifications=(root/'app/src/main/java/com/baseer/freshchat/DemoNotifications.java').read_text(encoding='utf-8')
 for required in ['FLAG_IMMUTABLE', 'IMPORTANCE_HIGH', 'TYPE_NOTIFICATION', 'postingBlockerId(context)', 'MAIN.postDelayed', 'OPEN_ACTION', 'setLocalOnly(true)']:
  assert required in notifications, required
 assert not app.findall('service') and not app.findall('receiver')
@@ -55,8 +55,8 @@ canonical=root.parent.parent/'custom_addons/baseer_basser_workspace/static/descr
 if canonical.exists(): assert (root/'app/src/main/res/drawable-nodpi/baseer_mark_b.png').read_bytes()==canonical.read_bytes(), 'Original B must remain byte-identical'
 print('PASS BChat identity, current version, original B asset bytes, main sections, settings and shared audio controls')
 
-waveforms=(root/'app/src/main/java/com/baseer/freshchat/AudioWaveforms.java').read_text()
-player_view=(root/'app/src/main/java/com/baseer/freshchat/VoicePlayerView.java').read_text()
+waveforms=(root/'app/src/main/java/com/baseer/freshchat/AudioWaveforms.java').read_text(encoding='utf-8')
+player_view=(root/'app/src/main/java/com/baseer/freshchat/VoicePlayerView.java').read_text(encoding='utf-8')
 assert 'new LinkedBlockingQueue<>(8)' in waveforms and 'pending.size() >= 8' in waveforms
 assert 'worker.remove((Runnable)job.task)' in waveforms and 'pending.get(key) != job' in waveforms
 assert 'analysis.cancel()' in player_view and 'isAttachedToWindow()' in player_view
@@ -65,11 +65,11 @@ assert 'target.conversationTitle)' not in notifications and 'target.companyName)
 print('PASS bounded/cancellable local PCM analysis, detached-view fencing and generic private notifications')
 
 import re
-gradle=(root/'app/build.gradle').read_text()
-build_script=(root/'tools/build-apk.sh').read_text()
+gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
+build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
-assert re.search(r"versionCode\s+52\b", gradle)
-assert "versionName '0.7.36-qa-login'" in gradle
+assert re.search(r"versionCode\s+55\b", gradle)
+assert "versionName '0.7.39-qa-task-notifications'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
@@ -110,7 +110,7 @@ assert re.search(r'debug\s*\{\s*signingConfig signingConfigs\.preview', gradle)
 assert re.search(r'release\s*\{\s*signingConfig signingConfigs\.preview', gradle)
 print('PASS independent preview requires an explicitly supplied local signer; no implicit replacement signer')
 
-identity=(root/'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text()
+identity=(root/'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text(encoding='utf-8')
 assert 'private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);' in identity
 assert '"https".equals(uri.getScheme())' in identity
 assert 'expected.getHost().equals(uri.getHost()) && uri.getPort() == expected.getPort()' in identity
@@ -118,7 +118,7 @@ assert '"https://localhost:18443"' in gradle and 'bchatEmulatorLocal' in gradle
 assert '"https://baseer-live-qa.tail938958.ts.net"' in gradle
 assert '"baseer_live_qa_clean_20260928"' in gradle
 assert '"https://desktop-cvc68i5.tail938958.ts.net:18444"' not in gradle
-assert 'return configuredOrigin;' in (root/'app/src/main/java/com/baseer/freshchat/RuntimeOrigin.java').read_text()
+assert 'return configuredOrigin;' in (root/'app/src/main/java/com/baseer/freshchat/RuntimeOrigin.java').read_text(encoding='utf-8')
 assert '"http://' not in gradle
 print('PASS Odoo identity WebView is pinned to the selected HTTPS build origin')
 assert source.index('redirectToEmployeeEntry(getIntent())') < source.index('openStore(saved)')
@@ -146,7 +146,7 @@ assert 'openWeb(ORIGIN + "/odoo")' not in identity
 assert identity.count('|| !isBridgeUrl(Uri.parse(web.getUrl()))') >= 3
 print('PASS native employee entry, no demo-store startup, same-origin official login form, session-only remember and disabled sharing')
 
-v2_outbox=(root/'app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java').read_text()
+v2_outbox=(root/'app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java').read_text(encoding='utf-8')
 for required in ('/bchat/api/v2/bootstrap', '/bchat/api/v2/rooms', 'author_name',
                  'new WebMessagePort[]{channel[1]}', 'redirect:\'manual\'',
                  'MAX_V2_RESPONSE = 131072', 'probeV1AfterTransportFailure(writeRequest)',

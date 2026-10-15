@@ -1,6 +1,6 @@
 {
     'name': 'BChat',
-    'version': '19.0.0.4.6',
+    'version': '19.0.0.4.7',
     'category': 'Productivity/Discuss',
     'summary': 'Private BChat messaging and company-scoped group administration',
     'license': 'LGPL-3',
@@ -9,6 +9,7 @@
         'security/security.xml',
         'security/ir.model.access.csv',
         'data/media_cleanup_cron.xml',
+        'data/push_cron.xml',
         'views/bchat_admin_views.xml',
         'views/res_users_bchat_views.xml',
     ],

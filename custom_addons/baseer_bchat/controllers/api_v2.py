@@ -186,6 +186,33 @@ class BChatTextApi(http.Controller):
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/notifications/register', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=8192)
+    def notification_register(self, **kwargs):
+        try:
+            self._no_query()
+            return self._response(self._service()._v2_push_register(self._group_form_payload()))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
+    @http.route('/bchat/api/v2/notifications/unregister', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=1024)
+    def notification_unregister(self, **kwargs):
+        try:
+            self._no_query()
+            return self._response(self._service()._v2_push_unregister(self._group_form_payload()))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
+    @http.route('/bchat/api/v2/notifications/<int:event_id>', type='http', auth='user',
+                methods=['GET'], csrf=True, save_session=True)
+    def notification_event(self, event_id, **kwargs):
+        try:
+            self._no_query()
+            return self._response(self._service()._v2_push_event(event_id))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/rooms/<int:room_id>/messages', type='http', auth='user',
                 methods=['GET'], csrf=True, save_session=True)
     def history(self, room_id, **kwargs):

@@ -1,5 +1,6 @@
 """Session-bound service for BChat-owned tasks, never project.task or Discuss."""
 import json
+import logging
 import unicodedata
 
 from psycopg2.errors import UniqueViolation
@@ -12,11 +13,15 @@ from ..contracts import ProtocolError, positive_id
 from .task import _TASK_SERVICE_TOKEN
 
 
+_logger = logging.getLogger(__name__)
+
+
 class BChatTaskService(models.AbstractModel):
     _inherit = 'baseer.bchat.service'
 
     @api.model
-    def _task_publish_change(self, task, former_assignee_id=None):
+    def _task_publish_change(self, task, former_assignee_id=None,
+                             notification_action='created', actor_id=None):
         if task.room_id:
             members = self.env['baseer.bchat.membership'].sudo().search([
                 ('room_id', '=', task.room_id.id), ('active', '=', True),
@@ -34,6 +39,13 @@ class BChatTaskService(models.AbstractModel):
             if former_assignee_id and former_assignee_id not in recipients:
                 self._change_publish([former_assignee_id], 'task_revoked',
                                      task_id=task.id, company_id=task.company_id.id)
+        # Push is only a wake-up. A delivery fault must never undo a verified
+        # task transition or its durable change hint.
+        try:
+            with self.env.cr.savepoint():
+                self._task_queue_push(task, notification_action, actor_id)
+        except Exception:
+            _logger.warning('BChat task push event could not be queued', exc_info=False)
 
     @api.model
     def _task_company(self, company_id):
@@ -120,8 +132,8 @@ class BChatTaskService(models.AbstractModel):
     def _v2_task_options(self, company_id=None, room_id=None):
         user = self._require_bchat_permission('task_view')
         companies = user.company_ids
-        if len(companies) > 20:
-            raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
+        if len(companies) > 100:
+            raise ProtocolError('too_many_companies', 'Company scope exceeds the supported limit.', 409)
         response = {'api_version': 2, 'companies': [
             {'id': company.id, 'name': self._task_label(company.name)} for company in companies
         ], 'assignees': []}
@@ -159,10 +171,10 @@ class BChatTaskService(models.AbstractModel):
             before_id = positive_id(before_id, 'before_id')
         if room_id is not None:
             room_id = positive_id(room_id, 'room_id')
-        if state is not None and state not in ('new', 'in_progress', 'done', 'cancelled'):
+        if state is not None and state not in ('open', 'new', 'in_progress', 'done', 'cancelled'):
             raise ProtocolError('invalid_payload', 'Unknown task state.')
-        if len(user.company_ids) > 20:
-            raise ProtocolError('too_many_companies', 'Task listing needs company selection.', 409)
+        if len(user.company_ids) > 100:
+            raise ProtocolError('too_many_companies', 'Company scope exceeds the supported limit.', 409)
         members = self.env['baseer.bchat.membership'].sudo().search([
             ('user_id', '=', user.id), ('active', '=', True),
             ('company_id', 'in', user.company_ids.ids),
@@ -189,7 +201,9 @@ class BChatTaskService(models.AbstractModel):
         else:
             domain += ['|', ('room_id', 'in', current_rooms), '&', ('room_id', '=', False),
                        '|', ('creator_id', '=', user.id), ('assignee_id', '=', user.id)]
-        if state is not None:
+        if state == 'open':
+            domain.append(('state', 'in', ('new', 'in_progress')))
+        elif state is not None:
             domain.append(('state', '=', state))
         if before_id is not None:
             domain.append(('id', '<', before_id))
@@ -262,7 +276,7 @@ class BChatTaskService(models.AbstractModel):
                 if error.diag.constraint_name != 'baseer_bchat_task_creator_uuid_unique':
                     raise
                 return scoped._task_fresh_create_replay(normalized, digest)
-            scoped._task_publish_change(task)
+            scoped._task_publish_change(task, notification_action='created', actor_id=user.id)
             return {'api_version': 2, 'client_uuid': task.client_uuid,
                     'task': scoped._task_data(task), 'replayed': False}
 
@@ -363,6 +377,7 @@ class BChatTaskService(models.AbstractModel):
                 if error.diag.constraint_name != 'baseer_bchat_task_event_actor_uuid_unique':
                     raise
                 raise ProtocolError('idempotency_conflict', 'The UUID belongs to another operation.', 409) from None
-            self._task_publish_change(task, former_assignee_id)
+            self._task_publish_change(task, former_assignee_id,
+                                      notification_action=action, actor_id=user.id)
             return {'api_version': 2, 'task': self._task_data(task),
                     'replayed': False, 'operation_revision': values['revision']}

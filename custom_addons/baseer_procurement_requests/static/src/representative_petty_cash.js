@@ -31,8 +31,6 @@ export function formatRequestDateTime(value, locale = user.lang, timeZone = user
     const options = {
         calendar: "gregory",
         day: "2-digit",
-        hour: "numeric",
-        minute: "2-digit",
         month: "2-digit",
         numberingSystem: "latn",
         timeZone: timeZone || "UTC",

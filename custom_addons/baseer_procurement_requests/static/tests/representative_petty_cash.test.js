@@ -24,4 +24,5 @@ test.tags("desktop");
 test("request datetime accepts Odoo's underscored English locale", () => {
     const label = formatRequestDateTime("2026-10-15 21:30:00", "en_US", "Asia/Riyadh");
     expect(label).toContain("10/16/2026");
+    expect(label).not.toContain(":");
 });

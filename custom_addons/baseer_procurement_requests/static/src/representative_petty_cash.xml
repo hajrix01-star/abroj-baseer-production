@@ -37,7 +37,7 @@
                                 </t>
                             </Dropdown>
                         </label>
-                        <div class="o_rep_pc_request_total" t-if="selectedRequest()"><span>Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></span><small><span>Request date:</span> <span dir="ltr"><t t-esc="requestDateTimeLabel()"/></span></small></div>
+                        <div class="o_rep_pc_request_total" t-if="selectedRequest()"><span>Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></span><small><span>Request date:</span> <span><t t-esc="requestDateTimeLabel()"/></span></small></div>
                         <label>From
                             <Dropdown>
                                 <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="paymentPointLabel()"><span t-esc="paymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>

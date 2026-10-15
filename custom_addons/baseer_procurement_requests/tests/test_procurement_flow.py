@@ -233,6 +233,52 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(batch.procurement_invoice_difference, 0)
         self.assertTrue(batch.procurement_invoice_matches)
 
+    def test_purchase_batch_source_uses_receipt_route_or_direct_creator(self):
+        """Direct entry attribution is audit-only and receipt batches keep their route."""
+        Batch = self.env['baseer.purchase.batch']
+        direct_batch = Batch.create({
+            'company_id': self.company.id,
+            'entry_date': fields.Date.from_string('2026-01-01'),
+        })
+        newer_direct_batch = Batch.create({
+            'company_id': self.company.id,
+            'entry_date': fields.Date.from_string('2026-01-02'),
+        })
+        self.assertEqual(direct_batch.procurement_entry_source, 'Direct entry — %s' % self.env.user.name)
+        self.assertEqual(direct_batch.create_uid, self.env.user)
+        self.assertFalse(direct_batch.procurement_request_id)
+        self.assertEqual(
+            Batch.search([('id', 'in', [direct_batch.id, newer_direct_batch.id])]).ids,
+            [newer_direct_batch.id, direct_batch.id],
+        )
+
+        request = self._complete_request(actual_quantity=1, actual_price=7)
+        receipt_batch = Batch.search([('procurement_request_id', '=', request.id)])
+        self.assertEqual(receipt_batch.procurement_entry_source, request._purchase_route_label())
+        self.assertTrue(receipt_batch.procurement_auto_draft)
+
+        invoice_accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC batch invoice accountant',
+            'login': 'prc-batch-accountant-%s' % uuid4(),
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_invoice').id,
+            ])],
+        })
+        # The user switch must exercise a fresh non-stored compute, not the
+        # value this administrator transaction may already have cached.
+        (receipt_batch | direct_batch).invalidate_recordset(['procurement_entry_source'])
+        receipt_source = receipt_batch.with_user(invoice_accountant).with_company(self.company).read([
+            'procurement_entry_source',
+        ])[0]['procurement_entry_source']
+        direct_source = direct_batch.with_user(invoice_accountant).with_company(self.company).read([
+            'procurement_entry_source',
+        ])[0]['procurement_entry_source']
+        self.assertEqual(receipt_source, request._purchase_route_label())
+        self.assertEqual(direct_source, 'Direct entry — %s' % self.env.user.name)
+
     def _native_batch_accounting_fixture(self, company, expense, supplier):
         """Supply native journal/account and analytics for productless bills."""
         env = self.env(context={**self.env.context, 'allowed_company_ids': company.ids})

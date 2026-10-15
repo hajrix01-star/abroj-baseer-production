@@ -111,6 +111,33 @@ msgid "Route"
 msgstr "المسار"
 
 #. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_entry_source
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Source"
+msgstr "المصدر"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Entry source"
+msgstr "مصدر الإدخال"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "Direct entry — %s"
+msgstr "إدخال مباشر — %s"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "Direct entry"
+msgstr "إدخال مباشر"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,help:baseer_procurement_requests.field_baseer_purchase_batch__procurement_entry_source
+msgid "Receipt batches show the original purchase route; direct batches show the Odoo user who entered them."
+msgstr "تعرض دفعات الاستلام مسار الشراء الأصلي، وتعرض الدفعات المباشرة مستخدم أودو الذي أدخلها."
+
+#. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
 msgid "Received total"
 msgstr "إجمالي المستلم"

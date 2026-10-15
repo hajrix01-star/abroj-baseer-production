@@ -55,6 +55,11 @@ class ProcurementRequest(models.Model):
 class BaseerPurchaseBatch(models.Model):
     _inherit = 'baseer.purchase.batch'
 
+    procurement_entry_source = fields.Char(
+        compute='_compute_procurement_entry_source',
+        string='Source', readonly=True, compute_sudo=True,
+        help='Receipt batches show the original purchase route; direct batches show the Odoo user who entered them.',
+    )
     procurement_auto_draft = fields.Boolean(
         string='Receipt invoice draft', readonly=True, copy=False, index=True,
         help='Created automatically after a completed purchase receipt; no accounting entry exists until approval.',
@@ -67,6 +72,26 @@ class BaseerPurchaseBatch(models.Model):
         related='procurement_request_id.representative_partner_id',
         string='Receipt representative', readonly=True,
     )
+
+    @api.depends('procurement_request_id', 'procurement_request_id.purchase_route', 'create_uid', 'create_uid.name')
+    @api.depends_context('lang')
+    def _compute_procurement_entry_source(self):
+        """Keep a clear, immutable display attribution for every batch.
+
+        The field deliberately does not identify a payment method for a direct
+        entry.  Only a completed procurement receipt owns a purchase route;
+        all other batches are attributed to Odoo's native audit creator.  It
+        computes as sudo because invoice accountants can read a batch without
+        membership in the procurement-request ACL; the batch's company rule
+        remains the outer access boundary.
+        """
+        for batch in self:
+            if batch.procurement_request_id:
+                batch.procurement_entry_source = batch.procurement_request_id._purchase_route_label()
+            elif batch.create_uid:
+                batch.procurement_entry_source = _('Direct entry — %s') % batch.create_uid.name
+            else:
+                batch.procurement_entry_source = _('Direct entry')
 
     @api.depends('procurement_request_id', 'procurement_request_id.representative_partner_id')
     def _compute_procurement_representative_funded_amount(self):

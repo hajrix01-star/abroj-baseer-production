@@ -180,6 +180,48 @@ class ProcurementFlowCase(TransactionCase):
         with self.assertRaises(AccessError):
             request.write({'purchase_route': 'bank_transfer'})
 
+    def test_purchase_batch_exposes_received_total_invoice_difference_and_match(self):
+        """The accountant sees the authoritative approval comparison before posting."""
+        request = self._complete_request(actual_quantity=2, actual_price=100)
+        batch = self.env['baseer.purchase.batch'].create({
+            'company_id': self.company.id,
+            'procurement_request_id': request.id,
+        })
+
+        self.assertEqual(batch.procurement_request_actual_total, 200)
+        self.assertEqual(batch.amount_gross, 0)
+        self.assertEqual(batch.procurement_invoice_difference, 200)
+        self.assertFalse(batch.procurement_invoice_matches)
+        with self.assertRaisesRegex(ValidationError, 'must equal'):
+            batch.action_approve()
+        batch.invalidate_recordset()
+        self.assertEqual(batch.state, 'draft')
+        self.assertFalse(batch.line_ids.mapped('move_id'))
+
+        supplier = self.env['res.partner'].create({
+            'name': 'PRC matching supplier %s' % uuid4(),
+            'supplier_rank': 1,
+        })
+        batch.write({'line_ids': [Command.create({
+            'partner_id': supplier.id,
+            'supplier_ref': 'PRC-MATCH-%s' % uuid4(),
+            'gross_amount': 201,
+            'is_credit': True,
+        })]})
+        self.assertEqual(batch.amount_gross, 201)
+        self.assertEqual(batch.procurement_invoice_difference, -1)
+        self.assertFalse(batch.procurement_invoice_matches)
+        with self.assertRaisesRegex(ValidationError, 'must equal'):
+            batch.action_approve()
+        batch.invalidate_recordset()
+        self.assertEqual(batch.state, 'draft')
+        self.assertFalse(batch.line_ids.mapped('move_id'))
+
+        batch.line_ids.gross_amount = 200
+        self.assertEqual(batch.amount_gross, 200)
+        self.assertEqual(batch.procurement_invoice_difference, 0)
+        self.assertTrue(batch.procurement_invoice_matches)
+
     def _native_batch_accounting_fixture(self, company, expense, supplier):
         """Supply native journal/account and analytics for productless bills."""
         env = self.env(context={**self.env.context, 'allowed_company_ids': company.ids})

@@ -1052,6 +1052,27 @@ msgid "Supplier invoices entered"
 msgstr "مجموع فواتير الموردين"
 
 #. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_invoice_difference
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
+msgid "Receipt invoice difference"
+msgstr "فرق مطابقة الاستلام والفواتير"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,help:baseer_procurement_requests.field_baseer_purchase_batch__procurement_invoice_difference
+msgid "Received request total minus supplier invoices entered in this batch."
+msgstr "إجمالي الطلب المستلم ناقص إجمالي فواتير الموردين المدخلة في هذه الدفعة."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
+msgid "Matched — ready to approve"
+msgstr "متطابق — جاهز للاعتماد"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
+msgid "Complete the supplier invoices to match the received request before approval."
+msgstr "أكمل فواتير الموردين لتطابق الطلب المستلم قبل الاعتماد."
+
+#. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_representative_balance
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
 msgid "Representative Petty Cash balance"

@@ -127,6 +127,34 @@ class CashierProcurementRoleCase(TransactionCase):
         petty_cash.with_user(owner).with_company(company).action_close()
         self.assertEqual(petty_cash.state, 'closed')
 
+    def test_cpr_t00c_accountant_can_enter_purchase_batches_but_not_operational_requests(self):
+        """Accountant is the least-privilege role for supplier-bill entry."""
+        company = self.env.company
+        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Purchase batch accountant',
+            'login': 'purchase-batch-accountant-%s' % uuid4().hex,
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'baseer_access_role': 'accountant',
+        })
+        Batch = self.env['baseer.purchase.batch'].with_user(accountant).with_context(
+            allowed_company_ids=company.ids,
+        )
+        Line = self.env['baseer.purchase.batch.line'].with_user(accountant).with_context(
+            allowed_company_ids=company.ids,
+        )
+        Request = self.env['baseer.procurement.request'].with_user(accountant).with_context(
+            allowed_company_ids=company.ids,
+        )
+
+        self.assertTrue(accountant.has_group('account.group_account_invoice'))
+        for operation in ('read', 'create', 'write'):
+            self.assertTrue(Batch.check_access_rights(operation, raise_exception=False))
+            self.assertTrue(Line.check_access_rights(operation, raise_exception=False))
+        self.assertTrue(Request.check_access_rights('read', raise_exception=False))
+        self.assertFalse(Request.check_access_rights('create', raise_exception=False))
+        self.assertFalse(Request.check_access_rights('write', raise_exception=False))
+
     def _fixture(self, company, suffix):
         """Create the minimum company-local operational request fixture."""
         company_env = self.env(context={

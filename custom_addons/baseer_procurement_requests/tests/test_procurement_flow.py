@@ -163,9 +163,15 @@ class ProcurementFlowCase(TransactionCase):
             [{'option_id': self.option.id, 'quantity': '1.00'}],
             self.warehouse.id, purchase_route='cash',
         )
-        batch = self.env['baseer.purchase.batch'].create({
-            'company_id': self.company.id, 'procurement_request_id': request_id,
-        })
+        completed_request = self.env['baseer.procurement.request'].browse(request_id)
+        completed_request.action_mark_sent()
+        completed_request.line_ids.manager_received_qty = 1
+        completed_request.action_confirm_manager_receipt()
+        completed_request.line_ids.write({'actual_qty': 1, 'actual_price': 4})
+        completed_request.action_confirm_actual_purchase()
+        batch = self.env['baseer.purchase.batch'].search([
+            ('procurement_request_id', '=', request_id),
+        ])
         self.assertEqual(batch.procurement_purchase_route, 'cash')
         accountant = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'PRC route accountant', 'login': 'prc-route-accountant-%s' % uuid4(),
@@ -183,10 +189,11 @@ class ProcurementFlowCase(TransactionCase):
     def test_purchase_batch_exposes_received_total_invoice_difference_and_match(self):
         """The accountant sees the authoritative approval comparison before posting."""
         request = self._complete_request(actual_quantity=2, actual_price=100)
-        batch = self.env['baseer.purchase.batch'].create({
-            'company_id': self.company.id,
-            'procurement_request_id': request.id,
-        })
+        batch = self.env['baseer.purchase.batch'].search([
+            ('procurement_request_id', '=', request.id),
+        ])
+        self.assertEqual(len(batch), 1)
+        self.assertTrue(batch.procurement_auto_draft)
 
         self.assertEqual(batch.procurement_request_actual_total, 200)
         self.assertEqual(batch.amount_gross, 0)
@@ -729,6 +736,125 @@ class ProcurementFlowCase(TransactionCase):
         request.with_user(cashier).action_confirm_actual_purchase()
         self.assertEqual(request.state, 'purchased')
         self.assertEqual(self.option.last_price, 5)
+
+    def test_completed_receipt_creates_one_non_accounting_invoice_draft(self):
+        request = self.env['baseer.procurement.request'].create({
+            'company_id': self.company.id,
+            'warehouse_id': self.warehouse.id,
+            'purchase_route': 'cash',
+            'line_ids': [Command.create({
+                'option_id': self.option.id, 'requested_qty': 4, 'requested_price': 5,
+            })],
+        })
+        account_moves_before = self.env['account.move'].search_count([('company_id', '=', self.company.id)])
+        request.action_mark_sent()
+        request.line_ids.manager_received_qty = 4
+        request.action_confirm_manager_receipt()
+        request.line_ids.write({'actual_qty': 4, 'actual_price': 5})
+
+        request.action_confirm_actual_purchase()
+        batch = self.env['baseer.purchase.batch'].search([
+            ('procurement_request_id', '=', request.id),
+        ])
+        self.assertEqual(len(batch), 1)
+        self.assertTrue(batch.procurement_auto_draft)
+        self.assertEqual(batch.state, 'draft')
+        self.assertFalse(batch.line_ids)
+        self.assertEqual(batch.procurement_purchase_route, 'cash')
+        self.assertEqual(batch.procurement_request_actual_total, 20)
+        self.assertEqual(self.env['account.move'].search_count([('company_id', '=', self.company.id)]), account_moves_before)
+
+        # The completed-receipt action is retry-safe and must reuse the draft.
+        request.action_confirm_actual_purchase()
+        self.assertEqual(self.env['baseer.purchase.batch'].search_count([
+            ('procurement_request_id', '=', request.id),
+        ]), 1)
+        with self.assertRaisesRegex(AccessError, 'created only'):
+            self.env['baseer.purchase.batch'].create({
+                'company_id': self.company.id,
+                'procurement_request_id': request.id,
+                'procurement_auto_draft': True,
+            })
+        with self.assertRaisesRegex(AccessError, 'controlled by the server'):
+            batch.write({'procurement_request_id': self._request().id})
+        with self.assertRaisesRegex(AccessError, 'cannot be deleted'):
+            batch.unlink()
+        with self.assertRaisesRegex(ValidationError, 'completed purchase receipt'):
+            self.env['baseer.purchase.batch'].create({
+                'company_id': self.company.id,
+                'procurement_request_id': self._request().id,
+            })
+
+    def test_completed_representative_receipt_uses_invoice_level_settlement(self):
+        advance_account, _cash_account, _bank_account, general, _cash, bank = self._custody_accounting_fixture('PAD01')
+        self.company.write({
+            'baseer_procurement_representative_petty_cash_account_id': advance_account.id,
+            'baseer_procurement_representative_petty_cash_journal_id': general.id,
+            'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([bank.id])],
+        })
+        representative = self.env['res.partner'].create({
+            'name': 'PAD representative', 'is_purchase_representative': True,
+        })
+        request = self.env['baseer.procurement.request'].create({
+            'company_id': self.company.id,
+            'warehouse_id': self.warehouse.id,
+            'representative_partner_id': representative.id,
+            'line_ids': [Command.create({
+                'option_id': self.option.id, 'requested_qty': 2, 'requested_price': 10,
+            })],
+        })
+        request.action_mark_sent()
+        self.env['baseer.procurement.representative.advance'].with_company(
+            self.company
+        ).submit_funding(
+            request.id, bank.id, representative.id, 25, str(uuid4()), fields.Date.context_today(self),
+        )
+        request.line_ids.manager_received_qty = 2
+        request.action_confirm_manager_receipt()
+        request.line_ids.write({'actual_qty': 2, 'actual_price': 10})
+        request.action_confirm_actual_purchase()
+
+        batch = self.env['baseer.purchase.batch'].search([
+            ('procurement_request_id', '=', request.id),
+        ])
+        self.assertEqual(len(batch), 1)
+        self.assertTrue(batch.procurement_auto_draft)
+        self.assertEqual(batch.procurement_purchase_route, 'representative')
+        self.assertFalse(batch.representative_petty_cash_id)
+        self.assertEqual(batch.procurement_representative_funded_amount, 25)
+        self.assertEqual(batch.procurement_request_actual_total, 20)
+        expense = self.env['account.account'].create({
+            'name': 'PAD purchase expense', 'code': 'PAD01', 'account_type': 'expense',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        supplier = self.env['res.partner'].create({'name': 'PAD supplier', 'supplier_rank': 1})
+        self._native_batch_accounting_fixture(self.company, expense, supplier)
+        other_representative = self.env['res.partner'].create({
+            'name': 'PAD wrong representative', 'is_purchase_representative': True,
+        })
+        batch.write({'line_ids': [Command.create({
+            'partner_id': supplier.id,
+            'supplier_ref': 'PAD-REP-WRONG',
+            'entry_type': 'purchase',
+            'gross_amount': 20,
+            'payment_source_type': 'representative_petty_cash',
+            'representative_petty_cash_representative_id': other_representative.id,
+        })]})
+        with self.assertRaisesRegex(ValidationError, 'only the purchase representative'):
+            batch.action_approve()
+        batch.line_ids.unlink()
+        batch.write({'line_ids': [Command.create({
+            'partner_id': supplier.id,
+            'supplier_ref': 'PAD-REP-1',
+            'entry_type': 'purchase',
+            'gross_amount': 20,
+            'payment_source_type': 'representative_petty_cash',
+            'representative_petty_cash_representative_id': representative.id,
+        })]})
+        batch.action_approve()
+        self.assertEqual(batch.state, 'approved')
+        self.assertTrue(batch.line_ids.representative_petty_cash_invoice_settlement_id)
+        self.assertEqual(batch.line_ids.move_id.payment_state, 'paid')
 
     def test_real_time_material_is_refused(self):
         if 'property_valuation' not in self.category._fields:

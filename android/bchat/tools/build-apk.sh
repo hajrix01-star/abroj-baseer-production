@@ -23,7 +23,7 @@ BUILD_DIR="$(realpath -m artifacts/build)"
 rm -rf -- "$BUILD_DIR"
 mkdir -p artifacts/build/{compiled,gen,classes,dex} artifacts/signing
 "$BUILD_TOOLS/aapt2" compile --no-crunch --dir app/src/main/res -o artifacts/build/compiled.zip
-"$BUILD_TOOLS/aapt2" link -o artifacts/build/resources.apk -I "$ANDROID_JAR" --manifest app/src/main/AndroidManifest.xml --custom-package com.baseer.freshchat --java artifacts/build/gen --min-sdk-version 26 --target-sdk-version 35 --version-code 43 --version-name 0.7.27-group-photo-viewer-preview "${DEBUG_ARGS[@]}" artifacts/build/compiled.zip
+"$BUILD_TOOLS/aapt2" link -o artifacts/build/resources.apk -I "$ANDROID_JAR" --manifest app/src/main/AndroidManifest.xml --custom-package com.baseer.freshchat --java artifacts/build/gen --min-sdk-version 26 --target-sdk-version 35 --version-code 53 --version-name 0.7.37-qa-offline "${DEBUG_ARGS[@]}" artifacts/build/compiled.zip
 find app/src/main/java artifacts/build/gen -name '*.java' > artifacts/build/sources.txt
 "${JAVAC[@]}" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -classpath "$ANDROID_JAR" -d artifacts/build/classes @artifacts/build/sources.txt
 find artifacts/build/classes -name '*.class' > artifacts/build/classes.txt
@@ -32,8 +32,8 @@ cp artifacts/build/resources.apk artifacts/build/unsigned.apk
 (cd artifacts/build/dex && jar uf ../unsigned.apk classes*.dex)
 "$BUILD_TOOLS/zipalign" -f -p 4 artifacts/build/unsigned.apk artifacts/build/aligned.apk
 if [[ "${BCHAT_UNSIGNED_ONLY:-0}" == 1 ]]; then
-  unsigned_output=artifacts/BChat-0.7.8-Modern-Chat-Unsigned-COMPILE-CHECK.apk
-  if [[ "${BCHAT_DEBUGGABLE_LOCAL:-0}" == 1 ]]; then unsigned_output=artifacts/BChat-0.7.8-Modern-Chat-Debug-Unsigned.apk; fi
+  unsigned_output=artifacts/BChat-0.7.37-qa-offline-Unsigned-COMPILE-CHECK.apk
+  if [[ "${BCHAT_DEBUGGABLE_LOCAL:-0}" == 1 ]]; then unsigned_output=artifacts/BChat-0.7.37-qa-offline-Debug-Unsigned.apk; fi
   cp artifacts/build/aligned.apk "$unsigned_output"
   "$BUILD_TOOLS/aapt2" dump badging "$unsigned_output" > artifacts/unsigned-manifest.txt
   sha256sum "$unsigned_output"

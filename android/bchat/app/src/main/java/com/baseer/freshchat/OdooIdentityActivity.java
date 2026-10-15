@@ -64,6 +64,7 @@ import com.baseer.freshchat.sync.BChatV2Outbox;
 import com.baseer.freshchat.sync.BChatConnectedMediaStore;
 import com.baseer.freshchat.sync.ConnectedHistoryCache;
 import com.baseer.freshchat.sync.OutboxPolicy;
+import com.baseer.freshchat.sync.TaskOfflineCache;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -194,6 +195,7 @@ public final class OdooIdentityActivity extends Activity {
     private final Set<Long> v1Companies = new HashSet<>();
     private BChatV2Outbox outbox;
     private ConnectedHistoryCache historyCache;
+    private TaskOfflineCache taskOfflineCache;
     private PermissionSet permissionSet = PermissionSet.legacy();
     private AccountScope permissionAccount;
     private boolean permissionRefreshScheduled;
@@ -204,6 +206,8 @@ public final class OdooIdentityActivity extends Activity {
     private final ExecutorService mediaIo = Executors.newSingleThreadExecutor();
     private volatile int historyWriteGeneration;
     private boolean offlineHistory;
+    private boolean offlineChatCacheAvailable, offlineTaskCacheAvailable;
+    private static final long MAX_OFFLINE_AGE_MILLIS = 24L * 60L * 60L * 1000L;
     private boolean offlineUncertainWrite;
     private final List<JSONObject> displayedMessages = new ArrayList<>();
     private static final int MAX_CONNECTED_MESSAGE_WINDOW = 500;
@@ -270,6 +274,10 @@ public final class OdooIdentityActivity extends Activity {
         @Override protected int sizeOf(String key, Bitmap bitmap) { return bitmap.getByteCount(); }
     };
     private final List<Room> rooms = new ArrayList<>();
+    /** Advances only after a complete authoritative /rooms replacement. */
+    private int roomMetadataGeneration;
+    /** Advances after a locally confirmed read so an older /rooms reply cannot restore its badge. */
+    private int unreadMetadataGeneration;
     private AccountScope groupPhotoAccount;
     private Room groupPhotoRoom;
     private final Map<String, List<ImageView>> groupAvatarWaiting = new LinkedHashMap<>();
@@ -452,6 +460,7 @@ public final class OdooIdentityActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         historyCache = new ConnectedHistoryCache(this);
+        taskOfflineCache = new TaskOfflineCache(this);
         if (BuildConfig.BCHAT_PUSH_ENABLED) BChatPushState.observe(this, pushTokenListener);
         capturePushTarget(getIntent());
         if (!preferences().getBoolean(REMEMBER, false)) BChatPushState.clearAccount(this);
@@ -2292,6 +2301,8 @@ public final class OdooIdentityActivity extends Activity {
             if ("chats".equals(section) && !chatAllowed()) continue;
             if ("tasks".equals(section) && !permissionSet.taskView) continue;
             if ("orders".equals(section) && !orderCanView) continue;
+            if (offlineHistory && "chats".equals(section) && !offlineChatCacheAvailable) continue;
+            if (offlineHistory && "tasks".equals(section) && !offlineTaskCacheAvailable) continue;
             boolean selected = section.equals(visibleSection);
             LinearLayout tab = Ui.column(this);
             tab.setGravity(Gravity.CENTER);
@@ -2315,10 +2326,12 @@ public final class OdooIdentityActivity extends Activity {
             lineSize.topMargin = dp(3);
             tab.addView(selectedLine, lineSize);
             tab.setOnClickListener(v -> {
-                if ("tasks".equals(section)) {
+                    if ("tasks".equals(section)) {
                     ++taskViewSerial;
                     taskRoomFilter = 0;
-                    if ("tasks".equals(visibleSection)) discoverTasks();
+                    if ("tasks".equals(visibleSection)) {
+                        if (offlineHistory) showCachedTasks(); else discoverTasks();
+                    }
                     else switchSection(section);
                 } else switchSection(section);
             });
@@ -2333,6 +2346,8 @@ public final class OdooIdentityActivity extends Activity {
         if ("chats".equals(section) && !chatAllowed()) return;
         if ("tasks".equals(section) && !permissionSet.taskView) return;
         if ("orders".equals(section) && !orderCanView) return;
+        if (offlineHistory && "chats".equals(section) && !offlineChatCacheAvailable) return;
+        if (offlineHistory && "tasks".equals(section) && !offlineTaskCacheAvailable) return;
         if (section.equals(visibleSection) && ("chats".equals(section) ? chatPane.getVisibility() == View.VISIBLE
                 : "tasks".equals(section) ? taskPane.getVisibility() == View.VISIBLE
                 : modulePane.getVisibility() == View.VISIBLE)) return;
@@ -2361,7 +2376,8 @@ public final class OdooIdentityActivity extends Activity {
         taskPane.setVisibility("tasks".equals(section) ? View.VISIBLE : View.GONE);
         boolean insideRoom = chats && selectedRoom != null;
         brandBar.setVisibility(insideRoom ? View.GONE : View.VISIBLE);
-        bottomTabs.setVisibility(insideRoom ? View.GONE : View.VISIBLE);
+        bottomTabs.setVisibility(insideRoom || (offlineHistory
+                && !(offlineChatCacheAvailable && offlineTaskCacheAvailable)) ? View.GONE : View.VISIBLE);
         if ("orders".equals(section)) {
             // A denied role can be granted during this session. Otherwise the scoped
             // content request still checks authorization without repeating both options calls.
@@ -2381,7 +2397,9 @@ public final class OdooIdentityActivity extends Activity {
                 }
             }
         }
-        if ("tasks".equals(section)) discoverTasks();
+        if ("tasks".equals(section)) {
+            if (offlineHistory) showCachedTasks(); else discoverTasks();
+        }
         renderBottomTabs();
         if (!"orders".equals(section)) handler.post(this::maybeProbeOrderCapability);
         handler.post(this::flushLiveUi);
@@ -2756,11 +2774,14 @@ public final class OdooIdentityActivity extends Activity {
             while (keys.hasNext()) if (capabilities.opt(keys.next()) != Boolean.FALSE)
                 throw new IllegalArgumentException("Unexpected enabled capability");
             AccountScope nextAccount = new AccountScope(ORIGIN, DATABASE, uid);
-            boolean canRemember = historyCache != null;
+            boolean canRemember = historyCache != null && taskOfflineCache != null;
             ++historyWriteGeneration; // Fence queued writes before account-switch cleanup.
             ++historyGlobalGeneration; // Also fence the previous Activity after a fast recreate.
-            if (historyCache != null) try {
-                synchronized (historyStorageLock) { historyCache.purgeOtherAccounts(nextAccount); }
+            if (historyCache != null && taskOfflineCache != null) try {
+                synchronized (historyStorageLock) {
+                    historyCache.purgeOtherAccounts(nextAccount);
+                    taskOfflineCache.purgeOtherAccounts(nextAccount);
+                }
             }
             catch (RuntimeException storage) {
                 // No cold-start access can be offered if account-switch cleanup failed.
@@ -2769,6 +2790,8 @@ public final class OdooIdentityActivity extends Activity {
                 synchronized (historyStorageLock) {
                     historyCache.close();
                     historyCache = null;
+                    taskOfflineCache.close();
+                    taskOfflineCache = null;
                 }
             }
             prepareOrderCompanyAccount(nextAccount);
@@ -3519,6 +3542,9 @@ public final class OdooIdentityActivity extends Activity {
             groupInfoDialog.dismiss();
         if (!next.taskView) {
             ++taskViewSerial;
+            try { synchronized (historyStorageLock) {
+                if (taskOfflineCache != null) taskOfflineCache.purgeAccount(scope);
+            } } catch (RuntimeException damaged) { purgeHistory(); }
             tasksAvailable = false;
             tasks.clear();
             taskCompanies.clear();
@@ -3566,6 +3592,9 @@ public final class OdooIdentityActivity extends Activity {
                 if (allowed.contains(room.companyId)) retainedRooms.add(room.id);
                 else historyCache.purgeRoom(scope, room.id);
             }
+        } } catch (RuntimeException damaged) { purgeHistory(); }
+        if (taskOfflineCache != null) try { synchronized (historyStorageLock) {
+            taskOfflineCache.purgeExceptCompanySet(scope, allowed);
         } } catch (RuntimeException damaged) { purgeHistory(); }
         if (selectedRoom != null && !allowed.contains(selectedRoom.companyId)) showRooms();
         rooms.removeIf(room -> !allowed.contains(room.companyId));
@@ -4118,6 +4147,7 @@ public final class OdooIdentityActivity extends Activity {
         String name, invoicePolicy;
         int invoicePolicyVersion;
         String lastMessagePreview = "", lastMessageAt = "", lastMessageKind = "";
+        long lastMessageId;
         int unreadCount, avatarVersion, memberCount;
         boolean groupAdmin, isGroup;
         Room(long id, long companyId, long membershipId, String name,
@@ -4140,6 +4170,7 @@ public final class OdooIdentityActivity extends Activity {
             lastMessagePreview = other.lastMessagePreview;
             lastMessageAt = other.lastMessageAt;
             lastMessageKind = other.lastMessageKind;
+            lastMessageId = other.lastMessageId;
             unreadCount = other.unreadCount;
             avatarVersion = other.avatarVersion;
             memberCount = other.memberCount;
@@ -4153,8 +4184,11 @@ public final class OdooIdentityActivity extends Activity {
         ++historyGlobalGeneration;
         // If disk deletion fails, a restarted app must still refuse stale offline access.
         preferences().edit().putBoolean(REMEMBER, false).commit();
-        if (historyCache == null) return;
-        try { synchronized (historyStorageLock) { historyCache.purgeAll(); } }
+        if (historyCache == null && taskOfflineCache == null) return;
+        try { synchronized (historyStorageLock) {
+            if (historyCache != null) historyCache.purgeAll();
+            if (taskOfflineCache != null) taskOfflineCache.purgeAll();
+        } }
         catch (RuntimeException damaged) {
             // A damaged local cache must not authorize cold-start browsing later.
             preferences().edit().putBoolean(REMEMBER, false).commit();
@@ -4172,13 +4206,23 @@ public final class OdooIdentityActivity extends Activity {
     /** An offline snapshot is a read-only fallback after transport failure, never a session. */
     private boolean offerOfflineHistory() {
         if (closed || loggingOut || !preferences().getBoolean(REMEMBER, false)
-                || historyCache == null) return false;
-        ConnectedHistoryCache.Snapshot snapshot;
+                || (historyCache == null && taskOfflineCache == null)) return false;
+        ConnectedHistoryCache.Snapshot history = null;
+        TaskOfflineCache.Snapshot taskSnapshot = null;
+        PermissionSet saved;
         try {
-            snapshot = historyCache.remembered(ORIGIN, DATABASE);
-            if (snapshot == null) return false;
-            PermissionSet saved = rememberedPermissions(snapshot.account);
-            if (saved != null && !saved.chatView) return false;
+            long now = System.currentTimeMillis();
+            if (historyCache != null)
+                history = historyCache.remembered(ORIGIN, DATABASE, now, MAX_OFFLINE_AGE_MILLIS);
+            if (taskOfflineCache != null)
+                taskSnapshot = taskOfflineCache.remembered(ORIGIN, DATABASE, now, MAX_OFFLINE_AGE_MILLIS);
+            if (history == null && taskSnapshot == null) return false;
+            AccountScope candidate = history != null ? history.account : taskSnapshot.account;
+            if (history != null && taskSnapshot != null
+                    && !history.account.key.equals(taskSnapshot.account.key)) return false;
+            saved = rememberedPermissions(candidate);
+            if (saved == null || (history == null || !saved.chatView)
+                    && (taskSnapshot == null || !saved.taskView)) return false;
         } catch (Exception unavailable) { return false; }
         ++epoch;
         probing = false;
@@ -4186,13 +4230,7 @@ public final class OdooIdentityActivity extends Activity {
         verified = false;
         csrfToken = null;
         releaseWeb();
-        showShell();
-        if (!browseRememberedHistory(snapshot)) {
-            showShell();
-            shellNotice.setText(R.string.chat_v2_load_failed);
-            shellRetry.setVisibility(View.VISIBLE);
-        }
-        return true;
+        return browseRememberedHistory(history, taskSnapshot, saved);
     }
 
     private void retryOnlineSession() {
@@ -4220,27 +4258,37 @@ public final class OdooIdentityActivity extends Activity {
         });
     }
 
-    private boolean browseRememberedHistory(ConnectedHistoryCache.Snapshot snapshot) {
-        if (closed || snapshot == null || historyCache == null
+    private boolean browseRememberedHistory(ConnectedHistoryCache.Snapshot snapshot,
+                                            TaskOfflineCache.Snapshot taskSnapshot,
+                                            PermissionSet saved) {
+        if (closed || saved == null || (snapshot == null && taskSnapshot == null)
                 || !preferences().getBoolean(REMEMBER, false)) return false;
         try {
             releaseWeb();
             clearChatView();
-            account = snapshot.account;
+            account = snapshot != null ? snapshot.account : taskSnapshot.account;
             csrfToken = null;
             verified = false;
             offlineHistory = true;
-            for (ConnectedHistoryCache.RoomRecord record : snapshot.rooms)
+            offlineChatCacheAvailable = snapshot != null;
+            offlineTaskCacheAvailable = taskSnapshot != null;
+            permissionSet = saved;
+            permissionAccount = account;
+            v1Companies.clear();
+            if (taskSnapshot != null) v1Companies.addAll(taskSnapshot.companyIds);
+            if (snapshot != null) for (ConnectedHistoryCache.RoomRecord record : snapshot.rooms) {
                 rooms.add(new Room(record.id, record.companyId, record.membershipId,
                         record.name, record.policy, record.policyVersion));
+                v1Companies.add(record.companyId);
+            }
             shell.setVisibility(View.GONE);
             nativeForm.setVisibility(View.GONE);
             status.setVisibility(View.GONE);
             chatRoot.setVisibility(View.VISIBLE);
             layout.setPadding(0, 0, 0, 0);
-            showRooms();
-            bottomTabs.setVisibility(View.GONE);
-            chatNotice.setText(offlineNotice());
+            if (saved.chatView && snapshot != null) showRooms();
+            else if (saved.taskView && taskSnapshot != null) switchSection("tasks");
+            else return false;
             return true;
         } catch (Exception unavailable) {
             clearChatView();
@@ -4290,6 +4338,7 @@ public final class OdooIdentityActivity extends Activity {
         ++messageRenderSerial;
         historicalWindow = false;
         offlineHistory = false;
+        offlineChatCacheAvailable = offlineTaskCacheAvailable = false;
         offlineUncertainWrite = false;
         receiptsAvailable = false;
         liveRoomsDirty = liveMessagesDirty = liveTasksDirty = liveOrdersDirty = false;
@@ -4342,6 +4391,8 @@ public final class OdooIdentityActivity extends Activity {
         flushDraftSave();
         if (pendingDialog != null) { pendingDialog.dismiss(); pendingDialog = null; }
         rooms.clear();
+        ++roomMetadataGeneration;
+        ++unreadMetadataGeneration;
         selectedRoom = null;
         if (chatCompanyMenu != null) chatCompanyMenu.dismiss();
         pendingNotificationMessageId = 0;
@@ -4506,7 +4557,8 @@ public final class OdooIdentityActivity extends Activity {
         if (chatRoot == null) return;
         switchSection("chats");
         brandBar.setVisibility(View.VISIBLE);
-        bottomTabs.setVisibility(offlineHistory ? View.GONE : View.VISIBLE);
+        bottomTabs.setVisibility(offlineHistory && !(offlineChatCacheAvailable && offlineTaskCacheAvailable)
+                ? View.GONE : View.VISIBLE);
         chatTitle.setText(R.string.chat_v2_rooms);
         refreshRoomCompanySubtitle();
         chatTitleBar.setVisibility(View.GONE);
@@ -4636,6 +4688,7 @@ public final class OdooIdentityActivity extends Activity {
     private void loadRooms() {
         if (!chatAllowed()) return;
         boolean initial = chatRoot.getVisibility() != View.VISIBLE;
+        final int requestUnreadMetadataGeneration = unreadMetadataGeneration;
         if (initial) shellNotice.setText(R.string.chat_v2_loading);
         else chatNotice.setText(R.string.chat_v2_loading);
         fetchV2("GET", V2_ROOMS, null, (statusCode, result) -> {
@@ -4643,6 +4696,10 @@ public final class OdooIdentityActivity extends Activity {
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
+                if (requestUnreadMetadataGeneration != unreadMetadataGeneration) {
+                    loadRooms();
+                    return;
+                }
                 JSONArray list = result.getJSONArray("rooms");
                 if (list.length() > 100) throw new IllegalArgumentException();
                 List<Room> validated = new ArrayList<>();
@@ -4663,6 +4720,7 @@ public final class OdooIdentityActivity extends Activity {
                             || "invoice_default".equals(policy)) || version < 1)
                         throw new IllegalArgumentException();
                     Room room = new Room(id, company, membership, name, policy, version);
+                    room.lastMessageId = nonnegativeCursor(item.get("last_message_id"));
                     room.lastMessagePreview = item.opt("last_message_preview") instanceof String
                             ? item.optString("last_message_preview") : "";
                     room.lastMessageAt = item.opt("last_message_at") instanceof String
@@ -4716,6 +4774,7 @@ public final class OdooIdentityActivity extends Activity {
                 }
                 rooms.clear();
                 rooms.addAll(validated);
+                ++roomMetadataGeneration;
                 if (historyCache != null && account != null) {
                     List<ConnectedHistoryCache.RoomRecord> snapshot = new ArrayList<>();
                     for (Room room : validated)
@@ -6678,10 +6737,11 @@ public final class OdooIdentityActivity extends Activity {
                 || messageId <= 0 || !("delivered".equals(kind) || "read".equals(kind))) return;
         String key = room.id + ":" + messageId + ":" + kind;
         if (acknowledgedMessages.contains(key) || !pendingAcknowledgements.add(key)) return;
+        final int requestRoomMetadataGeneration = roomMetadataGeneration;
         String path = V2_ROOMS + "/" + room.id + "/messages/" + messageId + "/receipts";
         enqueueLive("POST", path, "kind", kind, (statusCode, result) -> {
             pendingAcknowledgements.remove(key);
-            if (!liveReady(scope) || selectedRoom != room) return;
+            if (!liveReady(scope)) return;
             if (statusCode == 401) { logout(); return; }
             try {
                 if (statusCode != 200 || result == null
@@ -6690,9 +6750,26 @@ public final class OdooIdentityActivity extends Activity {
                         || !(result.opt("delivered_at") instanceof String)
                         || ("read".equals(kind) && !(result.opt("read_at") instanceof String)))
                     throw new IllegalArgumentException();
+                long unread = nonnegativeCursor(result.get("unread_count"));
+                long responseLastMessageId = nonnegativeCursor(result.get("last_message_id"));
+                if (unread > Integer.MAX_VALUE) throw new IllegalArgumentException();
                 acknowledgedMessages.add(key);
-                if ("read".equals(kind))
+                if ("read".equals(kind)) {
                     acknowledgedMessages.add(room.id + ":" + messageId + ":delivered");
+                    // The server committed this exact read receipt. Apply its
+                    // count only to the same active membership and only if a
+                    // newer room snapshot has not arrived while it was in flight.
+                    for (Room candidate : rooms) {
+                        if (!candidate.sameMembership(room)) continue;
+                        if (requestRoomMetadataGeneration != roomMetadataGeneration) break;
+                        if (candidate.lastMessageId != responseLastMessageId) break;
+                        candidate.unreadCount = (int) unread;
+                        if (selectedRoom == candidate) selectedRoom.unreadCount = (int) unread;
+                        ++unreadMetadataGeneration;
+                        if (selectedRoom == null && "chats".equals(visibleSection)) renderRooms();
+                        break;
+                    }
+                }
             } catch (Exception invalid) {
                 if (statusCode == 0 || statusCode >= 500) handler.postDelayed(() -> {
                     if (selectedRoom == room && liveReady(scope)) {
@@ -7751,6 +7828,54 @@ public final class OdooIdentityActivity extends Activity {
         return list;
     }
 
+    private JSONArray cachedTaskCompanies() throws Exception {
+        JSONArray value = new JSONArray();
+        for (TaskChoice company : taskCompanies) {
+            JSONObject item = new JSONObject();
+            item.put("id", company.id);
+            item.put("name", company.name);
+            value.put(item);
+        }
+        return value;
+    }
+
+    private void cacheVerifiedTaskPage(AccountScope scope, long roomId, String stateFilter,
+                                       JSONArray page, long nextBeforeId) {
+        if (scope == null || taskOfflineCache == null || page == null) return;
+        try {
+            final JSONArray taskCopy = new JSONArray(page.toString());
+            final JSONArray companyCopy = cachedTaskCompanies();
+            final Set<Long> companyScope = new HashSet<>(v1Companies);
+            final TaskOfflineCache cache = taskOfflineCache;
+            final boolean remembered = preferences().getBoolean(REMEMBER, false);
+            final long verifiedAt = System.currentTimeMillis();
+            final int generation = historyWriteGeneration;
+            final int globalGeneration = historyGlobalGeneration;
+            historyWrites.execute(() -> {
+                synchronized (historyStorageLock) {
+                    if (closed || generation != historyWriteGeneration
+                            || globalGeneration != historyGlobalGeneration || account != scope
+                            || taskOfflineCache != cache) return;
+                    try {
+                        cache.save(scope, companyScope, roomId, stateFilter, taskCopy, companyCopy,
+                                nextBeforeId, remembered, verifiedAt);
+                    } catch (Exception storage) {
+                        handler.post(() -> {
+                            if (closed || account != scope || taskOfflineCache != cache) return;
+                            preferences().edit().putBoolean(REMEMBER, false).commit();
+                            synchronized (historyStorageLock) {
+                                cache.close();
+                                if (taskOfflineCache == cache) taskOfflineCache = null;
+                            }
+                        });
+                    }
+                }
+            });
+        } catch (Exception ignored) {
+            // The network response remains valid even if a non-authoritative local copy cannot be made.
+        }
+    }
+
     private void openTasks(long roomId) {
         if (!permissionSet.taskView) return;
         ++taskViewSerial;
@@ -7851,6 +7976,8 @@ public final class OdooIdentityActivity extends Activity {
                 long cursor = next == null || next == JSONObject.NULL ? 0 : positiveId(next);
                 if (cursor > 0 && (page.isEmpty() || cursor != page.get(page.size() - 1).id))
                     throw new IllegalArgumentException();
+                if (beforeId == 0) cacheVerifiedTaskPage(scopedAccount, roomFilter,
+                        taskStateFilter, items, cursor);
                 if (beforeId == 0) tasks.clear();
                 tasks.addAll(page);
                 taskBeforeId = cursor;
@@ -7863,6 +7990,55 @@ public final class OdooIdentityActivity extends Activity {
                 if (statusCode == 403) clearDeniedTaskList();
             }
         });
+    }
+
+    /** Offline tasks are a complete previously verified first page, never a partial network merge. */
+    private void showCachedTasks() {
+        if (!offlineHistory || taskOfflineCache == null || account == null || !permissionSet.taskView) return;
+        taskNewButton.setVisibility(View.GONE);
+        taskFilterButton.setVisibility(View.GONE);
+        taskOlderButton.setVisibility(View.GONE);
+        taskOlderButton.setEnabled(false);
+        try {
+            TaskOfflineCache.Page cached = taskOfflineCache.page(account, v1Companies,
+                    taskRoomFilter, taskStateFilter);
+            tasks.clear();
+            taskCompanies.clear();
+            taskBeforeId = 0;
+            if (cached == null) {
+                tasksAvailable = true;
+                renderTasks();
+                taskNotice.setText(offlineNotice());
+                return;
+            }
+            List<TaskChoice> companies = choices(cached.companies, 20, true);
+            Set<Long> companyIds = new HashSet<>();
+            for (TaskChoice company : companies) companyIds.add(company.id);
+            if (!companyIds.equals(v1Companies) || cached.tasks.length() > TaskOfflineCache.PAGE_SIZE)
+                throw new IllegalArgumentException();
+            long previous = Long.MAX_VALUE;
+            for (int index = 0; index < cached.tasks.length(); index++) {
+                Task task = new Task(cached.tasks.getJSONObject(index));
+                if (task.id >= previous || !v1Companies.contains(task.companyId)
+                        || (taskRoomFilter > 0 && task.roomId != taskRoomFilter)
+                        || (taskStateFilter != null && !taskStateFilter.equals(task.state)))
+                    throw new IllegalArgumentException();
+                previous = task.id;
+                tasks.add(task);
+            }
+            taskCompanies.addAll(companies);
+            tasksAvailable = true;
+            taskHeading.setText(taskRoomFilter > 0 ? R.string.task_room_tasks : R.string.chat_v2_tasks);
+            taskHeading.setVisibility(taskRoomFilter > 0 ? View.VISIBLE : View.GONE);
+            renderTasks();
+            taskNotice.setText(offlineNotice());
+        } catch (Exception invalid) {
+            tasks.clear();
+            taskCompanies.clear();
+            tasksAvailable = true;
+            renderTasks();
+            taskNotice.setText(R.string.task_load_failed);
+        }
     }
 
     private void clearDeniedTaskList() {
@@ -7940,11 +8116,25 @@ public final class OdooIdentityActivity extends Activity {
                     getString(R.string.task_due_value, displayTaskDue(task.dueAt)), 12, Ui.MUTED, false), fieldSize(4));
             entry.setContentDescription(task.title + ", " + getString(taskStateLabel(task.state)));
             Ui.clickable(entry);
-            entry.setOnClickListener(v -> loadTaskDetail(task.id));
+            entry.setOnClickListener(v -> {
+                if (offlineHistory) showCachedTaskDetail(task); else loadTaskDetail(task.id);
+            });
             LinearLayout.LayoutParams cardSize = new LinearLayout.LayoutParams(-1, -2);
             cardSize.setMargins(dp(10), dp(5), dp(10), dp(3));
             taskItems.addView(entry, cardSize);
         }
+    }
+
+    private void showCachedTaskDetail(Task task) {
+        StringBuilder detail = new StringBuilder();
+        if (!task.description.trim().isEmpty()) detail.append(task.description.trim()).append("\n\n");
+        detail.append(getString(R.string.bchat_task_people,
+                taskCompanyName(task.companyId), task.assigneeName));
+        if (task.dueAt != null) detail.append("\n").append(getString(R.string.task_due_value,
+                displayTaskDue(task.dueAt)));
+        detail.append("\n\n").append(offlineNotice());
+        new AlertDialog.Builder(this).setTitle(task.title).setMessage(detail.toString())
+                .setPositiveButton(R.string.task_close, null).show();
     }
 
     private interface TaskChoicesCallback { void ready(List<TaskChoice> choices); }
@@ -11847,9 +12037,11 @@ public final class OdooIdentityActivity extends Activity {
         // A verified room snapshot queued just before a language change or activity close
         // must commit before this helper closes. No disk wait occurs on the UI thread.
         ConnectedHistoryCache closingCache = historyCache;
+        TaskOfflineCache closingTaskCache = taskOfflineCache;
         historyWrites.execute(() -> {
             synchronized (historyStorageLock) {
                 if (closingCache != null) closingCache.close();
+                if (closingTaskCache != null) closingTaskCache.close();
             }
         });
         historyWrites.shutdown();

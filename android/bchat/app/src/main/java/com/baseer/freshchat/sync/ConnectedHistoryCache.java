@@ -147,10 +147,18 @@ public final class ConnectedHistoryCache extends SQLiteOpenHelper {
 
     /** Only the account explicitly remembered after a verified login may be browsed cold. */
     public Snapshot remembered(String origin, String database) {
+        return remembered(origin, database, System.currentTimeMillis(), Long.MAX_VALUE);
+    }
+
+    /** A cold view is bounded by a last verified time; caller owns the product retention policy. */
+    public Snapshot remembered(String origin, String database, long now, long maxAge) {
+        if (now <= 0 || maxAge <= 0) return null;
+        long cutoff = maxAge >= now ? 0 : now - maxAge;
         AccountScope scope;
         try (Cursor rows = getReadableDatabase().query("account_scope",
                 new String[]{"origin", "database_name", "user_id"},
-                "remembered=1 AND origin=? AND database_name=?", new String[]{origin, database},
+                "remembered=1 AND origin=? AND database_name=? AND verified_at<=? AND verified_at>=?",
+                new String[]{origin, database, String.valueOf(now), String.valueOf(cutoff)},
                 null, null, "verified_at DESC", "1")) {
             if (!rows.moveToFirst()) return null;
             scope = new AccountScope(rows.getString(0), rows.getString(1), rows.getLong(2));

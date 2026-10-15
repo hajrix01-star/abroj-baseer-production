@@ -49,9 +49,12 @@ public final class ConnectedHistoryCache extends SQLiteOpenHelper {
     public static final class Snapshot {
         public final AccountScope account;
         public final List<RoomRecord> rooms;
-        private Snapshot(AccountScope account, List<RoomRecord> rooms) {
+        /** The latest verified server snapshot time, used only to label a read-only cold view. */
+        public final long verifiedAt;
+        private Snapshot(AccountScope account, List<RoomRecord> rooms, long verifiedAt) {
             this.account = account;
             this.rooms = rooms;
+            this.verifiedAt = verifiedAt;
         }
     }
 
@@ -155,16 +158,18 @@ public final class ConnectedHistoryCache extends SQLiteOpenHelper {
         if (now <= 0 || maxAge <= 0) return null;
         long cutoff = maxAge >= now ? 0 : now - maxAge;
         AccountScope scope;
+        long verifiedAt;
         try (Cursor rows = getReadableDatabase().query("account_scope",
-                new String[]{"origin", "database_name", "user_id"},
+                new String[]{"origin", "database_name", "user_id", "verified_at"},
                 "remembered=1 AND origin=? AND database_name=? AND verified_at<=? AND verified_at>=?",
                 new String[]{origin, database, String.valueOf(now), String.valueOf(cutoff)},
                 null, null, "verified_at DESC", "1")) {
             if (!rows.moveToFirst()) return null;
             scope = new AccountScope(rows.getString(0), rows.getString(1), rows.getLong(2));
+            verifiedAt = rows.getLong(3);
         }
         List<RoomRecord> rooms = rooms(scope);
-        return rooms.isEmpty() ? null : new Snapshot(scope, rooms);
+        return rooms.isEmpty() ? null : new Snapshot(scope, rooms, verifiedAt);
     }
 
     public List<RoomRecord> rooms(AccountScope account) {

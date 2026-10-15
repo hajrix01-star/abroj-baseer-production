@@ -845,6 +845,8 @@
     <string name="chat_v2_offline_prompt">The server is unavailable. You can browse previously saved chats in read-only mode.</string>
     <string name="chat_v2_offline_browse">Browse saved chats</string>
     <string name="chat_v2_offline_read_only">Offline · saved messages only; gaps may exist · read-only</string>
+    <string name="chat_v2_offline_tasks_read_only">Offline · saved tasks only; they may be incomplete · read-only</string>
+    <string name="chat_v2_offline_saved_at">Saved on: %1$s</string>
     <string name="chat_v2_offline_media_unavailable">Attachment preview requires a connection</string>
     <string name="chat_v2_new_messages">New messages · tap to jump to latest</string>
     <string name="chat_v2_older_saved">Older saved</string>

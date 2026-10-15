@@ -207,6 +207,7 @@ public final class OdooIdentityActivity extends Activity {
     private volatile int historyWriteGeneration;
     private boolean offlineHistory;
     private boolean offlineChatCacheAvailable, offlineTaskCacheAvailable;
+    private long offlineChatVerifiedAt, offlineTaskVerifiedAt;
     private static final long MAX_OFFLINE_AGE_MILLIS = 24L * 60L * 60L * 1000L;
     private boolean offlineUncertainWrite;
     private final List<JSONObject> displayedMessages = new ArrayList<>();
@@ -4272,6 +4273,8 @@ public final class OdooIdentityActivity extends Activity {
             offlineHistory = true;
             offlineChatCacheAvailable = snapshot != null;
             offlineTaskCacheAvailable = taskSnapshot != null;
+            offlineChatVerifiedAt = snapshot == null ? 0 : snapshot.verifiedAt;
+            offlineTaskVerifiedAt = taskSnapshot == null ? 0 : taskSnapshot.verifiedAt;
             permissionSet = saved;
             permissionAccount = account;
             v1Companies.clear();
@@ -4297,8 +4300,19 @@ public final class OdooIdentityActivity extends Activity {
         }
     }
 
-    private String offlineNotice() {
-        String readOnly = getString(R.string.chat_v2_offline_read_only);
+    private String offlineNotice() { return offlineNotice(false); }
+
+    /** Offline pages are always dated so users do not mistake a cache for current server state. */
+    private String offlineNotice(boolean tasks) {
+        String readOnly = getString(tasks ? R.string.chat_v2_offline_tasks_read_only
+                : R.string.chat_v2_offline_read_only);
+        long verifiedAt = tasks ? offlineTaskVerifiedAt : offlineChatVerifiedAt;
+        if (verifiedAt > 0) {
+            Date date = new Date(verifiedAt);
+            readOnly += "\n" + getString(R.string.chat_v2_offline_saved_at,
+                    asciiDigits(android.text.format.DateFormat.getDateFormat(this).format(date)
+                            + " " + android.text.format.DateFormat.getTimeFormat(this).format(date)));
+        }
         return offlineUncertainWrite
                 ? getString(R.string.chat_v2_uncertain_network) + "\n" + readOnly : readOnly;
     }
@@ -4339,6 +4353,7 @@ public final class OdooIdentityActivity extends Activity {
         historicalWindow = false;
         offlineHistory = false;
         offlineChatCacheAvailable = offlineTaskCacheAvailable = false;
+        offlineChatVerifiedAt = offlineTaskVerifiedAt = 0;
         offlineUncertainWrite = false;
         receiptsAvailable = false;
         liveRoomsDirty = liveMessagesDirty = liveTasksDirty = liveOrdersDirty = false;
@@ -6759,15 +6774,26 @@ public final class OdooIdentityActivity extends Activity {
                     // The server committed this exact read receipt. Apply its
                     // count only to the same active membership and only if a
                     // newer room snapshot has not arrived while it was in flight.
+                    boolean refreshUnreadMetadata = false;
                     for (Room candidate : rooms) {
                         if (!candidate.sameMembership(room)) continue;
-                        if (requestRoomMetadataGeneration != roomMetadataGeneration) break;
-                        if (candidate.lastMessageId != responseLastMessageId) break;
+                        if (requestRoomMetadataGeneration != roomMetadataGeneration
+                                || candidate.lastMessageId != responseLastMessageId) {
+                            // A list response may have replaced the badge with data fetched
+                            // before this receipt committed. It is not safe to merge the ACK
+                            // into that snapshot; fence every in-flight list and fetch a fresh one.
+                            refreshUnreadMetadata = true;
+                            break;
+                        }
                         candidate.unreadCount = (int) unread;
                         if (selectedRoom == candidate) selectedRoom.unreadCount = (int) unread;
                         ++unreadMetadataGeneration;
                         if (selectedRoom == null && "chats".equals(visibleSection)) renderRooms();
                         break;
+                    }
+                    if (refreshUnreadMetadata) {
+                        ++unreadMetadataGeneration;
+                        loadRooms();
                     }
                 }
             } catch (Exception invalid) {
@@ -8008,7 +8034,7 @@ public final class OdooIdentityActivity extends Activity {
             if (cached == null) {
                 tasksAvailable = true;
                 renderTasks();
-                taskNotice.setText(offlineNotice());
+                taskNotice.setText(offlineNotice(true));
                 return;
             }
             List<TaskChoice> companies = choices(cached.companies, 20, true);
@@ -8031,7 +8057,7 @@ public final class OdooIdentityActivity extends Activity {
             taskHeading.setText(taskRoomFilter > 0 ? R.string.task_room_tasks : R.string.chat_v2_tasks);
             taskHeading.setVisibility(taskRoomFilter > 0 ? View.VISIBLE : View.GONE);
             renderTasks();
-            taskNotice.setText(offlineNotice());
+            taskNotice.setText(offlineNotice(true));
         } catch (Exception invalid) {
             tasks.clear();
             taskCompanies.clear();
@@ -8132,7 +8158,7 @@ public final class OdooIdentityActivity extends Activity {
                 taskCompanyName(task.companyId), task.assigneeName));
         if (task.dueAt != null) detail.append("\n").append(getString(R.string.task_due_value,
                 displayTaskDue(task.dueAt)));
-        detail.append("\n\n").append(offlineNotice());
+        detail.append("\n\n").append(offlineNotice(true));
         new AlertDialog.Builder(this).setTitle(task.title).setMessage(detail.toString())
                 .setPositiveButton(R.string.task_close, null).show();
     }

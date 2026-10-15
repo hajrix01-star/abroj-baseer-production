@@ -33,6 +33,11 @@ assert 'nonnegativeCursor(result.get("last_message_id"))' in ack
 assert 'candidate.sameMembership(room)' in ack
 assert 'candidate.lastMessageId != responseLastMessageId' in ack
 assert 'requestRoomMetadataGeneration != roomMetadataGeneration' in ack
+assert 'boolean refreshUnreadMetadata = false;' in ack
+assert 'refreshUnreadMetadata = true;' in ack
+assert 'if (refreshUnreadMetadata) {' in ack
+assert '++unreadMetadataGeneration;' in ack
+assert 'loadRooms();' in ack
 assert 'if ("read".equals(kind)) {' in ack
 assert 'room.unreadCount--' not in ack
 assert 'room.unreadCount = 0;' not in ack

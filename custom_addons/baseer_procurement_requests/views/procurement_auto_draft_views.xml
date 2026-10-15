@@ -46,7 +46,7 @@
                 </div>
                 <group string="Receipt information" invisible="not procurement_request_id or procurement_purchase_route != 'representative'">
                     <group>
-                        <field name="procurement_request_representative_id" string="Purchase representative" readonly="1" invisible="procurement_purchase_route != 'representative'"/>
+                        <field name="procurement_request_representative_id" string="Receipt representative" readonly="1" invisible="procurement_purchase_route != 'representative'"/>
                         <field name="procurement_representative_funded_amount" string="Representative amount transferred" readonly="1" invisible="procurement_purchase_route != 'representative'"/>
                     </group>
                 </group>

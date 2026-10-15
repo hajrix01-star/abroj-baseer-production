@@ -965,11 +965,15 @@ msgstr "ترحيل الحركة"
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_period_close_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_period_close_list
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_procurement_link
-#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
-#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_request_representative_id
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Purchase representative"
 msgstr "مندوب المشتريات"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_request_representative_id
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Receipt representative"
+msgstr "مندوب الاستلام"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form

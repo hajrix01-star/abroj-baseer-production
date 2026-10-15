@@ -65,7 +65,7 @@ class BaseerPurchaseBatch(models.Model):
     )
     procurement_request_representative_id = fields.Many2one(
         related='procurement_request_id.representative_partner_id',
-        string='Purchase representative', readonly=True,
+        string='Receipt representative', readonly=True,
     )
 
     @api.depends('procurement_request_id', 'procurement_request_id.representative_partner_id')

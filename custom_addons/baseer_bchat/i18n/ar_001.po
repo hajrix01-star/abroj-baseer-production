@@ -1,0 +1,50 @@
+# Translation of Odoo Server.
+# Module: baseer_bchat
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0?0:n==1?1:n==2?2:n%100>=3 && n%100<=10?3:n%100>=11 && n%100<=99?4:5;\n"
+
+#. module: baseer_bchat
+msgid "BChat Conversation Manager"
+msgstr "مدير محادثات BChat"
+
+#. module: baseer_bchat
+msgid "BChat API User"
+msgstr "مستخدم واجهة BChat البرمجية"
+
+#. module: baseer_bchat
+msgid "View conversations"
+msgstr "عرض المحادثات"
+
+#. module: baseer_bchat
+msgid "Send messages"
+msgstr "إرسال الرسائل"
+
+#. module: baseer_bchat
+msgid "Send media and files"
+msgstr "إرسال الصور والتسجيلات والملفات"
+
+#. module: baseer_bchat
+msgid "Create groups"
+msgstr "إنشاء مجموعات"
+
+#. module: baseer_bchat
+msgid "Manage assigned groups"
+msgstr "إدارة المجموعات المصرّح بها"
+
+#. module: baseer_bchat
+msgid "View tasks"
+msgstr "عرض المهام"
+
+#. module: baseer_bchat
+msgid "Create and update tasks"
+msgstr "إنشاء المهام وتحديثها"
+
+#. module: baseer_bchat
+msgid "Manage rooms and members"
+msgstr "إدارة الغرف والأعضاء"

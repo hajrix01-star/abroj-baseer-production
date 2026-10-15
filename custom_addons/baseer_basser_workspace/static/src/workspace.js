@@ -19,6 +19,7 @@ export class BasserWorkspace extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.workspaceNavigation = useService("baseer_workspace_navigation");
         this.notification = useService("notification");
         this.requestSequence = 0;
         this.state = useState({
@@ -36,6 +37,7 @@ export class BasserWorkspace extends Component {
             error: _t("Baseer could not be loaded."),
             retry: _t("Retry"),
             opening: _t("Opening…"),
+            manage: _t("Manage Baseer configuration"),
         };
         onWillStart(() => this.loadWorkspace());
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => {
@@ -58,7 +60,7 @@ export class BasserWorkspace extends Component {
             }
             this.state.sections = workspace.sections || [];
             this.state.canManage = Boolean(workspace.can_manage);
-            if (this.state.canManage && !this.state.sections.length) {
+            if (this.state.canManage && !this.state.sections.length && !this.isOwnerLanding()) {
                 // Owners have a configuration destination rather than an
                 // operational card. Open it immediately and avoid a blank
                 // landing page plus an extra management click.
@@ -74,6 +76,13 @@ export class BasserWorkspace extends Component {
         }
     }
 
+    isOwnerLanding() {
+        return Boolean(
+            this.props.show_landing
+            || this.props.action?.params?.show_landing,
+        );
+    }
+
     async openItem(item) {
         if (this.state.openingItemId) {
             return;
@@ -83,7 +92,15 @@ export class BasserWorkspace extends Component {
             const result = await this.orm.call(
                 "baseer.basser.workspace.section", "open_workspace_item", [item.id],
             );
-            await this.action.doAction(result.action || result.action_id);
+            // Keep the original action intact. It can be an action id, a client
+            // action, or a company-pool action carrying protected defaults.
+            this.workspaceNavigation.activate();
+            try {
+                await this.action.doAction(result.action || result.action_id);
+            } catch (error) {
+                this.workspaceNavigation.deactivate();
+                throw error;
+            }
         } catch (_error) {
             this.notification.add(_t("This operation is no longer available to you."), {
                 type: "danger",
@@ -103,7 +120,13 @@ export class BasserWorkspace extends Component {
             const result = await this.orm.call(
                 "baseer.basser.workspace.section", "open_workspace_management", [],
             );
-            await this.action.doAction(result.action_id);
+            this.workspaceNavigation.activate();
+            try {
+                await this.action.doAction(result.action_id);
+            } catch (error) {
+                this.workspaceNavigation.deactivate();
+                throw error;
+            }
         } catch (_error) {
             this.notification.add(_t("Baseer configuration is not available."), { type: "danger" });
             if (reloadOnError) {

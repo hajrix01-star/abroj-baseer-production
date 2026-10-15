@@ -335,3 +335,15 @@ msgstr "قسم عمليات Baseer"
 #. module: baseer_basser_workspace
 msgid "Baseer workspace item"
 msgstr "عنصر مساحة عمل Baseer"
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace_navigation_bar.xml:0
+msgid "Back to Baseer"
+msgstr "العودة إلى بصير"
+
+#. module: baseer_basser_workspace
+#. odoo-javascript
+#: code:addons/baseer_basser_workspace/static/src/workspace.js:0
+msgid "Manage Baseer configuration"
+msgstr "إدارة إعدادات بصير"

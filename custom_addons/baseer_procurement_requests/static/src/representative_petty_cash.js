@@ -4,6 +4,7 @@ import { Component, onMounted, useState } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { localization } from "@web/core/l10n/localization";
+import { user } from "@web/core/user";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
@@ -17,6 +18,32 @@ function today() {
         timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit",
     }).formatToParts(new Date()).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
     return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function formatRequestDateTime(value, locale = user.lang, timeZone = user.tz) {
+    if (!value || typeof value !== "string") return "";
+    // Odoo serializes this datetime without an offset. The server contract is
+    // UTC, so parse it explicitly instead of inheriting the browser timezone.
+    const timestamp = new Date(`${value.replace(" ", "T")}Z`);
+    if (Number.isNaN(timestamp.valueOf())) return "";
+    const normalizedLocale = typeof locale === "string" ? locale.replaceAll("_", "-") : "en-US";
+    let formatter;
+    const options = {
+        calendar: "gregory",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+        month: "2-digit",
+        numberingSystem: "latn",
+        timeZone: timeZone || "UTC",
+        year: "numeric",
+    };
+    try {
+        formatter = new Intl.DateTimeFormat(normalizedLocale, options);
+    } catch (_error) {
+        formatter = new Intl.DateTimeFormat("en-US", options);
+    }
+    return formatter.format(timestamp);
 }
 
 function serverErrorMessage(error, fallback) {
@@ -103,6 +130,10 @@ export class RepresentativePettyCash extends Component {
     requestLabel() {
         const request = this.selectedRequest();
         return request ? `${request.name} — ${request.representative_name}` : _t("Choose a purchase request");
+    }
+
+    requestDateTimeLabel(request = this.selectedRequest()) {
+        return formatRequestDateTime(request?.request_date);
     }
 
     paymentPointLabel() {

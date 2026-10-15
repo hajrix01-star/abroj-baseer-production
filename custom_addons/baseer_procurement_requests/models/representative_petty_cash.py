@@ -453,6 +453,7 @@ class RepresentativePettyCash(models.Model):
             request_rows = [{
                 'id': request.id, 'name': request.name, 'representative_id': request.representative_partner_id.id,
                 'representative_name': request.representative_partner_id.display_name,
+                'request_date': fields.Datetime.to_string(request.request_date),
                 'amount': request.actual_total if request.state == 'purchased' else request.requested_total,
                 'currency_symbol': request.currency_id.symbol, 'currency_position': request.currency_id.position,
             } for request in requests]

@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Procurement Requests',
-    'version': '19.0.14.0.11',
+    'version': '19.0.14.0.12',
     'category': 'Inventory/Purchase',
     'summary': 'Company-product procurement requests, price history, and optional stock receipts',
     'author': 'Baseer',
@@ -30,6 +30,9 @@
             'baseer_procurement_requests/static/src/payment_settlement_selector.js',
             'baseer_procurement_requests/static/src/payment_settlement_selector.xml',
             'baseer_procurement_requests/static/src/payment_settlement_selector.scss',
+        ],
+        'web.assets_unit_tests': [
+            'baseer_procurement_requests/static/tests/representative_petty_cash.test.js',
         ],
     },
     'application': True,

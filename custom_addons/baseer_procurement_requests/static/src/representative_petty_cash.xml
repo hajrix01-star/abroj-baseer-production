@@ -33,11 +33,11 @@
                             <Dropdown>
                                 <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="requestLabel()"><span t-esc="requestLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
                                 <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.requests" t-as="request" t-key="request.id" onSelected="() => this.selectRequest(request.id)"><t t-esc="request.name"/> — <t t-esc="request.representative_name"/></DropdownItem>
+                                    <DropdownItem t-foreach="state.data.requests" t-as="request" t-key="request.id" onSelected="() => this.selectRequest(request.id)"><span class="o_rep_pc_request_option"><strong dir="ltr"><t t-esc="request.name"/></strong><span><t t-esc="request.representative_name"/></span><small dir="ltr"><t t-esc="requestDateTimeLabel(request)"/></small></span></DropdownItem>
                                 </t>
                             </Dropdown>
                         </label>
-                        <div class="o_rep_pc_request_total" t-if="selectedRequest()">Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></div>
+                        <div class="o_rep_pc_request_total" t-if="selectedRequest()"><span>Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></span><small><span>Request date:</span> <span dir="ltr"><t t-esc="requestDateTimeLabel()"/></span></small></div>
                         <label>From
                             <Dropdown>
                                 <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="paymentPointLabel()"><span t-esc="paymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>

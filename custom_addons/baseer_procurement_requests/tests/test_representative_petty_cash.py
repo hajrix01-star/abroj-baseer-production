@@ -137,6 +137,14 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertIn(self.bank_journal.id, [point['id'] for point in dashboard['payment_points']])
         self.assertFalse(dashboard['setup_issue'])
 
+    def test_dashboard_exposes_the_eligible_request_timestamp_without_changing_amount(self):
+        request = self._sent_request()
+        dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()
+        row = next(item for item in dashboard['requests'] if item['id'] == request.id)
+        self.assertEqual(row['request_date'], fields.Datetime.to_string(request.request_date))
+        self.assertEqual(row['amount'], request.requested_total)
+        self.assertEqual(row['representative_id'], self.representative.id)
+
     def test_dashboard_reports_missing_company_accounting_setup_before_save(self):
         self.company.baseer_procurement_representative_petty_cash_account_id = False
         dashboard = self.env['baseer.procurement.representative.advance'].dashboard_data()

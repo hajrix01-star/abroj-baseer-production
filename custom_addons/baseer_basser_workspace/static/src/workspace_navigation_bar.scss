@@ -1,0 +1,14 @@
+.o_baseer_workspace_home {
+    align-items: center;
+    color: var(--o-navbar-text-color, #fff);
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin-inline: .35rem;
+    white-space: nowrap;
+}
+
+.o_baseer_workspace_home:hover,
+.o_baseer_workspace_home:focus-visible {
+    background-color: rgba(255, 255, 255, .16);
+    color: var(--o-navbar-text-color, #fff);
+}

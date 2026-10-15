@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Workspace',
     'summary': 'Role-curated navigation to approved Baseer operations',
-    'version': '19.0.1.0.12',
+    'version': '19.0.1.0.13',
     'category': 'Productivity',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -20,6 +20,10 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'baseer_basser_workspace/static/src/workspace_navigation.js',
+            'baseer_basser_workspace/static/src/workspace_navigation_bar.js',
+            'baseer_basser_workspace/static/src/workspace_navigation_bar.xml',
+            'baseer_basser_workspace/static/src/workspace_navigation_bar.scss',
             'baseer_basser_workspace/static/src/workspace.js',
             'baseer_basser_workspace/static/src/workspace.xml',
             'baseer_basser_workspace/static/src/workspace.scss',

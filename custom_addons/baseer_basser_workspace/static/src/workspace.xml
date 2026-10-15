@@ -25,7 +25,12 @@
                 <p class="mb-0" t-esc="labels.empty"/>
             </section>
             <section t-else="" class="o_basser_workspace_sections">
-                <section t-foreach="state.sections" t-as="section" t-key="section.id" class="o_basser_workspace_section">
+                <section t-if="state.canManage" class="o_basser_workspace_state" role="status">
+                    <i class="fa fa-th-large o_basser_workspace_empty_icon" aria-hidden="true"/>
+                    <p class="mb-3" t-esc="labels.description"/>
+                    <button type="button" class="btn btn-primary" t-on-click="openManagement" t-esc="labels.manage"/>
+                </section>
+                <section t-if="!state.canManage" t-foreach="state.sections" t-as="section" t-key="section.id" class="o_basser_workspace_section">
                     <h2 t-esc="section.name"/>
                     <div class="o_basser_workspace_grid">
                         <button t-foreach="section.items" t-as="item" t-key="item.id" type="button"

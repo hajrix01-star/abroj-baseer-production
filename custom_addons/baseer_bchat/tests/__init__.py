@@ -4,3 +4,4 @@ from . import test_media_v2
 from . import test_bridge
 from . import test_tasks_v2
 from . import test_permissions
+from . import test_push_v2

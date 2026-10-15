@@ -128,9 +128,11 @@ class BChatTextService(models.AbstractModel):
             return []
         if len(memberships) > 100:
             raise ProtocolError('too_many_rooms', 'Room listing needs pagination.', 409)
+        task_view = bool(self._require_user()._bchat_effective_permissions().get('task_view'))
         self.env.cr.execute('''
             SELECT membership.id, latest.id, latest.text, latest.create_date,
-                   media.kind, COALESCE(unread.total, 0), COALESCE(members.total, 0)
+                   media.kind, COALESCE(unread.total, 0), COALESCE(members.total, 0),
+                   COALESCE(tasks.has_active_task, FALSE)
             FROM baseer_bchat_membership AS membership
             LEFT JOIN LATERAL (
                 SELECT message.id, message.text, message.create_date, message.media_id
@@ -152,6 +154,14 @@ class BChatTextService(models.AbstractModel):
                 SELECT COUNT(*) AS total FROM baseer_bchat_membership AS other
                 WHERE other.room_id = membership.room_id AND other.active
             ) AS members ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT EXISTS(
+                    SELECT 1 FROM baseer_bchat_task AS task
+                    WHERE task.room_id = membership.room_id
+                      AND task.company_id = membership.company_id
+                      AND task.state IN ('new', 'in_progress')
+                ) AS has_active_task
+            ) AS tasks ON TRUE
             WHERE membership.id = ANY(%s) AND membership.active
         ''', [self.env.uid, memberships.ids])
         metadata = {row[0]: row[1:] for row in self.env.cr.fetchall()}
@@ -159,7 +169,7 @@ class BChatTextService(models.AbstractModel):
         for member in memberships:
             if member.id not in metadata:
                 continue
-            last_id, text, created_at, media_kind, unread_count, member_count = metadata[member.id]
+            last_id, text, created_at, media_kind, unread_count, member_count, has_active_task = metadata[member.id]
             preview = ' '.join((text or '').split())[:160]
             room = member.room_id
             result.append({
@@ -176,6 +186,8 @@ class BChatTextService(models.AbstractModel):
                 'last_message_kind': media_kind or None,
                 'last_message_at': fields.Datetime.to_string(created_at) if created_at else None,
                 'unread_count': unread_count,
+                # Neutral group indicator; never a task title or description.
+                'has_active_task': bool(has_active_task) if task_view else False,
             })
         return result
 

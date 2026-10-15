@@ -3217,6 +3217,7 @@ public final class OdooIdentityActivity extends Activity {
             if (selectedRoom != null && selectedRoom.id == roomId) liveMessagesDirty = true;
         } else if ("task".equals(kind)) {
             liveTasksDirty = true;
+            if (roomId > 0) liveRoomsDirty = true;
         } else if ("order".equals(kind)) {
             liveOrdersDirty = true;
         } else if ("permissions".equals(kind) || "permission".equals(kind)) {
@@ -4181,7 +4182,7 @@ public final class OdooIdentityActivity extends Activity {
         String lastMessagePreview = "", lastMessageAt = "", lastMessageKind = "";
         long lastMessageId;
         int unreadCount, avatarVersion, memberCount;
-        boolean groupAdmin, isGroup;
+        boolean groupAdmin, isGroup, hasActiveTask;
         Room(long id, long companyId, long membershipId, String name,
              String invoicePolicy, int invoicePolicyVersion) {
             this.id = id; this.companyId = companyId; this.membershipId = membershipId;
@@ -4208,6 +4209,7 @@ public final class OdooIdentityActivity extends Activity {
             memberCount = other.memberCount;
             groupAdmin = other.groupAdmin;
             isGroup = other.isGroup;
+            hasActiveTask = other.hasActiveTask;
         }
     }
 
@@ -4702,6 +4704,15 @@ public final class OdooIdentityActivity extends Activity {
                 badgeSize.setMarginStart(dp(8));
                 subtitleRow.addView(badge, badgeSize);
             }
+            if (room.isGroup && room.hasActiveTask) {
+                TextView taskChip = Ui.text(this, getString(R.string.bchat_room_has_tasks),
+                        Ui.CHAT_META_SP, Ui.GREEN, true);
+                taskChip.setSingleLine(true);
+                taskChip.setBackground(Ui.bg(0xffe6f3fb, 14, this));
+                LinearLayout.LayoutParams taskChipSize = new LinearLayout.LayoutParams(-2, dp(22));
+                taskChipSize.setMarginStart(dp(8));
+                subtitleRow.addView(taskChip, taskChipSize);
+            }
             labelColumn.addView(subtitleRow, new LinearLayout.LayoutParams(-1, -2));
             if (showCompany && !companyName.isEmpty()) {
                 TextView companyLabel = Ui.text(this, companyName, Ui.CHAT_META_SP,
@@ -4778,6 +4789,7 @@ public final class OdooIdentityActivity extends Activity {
                     room.memberCount = item.optInt("member_count", 0);
                     room.groupAdmin = item.optBoolean("is_group_admin", false);
                     room.isGroup = item.optBoolean("is_group", false);
+                    room.hasActiveTask = item.optBoolean("has_active_task", false);
                     if (room.lastMessagePreview.length() > 512 || room.unreadCount < 0
                             || room.avatarVersion < 0 || room.memberCount < 0)
                         throw new IllegalArgumentException();

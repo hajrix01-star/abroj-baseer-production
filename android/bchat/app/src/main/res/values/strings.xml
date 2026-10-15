@@ -781,6 +781,7 @@
     <string name="bchat_push_chat">رسالة جديدة في BChat</string>
     <string name="bchat_push_task">مهمة جديدة في BChat</string>
     <string name="bchat_push_order">طلب جديد في BChat</string>
+    <string name="bchat_room_has_tasks">مهام</string>
     <string name="bchat_push_unavailable">لم يعد هذا التنبيه متاحًا لحسابك.</string>
     <string name="bchat_push_order_detail">تفاصيل الطلب</string>
     <string name="bchat_push_order_requester">الطالب: %1$s\nالإجمالي: %2$s %3$s</string>

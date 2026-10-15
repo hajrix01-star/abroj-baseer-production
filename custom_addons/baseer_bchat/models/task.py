@@ -49,6 +49,10 @@ class BChatTask(models.Model):
             CREATE INDEX IF NOT EXISTS baseer_bchat_task_room_id_idx
             ON baseer_bchat_task (room_id, id DESC)
         ''')
+        self.env.cr.execute('''
+            CREATE INDEX IF NOT EXISTS baseer_bchat_task_room_state_idx
+            ON baseer_bchat_task (room_id, state)
+        ''')
 
     @api.model_create_multi
     def create(self, vals_list):

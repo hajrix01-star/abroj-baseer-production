@@ -781,6 +781,7 @@
     <string name="bchat_push_chat">New message in BChat</string>
     <string name="bchat_push_task">New task in BChat</string>
     <string name="bchat_push_order">New order in BChat</string>
+    <string name="bchat_room_has_tasks">Tasks</string>
     <string name="bchat_push_unavailable">This notification is no longer available to your account.</string>
     <string name="bchat_push_order_detail">Order details</string>
     <string name="bchat_push_order_requester">Requested by: %1$s\nTotal: %2$s %3$s</string>

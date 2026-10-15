@@ -18,6 +18,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Build;
@@ -163,6 +166,9 @@ public final class OdooIdentityActivity extends Activity {
     private int pushNavigationRetries;
     private long pendingNotificationTaskId;
     private long pendingNotificationMessageId;
+    /** A push can name a freshly-added room that the cached room list has not seen yet. */
+    private long pendingPushRoomId;
+    private long pendingPushRoomMessageId;
     private LinearLayout layout;
     private TextView status;
     private TextView shellNotice;
@@ -386,6 +392,8 @@ public final class OdooIdentityActivity extends Activity {
     private Button taskOlderButton;
     private View roomTasksButton;
     private long taskRoomFilter;
+    /** Scope currently rendered in the task list; never keep another room's rows on screen. */
+    private long renderedTaskRoomFilter = Long.MIN_VALUE;
     private long taskBeforeId;
     private int taskViewSerial;
     private String taskStateFilter;
@@ -527,11 +535,13 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void collapseWhenEmpty(TextView view) {
-        view.setVisibility(View.GONE);
+        // Keep the notice slot reserved.  A GONE/visible flip during a network
+        // refresh moved the tabs and list vertically, which felt like a jump.
+        view.setVisibility(View.INVISIBLE);
         view.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                view.setVisibility(s == null || s.length() == 0 ? View.GONE : View.VISIBLE);
+                view.setVisibility(s == null || s.length() == 0 ? View.INVISIBLE : View.VISIBLE);
             }
             @Override public void afterTextChanged(Editable value) { }
         });
@@ -2497,8 +2507,18 @@ public final class OdooIdentityActivity extends Activity {
         handler.postDelayed(bridgeNavigationTimeout, BRIDGE_NAVIGATION_TIMEOUT_MILLIS);
     }
 
+    /** A remembered account should not wait for a WebView navigation timeout when offline. */
+    private boolean networkAvailable() {
+        ConnectivityManager manager = getSystemService(ConnectivityManager.class);
+        if (manager == null) return true; // Let the authenticated bridge remain the authority when unknown.
+        Network network = manager.getActiveNetwork();
+        NetworkCapabilities capabilities = network == null ? null : manager.getNetworkCapabilities(network);
+        return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
     private void openWeb(String url) {
         if (closed) return;
+        if (BRIDGE.equals(url) && !loggingOut && !networkAvailable() && offerOfflineHistory()) return;
         final String intendedUrl = url;
         if (LOGIN.equals(url) || LOGOUT.equals(url)) {
             bridgeRecoveryUsed = false;
@@ -4034,7 +4054,15 @@ public final class OdooIdentityActivity extends Activity {
                     throw new IllegalArgumentException();
                 Room targetRoom = null;
                 for (Room room : rooms) if (room.id == roomId) { targetRoom = room; break; }
-                if (targetRoom == null) throw new IllegalArgumentException();
+                if (targetRoom == null) {
+                    // The detail route has already rechecked membership. Refresh the bounded
+                    // room index once instead of incorrectly claiming that the push vanished.
+                    pendingPushRoomId = roomId;
+                    pendingPushRoomMessageId = messageId;
+                    loadRooms();
+                    finishPushNavigation();
+                    return;
+                }
                 selectRoom(targetRoom, messageId);
             } catch (Exception invalid) { pushUnavailable(); }
             finishPushNavigation();
@@ -4411,6 +4439,8 @@ public final class OdooIdentityActivity extends Activity {
         pushRegistrationScheduled = false;
         pushNavigationBusy = false;
         pendingNotificationTaskId = 0;
+        pendingPushRoomId = 0;
+        pendingPushRoomMessageId = 0;
         closeMediaUpload();
         closeMediaRead();
         if (sensitiveDetailDialog != null) { sensitiveDetailDialog.dismiss(); sensitiveDetailDialog = null; }
@@ -4515,6 +4545,7 @@ public final class OdooIdentityActivity extends Activity {
             taskOlderButton.setVisibility(View.GONE);
         }
         taskRoomFilter = 0;
+        renderedTaskRoomFilter = Long.MIN_VALUE;
         taskBeforeId = 0;
         taskStateFilter = null;
         tasksAvailable = false;
@@ -4850,6 +4881,7 @@ public final class OdooIdentityActivity extends Activity {
                     layout.setPadding(0, 0, 0, 0);
                     showRooms();
                 } else renderRooms();
+                openDeferredPushRoomIfPresent();
                 if (unresolvedSendNotice) {
                     chatNotice.setText(R.string.chat_v2_uncertain);
                     unresolvedSendNotice = false;
@@ -4885,6 +4917,22 @@ public final class OdooIdentityActivity extends Activity {
                 }
             }
         });
+    }
+
+    /** Complete a validated push after a one-time room-index refresh. */
+    private void openDeferredPushRoomIfPresent() {
+        if (pendingPushRoomId <= 0 || pendingPushRoomMessageId <= 0) return;
+        long roomId = pendingPushRoomId;
+        long messageId = pendingPushRoomMessageId;
+        pendingPushRoomId = 0;
+        pendingPushRoomMessageId = 0;
+        for (Room room : rooms) {
+            if (room.id == roomId) {
+                selectRoom(room, messageId);
+                return;
+            }
+        }
+        pushUnavailable();
     }
 
     private void selectRoom(Room room) {
@@ -6039,45 +6087,7 @@ public final class OdooIdentityActivity extends Activity {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
                 JSONArray list = result.getJSONArray("messages");
-                if (list.length() > 30) throw new IllegalArgumentException();
-                List<JSONObject> validated = new ArrayList<>();
-                long lastId = 0;
-                for (int i = 0; i < list.length(); i++) {
-                    JSONObject item = list.getJSONObject(i);
-                    long id = positiveId(item.get("id"));
-                    positiveId(item.get("author_user_id"));
-                    String authorName = item.getString("author_name");
-                    String body = item.getString("text");
-                    String date = item.getString("created_at");
-                    if (item.has("media")) new MediaRecord(item.getJSONObject("media"));
-                    if (!item.has("media") || !body.isEmpty()) OutboxPolicy.requireText(body);
-                    if (id <= lastId || (beforeId > 0 && id >= beforeId) || date.length() > 64
-                            || date.trim().isEmpty() || date.indexOf('\n') >= 0 || date.indexOf('\r') >= 0
-                            || authorName.trim().isEmpty() || authorName.length() > 160
-                            || authorName.indexOf('\n') >= 0 || authorName.indexOf('\r') >= 0)
-                        throw new IllegalArgumentException();
-                    if (item.has("reply")) {
-                        JSONObject reply = item.optJSONObject("reply");
-                        if (reply == null) throw new IllegalArgumentException();
-                        java.util.Set<String> replyFields = new java.util.HashSet<>();
-                        java.util.Iterator<String> replyKeys = reply.keys();
-                        while (replyKeys.hasNext()) replyFields.add(replyKeys.next());
-                        if (reply.has("unavailable")) {
-                            ReplyWireContract.requireUnavailable(
-                                    replyFields, reply.optBoolean("unavailable", false));
-                        } else {
-                            long parentId = positiveId(reply.get("id"));
-                            String parentAuthor = reply.getString("author_name");
-                            String parentText = reply.getString("text");
-                            String mediaKind = reply.has("media_kind") && !reply.isNull("media_kind")
-                                    ? reply.getString("media_kind") : null;
-                            ReplyWireContract.requireAvailable(replyFields, id, parentId,
-                                    parentAuthor, parentText, mediaKind);
-                        }
-                    }
-                    lastId = id;
-                    validated.add(item);
-                }
+                List<JSONObject> validated = validateMessageList(list, beforeId);
                 Object older = result.opt("next_before_id");
                 long cursor = older == JSONObject.NULL || older == null ? 0 : positiveId(older);
                 if (cursor > 0 && (list.length() == 0 || cursor != positiveId(list.getJSONObject(0).get("id"))))
@@ -6151,6 +6161,108 @@ public final class OdooIdentityActivity extends Activity {
                 if (statusCode == 403) { showRooms(); loadRooms(); }
             }
         });
+    }
+
+    private List<JSONObject> validateMessageList(JSONArray list, long beforeId) throws Exception {
+        if (list.length() > 30) throw new IllegalArgumentException();
+        List<JSONObject> validated = new ArrayList<>();
+        long lastId = 0;
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject item = list.getJSONObject(i);
+            long id = positiveId(item.get("id"));
+            positiveId(item.get("author_user_id"));
+            String authorName = item.getString("author_name");
+            String body = item.getString("text");
+            String date = item.getString("created_at");
+            if (item.has("media")) new MediaRecord(item.getJSONObject("media"));
+            if (!item.has("media") || !body.isEmpty()) OutboxPolicy.requireText(body);
+            if (id <= lastId || (beforeId > 0 && id >= beforeId) || date.length() > 64
+                    || date.trim().isEmpty() || date.indexOf('\n') >= 0 || date.indexOf('\r') >= 0
+                    || authorName.trim().isEmpty() || authorName.length() > 160
+                    || authorName.indexOf('\n') >= 0 || authorName.indexOf('\r') >= 0)
+                throw new IllegalArgumentException();
+            if (item.has("reply")) {
+                JSONObject reply = item.optJSONObject("reply");
+                if (reply == null) throw new IllegalArgumentException();
+                java.util.Set<String> replyFields = new java.util.HashSet<>();
+                java.util.Iterator<String> replyKeys = reply.keys();
+                while (replyKeys.hasNext()) replyFields.add(replyKeys.next());
+                if (reply.has("unavailable")) {
+                    ReplyWireContract.requireUnavailable(replyFields, reply.optBoolean("unavailable", false));
+                } else {
+                    long parentId = positiveId(reply.get("id"));
+                    String parentAuthor = reply.getString("author_name");
+                    String parentText = reply.getString("text");
+                    String mediaKind = reply.has("media_kind") && !reply.isNull("media_kind")
+                            ? reply.getString("media_kind") : null;
+                    ReplyWireContract.requireAvailable(replyFields, id, parentId,
+                            parentAuthor, parentText, mediaKind);
+                }
+            }
+            lastId = id;
+            validated.add(item);
+        }
+        return validated;
+    }
+
+    /** Fetch just the acknowledged row after send; avoid reloading/rebinding the entire timeline. */
+    private void appendAcknowledgedMessage(AccountScope scopedAccount, Room room, long messageId) {
+        if (!stillCurrent(scopedAccount, room)) return;
+        fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + messageId, null,
+                (statusCode, result) -> {
+                    if (!stillCurrent(scopedAccount, room)) return;
+                    if (handleV2TransportFailure(statusCode)) return;
+                    try {
+                        if (statusCode != 200 || result == null
+                                || positiveId(result.get("api_version")) != 2)
+                            throw new IllegalArgumentException();
+                        JSONArray one = new JSONArray().put(result.getJSONObject("message"));
+                        JSONObject message = validateMessageList(one, 0).get(0);
+                        // A reply may be sent while viewing an older, bounded page.  Do not
+                        // splice a newest row into that historical window: reload the latest
+                        // page instead so there is no invisible gap in the timeline.
+                        if (historicalWindow) {
+                            // An own acknowledged send is intentional navigation back to the
+                            // newest page, not an ordinary background refresh of old history.
+                            scrollAfterOwnSend = true;
+                            loadMessages(0);
+                            return;
+                        }
+                        long id = positiveId(message.get("id"));
+                        List<JSONObject> window = new ArrayList<>(displayedMessages);
+                        boolean present = false;
+                        for (int i = 0; i < window.size(); i++) {
+                            long existing = positiveId(window.get(i).get("id"));
+                            if (existing == id) { window.set(i, message); present = true; break; }
+                            if (existing > id) throw new IllegalArgumentException();
+                        }
+                        if (!present) window.add(message);
+                        boolean trimmedOldest = window.size() > MAX_CONNECTED_MESSAGE_WINDOW;
+                        if (trimmedOldest)
+                            window = new ArrayList<>(window.subList(window.size() - MAX_CONNECTED_MESSAGE_WINDOW,
+                                    window.size()));
+                        // The locally trimmed first row is a real pagination boundary.  Keep
+                        // it as the cursor so the older row is never stranded after 500 rows.
+                        if (trimmedOldest && !window.isEmpty())
+                            nextBeforeId = positiveId(window.get(0).get("id"));
+                        if (historyCache != null) {
+                            final List<JSONObject> saved = new ArrayList<>(window);
+                            final ConnectedHistoryCache cache = historyCache;
+                            queueHistoryWrite(scopedAccount, cache, () -> {
+                                try { cache.savePage(scopedAccount, room.id, room.membershipId, saved); }
+                                catch (Exception storage) { throw new IllegalStateException(storage); }
+                            });
+                        }
+                        renderMessageWindow(room, window, true, 0, currentScrollAnchor());
+                        updateOlderControl();
+                        updateOlderButtonAvailability();
+                        chatNotice.setText("");
+                        chatNotice.setOnClickListener(null);
+                    } catch (Exception invalid) {
+                        // A normal paged refresh remains the safe fallback for an unexpected wire shape.
+                        loadMessages(0);
+                    }
+                });
     }
 
     private static final class ScrollAnchor {
@@ -7760,12 +7872,11 @@ public final class OdooIdentityActivity extends Activity {
                                     || !entry.clientUuid.equals(result.getString("client_uuid"))
                                     || !"sent".equals(result.getString("state")))
                                 throw new IOException("Unverified media ACK");
-                            positiveId(result.get("message_id"));
+                            long sentMessageId = positiveId(result.get("message_id"));
                             mediaStore.acknowledge(scopedAccount, entry);
                             chatNotice.setText(R.string.chat_v2_sent);
                             updatePendingUi();
-                            scrollAfterOwnSend = true;
-                            loadMessages(0);
+                            appendAcknowledgedMessage(scopedAccount, room, sentMessageId);
                         } catch (Exception invalid) {
                             JSONObject error = result == null ? null : result.optJSONObject("error");
                             boolean policyChanged = statusCode == 409 && error != null
@@ -7811,12 +7922,11 @@ public final class OdooIdentityActivity extends Activity {
                             || positiveId(result.get("membership_id")) != room.membershipId
                             || !entry.uuid.equals(result.getString("client_uuid"))
                             || !"sent".equals(result.getString("state"))) throw new IllegalArgumentException();
-                    positiveId(result.get("message_id"));
+                    long sentMessageId = positiveId(result.get("message_id"));
                     if (!outbox.acknowledge(account, entry)) throw new IllegalArgumentException();
                     if (selectedRoom == room) {
                         chatNotice.setText(R.string.chat_v2_sent);
-                        scrollAfterOwnSend = true;
-                        loadMessages(0);
+                        appendAcknowledgedMessage(account, room, sentMessageId);
                     }
                 } catch (Exception invalid) {
                     if (statusCode == 400 || statusCode == 413) {
@@ -7968,11 +8078,23 @@ public final class OdooIdentityActivity extends Activity {
             handler.postDelayed(() -> { if ("tasks".equals(visibleSection) && verified) discoverTasks(); }, 500);
             return;
         }
+        // Keeping a list is pleasant during a refresh of the same room, but showing
+        // another room's tasks under a new heading is misleading.  Clear that stale
+        // scope immediately and leave the stable task shell/notice in place.
+        boolean keepCurrentList = (tasksAvailable || !tasks.isEmpty())
+                && renderedTaskRoomFilter == taskRoomFilter;
         tasksAvailable = false;
-        taskNewButton.setVisibility(View.GONE);
-        setTaskTabsVisibility(View.GONE);
-        taskOlderButton.setVisibility(View.GONE);
-        taskItems.removeAllViews();
+        if (!keepCurrentList) {
+            tasks.clear();
+            taskBeforeId = 0;
+            taskNewButton.setVisibility(View.GONE);
+            setTaskTabsVisibility(View.GONE);
+            taskOlderButton.setVisibility(View.GONE);
+            taskItems.removeAllViews();
+        } else {
+            taskNewButton.setEnabled(false);
+            taskOlderButton.setEnabled(false);
+        }
         taskNotice.setText(R.string.task_loading);
         final long roomFilter = taskRoomFilter;
         fetchV2("GET", V2_TASKS + "/options", null, (statusCode, result) -> {
@@ -8057,6 +8179,7 @@ public final class OdooIdentityActivity extends Activity {
                 if (beforeId == 0) tasks.clear();
                 tasks.addAll(page);
                 taskBeforeId = cursor;
+                if (beforeId == 0) renderedTaskRoomFilter = roomFilter;
                 renderTasks();
                 taskOlderButton.setVisibility(cursor > 0 ? View.VISIBLE : View.GONE);
                 taskOlderButton.setEnabled(cursor > 0);
@@ -8081,6 +8204,7 @@ public final class OdooIdentityActivity extends Activity {
             tasks.clear();
             taskCompanies.clear();
             taskBeforeId = 0;
+            renderedTaskRoomFilter = taskRoomFilter;
             if (cached == null) {
                 tasksAvailable = true;
                 renderTasks();
@@ -8122,6 +8246,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void clearDeniedTaskList() {
         tasks.clear();
+        renderedTaskRoomFilter = Long.MIN_VALUE;
         taskBeforeId = 0;
         taskItems.removeAllViews();
         taskOlderButton.setVisibility(View.GONE);
@@ -8150,6 +8275,9 @@ public final class OdooIdentityActivity extends Activity {
     private void updateTaskTabs() {
         if (taskAllLine == null || taskOpenLine == null || taskDoneLine == null) return;
         boolean all = taskStateFilter == null;
+        Ui.styleSegment(taskAllButton, all);
+        Ui.styleSegment(taskOpenButton, "open".equals(taskStateFilter));
+        Ui.styleSegment(taskDoneButton, "done".equals(taskStateFilter));
         taskAllLine.setBackgroundColor(all ? Ui.GREEN : Color.TRANSPARENT);
         taskOpenLine.setBackgroundColor("open".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
         taskDoneLine.setBackgroundColor("done".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);

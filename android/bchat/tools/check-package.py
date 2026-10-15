@@ -7,7 +7,7 @@ manifest=ET.parse(root/'app/src/main/AndroidManifest.xml').getroot()
 a='{http://schemas.android.com/apk/res/android}'
 assert manifest.attrib['package']=='com.baseer.bchat.preview'
 permissions={e.get(a+'name') for e in manifest.findall('uses-permission')}
-assert permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.VIBRATE','android.permission.RECORD_AUDIO','android.permission.INTERNET'}, 'Only explicitly used demo and Odoo identity permissions are allowed'
+assert permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.VIBRATE','android.permission.RECORD_AUDIO','android.permission.INTERNET','android.permission.ACCESS_NETWORK_STATE'}, 'Only explicitly used demo and Odoo identity permissions are allowed'
 app=manifest.find('application')
 assert app.get(a+'allowBackup')=='false'
 assert app.get(a+'supportsRtl')=='true'
@@ -68,12 +68,19 @@ import re
 gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
-assert re.search(r"versionCode\s+55\b", gradle)
-assert "versionName '0.7.39-qa-task-notifications'" in gradle
+assert re.search(r"versionCode\s+57\b", gradle)
+assert "versionName '0.7.41-qa-chat-notifications'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
 print('PASS QA Gradle release version, installed-package About version and in-app changelog')
+
+push=(root/'app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java').read_text(encoding='utf-8')
+for required in ('bchat-events-v3', 'setSound(Settings.System.DEFAULT_NOTIFICATION_URI',
+                 'setVisibility(Notification.VISIBILITY_PRIVATE)', 'message_preview',
+                 'sender_name', 'Notification.BigTextStyle'):
+ assert required in push, required
+assert 'android.permission.ACCESS_NETWORK_STATE' in permissions
 
 assert notifications.index('channel.setVibrationPattern(') < notifications.index('channel.enableVibration(settings.vibration(CATEGORY))'), 'Apply vibration Off after Android pattern setter'
 notification_start=notifications[notifications.index('static String start('):notifications.index('private static String post(')]
@@ -111,6 +118,11 @@ assert re.search(r'release\s*\{\s*signingConfig signingConfigs\.preview', gradle
 print('PASS independent preview requires an explicitly supplied local signer; no implicit replacement signer')
 
 identity=(root/'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text(encoding='utf-8')
+assert 'networkAvailable() && offerOfflineHistory()' in identity
+assert 'scrollAfterOwnSend = true;\n                            loadMessages(0);' in identity
+clear_chat=identity[identity.index('private void clearChatView()'):identity.index('private void queueHistoryWrite(')]
+assert 'pendingPushRoomId = 0;' in clear_chat and 'pendingPushRoomMessageId = 0;' in clear_chat
+print('PASS private chat previews, replacement sound channel and immediate offline history fallback')
 assert 'private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);' in identity
 assert '"https".equals(uri.getScheme())' in identity
 assert 'expected.getHost().equals(uri.getHost()) && uri.getPort() == expected.getPort()' in identity

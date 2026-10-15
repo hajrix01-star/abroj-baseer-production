@@ -40,6 +40,18 @@ class BChatPushCase(TransactionCase):
             'due_at': None, 'assignee_id': (assignee or self.assignee).id,
         })
 
+    def _room(self):
+        manager = self.env.ref('base.user_admin')
+        manager.write({'group_ids': [Command.link(
+            self.env.ref('baseer_bchat.group_bchat_manager').id)]})
+        room = self.env['baseer.bchat.room'].with_user(manager).with_company(self.company).create({
+            'name': 'Push chat %s' % uuid4().hex, 'company_id': self.company.id,
+        })
+        memberships = self.env['baseer.bchat.membership'].with_user(manager).with_company(self.company)
+        creator = memberships.create({'room_id': room.id, 'user_id': self.creator.id})
+        recipient = memberships.create({'room_id': room.id, 'user_id': self.assignee.id})
+        return room, creator, recipient
+
     def test_task_assignment_creates_private_event_and_rechecks_recipient(self):
         registration = self._register(self.assignee, 'a' * 64)
         self.assertTrue(registration['push_enabled'])
@@ -110,3 +122,71 @@ class BChatPushCase(TransactionCase):
         for model in ('baseer.bchat.push.device', 'baseer.bchat.push.event'):
             self.assertFalse(self.env[model].with_user(self.creator).has_access('read'))
             self.assertFalse(self.env[model].with_user(self.creator).has_access('create'))
+
+    def test_chat_message_queues_one_private_event_per_device_and_opens_only_for_recipient(self):
+        self._register(self.assignee, 'g' * 64)
+        room, author_member, recipient_member = self._room()
+        request = {
+            'api_version': 2, 'membership_id': author_member.id,
+            'client_uuid': str(uuid4()), 'text': 'Private push preview',
+        }
+        sent = self._service(self.creator)._v2_send(room.id, request)
+        self.assertEqual(self._service(self.creator)._v2_send(room.id, request), sent)
+        events = self.env['baseer.bchat.push.event'].sudo().search([
+            ('message_id', '=', sent['message_id']),
+        ])
+        self.assertEqual(len(events), 1)
+        event = events[0]
+        self.assertEqual(event.recipient_id, self.assignee)
+        self.assertEqual(event.event_kind, 'message')
+        self.assertFalse(event.task_id)
+        self.assertFalse(event.task_revision)
+        received = self._service(self.assignee)._v2_push_event(event.id)
+        self.assertEqual(received['notification'], {
+            'id': event.id, 'kind': 'chat',
+            'source_ref': {'destination': 'room_message', 'room_id': room.id,
+                           'message_id': sent['message_id']},
+        })
+        with self.assertRaises(AccessError):
+            self._service(self.creator)._v2_push_event(event.id)
+        detail = self._service(self.assignee)._v2_message(room.id, sent['message_id'])
+        self.assertEqual(detail['message']['text'], 'Private push preview')
+        self.assertEqual(recipient_member.user_id, self.assignee)
+
+    def test_notification_preview_is_bounded_and_removes_controls(self):
+        from ..models.push import _notification_text
+        self.assertEqual(_notification_text('\u202e<b>Hello</b>\nworld\x00', 160), 'Hello world')
+        self.assertEqual(_notification_text('x' * 200, 160), 'x' * 160)
+
+    def test_largest_qa_group_creates_one_event_per_active_device(self):
+        """35-user QA bound: sender + 34 recipients, five devices each."""
+        room, author_member, _recipient = self._room()
+        memberships = self.env['baseer.bchat.membership'].with_user(
+            self.env.ref('base.user_admin')).with_company(self.company)
+        recipients = []
+        for index in range(34):
+            user = self._user('group-%s' % index)
+            recipients.append(user)
+            memberships.create({'room_id': room.id, 'user_id': user.id})
+            for device in range(5):
+                token = ('g%03d%02d' % (index, device)) + ('x' * 58)
+                self._register(user, token)
+        sent = self._service(self.creator)._v2_send(room.id, {
+            'api_version': 2, 'membership_id': author_member.id,
+            'client_uuid': str(uuid4()), 'text': 'QA maximum group',
+        })
+        events = self.env['baseer.bchat.push.event'].sudo().search([
+            ('message_id', '=', sent['message_id']),
+        ])
+        self.assertEqual(len(events), 170)
+        self.assertEqual(len(set(events.mapped('device_id').ids)), 170)
+        self.assertNotIn(self.creator.id, events.mapped('recipient_id').ids)
+
+    def test_postgres_skip_locked_excludes_a_row_locked_by_another_worker(self):
+        """The dispatcher lock primitive must not hand a locked row to a second worker."""
+        with self.env.registry.cursor() as first_worker:
+            first_worker.execute('SELECT id FROM res_users WHERE id = %s FOR UPDATE', [1])
+            with self.env.registry.cursor() as second_worker:
+                second_worker.execute(
+                    'SELECT id FROM res_users WHERE id = %s FOR UPDATE SKIP LOCKED', [1])
+                self.assertFalse(second_worker.fetchall())

@@ -779,6 +779,8 @@
     <string name="bchat_task_empty_hint">"أنشئ مهمة من هنا أو من محادثة."</string>
     <string name="bchat_task_people">"%1$s · المسؤول: %2$s"</string>
     <string name="bchat_push_chat">رسالة جديدة في BChat</string>
+    <string name="bchat_push_attachment">أرسل مرفقًا</string>
+    <string name="bchat_push_channel_description">رسائل ومهام BChat</string>
     <string name="bchat_push_task">مهمة جديدة في BChat</string>
     <string name="bchat_push_order">طلب جديد في BChat</string>
     <string name="bchat_room_has_tasks">مهام</string>

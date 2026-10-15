@@ -163,6 +163,22 @@ class ProcurementFlowCase(TransactionCase):
             [{'option_id': self.option.id, 'quantity': '1.00'}],
             self.warehouse.id, purchase_route='cash',
         )
+        # The accountant restriction is an ACL concern.  Assert it while the
+        # request is still editable so the workflow's post-submission guard
+        # cannot mask the access-control result.
+        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC route accountant', 'login': 'prc-route-accountant-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_accountant').id,
+            ])],
+        })
+        draft_request = Request.browse(request_id).with_user(accountant)
+        self.assertFalse(draft_request.env.su)
+        self.assertEqual(draft_request.read(['purchase_route'])[0]['purchase_route'], 'cash')
+        with self.assertRaises(AccessError):
+            draft_request.write({'purchase_route': 'bank_transfer'})
+
         completed_request = self.env['baseer.procurement.request'].browse(request_id)
         completed_request.action_mark_sent()
         completed_request.line_ids.manager_received_qty = 1
@@ -173,18 +189,6 @@ class ProcurementFlowCase(TransactionCase):
             ('procurement_request_id', '=', request_id),
         ])
         self.assertEqual(batch.procurement_purchase_route, 'cash')
-        accountant = self.env['res.users'].with_context(no_reset_password=True).create({
-            'name': 'PRC route accountant', 'login': 'prc-route-accountant-%s' % uuid4(),
-            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
-            'group_ids': [Command.set([
-                self.env.ref('baseer_procurement_requests.group_procurement_accountant').id,
-            ])],
-        })
-        request = Request.browse(request_id).with_user(accountant)
-        self.assertFalse(request.env.su)
-        self.assertEqual(request.read(['purchase_route'])[0]['purchase_route'], 'cash')
-        with self.assertRaises(AccessError):
-            request.write({'purchase_route': 'bank_transfer'})
 
     def test_purchase_batch_exposes_received_total_invoice_difference_and_match(self):
         """The accountant sees the authoritative approval comparison before posting."""

@@ -1248,6 +1248,14 @@ class BaseerPurchaseBatch(models.Model):
         related='procurement_request_id.actual_total', string='Received request total',
         currency_field='currency_id', readonly=True,
     )
+    procurement_invoice_difference = fields.Monetary(
+        compute='_compute_procurement_invoice_match', string='Receipt invoice difference',
+        currency_field='currency_id', readonly=True,
+        help='Received request total minus supplier invoices entered in this batch.',
+    )
+    procurement_invoice_matches = fields.Boolean(
+        compute='_compute_procurement_invoice_match', string='Receipt invoices match', readonly=True,
+    )
     procurement_purchase_route = fields.Selection(
         related='procurement_request_id.purchase_route', string='Purchase route', readonly=True,
     )
@@ -1255,6 +1263,26 @@ class BaseerPurchaseBatch(models.Model):
         compute='_compute_procurement_representative_balance',
         string='Representative Petty Cash balance', currency_field='currency_id', readonly=True,
     )
+
+    @api.depends('procurement_request_id.actual_total', 'amount_gross', 'currency_id')
+    def _compute_procurement_invoice_match(self):
+        """Expose the same monetary comparison that approval enforces.
+
+        The browser only renders these values.  ``action_approve`` continues
+        to lock the request and validate the two source amounts transactionally.
+        """
+        for batch in self:
+            if not batch.procurement_request_id:
+                batch.procurement_invoice_difference = 0.0
+                batch.procurement_invoice_matches = False
+                continue
+            difference = (
+                batch.procurement_request_actual_total - batch.amount_gross
+            )
+            batch.procurement_invoice_difference = difference
+            batch.procurement_invoice_matches = not batch.currency_id.compare_amounts(
+                batch.amount_gross, batch.procurement_request_actual_total,
+            )
 
     @api.depends(
         'procurement_custody_id', 'procurement_representative_partner_id',

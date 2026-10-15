@@ -14,6 +14,7 @@
         'views/procurement_option_views.xml',
         'views/procurement_custody_views.xml',
         'views/representative_petty_cash_views.xml',
+        'views/procurement_auto_draft_views.xml',
         'views/company_onboarding_views.xml',
         'views/procurement_menus.xml',
     ],

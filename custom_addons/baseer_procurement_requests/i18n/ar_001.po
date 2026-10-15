@@ -44,6 +44,108 @@ msgid "Complete or clear the existing Representative Petty Cash account and jour
 msgstr "أكمل إعداد حساب ودفتر عهدة مندوبي المشتريات القائم أو أزله أولًا."
 
 #. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_auto_draft
+msgid "Receipt invoice draft"
+msgstr "مسودة فاتورة الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,help:baseer_procurement_requests.field_baseer_purchase_batch__procurement_auto_draft
+msgid "Created automatically after a completed purchase receipt; no accounting entry exists until approval."
+msgstr "تُنشأ تلقائيًا بعد اكتمال استلام الشراء؛ ولا ينشأ أي قيد محاسبي قبل الاعتماد."
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_representative_funded_amount
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Representative amount transferred"
+msgstr "المبلغ المحول للمندوب"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "Receipt invoice drafts are created only by the completed-receipt workflow."
+msgstr "تُنشأ مسودات فاتورة الاستلام فقط من مسار الاستلام المكتمل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "Receipt invoice draft status is controlled by the server."
+msgstr "حالة مسودة فاتورة الاستلام يتحكم بها الخادم."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "This completed purchase request is already reserved by a manual supplier-bill batch."
+msgstr "طلب الشراء المكتمل هذا محجوز بالفعل في دفعة فواتير مورد يدوية."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "A supplier-bill batch can be linked only to a completed purchase receipt."
+msgstr "لا يمكن ربط دفعة فواتير المورد إلا باستلام شراء مكتمل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "The completed-receipt link and payment route of an automatic invoice draft are controlled by the server."
+msgstr "رابط الاستلام المكتمل ومسار الدفع في مسودة الفاتورة التلقائية يتحكم بهما الخادم."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement_auto_draft.py:0
+msgid "Automatic receipt invoice drafts cannot be deleted."
+msgstr "لا يمكن حذف مسودات فاتورة الاستلام التلقائية."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "An automatic receipt invoice draft can use only the purchase representative on its receipt."
+msgstr "لا يمكن لمسودة فاتورة الاستلام التلقائية استخدام إلا مندوب المشتريات المثبت في استلامها."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+msgid "Batch"
+msgstr "الدفعة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Receipt request"
+msgstr "طلب الاستلام"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+msgid "Route"
+msgstr "المسار"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+msgid "Received total"
+msgstr "إجمالي المستلم"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+msgid "Representative advance"
+msgstr "عهدة المندوب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+msgid "Entry date"
+msgstr "تاريخ الإدخال"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+msgid "Invoice total"
+msgstr "إجمالي الفواتير"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_search
+msgid "Waiting for invoice"
+msgstr "بانتظار الفاتورة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Receipt information"
+msgstr "معلومات الاستلام"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "This receipt is ready for invoice entry. Add the supplier invoice details, then save and approve it."
+msgstr "هذا الاستلام جاهز لإدخال الفاتورة. أضف بيانات فاتورة المورد ثم احفظ واعتمد."
+
+#. module: baseer_procurement_requests
 #: model:ir.ui.menu,name:baseer_procurement_requests.menu_procurement_root
 msgid "Procurement Requests"
 msgstr "طلبات المشتريات"
@@ -868,6 +970,12 @@ msgid "Purchase representative"
 msgstr "مندوب المشتريات"
 
 #. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_request_representative_id
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
+msgid "Receipt representative"
+msgstr "مندوب الاستلام"
+
+#. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 msgid "Funded procurement request"
@@ -1639,6 +1747,7 @@ msgstr "اختر طريقة السداد"
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_search
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__purchase_route
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch__procurement_purchase_route
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_form
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Purchase route"
 msgstr "نوع الشراء"

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_purchase_batch_auto_draft_list" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.auto.draft.list</field>
+        <field name="model">baseer.purchase.batch</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='name']" position="attributes">
+                <attribute name="string">Batch</attribute><attribute name="width">150px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='name']" position="after">
+                <field name="procurement_request_id" string="Receipt request" optional="show" width="165px"/>
+                <field name="procurement_purchase_route" string="Route" optional="show" width="135px"/>
+                <field name="procurement_request_actual_total" string="Received total" optional="show" width="145px" class="text-end"/>
+                <field name="procurement_representative_funded_amount" string="Representative advance" optional="hide" width="165px" class="text-end"/>
+            </xpath>
+            <xpath expr="//list/field[@name='entry_date']" position="attributes">
+                <attribute name="string">Entry date</attribute><attribute name="width">120px</attribute><attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='company_id']" position="attributes">
+                <attribute name="width">135px</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='amount_gross']" position="attributes">
+                <attribute name="string">Invoice total</attribute><attribute name="width">135px</attribute><attribute name="class">text-end</attribute><attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='amount_net']" position="attributes"><attribute name="optional">hide</attribute></xpath>
+            <xpath expr="//list/field[@name='amount_tax']" position="attributes"><attribute name="optional">hide</attribute></xpath>
+            <xpath expr="//list/field[@name='bill_count']" position="attributes"><attribute name="optional">hide</attribute></xpath>
+            <xpath expr="//list/field[@name='state']" position="attributes"><attribute name="width">105px</attribute></xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_batch_auto_draft_form" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.auto.draft.form</field>
+        <field name="model">baseer.purchase.batch</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='currency_id']" position="after"><field name="procurement_auto_draft" invisible="1"/></xpath>
+            <xpath expr="//field[@name='procurement_request_id']" position="attributes">
+                <attribute name="invisible">not procurement_request_id</attribute>
+                <attribute name="readonly">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']" position="before">
+                <div class="alert alert-info mb-3" role="status" invisible="state != 'draft' or not procurement_auto_draft">
+                    This receipt is ready for invoice entry. Add the supplier invoice details, then save and approve it.
+                </div>
+                <group string="Receipt information" invisible="not procurement_request_id or procurement_purchase_route != 'representative'">
+                    <group>
+                        <field name="procurement_request_representative_id" string="Receipt representative" readonly="1" invisible="procurement_purchase_route != 'representative'"/>
+                        <field name="procurement_representative_funded_amount" string="Representative amount transferred" readonly="1" invisible="procurement_purchase_route != 'representative'"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_batch_auto_draft_search" model="ir.ui.view">
+        <field name="name">baseer.purchase.batch.auto.draft.search</field>
+        <field name="model">baseer.purchase.batch</field>
+        <field name="inherit_id" ref="baseer_purchase_batch.view_purchase_batch_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search/field[@name='name']" position="after">
+                <field name="procurement_request_id"/><field name="procurement_purchase_route"/>
+                <filter name="receipt_invoice_drafts" string="Waiting for invoice" domain="[('state', '=', 'draft'), ('procurement_auto_draft', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

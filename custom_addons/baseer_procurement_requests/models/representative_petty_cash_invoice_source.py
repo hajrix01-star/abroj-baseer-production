@@ -459,11 +459,20 @@ class BaseerPurchaseBatch(models.Model):
             return
         if self.representative_petty_cash_id:
             raise ValidationError(_('Historical Representative Petty Cash cannot be mixed with invoice-level payment sources.'))
-        if self.procurement_request_id:
+        if self.procurement_request_id and not self.procurement_auto_draft:
             raise ValidationError(_(
                 'Representative Petty Cash supplier invoices are linked to the representative balance only; '
                 'do not select a purchase request on the batch header.'
             ))
+        if self.procurement_auto_draft:
+            request_representative = self.procurement_request_id.representative_partner_id
+            if not request_representative or any(
+                line.representative_petty_cash_representative_id != request_representative
+                for line in lines
+            ):
+                raise ValidationError(_(
+                    'An automatic receipt invoice draft can use only the purchase representative on its receipt.'
+                ))
         lines._baseer_validate_payment_source()
         self._baseer_lock_representatives(lines.mapped('representative_petty_cash_representative_id'))
         Advance = self.env['baseer.procurement.representative.advance']

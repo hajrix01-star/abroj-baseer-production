@@ -20,15 +20,15 @@ msgstr "BChat: مشغل الطلبات القديم"
 
 #. module: baseer_bchat_procurement
 #: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_order_view
-msgid "BChat: View purchase requests"
-msgstr "BChat: عرض طلبات المشتريات"
+msgid "View purchase requests"
+msgstr "عرض طلبات المشتريات"
 
 #. module: baseer_bchat_procurement
 #: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_order_create
-msgid "BChat: Create and send purchase requests"
-msgstr "BChat: إنشاء طلبات المشتريات وإرسالها"
+msgid "Create and send purchase requests"
+msgstr "إنشاء طلبات المشتريات وإرسالها"
 
 #. module: baseer_bchat_procurement
 #: model:ir.model.fields,field_description:baseer_bchat_procurement.field_res_users__bchat_order_receive
-msgid "BChat: Confirm purchase receipt"
-msgstr "BChat: تأكيد استلام المشتريات"
+msgid "Confirm purchase receipt"
+msgstr "تأكيد استلام المشتريات"

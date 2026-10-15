@@ -18,22 +18,22 @@ class ResUsers(models.Model):
     # Existing internal accounts had these BChat abilities before this version.
     # External users are never authorized by a default: _is_internal is always
     # checked at the service boundary and effective-permission computation.
-    bchat_chat_view = fields.Boolean(string='BChat: View conversations',
+    bchat_chat_view = fields.Boolean(string='View conversations',
                                      default=True, groups='base.group_system')
-    bchat_chat_send = fields.Boolean(string='BChat: Send messages',
+    bchat_chat_send = fields.Boolean(string='Send messages',
                                      default=True, groups='base.group_system')
-    bchat_media = fields.Boolean(string='BChat: Use images, audio and files',
+    bchat_media = fields.Boolean(string='Send media and files',
                                  default=True, groups='base.group_system')
-    bchat_group_create = fields.Boolean(string='BChat: Create groups',
+    bchat_group_create = fields.Boolean(string='Create groups',
                                         default=True, groups='base.group_system')
-    bchat_group_manage = fields.Boolean(string='BChat: Manage assigned groups',
+    bchat_group_manage = fields.Boolean(string='Manage assigned groups',
                                         default=True, groups='base.group_system')
-    bchat_task_view = fields.Boolean(string='BChat: View tasks',
+    bchat_task_view = fields.Boolean(string='View tasks',
                                     default=True, groups='base.group_system')
-    bchat_task_manage = fields.Boolean(string='BChat: Create and update tasks',
+    bchat_task_manage = fields.Boolean(string='Create and update tasks',
                                       default=True, groups='base.group_system')
     bchat_manage_rooms = fields.Boolean(
-        string='BChat: Manage public rooms and members',
+        string='Manage rooms and members',
         compute='_compute_bchat_manage_rooms', inverse='_inverse_bchat_manage_rooms',
         store=True, groups='base.group_system',
     )

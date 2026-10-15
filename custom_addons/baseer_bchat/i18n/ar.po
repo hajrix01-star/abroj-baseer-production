@@ -120,13 +120,13 @@ msgstr "فترة عضوية غرفة BChat"
 
 #. module: baseer_bchat
 #: model:res.groups,name:baseer_bchat.group_bchat_manager
-msgid "BChat Conversation Manager (development)"
-msgstr "مدير محادثات BChat (تطوير)"
+msgid "BChat Conversation Manager"
+msgstr "مدير محادثات BChat"
 
 #. module: baseer_bchat
 #: model:res.groups,name:baseer_bchat.group_bchat_user
-msgid "BChat API User (development)"
-msgstr "مستخدم واجهة BChat البرمجية (تطوير)"
+msgid "BChat API User"
+msgstr "مستخدم واجهة BChat البرمجية"
 
 #. module: baseer_bchat
 #: model:ir.model.fields,field_description:baseer_bchat.field_res_company__bchat_history_policy
@@ -227,36 +227,36 @@ msgid "An explicitly assigned BChat manager is required."
 msgstr "لا يمكنك إدارة BChat دون صلاحية المدير."
 
 #. module: baseer_bchat
-msgid "BChat: View conversations"
-msgstr "BChat: عرض المحادثات"
+msgid "View conversations"
+msgstr "عرض المحادثات"
 
 #. module: baseer_bchat
-msgid "BChat: Send messages"
-msgstr "BChat: إرسال الرسائل"
+msgid "Send messages"
+msgstr "إرسال الرسائل"
 
 #. module: baseer_bchat
-msgid "BChat: Use images, audio and files"
-msgstr "BChat: استخدام الصور والصوت والملفات"
+msgid "Send media and files"
+msgstr "إرسال الصور والتسجيلات والملفات"
 
 #. module: baseer_bchat
-msgid "BChat: Create groups"
-msgstr "BChat: إنشاء مجموعات"
+msgid "Create groups"
+msgstr "إنشاء مجموعات"
 
 #. module: baseer_bchat
-msgid "BChat: Manage assigned groups"
-msgstr "BChat: إدارة المجموعات المخوّل بها"
+msgid "Manage assigned groups"
+msgstr "إدارة المجموعات المصرّح بها"
 
 #. module: baseer_bchat
-msgid "BChat: View tasks"
-msgstr "BChat: عرض المهام"
+msgid "View tasks"
+msgstr "عرض المهام"
 
 #. module: baseer_bchat
-msgid "BChat: Create and update tasks"
-msgstr "BChat: إنشاء المهام وتحديثها"
+msgid "Create and update tasks"
+msgstr "إنشاء المهام وتحديثها"
 
 #. module: baseer_bchat
-msgid "BChat: Manage public rooms and members"
-msgstr "BChat: إدارة الغرف العامة وأعضائها"
+msgid "Manage rooms and members"
+msgstr "إدارة الغرف والأعضاء"
 
 #. module: baseer_bchat
 msgid "This BChat action is not enabled for your user."

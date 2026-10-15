@@ -144,20 +144,11 @@ class BasserWorkspaceCase(TransactionCase):
             self.env.ref(
                 'baseer_basser_workspace.workspace_item_accountant_monthly_custody_reconciliation'
             ).id,
-            self.env.ref('baseer_basser_workspace.workspace_item_accountant_supplier_bills').id,
         })
-        supplier_dashboard_opened = self.env['baseer.basser.workspace.section'].with_user(
-            accountant
-        ).open_workspace_item(
-            self.env.ref('baseer_basser_workspace.workspace_item_accountant_supplier_bills').id,
-        )
-        self.assertEqual(
-            supplier_dashboard_opened['action']['tag'], 'action_spreadsheet_dashboard',
-        )
-        self.assertEqual(
-            supplier_dashboard_opened['action']['params']['dashboard_id'],
-            self.env.ref('baseer_purchase_expense_dashboard.dashboard_supplier_bills').id,
-        )
+        with self.assertRaises(AccessError):
+            self.env['baseer.basser.workspace.section'].with_user(accountant).open_workspace_item(
+                self.env.ref('baseer_basser_workspace.workspace_item_accountant_supplier_bills').id,
+            )
         pool = self.env['baseer.procurement.custody'].create({
             'company_id': accountant.company_id.id,
             'is_company_pool': True,

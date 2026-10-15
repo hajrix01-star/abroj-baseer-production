@@ -2,11 +2,11 @@
 <odoo>
     <!-- No user assignments, role-preset changes, or native project grants. -->
     <record id="group_bchat_user" model="res.groups">
-        <field name="name">BChat API User (development)</field>
+        <field name="name">BChat API User</field>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
     <record id="group_bchat_manager" model="res.groups">
-        <field name="name">BChat Conversation Manager (development)</field>
+        <field name="name">BChat Conversation Manager</field>
         <field name="implied_ids" eval="[(4, ref('group_bchat_user'))]"/>
     </record>
     <!-- Global intersections, not additive group rules. No admin exception. -->

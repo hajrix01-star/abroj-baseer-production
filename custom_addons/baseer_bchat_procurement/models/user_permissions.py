@@ -14,15 +14,15 @@ class ResUsers(models.Model):
     _inherit = 'res.users'
 
     bchat_order_view = fields.Boolean(
-        string='BChat: View purchase requests', groups='base.group_system', copy=False,
+        string='View purchase requests', groups='base.group_system', copy=False,
         default=False,
     )
     bchat_order_create = fields.Boolean(
-        string='BChat: Create and send purchase requests', groups='base.group_system',
+        string='Create and send purchase requests', groups='base.group_system',
         copy=False, default=False,
     )
     bchat_order_receive = fields.Boolean(
-        string='BChat: Confirm purchase receipt', groups='base.group_system',
+        string='Confirm purchase receipt', groups='base.group_system',
         copy=False, default=False,
     )
     # One-release compatibility field. The legacy group is no longer authority.

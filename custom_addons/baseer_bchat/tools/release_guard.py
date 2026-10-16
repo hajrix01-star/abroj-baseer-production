@@ -54,7 +54,7 @@ def source_text(relative: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def load_registry(raw: str | None = None) -> dict:
+def load_registry(raw: str | None = None, *, enforce_current_required: bool = True) -> dict:
     try:
         value = json.loads(raw if raw is not None else REGISTRY.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -82,7 +82,8 @@ def load_registry(raw: str | None = None) -> dict:
         suites = entry.get("suites")
         require(isinstance(suites, list) and suites and set(suites) <= SUITES,
                 f"{invariant_id} references an unknown or empty suite")
-    require(REQUIRED_IDS <= ids, "BChat guard registry does not cover all protected invariants")
+    if enforce_current_required:
+        require(REQUIRED_IDS <= ids, "BChat guard registry does not cover all protected invariants")
     return value
 
 
@@ -102,7 +103,10 @@ def check_registry_history(base: str, current: dict) -> None:
     except subprocess.CalledProcessError:
         # This is the one bootstrap PR which introduces the guard.
         return
-    previous = load_registry(raw)
+    # A historical registry legitimately predates a newly introduced required
+    # invariant. It must still be structurally valid so that its entries cannot
+    # be deleted or weakened by the current candidate.
+    previous = load_registry(raw, enforce_current_required=False)
     old_entries = entries_by_id(previous)
     new_entries = entries_by_id(current)
     for invariant_id, old in old_entries.items():

@@ -458,6 +458,9 @@ for approved_module in "${APPROVED_THIRD_PARTY_MODULES[@]}"; do
     [ -f "$source_dir/$module_path/__manifest__.py" ] || die "approved third-party module is missing from release: $approved_module"
 done
 verify_installed_baseer_module_source
+if [[ " ${APPROVED_MODULES[*]} " == *" baseer_bchat "* ]]; then
+    python3 "$source_dir/custom_addons/baseer_bchat/tools/release_guard.py" || die 'BChat release guard rejected the production candidate'
+fi
 
 compose_old=(docker compose --project-name baseer-odoo-prod --env-file "$old_release/.env" -f "$old_release/compose.production.yaml" "${dms_old_compose_files[@]}" "${google_compose_files[@]}" --project-directory "$old_release")
 run_dms_preflight

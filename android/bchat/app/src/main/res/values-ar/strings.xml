@@ -696,7 +696,7 @@
     <string name="order_quote_short">"تقديري %1$s %2$s"</string>
     <string name="order_total_loading">"جارٍ حساب الإجمالي…"</string>
     <string name="order_total_unavailable">"الإجمالي غير متاح"</string>
-    <string name="order_quote_disclaimer">"إجمالي تقديري من أودو؛ تُحدد القيمة النهائية عند إرسال الطلب."</string>
+    <string name="order_quote_disclaimer">"يحدد أودو القيمة النهائية عند الإرسال."</string>
     <string name="order_cart_context">"%1$s · %2$s · %3$s"</string>
     <string name="order_add_more">"إضافة أصناف"</string>
     <string name="order_decrease">"إنقاص كمية"</string>
@@ -735,7 +735,7 @@
     <string name="order_summary_company">"الشركة: %1$s"</string>
     <string name="order_summary_requester">"الطالب: %1$s"</string>
     <string name="order_total">"القيمة المطلوبة: %1$s %2$s"</string>
-    <string name="order_estimated_total">"الإجمالي التقديري للطلب: %1$s %2$s"</string>
+    <string name="order_estimated_total">"الإجمالي الحالي: %1$s %2$s"</string>
     <string name="order_empty_cart">"السلة فارغة؛ أضف صنفًا من المنيو."</string>
     <string name="order_cart_review">"الشركة: %1$s\nالمخزن: %2$s\nالمندوب: %3$s\n\nالأصناف:\n%4$s\nتُعتمد الكميات والقيمة النهائية في الخادم."</string>
     <string name="order_submit">"إرسال للمشتريات"</string>
@@ -769,6 +769,13 @@
     <string name="bchat_account_menu">"المزيد"</string>
     <string name="bchat_settings">"الإعدادات"</string>
     <string name="bchat_notifications">"التنبيهات"</string>
+    <string name="bchat_attention">"مركز المتابعة"</string>
+    <string name="bchat_attention_count">"مركز المتابعة: %1$d عنصر يحتاج انتباهك"</string>
+    <string name="bchat_attention_loading">"جارٍ تحميل العناصر التي تحتاج انتباهك…"</string>
+    <string name="bchat_attention_unavailable">"تعذّر تحديث مركز المتابعة الآن."</string>
+    <string name="bchat_attention_empty">"لا توجد عناصر تحتاج انتباهك."</string>
+    <string name="bchat_attention_messages">"الرسائل"</string>
+    <string name="bchat_attention_tasks">"المهام"</string>
     <string name="bchat_notifications_unavailable">"التنبيهات غير مفعّلة في هذه النسخة."</string>
     <string name="bchat_notifications_on">"التنبيهات مفعّلة وستتبع إعدادات صوت الجهاز.\n%1$s"</string>
     <string name="bchat_notifications_off">"التنبيهات متوقفة من إعدادات الجهاز أو قناة BChat. افتح الإعدادات لتشغيلها أو تعديل صوتها.\n%1$s"</string>

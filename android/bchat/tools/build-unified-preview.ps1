@@ -1,7 +1,8 @@
 param(
     [string]$EmulatorSerial = 'emulator-5554',
     [string]$GradleBin = 'D:\Codex\tools\gradle-8.11.1\bin\gradle.bat',
-    [string]$SdkRoot = 'D:\Codex\AndroidSdk'
+    [string]$SdkRoot = 'D:\Codex\AndroidSdk',
+    [switch]$SkipDeviceInstall
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,16 +37,34 @@ try {
         throw 'Unexpected package identity or missing versionCode.'
     }
     $versionCode = $versionMatch.Groups[1].Value
+    if ([int]$versionCode -le 58) {
+        throw 'The unified APK must increment versionCode beyond the previously distributed build.'
+    }
+    $manifestTree = & $aapt dump xmltree $built AndroidManifest.xml
+    if ($LASTEXITCODE -ne 0 -or
+        -not ($manifestTree | Select-String -Quiet -SimpleMatch 'com.baseer.freshchat.BChatFirebaseMessagingService') -or
+        -not ($manifestTree | Select-String -Quiet -SimpleMatch 'com.google.firebase.MESSAGING_EVENT')) {
+        throw 'The built APK is missing the Firebase messaging service; refusing a silently reduced release.'
+    }
     $signature = & $apksigner verify --print-certs $built
     if ($LASTEXITCODE -ne 0 -or
         -not ($signature | Where-Object { $_ -eq "Signer #1 certificate SHA-256 digest: $expectedSigner" })) {
         throw 'Release APK signature does not match the approved preview certificate.'
     }
 
-    $artifact = Join-Path $project "artifacts\BChat-phone-v$versionCode-unified.apk"
+    $artifactDir = Join-Path $project 'artifacts'
+    New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+    $artifact = Join-Path $artifactDir "BChat-phone-v$versionCode-unified.apk"
     if (Test-Path -LiteralPath $artifact) { throw "Refusing to overwrite $artifact" }
     Copy-Item -LiteralPath $built -Destination $artifact
     $expectedHash = (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash
+
+    if ($SkipDeviceInstall) {
+        Write-Output "Unified APK: $artifact"
+        Write-Output "SHA256: $expectedHash"
+        Write-Output 'Device validation: skipped explicitly; this is artifact validation, not device acceptance.'
+        return
+    }
 
     & $adb -s $EmulatorSerial install -r $artifact
     if ($LASTEXITCODE -ne 0) { throw 'Installing the unified APK failed.' }

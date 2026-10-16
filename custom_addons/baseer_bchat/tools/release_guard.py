@@ -91,7 +91,12 @@ def entries_by_id(registry: dict) -> dict[str, dict]:
 def check_registry_history(base: str, current: dict) -> None:
     """Make the registry append-only; protected fields may only be extended."""
     try:
-        raw = subprocess.check_output(["git", "show", f"{base}:{REGISTRY_PATH}"], cwd=ROOT, text=True)
+        raw = subprocess.check_output(
+            ["git", "show", f"{base}:{REGISTRY_PATH}"],
+            cwd=ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
     except subprocess.CalledProcessError:
         # This is the one bootstrap PR which introduces the guard.
         return

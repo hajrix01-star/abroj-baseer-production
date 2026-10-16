@@ -26,8 +26,8 @@ android {
  aaptOptions { cruncherEnabled = false }
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
-  // QA-only registration diagnostic candidate. It exposes fixed stage codes only.
-  versionCode 71; versionName '0.7.55-qa-push-registration-trace'
+  // QA-only registration contract diagnostic. It exposes fixed stage codes only.
+  versionCode 72; versionName '0.7.56-qa-push-registration-contract-trace'
   buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
   buildConfigField 'boolean', 'BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'

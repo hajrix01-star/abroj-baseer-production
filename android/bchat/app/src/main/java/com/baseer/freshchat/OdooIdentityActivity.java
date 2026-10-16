@@ -4357,23 +4357,30 @@ public final class OdooIdentityActivity extends Activity {
             if (closed || account == null || !account.key.equals(scopedAccount.key)
                     || !installation.equals(BChatPushState.installationId(this))) return;
             try {
-                if (statusCode != 200 || response == null
-                        || positiveId(response.get("api_version")) != 2
-                        || !installation.equals(response.getString("installation_id"))
-                        || !(response.opt("push_enabled") instanceof Boolean)) {
-                    tracePushRegistration("P10_RESPONSE_REJECTED");
+                if (statusCode != 200) { tracePushRegistration("P10_HTTP_" + statusCode); return; }
+                if (response == null) { tracePushRegistration("P11_RESPONSE_EMPTY"); return; }
+                if (positiveId(response.get("api_version")) != 2) {
+                    tracePushRegistration("P12_API_VERSION");
+                    return;
+                }
+                if (!installation.equals(response.getString("installation_id"))) {
+                    tracePushRegistration("P13_INSTALLATION_MISMATCH");
+                    return;
+                }
+                if (!(response.opt("push_enabled") instanceof Boolean)) {
+                    tracePushRegistration("P14_PUSH_FLAG_INVALID");
                     return;
                 }
                 if (BChatPushState.registered(this, scopedAccount, token, installation,
-                        response.getString("account_key"))) tracePushRegistration("P11_LINKED");
-                else tracePushRegistration("P12_LOCAL_SAVE_REJECTED");
+                        response.getString("account_key"))) tracePushRegistration("P15_LINKED");
+                else tracePushRegistration("P16_LOCAL_SAVE_REJECTED");
             } catch (Exception invalid) {
                 // Missing optional module or untrusted response never enables push.
-                tracePushRegistration("P10_RESPONSE_REJECTED");
+                tracePushRegistration("P17_RESPONSE_MALFORMED");
             }
         })) {
             pushRegistrationBusy = false;
-            tracePushRegistration("P13_DIRECT_PATH_UNAVAILABLE");
+            tracePushRegistration("P18_DIRECT_PATH_UNAVAILABLE");
             if (!closed) schedulePushRegistration();
         }
     }

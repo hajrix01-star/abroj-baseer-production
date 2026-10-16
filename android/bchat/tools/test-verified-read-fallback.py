@@ -109,7 +109,7 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 71; versionName '0.7.55-qa-push-registration-trace'", GRADLE)
+        self.assertIn("versionCode 72; versionName '0.7.56-qa-push-registration-contract-trace'", GRADLE)
 
     def test_recovery_candidate_disables_diagnostic_ui(self):
         self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)
@@ -131,8 +131,10 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         self.assertIn('BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', trace)
         caller = method('maybeRegisterPush')
         for stage in ('P05_WAITING_FOR_READ', 'P08_DISPATCHED', 'P09_HTTP_',
-                      'P10_RESPONSE_REJECTED', 'P11_LINKED',
-                      'P12_LOCAL_SAVE_REJECTED', 'P13_DIRECT_PATH_UNAVAILABLE'):
+                      'P10_HTTP_', 'P11_RESPONSE_EMPTY', 'P12_API_VERSION',
+                      'P13_INSTALLATION_MISMATCH', 'P14_PUSH_FLAG_INVALID',
+                      'P15_LINKED', 'P16_LOCAL_SAVE_REJECTED',
+                      'P17_RESPONSE_MALFORMED', 'P18_DIRECT_PATH_UNAVAILABLE'):
             self.assertIn(stage, caller)
         self.assertNotIn(' + token', trace)
         self.assertNotIn(' + csrf', trace)

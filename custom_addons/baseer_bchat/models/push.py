@@ -112,7 +112,12 @@ class BChatPushDevice(models.Model):
     def _register_verified(self, user, installation_id, fcm_token, token):
         if token is not _PUSH_TOKEN:
             raise AccessError(self.env._('A verified BChat push registration is required.'))
-        devices = self.sudo()
+        # A prior logout deliberately makes the device inactive.  Odoo's
+        # implicit ``active_test`` filter would then hide that same row here,
+        # making a subsequent sign-in try to INSERT an already-owned
+        # (user, installation_id) pair.  Registration is an upsert, so it
+        # must include inactive history and reactivate the existing row.
+        devices = self.sudo().with_context(active_test=False)
         existing = devices.search([
             ('user_id', '=', user.id), ('installation_id', '=', installation_id),
         ], limit=1)
@@ -148,7 +153,7 @@ class BChatPushDevice(models.Model):
     def _unregister_verified(self, user, installation_id, token):
         if token is not _PUSH_TOKEN:
             raise AccessError(self.env._('A verified BChat push registration is required.'))
-        rows = self.sudo().search([
+        rows = self.sudo().with_context(active_test=False).search([
             ('user_id', '=', user.id), ('installation_id', '=', installation_id),
         ])
         if rows:

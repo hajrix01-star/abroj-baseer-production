@@ -130,6 +130,29 @@ class BChatPushCase(TransactionCase):
             self.assertFalse(self.env[model].with_user(self.creator).has_access('read'))
             self.assertFalse(self.env[model].with_user(self.creator).has_access('create'))
 
+    def test_registration_reactivates_the_same_device_after_logout(self):
+        installation = str(uuid4())
+        payload = {
+            'api_version': 2,
+            'installation_id': installation,
+            'fcm_token': 'reconnect-' + ('h' * 56),
+        }
+        first = self._service(self.assignee)._v2_push_register(payload)
+        self._service(self.assignee)._v2_push_unregister({
+            'api_version': 2, 'installation_id': installation,
+        })
+        restored = self._service(self.assignee)._v2_push_register(payload)
+        self.assertEqual(restored['account_key'], first['account_key'])
+        devices = self.env['baseer.bchat.push.device'].sudo().with_context(
+            active_test=False).search([
+                ('user_id', '=', self.assignee.id),
+                ('installation_id', '=', installation),
+            ])
+        self.assertEqual(len(devices), 1)
+        self.assertTrue(devices.active)
+        self.assertFalse(devices.inactive_reason)
+        self.assertFalse(devices.inactive_at)
+
     def test_chat_message_queues_one_private_event_per_device_and_opens_only_for_recipient(self):
         self._register(self.assignee, 'g' * 64)
         room, author_member, recipient_member = self._room()

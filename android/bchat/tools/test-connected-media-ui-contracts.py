@@ -33,6 +33,16 @@ checks = {
         "setPositiveButton(R.string.bchat_media_preview_send" in body("private void showVoicePreview("),
     "Audio download survives same-media redraw while pending":
         "inlineAudioMediaId > 0" in body("private void renderMessageWindow("),
+    "Verified history clears only the matching author's acknowledged staged media":
+        "private void reconcilePendingMediaFromVerifiedHistory(" in source
+        and "reconcilePendingMediaFromVerifiedHistory(account, room, validated);" in body(
+            "private void loadMessages(long beforeId)")
+        and "positiveId(message.opt(\"author_user_id\")) != scopedAccount.userId" in body(
+            "private void reconcilePendingMediaFromVerifiedHistory(")
+        and "serverMedia.id == pending.mediaId" in body(
+            "private void reconcilePendingMediaFromVerifiedHistory(")
+        and "mediaStore.acknowledge(scopedAccount, pending);" in body(
+            "private void reconcilePendingMediaFromVerifiedHistory("),
     "Media chunks are decoded and encoded off UI thread":
         "mediaIo.execute" in body("private void readConnectedMedia(")
         and "mediaIo.execute" in body("private void sendNextMediaChunk("),

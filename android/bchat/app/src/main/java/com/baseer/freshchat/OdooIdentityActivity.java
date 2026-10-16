@@ -6824,6 +6824,12 @@ public final class OdooIdentityActivity extends Activity {
                     throw new IllegalArgumentException();
                 JSONArray list = result.getJSONArray("messages");
                 List<JSONObject> validated = validateMessageList(list, beforeId);
+                // A media POST can reach Odoo while its one-shot bridge ACK is lost.  Never
+                // retransmit it automatically: the authenticated history is the source of
+                // truth.  A matching media ID is globally unique to one message, and this
+                // helper also requires the current account to be that message's author.
+                // Therefore it is safe to retire only that local staged copy.
+                reconcilePendingMediaFromVerifiedHistory(account, room, validated);
                 Object older = result.opt("next_before_id");
                 long cursor = older == JSONObject.NULL || older == null ? 0 : positiveId(older);
                 if (cursor > 0 && (list.length() == 0 || cursor != positiveId(list.getJSONObject(0).get("id"))))
@@ -6897,6 +6903,33 @@ public final class OdooIdentityActivity extends Activity {
                 if (statusCode == 403) { showRooms(); loadRooms(); }
             }
         });
+    }
+
+    /**
+     * Retire a locally staged upload only after verified room history proves that this account
+     * owns the sent message containing the exact server media ID.  This heals a lost write ACK
+     * without issuing another POST (which could duplicate a message after an uncertain send).
+     */
+    private void reconcilePendingMediaFromVerifiedHistory(AccountScope scopedAccount, Room room,
+                                                           List<JSONObject> messages) {
+        if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
+        try {
+            BChatConnectedMediaStore.Entry pending = mediaStore.pending(scopedAccount,
+                    room.id, room.membershipId);
+            if (pending == null || pending.mediaId <= 0) return;
+            for (JSONObject message : messages) {
+                if (positiveId(message.opt("author_user_id")) != scopedAccount.userId
+                        || !message.has("media")) continue;
+                MediaRecord serverMedia = new MediaRecord(message.getJSONObject("media"));
+                if (serverMedia.id == pending.mediaId) {
+                    mediaStore.acknowledge(scopedAccount, pending);
+                    return;
+                }
+            }
+        } catch (Exception ignored) {
+            // Retaining the staged item is safer than hiding an uncertain send.  The next
+            // verified history read will retry this idempotent reconciliation.
+        }
     }
 
     private List<JSONObject> validateMessageList(JSONArray list, long beforeId) throws Exception {

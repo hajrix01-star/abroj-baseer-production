@@ -170,6 +170,27 @@ class BChatTaskCase(TransactionCase):
                 self._change(actor, task_id, 5, action,
                              self.assignee if action == 'reassign' else None)
 
+    def test_lifecycle_notes_are_audited_and_latest_note_survives_a_blank_transition(self):
+        task_id = self._create(self.room)['task']['id']
+        started = self._change(self.assignee, task_id, 1, 'start', reason='Stock count started')
+        self.assertEqual(started['task']['last_note'], 'Stock count started')
+        reassigned = self._change(self.creator, task_id, 2, 'reassign', self.rescuer,
+                                  reason='Please finish the count')
+        self.assertEqual(reassigned['task']['last_note'], 'Please finish the count')
+        cancelled = self._change(self.creator, task_id, 3, 'cancel', reason='Supplier cancelled')
+        self.assertEqual(cancelled['task']['last_note'], 'Supplier cancelled')
+
+        completed_id = self._create(self.room)['task']['id']
+        self._change(self.assignee, completed_id, 1, 'start', reason='Started inspection')
+        completed = self._change(self.assignee, completed_id, 2, 'done')
+        self.assertEqual(completed['task']['last_note'], 'Started inspection')
+        events = self.env['baseer.bchat.task.event'].sudo().search([
+            ('task_id', '=', task_id),
+        ], order='id')
+        self.assertEqual(events.mapped('reason'), [
+            'Stock count started', 'Please finish the count', 'Supplier cancelled',
+        ])
+
     def test_create_replay_and_no_cross_company_or_uuid_reuse(self):
         operation = str(uuid4())
         first = self._create(client_uuid=operation)

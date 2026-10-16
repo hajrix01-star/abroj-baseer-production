@@ -2148,9 +2148,14 @@ public final class OdooIdentityActivity extends Activity {
         boolean channelMuted = false;
         if (Build.VERSION.SDK_INT >= 26 && notifications != null) {
             NotificationChannel channel = notifications.getNotificationChannel("bchat-events-v3");
-            channelMuted = channel != null && channel.getImportance() == NotificationManager.IMPORTANCE_NONE;
+            // Android preserves a user's per-channel sound choice.  Treat a quiet
+            // channel as unavailable too, otherwise the status screen would claim
+            // that delivery has sound even after the user muted it.
+            channelMuted = channel != null && (channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT
+                    || channel.getSound() == null);
         }
         boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
+        final boolean openChannelSettings = permissionGranted && enabled && channelMuted;
         int state = !permissionGranted || !enabled || channelMuted
                 ? R.string.bchat_notifications_off
                 : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
@@ -2168,7 +2173,7 @@ public final class OdooIdentityActivity extends Activity {
                         preferences().edit().putBoolean(PUSH_PERMISSION_ASKED, true).apply();
                         requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
                                 PUSH_PERMISSION_REQUEST);
-                    } else openNotificationSettings();
+                    } else openNotificationSettings(openChannelSettings);
                     dialog.dismiss();
                 }));
         dialog.show();
@@ -2187,12 +2192,17 @@ public final class OdooIdentityActivity extends Activity {
         notifications.createNotificationChannel(channel);
     }
 
-    private void openNotificationSettings() {
+    private void openNotificationSettings(boolean openChannel) {
         Intent intent;
-        if (Build.VERSION.SDK_INT >= 26) {
+        if (Build.VERSION.SDK_INT >= 26 && openChannel) {
             intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
                     .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
                     .putExtra(Settings.EXTRA_CHANNEL_ID, "bchat-events-v3");
+        } else if (Build.VERSION.SDK_INT >= 26) {
+            // A disabled app or denied POST_NOTIFICATIONS permission cannot be
+            // repaired from a channel page; Android exposes both controls here.
+            intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
         } else {
             intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                     .setData(Uri.fromParts("package", getPackageName(), null));
@@ -3924,6 +3934,9 @@ public final class OdooIdentityActivity extends Activity {
                 clearChatView();
                 mediaAvailable = canUseMedia;
                 applyPermissionSet(account, granted);
+                // Task-only users never load rooms, so registration must start
+                // from the verified account rather than from the chat flow.
+                maybeRegisterPush();
                 profileSnapshot = verifiedProfile;
                 selectedChatCompanyId = v2Companies.contains(result.optLong("current_company_id"))
                         ? result.optLong("current_company_id") : 0;

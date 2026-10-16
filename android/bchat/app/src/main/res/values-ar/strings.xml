@@ -697,9 +697,9 @@
     <string name="order_quote_short">"تقديري %1$s %2$s"</string>
     <string name="order_total_loading">"جارٍ حساب الإجمالي…"</string>
     <string name="order_total_unavailable">"الإجمالي غير متاح"</string>
-    <string name="order_quote_disclaimer">"يحدد أودو القيمة النهائية عند الإرسال."</string>
-    <string name="order_cart_context">"%1$s · %2$s · %3$s"</string>
-    <string name="order_add_more">"إضافة أصناف"</string>
+    <string name="order_quote_disclaimer">"تُؤكَّد القيمة النهائية عند الإرسال."</string>
+    <string name="order_cart_context">"%1$s\n%2$s"</string>
+    <string name="order_add_more">"متابعة التسوق"</string>
     <string name="order_decrease">"إنقاص كمية"</string>
     <string name="order_increase">"زيادة كمية"</string>
     <string name="order_apply_quantity">"تطبيق الكمية"</string>
@@ -739,7 +739,7 @@
     <string name="order_estimated_total">"الإجمالي الحالي: %1$s %2$s"</string>
     <string name="order_empty_cart">"السلة فارغة؛ أضف صنفًا من المنيو."</string>
     <string name="order_cart_review">"الشركة: %1$s\nالمخزن: %2$s\nالمندوب: %3$s\n\nالأصناف:\n%4$s\nتُعتمد الكميات والقيمة النهائية في الخادم."</string>
-    <string name="order_submit">"إرسال للمشتريات"</string>
+    <string name="order_submit">"إرسال الطلب"</string>
     <string name="order_choose_room">"أين تريد مشاركة الطلب؟"</string>
     <string name="order_without_room">"بدون محادثة — في طلباتي فقط"</string>
     <string name="order_room_loading">"جارٍ تحميل المحادثات المتاحة…"</string>

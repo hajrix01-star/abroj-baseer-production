@@ -2472,7 +2472,8 @@ public final class OdooIdentityActivity extends Activity {
             Ui.pad(companyCard, 14, 12);
             LinearLayout.LayoutParams companyCardSize = new LinearLayout.LayoutParams(-1, -2);
             companyCardSize.topMargin = dp(12);
-            TextView companyName = Ui.text(this, AppLocale.name(this, company.optString("name")), 15, Ui.GREEN, true);
+            // Prefer the dedicated localized label over a legacy legal name that can join both languages.
+            TextView companyName = Ui.text(this, localizedCompanyName(company), 15, Ui.GREEN, true);
             companyCard.addView(companyName, fieldSize(6));
             JSONArray titles = company.optJSONArray("job_titles");
             StringBuilder jobs = new StringBuilder();
@@ -2480,11 +2481,14 @@ public final class OdooIdentityActivity extends Activity {
                 if (j > 0) jobs.append(" · ");
                 jobs.append(AppLocale.name(this, titles.optString(j)));
             }
-            if (jobs.length() == 0) jobs.append(getString(R.string.bchat_profile_no_job));
-            TextView job = Ui.text(this, jobs.toString(), 13, Ui.MUTED, false);
-            job.setBackground(Ui.bg(Ui.ACTION_TONAL, 9, this));
-            Ui.pad(job, 10, 6);
-            companyCard.addView(job, new LinearLayout.LayoutParams(-2, -2));
+            // An absent optional title is not an error state; do not repeat an empty-state chip
+            // on every company card.
+            if (jobs.length() > 0) {
+                TextView job = Ui.text(this, jobs.toString(), 13, Ui.MUTED, false);
+                job.setBackground(Ui.bg(Ui.ACTION_TONAL, 9, this));
+                Ui.pad(job, 10, 6);
+                companyCard.addView(job, new LinearLayout.LayoutParams(-2, -2));
+            }
             body.addView(companyCard, companyCardSize);
         }
         ScrollView scroll = new ScrollView(this);
@@ -7123,6 +7127,9 @@ public final class OdooIdentityActivity extends Activity {
                 updateOlderControl();
                 return;
             }
+            // The cache is written only after an authenticated, validated room read. It can
+            // safely confirm the exact media ID before the next live fetch completes.
+            reconcilePendingMediaFromVerifiedHistory(account, room, cached);
             ScrollAnchor anchor = currentScrollAnchor();
             List<JSONObject> window = messageWindow(cached, beforeId, anchor.atBottom, false);
             long first = window.isEmpty() ? 0 : positiveId(window.get(0).get("id"));
@@ -7130,6 +7137,7 @@ public final class OdooIdentityActivity extends Activity {
                     ? first : 0;
             if (beforeId > 0) historicalWindow = true;
             renderMessageWindow(room, window, firstOpen, 0, anchor);
+            updatePendingUi();
             updateOlderControl();
             newerControl.setVisibility(historicalWindow ? View.VISIBLE : View.GONE);
             if (offlineHistory) chatNotice.setText(offlineNotice());
@@ -7377,7 +7385,8 @@ public final class OdooIdentityActivity extends Activity {
                     mine ? item : null);
             return true;
         });
-        outer.setGravity(mine ? Gravity.START : Gravity.END);
+        // Conversation side is physical, so it remains WhatsApp-like in either UI language.
+        outer.setGravity(mine ? Gravity.RIGHT : Gravity.LEFT);
         if (showDate) {
             String label = formatMessageDay(item.getString("created_at"));
             if (!label.isEmpty()) {
@@ -12081,8 +12090,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private void refreshOrderCartRoute() {
         if (orderCartRouteButton != null) {
-            orderCartRouteButton.setText(getString(R.string.order_purchase_route_value,
-                    orderRouteLabel(orderPurchaseRoute)));
+            // This is already a selectable route control; a compact value avoids repeating its label.
+            orderCartRouteButton.setText(orderRouteLabel(orderPurchaseRoute));
             orderCartRouteButton.setVisibility(orderPurchaseRoutes.size() > 1
                     ? View.VISIBLE : View.GONE);
         }
@@ -12096,18 +12105,11 @@ public final class OdooIdentityActivity extends Activity {
                             R.string.order_choose_representative));
         }
         if (orderCartContextView != null) {
-            String route = orderRouteLabel(orderPurchaseRoute);
-            if ("representative".equals(orderPurchaseRoute)) {
-                String representative = orderRepresentatives.size() == 1
-                        ? orderRepresentatives.get(0).name
-                        : orderChoiceName(orderRepresentatives, orderRepresentativeId,
-                                R.string.order_choose_representative);
-                route += " · " + representative;
-            }
             orderCartContextView.setText(getString(R.string.order_cart_context,
-                    orderChoiceName(orderCompanies, orderCompanyId, R.string.order_choose_company),
-                    orderChoiceName(orderWarehouses, orderWarehouseId, R.string.order_choose_warehouse),
-                    route));
+                    companyNameForId(orderCompanyId, orderChoiceName(orderCompanies,
+                            orderCompanyId, R.string.order_choose_company)),
+                    orderChoiceName(orderWarehouses, orderWarehouseId,
+                            R.string.order_choose_warehouse)));
         }
     }
 
@@ -12217,42 +12219,20 @@ public final class OdooIdentityActivity extends Activity {
             LinearLayout row = Ui.column(this);
             Ui.pad(row, 10, 9);
             row.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
-            row.addView(Ui.text(this, line.option.product, 15, Ui.INK, true));
+            LinearLayout heading = Ui.row(this);
+            TextView product = Ui.text(this, line.option.product, 15, Ui.INK, true);
+            product.setMaxLines(2);
+            product.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            heading.addView(product, new LinearLayout.LayoutParams(0, -2, 1));
+            FrameLayout remove = Ui.iconButton(this, "close", getString(R.string.order_remove)
+                    + " " + line.option.product);
+            remove.setOnClickListener(v -> removeOrderOption(line.option.id));
+            heading.addView(remove, new LinearLayout.LayoutParams(dp(48), dp(48)));
+            row.addView(heading);
             row.addView(Ui.text(this, orderOptionLabel(line.option), 12, Ui.MUTED, false));
             LinearLayout controls = Ui.row(this);
-            controls.addView(orderQuantityAction("−", R.string.order_decrease,
-                    line.option.product, () -> stepOrderQuantity(line.option, -1)),
-                    new LinearLayout.LayoutParams(dp(48), dp(48)));
-            EditText quantity = new EditText(this);
-            quantity.setSingleLine(true);
-            quantity.setText(line.quantity);
-            quantity.setTextSize(15);
-            quantity.setSelectAllOnFocus(true);
-            quantity.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            quantity.setContentDescription(getString(R.string.order_quantity) + " " + line.option.product);
-            quantity.setGravity(Gravity.CENTER);
-            quantity.setMinHeight(dp(48));
-            controls.addView(quantity, new LinearLayout.LayoutParams(0, dp(48), 1));
-            controls.addView(orderQuantityAction("✓", R.string.order_apply_quantity,
-                    line.option.product, () -> {
-                        try {
-                            String normalized = normalizeOrderQuantity(quantity.getText().toString());
-                            OrderCartLine current = orderCart.get(line.option.id);
-                            if (current != null && !current.quantity.equals(normalized)) {
-                                orderCart.put(line.option.id, new OrderCartLine(line.option, normalized));
-                                lastRemovedOrderLine = null;
-                                afterOrderCartChange(true);
-                            }
-                        } catch (Exception invalid) {
-                            quantity.setError(getString(R.string.order_invalid_quantity));
-                        }
-                    }), new LinearLayout.LayoutParams(dp(48), dp(48)));
-            controls.addView(orderQuantityAction("+", R.string.order_increase,
-                    line.option.product, () -> stepOrderQuantity(line.option, 1)),
-                    new LinearLayout.LayoutParams(dp(48), dp(48)));
-            controls.addView(orderQuantityAction("×", R.string.order_remove,
-                    line.option.product, () -> removeOrderOption(line.option.id)),
-                    new LinearLayout.LayoutParams(dp(48), dp(48)));
+            controls.setGravity(Gravity.END);
+            controls.addView(orderQuantityStepper(line), new LinearLayout.LayoutParams(-2, dp(48)));
             row.addView(controls);
             LinearLayout.LayoutParams rowSize = new LinearLayout.LayoutParams(-1, -2);
             rowSize.setMargins(0, 0, 0, dp(8));

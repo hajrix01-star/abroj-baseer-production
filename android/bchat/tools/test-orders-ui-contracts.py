@@ -106,6 +106,17 @@ class OrdersUiContracts(unittest.TestCase):
         self.assertIn('setMinWidth(dp(48))', action)
         self.assertIn('setMinHeight(dp(48))', action)
 
+    def test_cart_keeps_context_concise_and_uses_one_quantity_control_per_line(self):
+        route = method('refreshOrderCartRoute')
+        self.assertIn('orderCartRouteButton.setText(orderRouteLabel(orderPurchaseRoute));', route)
+        self.assertIn('companyNameForId(orderCompanyId', route)
+        self.assertNotIn('String route = orderRouteLabel(orderPurchaseRoute);', route)
+        cart = method('renderOrderCartLines')
+        self.assertIn('Ui.iconButton(this, "close", getString(R.string.order_remove)', cart)
+        self.assertIn('controls.addView(orderQuantityStepper(line)', cart)
+        self.assertNotIn('new EditText(this)', cart)
+        self.assertNotIn('orderQuantityAction("✓"', cart)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

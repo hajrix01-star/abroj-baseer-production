@@ -42,6 +42,7 @@ REQUIRED_IDS = {
     "qa-live-release-gate",
     "guard-engine-integrity",
     "task-push-fastlane-and-private-avatars",
+    "media-send-ack-reconciliation",
 }
 
 
@@ -180,6 +181,10 @@ def check_android_source() -> None:
     require("privateAvatarView" in activity and "V2_PROFILE_AVATAR" in activity
             and "members/\" + authorId + \"/avatar" in activity,
             "private employee-avatar presentation is absent")
+    require("reconcilePendingMediaFromVerifiedHistory" in activity
+            and "serverMedia.id == pending.mediaId" in activity
+            and "mediaStore.acknowledge(scopedAccount, pending);" in activity,
+            "media send acknowledgement recovery is absent")
 
 
 def check_release_wrappers() -> None:
@@ -206,6 +211,7 @@ def run_android_source_contract() -> None:
         "android/bchat/tools/test-entry-layout-contracts.py",
         "android/bchat/tools/test-localization.py",
         "android/bchat/tools/test-bchat-user-permissions.py",
+        "android/bchat/tools/test-connected-media-ui-contracts.py",
         "android/bchat/tools/test-verified-read-fallback.py",
     ):
         subprocess.run([sys.executable, source_test], cwd=ROOT, check=True)

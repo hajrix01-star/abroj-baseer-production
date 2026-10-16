@@ -87,4 +87,7 @@ class BChatAvatarService(models.AbstractModel):
     @api.model
     def _v2_profile_avatar(self):
         user = self._require_any_bchat_permission('chat_view', 'task_view')
-        return self._v2_avatar_png_for_user(user)
+        # A user can have one employee record per allowed company.  Keep the
+        # profile deterministic and aligned with the current Odoo company,
+        # rather than leaking an arbitrary company-ordered employee image.
+        return self._v2_avatar_png_for_user(user, self.env.company)

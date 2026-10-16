@@ -274,6 +274,28 @@ class BChatTextCase(TransactionCase):
         with self.assertRaises(AccessError):
             self._service(self.manager)._v2_member_avatar(self.room.id, self.member.id)
 
+    def test_profile_avatar_uses_the_active_company_employee_image(self):
+        if not self.env.registry.models.get('hr.employee'):
+            self.skipTest('HR is optional and not installed in this test database')
+        second = self.env['res.company'].create({'name': 'BChat avatar active company'})
+        self.member.write({'company_ids': [Command.set([self.company.id, second.id])]})
+        first_image = io.BytesIO()
+        Image.new('RGB', (12, 12), '#aa1122').save(first_image, format='PNG')
+        second_image = io.BytesIO()
+        Image.new('RGB', (12, 12), '#2474a7').save(second_image, format='PNG')
+        employees = self.env['hr.employee'].sudo()
+        employees.create({
+            'name': 'BChat first-company avatar', 'user_id': self.member.id,
+            'company_id': self.company.id, 'image_128': base64.b64encode(first_image.getvalue()),
+        })
+        employees.create({
+            'name': 'BChat second-company avatar', 'user_id': self.member.id,
+            'company_id': second.id, 'image_128': base64.b64encode(second_image.getvalue()),
+        })
+        raw = self._service(self.member).with_company(second)._v2_profile_avatar()
+        with Image.open(io.BytesIO(raw)) as avatar:
+            self.assertEqual(avatar.convert('RGB').getpixel((4, 4)), (36, 116, 167))
+
     def test_v2_profile_company_names_are_optional_and_never_joined(self):
         if not {'baseer_name_ar', 'baseer_name_en'} <= self.company._fields.keys():
             row = self._service(self.member)._v2_bootstrap()['profile']['companies'][0]

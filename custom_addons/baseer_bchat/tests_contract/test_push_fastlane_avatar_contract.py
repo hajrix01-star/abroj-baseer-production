@@ -29,7 +29,8 @@ class PushFastlaneAndAvatarContractTests(unittest.TestCase):
         for required in (
             'def _v2_member_avatar', '_require_bchat_permission', '_v2_current_member',
             "('room_id', '=', room.id)", "('active', '=', True)",
-            'image_128', "raise ProtocolError('avatar_missing'",
+            'image_128', 'def _v2_profile_avatar', 'user, self.env.company',
+            "raise ProtocolError('avatar_missing'",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, source)

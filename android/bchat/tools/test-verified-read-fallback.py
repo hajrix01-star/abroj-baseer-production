@@ -52,6 +52,15 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         self.assertLess(fetch.index('fetchV2ReadDirectlyInWebView(path, callback)'),
                         fetch.index('fetchV2Internal('))
 
+    def test_initial_room_read_precedes_push_registration(self):
+        verify = method('verifyV2')
+        self.assertLess(verify.index('if (chatAllowed()) loadRooms();'),
+                        verify.index('handler.post(this::maybeRegisterPush);'))
+        direct = method('fetchVerifiedGetInWebView', 'boolean')
+        self.assertIn('v2Busy = true;', direct)
+        complete = method('completeVerifiedGetFallback')
+        self.assertLess(complete.index('v2Busy = false;'), complete.index('callback.complete(statusCode, body);'))
+
     def test_expired_web_session_keeps_offline_snapshots(self):
         recovery = method('recoverExpiredPrivateBridgeSession', 'boolean')
         self.assertNotIn('purgeHistory()', recovery)
@@ -62,10 +71,10 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 67; versionName '0.7.51-qa-read-path-diagnostic'", GRADLE)
+        self.assertIn("versionCode 68; versionName '0.7.52-qa-push-queue-recovery'", GRADLE)
 
-    def test_read_path_diagnostic_has_only_fixed_safe_route_markers(self):
-        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'true'", GRADLE)
+    def test_recovery_candidate_disables_diagnostic_ui(self):
+        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)
         labels = method('transportReadLabel', 'String')
         self.assertIn('V2_BOOTSTRAP.equals(path)', labels)
         self.assertIn('V2_ROOMS.equals(path)', labels)

@@ -69,9 +69,9 @@ gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
-assert version_match and int(version_match.group(1)) >= 67, 'BChat read-path diagnostic requires versionCode 67 or newer'
-assert "versionName '0.7.51-qa-read-path-diagnostic'" in gradle
-assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'true'" in gradle
+assert version_match and int(version_match.group(1)) >= 68, 'BChat push-queue recovery requires versionCode 68 or newer'
+assert "versionName '0.7.52-qa-push-queue-recovery'" in gradle
+assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'false'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
@@ -126,10 +126,12 @@ assert 'channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT' in ide
 assert 'channel.getSound() == null' in identity
 assert 'Settings.ACTION_APP_NOTIFICATION_SETTINGS' in identity
 verified_push = identity[identity.index('applyPermissionSet(account, granted);'):identity.index('profileSnapshot = verifiedProfile;')]
-assert 'maybeRegisterPush();' in verified_push
+assert 'maybeRegisterPush();' not in verified_push
+assert 'if (chatAllowed()) loadRooms();' in identity
+assert 'handler.post(this::maybeRegisterPush);' in identity
 clear_chat=identity[identity.index('private void clearChatView()'):identity.index('private void queueHistoryWrite(')]
 assert 'pendingPushRoomId = 0;' in clear_chat and 'pendingPushRoomMessageId = 0;' in clear_chat
-print('PASS private chat previews, replacement sound channel and immediate offline history fallback')
+print('PASS private chat previews, replacement sound channel, deferred push registration and immediate offline history fallback')
 assert 'private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);' in identity
 assert '"https".equals(uri.getScheme())' in identity
 assert 'expected.getHost().equals(uri.getHost()) && uri.getPort() == expected.getPort()' in identity

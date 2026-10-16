@@ -3078,6 +3078,9 @@ public final class OdooIdentityActivity extends Activity {
         if (diagnosticRead != null) traceTransport("D12_" + diagnosticRead + "_DIRECT_START");
         webV2GetFallbackBusy = true;
         releaseV2Port();
+        // The direct reader occupies the same authenticated WebView. Keep the shared busy
+        // signal true so push registration and optional reads wait instead of racing it.
+        v2Busy = true;
         String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
                 + "var u=new URL(" + JSONObject.quote(path) + ",location.origin);"
                 + "if(u.origin!==location.origin)return;"
@@ -3110,6 +3113,7 @@ public final class OdooIdentityActivity extends Activity {
             String label = transportReadLabel(path);
             if (label != null) traceTransport("D14_" + label + "_CONTEXT_CHANGED");
             webV2GetFallbackBusy = false;
+            v2Busy = false;
             return;
         }
         String read = "(function(){var value=window[" + JSONObject.quote(slot)
@@ -3172,6 +3176,7 @@ public final class OdooIdentityActivity extends Activity {
                                              V2Callback callback) {
         if (fallback != webV2GetFallbackGeneration) return;
         webV2GetFallbackBusy = false;
+        v2Busy = false;
         if (closed || expectedWeb != webEpoch || expectedPage != pageEpoch || expectedEpoch != epoch) return;
         String label = transportReadLabel(path);
         if (label != null) traceTransport("D16_" + label + "_CALLBACK_" + statusCode);
@@ -4191,9 +4196,6 @@ public final class OdooIdentityActivity extends Activity {
                 clearChatView();
                 mediaAvailable = canUseMedia;
                 applyPermissionSet(account, granted);
-                // Task-only users never load rooms, so registration must start
-                // from the verified account rather than from the chat flow.
-                maybeRegisterPush();
                 profileSnapshot = verifiedProfile;
                 selectedChatCompanyId = v2Companies.contains(result.optLong("current_company_id"))
                         ? result.optLong("current_company_id") : 0;
@@ -4215,6 +4217,9 @@ public final class OdooIdentityActivity extends Activity {
                         shellNotice.setText(R.string.chat_v2_denied);
                     }
                     maybeProbeOrderCapability();
+                    // Task-only users do not load rooms. Queue registration after their first
+                    // UI read; its busy check defers safely if that read is still in progress.
+                    handler.post(this::maybeRegisterPush);
                 }
                 // A task-only account may never load rooms. Refreshing here
                 // plus the post-load calls keeps the header independent from

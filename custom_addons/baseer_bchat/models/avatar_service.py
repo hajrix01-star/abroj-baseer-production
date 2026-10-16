@@ -1,6 +1,7 @@
 """Private employee-avatar reads for BChat.
 
-Images are deliberately served through BChat routes rather than /web/image:
+Images are deliberately served through BChat routes rather than a generic
+attachment endpoint:
 the route re-checks the active room membership at every request and never
 exposes a predictable public attachment URL.
 """

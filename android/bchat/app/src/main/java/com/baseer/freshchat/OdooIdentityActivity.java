@@ -3031,7 +3031,7 @@ public final class OdooIdentityActivity extends Activity {
      * Repeat only authenticated GET requests after a failed WebMessagePort delivery.  The retry
      * stays in the same, authenticated WebView; it never extracts cookies or retries a POST.
      */
-    private boolean retryVerifiedGetInWebView(String method, String path, int maximum,
+    private boolean fetchVerifiedGetInWebView(String method, String path, int maximum,
                                               int expectedWeb, int expectedPage, int expectedEpoch,
                                               V2Callback callback) {
         if (!"GET".equals(method) || closed || webV2GetFallbackBusy || callback == null
@@ -3128,8 +3128,21 @@ public final class OdooIdentityActivity extends Activity {
         handler.post(this::flushLiveUi);
     }
 
+    /** Use the direct WebView callback for Bootstrap: some Android WebViews drop transferred ports. */
+    private boolean fetchBootstrapDirectlyInWebView(V2Callback callback) {
+        if (closed || !verified || account == null || v2Busy || webV2GetFallbackBusy
+                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl())))
+            return false;
+        return fetchVerifiedGetInWebView("GET", V2_BOOTSTRAP, MAX_RESPONSE,
+                webEpoch, pageEpoch, epoch, callback);
+    }
+
     /** Every request runs inside the already authenticated, same-origin WebView. */
     private void fetchV2(String method, String path, String payload, V2Callback callback) {
+        // This is the first v2 read after authentication.  Avoid a transferred MessagePort here:
+        // it is the exact handoff that fails on the affected Android 16 WebView.
+        if ("GET".equals(method) && V2_BOOTSTRAP.equals(path) && payload == null
+                && fetchBootstrapDirectlyInWebView(callback)) return;
         fetchV2Internal(method, path, payload, null, callback);
     }
 
@@ -3196,7 +3209,7 @@ public final class OdooIdentityActivity extends Activity {
                 } catch (OptionalModuleUnavailable expected) {
                     // Keep the authenticated shell and report feature availability truthfully.
                 } catch (Exception invalid) {
-                    if (retryVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
+                    if (fetchVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
                             currentEpoch, callback)) return;
                     statusCode = 0;
                     body = null;
@@ -3243,7 +3256,7 @@ public final class OdooIdentityActivity extends Activity {
         });
         handler.postDelayed(() -> {
             if (!closed && v2Busy && request == v2Nonce) {
-                if (retryVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
+                if (fetchVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
                         currentEpoch, callback)) return;
                 closeV2Port();
                 callback.complete(0, null);

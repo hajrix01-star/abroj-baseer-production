@@ -21,7 +21,7 @@ def method(name, return_type='void'):
 
 class VerifiedReadFallbackContracts(unittest.TestCase):
     def test_only_authenticated_gets_can_use_webview_recovery(self):
-        fallback = method('retryVerifiedGetInWebView', 'boolean')
+        fallback = method('fetchVerifiedGetInWebView', 'boolean')
         self.assertIn('!"GET".equals(method)', fallback)
         self.assertIn("credentials:'same-origin'", fallback)
         self.assertIn("redirect:'manual'", fallback)
@@ -36,8 +36,17 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
     def test_port_failure_and_timeout_both_try_read_fallback(self):
         transport = method('fetchV2Internal')
         self.assertIn('|| webV2GetFallbackBusy ||', transport)
-        self.assertGreaterEqual(transport.count('retryVerifiedGetInWebView(method, path, maximum'), 2)
-        self.assertIn('if (retryVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,', transport)
+        self.assertGreaterEqual(transport.count('fetchVerifiedGetInWebView(method, path, maximum'), 2)
+        self.assertIn('if (fetchVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,', transport)
+
+    def test_bootstrap_bypasses_transferred_message_port(self):
+        direct = method('fetchBootstrapDirectlyInWebView', 'boolean')
+        self.assertIn('V2_BOOTSTRAP', direct)
+        self.assertIn('fetchVerifiedGetInWebView("GET", V2_BOOTSTRAP', direct)
+        fetch = method('fetchV2')
+        self.assertIn('fetchBootstrapDirectlyInWebView(callback)', fetch)
+        self.assertLess(fetch.index('fetchBootstrapDirectlyInWebView(callback)'),
+                        fetch.index('fetchV2Internal('))
 
     def test_expired_web_session_keeps_offline_snapshots(self):
         recovery = method('recoverExpiredPrivateBridgeSession', 'boolean')
@@ -49,7 +58,7 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 63; versionName '0.7.47-qa-verified-read-fallback'", GRADLE)
+        self.assertIn("versionCode 64; versionName '0.7.48-qa-bootstrap-direct-read'", GRADLE)
 
 
 if __name__ == '__main__':

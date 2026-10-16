@@ -119,6 +119,8 @@ class BChatPushCase(TransactionCase):
             ('account_key', '=', registration['account_key']),
         ])
         self.assertFalse(device.active)
+        self.assertEqual(device.inactive_reason, 'logout')
+        self.assertTrue(device.inactive_at)
         for model in ('baseer.bchat.push.device', 'baseer.bchat.push.event'):
             self.assertFalse(self.env[model].with_user(self.creator).has_access('read'))
             self.assertFalse(self.env[model].with_user(self.creator).has_access('create'))

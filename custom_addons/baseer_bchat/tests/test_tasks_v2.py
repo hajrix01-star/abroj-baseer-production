@@ -216,6 +216,9 @@ class BChatTaskCase(TransactionCase):
         self.assertEqual(audit.action, 'rescue')
         self.assertEqual(audit.actor_id, self.rescuer)
         self.assertTrue(audit.reason)
+        self.assertEqual(saved['task']['last_note'], 'The original assignee left this room')
+        self.assertEqual(self.env['baseer.bchat.task'].sudo().browse(task_id).last_note,
+                         'The original assignee left this room')
         self.assertEqual(self.env['baseer.bchat.task.event'].sudo().search_count([
             ('task_id', '=', task_id),
         ]), 1)

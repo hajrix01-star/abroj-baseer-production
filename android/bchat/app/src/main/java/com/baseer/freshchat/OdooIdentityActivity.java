@@ -3,6 +3,8 @@ package com.baseer.freshchat;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.TimePickerDialog;
 import android.Manifest;
 import android.content.Context;
@@ -12,12 +14,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
+import android.media.AudioAttributes;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -396,7 +400,7 @@ public final class OdooIdentityActivity extends Activity {
     private long renderedTaskRoomFilter = Long.MIN_VALUE;
     private long taskBeforeId;
     private int taskViewSerial;
-    private String taskStateFilter;
+    private String taskStateFilter = "open";
     private boolean tasksAvailable;
     private final List<Task> tasks = new ArrayList<>();
     private final List<TaskChoice> taskCompanies = new ArrayList<>();
@@ -1114,7 +1118,7 @@ public final class OdooIdentityActivity extends Activity {
         Ui.pad(taskTabs, 8, 2);
         LinearLayout taskSegments = Ui.row(this);
         taskSegments.setBackgroundColor(Color.WHITE);
-        taskAllButton = orderChoiceButton(R.string.task_tab_all, () -> selectTaskState(null));
+        taskAllButton = orderChoiceButton(R.string.task_tab_closed, () -> selectTaskState("cancelled"));
         taskOpenButton = orderChoiceButton(R.string.task_tab_open, () -> selectTaskState("open"));
         taskDoneButton = orderChoiceButton(R.string.task_tab_done, () -> selectTaskState("done"));
         taskAllLine = addOrderTab(taskSegments, taskAllButton);
@@ -1124,7 +1128,7 @@ public final class OdooIdentityActivity extends Activity {
         taskPane.addView(taskTabs);
         taskNewButton = new Button(this);
         taskNewButton.setText(R.string.task_new);
-        styleAction(taskNewButton, true);
+        Ui.styleAction(taskNewButton, Ui.ActionTone.PRIMARY);
         taskNewButton.setOnClickListener(v -> createTaskDialog());
         LinearLayout taskActions = Ui.row(this);
         Ui.pad(taskActions, 6, 4);
@@ -1132,7 +1136,7 @@ public final class OdooIdentityActivity extends Activity {
         taskPane.addView(taskActions);
         taskPendingButton = new Button(this);
         taskPendingButton.setText(R.string.task_review_pending);
-        styleAction(taskPendingButton, false);
+        Ui.styleAction(taskPendingButton, Ui.ActionTone.SECONDARY);
         taskPendingButton.setVisibility(View.GONE);
         taskPendingButton.setOnClickListener(v -> reviewPendingTaskCreate());
         taskPane.addView(taskPendingButton, fieldSize(4));
@@ -1144,7 +1148,7 @@ public final class OdooIdentityActivity extends Activity {
         taskPane.addView(taskScroll, new LinearLayout.LayoutParams(-1, 0, 1));
         taskOlderButton = new Button(this);
         taskOlderButton.setText(R.string.task_older);
-        styleAction(taskOlderButton, false);
+        Ui.styleAction(taskOlderButton, Ui.ActionTone.SECONDARY);
         taskOlderButton.setOnClickListener(v -> loadTasks(taskBeforeId));
         taskPane.addView(taskOlderButton, new LinearLayout.LayoutParams(-1, dp(48)));
         taskPane.setVisibility(View.GONE);
@@ -2121,8 +2125,79 @@ public final class OdooIdentityActivity extends Activity {
         List<AnchoredMenu.Entry> entries = new ArrayList<>();
         entries.add(AnchoredMenu.Entry.page(getString(R.string.bchat_menu_back), "back",
                 () -> accountMenu.replace(getString(R.string.bchat_account_menu), accountRootEntries())));
+        entries.add(AnchoredMenu.Entry.action(getString(R.string.bchat_notifications), "bell",
+                this::showNotificationSettings));
         entries.add(AnchoredMenu.Entry.action(getString(R.string.language_title), "language", this::showLanguageSettings));
         accountMenu.replace(getString(R.string.bchat_settings), entries);
+    }
+
+    /** Android permission and the BChat channel are separate, user-controlled delivery settings. */
+    private void showNotificationSettings() {
+        if (!BuildConfig.BCHAT_PUSH_ENABLED) {
+            new AlertDialog.Builder(this).setTitle(R.string.bchat_notifications)
+                    .setMessage(R.string.bchat_notifications_unavailable)
+                    .setPositiveButton(R.string.task_close, null).show();
+            return;
+        }
+        boolean permissionGranted = Build.VERSION.SDK_INT < 33
+                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+        NotificationManager notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        ensureBChatNotificationChannel(notifications);
+        boolean enabled = notifications != null && notifications.areNotificationsEnabled();
+        boolean channelMuted = false;
+        if (Build.VERSION.SDK_INT >= 26 && notifications != null) {
+            NotificationChannel channel = notifications.getNotificationChannel("bchat-events-v3");
+            channelMuted = channel != null && channel.getImportance() == NotificationManager.IMPORTANCE_NONE;
+        }
+        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
+        int state = !permissionGranted || !enabled || channelMuted
+                ? R.string.bchat_notifications_off
+                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
+        int action = !permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
+                ? R.string.bchat_notifications_enable : R.string.bchat_notifications_manage;
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.bchat_notifications)
+                .setMessage(getString(state, linked ? getString(R.string.bchat_device_linked)
+                        : getString(R.string.bchat_device_linking)))
+                .setNegativeButton(R.string.task_close, null)
+                .setPositiveButton(action, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    if (!permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
+                            && Build.VERSION.SDK_INT >= 33) {
+                        preferences().edit().putBoolean(PUSH_PERMISSION_ASKED, true).apply();
+                        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                PUSH_PERMISSION_REQUEST);
+                    } else openNotificationSettings();
+                    dialog.dismiss();
+                }));
+        dialog.show();
+        maybeRegisterPush();
+    }
+
+    private void ensureBChatNotificationChannel(NotificationManager notifications) {
+        if (Build.VERSION.SDK_INT < 26 || notifications == null) return;
+        NotificationChannel channel = new NotificationChannel("bchat-events-v3", "BChat",
+                NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription(getString(R.string.bchat_push_channel_description));
+        channel.enableVibration(true);
+        channel.setVibrationPattern(new long[]{0, 160, 100, 160});
+        channel.setSound(Settings.System.DEFAULT_NOTIFICATION_URI,
+                new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build());
+        notifications.createNotificationChannel(channel);
+    }
+
+    private void openNotificationSettings() {
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= 26) {
+            intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
+                    .putExtra(Settings.EXTRA_CHANNEL_ID, "bchat-events-v3");
+        } else {
+            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.fromParts("package", getPackageName(), null));
+        }
+        startActivity(intent);
     }
 
     private void showAccountAbout() {
@@ -4547,7 +4622,7 @@ public final class OdooIdentityActivity extends Activity {
         taskRoomFilter = 0;
         renderedTaskRoomFilter = Long.MIN_VALUE;
         taskBeforeId = 0;
-        taskStateFilter = null;
+        taskStateFilter = "open";
         tasksAvailable = false;
         tasks.clear();
         ++taskViewSerial;
@@ -5014,17 +5089,6 @@ public final class OdooIdentityActivity extends Activity {
         showCachedMessages(room, 0, true);
         loadMessages(notifiedMessageId > 0 && notifiedMessageId < 2147483647L
                 ? notifiedMessageId + 1 : 0);
-        maybeRequestPushPermission();
-    }
-
-    private void maybeRequestPushPermission() {
-        if (!BuildConfig.BCHAT_PUSH_ENABLED || Build.VERSION.SDK_INT < 33
-                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                == PackageManager.PERMISSION_GRANTED
-                || preferences().getBoolean(PUSH_PERMISSION_ASKED, false)) return;
-        preferences().edit().putBoolean(PUSH_PERMISSION_ASKED, true).apply();
-        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                PUSH_PERMISSION_REQUEST);
     }
 
     private void clearSelectedReply() {
@@ -7283,6 +7347,10 @@ public final class OdooIdentityActivity extends Activity {
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions,
                                                       int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PUSH_PERMISSION_REQUEST) {
+            maybeRegisterPush();
+            return;
+        }
         if (requestCode != MEDIA_RECORD_PERMISSION_REQUEST) return;
         AccountScope scopedAccount = mediaPickerAccount;
         Room room = mediaPickerRoom;
@@ -7957,7 +8025,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private static final class Task {
         final long id, companyId, roomId, creatorId, assigneeId, revision;
-        final String title, description, dueAt, state, creatorName, assigneeName, createdAt;
+        final String title, description, dueAt, state, creatorName, assigneeName, createdAt, lastNote;
         Task(JSONObject item) throws Exception {
             id = positiveId(item.get("id"));
             companyId = positiveId(item.get("company_id"));
@@ -7974,6 +8042,7 @@ public final class OdooIdentityActivity extends Activity {
             assigneeId = positiveId(item.get("assignee_id"));
             creatorName = boundedTaskText(item.getString("creator_name"), 256, true);
             assigneeName = boundedTaskText(item.getString("assignee_name"), 256, true);
+            lastNote = boundedTaskText(item.optString("last_note", ""), 512, false);
             createdAt = taskDate(item.get("created_at"));
             taskDate(item.get("updated_at"));
             Object lastChanged = item.get("last_changed_at");
@@ -8062,7 +8131,7 @@ public final class OdooIdentityActivity extends Activity {
     private void openTasks(long roomId) {
         if (!permissionSet.taskView) return;
         ++taskViewSerial;
-        if (taskRoomFilter != roomId) taskStateFilter = null;
+        if (taskRoomFilter != roomId) taskStateFilter = "open";
         taskRoomFilter = roomId;
         if ("tasks".equals(visibleSection)) discoverTasks();
         else switchSection("tasks");
@@ -8254,7 +8323,8 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void selectTaskState(String state) {
-        if (!tasksAvailable || v2Busy || (state != null && !"open".equals(state) && !"done".equals(state))) return;
+        if (!tasksAvailable || v2Busy || (state != null && !"open".equals(state)
+                && !"done".equals(state) && !"cancelled".equals(state))) return;
         if (java.util.Objects.equals(taskStateFilter, state)) return;
         ++taskViewSerial;
         taskStateFilter = state;
@@ -8274,11 +8344,11 @@ public final class OdooIdentityActivity extends Activity {
 
     private void updateTaskTabs() {
         if (taskAllLine == null || taskOpenLine == null || taskDoneLine == null) return;
-        boolean all = taskStateFilter == null;
-        Ui.styleSegment(taskAllButton, all);
+        boolean closed = "cancelled".equals(taskStateFilter);
+        Ui.styleSegment(taskAllButton, closed);
         Ui.styleSegment(taskOpenButton, "open".equals(taskStateFilter));
         Ui.styleSegment(taskDoneButton, "done".equals(taskStateFilter));
-        taskAllLine.setBackgroundColor(all ? Ui.GREEN : Color.TRANSPARENT);
+        taskAllLine.setBackgroundColor(closed ? Ui.GREEN : Color.TRANSPARENT);
         taskOpenLine.setBackgroundColor("open".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
         taskDoneLine.setBackgroundColor("done".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
     }
@@ -8295,6 +8365,18 @@ public final class OdooIdentityActivity extends Activity {
         return String.valueOf(companyId);
     }
 
+    private int taskStateColor(String state) {
+        if ("done".equals(state)) return Ui.TASK_DONE;
+        if ("cancelled".equals(state)) return Ui.TASK_CLOSED;
+        return Ui.TASK_ACTIVE;
+    }
+
+    private int taskStateTint(String state) {
+        if ("done".equals(state)) return Ui.TASK_DONE_TINT;
+        if ("cancelled".equals(state)) return Ui.TASK_CLOSED_TINT;
+        return Ui.TASK_ACTIVE_TINT;
+    }
+
     private void renderTasks() {
         taskItems.removeAllViews();
         taskItems.setGravity(tasks.isEmpty() ? Gravity.CENTER : Gravity.TOP);
@@ -8307,41 +8389,66 @@ public final class OdooIdentityActivity extends Activity {
             TextView title = Ui.text(this, getString(R.string.task_empty), 16, Ui.INK, true);
             title.setGravity(Gravity.CENTER);
             empty.addView(title, fieldSize(10));
-            TextView explanation = Ui.text(this, getString(R.string.bchat_task_empty_hint), 13, Ui.MUTED, false);
-            explanation.setGravity(Gravity.CENTER);
-            empty.addView(explanation, fieldSize(3));
             taskItems.addView(empty);
             return;
         }
         for (Task task : tasks) {
-            LinearLayout entry = Ui.column(this);
-            Ui.pad(entry, 12, 10);
-            entry.setMinimumHeight(dp(76));
-            entry.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
+            int accent = taskStateColor(task.state);
+            LinearLayout entry = Ui.row(this);
+            entry.setGravity(Gravity.TOP);
+            entry.setMinimumHeight(dp(104));
+            entry.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 14, this));
+            View rail = new View(this);
+            rail.setBackground(Ui.bg(accent, 14, this));
+            entry.addView(rail, new LinearLayout.LayoutParams(dp(5), -1));
+            LinearLayout content = Ui.column(this);
+            Ui.pad(content, 13, 11);
             LinearLayout heading = Ui.row(this);
             TextView title = Ui.text(this, task.title, 16, Ui.INK, true);
             title.setMaxLines(2);
             title.setEllipsize(android.text.TextUtils.TruncateAt.END);
             heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
-            TextView state = Ui.text(this, getString(taskStateLabel(task.state)), 12,
-                    "done".equals(task.state) ? Ui.GREEN : Ui.MUTED, true);
+            TextView state = Ui.text(this, getString(taskStateLabel(task.state)), 12, accent, true);
             Ui.pad(state, 8, 4);
-            state.setBackground(Ui.bg("done".equals(task.state) ? Ui.LIME : Ui.LIGHT, 10, this));
+            state.setBackground(Ui.bg(taskStateTint(task.state), 10, this));
             LinearLayout.LayoutParams stateSize = new LinearLayout.LayoutParams(-2, -2);
             stateSize.setMarginStart(dp(8));
             heading.addView(state, stateSize);
-            entry.addView(heading);
-            entry.addView(Ui.text(this, getString(R.string.bchat_task_people,
-                    taskCompanyName(task.companyId), task.assigneeName), 12, Ui.MUTED, false), fieldSize(6));
-            if (task.dueAt != null) entry.addView(Ui.text(this,
-                    getString(R.string.task_due_value, displayTaskDue(task.dueAt)), 12, Ui.MUTED, false), fieldSize(4));
+            content.addView(heading);
+            LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(-1, dp(1));
+            dividerSize.setMargins(0, dp(9), 0, dp(7));
+            content.addView(Ui.line(this), dividerSize);
+            TextView people = Ui.text(this, getString(R.string.bchat_task_people,
+                    taskCompanyName(task.companyId), task.assigneeName), 13, Ui.MUTED, false);
+            people.setMaxLines(1);
+            people.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            content.addView(people);
+            if (task.dueAt != null) {
+                TextView due = Ui.text(this, getString(R.string.task_due_value,
+                        displayTaskDue(task.dueAt)), 12, Ui.MUTED, false);
+                LinearLayout.LayoutParams dueSize = fieldSize(5);
+                dueSize.setMargins(0, dp(5), 0, 0);
+                content.addView(due, dueSize);
+            }
+            if (!task.lastNote.trim().isEmpty()) {
+                TextView note = Ui.text(this, getString(R.string.task_last_note, task.lastNote),
+                        12, Ui.INK, false);
+                note.setMaxLines(2);
+                note.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                note.setBackground(Ui.bg(taskStateTint(task.state), 8, this));
+                Ui.pad(note, 9, 6);
+                LinearLayout.LayoutParams noteSize = new LinearLayout.LayoutParams(-1, -2);
+                noteSize.setMargins(0, dp(8), 0, 0);
+                content.addView(note, noteSize);
+            }
+            entry.addView(content, new LinearLayout.LayoutParams(0, -2, 1));
             entry.setContentDescription(task.title + ", " + getString(taskStateLabel(task.state)));
             Ui.clickable(entry);
             entry.setOnClickListener(v -> {
                 if (offlineHistory) showCachedTaskDetail(task); else loadTaskDetail(task.id);
             });
             LinearLayout.LayoutParams cardSize = new LinearLayout.LayoutParams(-1, -2);
-            cardSize.setMargins(dp(10), dp(5), dp(10), dp(3));
+            cardSize.setMargins(dp(10), dp(7), dp(10), dp(4));
             taskItems.addView(entry, cardSize);
         }
     }
@@ -8353,6 +8460,8 @@ public final class OdooIdentityActivity extends Activity {
                 taskCompanyName(task.companyId), task.assigneeName));
         if (task.dueAt != null) detail.append("\n").append(getString(R.string.task_due_value,
                 displayTaskDue(task.dueAt)));
+        if (!task.lastNote.trim().isEmpty()) detail.append("\n\n")
+                .append(getString(R.string.task_last_note, task.lastNote));
         detail.append("\n\n").append(offlineNotice(true));
         new AlertDialog.Builder(this).setTitle(task.title).setMessage(detail.toString())
                 .setPositiveButton(R.string.task_close, null).show();
@@ -8811,6 +8920,8 @@ public final class OdooIdentityActivity extends Activity {
                 task.creatorName, task.assigneeName, task.description.isEmpty()
                         ? getString(R.string.task_no_description) : task.description,
                 displayTaskDue(task.dueAt));
+        if (!task.lastNote.trim().isEmpty())
+            detail += "\n\n" + getString(R.string.task_last_note, task.lastNote);
         AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle(task.title).setMessage(detail)
                 .setNegativeButton(R.string.task_close, null);
         if (permissionSet.taskManage && !actions.isEmpty())
@@ -8829,14 +8940,7 @@ public final class OdooIdentityActivity extends Activity {
             String action = actions.get(index);
             if ("reassign".equals(action) || "rescue".equals(action)) {
                 showTaskAssignment(task, action);
-            } else if ("cancel".equals(action)) {
-                showSensitiveDetail(new AlertDialog.Builder(this).setTitle(R.string.task_cancel)
-                        .setMessage(R.string.task_cancel_confirm)
-                        .setPositiveButton(R.string.task_cancel, (confirm, which) -> {
-                            if (account == scopedAccount && verified)
-                                transitionTask(task, action, 0, null);
-                        }).setNegativeButton(R.string.chat_v2_cancel, null).create(), scopedAccount);
-            } else transitionTask(task, action, 0, null);
+            } else showTaskNote(task, action, 0, "rescue".equals(action));
         }).setNegativeButton(R.string.chat_v2_cancel, null).create(), scopedAccount);
     }
 
@@ -8846,26 +8950,37 @@ public final class OdooIdentityActivity extends Activity {
             for (TaskChoice choice : choices) if (choice.id != task.assigneeId) available.add(choice);
             if (available.isEmpty()) { taskNotice.setText(R.string.task_no_assignees); return; }
             chooseTaskAssignee(available, selected -> {
-                if ("rescue".equals(action)) {
-                    EditText reason = new EditText(this);
-                    reason.setHint(R.string.task_rescue_reason);
-                    reason.setMinLines(2);
-                    reason.setMaxLines(4);
-                    AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.task_rescue)
-                            .setView(reason).setPositiveButton(R.string.task_rescue, null)
-                            .setNegativeButton(R.string.chat_v2_cancel, null).create();
-                    dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                            .setOnClickListener(v -> {
-                                try {
-                                    String text = boundedTaskText(reason.getText().toString().trim(), 512, true);
-                                    dialog.dismiss();
-                                    transitionTask(task, action, selected.id, text);
-                                } catch (Exception invalid) { reason.setError(getString(R.string.task_invalid)); }
-                            }));
-                    showSensitiveDetail(dialog, account);
-                } else transitionTask(task, action, selected.id, null);
+                showTaskNote(task, action, selected.id, "rescue".equals(action));
             });
         }, null);
+    }
+
+    private void showTaskNote(Task task, String action, long assigneeId, boolean required) {
+        final AccountScope scopedAccount = account;
+        EditText note = new EditText(this);
+        note.setHint(required ? R.string.task_rescue_reason : R.string.task_note_optional);
+        note.setMinLines(2);
+        note.setMaxLines(4);
+        note.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        int title = "cancel".equals(action) ? R.string.task_cancel
+                : "done".equals(action) ? R.string.task_done
+                : "start".equals(action) ? R.string.task_start
+                : "reassign".equals(action) ? R.string.task_reassign : R.string.task_rescue;
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(title)
+                .setMessage("cancel".equals(action) ? getString(R.string.task_cancel_confirm) : null)
+                .setView(note).setPositiveButton(title, null)
+                .setNegativeButton(R.string.chat_v2_cancel, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    try {
+                        String text = boundedTaskText(note.getText().toString().trim(), 512, required);
+                        dialog.dismiss();
+                        if (account == scopedAccount && verified)
+                            transitionTask(task, action, assigneeId, text.isEmpty() ? null : text);
+                    } catch (Exception invalid) { note.setError(getString(R.string.task_invalid)); }
+                }));
+        showSensitiveDetail(dialog, scopedAccount);
     }
 
     private void transitionTask(Task task, String action, long assigneeId, String reason) {

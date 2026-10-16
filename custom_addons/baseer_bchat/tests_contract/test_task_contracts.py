@@ -46,15 +46,15 @@ class BChatTaskContractTests(unittest.TestCase):
         self.assertEqual(task.normalize_create(self.create_payload(
             due_at='2026-10-09T13:14:15Z'))['due_at'], '2026-10-09 13:14:15')
 
-    def test_transition_exact_actions_and_rescue_reason(self):
-        self.assertEqual(task.normalize_transition(self.transition_payload())['action'], 'start')
+    def test_transition_exact_actions_and_optional_notes(self):
+        self.assertEqual(task.normalize_transition(self.transition_payload(reason='Started after stock check'))['action'], 'start')
         self.assertEqual(task.normalize_transition(self.transition_payload(
             action='rescue', assignee_id=8, reason='Both accounts left the room.'))['assignee_id'], 8)
         for change in ({'expected_revision': 0}, {'action': 'delete'},
                        {'action': 'done', 'assignee_id': 8},
                        {'action': 'reassign', 'assignee_id': None},
                        {'action': 'rescue', 'assignee_id': 8, 'reason': ' '},
-                       {'reason': 'x'}, {'unexpected': 'field'}):
+                       {'reason': 'x' * 513}, {'unexpected': 'field'}):
             with self.subTest(change=change), self.assertRaises(task.ProtocolError):
                 task.normalize_transition(self.transition_payload(**change))
 

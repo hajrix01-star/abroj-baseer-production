@@ -621,6 +621,7 @@
     <string name="task_tab_all">"الكل"</string>
     <string name="task_tab_open">"نشطة"</string>
     <string name="task_tab_done">"منجزة"</string>
+    <string name="task_tab_closed">"مغلقة"</string>
     <string name="task_loading">"جارٍ تحميل المهام…"</string>
     <string name="task_unavailable">"خدمة المهام غير متاحة على الخادم حاليًا."</string>
     <string name="task_load_failed">"تعذّر تحميل المهام. حاول التحديث."</string>
@@ -668,6 +669,8 @@
     <string name="task_cancel_confirm">"هل تريد إلغاء هذه المهمة؟ لا يمكن إعادة فتحها."</string>
     <string name="task_rescue">"إنقاذ المهمة وإعادة إسنادها"</string>
     <string name="task_rescue_reason">"سبب إعادة الإسناد"</string>
+    <string name="task_note_optional">"أضف ملاحظة (اختياري)"</string>
+    <string name="task_last_note">"آخر ملاحظة: %1$s"</string>
     <string name="order_choose_company">"اختر الشركة"</string>
     <string name="order_details">"خيارات الطلب"</string>
     <string name="order_choose_warehouse">"اختر المخزن"</string>
@@ -765,6 +768,15 @@
     <string name="order_state_cancel">"ملغى"</string>
     <string name="bchat_account_menu">"المزيد"</string>
     <string name="bchat_settings">"الإعدادات"</string>
+    <string name="bchat_notifications">"التنبيهات"</string>
+    <string name="bchat_notifications_unavailable">"التنبيهات غير مفعّلة في هذه النسخة."</string>
+    <string name="bchat_notifications_on">"التنبيهات مفعّلة وستتبع إعدادات صوت الجهاز.\n%1$s"</string>
+    <string name="bchat_notifications_off">"التنبيهات متوقفة من إعدادات الجهاز أو قناة BChat. افتح الإعدادات لتشغيلها أو تعديل صوتها.\n%1$s"</string>
+    <string name="bchat_notifications_linking">"جارٍ إكمال ربط هذا الجهاز بالتنبيهات. افتح الصفحة مرة أخرى بعد الاتصال.\n%1$s"</string>
+    <string name="bchat_notifications_enable">"تشغيل التنبيهات"</string>
+    <string name="bchat_notifications_manage">"إدارة التنبيهات"</string>
+    <string name="bchat_device_linked">"الجهاز مربوط محليًا بالحساب."</string>
+    <string name="bchat_device_linking">"لم يكتمل الربط المحلي بعد."</string>
     <string name="bchat_about">"عن BChat"</string>
     <string name="bchat_menu_back">"رجوع"</string>
     <string name="bchat_about_summary">"BChat يجمع محادثات الفريق ومهامه وطلبات احتياجات المطعم عبر بصير."</string>

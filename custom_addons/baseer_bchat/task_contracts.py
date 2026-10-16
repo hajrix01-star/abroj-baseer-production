@@ -71,10 +71,10 @@ def normalize_transition(payload):
     reason = payload['reason']
     if reason is not None:
         reason = _text(reason, 'reason', 512)
+    # A short note is immutable audit context for every user-visible action.
+    # It is optional except for rescue, whose recovery intent must remain clear.
     if action == 'rescue' and (reason is None or not reason.strip()):
         raise ProtocolError('invalid_payload', 'Rescue requires a reason.')
-    if action != 'rescue' and reason is not None:
-        raise ProtocolError('invalid_payload', 'Reason is only accepted for rescue.')
     return {
         'client_uuid': canonical_uuid(payload['client_uuid']),
         'expected_revision': positive_id(payload['expected_revision'], 'expected_revision'),

@@ -27,6 +27,12 @@ final class Ui {
     static final int ACTION_TONAL = Color.rgb(234, 243, 252);
     static final int ACTION_TONAL_PRESSED = Color.rgb(214, 231, 248);
     static final int ACTION_DISABLED = Color.rgb(239, 241, 244);
+    static final int TASK_ACTIVE = Color.rgb(18, 116, 181);
+    static final int TASK_ACTIVE_TINT = Color.rgb(230, 243, 253);
+    static final int TASK_DONE = Color.rgb(24, 121, 78);
+    static final int TASK_DONE_TINT = Color.rgb(230, 246, 236);
+    static final int TASK_CLOSED = Color.rgb(97, 107, 120);
+    static final int TASK_CLOSED_TINT = Color.rgb(241, 243, 245);
     static final int ACTION_TOUCH_DP = 48;
     static final int CHAT_BODY_SP = 16;
     static final int CHAT_PREVIEW_SP = 14;

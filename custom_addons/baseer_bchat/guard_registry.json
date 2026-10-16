@@ -174,6 +174,17 @@
         "custom_addons/baseer_bchat/__manifest__.py"
       ],
       "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+    },
+    {
+      "id": "media-send-ack-reconciliation",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "Android retires staged media only after authenticated room history proves a message from the same account contains the exact server media identifier, never by automatically retransmitting an uncertain write.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "android/bchat/tools/test-connected-media-ui-contracts.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
     }
   ]
 }

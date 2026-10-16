@@ -26,7 +26,7 @@ android {
  aaptOptions { cruncherEnabled = false }
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
-  versionCode 62; versionName '0.7.46-qa-private-login-recovery'
+  versionCode 63; versionName '0.7.47-qa-verified-read-fallback'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'
  }
  // Independent preview signer, supplied only through local environment paths.

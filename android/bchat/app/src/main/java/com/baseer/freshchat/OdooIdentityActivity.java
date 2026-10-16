@@ -216,6 +216,9 @@ public final class OdooIdentityActivity extends Activity {
     private static volatile int historyGlobalGeneration;
     private final ExecutorService historyWrites = Executors.newSingleThreadExecutor();
     private final ExecutorService mediaIo = Executors.newSingleThreadExecutor();
+    /** Read-only fallback when an Android WebView drops a message-port response. */
+    private boolean webV2GetFallbackBusy;
+    private int webV2GetFallbackGeneration;
     private volatile int historyWriteGeneration;
     private boolean offlineHistory;
     private boolean offlineChatCacheAvailable, offlineTaskCacheAvailable;
@@ -603,6 +606,13 @@ public final class OdooIdentityActivity extends Activity {
         title.setTextColor(0xff0d3f68);
         title.setGravity(Gravity.CENTER);
         fields.addView(title, fieldSize(12));
+        TextView installedVersion = new TextView(this);
+        installedVersion.setText(getString(R.string.bchat_installed_version, installedBChatVersion()));
+        installedVersion.setTextSize(12);
+        installedVersion.setTextColor(0xff64748b);
+        installedVersion.setGravity(Gravity.CENTER);
+        installedVersion.setTextDirection(View.TEXT_DIRECTION_LTR);
+        fields.addView(installedVersion, fieldSize(2));
         loginInput = field(fields, R.string.auth_native_username, false);
         passwordInput = field(fields, R.string.auth_native_password, true);
         signIn = new Button(this);
@@ -2609,7 +2619,7 @@ public final class OdooIdentityActivity extends Activity {
      */
     private boolean recoverExpiredPrivateBridgeSession() {
         if (closed || loggingOut) return false;
-        purgeHistory();
+        // An expired web session does not revoke this employee's scoped offline snapshot.
         releaseWeb();
         clearCookies(() -> {
             if (!closed) {
@@ -3006,8 +3016,116 @@ public final class OdooIdentityActivity extends Activity {
 
     private void closeV2Port() {
         ++v2Nonce;
+        ++webV2GetFallbackGeneration;
+        webV2GetFallbackBusy = false;
         v2Busy = false;
         if (v2Port != null) { v2Port.close(); v2Port = null; }
+    }
+
+    private void releaseV2Port() {
+        v2Busy = false;
+        if (v2Port != null) { v2Port.close(); v2Port = null; }
+    }
+
+    /**
+     * Repeat only authenticated GET requests after a failed WebMessagePort delivery.  The retry
+     * stays in the same, authenticated WebView; it never extracts cookies or retries a POST.
+     */
+    private boolean retryVerifiedGetInWebView(String method, String path, int maximum,
+                                              int expectedWeb, int expectedPage, int expectedEpoch,
+                                              V2Callback callback) {
+        if (!"GET".equals(method) || closed || webV2GetFallbackBusy || callback == null
+                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
+        final int fallback = ++webV2GetFallbackGeneration;
+        final String slot = "__bchatReadFallback" + fallback;
+        webV2GetFallbackBusy = true;
+        releaseV2Port();
+        String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
+                + "var u=new URL(" + JSONObject.quote(path) + ",location.origin);"
+                + "if(u.origin!==location.origin)return;"
+                + "var done=function(x){window[" + JSONObject.quote(slot) + "]=JSON.stringify(x);};"
+                + "fetch(u.href,{method:'GET',credentials:'same-origin',redirect:'manual',cache:'no-store',headers:{Accept:'application/json'}})"
+                + ".then(function(r){if(r.type==='opaqueredirect')return {nonce:" + fallback
+                + ",status:401,type:'application/json',url:u.href,body:'{}'};"
+                + "if(!r.body||!r.body.getReader)throw Error('stream');"
+                + "var rd=r.body.getReader(),d=new TextDecoder('utf-8',{fatal:true}),b='',n=0;"
+                + "function read(){return rd.read().then(function(x){if(x.done){b+=d.decode();return {nonce:"
+                + fallback + ",status:r.status,type:r.headers.get('content-type')||'',url:r.url,body:b};}"
+                + "n+=x.value.byteLength;if(n>" + maximum + "){rd.cancel();throw Error('size');}"
+                + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
+                + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
+        web.evaluateJavascript(script, ignored -> pollVerifiedGetFallback(slot, fallback, path, maximum,
+                expectedWeb, expectedPage, expectedEpoch, callback, 0));
+        return true;
+    }
+
+    private void pollVerifiedGetFallback(String slot, int fallback, String path, int maximum,
+                                         int expectedWeb, int expectedPage, int expectedEpoch,
+                                         V2Callback callback, int attempt) {
+        if (fallback != webV2GetFallbackGeneration) return;
+        if (closed || web == null || expectedWeb != webEpoch || expectedPage != pageEpoch
+                || expectedEpoch != epoch || web.getUrl() == null
+                || !isBridgeUrl(Uri.parse(web.getUrl()))) {
+            webV2GetFallbackBusy = false;
+            return;
+        }
+        String read = "(function(){var value=window[" + JSONObject.quote(slot)
+                + "];if(value!==undefined){delete window[" + JSONObject.quote(slot)
+                + "];return value;}return null;})()";
+        web.evaluateJavascript(read, value -> {
+            if (fallback != webV2GetFallbackGeneration) return;
+            if (value == null || "null".equals(value)) {
+                if (attempt < 60) handler.postDelayed(() -> pollVerifiedGetFallback(slot, fallback,
+                        path, maximum, expectedWeb, expectedPage, expectedEpoch, callback, attempt + 1), 100);
+                else completeVerifiedGetFallback(fallback, 0, null, expectedWeb, expectedPage,
+                        expectedEpoch, callback);
+                return;
+            }
+            int statusCode = 0;
+            JSONObject body = null;
+            try {
+                String data = new JSONArray("[" + value + "]").getString(0);
+                if (data.length() > maximum * 6 + 4096) throw new IllegalArgumentException();
+                JSONObject response = new JSONObject(data);
+                if (response.getInt("nonce") != fallback) throw new IllegalArgumentException();
+                String finalUrl = response.getString("url");
+                Uri finalUri = Uri.parse(finalUrl);
+                if (sameOrigin(finalUri) && isLoginPath(finalUri.getPath())) {
+                    statusCode = 401;
+                    body = new JSONObject();
+                } else {
+                    if (!(ORIGIN + path).equals(finalUrl)) throw new IllegalArgumentException();
+                    statusCode = response.getInt("status");
+                    if (statusCode != 404 && statusCode != 503) {
+                        String mime = response.getString("type").toLowerCase(Locale.ROOT)
+                                .split(";", 2)[0].trim();
+                        if (!"application/json".equals(mime)) throw new IllegalArgumentException();
+                        String content = response.getString("body");
+                        if (content.length() > maximum || statusCode < 200 || statusCode > 599)
+                            throw new IllegalArgumentException();
+                        body = new JSONObject(content);
+                    }
+                }
+            } catch (Exception ignored) {
+                statusCode = 0;
+                body = null;
+            }
+            completeVerifiedGetFallback(fallback, statusCode, body, expectedWeb, expectedPage,
+                    expectedEpoch, callback);
+        });
+    }
+
+    private void completeVerifiedGetFallback(int fallback, int statusCode, JSONObject body,
+                                             int expectedWeb, int expectedPage, int expectedEpoch,
+                                             V2Callback callback) {
+        if (fallback != webV2GetFallbackGeneration) return;
+        webV2GetFallbackBusy = false;
+        if (closed || expectedWeb != webEpoch || expectedPage != pageEpoch || expectedEpoch != epoch) return;
+        callback.complete(statusCode, body);
+        handler.post(this::runQueuedOrderLoad);
+        handler.post(this::maybeProbeOrderCapability);
+        scheduleOrderImagePump();
+        handler.post(this::flushLiveUi);
     }
 
     /** Every request runs inside the already authenticated, same-origin WebView. */
@@ -3017,7 +3135,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void fetchV2Internal(String method, String path, String payload,
                                  String avatarBase64, V2Callback callback) {
-        if (closed || !verified || account == null || web == null || v2Busy || callback == null
+        if (closed || !verified || account == null || web == null || v2Busy || webV2GetFallbackBusy || callback == null
                 || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))
                 || !(V1_BOOTSTRAP.equals(path) || path.matches("/bchat/api/v2/[A-Za-z0-9/?=&_%~.-]+"))
                 || !("GET".equals(method) || "POST".equals(method))
@@ -3077,10 +3195,13 @@ public final class OdooIdentityActivity extends Activity {
                     // A manual same-origin login redirect is an expired session, not a network retry.
                 } catch (OptionalModuleUnavailable expected) {
                     // Keep the authenticated shell and report feature availability truthfully.
-                } catch (Exception invalid) { statusCode = 0; body = null; }
-                v2Port.close();
-                v2Port = null;
-                v2Busy = false;
+                } catch (Exception invalid) {
+                    if (retryVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
+                            currentEpoch, callback)) return;
+                    statusCode = 0;
+                    body = null;
+                }
+                releaseV2Port();
                 callback.complete(statusCode, body);
                 handler.post(OdooIdentityActivity.this::runQueuedOrderLoad);
                 handler.post(OdooIdentityActivity.this::maybeProbeOrderCapability);
@@ -3122,6 +3243,8 @@ public final class OdooIdentityActivity extends Activity {
         });
         handler.postDelayed(() -> {
             if (!closed && v2Busy && request == v2Nonce) {
+                if (retryVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
+                        currentEpoch, callback)) return;
                 closeV2Port();
                 callback.complete(0, null);
                 handler.post(this::runQueuedOrderLoad);

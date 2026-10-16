@@ -69,8 +69,8 @@ gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
-assert version_match and int(version_match.group(1)) >= 62, 'BChat private-login recovery requires versionCode 62 or newer'
-assert "versionName '0.7.46-qa-private-login-recovery'" in gradle
+assert version_match and int(version_match.group(1)) >= 63, 'BChat verified-read fallback requires versionCode 63 or newer'
+assert "versionName '0.7.47-qa-verified-read-fallback'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source

@@ -181,4 +181,13 @@ class LocalizationContracts(unittest.TestCase):
             self.assertNotIn('لا يوجد اتصال', copy['bchat_whats_new_body'])
             self.assertNotIn('no Odoo connection', copy['bchat_whats_new_body'])
 
+    def test_employee_profile_uses_one_localized_company_label_and_omits_empty_titles(self):
+        employee = source('OdooIdentityActivity.java')
+        profile = employee[employee.index('private void showProfile()'):
+                           employee.index('private void showLanguageSettings()')]
+        self.assertIn('localizedCompanyName(company)', profile)
+        self.assertNotIn('company.optString("name")), 15, Ui.GREEN', profile)
+        self.assertIn('if (jobs.length() > 0)', profile)
+        self.assertNotIn('jobs.append(getString(R.string.bchat_profile_no_job))', profile)
+
 if __name__ == '__main__': unittest.main(verbosity=2)

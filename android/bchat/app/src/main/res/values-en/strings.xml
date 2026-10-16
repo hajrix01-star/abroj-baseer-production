@@ -697,9 +697,9 @@
     <string name="order_quote_short">"Est. %1$s %2$s"</string>
     <string name="order_total_loading">"Calculating total…"</string>
     <string name="order_total_unavailable">"Total unavailable"</string>
-    <string name="order_quote_disclaimer">"Odoo confirms the final value when you send the order."</string>
-    <string name="order_cart_context">"%1$s · %2$s · %3$s"</string>
-    <string name="order_add_more">"Add products"</string>
+    <string name="order_quote_disclaimer">"The final value is confirmed when sent."</string>
+    <string name="order_cart_context">"%1$s\n%2$s"</string>
+    <string name="order_add_more">"Continue shopping"</string>
     <string name="order_decrease">"Decrease quantity"</string>
     <string name="order_increase">"Increase quantity"</string>
     <string name="order_apply_quantity">"Apply quantity"</string>
@@ -739,7 +739,7 @@
     <string name="order_estimated_total">"Current total: %1$s %2$s"</string>
     <string name="order_empty_cart">"Your cart is empty. Add a product from the menu."</string>
     <string name="order_cart_review">"Company: %1$s\nWarehouse: %2$s\nRepresentative: %3$s\n\nProducts:\n%4$s\nThe server validates quantities and final value."</string>
-    <string name="order_submit">"Send to purchasing"</string>
+    <string name="order_submit">"Send order"</string>
     <string name="order_choose_room">"Where would you like to share this order?"</string>
     <string name="order_without_room">"No chat — My orders only"</string>
     <string name="order_room_loading">"Loading available chats…"</string>

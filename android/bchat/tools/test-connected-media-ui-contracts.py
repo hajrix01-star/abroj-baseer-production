@@ -37,12 +37,19 @@ checks = {
         "private void reconcilePendingMediaFromVerifiedHistory(" in source
         and "reconcilePendingMediaFromVerifiedHistory(account, room, validated);" in body(
             "private void loadMessages(long beforeId)")
+        and "reconcilePendingMediaFromVerifiedHistory(account, room, cached);" in body(
+            "private void showCachedMessages(Room room, long beforeId, boolean firstOpen)")
+        and "updatePendingUi();" in body(
+            "private void showCachedMessages(Room room, long beforeId, boolean firstOpen)")
         and "positiveId(message.opt(\"author_user_id\")) != scopedAccount.userId" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
         and "serverMedia.id == pending.mediaId" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
         and "mediaStore.acknowledge(scopedAccount, pending);" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
+    "Conversation sides remain physically consistent in Arabic and English":
+        "outer.setGravity(mine ? Gravity.RIGHT : Gravity.LEFT);" in body(
+            "private View createMessageBubble(Room room, JSONObject item,"),
     "Media chunks are decoded and encoded off UI thread":
         "mediaIo.execute" in body("private void readConnectedMedia(")
         and "mediaIo.execute" in body("private void sendNextMediaChunk("),

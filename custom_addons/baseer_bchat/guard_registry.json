@@ -84,7 +84,8 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
         "android/bchat/app/src/main/res/**",
         "android/bchat/tools/test-entry-layout-contracts.py",
-        "android/bchat/tools/test-localization.py"
+        "android/bchat/tools/test-localization.py",
+        "android/bchat/tools/test-orders-ui-contracts.py"
       ],
       "suites": ["android-source-contract"]
     },

@@ -210,6 +210,7 @@ def run_android_source_contract() -> None:
         "android/bchat/tools/check-package.py",
         "android/bchat/tools/test-entry-layout-contracts.py",
         "android/bchat/tools/test-localization.py",
+        "android/bchat/tools/test-orders-ui-contracts.py",
         "android/bchat/tools/test-bchat-user-permissions.py",
         "android/bchat/tools/test-connected-media-ui-contracts.py",
         "android/bchat/tools/test-verified-read-fallback.py",

@@ -55,6 +55,9 @@ services:
       - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
       - ./custom_addons:/mnt/baseer-addons:ro
       - ./third_party_addons:/mnt/third-party-addons:ro
+      # Google credentials are mounted only in the Odoo container.  The
+      # database service never receives this directory or its environment.
+      - /srv/abroj-baseer-production/secrets/google:/run/baseer-google-secrets:ro
     # This network exists only to publish the loopback-only Odoo port to the
     # host Nginx. It is unique to this compose project and carries no database.
     networks: [frontend, backend]

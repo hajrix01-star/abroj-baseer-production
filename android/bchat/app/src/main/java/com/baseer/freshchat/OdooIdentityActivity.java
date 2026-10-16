@@ -2627,9 +2627,7 @@ public final class OdooIdentityActivity extends Activity {
                     || navigationFailed || loggingOut) return;
             navigationFailed = true;
             expectedView.stopLoading();
-            if (offerOfflineHistory()) return;
-            if (networkAvailable() && recoverExpiredPrivateBridgeSession()) return;
-            fail(R.string.auth_network_error);
+            if (!offerOfflineHistory()) fail(R.string.auth_network_error);
         };
         handler.postDelayed(bridgeNavigationTimeout, BRIDGE_NAVIGATION_TIMEOUT_MILLIS);
     }

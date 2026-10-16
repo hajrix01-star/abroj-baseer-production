@@ -29,17 +29,17 @@ class BridgeEntryContractTests(unittest.TestCase):
         self.assertIn("clearCookies", source[helper_start:helper_end])
         self.assertIn("openWeb(LOGIN);", source[helper_start:helper_end])
 
-    def test_private_bootstrap_404_and_online_bridge_timeout_share_login_recovery(self):
+    def test_private_bootstrap_404_recovers_without_weakening_timeout_offline_fallback(self):
         source = ACTIVITY.read_text(encoding="utf-8")
         self.assertIn(
             'if (envelope.optInt("nonce", -1) == attempt && envelope.optInt("status", -1) == 404)',
             source,
         )
-        self.assertIn(
-            "if (offerOfflineHistory()) return;\n"
-            "            if (networkAvailable() && recoverExpiredPrivateBridgeSession()) return;",
-            source,
-        )
+        timeout_start = source.index("private void scheduleBridgeNavigationTimeout")
+        timeout_end = source.index("private boolean networkAvailable", timeout_start)
+        timeout = source[timeout_start:timeout_end]
+        self.assertIn("if (!offerOfflineHistory()) fail(R.string.auth_network_error);", timeout)
+        self.assertNotIn("recoverExpiredPrivateBridgeSession", timeout)
 
     def test_sign_in_errors_name_the_qa_server_in_both_languages(self):
         arabic = (ROOT.parents[1] / "android" / "bchat" / "app" / "src" / "main" / "res" / "values-ar" / "strings.xml").read_text(encoding="utf-8")

@@ -167,6 +167,8 @@ public final class OdooIdentityActivity extends Activity {
             };
     private boolean pushRegistrationBusy;
     private boolean pushRegistrationScheduled;
+    // QA stage codes only. Never include a URL, account, token, CSRF value, or response body.
+    private String pushRegistrationDiagnostic = "P00_IDLE";
     private PushTarget pendingPush;
     private boolean pushNavigationBusy;
     private boolean pushNavigationScheduled;
@@ -2219,8 +2221,10 @@ public final class OdooIdentityActivity extends Activity {
         int state = !permissionGranted || !enabled || channelMuted
                 ? R.string.bchat_notifications_off
                 : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
-        return getString(state, linked ? getString(R.string.bchat_device_linked)
+        String message = getString(state, linked ? getString(R.string.bchat_device_linked)
                 : getString(R.string.bchat_device_linking));
+        return BuildConfig.BCHAT_PUSH_REGISTRATION_DIAGNOSTICS
+                ? message + "\nQA push: " + pushRegistrationDiagnostic : message;
     }
 
     /** Refresh only local state while the dialog is open; this never issues another registration. */
@@ -4310,42 +4314,66 @@ public final class OdooIdentityActivity extends Activity {
         }
     }
 
+    /** Stores a fixed QA-only registration stage; it never records request or account data. */
+    private void tracePushRegistration(String stage) {
+        if (BuildConfig.BCHAT_PUSH_REGISTRATION_DIAGNOSTICS) pushRegistrationDiagnostic = stage;
+    }
+
     /** Optional push registration uses only the authenticated same-origin API. */
     private void maybeRegisterPush() {
-        if (!BuildConfig.BCHAT_PUSH_ENABLED || closed || !verified || account == null
-                || csrfToken == null || web == null || pushRegistrationBusy
-                || !BChatPushState.needsRegistration(this, account)) return;
+        if (!BuildConfig.BCHAT_PUSH_ENABLED) { tracePushRegistration("P01_PUSH_DISABLED"); return; }
+        if (closed || !verified || account == null || csrfToken == null || web == null) {
+            tracePushRegistration("P02_NOT_READY");
+            return;
+        }
+        if (pushRegistrationBusy) { tracePushRegistration("P03_IN_FLIGHT"); return; }
+        if (!BChatPushState.needsRegistration(this, account)) {
+            tracePushRegistration("P04_NOT_NEEDED");
+            return;
+        }
         if (v2Busy || webV2GetFallbackBusy) {
+            tracePushRegistration("P05_WAITING_FOR_READ");
             schedulePushRegistration();
             return;
         }
         final AccountScope scopedAccount = account;
         final String token = BChatPushState.pendingToken(this);
         final String installation = BChatPushState.installationId(this);
-        if (token == null || installation == null) return;
+        if (token == null || installation == null) {
+            tracePushRegistration("P06_LOCAL_IDENTITY_MISSING");
+            return;
+        }
         final JSONObject payload = new JSONObject();
         try {
             payload.put("api_version", 2);
             payload.put("installation_id", installation);
             payload.put("fcm_token", token);
-        } catch (Exception invalid) { return; }
+        } catch (Exception invalid) { tracePushRegistration("P07_PAYLOAD_REJECTED"); return; }
         pushRegistrationBusy = true;
+        tracePushRegistration("P08_DISPATCHED");
         if (!registerPushDirectlyInWebView(payload.toString(), (statusCode, response) -> {
             pushRegistrationBusy = false;
+            tracePushRegistration("P09_HTTP_" + statusCode);
             if (closed || account == null || !account.key.equals(scopedAccount.key)
                     || !installation.equals(BChatPushState.installationId(this))) return;
             try {
                 if (statusCode != 200 || response == null
                         || positiveId(response.get("api_version")) != 2
                         || !installation.equals(response.getString("installation_id"))
-                        || !(response.opt("push_enabled") instanceof Boolean)) return;
-                BChatPushState.registered(this, scopedAccount, token, installation,
-                        response.getString("account_key"));
+                        || !(response.opt("push_enabled") instanceof Boolean)) {
+                    tracePushRegistration("P10_RESPONSE_REJECTED");
+                    return;
+                }
+                if (BChatPushState.registered(this, scopedAccount, token, installation,
+                        response.getString("account_key"))) tracePushRegistration("P11_LINKED");
+                else tracePushRegistration("P12_LOCAL_SAVE_REJECTED");
             } catch (Exception invalid) {
                 // Missing optional module or untrusted response never enables push.
+                tracePushRegistration("P10_RESPONSE_REJECTED");
             }
         })) {
             pushRegistrationBusy = false;
+            tracePushRegistration("P13_DIRECT_PATH_UNAVAILABLE");
             if (!closed) schedulePushRegistration();
         }
     }

@@ -69,13 +69,14 @@ gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
-assert version_match and int(version_match.group(1)) >= 70, 'BChat push-link continuity requires versionCode 70 or newer'
-assert "versionName '0.7.54-qa-push-link-continuity'" in gradle
+assert version_match and int(version_match.group(1)) >= 71, 'BChat push registration trace requires versionCode 71 or newer'
+assert "versionName '0.7.55-qa-push-registration-trace'" in gradle
 assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'false'" in gradle
+assert "BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
-print('PASS QA Gradle release version, installed-package About version and in-app changelog')
+print('PASS QA Gradle release version, installed-package About version and in-app push-registration trace')
 
 push=(root/'app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java').read_text(encoding='utf-8')
 for required in ('bchat-events-v3', 'setSound(Settings.System.DEFAULT_NOTIFICATION_URI',

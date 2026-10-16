@@ -21,9 +21,25 @@ class BridgeEntryContractTests(unittest.TestCase):
         self.assertIn(recovery, source)
         start = source.index(recovery)
         end = source.index("if (response.getStatusCode() == 401", start)
-        self.assertIn("purgeHistory();", source[start:end])
-        self.assertIn("clearCookies", source[start:end])
-        self.assertIn("openWeb(LOGIN);", source[start:end])
+        self.assertIn("recoverExpiredPrivateBridgeSession();", source[start:end])
+        helper = "private boolean recoverExpiredPrivateBridgeSession()"
+        helper_start = source.index(helper)
+        helper_end = source.index("private void scheduleBridgeNavigationTimeout", helper_start)
+        self.assertIn("purgeHistory();", source[helper_start:helper_end])
+        self.assertIn("clearCookies", source[helper_start:helper_end])
+        self.assertIn("openWeb(LOGIN);", source[helper_start:helper_end])
+
+    def test_private_bootstrap_404_and_online_bridge_timeout_share_login_recovery(self):
+        source = ACTIVITY.read_text(encoding="utf-8")
+        self.assertIn(
+            'if (envelope.optInt("nonce", -1) == attempt && envelope.optInt("status", -1) == 404)',
+            source,
+        )
+        self.assertIn(
+            "if (offerOfflineHistory()) return;\n"
+            "            if (networkAvailable() && recoverExpiredPrivateBridgeSession()) return;",
+            source,
+        )
 
     def test_sign_in_errors_name_the_qa_server_in_both_languages(self):
         arabic = (ROOT.parents[1] / "android" / "bchat" / "app" / "src" / "main" / "res" / "values-ar" / "strings.xml").read_text(encoding="utf-8")

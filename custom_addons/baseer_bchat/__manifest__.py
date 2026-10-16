@@ -1,6 +1,6 @@
 {
     'name': 'BChat',
-    'version': '19.0.0.4.10',
+    'version': '19.0.0.4.11',
     'category': 'Productivity/Discuss',
     'summary': 'Private BChat messaging and company-scoped group administration',
     'license': 'LGPL-3',

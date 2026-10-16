@@ -153,6 +153,34 @@ class BChatTextApi(http.Controller):
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/rooms/<int:room_id>/members/<int:user_id>/avatar', type='http', auth='user',
+                methods=['GET'], csrf=True, save_session=True)
+    def member_avatar(self, room_id, user_id, **kwargs):
+        try:
+            self._no_query()
+            raw = self._service()._v2_member_avatar(room_id, user_id)
+            return request.make_response(raw, headers=[
+                ('Content-Type', 'image/png'), ('Cache-Control', 'no-store'),
+                ('Pragma', 'no-cache'), ('Vary', 'Cookie'),
+                ('X-Content-Type-Options', 'nosniff'),
+            ])
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
+    @http.route('/bchat/api/v2/profile/avatar', type='http', auth='user',
+                methods=['GET'], csrf=True, save_session=True)
+    def profile_avatar(self, **kwargs):
+        try:
+            self._no_query()
+            raw = self._service()._v2_profile_avatar()
+            return request.make_response(raw, headers=[
+                ('Content-Type', 'image/png'), ('Cache-Control', 'no-store'),
+                ('Pragma', 'no-cache'), ('Vary', 'Cookie'),
+                ('X-Content-Type-Options', 'nosniff'),
+            ])
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/changes', type='http', auth='user',
                 methods=['GET'], csrf=True, save_session=True)
     def changes(self, **kwargs):

@@ -1,4 +1,5 @@
 """BChat-only text slice on an isolated Odoo database."""
+import base64
 import json
 import hashlib
 import io
@@ -247,6 +248,31 @@ class BChatTextCase(TransactionCase):
             expected_keys.add('name_en')
         self.assertTrue(all(set(company) == expected_keys
                             for company in bootstrap['profile']['companies']))
+
+    def test_member_avatar_uses_private_room_membership_and_employee_image_first(self):
+        if not self.env.registry.models.get('hr.employee'):
+            self.skipTest('HR is optional and not installed in this test database')
+        member_epoch = self._join(self.member)
+        user_image = io.BytesIO()
+        Image.new('RGB', (12, 12), '#aa1122').save(user_image, format='PNG')
+        employee_image = io.BytesIO()
+        Image.new('RGB', (12, 12), '#2474a7').save(employee_image, format='PNG')
+        self.member.write({'image_128': base64.b64encode(user_image.getvalue())})
+        self.env['hr.employee'].sudo().create({
+            'name': 'BChat avatar employee', 'user_id': self.member.id,
+            'company_id': self.company.id,
+            'image_128': base64.b64encode(employee_image.getvalue()),
+        })
+        raw = self._service(self.manager)._v2_member_avatar(self.room.id, self.member.id)
+        with Image.open(io.BytesIO(raw)) as avatar:
+            self.assertEqual(avatar.size, (12, 12))
+            self.assertEqual(avatar.convert('RGB').getpixel((4, 4)), (36, 116, 167))
+        self.assertEqual(member_epoch.user_id, self.member)
+        with self.assertRaises(AccessError):
+            self._service(self.foreign)._v2_member_avatar(self.room.id, self.member.id)
+        member_epoch.with_user(self.manager).action_revoke()
+        with self.assertRaises(AccessError):
+            self._service(self.manager)._v2_member_avatar(self.room.id, self.member.id)
 
     def test_v2_profile_company_names_are_optional_and_never_joined(self):
         if not {'baseer_name_ar', 'baseer_name_en'} <= self.company._fields.keys():

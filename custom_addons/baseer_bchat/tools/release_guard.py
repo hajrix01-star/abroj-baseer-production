@@ -41,6 +41,7 @@ REQUIRED_IDS = {
     "verified-webview-read-fallback",
     "qa-live-release-gate",
     "guard-engine-integrity",
+    "task-push-fastlane-and-private-avatars",
 }
 
 
@@ -131,6 +132,8 @@ def check_backend() -> None:
     controller = source_text("custom_addons/baseer_bchat/controllers/api_v2.py")
     task = source_text("custom_addons/baseer_bchat/models/task.py")
     receipt = source_text("custom_addons/baseer_bchat/models/message_receipt.py")
+    push = source_text("custom_addons/baseer_bchat/models/push.py")
+    avatars = source_text("custom_addons/baseer_bchat/models/avatar_service.py")
     require("'version'" in manifest, "BChat module version is absent")
     require("_require_any_bchat_permission" in service, "permission boundary is absent")
     require("joined_after_message_id" in v2 and "_v2_current_member" in v2,
@@ -146,6 +149,14 @@ def check_backend() -> None:
             "attention-center HTTP route is absent")
     require("baseer_bchat_task_assignee_state_id_idx" in task,
             "attention task index is absent")
+    require("self.env.cr.postcommit.add(submit)" in push
+            and "def _dispatch_event_ids" in push
+            and "ThreadPoolExecutor" in push,
+            "durable post-commit BChat push fast lane is absent")
+    require("def _v2_member_avatar" in avatars and "_v2_current_member" in avatars
+            and "image_128" in avatars
+            and "/bchat/api/v2/rooms/<int:room_id>/members/<int:user_id>/avatar" in controller,
+            "private BChat employee avatar contract is absent")
 
 
 def check_android_source() -> None:
@@ -166,6 +177,9 @@ def check_android_source() -> None:
     require(activity.count("handler.post(this::refreshAttentionBadge);") >= 3
             and "handler.postDelayed(this::refreshAttentionBadge, 350);" in activity,
             "attention badge no longer refreshes after login or retries the busy v2 channel")
+    require("privateAvatarView" in activity and "V2_PROFILE_AVATAR" in activity
+            and "members/\" + authorId + \"/avatar" in activity,
+            "private employee-avatar presentation is absent")
 
 
 def check_release_wrappers() -> None:

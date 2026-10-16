@@ -212,6 +212,39 @@ class BChatPushCase(TransactionCase):
         self.assertEqual(len(set(events.mapped('device_id').ids)), 170)
         self.assertNotIn(self.creator.id, events.mapped('recipient_id').ids)
 
+    def test_room_task_notifies_every_active_task_viewer_except_the_actor(self):
+        """Room tasks follow room visibility, not just creator/assignee roles."""
+        room, creator_member, _assignee_member = self._room()
+        memberships = self.env['baseer.bchat.membership'].with_user(
+            self.env.ref('base.user_admin')).with_company(self.company)
+        memberships.create({'room_id': room.id, 'user_id': self.replacement.id})
+        self._register(self.creator, 'creator-room-' + ('a' * 51))
+        self._register(self.assignee, 'assignee-room-' + ('b' * 50))
+        self._register(self.replacement, 'observer-room-' + ('c' * 50))
+        created = self._service(self.creator)._v2_task_create({
+            'api_version': 2, 'company_id': self.company.id, 'room_id': room.id,
+            'client_uuid': str(uuid4()), 'title': 'Visible room task',
+            'description': '', 'due_at': None, 'assignee_id': self.assignee.id,
+        })['task']
+        assignment_events = self.env['baseer.bchat.push.event'].sudo().search([
+            ('task_id', '=', created['id']), ('task_revision', '=', 1),
+        ])
+        self.assertEqual(set(assignment_events.mapped('recipient_id').ids), {
+            self.assignee.id, self.replacement.id,
+        })
+        self.assertNotIn(self.creator.id, assignment_events.mapped('recipient_id').ids)
+        self._service(self.assignee)._v2_task_transition(created['id'], {
+            'api_version': 2, 'client_uuid': str(uuid4()), 'expected_revision': 1,
+            'action': 'start', 'assignee_id': None, 'reason': None,
+        })
+        updated_events = self.env['baseer.bchat.push.event'].sudo().search([
+            ('task_id', '=', created['id']), ('task_revision', '=', 2),
+        ])
+        self.assertEqual(set(updated_events.mapped('recipient_id').ids), {
+            self.creator.id, self.replacement.id,
+        })
+        self.assertNotIn(self.assignee.id, updated_events.mapped('recipient_id').ids)
+
     def test_postgres_skip_locked_excludes_a_row_locked_by_another_worker(self):
         """The dispatcher lock primitive must not hand a locked row to a second worker."""
         with self.env.registry.cursor() as first_worker:

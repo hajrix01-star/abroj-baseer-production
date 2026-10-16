@@ -38,6 +38,7 @@ REQUIRED_IDS = {
     "push-enabled-apk",
     "attention-center",
     "bridge-session-recovery",
+    "verified-webview-read-fallback",
     "qa-live-release-gate",
     "guard-engine-integrity",
 }
@@ -186,7 +187,14 @@ def run_backend_contracts() -> None:
 
 
 def run_android_source_contract() -> None:
-    subprocess.run([sys.executable, "android/bchat/tools/check-package.py"], cwd=ROOT, check=True)
+    for source_test in (
+        "android/bchat/tools/check-package.py",
+        "android/bchat/tools/test-entry-layout-contracts.py",
+        "android/bchat/tools/test-localization.py",
+        "android/bchat/tools/test-bchat-user-permissions.py",
+        "android/bchat/tools/test-verified-read-fallback.py",
+    ):
+        subprocess.run([sys.executable, source_test], cwd=ROOT, check=True)
 
 
 def run_apk_artifact() -> None:

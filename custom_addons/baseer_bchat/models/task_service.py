@@ -126,6 +126,7 @@ class BChatTaskService(models.AbstractModel):
             'revision': task.revision,
             'last_actor_id': task.last_actor_id.id or None,
             'last_changed_at': self._task_stamp(task.last_changed_at),
+            'last_note': task.last_note or '',
         }
 
     @api.model
@@ -336,6 +337,10 @@ class BChatTaskService(models.AbstractModel):
             former_assignee_id = task.assignee_id.id
             values = {'revision': task.revision + 1, 'last_actor_id': user.id,
                       'last_changed_at': fields.Datetime.now()}
+            # Preserve the most recent meaningful note when a later state-only
+            # transition is made; task events remain the immutable full audit.
+            if normalized['reason']:
+                values['last_note'] = normalized['reason']
             if action in ('start', 'done'):
                 if task.assignee_id.id != user.id:
                     raise AccessError(self.env._('Only the current assignee may progress this task.'))

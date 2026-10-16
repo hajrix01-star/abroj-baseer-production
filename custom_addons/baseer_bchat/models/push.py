@@ -80,6 +80,11 @@ class BChatPushDevice(models.Model):
     fcm_token = fields.Char(required=True, readonly=True, size=4096, index=True)
     active = fields.Boolean(required=True, readonly=True, default=True, index=True)
     last_seen_at = fields.Datetime(required=True, readonly=True, default=fields.Datetime.now, index=True)
+    inactive_reason = fields.Selection([
+        ('logout', 'Logout'), ('provider_invalid', 'Provider token invalid'),
+        ('replaced', 'Replaced by another account'),
+    ], readonly=True, index=True)
+    inactive_at = fields.Datetime(readonly=True, index=True)
 
     _user_installation_unique = models.Constraint(
         'UNIQUE(user_id, installation_id)', 'One BChat push registration exists per user installation.',
@@ -115,11 +120,17 @@ class BChatPushDevice(models.Model):
         if token_owner and token_owner.id != existing.id:
             # A physical app installation must never keep receiving its former
             # user's notifications after another user signs in on the device.
-            super(BChatPushDevice, token_owner).unlink()
+            # Keep the deactivation audit without retaining a deliverable token.
+            super(BChatPushDevice, token_owner).write({
+                'fcm_token': 'revoked:' + str(uuid4()), 'active': False,
+                'last_seen_at': fields.Datetime.now(), 'inactive_reason': 'replaced',
+                'inactive_at': fields.Datetime.now(),
+            })
         now = fields.Datetime.now()
         if existing:
             super(BChatPushDevice, existing).write({
                 'fcm_token': fcm_token, 'active': True, 'last_seen_at': now,
+                'inactive_reason': False, 'inactive_at': False,
             })
             return existing
         # Keep the number of active destinations bounded without retaining a
@@ -141,7 +152,9 @@ class BChatPushDevice(models.Model):
             ('user_id', '=', user.id), ('installation_id', '=', installation_id),
         ])
         if rows:
-            super(BChatPushDevice, rows).write({'active': False, 'last_seen_at': fields.Datetime.now()})
+            now = fields.Datetime.now()
+            super(BChatPushDevice, rows).write({'active': False, 'last_seen_at': now,
+                                                 'inactive_reason': 'logout', 'inactive_at': now})
 
     def copy_data(self, default=None):
         raise AccessError(self.env._('BChat push registrations cannot be copied.'))
@@ -412,8 +425,10 @@ class BChatPushEvent(models.Model):
                                        'last_error': False, 'next_attempt_at': False}, _PUSH_TOKEN)
             except _PushTransportError as error:
                 if error.invalid_token and event.device_id:
-                    super(BChatPushDevice, event.device_id).write({'active': False,
-                                                                    'last_seen_at': now})
+                    super(BChatPushDevice, event.device_id).write({
+                        'active': False, 'last_seen_at': now,
+                        'inactive_reason': 'provider_invalid', 'inactive_at': now,
+                    })
                 if error.code == 'configuration':
                     event._write_verified({'state': 'configuration', 'last_error': error.code,
                                            'next_attempt_at': now + timedelta(minutes=30)}, _PUSH_TOKEN)

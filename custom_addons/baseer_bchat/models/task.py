@@ -31,6 +31,7 @@ class BChatTask(models.Model):
     cancelled_at = fields.Datetime(readonly=True)
     last_actor_id = fields.Many2one('res.users', readonly=True, ondelete='restrict')
     last_changed_at = fields.Datetime(readonly=True)
+    last_note = fields.Char(readonly=True, size=512)
 
     _creator_uuid_unique = models.Constraint(
         'UNIQUE(creator_id, client_uuid)', 'A BChat task UUID identifies one creation.',

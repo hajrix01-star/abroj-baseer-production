@@ -621,6 +621,7 @@
     <string name="task_tab_all">"All"</string>
     <string name="task_tab_open">"Active"</string>
     <string name="task_tab_done">"Completed"</string>
+    <string name="task_tab_closed">"Closed"</string>
     <string name="task_loading">"Loading tasks…"</string>
     <string name="task_unavailable">"The task service is currently unavailable on this server."</string>
     <string name="task_load_failed">"Could not load tasks. Try refreshing."</string>
@@ -668,6 +669,8 @@
     <string name="task_cancel_confirm">"Cancel this task? It cannot be reopened."</string>
     <string name="task_rescue">"Rescue and reassign task"</string>
     <string name="task_rescue_reason">"Reason for reassignment"</string>
+    <string name="task_note_optional">"Add a note (optional)"</string>
+    <string name="task_last_note">"Latest note: %1$s"</string>
     <string name="order_choose_company">"Choose company"</string>
     <string name="order_details">"Order options"</string>
     <string name="order_choose_warehouse">"Choose warehouse"</string>
@@ -765,6 +768,15 @@
     <string name="order_state_cancel">"Cancelled"</string>
     <string name="bchat_account_menu">"More options"</string>
     <string name="bchat_settings">"Settings"</string>
+    <string name="bchat_notifications">"Notifications"</string>
+    <string name="bchat_notifications_unavailable">"Notifications are not enabled in this build."</string>
+    <string name="bchat_notifications_on">"Notifications are on and follow the device sound settings.\n%1$s"</string>
+    <string name="bchat_notifications_off">"Notifications are off in the device settings or the BChat channel. Open settings to enable them or change their sound.\n%1$s"</string>
+    <string name="bchat_notifications_linking">"This device is still being linked to notifications. Open this page again after it connects.\n%1$s"</string>
+    <string name="bchat_notifications_enable">"Enable notifications"</string>
+    <string name="bchat_notifications_manage">"Manage notifications"</string>
+    <string name="bchat_device_linked">"This device is linked locally to the account."</string>
+    <string name="bchat_device_linking">"Local linking has not completed yet."</string>
     <string name="bchat_about">"About BChat"</string>
     <string name="bchat_menu_back">"Back"</string>
     <string name="bchat_about_summary">"BChat brings team conversations, tasks and restaurant supply requests together through Baseer."</string>

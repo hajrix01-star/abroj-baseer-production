@@ -3169,21 +3169,32 @@ public final class OdooIdentityActivity extends Activity {
         handler.post(this::flushLiveUi);
     }
 
-    /** Use the direct WebView callback for Bootstrap: some Android WebViews drop transferred ports. */
-    private boolean fetchBootstrapDirectlyInWebView(V2Callback callback) {
+    /**
+     * Authenticated reads must not depend on transferred WebMessagePorts.  The affected Android
+     * WebView can read bootstrap through the direct callback but drops the next transferred port
+     * (normally /rooms), leaving a valid session on a misleading connection-error shell.
+     *
+     * This applies only to bounded idempotent GET routes.  Writes retain the port path and their
+     * existing uncertain-write handling; this method never repeats or converts a POST.
+     */
+    private boolean fetchV2ReadDirectlyInWebView(String path, V2Callback callback) {
         if (closed || !verified || account == null || v2Busy || webV2GetFallbackBusy
-                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl())))
-            return false;
-        return fetchVerifiedGetInWebView("GET", V2_BOOTSTRAP, MAX_RESPONSE,
+                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))
+                || !(V1_BOOTSTRAP.equals(path)
+                        || path.matches("/bchat/api/v2/[A-Za-z0-9/?=&_%~.-]+"))) return false;
+        int maximum = V2_BOOTSTRAP.equals(path) || V1_BOOTSTRAP.equals(path)
+                ? MAX_RESPONSE : MAX_V2_RESPONSE;
+        return fetchVerifiedGetInWebView("GET", path, maximum,
                 webEpoch, pageEpoch, epoch, callback);
     }
 
     /** Every request runs inside the already authenticated, same-origin WebView. */
     private void fetchV2(String method, String path, String payload, V2Callback callback) {
-        // This is the first v2 read after authentication.  Avoid a transferred MessagePort here:
-        // it is the exact handoff that fails on the affected Android 16 WebView.
-        if ("GET".equals(method) && V2_BOOTSTRAP.equals(path) && payload == null
-                && fetchBootstrapDirectlyInWebView(callback)) return;
+        // A device trace proved bootstrap succeeds but the subsequent transferred /rooms port
+        // does not.  Use the bounded direct callback for every authenticated read, not only
+        // bootstrap; POST routes remain on their separate write-safe path below.
+        if ("GET".equals(method) && payload == null
+                && fetchV2ReadDirectlyInWebView(path, callback)) return;
         fetchV2Internal(method, path, payload, null, callback);
     }
 

@@ -26,9 +26,9 @@ android {
  aaptOptions { cruncherEnabled = false }
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
-  // QA-only diagnostic candidate. This flag must not be enabled in a user release.
-  versionCode 65; versionName '0.7.49-qa-transport-diagnostic'
-  buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'true'
+  // QA recovery candidate. Diagnostic UI is deliberately disabled for user acceptance.
+  versionCode 66; versionName '0.7.50-qa-direct-read-recovery'
+  buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'
  }
  // Independent preview signer, supplied only through local environment paths.

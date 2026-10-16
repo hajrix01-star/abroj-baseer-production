@@ -39,13 +39,17 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         self.assertGreaterEqual(transport.count('fetchVerifiedGetInWebView(method, path, maximum'), 2)
         self.assertIn('if (fetchVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,', transport)
 
-    def test_bootstrap_bypasses_transferred_message_port(self):
-        direct = method('fetchBootstrapDirectlyInWebView', 'boolean')
-        self.assertIn('V2_BOOTSTRAP', direct)
-        self.assertIn('fetchVerifiedGetInWebView("GET", V2_BOOTSTRAP', direct)
+    def test_all_authenticated_reads_bypass_transferred_message_port(self):
+        direct = method('fetchV2ReadDirectlyInWebView', 'boolean')
+        self.assertIn('V1_BOOTSTRAP.equals(path)', direct)
+        self.assertIn('path.matches("/bchat/api/v2/', direct)
+        self.assertIn('v2Busy', direct)
+        self.assertIn('fetchVerifiedGetInWebView("GET", path, maximum', direct)
         fetch = method('fetchV2')
-        self.assertIn('fetchBootstrapDirectlyInWebView(callback)', fetch)
-        self.assertLess(fetch.index('fetchBootstrapDirectlyInWebView(callback)'),
+        self.assertIn('"GET".equals(method)', fetch)
+        self.assertIn('payload == null', fetch)
+        self.assertIn('fetchV2ReadDirectlyInWebView(path, callback)', fetch)
+        self.assertLess(fetch.index('fetchV2ReadDirectlyInWebView(path, callback)'),
                         fetch.index('fetchV2Internal('))
 
     def test_expired_web_session_keeps_offline_snapshots(self):
@@ -58,10 +62,10 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 65; versionName '0.7.49-qa-transport-diagnostic'", GRADLE)
+        self.assertIn("versionCode 66; versionName '0.7.50-qa-direct-read-recovery'", GRADLE)
 
-    def test_diagnostic_candidate_has_safe_stage_markers(self):
-        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'true'", GRADLE)
+    def test_recovery_candidate_keeps_diagnostics_off_for_user_acceptance(self):
+        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)
         self.assertIn('private void traceTransport(String stage)', SOURCE)
         self.assertIn('D05_V2_SLOT_TIMEOUT', SOURCE)
         self.assertIn('D06_V2_RESPONSE_REJECTED', SOURCE)

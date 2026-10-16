@@ -69,9 +69,9 @@ gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
-assert version_match and int(version_match.group(1)) >= 65, 'BChat transport diagnostic requires versionCode 65 or newer'
-assert "versionName '0.7.49-qa-transport-diagnostic'" in gradle
-assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'true'" in gradle
+assert version_match and int(version_match.group(1)) >= 66, 'BChat direct-read recovery requires versionCode 66 or newer'
+assert "versionName '0.7.50-qa-direct-read-recovery'" in gradle
+assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'false'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source

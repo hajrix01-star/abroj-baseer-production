@@ -16,7 +16,7 @@ class AttentionContractTests(unittest.TestCase):
         source = (ROOT / "models" / "attention_service.py").read_text(encoding="utf-8")
         for required in (
             "def _v2_attention", "_require_any_bchat_permission", "user.company_ids.ids",
-            "joined_after_message_id", "assignee_id", "badge_count", "min(50",
+            "joined_after_message_id", "assignee_id", "badge_count", "min(total, 50)",
             "JOIN LATERAL", "LIMIT 51", "LIMIT 25", "_v2_lock_room",
         ):
             with self.subTest(required=required):

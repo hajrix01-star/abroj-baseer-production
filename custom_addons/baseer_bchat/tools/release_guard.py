@@ -39,6 +39,16 @@ REQUIRED_IDS = {
     "qa-live-release-gate",
     "guard-engine-integrity",
 }
+OFFLINE_BACKEND_CONTRACT_FILES = (
+    "test_attention_contract.py",
+    "test_business_contracts.py",
+    "test_contracts.py",
+    "test_group_contracts.py",
+    "test_release_guard.py",
+    "test_storage_policy.py",
+    "test_task_contracts.py",
+    "test_text_v2_contract.py",
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -173,10 +183,14 @@ def check_release_wrappers() -> None:
 
 
 def run_backend_contracts() -> None:
-    subprocess.run([
-        sys.executable, "-m", "unittest", "discover", "-s",
-        "custom_addons/baseer_bchat/tests_contract", "-p", "test_*.py", "-v",
-    ], cwd=ROOT, check=True)
+    # The guard owns source-level contracts only. Media tests deliberately
+    # remain in their Pillow-enabled integration environment rather than
+    # making every source-gate run depend on an unrelated image library.
+    for test_file in OFFLINE_BACKEND_CONTRACT_FILES:
+        subprocess.run([
+            sys.executable, "-m", "unittest", "discover", "-s",
+            "custom_addons/baseer_bchat/tests_contract", "-p", test_file, "-v",
+        ], cwd=ROOT, check=True)
 
 
 def run_android_source_contract() -> None:

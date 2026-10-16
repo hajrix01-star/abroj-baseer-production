@@ -31,6 +31,11 @@ class ReleaseGuardTests(unittest.TestCase):
     def test_guard_integrity_covers_codeowners_and_both_ci_modes(self):
         guard.run_guard_integrity()
 
+    def test_backend_gate_has_an_explicit_dependency_free_contract_set(self):
+        self.assertIn("test_attention_contract.py", guard.OFFLINE_BACKEND_CONTRACT_FILES)
+        self.assertIn("test_release_guard.py", guard.OFFLINE_BACKEND_CONTRACT_FILES)
+        self.assertNotIn("test_media_contract.py", guard.OFFLINE_BACKEND_CONTRACT_FILES)
+
 
 if __name__ == "__main__":
     unittest.main()

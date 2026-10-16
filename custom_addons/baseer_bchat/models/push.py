@@ -1,8 +1,9 @@
 """Private, durable BChat FCM delivery.
 
 The database records who may be woken, while Firebase remains only a best-effort
-transport.  Payloads intentionally contain no BChat content: Android must fetch
-the referenced event through its authenticated session before opening anything.
+transport.  Payloads may include an opted-in, sanitised, bounded preview for the
+system notification; Android still fetches the referenced event through its
+authenticated session before opening anything.
 """
 import base64
 from concurrent.futures import ThreadPoolExecutor
@@ -30,6 +31,8 @@ _OAUTH_CACHE = {'key': None, 'token': None, 'expires_at': 0}
 _FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging'
 _FCM_TOKEN_URI = 'https://oauth2.googleapis.com/token'
 _FAST_DISPATCH_WORKERS = 8
+# This bounds queued *lanes*, not individual device events. A large room is
+# divided over at most eight lanes so its tail is not silently left for cron.
 _FAST_DISPATCH_CAPACITY = 128
 _FAST_DISPATCH_EXECUTOR = ThreadPoolExecutor(
     max_workers=_FAST_DISPATCH_WORKERS, thread_name_prefix='bchat-push')
@@ -88,9 +91,19 @@ def _fast_dispatch_event(dbname, event_id):
         with registry.cursor() as cursor:
             env = api.Environment(cursor, SUPERUSER_ID, {})
             env['baseer.bchat.push.event']._dispatch_event_ids([event_id])
+            # Firebase may have accepted the payload. Persist its resulting
+            # event state before releasing this independent cursor, otherwise
+            # cron can retry an already-delivered notification.
+            cursor.commit()
     except Exception:
         _LOGGER.warning('BChat fast push dispatch failed for event %s', event_id,
                         exc_info=False)
+
+
+def _fast_dispatch_events(dbname, event_ids):
+    """Drain one fair fast-lane shard, persisting each durable event."""
+    for event_id in event_ids:
+        _fast_dispatch_event(dbname, event_id)
 
 
 class BChatPushDevice(models.Model):
@@ -429,18 +442,20 @@ class BChatPushEvent(models.Model):
         if not ids:
             return
         dbname = self.env.cr.dbname
+        lane_count = min(_FAST_DISPATCH_WORKERS, len(ids))
+        lanes = [ids[lane_index::lane_count] for lane_index in range(lane_count)]
 
         def submit():
-            for event_id in ids:
+            for lane in lanes:
                 if not _FAST_DISPATCH_SLOTS.acquire(blocking=False):
-                    _LOGGER.info('BChat fast push lane is full; cron will recover pending events')
-                    break
+                    _LOGGER.info('BChat fast push lane is full; cron will recover a pending lane')
+                    continue
                 try:
-                    future = _FAST_DISPATCH_EXECUTOR.submit(_fast_dispatch_event, dbname, event_id)
+                    future = _FAST_DISPATCH_EXECUTOR.submit(_fast_dispatch_events, dbname, lane)
                 except RuntimeError:
                     _FAST_DISPATCH_SLOTS.release()
                     _LOGGER.warning('BChat fast push lane is unavailable; cron will recover pending events')
-                    break
+                    continue
                 future.add_done_callback(lambda _future: _FAST_DISPATCH_SLOTS.release())
 
         self.env.cr.postcommit.add(submit)

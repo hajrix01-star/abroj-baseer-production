@@ -16,6 +16,8 @@ class PushFastlaneAndAvatarContractTests(unittest.TestCase):
             'ThreadPoolExecutor', 'threading.BoundedSemaphore',
             'def _schedule_fast_dispatch', 'self.env.cr.postcommit.add(submit)',
             'def _dispatch_event_ids', 'FOR UPDATE SKIP LOCKED',
+            'cursor.commit()', 'def _fast_dispatch_events',
+            '_FAST_DISPATCH_EXECUTOR.submit(_fast_dispatch_events, dbname, lane)',
             "('room_id', '=', task.room_id.id)", 'recipient_ids.discard(actor_id)',
             'queued._schedule_fast_dispatch(queued.ids)',
         ):

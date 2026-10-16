@@ -3,13 +3,6 @@ name: BChat cumulative contracts
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'custom_addons/baseer_bchat/**'
-      - 'android/bchat/**'
-      - 'ops/qa/baseer-qa-deploy'
-      - 'ops/production/baseer-production-deploy'
-      - '.github/workflows/validate-pull-request.yml'
-      - '.github/CODEOWNERS'
   workflow_dispatch:
 
 permissions:

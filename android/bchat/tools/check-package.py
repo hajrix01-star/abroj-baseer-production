@@ -69,8 +69,8 @@ gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
-assert version_match and int(version_match.group(1)) >= 69, 'BChat direct push registration requires versionCode 69 or newer'
-assert "versionName '0.7.53-qa-push-direct-registration'" in gradle
+assert version_match and int(version_match.group(1)) >= 70, 'BChat push-link continuity requires versionCode 70 or newer'
+assert "versionName '0.7.54-qa-push-link-continuity'" in gradle
 assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'false'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source

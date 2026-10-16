@@ -27,7 +27,7 @@ android {
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
   // QA recovery candidate. Diagnostic UI is disabled for user acceptance.
-  versionCode 69; versionName '0.7.53-qa-push-direct-registration'
+  versionCode 70; versionName '0.7.54-qa-push-link-continuity'
   buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'
  }

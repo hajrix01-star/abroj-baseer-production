@@ -2193,14 +2193,10 @@ public final class OdooIdentityActivity extends Activity {
         }
         boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
         final boolean openChannelSettings = permissionGranted && enabled && channelMuted;
-        int state = !permissionGranted || !enabled || channelMuted
-                ? R.string.bchat_notifications_off
-                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
         int action = !permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
                 ? R.string.bchat_notifications_enable : R.string.bchat_notifications_manage;
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.bchat_notifications)
-                .setMessage(getString(state, linked ? getString(R.string.bchat_device_linked)
-                        : getString(R.string.bchat_device_linking)))
+                .setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked))
                 .setNegativeButton(R.string.task_close, null)
                 .setPositiveButton(action, null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
@@ -2215,6 +2211,28 @@ public final class OdooIdentityActivity extends Activity {
                 }));
         dialog.show();
         maybeRegisterPush();
+        refreshNotificationStatus(dialog, permissionGranted, enabled, channelMuted);
+    }
+
+    private String notificationStatusMessage(boolean permissionGranted, boolean enabled,
+                                             boolean channelMuted, boolean linked) {
+        int state = !permissionGranted || !enabled || channelMuted
+                ? R.string.bchat_notifications_off
+                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
+        return getString(state, linked ? getString(R.string.bchat_device_linked)
+                : getString(R.string.bchat_device_linking));
+    }
+
+    /** Refresh only local state while the dialog is open; this never issues another registration. */
+    private void refreshNotificationStatus(AlertDialog dialog, boolean permissionGranted,
+                                           boolean enabled, boolean channelMuted) {
+        if (dialog == null || !dialog.isShowing()) return;
+        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
+        dialog.setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked));
+        if (!linked && permissionGranted && enabled && !channelMuted) {
+            handler.postDelayed(() -> refreshNotificationStatus(dialog, permissionGranted, enabled,
+                    channelMuted), 300);
+        }
     }
 
     private void ensureBChatNotificationChannel(NotificationManager notifications) {
@@ -12780,7 +12798,9 @@ public final class OdooIdentityActivity extends Activity {
         if (recheckOnResume && verified && !closed) {
             recheckOnResume = false;
             verified = false;
-            BChatPushState.clearAccount(this);
+            // Keep the local route during this same-account bridge recheck. If authentication
+            // fails, the login and failure paths clear it; if it succeeds, verifiedAccount
+            // preserves the prior confirmed route without a notification-delivery gap.
             bridgeRecoveryUsed = false;
             clearChatView();
             account = null;

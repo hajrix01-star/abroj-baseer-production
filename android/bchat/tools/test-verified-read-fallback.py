@@ -7,6 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / 'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text(encoding='utf-8')
 GRADLE = (ROOT / 'app/build.gradle').read_text(encoding='utf-8')
+PUSH_STATE = (ROOT / 'app/src/main/java/com/baseer/freshchat/BChatPushState.java').read_text(encoding='utf-8')
 
 
 def method(name, return_type='void'):
@@ -85,6 +86,19 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
                         screen.index('brandBar.addView(headerAttention'))
         self.assertNotIn('companyLabelWidth', screen)
 
+    def test_recheck_preserves_confirmed_push_route_and_dialog_updates(self):
+        self.assertIn('if (account.key.equals(state.getString(SCOPE, null))) return;', PUSH_STATE)
+        resume_start = SOURCE.index('@Override protected void onResume()')
+        resume_end = SOURCE.index('@Override public void onBackPressed()', resume_start)
+        self.assertNotIn('BChatPushState.clearAccount(this)', SOURCE[resume_start:resume_end])
+        settings = method('showNotificationSettings')
+        self.assertIn('maybeRegisterPush();', settings)
+        self.assertIn('refreshNotificationStatus(dialog, permissionGranted, enabled, channelMuted);', settings)
+        refresh = method('refreshNotificationStatus')
+        self.assertIn('dialog.setMessage(notificationStatusMessage(', refresh)
+        self.assertIn('handler.postDelayed', refresh)
+        self.assertNotIn('maybeRegisterPush()', refresh)
+
     def test_expired_web_session_keeps_offline_snapshots(self):
         recovery = method('recoverExpiredPrivateBridgeSession', 'boolean')
         self.assertNotIn('purgeHistory()', recovery)
@@ -95,7 +109,7 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 69; versionName '0.7.53-qa-push-direct-registration'", GRADLE)
+        self.assertIn("versionCode 70; versionName '0.7.54-qa-push-link-continuity'", GRADLE)
 
     def test_recovery_candidate_disables_diagnostic_ui(self):
         self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)

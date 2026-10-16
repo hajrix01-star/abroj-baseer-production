@@ -87,6 +87,23 @@
       "suites": ["android-source-contract"]
     },
     {
+      "id": "bridge-session-recovery",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "The private BChat bridge remains undiscoverable before authentication while an expired remembered Android session clears only its local state and opens the canonical Odoo login.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/controllers/bridge.py",
+        "custom_addons/baseer_bchat/tests/test_bridge.py",
+        "custom_addons/baseer_bchat/tests_contract/test_bridge_entry_contract.py",
+        "android/bchat/app/build.gradle",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "android/bchat/app/src/main/res/values/strings.xml",
+        "android/bchat/app/src/main/res/values-ar/strings.xml",
+        "android/bchat/app/src/main/res/values-en/strings.xml"
+      ],
+      "suites": ["bridge-entry-contract", "android-source-contract", "backend-contracts"]
+    },
+    {
       "id": "qa-live-release-gate",
       "introduced": "2026-10-16",
       "risk": "critical",

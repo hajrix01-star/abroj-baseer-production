@@ -438,8 +438,8 @@
     <string name="auth_verify">"التحقق من الحساب"</string>
     <string name="auth_leave">"الخروج من حساب أودو"</string>
     <string name="auth_verifying">"جارٍ التحقق من الحساب والصلاحيات…"</string>
-    <string name="auth_tls_error">"تعذّر التحقق من شهادة الخادم المحلي. لم يكتمل الدخول."</string>
-    <string name="auth_network_error">"تعذّر الاتصال بالخادم المحلي. تحقّق من HTTPS وحاول مجددًا."</string>
+    <string name="auth_tls_error">"تعذّر التحقق من شهادة خادم QA. لم يكتمل الدخول."</string>
+    <string name="auth_network_error">"تعذّر الاتصال بخادم QA. تحقّق من HTTPS وحاول مجددًا."</string>
     <string name="auth_denied">"لم يثبت حساب أودو داخلي فعّال. أكمل الدخول والتحقق الثنائي ثم حاول مجددًا."</string>
     <string name="auth_verified">"تم التحقق من المستخدم رقم %1$d؛ الشركات المسموحة: %2$s"</string>
     <string name="auth_chat_disabled">"المحادثات الحقيقية وإرسال الصور غير مفعّلين بعد."</string>

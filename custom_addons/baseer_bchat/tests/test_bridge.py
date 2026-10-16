@@ -1,6 +1,5 @@
 """HTTP contract for the minimal BChat WebView landing page."""
 
-from urllib.parse import urlparse
 from uuid import uuid4
 
 from odoo import Command
@@ -9,10 +8,10 @@ from odoo.tests import HttpCase, tagged
 
 @tagged('post_install', '-at_install', 'baseer_bchat')
 class BChatBridgeHttpCase(HttpCase):
-    def test_guest_redirects_to_odoo_login(self):
+    def test_guest_cannot_discover_private_bridge(self):
         response = self.url_open('/bchat/app/bridge', allow_redirects=False)
-        self.assertIn(response.status_code, (302, 303))
-        self.assertEqual(urlparse(response.headers['Location']).path, '/web/login')
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn('BChat', response.text)
 
     def test_internal_session_gets_only_small_static_bridge(self):
         password = 'test-only-%s' % uuid4().hex

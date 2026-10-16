@@ -4,6 +4,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PUSH_STATE = (ROOT.parents[1] / "android" / "bchat" / "app" / "src" / "main"
+              / "java" / "com" / "baseer" / "freshchat" / "BChatPushState.java")
 
 
 class PushInstallationLifecycleContractTests(unittest.TestCase):
@@ -23,6 +25,12 @@ class PushInstallationLifecycleContractTests(unittest.TestCase):
         self.assertIn("test_registration_reactivates_the_same_device_after_logout", source)
         self.assertIn("_v2_push_unregister", source)
         self.assertIn("active_test=False", source)
+
+    def test_client_preserves_a_verified_route_on_same_account_recheck(self):
+        source = PUSH_STATE.read_text(encoding="utf-8")
+        self.assertIn("if (account.key.equals(state.getString(SCOPE, null))) return;", source)
+        self.assertIn(".remove(ACCOUNT).remove(REGISTERED_TOKEN)", source)
+        self.assertIn("validUuid(installationId)", source)
 
 
 if __name__ == "__main__":

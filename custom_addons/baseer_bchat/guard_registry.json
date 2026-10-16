@@ -152,7 +152,8 @@
         "custom_addons/baseer_bchat/models/push.py",
         "custom_addons/baseer_bchat/tests/test_push_v2.py",
         "custom_addons/baseer_bchat/tests_contract/test_push_installation_lifecycle_contract.py",
-        "custom_addons/baseer_bchat/__manifest__.py"
+        "custom_addons/baseer_bchat/__manifest__.py",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java"
       ],
       "suites": ["backend-contracts", "source-structure"]
     }

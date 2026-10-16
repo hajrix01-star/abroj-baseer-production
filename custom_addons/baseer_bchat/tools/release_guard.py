@@ -29,6 +29,7 @@ SUITES = {
     "release-wrapper",
     "source-structure",
     "guard-integrity",
+    "bridge-entry-contract",
 }
 REQUIRED_IDS = {
     "private-api-permissions",
@@ -36,6 +37,7 @@ REQUIRED_IDS = {
     "task-transitions",
     "push-enabled-apk",
     "attention-center",
+    "bridge-session-recovery",
     "qa-live-release-gate",
     "guard-engine-integrity",
 }
@@ -52,7 +54,7 @@ def source_text(relative: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def load_registry(raw: str | None = None) -> dict:
+def load_registry(raw: str | None = None, *, enforce_current_required: bool = True) -> dict:
     try:
         value = json.loads(raw if raw is not None else REGISTRY.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -80,7 +82,8 @@ def load_registry(raw: str | None = None) -> dict:
         suites = entry.get("suites")
         require(isinstance(suites, list) and suites and set(suites) <= SUITES,
                 f"{invariant_id} references an unknown or empty suite")
-    require(REQUIRED_IDS <= ids, "BChat guard registry does not cover all protected invariants")
+    if enforce_current_required:
+        require(REQUIRED_IDS <= ids, "BChat guard registry does not cover all protected invariants")
     return value
 
 
@@ -100,7 +103,10 @@ def check_registry_history(base: str, current: dict) -> None:
     except subprocess.CalledProcessError:
         # This is the one bootstrap PR which introduces the guard.
         return
-    previous = load_registry(raw)
+    # A historical registry legitimately predates a newly introduced required
+    # invariant. It must still be structurally valid so that its entries cannot
+    # be deleted or weakened by the current candidate.
+    previous = load_registry(raw, enforce_current_required=False)
     old_entries = entries_by_id(previous)
     new_entries = entries_by_id(current)
     for invariant_id, old in old_entries.items():
@@ -226,6 +232,14 @@ def run_guard_integrity() -> None:
             "BChat media-test dependency is not installed by every guard workflow")
 
 
+def run_bridge_entry_contract() -> None:
+    subprocess.run([
+        sys.executable, "-m", "unittest", "discover", "-s",
+        "custom_addons/baseer_bchat/tests_contract", "-p",
+        "test_bridge_entry_contract.py", "-v",
+    ], cwd=ROOT, check=True)
+
+
 RUNNERS: dict[str, Callable[[], None]] = {
     "backend-contracts": run_backend_contracts,
     "android-source-contract": run_android_source_contract,
@@ -233,6 +247,7 @@ RUNNERS: dict[str, Callable[[], None]] = {
     "release-wrapper": check_release_wrappers,
     "source-structure": run_source_structure,
     "guard-integrity": run_guard_integrity,
+    "bridge-entry-contract": run_bridge_entry_contract,
 }
 
 

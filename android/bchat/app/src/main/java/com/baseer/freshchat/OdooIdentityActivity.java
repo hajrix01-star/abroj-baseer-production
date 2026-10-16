@@ -2727,6 +2727,20 @@ public final class OdooIdentityActivity extends Activity {
                         && response.getStatusCode() >= 400) {
                     cancelBridgeNavigationTimeout();
                     navigationFailed = true;
+                    // Odoo deliberately conceals auth='user' routes from an anonymous WebView
+                    // with 404. A remembered session can expire between launches, so only this
+                    // exact private landing page recovers by opening the canonical Odoo login.
+                    if (!loggingOut && response.getStatusCode() == 404 && BRIDGE.equals(intendedUrl)) {
+                        purgeHistory();
+                        releaseWeb();
+                        clearCookies(() -> {
+                            if (!closed) {
+                                showLoginForm();
+                                openWeb(LOGIN);
+                            }
+                        });
+                        return;
+                    }
                     if (response.getStatusCode() == 401 || response.getStatusCode() == 403)
                         purgeHistory();
                     fail(R.string.auth_network_error);

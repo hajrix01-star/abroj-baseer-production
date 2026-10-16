@@ -1,5 +1,6 @@
 """Regression checks for the cumulative BChat guard engine."""
 import importlib.util
+import json
 from pathlib import Path
 import unittest
 
@@ -30,6 +31,17 @@ class ReleaseGuardTests(unittest.TestCase):
 
     def test_guard_integrity_covers_codeowners_and_both_ci_modes(self):
         guard.run_guard_integrity()
+
+    def test_historical_registry_may_precede_a_new_required_invariant(self):
+        registry = guard.load_registry()
+        historical = dict(registry)
+        historical["invariants"] = [entry for entry in registry["invariants"]
+                                    if entry["id"] != "bridge-session-recovery"]
+        with self.assertRaises(SystemExit):
+            guard.load_registry(json.dumps(historical))
+        self.assertEqual(
+            guard.load_registry(json.dumps(historical), enforce_current_required=False)["schema"], 2,
+        )
 
 
 if __name__ == "__main__":

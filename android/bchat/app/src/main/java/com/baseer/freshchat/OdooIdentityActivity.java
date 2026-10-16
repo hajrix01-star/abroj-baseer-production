@@ -689,28 +689,30 @@ public final class OdooIdentityActivity extends Activity {
         compactBrand.setText(brandLetters);
         compactBrand.setContentDescription("BChat");
         brandBar.addView(compactBrand, new LinearLayout.LayoutParams(-2, dp(48)));
-        brandBar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
-        int companyLabelWidth = Math.max(dp(80), getResources().getDisplayMetrics().widthPixels - dp(145));
+        // Keep the two fixed header actions visible on narrow phones. The company label owns
+        // only the remaining width instead of growing past the bell and the account menu.
+        FrameLayout headerCompanySlot = new FrameLayout(this);
         chatHeaderCompanyButton = Ui.text(this, "", 14, Color.WHITE, true);
         chatHeaderCompanyButton.setGravity(Gravity.CENTER_VERTICAL | Gravity.END);
         chatHeaderCompanyButton.setSingleLine(true);
         chatHeaderCompanyButton.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        chatHeaderCompanyButton.setMaxWidth(companyLabelWidth);
         chatHeaderCompanyButton.setPaddingRelative(dp(8), 0, dp(8), 0);
         chatHeaderCompanyButton.setVisibility(View.GONE);
         chatHeaderCompanyButton.setOnClickListener(v -> showChatCompanyMenu(chatHeaderCompanyButton));
-        brandBar.addView(chatHeaderCompanyButton, new LinearLayout.LayoutParams(-2, dp(48)));
+        headerCompanySlot.addView(chatHeaderCompanyButton,
+                new FrameLayout.LayoutParams(-1, dp(48)));
         chatCompanyMenu = new AnchoredMenu(this);
         orderHeaderCompanyButton = Ui.text(this, "", 14, Color.WHITE, true);
         orderHeaderCompanyButton.setGravity(Gravity.CENTER);
         orderHeaderCompanyButton.setSingleLine(true);
         orderHeaderCompanyButton.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        orderHeaderCompanyButton.setMaxWidth(companyLabelWidth);
         orderHeaderCompanyButton.setPaddingRelative(dp(8), 0, dp(8), 0);
         orderHeaderCompanyButton.setVisibility(View.GONE);
         orderHeaderCompanyButton.setOnClickListener(v -> showOrderCompanyMenu());
-        brandBar.addView(orderHeaderCompanyButton, new LinearLayout.LayoutParams(-2, dp(48)));
+        headerCompanySlot.addView(orderHeaderCompanyButton,
+                new FrameLayout.LayoutParams(-1, dp(48)));
         orderCompanyMenu = new AnchoredMenu(this);
+        brandBar.addView(headerCompanySlot, new LinearLayout.LayoutParams(0, dp(48), 1f));
         headerRefresh = Ui.iconButton(this, "refresh", getString(R.string.chat_v2_refresh));
         headerRefresh.setOnClickListener(v -> refreshCurrentSection());
         headerAttention = Ui.iconButton(this, "bell", getString(R.string.bchat_attention));
@@ -3103,6 +3105,50 @@ public final class OdooIdentityActivity extends Activity {
         return true;
     }
 
+    /**
+     * The affected Android WebView can receive direct fetch callbacks but drops transferred
+     * WebMessagePorts. Device registration is the one write allowed to use that direct path:
+     * the server contract makes the exact (user, installation_id) registration idempotent.
+     *
+     * This sends one request only. The polling below merely reads the result already produced
+     * by the WebView; it never repeats a registration whose outcome might be uncertain.
+     */
+    private boolean registerPushDirectlyInWebView(String payload, V2Callback callback) {
+        if (closed || !verified || account == null || csrfToken == null || callback == null
+                || payload == null || payload.length() > 8192 || webV2GetFallbackBusy
+                || v2Busy || web == null || web.getUrl() == null
+                || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
+        final int fallback = ++webV2GetFallbackGeneration;
+        final String slot = "__bchatPushRegistration" + fallback;
+        final int currentWeb = webEpoch;
+        final int currentPage = pageEpoch;
+        final int currentEpoch = epoch;
+        webV2GetFallbackBusy = true;
+        releaseV2Port();
+        v2Busy = true;
+        String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
+                + "var u=new URL(" + JSONObject.quote(V2_PUSH_REGISTER) + ",location.origin);"
+                + "if(u.origin!==location.origin||u.pathname!==" + JSONObject.quote(V2_PUSH_REGISTER)
+                + ")return;var done=function(x){window[" + JSONObject.quote(slot)
+                + "]=JSON.stringify(x);};"
+                + "fetch(u.href,{method:'POST',credentials:'same-origin',redirect:'manual',cache:'no-store',"
+                + "headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},"
+                + "body:new URLSearchParams({csrf_token:" + JSONObject.quote(csrfToken)
+                + ",payload:" + JSONObject.quote(payload) + "}).toString()})"
+                + ".then(function(r){if(r.type==='opaqueredirect')return {nonce:" + fallback
+                + ",status:401,type:'application/json',url:u.href,body:'{}'};"
+                + "if(!r.body||!r.body.getReader)throw Error('stream');"
+                + "var rd=r.body.getReader(),d=new TextDecoder('utf-8',{fatal:true}),b='',n=0;"
+                + "function read(){return rd.read().then(function(x){if(x.done){b+=d.decode();return {nonce:"
+                + fallback + ",status:r.status,type:r.headers.get('content-type')||'',url:r.url,body:b};}"
+                + "n+=x.value.byteLength;if(n>" + MAX_V2_RESPONSE + "){rd.cancel();throw Error('size');}"
+                + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
+                + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
+        web.evaluateJavascript(script, ignored -> pollVerifiedGetFallback(slot, fallback,
+                V2_PUSH_REGISTER, MAX_V2_RESPONSE, currentWeb, currentPage, currentEpoch, callback, 0));
+        return true;
+    }
+
     private void pollVerifiedGetFallback(String slot, int fallback, String path, int maximum,
                                          int expectedWeb, int expectedPage, int expectedEpoch,
                                          V2Callback callback, int attempt) {
@@ -4251,14 +4297,8 @@ public final class OdooIdentityActivity extends Activity {
         if (!BuildConfig.BCHAT_PUSH_ENABLED || closed || !verified || account == null
                 || csrfToken == null || web == null || pushRegistrationBusy
                 || !BChatPushState.needsRegistration(this, account)) return;
-        if (v2Busy) {
-            if (!pushRegistrationScheduled) {
-                pushRegistrationScheduled = true;
-                handler.postDelayed(() -> {
-                    pushRegistrationScheduled = false;
-                    maybeRegisterPush();
-                }, 1500);
-            }
+        if (v2Busy || webV2GetFallbackBusy) {
+            schedulePushRegistration();
             return;
         }
         final AccountScope scopedAccount = account;
@@ -4272,7 +4312,7 @@ public final class OdooIdentityActivity extends Activity {
             payload.put("fcm_token", token);
         } catch (Exception invalid) { return; }
         pushRegistrationBusy = true;
-        fetchV2("POST", V2_PUSH_REGISTER, payload.toString(), (statusCode, response) -> {
+        if (!registerPushDirectlyInWebView(payload.toString(), (statusCode, response) -> {
             pushRegistrationBusy = false;
             if (closed || account == null || !account.key.equals(scopedAccount.key)
                     || !installation.equals(BChatPushState.installationId(this))) return;
@@ -4286,7 +4326,19 @@ public final class OdooIdentityActivity extends Activity {
             } catch (Exception invalid) {
                 // Missing optional module or untrusted response never enables push.
             }
-        });
+        })) {
+            pushRegistrationBusy = false;
+            if (!closed) schedulePushRegistration();
+        }
+    }
+
+    private void schedulePushRegistration() {
+        if (pushRegistrationScheduled) return;
+        pushRegistrationScheduled = true;
+        handler.postDelayed(() -> {
+            pushRegistrationScheduled = false;
+            maybeRegisterPush();
+        }, 1500);
     }
 
     private static final class PushTarget {

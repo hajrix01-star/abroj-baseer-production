@@ -61,6 +61,30 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         complete = method('completeVerifiedGetFallback')
         self.assertLess(complete.index('v2Busy = false;'), complete.index('callback.complete(statusCode, body);'))
 
+    def test_push_registration_uses_one_scoped_direct_callback(self):
+        registration = method('registerPushDirectlyInWebView', 'boolean')
+        self.assertIn('V2_PUSH_REGISTER', registration)
+        self.assertIn("method:'POST'", registration)
+        self.assertIn("credentials:'same-origin'", registration)
+        self.assertIn("redirect:'manual'", registration)
+        self.assertIn('csrf_token:', registration)
+        self.assertIn('new URLSearchParams', registration)
+        self.assertIn('pollVerifiedGetFallback', registration)
+        self.assertNotIn('fetchV2(', registration)
+        self.assertNotIn('postWebMessage', registration)
+        caller = method('maybeRegisterPush')
+        self.assertIn('registerPushDirectlyInWebView(payload.toString()', caller)
+        self.assertNotIn('fetchV2("POST", V2_PUSH_REGISTER', caller)
+        self.assertIn('schedulePushRegistration();', caller)
+
+    def test_header_keeps_account_menu_outside_company_label(self):
+        screen = method('buildScreen')
+        self.assertIn('FrameLayout headerCompanySlot', screen)
+        self.assertIn('new LinearLayout.LayoutParams(0, dp(48), 1f)', screen)
+        self.assertLess(screen.index('brandBar.addView(headerCompanySlot'),
+                        screen.index('brandBar.addView(headerAttention'))
+        self.assertNotIn('companyLabelWidth', screen)
+
     def test_expired_web_session_keeps_offline_snapshots(self):
         recovery = method('recoverExpiredPrivateBridgeSession', 'boolean')
         self.assertNotIn('purgeHistory()', recovery)
@@ -71,7 +95,7 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 68; versionName '0.7.52-qa-push-queue-recovery'", GRADLE)
+        self.assertIn("versionCode 69; versionName '0.7.53-qa-push-direct-registration'", GRADLE)
 
     def test_recovery_candidate_disables_diagnostic_ui(self):
         self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)

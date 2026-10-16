@@ -62,13 +62,19 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 66; versionName '0.7.50-qa-direct-read-recovery'", GRADLE)
+        self.assertIn("versionCode 67; versionName '0.7.51-qa-read-path-diagnostic'", GRADLE)
 
-    def test_recovery_candidate_keeps_diagnostics_off_for_user_acceptance(self):
-        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)
+    def test_read_path_diagnostic_has_only_fixed_safe_route_markers(self):
+        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'true'", GRADLE)
+        labels = method('transportReadLabel', 'String')
+        self.assertIn('V2_BOOTSTRAP.equals(path)', labels)
+        self.assertIn('V2_ROOMS.equals(path)', labels)
+        self.assertIn('V1_BOOTSTRAP.equals(path)', labels)
+        self.assertNotIn('url', labels.lower())
         self.assertIn('private void traceTransport(String stage)', SOURCE)
-        self.assertIn('D05_V2_SLOT_TIMEOUT', SOURCE)
-        self.assertIn('D06_V2_RESPONSE_REJECTED', SOURCE)
+        self.assertIn('D14_" + label + "_SLOT_TIMEOUT', SOURCE)
+        self.assertIn('D15_" + label + "_RESPONSE_REJECTED', SOURCE)
+        self.assertIn('D16_" + label + "_CALLBACK_', SOURCE)
         self.assertIn('D10_V1_PROBE_', SOURCE)
         self.assertNotIn('getCookie(', SOURCE)
 

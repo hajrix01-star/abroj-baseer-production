@@ -3041,6 +3041,15 @@ public final class OdooIdentityActivity extends Activity {
                 ? "\n" + getString(R.string.bchat_transport_diagnostic, transportDiagnostic) : "";
     }
 
+    /** Fixed route labels only: no URL parameters, account identifiers, or server data are traced. */
+    private String transportReadLabel(String path) {
+        if (!BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS) return null;
+        if (V2_BOOTSTRAP.equals(path)) return "V2B";
+        if (V2_ROOMS.equals(path)) return "ROOMS";
+        if (V1_BOOTSTRAP.equals(path)) return "V1B";
+        return null;
+    }
+
     private void closeV2Port() {
         ++v2Nonce;
         ++webV2GetFallbackGeneration;
@@ -3065,8 +3074,8 @@ public final class OdooIdentityActivity extends Activity {
                 || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
         final int fallback = ++webV2GetFallbackGeneration;
         final String slot = "__bchatReadFallback" + fallback;
-        final boolean diagnosticBootstrap = V2_BOOTSTRAP.equals(path);
-        if (diagnosticBootstrap) traceTransport("D03_V2_DIRECT_START");
+        final String diagnosticRead = transportReadLabel(path);
+        if (diagnosticRead != null) traceTransport("D12_" + diagnosticRead + "_DIRECT_START");
         webV2GetFallbackBusy = true;
         releaseV2Port();
         String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
@@ -3084,7 +3093,7 @@ public final class OdooIdentityActivity extends Activity {
                 + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
                 + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
         web.evaluateJavascript(script, ignored -> {
-            if (diagnosticBootstrap) traceTransport("D04_V2_FETCH_DISPATCHED");
+            if (diagnosticRead != null) traceTransport("D13_" + diagnosticRead + "_FETCH_DISPATCHED");
             pollVerifiedGetFallback(slot, fallback, path, maximum,
                     expectedWeb, expectedPage, expectedEpoch, callback, 0);
         });
@@ -3098,7 +3107,8 @@ public final class OdooIdentityActivity extends Activity {
         if (closed || web == null || expectedWeb != webEpoch || expectedPage != pageEpoch
                 || expectedEpoch != epoch || web.getUrl() == null
                 || !isBridgeUrl(Uri.parse(web.getUrl()))) {
-            if (V2_BOOTSTRAP.equals(path)) traceTransport("D05_V2_CONTEXT_CHANGED");
+            String label = transportReadLabel(path);
+            if (label != null) traceTransport("D14_" + label + "_CONTEXT_CHANGED");
             webV2GetFallbackBusy = false;
             return;
         }
@@ -3111,13 +3121,15 @@ public final class OdooIdentityActivity extends Activity {
                 if (attempt < 60) handler.postDelayed(() -> pollVerifiedGetFallback(slot, fallback,
                         path, maximum, expectedWeb, expectedPage, expectedEpoch, callback, attempt + 1), 100);
                 else {
-                    if (V2_BOOTSTRAP.equals(path)) traceTransport("D05_V2_SLOT_TIMEOUT");
+                    String label = transportReadLabel(path);
+                    if (label != null) traceTransport("D14_" + label + "_SLOT_TIMEOUT");
                     completeVerifiedGetFallback(fallback, path, 0, null, expectedWeb, expectedPage,
                             expectedEpoch, callback);
                 }
                 return;
             }
-            if (V2_BOOTSTRAP.equals(path)) traceTransport("D05_V2_SLOT_RECEIVED");
+            String label = transportReadLabel(path);
+            if (label != null) traceTransport("D14_" + label + "_SLOT_RECEIVED");
             int statusCode = 0;
             JSONObject body = null;
             try {
@@ -3144,12 +3156,12 @@ public final class OdooIdentityActivity extends Activity {
                     }
                 }
             } catch (Exception ignored) {
-                if (V2_BOOTSTRAP.equals(path)) traceTransport("D06_V2_RESPONSE_REJECTED");
+                if (label != null) traceTransport("D15_" + label + "_RESPONSE_REJECTED");
                 statusCode = 0;
                 body = null;
             }
-            if (V2_BOOTSTRAP.equals(path) && statusCode == 0)
-                traceTransport("D06_V2_WEB_FETCH_ZERO");
+            if (label != null && statusCode == 0)
+                traceTransport("D15_" + label + "_WEB_FETCH_ZERO");
             completeVerifiedGetFallback(fallback, path, statusCode, body, expectedWeb, expectedPage,
                     expectedEpoch, callback);
         });
@@ -3161,7 +3173,8 @@ public final class OdooIdentityActivity extends Activity {
         if (fallback != webV2GetFallbackGeneration) return;
         webV2GetFallbackBusy = false;
         if (closed || expectedWeb != webEpoch || expectedPage != pageEpoch || expectedEpoch != epoch) return;
-        if (V2_BOOTSTRAP.equals(path)) traceTransport("D07_V2_CALLBACK_" + statusCode);
+        String label = transportReadLabel(path);
+        if (label != null) traceTransport("D16_" + label + "_CALLBACK_" + statusCode);
         callback.complete(statusCode, body);
         handler.post(this::runQueuedOrderLoad);
         handler.post(this::maybeProbeOrderCapability);
@@ -3182,6 +3195,8 @@ public final class OdooIdentityActivity extends Activity {
                 || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))
                 || !(V1_BOOTSTRAP.equals(path)
                         || path.matches("/bchat/api/v2/[A-Za-z0-9/?=&_%~.-]+"))) return false;
+        String label = transportReadLabel(path);
+        if (label != null) traceTransport("D11_" + label + "_READ_START");
         int maximum = V2_BOOTSTRAP.equals(path) || V1_BOOTSTRAP.equals(path)
                 ? MAX_RESPONSE : MAX_V2_RESPONSE;
         return fetchVerifiedGetInWebView("GET", path, maximum,

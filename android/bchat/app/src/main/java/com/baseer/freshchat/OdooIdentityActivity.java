@@ -2604,8 +2604,8 @@ public final class OdooIdentityActivity extends Activity {
     /**
      * Odoo intentionally returns 404 for private routes before authentication.
      * WebView implementations do not consistently surface that main-document
-     * response through onReceivedHttpError, so the v1 bootstrap and timeout
-     * paths use this same bounded recovery too.
+     * response through onReceivedHttpError, so the v1 bootstrap path uses this
+     * same bounded recovery too. A plain navigation timeout never purges cache.
      */
     private boolean recoverExpiredPrivateBridgeSession() {
         if (closed || loggingOut) return false;

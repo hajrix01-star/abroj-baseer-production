@@ -28,6 +28,9 @@ class ReleaseGuardTests(unittest.TestCase):
         )]
         self.assertEqual(owners, ["attention-center"])
 
+    def test_guard_integrity_covers_codeowners_and_both_ci_modes(self):
+        guard.run_guard_integrity()
+
 
 if __name__ == "__main__":
     unittest.main()

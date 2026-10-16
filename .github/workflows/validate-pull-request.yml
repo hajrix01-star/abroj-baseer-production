@@ -39,7 +39,7 @@ jobs:
           if printf '%s\n' "${changed[@]}" | grep -q '^ops/production/'; then
             sudo python3 -m unittest discover -s ops/production/tests -v
           fi
-          if printf '%s\n' "${changed[@]}" | grep -Eq '^(custom_addons/baseer_bchat/|android/bchat/)'; then
+          if printf '%s\n' "${changed[@]}" | grep -Eq '^(custom_addons/baseer_bchat/|android/bchat/|ops/qa/baseer-qa-deploy$|ops/production/baseer-production-deploy$|\.github/workflows/(validate-pull-request|bchat-cumulative-contracts)\.yml$|\.github/CODEOWNERS$)'; then
             python3 custom_addons/baseer_bchat/tools/release_guard.py --changed "$BASE_SHA" "$HEAD_SHA"
           fi
           python3 - "$BASE_SHA" "$HEAD_SHA" <<'PY'

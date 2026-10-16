@@ -187,8 +187,22 @@ def run_source_structure() -> None:
 
 def run_guard_integrity() -> None:
     load_registry()
-    require("check_registry_history" in source_text("custom_addons/baseer_bchat/tools/release_guard.py"),
+    source = source_text("custom_addons/baseer_bchat/tools/release_guard.py")
+    require("check_registry_history" in source,
             "registry monotonicity check is absent")
+    owners = source_text(".github/CODEOWNERS")
+    for protected in (
+        "/custom_addons/baseer_bchat/guard_registry.json",
+        "/custom_addons/baseer_bchat/tools/release_guard.py",
+        "/.github/workflows/validate-pull-request.yml",
+        "/.github/workflows/bchat-cumulative-contracts.yml",
+        "/ops/qa/baseer-qa-deploy",
+        "/ops/production/baseer-production-deploy",
+    ):
+        require(protected in owners, f"CODEOWNERS does not protect {protected}")
+    workflow = source_text(".github/workflows/bchat-cumulative-contracts.yml")
+    require("release_guard.py --changed" in workflow and "release_guard.py --all" in workflow,
+            "BChat workflow no longer runs both PR and manual guard modes")
 
 
 RUNNERS: dict[str, Callable[[], None]] = {

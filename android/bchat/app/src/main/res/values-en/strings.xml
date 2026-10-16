@@ -440,6 +440,7 @@
     <string name="auth_verifying">"Verifying account and access…"</string>
     <string name="auth_tls_error">"The QA server certificate could not be verified. Sign-in did not finish."</string>
     <string name="auth_network_error">"Could not reach the QA server. Check HTTPS and try again."</string>
+    <string name="bchat_transport_diagnostic">"Transport diagnostic: %1$s"</string>
     <string name="auth_denied">"No active internal Odoo account was verified. Complete sign-in and MFA, then try again."</string>
     <string name="auth_verified">"Verified user #%1$d; allowed companies: %2$s"</string>
     <string name="auth_chat_disabled">"Real chats and image sending are not enabled yet."</string>

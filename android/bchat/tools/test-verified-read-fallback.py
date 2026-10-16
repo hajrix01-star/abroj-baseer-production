@@ -58,7 +58,15 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_installed_version', screen)
         self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 64; versionName '0.7.48-qa-bootstrap-direct-read'", GRADLE)
+        self.assertIn("versionCode 65; versionName '0.7.49-qa-transport-diagnostic'", GRADLE)
+
+    def test_diagnostic_candidate_has_safe_stage_markers(self):
+        self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'true'", GRADLE)
+        self.assertIn('private void traceTransport(String stage)', SOURCE)
+        self.assertIn('D05_V2_SLOT_TIMEOUT', SOURCE)
+        self.assertIn('D06_V2_RESPONSE_REJECTED', SOURCE)
+        self.assertIn('D10_V1_PROBE_', SOURCE)
+        self.assertNotIn('getCookie(', SOURCE)
 
 
 if __name__ == '__main__':

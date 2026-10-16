@@ -32,6 +32,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Base64;
+import android.util.Log;
 import android.util.LruCache;
 import android.text.InputType;
 import android.text.Editable;
@@ -106,6 +107,7 @@ import java.util.concurrent.Executors;
 
 /** Employee entry and isolated BChat v2 text client. The offline demo store stays untouched. */
 public final class OdooIdentityActivity extends Activity {
+    private static final String TRANSPORT_LOG_TAG = "BChatTransport";
     public static final String EXTRA_SHARE_UNAVAILABLE = "com.baseer.bchat.SHARE_UNAVAILABLE";
     private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);
     private static final String DATABASE = BuildConfig.BCHAT_DATABASE;
@@ -219,6 +221,8 @@ public final class OdooIdentityActivity extends Activity {
     /** Read-only fallback when an Android WebView drops a message-port response. */
     private boolean webV2GetFallbackBusy;
     private int webV2GetFallbackGeneration;
+    /** Safe stage codes for the QA-only transport diagnostic; never include response content. */
+    private String transportDiagnostic = "D00";
     private volatile int historyWriteGeneration;
     private boolean offlineHistory;
     private boolean offlineChatCacheAvailable, offlineTaskCacheAvailable;
@@ -2868,6 +2872,7 @@ public final class OdooIdentityActivity extends Activity {
         if (closed || web == null || probing || loggingOut || verified || web.getUrl() == null
                 || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
         probing = true;
+        resetTransportDiagnostic();
         submitting = false;
         status.setText(R.string.auth_verifying);
         final int attempt = ++epoch;
@@ -2999,6 +3004,7 @@ public final class OdooIdentityActivity extends Activity {
             account = nextAccount; // The server authorizes all work.
             v1Companies.clear();
             v1Companies.addAll(ids);
+            traceTransport("D02_V1_ACCEPTED");
             verified = true;
             probing = false;
             submitting = false;
@@ -3013,6 +3019,27 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private interface V2Callback { void complete(int status, JSONObject body); }
+
+    private void resetTransportDiagnostic() {
+        if (!BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS) return;
+        transportDiagnostic = "D00";
+        traceTransport("D01_V1_START");
+    }
+
+    private void traceTransport(String stage) {
+        if (!BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS) return;
+        // Stage labels are fixed source strings or HTTP status integers only. Do not add URLs,
+        // account identifiers, cookies, response bodies, or message content to this trace.
+        String next = transportDiagnostic == null || transportDiagnostic.isEmpty()
+                ? stage : transportDiagnostic + ">" + stage;
+        transportDiagnostic = next.length() > 180 ? next.substring(next.length() - 180) : next;
+        Log.i(TRANSPORT_LOG_TAG, stage);
+    }
+
+    private String transportDiagnosticNotice() {
+        return BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS
+                ? "\n" + getString(R.string.bchat_transport_diagnostic, transportDiagnostic) : "";
+    }
 
     private void closeV2Port() {
         ++v2Nonce;
@@ -3038,6 +3065,8 @@ public final class OdooIdentityActivity extends Activity {
                 || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
         final int fallback = ++webV2GetFallbackGeneration;
         final String slot = "__bchatReadFallback" + fallback;
+        final boolean diagnosticBootstrap = V2_BOOTSTRAP.equals(path);
+        if (diagnosticBootstrap) traceTransport("D03_V2_DIRECT_START");
         webV2GetFallbackBusy = true;
         releaseV2Port();
         String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
@@ -3054,8 +3083,11 @@ public final class OdooIdentityActivity extends Activity {
                 + "n+=x.value.byteLength;if(n>" + maximum + "){rd.cancel();throw Error('size');}"
                 + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
                 + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
-        web.evaluateJavascript(script, ignored -> pollVerifiedGetFallback(slot, fallback, path, maximum,
-                expectedWeb, expectedPage, expectedEpoch, callback, 0));
+        web.evaluateJavascript(script, ignored -> {
+            if (diagnosticBootstrap) traceTransport("D04_V2_FETCH_DISPATCHED");
+            pollVerifiedGetFallback(slot, fallback, path, maximum,
+                    expectedWeb, expectedPage, expectedEpoch, callback, 0);
+        });
         return true;
     }
 
@@ -3066,6 +3098,7 @@ public final class OdooIdentityActivity extends Activity {
         if (closed || web == null || expectedWeb != webEpoch || expectedPage != pageEpoch
                 || expectedEpoch != epoch || web.getUrl() == null
                 || !isBridgeUrl(Uri.parse(web.getUrl()))) {
+            if (V2_BOOTSTRAP.equals(path)) traceTransport("D05_V2_CONTEXT_CHANGED");
             webV2GetFallbackBusy = false;
             return;
         }
@@ -3077,10 +3110,14 @@ public final class OdooIdentityActivity extends Activity {
             if (value == null || "null".equals(value)) {
                 if (attempt < 60) handler.postDelayed(() -> pollVerifiedGetFallback(slot, fallback,
                         path, maximum, expectedWeb, expectedPage, expectedEpoch, callback, attempt + 1), 100);
-                else completeVerifiedGetFallback(fallback, 0, null, expectedWeb, expectedPage,
-                        expectedEpoch, callback);
+                else {
+                    if (V2_BOOTSTRAP.equals(path)) traceTransport("D05_V2_SLOT_TIMEOUT");
+                    completeVerifiedGetFallback(fallback, path, 0, null, expectedWeb, expectedPage,
+                            expectedEpoch, callback);
+                }
                 return;
             }
+            if (V2_BOOTSTRAP.equals(path)) traceTransport("D05_V2_SLOT_RECEIVED");
             int statusCode = 0;
             JSONObject body = null;
             try {
@@ -3107,20 +3144,24 @@ public final class OdooIdentityActivity extends Activity {
                     }
                 }
             } catch (Exception ignored) {
+                if (V2_BOOTSTRAP.equals(path)) traceTransport("D06_V2_RESPONSE_REJECTED");
                 statusCode = 0;
                 body = null;
             }
-            completeVerifiedGetFallback(fallback, statusCode, body, expectedWeb, expectedPage,
+            if (V2_BOOTSTRAP.equals(path) && statusCode == 0)
+                traceTransport("D06_V2_WEB_FETCH_ZERO");
+            completeVerifiedGetFallback(fallback, path, statusCode, body, expectedWeb, expectedPage,
                     expectedEpoch, callback);
         });
     }
 
-    private void completeVerifiedGetFallback(int fallback, int statusCode, JSONObject body,
+    private void completeVerifiedGetFallback(int fallback, String path, int statusCode, JSONObject body,
                                              int expectedWeb, int expectedPage, int expectedEpoch,
                                              V2Callback callback) {
         if (fallback != webV2GetFallbackGeneration) return;
         webV2GetFallbackBusy = false;
         if (closed || expectedWeb != webEpoch || expectedPage != pageEpoch || expectedEpoch != epoch) return;
+        if (V2_BOOTSTRAP.equals(path)) traceTransport("D07_V2_CALLBACK_" + statusCode);
         callback.complete(statusCode, body);
         handler.post(this::runQueuedOrderLoad);
         handler.post(this::maybeProbeOrderCapability);
@@ -4083,6 +4124,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void verifyV2() {
         fetchV2("GET", V2_BOOTSTRAP, null, (statusCode, result) -> {
+            traceTransport("D08_V2_VERIFY_" + statusCode);
             if (handleV2TransportFailure(statusCode)) return;
             if (statusCode == 403) purgeHistory();
             try {
@@ -4449,7 +4491,9 @@ public final class OdooIdentityActivity extends Activity {
         csrfToken = null;
         showShell();
         shellNotice.setText(R.string.auth_verifying);
+        traceTransport("D09_V1_PROBE_START");
         fetchV2("GET", V1_BOOTSTRAP, null, (statusCode, result) -> {
+            traceTransport("D10_V1_PROBE_" + statusCode);
             if (statusCode == 401) { logout(); return; }
             boolean sameUser = false;
             try {
@@ -4478,8 +4522,8 @@ public final class OdooIdentityActivity extends Activity {
             }
             releaseWeb();
             showShell();
-            shellNotice.setText(uncertainWrite ? R.string.chat_v2_uncertain_network
-                    : R.string.auth_network_error);
+            if (uncertainWrite) shellNotice.setText(R.string.chat_v2_uncertain_network);
+            else shellNotice.setText(getString(R.string.auth_network_error) + transportDiagnosticNotice());
             shellRetry.setVisibility(View.VISIBLE);
         });
     }

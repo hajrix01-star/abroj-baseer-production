@@ -2601,6 +2601,25 @@ public final class OdooIdentityActivity extends Activity {
         bridgeNavigationTimeout = null;
     }
 
+    /**
+     * Odoo intentionally returns 404 for private routes before authentication.
+     * WebView implementations do not consistently surface that main-document
+     * response through onReceivedHttpError, so the v1 bootstrap path uses this
+     * same bounded recovery too. A plain navigation timeout never purges cache.
+     */
+    private boolean recoverExpiredPrivateBridgeSession() {
+        if (closed || loggingOut) return false;
+        purgeHistory();
+        releaseWeb();
+        clearCookies(() -> {
+            if (!closed) {
+                showLoginForm();
+                openWeb(LOGIN);
+            }
+        });
+        return true;
+    }
+
     private void scheduleBridgeNavigationTimeout(WebView expectedView, int expectedWeb) {
         cancelBridgeNavigationTimeout();
         bridgeNavigationTimeout = () -> {
@@ -2731,14 +2750,7 @@ public final class OdooIdentityActivity extends Activity {
                     // with 404. A remembered session can expire between launches, so only this
                     // exact private landing page recovers by opening the canonical Odoo login.
                     if (!loggingOut && response.getStatusCode() == 404 && BRIDGE.equals(intendedUrl)) {
-                        purgeHistory();
-                        releaseWeb();
-                        clearCookies(() -> {
-                            if (!closed) {
-                                showLoginForm();
-                                openWeb(LOGIN);
-                            }
-                        });
+                        recoverExpiredPrivateBridgeSession();
                         return;
                     }
                     if (response.getStatusCode() == 401 || response.getStatusCode() == 403)
@@ -2903,6 +2915,12 @@ public final class OdooIdentityActivity extends Activity {
             JSONObject envelope = new JSONObject(data);
             if (envelope.optInt("nonce", -1) == attempt && envelope.optInt("status", -1) == 0) {
                 if (!offerOfflineHistory()) fail(R.string.auth_network_error);
+                return;
+            }
+            // Some Android WebView versions finish the private 404 document, then surface
+            // the same unauthenticated state only through the bootstrap fetch below.
+            if (envelope.optInt("nonce", -1) == attempt && envelope.optInt("status", -1) == 404) {
+                recoverExpiredPrivateBridgeSession();
                 return;
             }
             if (envelope.optInt("nonce", -1) == attempt

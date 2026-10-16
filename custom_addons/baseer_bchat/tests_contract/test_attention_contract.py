@@ -17,7 +17,7 @@ class AttentionContractTests(unittest.TestCase):
         for required in (
             "def _v2_attention", "_require_any_bchat_permission", "user.company_ids.ids",
             "joined_after_message_id", "assignee_id", "badge_count", "min(50",
-            "limit=25", "_v2_current_member",
+            "JOIN LATERAL", "LIMIT 51", "LIMIT 25", "_v2_current_member",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, source)
@@ -34,6 +34,18 @@ class AttentionContractTests(unittest.TestCase):
         self.assertEqual(keywords["auth"], "user")
         self.assertEqual(keywords["type"], "http")
         self.assertTrue(keywords["csrf"])
+
+    def test_badge_refreshes_after_login_and_retries_while_v2_is_busy(self):
+        activity = (ROOT.parents[1] / "android" / "bchat" / "app" / "src" / "main"
+                    / "java" / "com" / "baseer" / "freshchat"
+                    / "OdooIdentityActivity.java").read_text(encoding="utf-8")
+        self.assertGreaterEqual(
+            activity.count("handler.post(this::refreshAttentionBadge);"), 3,
+            "the badge must refresh after verified login, rooms, and tasks",
+        )
+        self.assertIn(
+            "handler.postDelayed(this::refreshAttentionBadge, 350);", activity,
+        )
 
 
 if __name__ == "__main__":

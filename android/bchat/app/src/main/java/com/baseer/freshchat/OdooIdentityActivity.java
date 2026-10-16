@@ -3980,6 +3980,10 @@ public final class OdooIdentityActivity extends Activity {
                     }
                     maybeProbeOrderCapability();
                 }
+                // A task-only account may never load rooms. Refreshing here
+                // plus the post-load calls keeps the header independent from
+                // the active tab and retries once the v2 channel is free.
+                handler.post(this::refreshAttentionBadge);
             } catch (Exception invalid) {
                 // v1's disabled shell is the safe fallback. Never expose demo data.
                 BChatPushState.clearAccount(this);
@@ -5030,8 +5034,12 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void refreshAttentionBadge() {
-        if (!verified || account == null || attentionLoading || v2Busy
+        if (!verified || account == null || attentionLoading
                 || (!permissionSet.chatView && !permissionSet.taskView)) return;
+        if (v2Busy) {
+            handler.postDelayed(this::refreshAttentionBadge, 350);
+            return;
+        }
         attentionLoading = true;
         fetchV2("GET", V2_ATTENTION, null, (statusCode, result) -> {
             attentionLoading = false;

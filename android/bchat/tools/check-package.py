@@ -68,8 +68,8 @@ import re
 gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
-assert re.search(r"versionCode\s+59\b", gradle)
-assert "versionName '0.7.43-qa-attention-center'" in gradle
+assert re.search(r"versionCode\s+60\b", gradle)
+assert "versionName '0.7.44-qa-attention-center'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source

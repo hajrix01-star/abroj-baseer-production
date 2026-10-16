@@ -127,7 +127,8 @@ def check_backend() -> None:
             "unread receipt index is absent")
     require("def _v2_attention" in attention and "badge_count" in attention,
             "attention-center contract is absent")
-    require("assignee_id" in attention and "joined_after_message_id" in attention,
+    require("assignee_id" in attention and "joined_after_message_id" in attention
+            and "JOIN LATERAL" in attention and "LIMIT 51" in attention,
             "attention-center scope is not assignee and membership epoch based")
     require("/bchat/api/v2/attention" in controller,
             "attention-center HTTP route is absent")
@@ -149,6 +150,10 @@ def check_android_source() -> None:
             "APK builder no longer validates the signed artifact Push contract")
     require("BChatFirebaseMessagingService" in package_check and "AndroidManifestPush.xml" in package_check,
             "Android source contract no longer validates the Push manifest")
+    activity = source_text("android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java")
+    require(activity.count("handler.post(this::refreshAttentionBadge);") >= 3
+            and "handler.postDelayed(this::refreshAttentionBadge, 350);" in activity,
+            "attention badge no longer refreshes after login or retries the busy v2 channel")
 
 
 def check_release_wrappers() -> None:
@@ -199,7 +204,11 @@ def run_guard_integrity() -> None:
         "/ops/qa/baseer-qa-deploy",
         "/ops/production/baseer-production-deploy",
     ):
-        require(protected in owners, f"CODEOWNERS does not protect {protected}")
+        matching = [line.split() for line in owners.splitlines()
+                    if line.strip() and not line.lstrip().startswith("#")
+                    and line.split()[0] == protected]
+        require(bool(matching) and any(owner.startswith("@") for owner in matching[0][1:]),
+                f"CODEOWNERS does not assign an explicit owner to {protected}")
     workflow = source_text(".github/workflows/bchat-cumulative-contracts.yml")
     require("release_guard.py --changed" in workflow and "release_guard.py --all" in workflow,
             "BChat workflow no longer runs both PR and manual guard modes")

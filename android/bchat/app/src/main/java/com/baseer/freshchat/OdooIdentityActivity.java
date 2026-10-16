@@ -121,6 +121,7 @@ public final class OdooIdentityActivity extends Activity {
     private static final String BOOTSTRAP = ORIGIN + V1_BOOTSTRAP;
     private static final String V2_BOOTSTRAP = "/bchat/api/v2/bootstrap";
     private static final String V2_ROOMS = "/bchat/api/v2/rooms";
+    private static final String V2_PROFILE_AVATAR = "/bchat/api/v2/profile/avatar";
     private static final String V2_TASKS = "/bchat/api/v2/tasks";
     private static final String V2_ATTENTION = "/bchat/api/v2/attention";
     private static final String V2_ORDERS = "/bchat/api/v2/orders";
@@ -148,6 +149,7 @@ public final class OdooIdentityActivity extends Activity {
     private static final int MAX_RESPONSE = 8192;
     private static final int MAX_V2_RESPONSE = 131072;
     private static final int MAX_PROFILE_BYTES = 16 * 1024;
+    private static final int MAX_PRIVATE_AVATAR_BYTES = 256 * 1024;
     private static final int MAX_ORDER_IMAGE_BYTES = 131072;
     private static final long BRIDGE_NAVIGATION_TIMEOUT_MILLIS = 8000L;
     // The verified v2 attachment capability is the runtime gate.
@@ -308,6 +310,15 @@ public final class OdooIdentityActivity extends Activity {
     private WebMessagePort groupAvatarPort;
     private int groupAvatarNonce;
     private final LruCache<String, Bitmap> groupAvatarCache = new LruCache<String, Bitmap>(4 * 1024 * 1024) {
+        @Override protected int sizeOf(String key, Bitmap bitmap) { return bitmap.getByteCount(); }
+    };
+    /** Member images are private, session-bound reads; initials remain the safe fallback. */
+    private final Map<String, List<ImageView>> privateAvatarWaiting = new LinkedHashMap<>();
+    private final LinkedList<PrivateAvatarRequest> privateAvatarQueue = new LinkedList<>();
+    private boolean privateAvatarBusy;
+    private WebMessagePort privateAvatarPort;
+    private int privateAvatarNonce;
+    private final LruCache<String, Bitmap> privateAvatarCache = new LruCache<String, Bitmap>(4 * 1024 * 1024) {
         @Override protected int sizeOf(String key, Bitmap bitmap) { return bitmap.getByteCount(); }
     };
     private Room selectedRoom;
@@ -1550,6 +1561,128 @@ public final class OdooIdentityActivity extends Activity {
         handler.post(this::pumpGroupAvatars);
     }
 
+    /** Builds an image slot with initials underneath; image access is never public. */
+    private View privateAvatarView(String key, String path, String name, int hue) {
+        FrameLayout holder = new FrameLayout(this);
+        holder.addView(new Ui.Avatar(this, name, "employee", hue),
+                new FrameLayout.LayoutParams(-1, -1));
+        if (!verified || offlineHistory || account == null) return holder;
+        ImageView image = new ImageView(this);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(Ui.LIGHT);
+        image.setBackground(circle);
+        image.setClipToOutline(true);
+        image.setVisibility(View.GONE);
+        image.setTag(key);
+        holder.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        Bitmap cached = privateAvatarCache.get(key);
+        if (cached != null) {
+            image.setImageBitmap(cached);
+            image.setVisibility(View.VISIBLE);
+        } else {
+            List<ImageView> waiting = privateAvatarWaiting.get(key);
+            if (waiting == null) {
+                waiting = new ArrayList<>();
+                privateAvatarWaiting.put(key, waiting);
+                privateAvatarQueue.add(new PrivateAvatarRequest(key, path));
+                handler.post(this::pumpPrivateAvatars);
+            }
+            waiting.add(image);
+        }
+        return holder;
+    }
+
+    private void pumpPrivateAvatars() {
+        if (privateAvatarBusy || privateAvatarQueue.isEmpty() || !verified || account == null
+                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
+        PrivateAvatarRequest item = privateAvatarQueue.removeFirst();
+        AccountScope scoped = account;
+        if (!privateAvatarWaiting.containsKey(item.key)) { handler.post(this::pumpPrivateAvatars); return; }
+        privateAvatarBusy = true;
+        String url = ORIGIN + item.path;
+        int currentWeb = webEpoch;
+        int currentPage = pageEpoch;
+        int request = ++privateAvatarNonce;
+        WebMessagePort[] channel = web.createWebMessageChannel();
+        privateAvatarPort = channel[0];
+        privateAvatarPort.setWebMessageCallback(new WebMessagePort.WebMessageCallback() {
+            @Override public void onMessage(WebMessagePort port, WebMessage message) {
+                if (request != privateAvatarNonce || port != privateAvatarPort || !verified
+                        || account != scoped || currentWeb != webEpoch || currentPage != pageEpoch) return;
+                String encoded = null;
+                try {
+                    String data = message.getData();
+                    if (data != null && data.length() <= 360000) {
+                        JSONObject response = new JSONObject(data);
+                        if (response.getInt("nonce") == request && response.getInt("status") == 200
+                                && url.equals(response.getString("url"))
+                                && "image/png".equals(response.getString("type")))
+                            encoded = response.getString("body");
+                    }
+                } catch (Exception ignored) { }
+                if (encoded == null) { finishPrivateAvatar(item.key, null, request); return; }
+                String safe = encoded;
+                mediaIo.execute(() -> {
+                    Bitmap bitmap = null;
+                    try {
+                        byte[] bytes = Base64.decode(safe, Base64.DEFAULT);
+                        if (bytes.length > 0 && bytes.length <= MAX_PRIVATE_AVATAR_BYTES)
+                            bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        if (bitmap != null && (bitmap.getWidth() > 128 || bitmap.getHeight() > 128))
+                            bitmap = null;
+                    } catch (Exception ignored) { }
+                    Bitmap ready = bitmap;
+                    handler.post(() -> finishPrivateAvatar(item.key, ready, request));
+                });
+            }
+        });
+        String script = "(function(){var h=function(e){var p=e.ports&&e.ports[0];"
+                + "if(!p||e.data!=='private-avatar')return;window.removeEventListener('message',h);"
+                + "var u=new URL(" + JSONObject.quote(item.path) + ",location.origin);"
+                + "if(location.href!==" + JSONObject.quote(BRIDGE)
+                + "||u.origin!==location.origin){p.postMessage('{}');return;}"
+                + "fetch(u.href,{credentials:'same-origin',redirect:'manual',cache:'no-store'})"
+                + ".then(function(r){if(r.status!==200||r.url!==u.href||"
+                + "(r.headers.get('content-type')||'').split(';')[0]!=='image/png')throw Error('image');"
+                + "return r.arrayBuffer();}).then(function(raw){if(!raw||raw.byteLength>"
+                + MAX_PRIVATE_AVATAR_BYTES + ")throw Error('size');var bytes=new Uint8Array(raw),parts=[];"
+                + "for(var i=0;i<bytes.length;i+=8192)parts.push(String.fromCharCode.apply(null,bytes.subarray(i,i+8192)));"
+                + "p.postMessage(JSON.stringify({nonce:" + request
+                + ",status:200,url:u.href,type:'image/png',body:btoa(parts.join(''))}));})"
+                + ".catch(function(){p.postMessage('{}');});};window.addEventListener('message',h);})();";
+        web.evaluateJavascript(script, ignored -> {
+            if (request == privateAvatarNonce && web != null && currentWeb == webEpoch
+                    && currentPage == pageEpoch && privateAvatarPort == channel[0])
+                web.postWebMessage(new WebMessage("private-avatar",
+                        new WebMessagePort[]{channel[1]}), Uri.parse(ORIGIN));
+        });
+        handler.postDelayed(() -> {
+            if (request == privateAvatarNonce && privateAvatarBusy)
+                finishPrivateAvatar(item.key, null, request);
+        }, 12000);
+    }
+
+    private void finishPrivateAvatar(String key, Bitmap bitmap, int request) {
+        if (request != privateAvatarNonce) return;
+        ++privateAvatarNonce;
+        if (privateAvatarPort != null) { privateAvatarPort.close(); privateAvatarPort = null; }
+        List<ImageView> waiting = privateAvatarWaiting.remove(key);
+        if (bitmap != null && waiting != null && verified && account != null
+                && key.startsWith(account.key + ":")) {
+            privateAvatarCache.put(key, bitmap);
+            for (ImageView target : waiting) {
+                if (key.equals(target.getTag())) {
+                    target.setImageBitmap(bitmap);
+                    target.setVisibility(View.VISIBLE);
+                }
+            }
+        }
+        privateAvatarBusy = false;
+        handler.post(this::pumpPrivateAvatars);
+    }
+
     private void searchGroupMember(long companyId, List<TaskChoice> selected,
                                    Runnable afterSelect) {
         EditText search = new EditText(this);
@@ -2312,15 +2445,35 @@ public final class OdooIdentityActivity extends Activity {
             return;
         }
         LinearLayout body = Ui.column(this);
-        Ui.pad(body, 18, 12);
-        TextView name = Ui.text(this, AppLocale.name(this, profile.optString("name")), 20, Ui.INK, true);
-        body.addView(name, fieldSize(4));
+        Ui.pad(body, 18, 18);
+        LinearLayout hero = Ui.column(this);
+        hero.setGravity(Gravity.CENTER_HORIZONTAL);
+        hero.setBackground(Ui.bg(Ui.LIGHT, 18, this));
+        Ui.pad(hero, 18, 18);
+        String profileName = AppLocale.name(this, profile.optString("name"));
+        if (profileName.trim().isEmpty()) profileName = getString(R.string.bchat_profile);
+        View photo = privateAvatarView(profileAccount.key + ":profile:" + profileAccount.userId,
+                V2_PROFILE_AVATAR, profileName, (int) (profileAccount.userId * 47 % 360));
+        LinearLayout.LayoutParams photoSize = new LinearLayout.LayoutParams(dp(84), dp(84));
+        photoSize.gravity = Gravity.CENTER_HORIZONTAL;
+        hero.addView(photo, photoSize);
+        TextView name = Ui.text(this, profileName, 21, Ui.INK, true);
+        name.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams nameSize = fieldSize(10);
+        nameSize.gravity = Gravity.CENTER_HORIZONTAL;
+        hero.addView(name, nameSize);
+        body.addView(hero, new LinearLayout.LayoutParams(-1, -2));
         JSONArray companies = profile.optJSONArray("companies");
         if (companies != null) for (int i = 0; i < companies.length(); i++) {
             JSONObject company = companies.optJSONObject(i);
             if (company == null) continue;
+            LinearLayout companyCard = Ui.column(this);
+            companyCard.setBackground(Ui.outline(Ui.SURFACE, Ui.LINE, 14, this));
+            Ui.pad(companyCard, 14, 12);
+            LinearLayout.LayoutParams companyCardSize = new LinearLayout.LayoutParams(-1, -2);
+            companyCardSize.topMargin = dp(12);
             TextView companyName = Ui.text(this, AppLocale.name(this, company.optString("name")), 15, Ui.GREEN, true);
-            body.addView(companyName, fieldSize(14));
+            companyCard.addView(companyName, fieldSize(6));
             JSONArray titles = company.optJSONArray("job_titles");
             StringBuilder jobs = new StringBuilder();
             if (titles != null) for (int j = 0; j < titles.length(); j++) {
@@ -2328,7 +2481,11 @@ public final class OdooIdentityActivity extends Activity {
                 jobs.append(AppLocale.name(this, titles.optString(j)));
             }
             if (jobs.length() == 0) jobs.append(getString(R.string.bchat_profile_no_job));
-            body.addView(Ui.text(this, jobs.toString(), 13, Ui.MUTED, false), fieldSize(3));
+            TextView job = Ui.text(this, jobs.toString(), 13, Ui.MUTED, false);
+            job.setBackground(Ui.bg(Ui.ACTION_TONAL, 9, this));
+            Ui.pad(job, 10, 6);
+            companyCard.addView(job, new LinearLayout.LayoutParams(-2, -2));
+            body.addView(companyCard, companyCardSize);
         }
         ScrollView scroll = new ScrollView(this);
         scroll.addView(body);
@@ -3418,6 +3575,11 @@ public final class OdooIdentityActivity extends Activity {
             this.method = method; this.path = path; this.formKey = formKey;
             this.formValue = formValue; this.scope = scope; this.callback = callback;
         }
+    }
+
+    private static final class PrivateAvatarRequest {
+        final String key, path;
+        PrivateAvatarRequest(String key, String path) { this.key = key; this.path = path; }
     }
 
     private void closeLiveSync() {
@@ -4896,6 +5058,12 @@ public final class OdooIdentityActivity extends Activity {
         ++groupAvatarNonce;
         if (groupAvatarPort != null) { groupAvatarPort.close(); groupAvatarPort = null; }
         groupAvatarCache.evictAll();
+        privateAvatarWaiting.clear();
+        privateAvatarQueue.clear();
+        privateAvatarBusy = false;
+        ++privateAvatarNonce;
+        if (privateAvatarPort != null) { privateAvatarPort.close(); privateAvatarPort = null; }
+        privateAvatarCache.evictAll();
         pushRegistrationBusy = false;
         pushRegistrationScheduled = false;
         pushNavigationBusy = false;
@@ -7293,10 +7461,25 @@ public final class OdooIdentityActivity extends Activity {
             });
         }
         LinearLayout.LayoutParams bubbleSize = new LinearLayout.LayoutParams(-2, -2);
-        bubbleSize.setMarginStart(mine ? 0 : dp(18));
-        bubbleSize.setMarginEnd(mine ? dp(18) : 0);
         bubbleSize.bottomMargin = sameSender ? dp(3) : dp(8);
-        outer.addView(bubble, bubbleSize);
+        if (!mine && !sameSender) {
+            LinearLayout incoming = Ui.row(this);
+            incoming.setGravity(Gravity.BOTTOM);
+            String avatarKey = account.key + ":room:" + room.id + ":member:" + authorId;
+            String avatarPath = V2_ROOMS + "/" + room.id + "/members/" + authorId + "/avatar";
+            View avatar = privateAvatarView(avatarKey, avatarPath, authorName,
+                    (int) ((authorId * 47) % 360));
+            LinearLayout.LayoutParams avatarSize = new LinearLayout.LayoutParams(dp(32), dp(32));
+            avatarSize.setMarginEnd(dp(7));
+            avatarSize.bottomMargin = dp(8);
+            incoming.addView(avatar, avatarSize);
+            incoming.addView(bubble, bubbleSize);
+            outer.addView(incoming, new LinearLayout.LayoutParams(-1, -2));
+        } else {
+            bubbleSize.setMarginStart(mine ? 0 : dp(39));
+            bubbleSize.setMarginEnd(mine ? dp(18) : 0);
+            outer.addView(bubble, bubbleSize);
+        }
         return outer;
     }
 

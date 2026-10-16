@@ -156,6 +156,24 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java"
       ],
       "suites": ["backend-contracts", "source-structure"]
+    },
+    {
+      "id": "task-push-fastlane-and-private-avatars",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "Room-task updates wake every active authorized room viewer after commit with a bounded durable fallback, and employee photos are served only through membership-rechecked BChat endpoints.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/push.py",
+        "custom_addons/baseer_bchat/models/avatar_service.py",
+        "custom_addons/baseer_bchat/models/__init__.py",
+        "custom_addons/baseer_bchat/controllers/api_v2.py",
+        "custom_addons/baseer_bchat/tests/test_push_v2.py",
+        "custom_addons/baseer_bchat/tests/test_text_v2.py",
+        "custom_addons/baseer_bchat/tests_contract/test_push_fastlane_avatar_contract.py",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "custom_addons/baseer_bchat/__manifest__.py"
+      ],
+      "suites": ["backend-contracts", "android-source-contract", "source-structure"]
     }
   ]
 }

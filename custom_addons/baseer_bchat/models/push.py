@@ -1,10 +1,12 @@
 """Private, durable BChat FCM delivery.
 
 The database records who may be woken, while Firebase remains only a best-effort
-transport.  Payloads intentionally contain no BChat content: Android must fetch
-the referenced event through its authenticated session before opening anything.
+transport.  Payloads may include an opted-in, sanitised, bounded preview for the
+system notification; Android still fetches the referenced event through its
+authenticated session before opening anything.
 """
 import base64
+from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
 import os
@@ -15,8 +17,9 @@ import unicodedata
 from datetime import timedelta
 from uuid import UUID, uuid4
 
-from odoo import api, fields, models
+from odoo import SUPERUSER_ID, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.modules.registry import Registry
 
 from ..contracts import ProtocolError, positive_id
 
@@ -27,6 +30,13 @@ _OAUTH_LOCK = threading.Lock()
 _OAUTH_CACHE = {'key': None, 'token': None, 'expires_at': 0}
 _FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging'
 _FCM_TOKEN_URI = 'https://oauth2.googleapis.com/token'
+_FAST_DISPATCH_WORKERS = 8
+# This bounds queued *lanes*, not individual device events. A large room is
+# divided over at most eight lanes so its tail is not silently left for cron.
+_FAST_DISPATCH_CAPACITY = 128
+_FAST_DISPATCH_EXECUTOR = ThreadPoolExecutor(
+    max_workers=_FAST_DISPATCH_WORKERS, thread_name_prefix='bchat-push')
+_FAST_DISPATCH_SLOTS = threading.BoundedSemaphore(_FAST_DISPATCH_CAPACITY)
 
 
 def _uuid4(value, name):
@@ -67,6 +77,33 @@ class _PushTransportError(Exception):
         self.retry = retry
         self.invalid_token = invalid_token
         super().__init__(code)
+
+
+def _fast_dispatch_event(dbname, event_id):
+    """Best-effort post-commit lane; the durable cron owns recovery.
+
+    The callback intentionally creates its own cursor and environment.  A
+    request cursor must never escape its transaction or be shared with a
+    background thread.
+    """
+    try:
+        registry = Registry(dbname)
+        with registry.cursor() as cursor:
+            env = api.Environment(cursor, SUPERUSER_ID, {})
+            env['baseer.bchat.push.event']._dispatch_event_ids([event_id])
+            # Firebase may have accepted the payload. Persist its resulting
+            # event state before releasing this independent cursor, otherwise
+            # cron can retry an already-delivered notification.
+            cursor.commit()
+    except Exception:
+        _LOGGER.warning('BChat fast push dispatch failed for event %s', event_id,
+                        exc_info=False)
+
+
+def _fast_dispatch_events(dbname, event_ids):
+    """Drain one fair fast-lane shard, persisting each durable event."""
+    for event_id in event_ids:
+        _fast_dispatch_event(dbname, event_id)
 
 
 class BChatPushDevice(models.Model):
@@ -384,15 +421,9 @@ class BChatPushEvent(models.Model):
                 or not user._bchat_effective_permissions().get('task_view')):
             return False
         # Assignment wake-ups are useful only for the current revision. This
-        # also revokes a queued (or already tapped) notification for a former
-        # assignee who remains a member of the room.
-        if event.event_kind == 'assigned':
-            if event.task_revision != task.revision:
-                return False
-            if user not in (task.assignee_id, task.creator_id):
-                return False
-        elif event.event_kind == 'updated' and (
-                user != task.creator_id or user == task.assignee_id):
+        # also revokes a queued (or already tapped) notification for an
+        # assignee who was superseded by a later assignment.
+        if event.event_kind == 'assigned' and event.task_revision != task.revision:
             return False
         if task.room_id:
             return bool(self.env['baseer.bchat.membership'].sudo().search([
@@ -401,20 +432,38 @@ class BChatPushEvent(models.Model):
         return user in (task.creator_id, task.assignee_id)
 
     @api.model
-    def _cron_dispatch(self):
-        now = fields.Datetime.now()
+    def _schedule_fast_dispatch(self, event_ids):
+        """Submit only after the creating transaction has committed.
+
+        A saturated or restarted worker does not lose a notification: the
+        durable event remains pending and the regular cron will recover it.
+        """
+        ids = sorted({event_id for event_id in event_ids if isinstance(event_id, int) and event_id > 0})
+        if not ids:
+            return
+        dbname = self.env.cr.dbname
+        lane_count = min(_FAST_DISPATCH_WORKERS, len(ids))
+        lanes = [ids[lane_index::lane_count] for lane_index in range(lane_count)]
+
+        def submit():
+            for lane in lanes:
+                if not _FAST_DISPATCH_SLOTS.acquire(blocking=False):
+                    _LOGGER.info('BChat fast push lane is full; cron will recover a pending lane')
+                    continue
+                try:
+                    future = _FAST_DISPATCH_EXECUTOR.submit(_fast_dispatch_events, dbname, lane)
+                except RuntimeError:
+                    _FAST_DISPATCH_SLOTS.release()
+                    _LOGGER.warning('BChat fast push lane is unavailable; cron will recover pending events')
+                    continue
+                future.add_done_callback(lambda _future: _FAST_DISPATCH_SLOTS.release())
+
+        self.env.cr.postcommit.add(submit)
+
+    @api.model
+    def _dispatch_selected(self, rows, now=None):
+        now = now or fields.Datetime.now()
         config = self._fcm_config()
-        # Do not let two Odoo workers deliver the same durable event.  The locks
-        # live until this cron transaction completes, so another worker skips them.
-        self.env.cr.execute('''
-            SELECT id FROM baseer_bchat_push_event
-            WHERE state IN ('pending', 'retry', 'configuration')
-              AND (next_attempt_at IS NULL OR next_attempt_at <= %s)
-            ORDER BY id
-            FOR UPDATE SKIP LOCKED
-            LIMIT 100
-        ''', [now])
-        rows = self.sudo().browse([row[0] for row in self.env.cr.fetchall()]).exists()
         for event in rows:
             if not self._event_recipient_still_allowed(event):
                 event._write_verified({'state': 'discarded', 'last_error': 'access_revoked',
@@ -447,6 +496,39 @@ class BChatPushEvent(models.Model):
                                            'next_attempt_at': now + timedelta(minutes=min(60, 2 ** attempts))},
                                           _PUSH_TOKEN)
         return True
+
+    @api.model
+    def _dispatch_event_ids(self, event_ids):
+        ids = sorted({event_id for event_id in event_ids if isinstance(event_id, int) and event_id > 0})
+        if not ids:
+            return True
+        now = fields.Datetime.now()
+        self.env.cr.execute('''
+            SELECT id FROM baseer_bchat_push_event
+            WHERE id = ANY(%s)
+              AND state IN ('pending', 'retry', 'configuration')
+              AND (next_attempt_at IS NULL OR next_attempt_at <= %s)
+            ORDER BY id
+            FOR UPDATE SKIP LOCKED
+        ''', [ids, now])
+        rows = self.sudo().browse([row[0] for row in self.env.cr.fetchall()]).exists()
+        return self._dispatch_selected(rows, now)
+
+    @api.model
+    def _cron_dispatch(self):
+        now = fields.Datetime.now()
+        # Do not let two Odoo workers deliver the same durable event.  The locks
+        # live until this cron transaction completes, so another worker skips them.
+        self.env.cr.execute('''
+            SELECT id FROM baseer_bchat_push_event
+            WHERE state IN ('pending', 'retry', 'configuration')
+              AND (next_attempt_at IS NULL OR next_attempt_at <= %s)
+            ORDER BY id
+            FOR UPDATE SKIP LOCKED
+            LIMIT 100
+        ''', [now])
+        rows = self.sudo().browse([row[0] for row in self.env.cr.fetchall()]).exists()
+        return self._dispatch_selected(rows, now)
 
     def copy_data(self, default=None):
         raise AccessError(self.env._('BChat push events cannot be copied.'))
@@ -502,15 +584,20 @@ class BChatPushService(models.AbstractModel):
 
     @api.model
     def _task_queue_push(self, task, action, actor_id=None):
-        if action in ('created', 'reassign', 'rescue'):
-            recipient_ids = {task.assignee_id.id}
-            event_kind = 'assigned'
-            if action != 'created' and task.creator_id.id != task.assignee_id.id:
-                recipient_ids.add(task.creator_id.id)
+        event_kind = 'assigned' if action in ('created', 'reassign', 'rescue') else 'updated'
+        if task.room_id:
+            members = self.env['baseer.bchat.membership'].sudo().search([
+                ('room_id', '=', task.room_id.id), ('active', '=', True),
+            ], limit=2049)
+            if len(members) > 2048:
+                raise AccessError(self.env._('This BChat room exceeds its member limit.'))
+            recipient_ids = set(members.mapped('user_id').ids)
         else:
-            recipient_ids = ({task.creator_id.id}
-                             if task.creator_id.id != task.assignee_id.id else set())
-            event_kind = 'updated'
+            # The existing task-read contract deliberately keeps standalone
+            # tasks private to their creator and current assignee.
+            recipient_ids = {task.creator_id.id, task.assignee_id.id}
+        if isinstance(actor_id, int):
+            recipient_ids.discard(actor_id)
         recipients = self.env['res.users'].sudo().browse(sorted(recipient_ids)).exists()
         rows = []
         devices = self.env['baseer.bchat.push.device'].sudo()
@@ -529,7 +616,8 @@ class BChatPushService(models.AbstractModel):
                              'event_kind': event_kind, 'task_revision': task.revision,
                              'state': 'pending', 'next_attempt_at': fields.Datetime.now()})
         if rows:
-            self.env['baseer.bchat.push.event']._queue_verified(rows, _PUSH_TOKEN)
+            queued = self.env['baseer.bchat.push.event']._queue_verified(rows, _PUSH_TOKEN)
+            queued._schedule_fast_dispatch(queued.ids)
 
     @api.model
     def _message_queue_push(self, message, recipients):
@@ -547,4 +635,5 @@ class BChatPushService(models.AbstractModel):
                              'event_kind': 'message', 'state': 'pending',
                              'next_attempt_at': fields.Datetime.now()})
         if rows:
-            self.env['baseer.bchat.push.event']._queue_verified(rows, _PUSH_TOKEN)
+            queued = self.env['baseer.bchat.push.event']._queue_verified(rows, _PUSH_TOKEN)
+            queued._schedule_fast_dispatch(queued.ids)

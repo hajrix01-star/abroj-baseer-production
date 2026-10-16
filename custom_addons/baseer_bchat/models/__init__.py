@@ -15,4 +15,5 @@ from . import media_service
 from . import task
 from . import change
 from . import task_service
+from . import attention_service
 from . import push

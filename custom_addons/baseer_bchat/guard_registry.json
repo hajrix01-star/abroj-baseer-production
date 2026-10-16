@@ -1,0 +1,116 @@
+{
+  "schema": 2,
+  "policy": "Cumulative BChat contracts: a new behavior is registered once, tested by a named suite, and remains enforced in every later pull request and QA/Live release.",
+  "owner": "Baseer BChat release engineering",
+  "invariants": [
+    {
+      "id": "private-api-permissions",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "All BChat API reads and writes require the session-bound permission boundary.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/controllers/**",
+        "custom_addons/baseer_bchat/models/service.py",
+        "custom_addons/baseer_bchat/models/v2_service.py",
+        "custom_addons/baseer_bchat/security/**"
+      ],
+      "suites": ["backend-contracts", "source-structure"]
+    },
+    {
+      "id": "membership-epochs",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "Room content and unread state are limited to an active membership epoch.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/v2_service.py",
+        "custom_addons/baseer_bchat/models/message_receipt.py",
+        "custom_addons/baseer_bchat/models/room.py",
+        "custom_addons/baseer_bchat/tests/**",
+        "custom_addons/baseer_bchat/tests_contract/**"
+      ],
+      "suites": ["backend-contracts", "source-structure"]
+    },
+    {
+      "id": "task-transitions",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "Task transitions remain revision-bound, permission-checked, and auditable.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/task.py",
+        "custom_addons/baseer_bchat/models/task_service.py",
+        "custom_addons/baseer_bchat/task_contracts.py",
+        "custom_addons/baseer_bchat/tests/test_tasks_v2.py",
+        "custom_addons/baseer_bchat/tests_contract/test_task_contracts.py"
+      ],
+      "suites": ["backend-contracts", "source-structure"]
+    },
+    {
+      "id": "push-enabled-apk",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "A distributed Push APK contains the FCM service and event action, a newer version code, and the approved signer.",
+      "source_paths": [
+        "android/bchat/app/build.gradle",
+        "android/bchat/app/google-services.json",
+        "android/bchat/app/src/gradle/AndroidManifestPush.xml",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+        "android/bchat/tools/build-unified-preview.ps1",
+        "android/bchat/tools/check-package.py"
+      ],
+      "suites": ["android-source-contract", "apk-artifact"]
+    },
+    {
+      "id": "attention-center",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "The header center is per user: unread message receipts plus active tasks assigned to that user, across authorized companies only.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/attention_service.py",
+        "custom_addons/baseer_bchat/controllers/api_v2.py",
+        "custom_addons/baseer_bchat/models/__init__.py",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "custom_addons/baseer_bchat/tests_contract/test_attention_contract.py"
+      ],
+      "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+    },
+    {
+      "id": "client-ui-localization",
+      "introduced": "2026-10-16",
+      "risk": "medium",
+      "scope": "The BChat client keeps its reviewed RTL/LTR labels, bounded task and cart presentation, and Android manifest identity without changing server-owned business data.",
+      "source_paths": [
+        "android/bchat/app/src/main/AndroidManifest.xml",
+        "android/bchat/app/src/gradle/AndroidManifest.xml",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "android/bchat/app/src/main/res/**"
+      ],
+      "suites": ["android-source-contract"]
+    },
+    {
+      "id": "qa-live-release-gate",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "QA and Live release wrappers execute the BChat source guard whenever baseer_bchat is in the approved module set.",
+      "source_paths": [
+        "ops/qa/baseer-qa-deploy",
+        "ops/production/baseer-production-deploy",
+        ".github/workflows/validate-pull-request.yml"
+      ],
+      "suites": ["release-wrapper", "source-structure"]
+    },
+    {
+      "id": "guard-engine-integrity",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "The contract registry and guard engine are monotonic: protected contracts may only be extended, never silently deleted or weakened.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/guard_registry.json",
+        "custom_addons/baseer_bchat/tools/release_guard.py",
+        "custom_addons/baseer_bchat/tests_contract/test_release_guard.py",
+        ".github/workflows/bchat-cumulative-contracts.yml",
+        ".github/CODEOWNERS"
+      ],
+      "suites": ["guard-integrity", "source-structure"]
+    }
+  ]
+}

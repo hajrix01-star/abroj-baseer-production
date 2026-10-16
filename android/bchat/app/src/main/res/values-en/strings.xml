@@ -696,7 +696,7 @@
     <string name="order_quote_short">"Est. %1$s %2$s"</string>
     <string name="order_total_loading">"Calculating total…"</string>
     <string name="order_total_unavailable">"Total unavailable"</string>
-    <string name="order_quote_disclaimer">"Estimate from Odoo; the final value is set when the order is sent."</string>
+    <string name="order_quote_disclaimer">"Odoo confirms the final value when you send the order."</string>
     <string name="order_cart_context">"%1$s · %2$s · %3$s"</string>
     <string name="order_add_more">"Add products"</string>
     <string name="order_decrease">"Decrease quantity"</string>
@@ -735,7 +735,7 @@
     <string name="order_summary_company">"Company: %1$s"</string>
     <string name="order_summary_requester">"Requested by: %1$s"</string>
     <string name="order_total">"Requested value: %1$s %2$s"</string>
-    <string name="order_estimated_total">"Estimated order total: %1$s %2$s"</string>
+    <string name="order_estimated_total">"Current total: %1$s %2$s"</string>
     <string name="order_empty_cart">"Your cart is empty. Add a product from the menu."</string>
     <string name="order_cart_review">"Company: %1$s\nWarehouse: %2$s\nRepresentative: %3$s\n\nProducts:\n%4$s\nThe server validates quantities and final value."</string>
     <string name="order_submit">"Send to purchasing"</string>
@@ -769,6 +769,13 @@
     <string name="bchat_account_menu">"More options"</string>
     <string name="bchat_settings">"Settings"</string>
     <string name="bchat_notifications">"Notifications"</string>
+    <string name="bchat_attention">"Attention center"</string>
+    <string name="bchat_attention_count">"Attention center: %1$d items need your attention"</string>
+    <string name="bchat_attention_loading">"Loading items that need your attention…"</string>
+    <string name="bchat_attention_unavailable">"The attention center could not be updated now."</string>
+    <string name="bchat_attention_empty">"Nothing needs your attention."</string>
+    <string name="bchat_attention_messages">"Messages"</string>
+    <string name="bchat_attention_tasks">"Tasks"</string>
     <string name="bchat_notifications_unavailable">"Notifications are not enabled in this build."</string>
     <string name="bchat_notifications_on">"Notifications are on and follow the device sound settings.\n%1$s"</string>
     <string name="bchat_notifications_off">"Notifications are off in the device settings or the BChat channel. Open settings to enable them or change their sound.\n%1$s"</string>

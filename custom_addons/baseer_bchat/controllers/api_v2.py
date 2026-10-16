@@ -55,6 +55,15 @@ class BChatTextApi(http.Controller):
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/attention', type='http', auth='user',
+                methods=['GET'], csrf=True, save_session=True)
+    def attention(self, **kwargs):
+        try:
+            self._no_query()
+            return self._response(self._service()._v2_attention())
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
     def _group_form_payload(self):
         incoming = request.httprequest
         if incoming.content_type.split(';', 1)[0].strip().lower() != 'application/x-www-form-urlencoded':

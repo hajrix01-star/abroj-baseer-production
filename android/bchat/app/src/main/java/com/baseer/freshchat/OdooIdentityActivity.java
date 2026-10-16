@@ -120,6 +120,7 @@ public final class OdooIdentityActivity extends Activity {
     private static final String V2_BOOTSTRAP = "/bchat/api/v2/bootstrap";
     private static final String V2_ROOMS = "/bchat/api/v2/rooms";
     private static final String V2_TASKS = "/bchat/api/v2/tasks";
+    private static final String V2_ATTENTION = "/bchat/api/v2/attention";
     private static final String V2_ORDERS = "/bchat/api/v2/orders";
     private static final String V2_CHANGES = "/bchat/api/v2/changes";
     private static final String LIVE_PREFS = "bchat-change-cursor-v1";
@@ -406,6 +407,10 @@ public final class OdooIdentityActivity extends Activity {
     private final List<TaskChoice> taskCompanies = new ArrayList<>();
     private LinearLayout bottomTabs;
     private View headerRefresh;
+    private FrameLayout headerAttention;
+    private TextView headerAttentionBadge;
+    private boolean attentionLoading;
+    private AlertDialog attentionDialog;
     private AnchoredMenu accountMenu;
     private AnchoredMenu orderCompanyMenu;
     private AnchoredMenu chatCompanyMenu;
@@ -694,6 +699,22 @@ public final class OdooIdentityActivity extends Activity {
         orderCompanyMenu = new AnchoredMenu(this);
         headerRefresh = Ui.iconButton(this, "refresh", getString(R.string.chat_v2_refresh));
         headerRefresh.setOnClickListener(v -> refreshCurrentSection());
+        headerAttention = Ui.iconButton(this, "bell", getString(R.string.bchat_attention));
+        Ui.styleHeaderIcon(headerAttention);
+        headerAttentionBadge = Ui.text(this, "", 10, Color.WHITE, true);
+        headerAttentionBadge.setGravity(Gravity.CENTER);
+        headerAttentionBadge.setSingleLine(true);
+        headerAttentionBadge.setMinWidth(dp(18));
+        headerAttentionBadge.setMinHeight(dp(18));
+        headerAttentionBadge.setPadding(dp(3), 0, dp(3), 0);
+        headerAttentionBadge.setBackground(Ui.bg(Ui.TASK_ACTIVE, 12, this));
+        headerAttentionBadge.setVisibility(View.GONE);
+        FrameLayout.LayoutParams attentionBadgeSize = new FrameLayout.LayoutParams(-2, dp(18),
+                Gravity.TOP | Gravity.END);
+        attentionBadgeSize.setMargins(0, dp(4), dp(3), 0);
+        headerAttention.addView(headerAttentionBadge, attentionBadgeSize);
+        headerAttention.setOnClickListener(v -> showAttentionCenter());
+        brandBar.addView(headerAttention, new LinearLayout.LayoutParams(dp(48), dp(48)));
         View accountButton = Ui.iconButton(this, "kebab", getString(R.string.bchat_account_menu));
         Ui.styleHeaderIcon(accountButton);
         accountMenu = new AnchoredMenu(this);
@@ -3959,6 +3980,10 @@ public final class OdooIdentityActivity extends Activity {
                     }
                     maybeProbeOrderCapability();
                 }
+                // A task-only account may never load rooms. Refreshing here
+                // plus the post-load calls keeps the header independent from
+                // the active tab and retries once the v2 channel is free.
+                handler.post(this::refreshAttentionBadge);
             } catch (Exception invalid) {
                 // v1's disabled shell is the safe fallback. Never expose demo data.
                 BChatPushState.clearAccount(this);
@@ -4979,6 +5004,7 @@ public final class OdooIdentityActivity extends Activity {
                 // occupy the single v2 request channel with a retry.
                 maybeProbeOrderCapability();
                 maybeRegisterPush();
+                handler.post(this::refreshAttentionBadge);
                 startLiveSync();
             } catch (Exception invalid) {
                 if (statusCode == 403) {
@@ -5005,6 +5031,123 @@ public final class OdooIdentityActivity extends Activity {
                 }
             }
         });
+    }
+
+    private void refreshAttentionBadge() {
+        if (!verified || account == null || attentionLoading
+                || (!permissionSet.chatView && !permissionSet.taskView)) return;
+        if (v2Busy) {
+            handler.postDelayed(this::refreshAttentionBadge, 350);
+            return;
+        }
+        attentionLoading = true;
+        fetchV2("GET", V2_ATTENTION, null, (statusCode, result) -> {
+            attentionLoading = false;
+            if (statusCode != 200 || result == null) return;
+            try {
+                updateAttentionBadge(result);
+            } catch (Exception ignored) { /* Keep the last safe badge value. */ }
+        });
+    }
+
+    private void updateAttentionBadge(JSONObject result) throws Exception {
+        if (positiveId(result.get("api_version")) != 2) throw new IllegalArgumentException();
+        int count = result.getInt("badge_count");
+        boolean overflow = result.optBoolean("badge_overflow", false);
+        if (count < 0 || count > 50 || headerAttentionBadge == null) throw new IllegalArgumentException();
+        headerAttentionBadge.setText(count == 0 ? "" : overflow ? "50+" : String.valueOf(count));
+        headerAttentionBadge.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
+        headerAttention.setContentDescription(getString(R.string.bchat_attention_count, count));
+    }
+
+    private void showAttentionCenter() {
+        if (!verified || account == null || (!permissionSet.chatView && !permissionSet.taskView)) return;
+        if (attentionDialog != null && attentionDialog.isShowing()) return;
+        LinearLayout content = Ui.column(this);
+        Ui.pad(content, 16, 6);
+        TextView notice = Ui.text(this, getString(R.string.bchat_attention_loading), 14, Ui.MUTED, false);
+        content.addView(notice, new LinearLayout.LayoutParams(-1, -2));
+        attentionDialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.bchat_attention).setView(content)
+                .setPositiveButton(R.string.bchat_attention_tasks, (dialog, which) -> switchSection("tasks"))
+                .setNeutralButton(R.string.bchat_attention_messages, (dialog, which) -> switchSection("chats"))
+                .setNegativeButton(R.string.task_close, null).create();
+        attentionDialog.setOnDismissListener(dialog -> attentionDialog = null);
+        attentionDialog.show();
+        Ui.decorateDialog(attentionDialog);
+        attentionDialog.getButton(AlertDialog.BUTTON_POSITIVE).setVisibility(
+                permissionSet.taskView ? View.VISIBLE : View.GONE);
+        attentionDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setVisibility(
+                permissionSet.chatView ? View.VISIBLE : View.GONE);
+        loadAttentionPanel(content, notice, attentionDialog, 0);
+    }
+
+    private void loadAttentionPanel(LinearLayout content, TextView notice, AlertDialog dialog, int retry) {
+        if (dialog == null || !dialog.isShowing()) return;
+        if (v2Busy) {
+            if (retry < 12) handler.postDelayed(() -> loadAttentionPanel(content, notice, dialog, retry + 1), 180);
+            else notice.setText(R.string.bchat_attention_unavailable);
+            return;
+        }
+        fetchV2("GET", V2_ATTENTION, null, (statusCode, result) -> {
+            if (dialog != attentionDialog || !dialog.isShowing()) return;
+            try {
+                if (statusCode != 200 || result == null) throw new IllegalArgumentException();
+                updateAttentionBadge(result);
+                JSONArray messages = result.getJSONArray("messages");
+                JSONArray taskRows = result.getJSONArray("tasks");
+                if (messages.length() > 25 || taskRows.length() > 25) throw new IllegalArgumentException();
+                content.removeAllViews();
+                addAttentionSection(content, R.string.bchat_attention_messages, messages, true);
+                addAttentionSection(content, R.string.bchat_attention_tasks, taskRows, false);
+                if (content.getChildCount() == 0) {
+                    content.addView(Ui.emptyState(this, getString(R.string.bchat_attention_empty), ""),
+                            new LinearLayout.LayoutParams(-1, -2));
+                }
+            } catch (Exception invalid) { notice.setText(R.string.bchat_attention_unavailable); }
+        });
+    }
+
+    private void addAttentionSection(LinearLayout content, int heading, JSONArray rows, boolean messages)
+            throws Exception {
+        if (rows.length() == 0) return;
+        TextView title = Ui.text(this, getString(heading), 14, Ui.INK, true);
+        LinearLayout.LayoutParams titleSize = new LinearLayout.LayoutParams(-1, -2);
+        titleSize.setMargins(0, dp(8), 0, dp(6));
+        content.addView(title, titleSize);
+        for (int index = 0; index < rows.length(); index++) {
+            JSONObject row = rows.getJSONObject(index);
+            LinearLayout card = Ui.column(this);
+            Ui.pad(card, 12, 10);
+            card.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
+            String primary;
+            String secondary;
+            if (messages) {
+                long companyId = positiveId(row.get("company_id"));
+                positiveId(row.get("room_id")); positiveId(row.get("message_id"));
+                int unread = row.getInt("unread_count");
+                if (!v1Companies.contains(companyId) || unread < 1 || unread > 100000) throw new IllegalArgumentException();
+                primary = boundedTaskText(row.getString("room_name"), 256, true);
+                secondary = boundedTaskText(row.optString("author_name", ""), 256, false) + " · "
+                        + boundedTaskText(row.optString("preview", ""), 160, false);
+            } else {
+                Task task = new Task(row);
+                if (!v1Companies.contains(task.companyId)) throw new IllegalArgumentException();
+                primary = task.title;
+                secondary = getString(taskStateLabel(task.state)) + " · " + task.assigneeName;
+            }
+            TextView line1 = Ui.text(this, primary, 15, Ui.INK, true);
+            line1.setSingleLine(true); line1.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            card.addView(line1, new LinearLayout.LayoutParams(-1, -2));
+            TextView line2 = Ui.text(this, secondary, 12, Ui.MUTED, false);
+            line2.setMaxLines(2); line2.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams line2Size = new LinearLayout.LayoutParams(-1, -2);
+            line2Size.topMargin = dp(4);
+            card.addView(line2, line2Size);
+            LinearLayout.LayoutParams cardSize = new LinearLayout.LayoutParams(-1, -2);
+            cardSize.setMargins(0, 0, 0, dp(7));
+            content.addView(card, cardSize);
+        }
     }
 
     /** Complete a validated push after a one-time room-index refresh. */
@@ -8263,6 +8406,7 @@ public final class OdooIdentityActivity extends Activity {
                 taskBeforeId = cursor;
                 if (beforeId == 0) renderedTaskRoomFilter = roomFilter;
                 renderTasks();
+                handler.post(this::refreshAttentionBadge);
                 taskOlderButton.setVisibility(cursor > 0 ? View.VISIBLE : View.GONE);
                 taskOlderButton.setEnabled(cursor > 0);
                 taskNotice.setText("");
@@ -8407,35 +8551,42 @@ public final class OdooIdentityActivity extends Activity {
         }
         for (Task task : tasks) {
             int accent = taskStateColor(task.state);
-            LinearLayout entry = Ui.row(this);
-            entry.setGravity(Gravity.TOP);
-            entry.setMinimumHeight(dp(104));
+            LinearLayout entry = Ui.column(this);
+            entry.setMinimumHeight(dp(116));
             entry.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 14, this));
-            View rail = new View(this);
-            rail.setBackground(Ui.bg(accent, 14, this));
-            entry.addView(rail, new LinearLayout.LayoutParams(dp(5), -1));
-            LinearLayout content = Ui.column(this);
-            Ui.pad(content, 13, 11);
             LinearLayout heading = Ui.row(this);
+            heading.setGravity(Gravity.CENTER_VERTICAL);
+            Ui.pad(heading, 13, 9);
+            heading.setBackground(Ui.bg(taskStateTint(task.state), 14, this));
+            TextView stateIcon = Ui.text(this, "•", 24, accent, true);
+            stateIcon.setGravity(Gravity.CENTER);
+            heading.addView(stateIcon, new LinearLayout.LayoutParams(dp(22), dp(28)));
             TextView title = Ui.text(this, task.title, 16, Ui.INK, true);
             title.setMaxLines(2);
             title.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+            LinearLayout.LayoutParams titleSize = new LinearLayout.LayoutParams(0, -2, 1);
+            titleSize.setMarginStart(dp(5));
+            heading.addView(title, titleSize);
             TextView state = Ui.text(this, getString(taskStateLabel(task.state)), 12, accent, true);
             Ui.pad(state, 8, 4);
-            state.setBackground(Ui.bg(taskStateTint(task.state), 10, this));
+            state.setBackground(Ui.outline(taskStateTint(task.state), accent, 10, this));
             LinearLayout.LayoutParams stateSize = new LinearLayout.LayoutParams(-2, -2);
             stateSize.setMarginStart(dp(8));
             heading.addView(state, stateSize);
-            content.addView(heading);
-            LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(-1, dp(1));
-            dividerSize.setMargins(0, dp(9), 0, dp(7));
-            content.addView(Ui.line(this), dividerSize);
+            entry.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+            LinearLayout content = Ui.column(this);
+            Ui.pad(content, 13, 10);
+            TextView company = Ui.text(this, taskCompanyName(task.companyId), 12, Ui.MUTED, true);
+            company.setSingleLine(true);
+            company.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            content.addView(company);
             TextView people = Ui.text(this, getString(R.string.bchat_task_people,
-                    taskCompanyName(task.companyId), task.assigneeName), 13, Ui.MUTED, false);
+                    taskCompanyName(task.companyId), task.assigneeName), 13, Ui.INK, false);
             people.setMaxLines(1);
             people.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            content.addView(people);
+            LinearLayout.LayoutParams peopleSize = fieldSize(3);
+            peopleSize.topMargin = dp(3);
+            content.addView(people, peopleSize);
             if (task.dueAt != null) {
                 TextView due = Ui.text(this, getString(R.string.task_due_value,
                         displayTaskDue(task.dueAt)), 12, Ui.MUTED, false);
@@ -8454,7 +8605,7 @@ public final class OdooIdentityActivity extends Activity {
                 noteSize.setMargins(0, dp(8), 0, 0);
                 content.addView(note, noteSize);
             }
-            entry.addView(content, new LinearLayout.LayoutParams(0, -2, 1));
+            entry.addView(content, new LinearLayout.LayoutParams(-1, -2));
             entry.setContentDescription(task.title + ", " + getString(taskStateLabel(task.state)));
             Ui.clickable(entry);
             entry.setOnClickListener(v -> {
@@ -11423,8 +11574,10 @@ public final class OdooIdentityActivity extends Activity {
         if (hasPendingOrder()) { reviewPendingOrder(); return; }
         if (orderCartDialog != null && orderCartDialog.isShowing()) return;
         LinearLayout content = Ui.column(this);
-        Ui.pad(content, 12, 4);
+        Ui.pad(content, 14, 6);
         orderCartContextView = Ui.text(this, "", 12, Ui.MUTED, false);
+        Ui.pad(orderCartContextView, 10, 8);
+        orderCartContextView.setBackground(Ui.bg(Ui.TASK_ACTIVE_TINT, 10, this));
         content.addView(orderCartContextView);
         orderCartRouteButton = orderChoiceButton(R.string.order_purchase_route,
                 this::chooseOrderPurchaseRoute);
@@ -11441,8 +11594,9 @@ public final class OdooIdentityActivity extends Activity {
                 getResources().getConfiguration().screenHeightDp - 300));
         int desiredHeight = Math.min(visibleHeight, Math.max(100, orderCart.size() * 104));
         content.addView(scroll, new LinearLayout.LayoutParams(-1, dp(desiredHeight)));
-        orderCartTotalView = Ui.text(this, orderQuoteLabel(), 16, Ui.INK, true);
-        Ui.pad(orderCartTotalView, 4, 10);
+        orderCartTotalView = Ui.text(this, orderQuoteLabel(), 17, Ui.INK, true);
+        Ui.pad(orderCartTotalView, 10, 10);
+        orderCartTotalView.setBackground(Ui.bg(Ui.TASK_ACTIVE_TINT, 10, this));
         content.addView(orderCartTotalView);
         TextView disclaimer = Ui.text(this, getString(R.string.order_quote_disclaimer),
                 12, Ui.MUTED, false);
@@ -11497,7 +11651,8 @@ public final class OdooIdentityActivity extends Activity {
         }
         for (OrderCartLine line : new ArrayList<>(orderCart.values())) {
             LinearLayout row = Ui.column(this);
-            Ui.pad(row, 2, 8);
+            Ui.pad(row, 10, 9);
+            row.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
             row.addView(Ui.text(this, line.option.product, 15, Ui.INK, true));
             row.addView(Ui.text(this, orderOptionLabel(line.option), 12, Ui.MUTED, false));
             LinearLayout controls = Ui.row(this);
@@ -11535,8 +11690,9 @@ public final class OdooIdentityActivity extends Activity {
                     line.option.product, () -> removeOrderOption(line.option.id)),
                     new LinearLayout.LayoutParams(dp(48), dp(48)));
             row.addView(controls);
-            orderCartLinesView.addView(row);
-            orderCartLinesView.addView(Ui.line(this));
+            LinearLayout.LayoutParams rowSize = new LinearLayout.LayoutParams(-1, -2);
+            rowSize.setMargins(0, 0, 0, dp(8));
+            orderCartLinesView.addView(row, rowSize);
         }
         if (orderCartDialog != null && orderCartDialog.isShowing())
             orderCartDialog.getButton(AlertDialog.BUTTON_POSITIVE)

@@ -340,6 +340,9 @@ if [ -n "${policy_third_party_modules:-}" ]; then
         tar -x -C "$stage" --no-same-owner --no-same-permissions
 fi
 rm -rf -- "$stage.git"
+if [ -n "${APPROVED_MODULE_SET[baseer_bchat]+x}" ]; then
+    python3 "$stage/custom_addons/baseer_bchat/tools/release_guard.py" || die 'BChat release guard rejected the QA candidate'
+fi
 mv "$stage" "$release"
 printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"
 chmod -R a+rX -- "$release"

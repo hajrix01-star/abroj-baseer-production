@@ -68,8 +68,8 @@ import re
 gradle=(root/'app/build.gradle').read_text(encoding='utf-8')
 build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
-assert re.search(r"versionCode\s+58\b", gradle)
-assert "versionName '0.7.42-qa-task-notifications'" in gradle
+assert re.search(r"versionCode\s+60\b", gradle)
+assert "versionName '0.7.44-qa-attention-center'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source
 assert 'showWhatsNew()' in source
 assert 'الإصدار 0.3.0' not in source and 'الإصدار 0.4.0' not in source
@@ -204,6 +204,7 @@ assert not app.findall('uses-library'), 'No shared application library is introd
 print('PASS independent Android sandbox declaration; no shared UID')
 
 gradle_manifest=ET.parse(root/'app/src/gradle/AndroidManifest.xml').getroot()
+push_manifest=ET.parse(root/'app/src/gradle/AndroidManifestPush.xml').getroot()
 assert gradle_manifest.get('package') is None
 canonical_manifest=ET.fromstring(ET.tostring(manifest))
 canonical_manifest.attrib.pop('package')
@@ -216,4 +217,8 @@ gradle_manifest.remove(gradle_sdk)
 assert ET.tostring(canonical_manifest)==ET.tostring(gradle_manifest), 'Standalone and Gradle manifests must match except package attribute'
 assert "'src/gradle/AndroidManifest.xml'" in gradle
 assert "'src/gradle/AndroidManifestPush.xml'" in gradle
+push_app=push_manifest.find('application')
+push_service=next(e for e in push_app.findall('service') if e.get(a+'name')=='com.baseer.freshchat.BChatFirebaseMessagingService')
+assert any(action.get(a+'name')=='com.google.firebase.MESSAGING_EVENT'
+           for action in push_service.findall('intent-filter/action'))
 print('PASS package-free AGP input exactly matches standalone app manifest semantics')

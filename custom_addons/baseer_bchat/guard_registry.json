@@ -142,6 +142,19 @@
         ".github/CODEOWNERS"
       ],
       "suites": ["guard-integrity", "source-structure"]
+    },
+    {
+      "id": "push-installation-lifecycle",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "A verified device registration is an idempotent upsert across logout and sign-in, preserving one installation record while reactivating it without duplicate-key failures.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/push.py",
+        "custom_addons/baseer_bchat/tests/test_push_v2.py",
+        "custom_addons/baseer_bchat/tests_contract/test_push_installation_lifecycle_contract.py",
+        "custom_addons/baseer_bchat/__manifest__.py"
+      ],
+      "suites": ["backend-contracts", "source-structure"]
     }
   ]
 }

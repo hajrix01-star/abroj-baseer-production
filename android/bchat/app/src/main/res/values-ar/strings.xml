@@ -440,6 +440,7 @@
     <string name="auth_verifying">"جارٍ التحقق من الحساب والصلاحيات…"</string>
     <string name="auth_tls_error">"تعذّر التحقق من شهادة خادم QA. لم يكتمل الدخول."</string>
     <string name="auth_network_error">"تعذّر الاتصال بخادم QA. تحقّق من HTTPS وحاول مجددًا."</string>
+    <string name="bchat_transport_diagnostic">"رمز تشخيص النقل: %1$s"</string>
     <string name="auth_denied">"لم يثبت حساب أودو داخلي فعّال. أكمل الدخول والتحقق الثنائي ثم حاول مجددًا."</string>
     <string name="auth_verified">"تم التحقق من المستخدم رقم %1$d؛ الشركات المسموحة: %2$s"</string>
     <string name="auth_chat_disabled">"المحادثات الحقيقية وإرسال الصور غير مفعّلين بعد."</string>

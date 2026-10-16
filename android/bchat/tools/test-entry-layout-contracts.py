@@ -44,7 +44,10 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertIn('android.permission.INTERNET', permissions)
         self.assertIn('startActivity(new Intent(this, OdooIdentityActivity.class))', method('showEntry'))
         identity = (JAVA / 'OdooIdentityActivity.java').read_text()
-        self.assertNotIn('ChatStore', identity.replace('offline demo store', ''))
+        # The connected client may reuse the attachment DTO for local recording, but it must
+        # never open or own the offline-demo store.
+        self.assertNotIn('new ChatStore(', identity)
+        self.assertNotIn('ChatStore.open(', identity)
         self.assertIn('credentials:\'same-origin\'', identity)
         self.assertIn('MIXED_CONTENT_NEVER_ALLOW', identity)
         self.assertFalse(manifest.find('application').findall('service'))
@@ -129,8 +132,8 @@ class EntryLayoutContracts(unittest.TestCase):
 
     def test_neutral_theme_does_not_modify_brand(self):
         ui = (JAVA/'Ui.java').read_text()
-        self.assertIn('Color.rgb(36, 40, 45)', ui)
-        self.assertIn('Color.rgb(244, 245, 247)', ui)
+        self.assertIn('Color.rgb(24, 42, 59)', ui)
+        self.assertIn('Color.rgb(248, 250, 252)', ui)
         wallpaper = ui[ui.index('static class Wallpaper'):]
         self.assertNotIn('onDraw', wallpaper)
         for folder in ('values-v29', 'values-v35'):

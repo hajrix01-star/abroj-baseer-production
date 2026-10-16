@@ -27,7 +27,12 @@ public final class BChatPushState {
 
     public static void verifiedAccount(Context context, AccountScope account) {
         if (account == null) throw new IllegalArgumentException("Verified account is required");
-        prefs(context).edit().putString(SCOPE, account.key)
+        SharedPreferences state = prefs(context);
+        // A bridge recheck after opening Android settings verifies the same authenticated account.
+        // Keep its already-confirmed push route until a different account, logout, or new FCM
+        // token explicitly replaces it. The notification target is still re-authorized by Odoo.
+        if (account.key.equals(state.getString(SCOPE, null))) return;
+        state.edit().putString(SCOPE, account.key)
                 .remove(ACCOUNT).remove(REGISTERED_TOKEN).apply();
     }
 

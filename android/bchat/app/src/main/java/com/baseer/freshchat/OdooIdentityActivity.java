@@ -32,6 +32,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Base64;
+import android.util.Log;
 import android.util.LruCache;
 import android.text.InputType;
 import android.text.Editable;
@@ -106,6 +107,7 @@ import java.util.concurrent.Executors;
 
 /** Employee entry and isolated BChat v2 text client. The offline demo store stays untouched. */
 public final class OdooIdentityActivity extends Activity {
+    private static final String TRANSPORT_LOG_TAG = "BChatTransport";
     public static final String EXTRA_SHARE_UNAVAILABLE = "com.baseer.bchat.SHARE_UNAVAILABLE";
     private static final String ORIGIN = RuntimeOrigin.forHardware(Build.HARDWARE, BuildConfig.BCHAT_ORIGIN);
     private static final String DATABASE = BuildConfig.BCHAT_DATABASE;
@@ -165,6 +167,8 @@ public final class OdooIdentityActivity extends Activity {
             };
     private boolean pushRegistrationBusy;
     private boolean pushRegistrationScheduled;
+    // QA stage codes only. Never include a URL, account, token, CSRF value, or response body.
+    private String pushRegistrationDiagnostic = "P00_IDLE";
     private PushTarget pendingPush;
     private boolean pushNavigationBusy;
     private boolean pushNavigationScheduled;
@@ -216,6 +220,11 @@ public final class OdooIdentityActivity extends Activity {
     private static volatile int historyGlobalGeneration;
     private final ExecutorService historyWrites = Executors.newSingleThreadExecutor();
     private final ExecutorService mediaIo = Executors.newSingleThreadExecutor();
+    /** Read-only fallback when an Android WebView drops a message-port response. */
+    private boolean webV2GetFallbackBusy;
+    private int webV2GetFallbackGeneration;
+    /** Safe stage codes for the QA-only transport diagnostic; never include response content. */
+    private String transportDiagnostic = "D00";
     private volatile int historyWriteGeneration;
     private boolean offlineHistory;
     private boolean offlineChatCacheAvailable, offlineTaskCacheAvailable;
@@ -603,6 +612,13 @@ public final class OdooIdentityActivity extends Activity {
         title.setTextColor(0xff0d3f68);
         title.setGravity(Gravity.CENTER);
         fields.addView(title, fieldSize(12));
+        TextView installedVersion = new TextView(this);
+        installedVersion.setText(getString(R.string.bchat_installed_version, installedBChatVersion()));
+        installedVersion.setTextSize(12);
+        installedVersion.setTextColor(0xff64748b);
+        installedVersion.setGravity(Gravity.CENTER);
+        installedVersion.setTextDirection(View.TEXT_DIRECTION_LTR);
+        fields.addView(installedVersion, fieldSize(2));
         loginInput = field(fields, R.string.auth_native_username, false);
         passwordInput = field(fields, R.string.auth_native_password, true);
         signIn = new Button(this);
@@ -675,28 +691,30 @@ public final class OdooIdentityActivity extends Activity {
         compactBrand.setText(brandLetters);
         compactBrand.setContentDescription("BChat");
         brandBar.addView(compactBrand, new LinearLayout.LayoutParams(-2, dp(48)));
-        brandBar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
-        int companyLabelWidth = Math.max(dp(80), getResources().getDisplayMetrics().widthPixels - dp(145));
+        // Keep the two fixed header actions visible on narrow phones. The company label owns
+        // only the remaining width instead of growing past the bell and the account menu.
+        FrameLayout headerCompanySlot = new FrameLayout(this);
         chatHeaderCompanyButton = Ui.text(this, "", 14, Color.WHITE, true);
         chatHeaderCompanyButton.setGravity(Gravity.CENTER_VERTICAL | Gravity.END);
         chatHeaderCompanyButton.setSingleLine(true);
         chatHeaderCompanyButton.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        chatHeaderCompanyButton.setMaxWidth(companyLabelWidth);
         chatHeaderCompanyButton.setPaddingRelative(dp(8), 0, dp(8), 0);
         chatHeaderCompanyButton.setVisibility(View.GONE);
         chatHeaderCompanyButton.setOnClickListener(v -> showChatCompanyMenu(chatHeaderCompanyButton));
-        brandBar.addView(chatHeaderCompanyButton, new LinearLayout.LayoutParams(-2, dp(48)));
+        headerCompanySlot.addView(chatHeaderCompanyButton,
+                new FrameLayout.LayoutParams(-1, dp(48)));
         chatCompanyMenu = new AnchoredMenu(this);
         orderHeaderCompanyButton = Ui.text(this, "", 14, Color.WHITE, true);
         orderHeaderCompanyButton.setGravity(Gravity.CENTER);
         orderHeaderCompanyButton.setSingleLine(true);
         orderHeaderCompanyButton.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        orderHeaderCompanyButton.setMaxWidth(companyLabelWidth);
         orderHeaderCompanyButton.setPaddingRelative(dp(8), 0, dp(8), 0);
         orderHeaderCompanyButton.setVisibility(View.GONE);
         orderHeaderCompanyButton.setOnClickListener(v -> showOrderCompanyMenu());
-        brandBar.addView(orderHeaderCompanyButton, new LinearLayout.LayoutParams(-2, dp(48)));
+        headerCompanySlot.addView(orderHeaderCompanyButton,
+                new FrameLayout.LayoutParams(-1, dp(48)));
         orderCompanyMenu = new AnchoredMenu(this);
+        brandBar.addView(headerCompanySlot, new LinearLayout.LayoutParams(0, dp(48), 1f));
         headerRefresh = Ui.iconButton(this, "refresh", getString(R.string.chat_v2_refresh));
         headerRefresh.setOnClickListener(v -> refreshCurrentSection());
         headerAttention = Ui.iconButton(this, "bell", getString(R.string.bchat_attention));
@@ -2177,14 +2195,10 @@ public final class OdooIdentityActivity extends Activity {
         }
         boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
         final boolean openChannelSettings = permissionGranted && enabled && channelMuted;
-        int state = !permissionGranted || !enabled || channelMuted
-                ? R.string.bchat_notifications_off
-                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
         int action = !permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
                 ? R.string.bchat_notifications_enable : R.string.bchat_notifications_manage;
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.bchat_notifications)
-                .setMessage(getString(state, linked ? getString(R.string.bchat_device_linked)
-                        : getString(R.string.bchat_device_linking)))
+                .setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked))
                 .setNegativeButton(R.string.task_close, null)
                 .setPositiveButton(action, null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
@@ -2199,6 +2213,30 @@ public final class OdooIdentityActivity extends Activity {
                 }));
         dialog.show();
         maybeRegisterPush();
+        refreshNotificationStatus(dialog, permissionGranted, enabled, channelMuted);
+    }
+
+    private String notificationStatusMessage(boolean permissionGranted, boolean enabled,
+                                             boolean channelMuted, boolean linked) {
+        int state = !permissionGranted || !enabled || channelMuted
+                ? R.string.bchat_notifications_off
+                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
+        String message = getString(state, linked ? getString(R.string.bchat_device_linked)
+                : getString(R.string.bchat_device_linking));
+        return BuildConfig.BCHAT_PUSH_REGISTRATION_DIAGNOSTICS
+                ? message + "\nQA push: " + pushRegistrationDiagnostic : message;
+    }
+
+    /** Refresh only local state while the dialog is open; this never issues another registration. */
+    private void refreshNotificationStatus(AlertDialog dialog, boolean permissionGranted,
+                                           boolean enabled, boolean channelMuted) {
+        if (dialog == null || !dialog.isShowing()) return;
+        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
+        dialog.setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked));
+        if (!linked && permissionGranted && enabled && !channelMuted) {
+            handler.postDelayed(() -> refreshNotificationStatus(dialog, permissionGranted, enabled,
+                    channelMuted), 300);
+        }
     }
 
     private void ensureBChatNotificationChannel(NotificationManager notifications) {
@@ -2609,7 +2647,7 @@ public final class OdooIdentityActivity extends Activity {
      */
     private boolean recoverExpiredPrivateBridgeSession() {
         if (closed || loggingOut) return false;
-        purgeHistory();
+        // An expired web session does not revoke this employee's scoped offline snapshot.
         releaseWeb();
         clearCookies(() -> {
             if (!closed) {
@@ -2858,6 +2896,7 @@ public final class OdooIdentityActivity extends Activity {
         if (closed || web == null || probing || loggingOut || verified || web.getUrl() == null
                 || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
         probing = true;
+        resetTransportDiagnostic();
         submitting = false;
         status.setText(R.string.auth_verifying);
         final int attempt = ++epoch;
@@ -2989,6 +3028,7 @@ public final class OdooIdentityActivity extends Activity {
             account = nextAccount; // The server authorizes all work.
             v1Companies.clear();
             v1Companies.addAll(ids);
+            traceTransport("D02_V1_ACCEPTED");
             verified = true;
             probing = false;
             submitting = false;
@@ -3004,20 +3044,251 @@ public final class OdooIdentityActivity extends Activity {
 
     private interface V2Callback { void complete(int status, JSONObject body); }
 
+    private void resetTransportDiagnostic() {
+        if (!BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS) return;
+        transportDiagnostic = "D00";
+        traceTransport("D01_V1_START");
+    }
+
+    private void traceTransport(String stage) {
+        if (!BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS) return;
+        // Stage labels are fixed source strings or HTTP status integers only. Do not add URLs,
+        // account identifiers, cookies, response bodies, or message content to this trace.
+        String next = transportDiagnostic == null || transportDiagnostic.isEmpty()
+                ? stage : transportDiagnostic + ">" + stage;
+        transportDiagnostic = next.length() > 180 ? next.substring(next.length() - 180) : next;
+        Log.i(TRANSPORT_LOG_TAG, stage);
+    }
+
+    private String transportDiagnosticNotice() {
+        return BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS
+                ? "\n" + getString(R.string.bchat_transport_diagnostic, transportDiagnostic) : "";
+    }
+
+    /** Fixed route labels only: no URL parameters, account identifiers, or server data are traced. */
+    private String transportReadLabel(String path) {
+        if (!BuildConfig.BCHAT_TRANSPORT_DIAGNOSTICS) return null;
+        if (V2_BOOTSTRAP.equals(path)) return "V2B";
+        if (V2_ROOMS.equals(path)) return "ROOMS";
+        if (V1_BOOTSTRAP.equals(path)) return "V1B";
+        return null;
+    }
+
     private void closeV2Port() {
         ++v2Nonce;
+        ++webV2GetFallbackGeneration;
+        webV2GetFallbackBusy = false;
         v2Busy = false;
         if (v2Port != null) { v2Port.close(); v2Port = null; }
     }
 
+    private void releaseV2Port() {
+        v2Busy = false;
+        if (v2Port != null) { v2Port.close(); v2Port = null; }
+    }
+
+    /**
+     * Repeat only authenticated GET requests after a failed WebMessagePort delivery.  The retry
+     * stays in the same, authenticated WebView; it never extracts cookies or retries a POST.
+     */
+    private boolean fetchVerifiedGetInWebView(String method, String path, int maximum,
+                                              int expectedWeb, int expectedPage, int expectedEpoch,
+                                              V2Callback callback) {
+        if (!"GET".equals(method) || closed || webV2GetFallbackBusy || callback == null
+                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
+        final int fallback = ++webV2GetFallbackGeneration;
+        final String slot = "__bchatReadFallback" + fallback;
+        final String diagnosticRead = transportReadLabel(path);
+        if (diagnosticRead != null) traceTransport("D12_" + diagnosticRead + "_DIRECT_START");
+        webV2GetFallbackBusy = true;
+        releaseV2Port();
+        // The direct reader occupies the same authenticated WebView. Keep the shared busy
+        // signal true so push registration and optional reads wait instead of racing it.
+        v2Busy = true;
+        String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
+                + "var u=new URL(" + JSONObject.quote(path) + ",location.origin);"
+                + "if(u.origin!==location.origin)return;"
+                + "var done=function(x){window[" + JSONObject.quote(slot) + "]=JSON.stringify(x);};"
+                + "fetch(u.href,{method:'GET',credentials:'same-origin',redirect:'manual',cache:'no-store',headers:{Accept:'application/json'}})"
+                + ".then(function(r){if(r.type==='opaqueredirect')return {nonce:" + fallback
+                + ",status:401,type:'application/json',url:u.href,body:'{}'};"
+                + "if(!r.body||!r.body.getReader)throw Error('stream');"
+                + "var rd=r.body.getReader(),d=new TextDecoder('utf-8',{fatal:true}),b='',n=0;"
+                + "function read(){return rd.read().then(function(x){if(x.done){b+=d.decode();return {nonce:"
+                + fallback + ",status:r.status,type:r.headers.get('content-type')||'',url:r.url,body:b};}"
+                + "n+=x.value.byteLength;if(n>" + maximum + "){rd.cancel();throw Error('size');}"
+                + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
+                + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
+        web.evaluateJavascript(script, ignored -> {
+            if (diagnosticRead != null) traceTransport("D13_" + diagnosticRead + "_FETCH_DISPATCHED");
+            pollVerifiedGetFallback(slot, fallback, path, maximum,
+                    expectedWeb, expectedPage, expectedEpoch, callback, 0);
+        });
+        return true;
+    }
+
+    /**
+     * The affected Android WebView can receive direct fetch callbacks but drops transferred
+     * WebMessagePorts. Device registration is the one write allowed to use that direct path:
+     * the server contract makes the exact (user, installation_id) registration idempotent.
+     *
+     * This sends one request only. The polling below merely reads the result already produced
+     * by the WebView; it never repeats a registration whose outcome might be uncertain.
+     */
+    private boolean registerPushDirectlyInWebView(String payload, V2Callback callback) {
+        if (closed || !verified || account == null || csrfToken == null || callback == null
+                || payload == null || payload.length() > 8192 || webV2GetFallbackBusy
+                || v2Busy || web == null || web.getUrl() == null
+                || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
+        final int fallback = ++webV2GetFallbackGeneration;
+        final String slot = "__bchatPushRegistration" + fallback;
+        final int currentWeb = webEpoch;
+        final int currentPage = pageEpoch;
+        final int currentEpoch = epoch;
+        webV2GetFallbackBusy = true;
+        releaseV2Port();
+        v2Busy = true;
+        String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
+                + "var u=new URL(" + JSONObject.quote(V2_PUSH_REGISTER) + ",location.origin);"
+                + "if(u.origin!==location.origin||u.pathname!==" + JSONObject.quote(V2_PUSH_REGISTER)
+                + ")return;var done=function(x){window[" + JSONObject.quote(slot)
+                + "]=JSON.stringify(x);};"
+                + "fetch(u.href,{method:'POST',credentials:'same-origin',redirect:'manual',cache:'no-store',"
+                + "headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},"
+                + "body:new URLSearchParams({csrf_token:" + JSONObject.quote(csrfToken)
+                + ",payload:" + JSONObject.quote(payload) + "}).toString()})"
+                + ".then(function(r){if(r.type==='opaqueredirect')return {nonce:" + fallback
+                + ",status:401,type:'application/json',url:u.href,body:'{}'};"
+                + "if(!r.body||!r.body.getReader)throw Error('stream');"
+                + "var rd=r.body.getReader(),d=new TextDecoder('utf-8',{fatal:true}),b='',n=0;"
+                + "function read(){return rd.read().then(function(x){if(x.done){b+=d.decode();return {nonce:"
+                + fallback + ",status:r.status,type:r.headers.get('content-type')||'',url:r.url,body:b};}"
+                + "n+=x.value.byteLength;if(n>" + MAX_V2_RESPONSE + "){rd.cancel();throw Error('size');}"
+                + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
+                + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
+        web.evaluateJavascript(script, ignored -> pollVerifiedGetFallback(slot, fallback,
+                V2_PUSH_REGISTER, MAX_V2_RESPONSE, currentWeb, currentPage, currentEpoch, callback, 0));
+        return true;
+    }
+
+    private void pollVerifiedGetFallback(String slot, int fallback, String path, int maximum,
+                                         int expectedWeb, int expectedPage, int expectedEpoch,
+                                         V2Callback callback, int attempt) {
+        if (fallback != webV2GetFallbackGeneration) return;
+        if (closed || web == null || expectedWeb != webEpoch || expectedPage != pageEpoch
+                || expectedEpoch != epoch || web.getUrl() == null
+                || !isBridgeUrl(Uri.parse(web.getUrl()))) {
+            String label = transportReadLabel(path);
+            if (label != null) traceTransport("D14_" + label + "_CONTEXT_CHANGED");
+            webV2GetFallbackBusy = false;
+            v2Busy = false;
+            return;
+        }
+        String read = "(function(){var value=window[" + JSONObject.quote(slot)
+                + "];if(value!==undefined){delete window[" + JSONObject.quote(slot)
+                + "];return value;}return null;})()";
+        web.evaluateJavascript(read, value -> {
+            if (fallback != webV2GetFallbackGeneration) return;
+            if (value == null || "null".equals(value)) {
+                if (attempt < 60) handler.postDelayed(() -> pollVerifiedGetFallback(slot, fallback,
+                        path, maximum, expectedWeb, expectedPage, expectedEpoch, callback, attempt + 1), 100);
+                else {
+                    String label = transportReadLabel(path);
+                    if (label != null) traceTransport("D14_" + label + "_SLOT_TIMEOUT");
+                    completeVerifiedGetFallback(fallback, path, 0, null, expectedWeb, expectedPage,
+                            expectedEpoch, callback);
+                }
+                return;
+            }
+            String label = transportReadLabel(path);
+            if (label != null) traceTransport("D14_" + label + "_SLOT_RECEIVED");
+            int statusCode = 0;
+            JSONObject body = null;
+            try {
+                String data = new JSONArray("[" + value + "]").getString(0);
+                if (data.length() > maximum * 6 + 4096) throw new IllegalArgumentException();
+                JSONObject response = new JSONObject(data);
+                if (response.getInt("nonce") != fallback) throw new IllegalArgumentException();
+                String finalUrl = response.getString("url");
+                Uri finalUri = Uri.parse(finalUrl);
+                if (sameOrigin(finalUri) && isLoginPath(finalUri.getPath())) {
+                    statusCode = 401;
+                    body = new JSONObject();
+                } else {
+                    if (!(ORIGIN + path).equals(finalUrl)) throw new IllegalArgumentException();
+                    statusCode = response.getInt("status");
+                    if (statusCode != 404 && statusCode != 503) {
+                        String mime = response.getString("type").toLowerCase(Locale.ROOT)
+                                .split(";", 2)[0].trim();
+                        if (!"application/json".equals(mime)) throw new IllegalArgumentException();
+                        String content = response.getString("body");
+                        if (content.length() > maximum || statusCode < 200 || statusCode > 599)
+                            throw new IllegalArgumentException();
+                        body = new JSONObject(content);
+                    }
+                }
+            } catch (Exception ignored) {
+                if (label != null) traceTransport("D15_" + label + "_RESPONSE_REJECTED");
+                statusCode = 0;
+                body = null;
+            }
+            if (label != null && statusCode == 0)
+                traceTransport("D15_" + label + "_WEB_FETCH_ZERO");
+            completeVerifiedGetFallback(fallback, path, statusCode, body, expectedWeb, expectedPage,
+                    expectedEpoch, callback);
+        });
+    }
+
+    private void completeVerifiedGetFallback(int fallback, String path, int statusCode, JSONObject body,
+                                             int expectedWeb, int expectedPage, int expectedEpoch,
+                                             V2Callback callback) {
+        if (fallback != webV2GetFallbackGeneration) return;
+        webV2GetFallbackBusy = false;
+        v2Busy = false;
+        if (closed || expectedWeb != webEpoch || expectedPage != pageEpoch || expectedEpoch != epoch) return;
+        String label = transportReadLabel(path);
+        if (label != null) traceTransport("D16_" + label + "_CALLBACK_" + statusCode);
+        callback.complete(statusCode, body);
+        handler.post(this::runQueuedOrderLoad);
+        handler.post(this::maybeProbeOrderCapability);
+        scheduleOrderImagePump();
+        handler.post(this::flushLiveUi);
+    }
+
+    /**
+     * Authenticated reads must not depend on transferred WebMessagePorts.  The affected Android
+     * WebView can read bootstrap through the direct callback but drops the next transferred port
+     * (normally /rooms), leaving a valid session on a misleading connection-error shell.
+     *
+     * This applies only to bounded idempotent GET routes.  Writes retain the port path and their
+     * existing uncertain-write handling; this method never repeats or converts a POST.
+     */
+    private boolean fetchV2ReadDirectlyInWebView(String path, V2Callback callback) {
+        if (closed || !verified || account == null || v2Busy || webV2GetFallbackBusy
+                || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))
+                || !(V1_BOOTSTRAP.equals(path)
+                        || path.matches("/bchat/api/v2/[A-Za-z0-9/?=&_%~.-]+"))) return false;
+        String label = transportReadLabel(path);
+        if (label != null) traceTransport("D11_" + label + "_READ_START");
+        int maximum = V2_BOOTSTRAP.equals(path) || V1_BOOTSTRAP.equals(path)
+                ? MAX_RESPONSE : MAX_V2_RESPONSE;
+        return fetchVerifiedGetInWebView("GET", path, maximum,
+                webEpoch, pageEpoch, epoch, callback);
+    }
+
     /** Every request runs inside the already authenticated, same-origin WebView. */
     private void fetchV2(String method, String path, String payload, V2Callback callback) {
+        // A device trace proved bootstrap succeeds but the subsequent transferred /rooms port
+        // does not.  Use the bounded direct callback for every authenticated read, not only
+        // bootstrap; POST routes remain on their separate write-safe path below.
+        if ("GET".equals(method) && payload == null
+                && fetchV2ReadDirectlyInWebView(path, callback)) return;
         fetchV2Internal(method, path, payload, null, callback);
     }
 
     private void fetchV2Internal(String method, String path, String payload,
                                  String avatarBase64, V2Callback callback) {
-        if (closed || !verified || account == null || web == null || v2Busy || callback == null
+        if (closed || !verified || account == null || web == null || v2Busy || webV2GetFallbackBusy || callback == null
                 || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))
                 || !(V1_BOOTSTRAP.equals(path) || path.matches("/bchat/api/v2/[A-Za-z0-9/?=&_%~.-]+"))
                 || !("GET".equals(method) || "POST".equals(method))
@@ -3077,10 +3348,13 @@ public final class OdooIdentityActivity extends Activity {
                     // A manual same-origin login redirect is an expired session, not a network retry.
                 } catch (OptionalModuleUnavailable expected) {
                     // Keep the authenticated shell and report feature availability truthfully.
-                } catch (Exception invalid) { statusCode = 0; body = null; }
-                v2Port.close();
-                v2Port = null;
-                v2Busy = false;
+                } catch (Exception invalid) {
+                    if (fetchVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
+                            currentEpoch, callback)) return;
+                    statusCode = 0;
+                    body = null;
+                }
+                releaseV2Port();
                 callback.complete(statusCode, body);
                 handler.post(OdooIdentityActivity.this::runQueuedOrderLoad);
                 handler.post(OdooIdentityActivity.this::maybeProbeOrderCapability);
@@ -3122,6 +3396,8 @@ public final class OdooIdentityActivity extends Activity {
         });
         handler.postDelayed(() -> {
             if (!closed && v2Busy && request == v2Nonce) {
+                if (fetchVerifiedGetInWebView(method, path, maximum, currentWeb, currentPage,
+                        currentEpoch, callback)) return;
                 closeV2Port();
                 callback.complete(0, null);
                 handler.post(this::runQueuedOrderLoad);
@@ -3947,6 +4223,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void verifyV2() {
         fetchV2("GET", V2_BOOTSTRAP, null, (statusCode, result) -> {
+            traceTransport("D08_V2_VERIFY_" + statusCode);
             if (handleV2TransportFailure(statusCode)) return;
             if (statusCode == 403) purgeHistory();
             try {
@@ -3987,9 +4264,6 @@ public final class OdooIdentityActivity extends Activity {
                 clearChatView();
                 mediaAvailable = canUseMedia;
                 applyPermissionSet(account, granted);
-                // Task-only users never load rooms, so registration must start
-                // from the verified account rather than from the chat flow.
-                maybeRegisterPush();
                 profileSnapshot = verifiedProfile;
                 selectedChatCompanyId = v2Companies.contains(result.optLong("current_company_id"))
                         ? result.optLong("current_company_id") : 0;
@@ -4011,6 +4285,9 @@ public final class OdooIdentityActivity extends Activity {
                         shellNotice.setText(R.string.chat_v2_denied);
                     }
                     maybeProbeOrderCapability();
+                    // Task-only users do not load rooms. Queue registration after their first
+                    // UI read; its busy check defers safely if that read is still in progress.
+                    handler.post(this::maybeRegisterPush);
                 }
                 // A task-only account may never load rooms. Refreshing here
                 // plus the post-load calls keeps the header independent from
@@ -4037,47 +4314,84 @@ public final class OdooIdentityActivity extends Activity {
         }
     }
 
+    /** Stores a fixed QA-only registration stage; it never records request or account data. */
+    private void tracePushRegistration(String stage) {
+        if (BuildConfig.BCHAT_PUSH_REGISTRATION_DIAGNOSTICS) pushRegistrationDiagnostic = stage;
+    }
+
     /** Optional push registration uses only the authenticated same-origin API. */
     private void maybeRegisterPush() {
-        if (!BuildConfig.BCHAT_PUSH_ENABLED || closed || !verified || account == null
-                || csrfToken == null || web == null || pushRegistrationBusy
-                || !BChatPushState.needsRegistration(this, account)) return;
-        if (v2Busy) {
-            if (!pushRegistrationScheduled) {
-                pushRegistrationScheduled = true;
-                handler.postDelayed(() -> {
-                    pushRegistrationScheduled = false;
-                    maybeRegisterPush();
-                }, 1500);
-            }
+        if (!BuildConfig.BCHAT_PUSH_ENABLED) { tracePushRegistration("P01_PUSH_DISABLED"); return; }
+        if (closed || !verified || account == null || csrfToken == null || web == null) {
+            tracePushRegistration("P02_NOT_READY");
+            return;
+        }
+        if (pushRegistrationBusy) { tracePushRegistration("P03_IN_FLIGHT"); return; }
+        if (!BChatPushState.needsRegistration(this, account)) {
+            tracePushRegistration("P04_NOT_NEEDED");
+            return;
+        }
+        if (v2Busy || webV2GetFallbackBusy) {
+            tracePushRegistration("P05_WAITING_FOR_READ");
+            schedulePushRegistration();
             return;
         }
         final AccountScope scopedAccount = account;
         final String token = BChatPushState.pendingToken(this);
         final String installation = BChatPushState.installationId(this);
-        if (token == null || installation == null) return;
+        if (token == null || installation == null) {
+            tracePushRegistration("P06_LOCAL_IDENTITY_MISSING");
+            return;
+        }
         final JSONObject payload = new JSONObject();
         try {
             payload.put("api_version", 2);
             payload.put("installation_id", installation);
             payload.put("fcm_token", token);
-        } catch (Exception invalid) { return; }
+        } catch (Exception invalid) { tracePushRegistration("P07_PAYLOAD_REJECTED"); return; }
         pushRegistrationBusy = true;
-        fetchV2("POST", V2_PUSH_REGISTER, payload.toString(), (statusCode, response) -> {
+        tracePushRegistration("P08_DISPATCHED");
+        if (!registerPushDirectlyInWebView(payload.toString(), (statusCode, response) -> {
             pushRegistrationBusy = false;
+            tracePushRegistration("P09_HTTP_" + statusCode);
             if (closed || account == null || !account.key.equals(scopedAccount.key)
                     || !installation.equals(BChatPushState.installationId(this))) return;
             try {
-                if (statusCode != 200 || response == null
-                        || positiveId(response.get("api_version")) != 2
-                        || !installation.equals(response.getString("installation_id"))
-                        || !(response.opt("push_enabled") instanceof Boolean)) return;
-                BChatPushState.registered(this, scopedAccount, token, installation,
-                        response.getString("account_key"));
+                if (statusCode != 200) { tracePushRegistration("P10_HTTP_" + statusCode); return; }
+                if (response == null) { tracePushRegistration("P11_RESPONSE_EMPTY"); return; }
+                if (positiveId(response.get("api_version")) != 2) {
+                    tracePushRegistration("P12_API_VERSION");
+                    return;
+                }
+                if (!installation.equals(response.getString("installation_id"))) {
+                    tracePushRegistration("P13_INSTALLATION_MISMATCH");
+                    return;
+                }
+                if (!(response.opt("push_enabled") instanceof Boolean)) {
+                    tracePushRegistration("P14_PUSH_FLAG_INVALID");
+                    return;
+                }
+                if (BChatPushState.registered(this, scopedAccount, token, installation,
+                        response.getString("account_key"))) tracePushRegistration("P15_LINKED");
+                else tracePushRegistration("P16_LOCAL_SAVE_REJECTED");
             } catch (Exception invalid) {
                 // Missing optional module or untrusted response never enables push.
+                tracePushRegistration("P17_RESPONSE_MALFORMED");
             }
-        });
+        })) {
+            pushRegistrationBusy = false;
+            tracePushRegistration("P18_DIRECT_PATH_UNAVAILABLE");
+            if (!closed) schedulePushRegistration();
+        }
+    }
+
+    private void schedulePushRegistration() {
+        if (pushRegistrationScheduled) return;
+        pushRegistrationScheduled = true;
+        handler.postDelayed(() -> {
+            pushRegistrationScheduled = false;
+            maybeRegisterPush();
+        }, 1500);
     }
 
     private static final class PushTarget {
@@ -4313,7 +4627,9 @@ public final class OdooIdentityActivity extends Activity {
         csrfToken = null;
         showShell();
         shellNotice.setText(R.string.auth_verifying);
+        traceTransport("D09_V1_PROBE_START");
         fetchV2("GET", V1_BOOTSTRAP, null, (statusCode, result) -> {
+            traceTransport("D10_V1_PROBE_" + statusCode);
             if (statusCode == 401) { logout(); return; }
             boolean sameUser = false;
             try {
@@ -4342,8 +4658,8 @@ public final class OdooIdentityActivity extends Activity {
             }
             releaseWeb();
             showShell();
-            shellNotice.setText(uncertainWrite ? R.string.chat_v2_uncertain_network
-                    : R.string.auth_network_error);
+            if (uncertainWrite) shellNotice.setText(R.string.chat_v2_uncertain_network);
+            else shellNotice.setText(getString(R.string.auth_network_error) + transportDiagnosticNotice());
             shellRetry.setVisibility(View.VISIBLE);
         });
     }
@@ -12517,7 +12833,9 @@ public final class OdooIdentityActivity extends Activity {
         if (recheckOnResume && verified && !closed) {
             recheckOnResume = false;
             verified = false;
-            BChatPushState.clearAccount(this);
+            // Keep the local route during this same-account bridge recheck. If authentication
+            // fails, the login and failure paths clear it; if it succeeds, verifiedAccount
+            // preserves the prior confirmed route without a notification-delivery gap.
             bridgeRecoveryUsed = false;
             clearChatView();
             account = null;

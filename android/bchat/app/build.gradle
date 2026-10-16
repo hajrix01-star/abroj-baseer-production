@@ -26,7 +26,10 @@ android {
  aaptOptions { cruncherEnabled = false }
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
-  versionCode 62; versionName '0.7.46-qa-private-login-recovery'
+  // QA-only registration contract diagnostic. It exposes fixed stage codes only.
+  versionCode 72; versionName '0.7.56-qa-push-registration-contract-trace'
+  buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
+  buildConfigField 'boolean', 'BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'
  }
  // Independent preview signer, supplied only through local environment paths.

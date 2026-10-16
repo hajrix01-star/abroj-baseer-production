@@ -25,7 +25,10 @@ class BridgeEntryContractTests(unittest.TestCase):
         helper = "private boolean recoverExpiredPrivateBridgeSession()"
         helper_start = source.index(helper)
         helper_end = source.index("private void scheduleBridgeNavigationTimeout", helper_start)
-        self.assertIn("purgeHistory();", source[helper_start:helper_end])
+        helper = source[helper_start:helper_end]
+        self.assertIn("releaseWeb();", helper)
+        self.assertIn("clearCookies", helper)
+        self.assertNotIn("purgeHistory();", helper)
         self.assertIn("clearCookies", source[helper_start:helper_end])
         self.assertIn("openWeb(LOGIN);", source[helper_start:helper_end])
 

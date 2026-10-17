@@ -146,8 +146,12 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         raw = self._image()
         metadata, issued = self._issue(raw)
         grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
-        claim = grants._claim_capability(issued['grant_id'], issued['secret'])
-        self.assertTrue(claim['claimed'])
+        grant = grants.search([('grant_id', '=', issued['grant_id'])], limit=1)
+        # The independent capability claim cursor is intentionally not part of a
+        # TransactionCase savepoint.  This direct verified transition models the durable
+        # post-claim state while keeping the regression test isolated.
+        grant._write_verified({'state': 'uploading', 'upload_started_at': fields.Datetime.now()},
+                               _MOBILE_UPLOAD_GRANT_TOKEN)
         state = self.env['baseer.bchat.service'].with_user(self.manager)._v2_reconcile_native_upload(
             self.room.id, metadata['upload_uuid'])
         self.assertEqual((state['state'], state.get('media_id')), ('uploading', None))

@@ -570,6 +570,13 @@
     <string name="chat_v2_invalid_text">"اكتب رسالة نصية غير فارغة حتى 16 KB."</string>
     <string name="bchat_media_attach">"صورة أو ملف"</string>
     <string name="bchat_media_pending">"مرفق بانتظار التأكيد. راجع الطلب قبل إرسال رسالة أخرى."</string>
+    <string name="bchat_media_review_pending">مراجعة حالة المرفق</string>
+    <string name="bchat_media_review_intro">%1$d مرفق معلّق محليًا. «تحقّق الآن» لا يعيد رفع أي ملف.</string>
+    <string name="bchat_media_check_now">تحقّق الآن</string>
+    <string name="bchat_media_checking">جارٍ التحقق من سجل المحادثة…</string>
+    <string name="bchat_media_status_upload_pending">لم يصل تأكيد رفع الملف من الخادم بعد. رمز التشخيص: M01.</string>
+    <string name="bchat_media_status_message_pending">تم رفع المرفق رقم %1$d، لكن لم يتأكد ربطه برسالة بعد. رمز التشخيص: M02.</string>
+    <string name="bchat_media_status_rejected">رفض الخادم رفع المرفق (%1$s). رمز التشخيص: M04.</string>
     <string name="bchat_media_invalid">"تعذّر تجهيز المرفق. الصورة حتى 5 MB، والملفات والصوت حتى 10 MB."</string>
     <string name="bchat_media_uploading">"جارٍ رفع المرفق…"</string>
     <string name="bchat_media_sending">"جارٍ إرسال المرفق…"</string>

@@ -1011,7 +1011,7 @@ public final class OdooIdentityActivity extends Activity {
         Ui.pad(pendingActionsRow, 8, 0);
         pendingActionsRow.addView(retryButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
         mediaReviewButton = new Button(this);
-        mediaReviewButton.setText(R.string.bchat_media_pending);
+        mediaReviewButton.setText(R.string.bchat_media_review_pending);
         styleAction(mediaReviewButton, false);
         mediaReviewButton.setVisibility(View.GONE);
         mediaReviewButton.setOnClickListener(v -> reviewConnectedMedia());
@@ -5848,8 +5848,7 @@ public final class OdooIdentityActivity extends Activity {
         } catch (IOException damaged) { chatNotice.setText(R.string.chat_v2_save_failed); mediaPending = true; }
         boolean inFlight = mediaStageBusy || mediaUploadBusy || mediaConfirmBusy
                 && mediaConfirmRoom != null && mediaConfirmRoom.sameMembership(selectedRoom);
-        mediaReviewButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaUploadAllowed()
-                && mediaPending && !inFlight
+        mediaReviewButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaPending && !inFlight
                 ? View.VISIBLE : View.GONE);
         sendButton.setEnabled(sendAllowed() && pending == null && !mediaPending && !v2Busy
                 && !inFlight);
@@ -8402,22 +8401,26 @@ public final class OdooIdentityActivity extends Activity {
     private void reviewConnectedMedia() {
         Room room = selectedRoom;
         AccountScope scopedAccount = account;
-        if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed()
-                || !stillCurrent(scopedAccount, room) || mediaStore == null) return;
+        if (!CONNECTED_MEDIA_UI_ENABLED || !stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
-            BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id, room.membershipId);
-            if (entry == null) { updatePendingUi(); return; }
+            List<BChatConnectedMediaStore.Entry> entries = mediaStore.pendingForRoom(scopedAccount,
+                    room.id, room.membershipId);
+            if (entries.isEmpty()) { updatePendingUi(); return; }
+            BChatConnectedMediaStore.Entry entry = entries.get(0);
             boolean policyChanged = entry.policyVersion != room.invoicePolicyVersion;
             boolean uploadBlocked = !entry.uploadBlockCode.isEmpty();
-            int typeLabel = "invoice".equals(entry.documentType) ? R.string.bchat_media_invoice
-                    : "payment_receipt".equals(entry.documentType) ? R.string.bchat_media_receipt
-                    : R.string.bchat_media_other;
+            boolean hasUploadedRecord = false;
+            StringBuilder detail = new StringBuilder(getString(R.string.bchat_media_review_intro,
+                    entries.size()));
+            for (BChatConnectedMediaStore.Entry candidate : entries) {
+                detail.append("\n\n").append(candidate.name).append("\n")
+                        .append(connectedMediaPendingStatus(candidate, room));
+                if (candidate.mediaId > 0 && candidate.policyVersion == room.invoicePolicyVersion
+                        && candidate.uploadBlockCode.isEmpty()) hasUploadedRecord = true;
+            }
             AlertDialog.Builder review = new AlertDialog.Builder(this)
                     .setTitle(R.string.bchat_media_pending)
-                    .setMessage(entry.name + "\n" + getString(typeLabel)
-                            + "\n" + getString(policyChanged ? R.string.bchat_media_policy_changed
-                                    : uploadBlocked ? R.string.bchat_media_upload_blocked
-                                    : R.string.chat_v2_uncertain_explain))
+                    .setMessage(detail)
                     .setNeutralButton(R.string.chat_v2_delete_local, (dialog, which) ->
                             showPendingDialog(new AlertDialog.Builder(this)
                                     .setTitle(R.string.chat_v2_delete_local)
@@ -8427,10 +8430,39 @@ public final class OdooIdentityActivity extends Activity {
                                         discardConnectedMedia(scopedAccount, room, entry, 0);
                                     }).setNegativeButton(R.string.chat_v2_cancel, null)))
                     .setNegativeButton(R.string.chat_v2_cancel, null);
-            if (!policyChanged && !uploadBlocked) review.setPositiveButton(R.string.chat_v2_retry,
-                    (dialog, which) -> retryConnectedMedia());
+            if (hasUploadedRecord) review.setPositiveButton(R.string.bchat_media_check_now,
+                    (dialog, which) -> checkConnectedMediaStatus(scopedAccount, room));
+            else if (!policyChanged && !uploadBlocked && mediaUploadAllowed())
+                review.setPositiveButton(R.string.chat_v2_retry, (dialog, which) -> retryConnectedMedia());
             showPendingDialog(review);
         } catch (IOException invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
+    }
+
+    private String connectedMediaPendingStatus(BChatConnectedMediaStore.Entry entry, Room room) {
+        if (entry.policyVersion != room.invoicePolicyVersion)
+            return getString(R.string.bchat_media_policy_changed);
+        if (!entry.uploadBlockCode.isEmpty())
+            return getString(R.string.bchat_media_status_rejected, entry.uploadBlockCode);
+        if (entry.mediaId <= 0) return getString(R.string.bchat_media_status_upload_pending);
+        return getString(R.string.bchat_media_status_message_pending, entry.mediaId);
+    }
+
+    /** Re-reads verified room history only; it never uploads or posts a media message. */
+    private void checkConnectedMediaStatus(AccountScope scopedAccount, Room room) {
+        if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
+        try {
+            boolean hasUploadedRecord = false;
+            for (BChatConnectedMediaStore.Entry entry : mediaStore.pendingForRoom(scopedAccount,
+                    room.id, room.membershipId))
+                if (entry.mediaId > 0 && entry.policyVersion == room.invoicePolicyVersion
+                        && entry.uploadBlockCode.isEmpty()) hasUploadedRecord = true;
+            if (!hasUploadedRecord) {
+                chatNotice.setText(R.string.bchat_media_status_upload_pending);
+                return;
+            }
+            chatNotice.setText(R.string.bchat_media_checking);
+            recoverUncertainMediaConfirmation(scopedAccount, room);
+        } catch (IOException unavailable) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
 
     private void discardConnectedMedia(AccountScope scope, Room room,

@@ -40,3 +40,14 @@ jobs:
           else
             python3 custom_addons/baseer_bchat/tools/release_guard.py --all
           fi
+
+      - name: Run native media controller on pinned Odoo HTTPRequest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --entrypoint python3 -e PYTHONDONTWRITEBYTECODE=1 \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons/baseer_bchat",dst=/mnt/baseer-addons/baseer_bchat,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            /mnt/baseer-addons/baseer_bchat/tools/run_native_body_tests.py \
+            --addon-root /mnt/baseer-addons/baseer_bchat

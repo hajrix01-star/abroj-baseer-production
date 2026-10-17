@@ -136,6 +136,10 @@ checks = {
         and "mediaStore.markUploaded(scopedAccount, entry, mediaId);" in body(
             "private void reconcileNativeMediaUpload(")
         and "sendConnectedMedia(scopedAccount, room, saved);" in body(
+            "private void reconcileNativeMediaUpload(")
+        and 'mediaId == 0 && "uploading".equals(state)' in body(
+            "private void reconcileNativeMediaUpload(")
+        and "handler.postDelayed(() -> reconcileNativeMediaUpload(scopedAccount, room, entry), 1500);" in body(
             "private void reconcileNativeMediaUpload("),
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),

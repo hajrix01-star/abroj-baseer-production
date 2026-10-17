@@ -14,7 +14,7 @@ from odoo.exceptions import AccessError
 from .. import media_contracts
 from ..contracts import ProtocolError, canonical_uuid, positive_id
 from .media import _MEDIA_TOKEN
-from .mobile_upload_grant import _MOBILE_UPLOAD_GRANT_TOKEN
+from .mobile_upload_grant import _MOBILE_UPLOAD_GRANT_TOKEN, _UPLOAD_LEASE_SECONDS
 
 
 _logger = logging.getLogger(__name__)
@@ -84,6 +84,18 @@ class BChatMediaService(models.AbstractModel):
         }
         if media:
             payload.update({'media_id': media.id, 'state': media.state})
+            return payload
+        # A process restart can lose the Android response while its raw native body is still
+        # arriving.  Report this scoped, short lease so the client keeps reconciling instead
+        # of offering an early second POST for the same upload UUID.
+        uploading = self.env['baseer.bchat.mobile.upload.grant'].sudo().search([
+            ('user_id', '=', self.env.uid), ('company_id', '=', room.company_id.id),
+            ('room_id', '=', room.id), ('membership_id', '=', member.id),
+            ('upload_uuid', '=', upload_uuid), ('state', '=', 'uploading'),
+            ('upload_started_at', '>=', fields.Datetime.now() - timedelta(seconds=_UPLOAD_LEASE_SECONDS)),
+        ], limit=1)
+        if uploading:
+            payload['state'] = 'uploading'
         return payload
 
     @api.model

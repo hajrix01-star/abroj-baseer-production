@@ -50,6 +50,8 @@ class NativeMediaUploadContractTests(unittest.TestCase):
         self.assertIn("('membership_id', '=', member.id)", SERVICE)
         self.assertIn("('author_user_id', '=', self.env.uid)", SERVICE)
         self.assertIn("('state', 'in', ('staged', 'attached'))", SERVICE)
+        self.assertIn("('state', '=', 'uploading')", SERVICE)
+        self.assertIn("_UPLOAD_LEASE_SECONDS", SERVICE)
 
     def test_grant_lifecycle_is_bounded_and_recovers_a_lost_native_response(self):
         self.assertIn('_MAX_ACTIVE_GRANTS_PER_USER = 1', GRANT)

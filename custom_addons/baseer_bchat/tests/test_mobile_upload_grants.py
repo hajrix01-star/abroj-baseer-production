@@ -142,6 +142,16 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         self.assertEqual((limited.exception.code, limited.exception.status),
                          ('upload_rate_limited', 429))
 
+    def test_reconcile_reports_only_the_current_memberships_active_native_upload(self):
+        raw = self._image()
+        metadata, issued = self._issue(raw)
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        claim = grants._claim_capability(issued['grant_id'], issued['secret'])
+        self.assertTrue(claim['claimed'])
+        state = self.env['baseer.bchat.service'].with_user(self.manager)._v2_reconcile_native_upload(
+            self.room.id, metadata['upload_uuid'])
+        self.assertEqual((state['state'], state.get('media_id')), ('uploading', None))
+
     def test_expired_tombstones_are_purged_only_by_the_verified_cron(self):
         raw = self._image()
         _, issued = self._issue(raw)

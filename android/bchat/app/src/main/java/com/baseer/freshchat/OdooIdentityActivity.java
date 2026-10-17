@@ -8515,6 +8515,14 @@ public final class OdooIdentityActivity extends Activity {
                     sendConnectedMedia(scopedAccount, room, saved);
                     return;
                 }
+                if (mediaId == 0 && "uploading".equals(state)) {
+                    // The server still owns the first raw body.  Keep reading the narrowly
+                    // scoped receipt; never race it with another byte stream after restart.
+                    updatePendingUi();
+                    chatNotice.setText(R.string.bchat_media_checking);
+                    handler.postDelayed(() -> reconcileNativeMediaUpload(scopedAccount, room, entry), 1500);
+                    return;
+                }
                 if (!"missing".equals(state)) throw new IOException();
                 updatePendingUi();
                 showMissingNativeMediaRetry(scopedAccount, room, entry);

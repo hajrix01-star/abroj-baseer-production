@@ -186,6 +186,22 @@
         "android/bchat/tools/test-connected-media-ui-contracts.py"
       ],
       "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "login-brand-motion",
+      "introduced": "2026-10-17",
+      "risk": "medium",
+      "scope": "The BChat login keeps the canonical unaltered mark, a restrained motion fallback, professional credential fields, and release metadata without a marketing tagline.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/EntryMarkView.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/LoginBrandView.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "android/bchat/app/src/main/res/values/strings.xml",
+        "android/bchat/app/src/main/res/values-ar/strings.xml",
+        "android/bchat/app/src/main/res/values-en/strings.xml",
+        "android/bchat/tools/test-login-brand-contracts.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
     }
   ]
 }

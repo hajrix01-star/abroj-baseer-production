@@ -107,9 +107,9 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
 
     def test_login_screen_and_package_identify_the_candidate(self):
         screen = method('buildScreen')
-        self.assertIn('bchat_installed_version', screen)
-        self.assertIn('installedBChatVersion()', screen)
-        self.assertIn("versionCode 76; versionName '0.7.60-qa-media-replay-and-layout'", GRADLE)
+        self.assertIn('bchat_login_release_footer', screen)
+        self.assertIn('installedBChatReleaseName()', screen)
+        self.assertIn("versionCode 77; versionName '0.7.61-qa-brand-motion'", GRADLE)
 
     def test_recovery_candidate_disables_diagnostic_ui(self):
         self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)

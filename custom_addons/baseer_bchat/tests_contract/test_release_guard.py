@@ -29,6 +29,14 @@ class ReleaseGuardTests(unittest.TestCase):
         )]
         self.assertEqual(owners, ["attention-center"])
 
+    def test_login_brand_source_has_its_contract(self):
+        registry = guard.load_registry()
+        owners = [entry["id"] for entry in registry["invariants"] if guard.matches(
+            "android/bchat/app/src/main/java/com/baseer/freshchat/LoginBrandView.java",
+            entry["source_paths"],
+        )]
+        self.assertEqual(owners, ["login-brand-motion"])
+
     def test_guard_integrity_covers_codeowners_and_both_ci_modes(self):
         guard.run_guard_integrity()
 

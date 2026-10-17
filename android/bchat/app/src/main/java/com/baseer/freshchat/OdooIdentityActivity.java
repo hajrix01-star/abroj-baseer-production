@@ -578,19 +578,20 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private EditText field(LinearLayout parent, int label, boolean password) {
-        TextView caption = new TextView(this);
-        caption.setText(label);
-        caption.setTextColor(0xff0d3f68);
-        caption.setTextSize(14);
-        parent.addView(caption, fieldSize(14));
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setTextSize(16);
         input.setInputType(password ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
                 : InputType.TYPE_CLASS_TEXT);
+        input.setHint(label);
+        input.setHintTextColor(0xff64748b);
+        input.setTextColor(0xff182a3b);
+        input.setBackground(Ui.outline(Color.WHITE, 0xffbfd0df, 14, this));
+        input.setMinHeight(dp(56));
+        input.setPadding(dp(16), 0, dp(16), 0);
         input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
         input.setContentDescription(getString(label));
-        parent.addView(input, fieldSize(4));
+        parent.addView(input, fieldSize(12));
         return input;
     }
 
@@ -611,34 +612,39 @@ public final class OdooIdentityActivity extends Activity {
         nativeForm.setVerticalScrollBarEnabled(false);
         LinearLayout fields = new LinearLayout(this);
         fields.setOrientation(LinearLayout.VERTICAL);
-        fields.setGravity(Gravity.CENTER_VERTICAL);
-        fields.setPadding(dp(8), dp(8), dp(8), dp(8));
-        nativeForm.addView(fields);
-        EntryMarkView mark = new EntryMarkView(this);
-        LinearLayout.LayoutParams markSize = new LinearLayout.LayoutParams(dp(100), dp(100));
+        fields.setGravity(Gravity.CENTER_HORIZONTAL);
+        fields.setPadding(dp(12), dp(20), dp(12), dp(14));
+        nativeForm.addView(fields, new ScrollView.LayoutParams(-1, -1));
+        LoginBrandView mark = new LoginBrandView(this);
+        LinearLayout.LayoutParams markSize = new LinearLayout.LayoutParams(dp(148), dp(158));
         markSize.gravity = Gravity.CENTER_HORIZONTAL;
         fields.addView(mark, markSize);
         TextView title = new TextView(this);
         title.setText(R.string.auth_native_title);
-        title.setTextSize(24);
+        title.setTextSize(23);
         title.setTextColor(0xff0d3f68);
         title.setGravity(Gravity.CENTER);
-        fields.addView(title, fieldSize(12));
-        TextView installedVersion = new TextView(this);
-        installedVersion.setText(getString(R.string.bchat_installed_version, installedBChatVersion()));
-        installedVersion.setTextSize(12);
-        installedVersion.setTextColor(0xff64748b);
-        installedVersion.setGravity(Gravity.CENTER);
-        installedVersion.setTextDirection(View.TEXT_DIRECTION_LTR);
-        fields.addView(installedVersion, fieldSize(2));
+        fields.addView(title, fieldSize(8));
         loginInput = field(fields, R.string.auth_native_username, false);
         passwordInput = field(fields, R.string.auth_native_password, true);
         signIn = new Button(this);
         signIn.setText(R.string.auth_native_sign_in);
         styleAction(signIn, true);
+        signIn.setMinHeight(dp(54));
         signIn.setEnabled(false);
         signIn.setOnClickListener(v -> submitLogin());
-        fields.addView(signIn, fieldSize(8));
+        fields.addView(signIn, fieldSize(12));
+        View footerSpacer = new View(this);
+        fields.addView(footerSpacer, new LinearLayout.LayoutParams(-1, 0, 1));
+        View footerDivider = Ui.line(this);
+        fields.addView(footerDivider, fieldSize(16));
+        TextView releaseFooter = new TextView(this);
+        releaseFooter.setText(getString(R.string.bchat_login_release_footer,
+                installedBChatReleaseName(), getString(R.string.bchat_login_release_date)));
+        releaseFooter.setTextSize(12);
+        releaseFooter.setTextColor(0xff64748b);
+        releaseFooter.setGravity(Gravity.CENTER);
+        fields.addView(releaseFooter, fieldSize(10));
         layout.addView(nativeForm, new LinearLayout.LayoutParams(-1, 0, 1));
 
         shell = new LinearLayout(this);
@@ -2419,6 +2425,14 @@ public final class OdooIdentityActivity extends Activity {
             android.content.pm.PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
             long code = android.os.Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
             return info.versionName + " (" + code + ")";
+        } catch (android.content.pm.PackageManager.NameNotFoundException unavailable) {
+            return getString(R.string.bchat_version_unavailable);
+        }
+    }
+
+    private String installedBChatReleaseName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (android.content.pm.PackageManager.NameNotFoundException unavailable) {
             return getString(R.string.bchat_version_unavailable);
         }

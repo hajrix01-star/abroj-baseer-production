@@ -790,6 +790,8 @@
     <string name="bchat_about_summary">"BChat يجمع محادثات الفريق ومهامه وطلبات احتياجات المطعم عبر بصير."</string>
     <string name="bchat_installed_version">"الإصدار المثبت: %1$s"</string>
     <string name="bchat_version_unavailable">"غير متاح"</string>
+    <string name="bchat_login_release_footer">"الإصدار %1$s\n%2$s"</string>
+    <string name="bchat_login_release_date">"17 أكتوبر 2026"</string>
     <string name="bchat_whats_new">"ما الجديد"</string>
     <string name="bchat_whats_new_title">"ما الجديد في %1$s"</string>
     <string name="bchat_whats_new_body">"• تصميم جديد لقائمة الغرف والمحادثة برأس أصغر وألوان أوضح.\n• بحث محلي في أسماء الغرف، وتبويبات تنقل أصغر دون الشكل القديم.\n• حجم خط مريح للرسائل مع الحفاظ على الصوت والصور والمرفقات والردود.\n\nهذه نسخة تجريبية محلية؛ لم تتغير صلاحيات الطلبات أو مصدر بيانات المحادثات."</string>

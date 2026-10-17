@@ -534,12 +534,11 @@ class BChatMediaHttpCase(HttpCase):
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
         })
-        manager = self.env['res.users'].with_context(no_reset_password=True).create({
-            'name': 'BChat media HTTP manager',
-            'login': 'bchat-media-http-manager-%s' % uuid4().hex,
-            'company_id': company.id,
-            'company_ids': [Command.set(company.ids)],
-            'group_ids': [Command.set([self.env.ref('baseer_bchat.group_bchat_manager').id])],
+        # Room administration intentionally belongs only to the canonical Odoo
+        # administrator; a manager group alone must never gain that capability.
+        manager = self.env.ref('base.user_admin')
+        manager.sudo().write({
+            'group_ids': [Command.link(self.env.ref('baseer_bchat.group_bchat_manager').id)],
         })
         room = self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
             'name': 'Media HTTP room', 'company_id': company.id,

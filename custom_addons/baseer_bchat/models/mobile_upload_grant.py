@@ -107,6 +107,10 @@ class BChatMobileUploadGrant(models.Model):
                   and grant.upload_started_at < now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)):
                 grant._write_verified({'state': 'expired', 'failure_code': 'upload_timeout'},
                                       _MOBILE_UPLOAD_GRANT_TOKEN)
+        # PostgreSQL checks the partial unique index when a replacement is inserted.
+        # Flush under the advisory lock so an ORM-deferred expiry cannot look like a
+        # duplicate active grant for the same logical upload.
+        self.flush_model(['state', 'failure_code'])
         active.invalidate_recordset(['state', 'upload_started_at', 'expires_at'])
         active = active.filtered(lambda grant: grant.state in ('issued', 'uploading'))
         same_upload = active.filtered(lambda grant: grant.upload_uuid == upload_uuid)
@@ -115,6 +119,7 @@ class BChatMobileUploadGrant(models.Model):
             if grant.state == 'uploading':
                 raise ProtocolError('upload_in_progress', 'This media upload is already in progress.', 409)
             grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
+            self.flush_model(['state'])
             active -= grant
         if len(active) >= _MAX_ACTIVE_GRANTS_PER_USER:
             raise ProtocolError('upload_in_progress', 'Another media upload is already in progress.', 429)

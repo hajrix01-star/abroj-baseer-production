@@ -66,8 +66,9 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         service = self.env['baseer.bchat.service'].with_user(self.manager).with_context({
             'allowed_company_ids': [self.company.id],
         })
-        with self.assertRaises(AccessError):
+        with self.assertRaises(ProtocolError) as membership_changed:
             service._v2_mobile_upload_from_capability(snapshot, raw)
+        self.assertEqual(membership_changed.exception.code, 'membership_changed')
         # The HTTP boundary denies this claim after a service rejection.  This direct
         # service test performs the equivalent cleanup before requesting a new grant.
         grant._write_verified({'state': 'denied', 'failure_code': 'access_revoked'},
@@ -134,6 +135,7 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
         grant = grants.search([('grant_id', '=', issued['grant_id'])], limit=1)
         grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
+        grant.flush_recordset(['state', 'write_date'])
         self.env.cr.execute('''
             UPDATE baseer_bchat_mobile_upload_grant
             SET write_date = %s WHERE id = %s

@@ -1,0 +1,102 @@
+"""Focused contracts for the native Android media capability boundary."""
+import hashlib
+from datetime import timedelta
+from uuid import uuid4
+
+from odoo import fields
+from odoo.exceptions import AccessError
+from odoo.tests import tagged
+
+from ..contracts import ProtocolError
+from ..models.mobile_upload_grant import _MOBILE_UPLOAD_GRANT_TOKEN
+from .test_media_v2 import BChatMediaCase
+
+
+@tagged('post_install', '-at_install', 'baseer_bchat_media')
+class BChatMobileUploadGrantCase(BChatMediaCase):
+    def _metadata(self, raw, **overrides):
+        return super()._metadata(raw, **overrides)
+
+    def _issue(self, raw, **overrides):
+        metadata = self._metadata(raw, **overrides)
+        service = self.env['baseer.bchat.service'].with_user(self.manager)
+        return metadata, service._v2_issue_mobile_upload_grant(self.room.id, metadata)
+
+    def test_grant_is_single_use_scope_and_direct_model_access_is_denied(self):
+        raw = self._image()
+        metadata, issued = self._issue(raw)
+        self.assertRegex(issued['grant_id'], r'^[0-9a-f-]{36}$')
+        self.assertRegex(issued['secret'], r'^[A-Za-z0-9_-]{43,128}$')
+        grant = self.env['baseer.bchat.mobile.upload.grant'].sudo().search([
+            ('grant_id', '=', issued['grant_id']),
+        ], limit=1)
+        self.assertEqual((grant.user_id, grant.room_id, grant.membership_id),
+                         (self.manager, self.room, self.manager_epoch))
+        self.assertEqual((grant.upload_uuid, grant.sha256, grant.size_bytes),
+                         (metadata['upload_uuid'], metadata['sha256'], len(raw)))
+        self.assertNotEqual(grant.secret_hash, issued['secret'])
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.mobile.upload.grant'].with_user(self.manager).create({})
+        replacement = self.env['baseer.bchat.service'].with_user(self.manager)._v2_issue_mobile_upload_grant(
+            self.room.id, metadata)
+        grant.invalidate_recordset(['state'])
+        self.assertEqual(grant.state, 'expired')
+        self.assertNotEqual(replacement['grant_id'], issued['grant_id'])
+        active = self.env['baseer.bchat.mobile.upload.grant'].sudo().search([
+            ('grant_id', '=', replacement['grant_id']),
+        ], limit=1)
+        active._write_verified({'state': 'uploading', 'upload_started_at': fields.Datetime.now()},
+                               _MOBILE_UPLOAD_GRANT_TOKEN)
+        with self.assertRaises(ProtocolError) as busy:
+            self.env['baseer.bchat.service'].with_user(self.manager)._v2_issue_mobile_upload_grant(
+                self.room.id, metadata)
+        self.assertEqual(busy.exception.code, 'upload_in_progress')
+
+    def test_redeem_path_rechecks_membership_and_result_is_retained_after_upload_expiry(self):
+        raw = self._image()
+        metadata, issued = self._issue(raw)
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        grant = grants.search([('grant_id', '=', issued['grant_id'])], limit=1)
+        grant._write_verified({
+            'state': 'uploading', 'upload_started_at': fields.Datetime.now(),
+        }, _MOBILE_UPLOAD_GRANT_TOKEN)
+        snapshot = grant._snapshot()
+        snapshot['claimed'] = True
+        self.manager_epoch.with_user(self.room_admin).with_company(self.company).action_revoke()
+        service = self.env['baseer.bchat.service'].with_user(self.manager).with_context({
+            'allowed_company_ids': [self.company.id],
+        })
+        with self.assertRaises(AccessError):
+            service._v2_mobile_upload_from_capability(snapshot, raw)
+
+        # A fresh grant can resolve normally.  Its durable receipt remains readable for the
+        # result-retention window even though the short upload privilege has ended.
+        self.manager_epoch = self._join(self.manager)
+        metadata, issued = self._issue(raw, uuid=str(uuid4()))
+        grant = grants.search([('grant_id', '=', issued['grant_id'])], limit=1)
+        media_id = self.env['baseer.bchat.service'].with_user(self.manager)._v2_upload(
+            self.room.id, metadata, raw)['media_id']
+        grant._write_verified({
+            'state': 'resolved', 'media_id': media_id,
+            'result_expires_at': fields.Datetime.now() + timedelta(minutes=1),
+        }, _MOBILE_UPLOAD_GRANT_TOKEN)
+        status = grants._status_capability(issued['grant_id'], issued['secret'])
+        self.assertEqual((status['state'], status['media_id']), ('resolved', media_id))
+        grant._write_verified({
+            'result_expires_at': fields.Datetime.now() - timedelta(seconds=1),
+        }, _MOBILE_UPLOAD_GRANT_TOKEN)
+        with self.assertRaises(ProtocolError) as expired:
+            grants._status_capability(issued['grant_id'], issued['secret'])
+        self.assertEqual(expired.exception.status, 410)
+
+    def test_capability_snapshot_cannot_change_metadata(self):
+        raw = self._image()
+        metadata, issued = self._issue(raw)
+        grant = self.env['baseer.bchat.mobile.upload.grant'].sudo().search([
+            ('grant_id', '=', issued['grant_id']),
+        ], limit=1)
+        snapshot = grant._snapshot()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), snapshot['sha256'])
+        self.assertEqual(metadata['mime'], snapshot['mime'])
+        with self.assertRaises(AccessError):
+            grant.write({'mime': 'application/pdf'})

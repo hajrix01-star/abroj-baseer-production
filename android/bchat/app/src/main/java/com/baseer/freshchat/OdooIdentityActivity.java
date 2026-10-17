@@ -161,7 +161,6 @@ public final class OdooIdentityActivity extends Activity {
     private static final int MEDIA_CAMERA_REQUEST = 1207;
     private static final int MEDIA_RECORD_PERMISSION_REQUEST = 1208;
     private static final int GROUP_PHOTO_REQUEST = 1209;
-    private static final int MEDIA_CHUNK_BYTES = 32 * 1024;
     private static final int MEDIA_READ_CHUNK_BYTES = 64 * 1024;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -246,13 +245,9 @@ public final class OdooIdentityActivity extends Activity {
     private boolean mediaAvailable;
     private View mediaPickButton;
     private Button mediaReviewButton;
-    private WebMessagePort mediaUploadPort;
-    private FileInputStream mediaUploadInput;
-    private boolean mediaUploadChunkPending;
+    private BChatNativeMediaUploader.Call mediaNativeUpload;
     private Runnable mediaUploadTimeout;
     private int mediaUploadNonce;
-    private int mediaUploadSequence;
-    private int mediaUploadBytes;
     private boolean mediaUploadBusy;
     private boolean mediaConfirmBusy;
     private boolean mediaReplayAfterInitialHistory;
@@ -3318,19 +3313,31 @@ public final class OdooIdentityActivity extends Activity {
 
     /**
      * The affected Android WebView can receive direct fetch callbacks but drops transferred
-     * WebMessagePorts. Device registration is the one write allowed to use that direct path:
-     * the server contract makes the exact (user, installation_id) registration idempotent.
+     * WebMessagePorts. Push registration uses the bounded direct callback; native media uses it
+     * only to issue a capability and streams no file bytes through WebView.
      *
      * This sends one request only. The polling below merely reads the result already produced
      * by the WebView; it never repeats a registration whose outcome might be uncertain.
      */
     private boolean registerPushDirectlyInWebView(String payload, V2Callback callback) {
+        return postSmallFormDirectlyInWebView(V2_PUSH_REGISTER, "payload", payload, callback);
+    }
+
+    /**
+     * Sends only a bounded, idempotency-safe control payload in the authenticated WebView.
+     * Native media bytes never use this path: it issues a one-time capability only.
+     */
+    private boolean postSmallFormDirectlyInWebView(String path, String field, String payload,
+                                                   V2Callback callback) {
+        boolean supported = V2_PUSH_REGISTER.equals(path)
+                || path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/mobile-upload-grants");
         if (closed || !verified || account == null || csrfToken == null || callback == null
-                || payload == null || payload.length() > 8192 || webV2GetFallbackBusy
+                || payload == null || payload.length() > (V2_PUSH_REGISTER.equals(path) ? 8192 : 4096) || field == null
+                || !field.matches("[a-z_]{1,32}") || !supported || webV2GetFallbackBusy
                 || v2Busy || web == null || web.getUrl() == null
                 || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
         final int fallback = ++webV2GetFallbackGeneration;
-        final String slot = "__bchatPushRegistration" + fallback;
+        final String slot = "__bchatSmallPost" + fallback;
         final int currentWeb = webEpoch;
         final int currentPage = pageEpoch;
         final int currentEpoch = epoch;
@@ -3338,14 +3345,15 @@ public final class OdooIdentityActivity extends Activity {
         releaseV2Port();
         v2Busy = true;
         String script = "(function(){if(location.href!==" + JSONObject.quote(BRIDGE) + ")return;"
-                + "var u=new URL(" + JSONObject.quote(V2_PUSH_REGISTER) + ",location.origin);"
-                + "if(u.origin!==location.origin||u.pathname!==" + JSONObject.quote(V2_PUSH_REGISTER)
+                + "var u=new URL(" + JSONObject.quote(path) + ",location.origin);"
+                + "if(u.origin!==location.origin||u.pathname!==" + JSONObject.quote(path)
                 + ")return;var done=function(x){window[" + JSONObject.quote(slot)
                 + "]=JSON.stringify(x);};"
                 + "fetch(u.href,{method:'POST',credentials:'same-origin',redirect:'manual',cache:'no-store',"
                 + "headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},"
-                + "body:new URLSearchParams({csrf_token:" + JSONObject.quote(csrfToken)
-                + ",payload:" + JSONObject.quote(payload) + "}).toString()})"
+                + "body:(function(){var p=new URLSearchParams();p.set('csrf_token',"
+                + JSONObject.quote(csrfToken) + ");p.set(" + JSONObject.quote(field) + ","
+                + JSONObject.quote(payload) + ");return p.toString();})()})"
                 + ".then(function(r){if(r.type==='opaqueredirect')return {nonce:" + fallback
                 + ",status:401,type:'application/json',url:u.href,body:'{}'};"
                 + "if(!r.body||!r.body.getReader)throw Error('stream');"
@@ -3356,7 +3364,7 @@ public final class OdooIdentityActivity extends Activity {
                 + "b+=d.decode(x.value,{stream:true});return read();});}return read();})"
                 + ".then(done).catch(function(){done({nonce:" + fallback + ",status:0});});})();";
         web.evaluateJavascript(script, ignored -> pollVerifiedGetFallback(slot, fallback,
-                V2_PUSH_REGISTER, MAX_V2_RESPONSE, currentWeb, currentPage, currentEpoch, callback, 0));
+                path, MAX_V2_RESPONSE, currentWeb, currentPage, currentEpoch, callback, 0));
         return true;
     }
 
@@ -8576,15 +8584,8 @@ public final class OdooIdentityActivity extends Activity {
     private void closeMediaUpload() {
         ++mediaUploadNonce;
         mediaUploadBusy = false;
-        mediaUploadChunkPending = false;
         if (mediaUploadTimeout != null) { handler.removeCallbacks(mediaUploadTimeout); mediaUploadTimeout = null; }
-        if (mediaUploadPort != null) { mediaUploadPort.close(); mediaUploadPort = null; }
-        if (mediaUploadInput != null) {
-            try { mediaUploadInput.close(); } catch (IOException ignored) { }
-            mediaUploadInput = null;
-        }
-        if (web != null && web.getUrl() != null && isBridgeUrl(Uri.parse(web.getUrl())))
-            web.evaluateJavascript("if(window.__bchatMediaAbort){window.__bchatMediaAbort.abort();window.__bchatMediaAbort=null}", null);
+        if (mediaNativeUpload != null) { mediaNativeUpload.cancel(); mediaNativeUpload = null; }
     }
 
     private void mediaUploadDeadline(int request, AccountScope scopedAccount, Room room) {
@@ -8597,152 +8598,119 @@ public final class OdooIdentityActivity extends Activity {
         handler.postDelayed(mediaUploadTimeout, 90000);
     }
 
-    private void sendNextMediaChunk(int request, BChatConnectedMediaStore.Entry entry,
-                                    AccountScope scopedAccount, Room room) {
-        if (!mediaUploadBusy || request != mediaUploadNonce || !stillCurrent(scopedAccount, room)
-                || mediaUploadPort == null || mediaUploadInput == null || mediaUploadChunkPending) return;
-        mediaUploadChunkPending = true;
-        FileInputStream input = mediaUploadInput;
-        int bytesSent = mediaUploadBytes;
-        int sequence = mediaUploadSequence;
+    private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
+                                      BChatConnectedMediaStore.Entry entry) throws IOException {
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy || web == null
+                || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
+        File staged = mediaStore.file(scopedAccount, entry);
+        mediaUploadBusy = true;
+        updatePendingUi();
+        final int request = ++mediaUploadNonce;
+        final String path = V2_ROOMS + "/" + room.id + "/mobile-upload-grants";
+        chatNotice.setText(R.string.bchat_media_uploading);
+        mediaUploadDeadline(request, scopedAccount, room);
+        if (!postSmallFormDirectlyInWebView(path, "metadata", entry.uploadMetadata().toString(),
+                (statusCode, result) -> beginNativeMediaUpload(request, scopedAccount, room, entry,
+                        staged, statusCode, result))) {
+            closeMediaUpload();
+            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+        }
+    }
+
+    private void beginNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
+                                        BChatConnectedMediaStore.Entry entry, File staged,
+                                        int statusCode, JSONObject result) {
+        if (closed || request != mediaUploadNonce || !mediaUploadBusy
+                || !stillCurrent(scopedAccount, room)) return;
+        try {
+            if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
+                throw new IOException("Native grant rejected");
+            String grantId = result.getString("grant_id");
+            String secret = result.getString("secret");
+            if (!grantId.matches("[0-9a-f-]{36}") || !secret.matches("[A-Za-z0-9_-]{43,128}"))
+                throw new IOException("Invalid native grant");
+            BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
+            mediaNativeUpload = call;
+            mediaIo.execute(() -> {
+                BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.upload(
+                        call, ORIGIN, grantId, secret, staged, entry.size, entry.mime);
+                handler.post(() -> finishNativeMediaUpload(request, scopedAccount, room, entry,
+                        grantId, secret, response));
+            });
+        } catch (Exception invalid) {
+            closeMediaUpload();
+            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+        }
+    }
+
+    private void finishNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
+                                         BChatConnectedMediaStore.Entry entry, String grantId,
+                                         String secret, BChatNativeMediaUploader.Result response) {
+        if (closed || request != mediaUploadNonce || !mediaUploadBusy
+                || !stillCurrent(scopedAccount, room)) return;
+        if (response.isTransportFailure() || response.status == 202) {
+            checkNativeMediaUpload(request, scopedAccount, room, entry, grantId, secret, 0);
+            return;
+        }
+        applyNativeMediaResult(request, scopedAccount, room, entry, response, 0);
+    }
+
+    private void checkNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
+                                        BChatConnectedMediaStore.Entry entry, String grantId,
+                                        String secret, int attempt) {
+        if (closed || request != mediaUploadNonce || !mediaUploadBusy
+                || !stillCurrent(scopedAccount, room)) return;
+        BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
+        mediaNativeUpload = call;
         mediaIo.execute(() -> {
-            String frame = null;
-            int count = 0;
-            boolean end = bytesSent == entry.size;
-            try {
-                JSONObject chunk = new JSONObject();
-                chunk.put("nonce", request);
-                chunk.put("seq", sequence);
-                chunk.put("end", end);
-                if (end) input.close();
-                else {
-                    byte[] bytes = new byte[Math.min(MEDIA_CHUNK_BYTES, entry.size - bytesSent)];
-                    count = input.read(bytes);
-                    if (count <= 0) throw new IOException("Staged media shortened");
-                    chunk.put("data", Base64.encodeToString(bytes, 0, count, Base64.NO_WRAP));
-                }
-                frame = chunk.toString();
-            } catch (Exception ignored) { }
-            String readyFrame = frame;
-            int copied = count;
+            BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.status(call, ORIGIN, grantId, secret);
             handler.post(() -> {
-                if (request != mediaUploadNonce || !mediaUploadBusy) return;
-                mediaUploadChunkPending = false;
-                if (readyFrame == null || mediaUploadPort == null) {
-                    closeMediaUpload();
-                    if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_save_failed);
-                    return;
-                }
-                mediaUploadBytes += copied;
-                mediaUploadSequence = sequence + 1;
-                if (end) mediaUploadInput = null;
-                try {
-                    mediaUploadPort.postMessage(new WebMessage(readyFrame));
-                    mediaUploadDeadline(request, scopedAccount, room);
-                } catch (Exception invalid) {
-                    closeMediaUpload();
-                    if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_save_failed);
-                }
+                if (closed || request != mediaUploadNonce || !mediaUploadBusy
+                        || !stillCurrent(scopedAccount, room)) return;
+                if (response.status == 202 && attempt < 4) {
+                    handler.postDelayed(() -> checkNativeMediaUpload(request, scopedAccount, room, entry,
+                            grantId, secret, attempt + 1), 500);
+                } else applyNativeMediaResult(request, scopedAccount, room, entry, response, attempt);
             });
         });
     }
 
-    private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
-                                      BChatConnectedMediaStore.Entry entry) throws IOException {
-        uploadConnectedMedia(scopedAccount, room, entry, false);
-    }
-
-    private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
-                                      BChatConnectedMediaStore.Entry entry,
-                                      boolean renewedThisAttempt) throws IOException {
-        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy || web == null
-                || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
-        File staged = mediaStore.file(scopedAccount, entry);
-        mediaUploadInput = new FileInputStream(staged);
-        mediaUploadBytes = 0;
-        mediaUploadSequence = 0;
-        mediaUploadBusy = true;
-        updatePendingUi();
-        final int request = ++mediaUploadNonce;
-        final int currentWeb = webEpoch, currentPage = pageEpoch, currentEpoch = epoch;
-        final String path = V2_ROOMS + "/" + room.id + "/uploads";
-        WebMessagePort[] channel = web.createWebMessageChannel();
-        mediaUploadPort = channel[0];
-        mediaUploadPort.setWebMessageCallback(new WebMessagePort.WebMessageCallback() {
-            @Override public void onMessage(WebMessagePort port, WebMessage message) {
-                if (closed || request != mediaUploadNonce || !mediaUploadBusy || port != mediaUploadPort
-                        || currentWeb != webEpoch || currentPage != pageEpoch || currentEpoch != epoch
-                        || !stillCurrent(scopedAccount, room) || web == null || web.getUrl() == null
-                        || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
-                try {
-                    String raw = message.getData();
-                    if (raw == null || raw.length() > 12000) throw new IOException("Oversized bridge result");
-                    JSONObject value = new JSONObject(raw);
-                    if (value.getInt("nonce") != request) throw new IOException("Stale bridge response");
-                    String type = value.getString("type");
-                    if ("ready".equals(type) || "ack".equals(type)) {
-                        if ("ack".equals(type) && value.getInt("seq") != mediaUploadSequence - 1)
-                            throw new IOException("Out-of-order media ACK");
-                        sendNextMediaChunk(request, entry, scopedAccount, room);
-                        return;
-                    }
-                    if (!"result".equals(type)) throw new IOException("Invalid media response");
-                    int statusCode = value.getInt("status");
-                    String finalUrl = value.optString("url", "");
-                    String mime = value.optString("content_type", "").split(";", 2)[0].trim();
-                    JSONObject result = new JSONObject(value.optString("body", "{}"));
-                    if (!(ORIGIN + path).equals(finalUrl) || !"application/json".equals(mime))
-                        throw new IOException("Unexpected upload endpoint");
-                    closeMediaUpload();
-                    if (handleV2TransportFailure(statusCode, true)) return;
-                    if (statusCode == 200 && positiveId(result.get("api_version")) == 2
-                            && entry.networkUploadUuid().equals(result.getString("upload_uuid"))
-                            && ("staged".equals(result.getString("state"))
-                            || "attached".equals(result.getString("state")))) {
-                        BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry,
-                                positiveId(result.get("media_id")));
-                        sendConnectedMedia(scopedAccount, room, saved);
-                    } else if (statusCode == 400 || statusCode == 409 || statusCode == 413
-                            || statusCode == 415) {
-                        JSONObject error = result.optJSONObject("error");
-                        String code = error == null ? "upload_rejected" : error.optString("code", "upload_rejected");
-                        if (!code.matches("[a-z_]{1,64}")) code = "upload_rejected";
-                        if (BChatConnectedMediaStore.canRenewExpiredUpload(statusCode, code,
-                                renewedThisAttempt) && stillCurrent(scopedAccount, room)
-                                && entry.roomId == room.id && entry.companyId == room.companyId
-                                && entry.membershipId == room.membershipId
-                                && entry.policyVersion == room.invoicePolicyVersion
-                                && outbox.first(scopedAccount, room.id, room.membershipId) == null) {
-                            BChatConnectedMediaStore.Entry renewed =
-                                    mediaStore.renewExpiredUpload(scopedAccount, entry, code);
-                            uploadConnectedMedia(scopedAccount, room, renewed, true);
-                            return;
-                        }
-                        mediaStore.markUploadBlocked(scopedAccount, entry, code);
-                        if (statusCode == 409) loadRooms();
-                        updatePendingUi();
-                        chatNotice.setText(R.string.bchat_media_upload_blocked);
-                    } else if (statusCode == 429) {
-                        chatNotice.setText(R.string.bchat_media_rejected);
-                        updatePendingUi();
-                    } else chatNotice.setText(R.string.chat_v2_uncertain);
-                } catch (Exception invalid) {
-                    closeMediaUpload();
-                    if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
-                }
+    private void applyNativeMediaResult(int request, AccountScope scopedAccount, Room room,
+                                        BChatConnectedMediaStore.Entry entry,
+                                        BChatNativeMediaUploader.Result response, int statusAttempt) {
+        if (closed || request != mediaUploadNonce || !mediaUploadBusy
+                || !stillCurrent(scopedAccount, room)) return;
+        try {
+            JSONObject result = new JSONObject(response.body);
+            if (response.status == 200 && positiveId(result.get("api_version")) == 2
+                    && entry.networkUploadUuid().equals(result.getString("upload_uuid"))
+                    && ("staged".equals(result.getString("state"))
+                    || "attached".equals(result.getString("state")))) {
+                closeMediaUpload();
+                BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry,
+                        positiveId(result.get("media_id")));
+                sendConnectedMedia(scopedAccount, room, saved);
+                return;
             }
-        });
-        String script = BChatConnectedMediaBridge.uploadScript(ORIGIN, BRIDGE, path,
-                csrfToken, entry, request);
-        chatNotice.setText(R.string.bchat_media_uploading);
-        web.evaluateJavascript(script, ignored -> {
-            if (request != mediaUploadNonce || !mediaUploadBusy || currentWeb != webEpoch
-                    || currentPage != pageEpoch || currentEpoch != epoch || !stillCurrent(scopedAccount, room)
-                    || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
-            web.postWebMessage(new WebMessage("bchat-media-upload",
-                    new WebMessagePort[]{channel[1]}), Uri.parse(ORIGIN));
-            mediaUploadDeadline(request, scopedAccount, room);
-        });
+            JSONObject error = result.optJSONObject("error");
+            String code = error == null ? "native_upload_unconfirmed"
+                    : error.optString("code", "native_upload_unconfirmed");
+            if (!code.matches("[a-z_]{1,64}")) code = "native_upload_unconfirmed";
+            closeMediaUpload();
+            if (response.status == 400 || response.status == 409 || response.status == 413
+                    || response.status == 415) {
+                mediaStore.markUploadBlocked(scopedAccount, entry, code);
+                if (response.status == 409) loadRooms();
+                updatePendingUi();
+                chatNotice.setText(R.string.bchat_media_upload_blocked);
+            } else if (response.status == 429) {
+                chatNotice.setText(R.string.bchat_media_rejected);
+                updatePendingUi();
+            } else chatNotice.setText(R.string.chat_v2_uncertain);
+        } catch (Exception invalid) {
+            closeMediaUpload();
+            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+        }
     }
 
     private void sendConnectedMedia(AccountScope scopedAccount, Room room,

@@ -32,6 +32,114 @@ class BChatMediaApi(http.Controller):
             'code': 'forbidden', 'message': 'This media is unavailable.',
         }}, 403)
 
+    @staticmethod
+    def _native_json(payload, status=200):
+        return request.make_json_response(payload, status=status, headers=[
+            ('Cache-Control', 'no-store'), ('Pragma', 'no-cache'),
+            ('Vary', 'Authorization'), ('X-Content-Type-Options', 'nosniff'),
+        ])
+
+    @staticmethod
+    def _native_capability(grant_id, *, claim=False):
+        """Native routes are capability-only: never silently fall back to WebView cookies."""
+        incoming = request.httprequest
+        if incoming.headers.get('Cookie') or incoming.args:
+            raise ProtocolError('invalid_authentication', 'The upload capability is invalid.', 401)
+        authorization = incoming.headers.get('Authorization', '')
+        prefix = 'BChatUpload '
+        if not authorization.startswith(prefix):
+            raise ProtocolError('invalid_authentication', 'The upload capability is invalid.', 401)
+        token = authorization[len(prefix):]
+        supplied_id, separator, secret = token.partition('.')
+        if not separator or supplied_id != grant_id or '.' in secret:
+            raise ProtocolError('invalid_authentication', 'The upload capability is invalid.', 401)
+        grants = request.env['baseer.bchat.mobile.upload.grant']
+        return (grants._claim_capability(grant_id, secret) if claim
+                else grants._status_capability(grant_id, secret))
+
+    @staticmethod
+    def _native_result(snapshot):
+        payload = {
+            'api_version': 2, 'grant_state': snapshot['state'],
+            'upload_uuid': snapshot['upload_uuid'],
+        }
+        if snapshot['state'] == 'resolved':
+            media = request.env['baseer.bchat.media'].sudo().browse(snapshot['media_id']).exists()
+            if not media or media.upload_uuid != snapshot['upload_uuid']:
+                raise ProtocolError('media_unavailable', 'The media result is unavailable.', 503)
+            payload.update({'media_id': media.id, 'state': media.state})
+        elif snapshot['state'] == 'denied':
+            payload['failure_code'] = snapshot['failure_code']
+        return payload
+
+    @http.route('/bchat/api/v2/rooms/<int:room_id>/mobile-upload-grants', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=8192)
+    def issue_mobile_upload_grant(self, room_id, **kwargs):
+        """Small same-origin WebView write.  It carries metadata, never file bytes."""
+        try:
+            incoming = request.httprequest
+            if (incoming.args
+                    or incoming.content_type.split(';', 1)[0].strip().lower()
+                    != 'application/x-www-form-urlencoded'
+                    or incoming.files or set(incoming.form) != {'csrf_token', 'metadata'}
+                    or any(len(incoming.form.getlist(key)) != 1 for key in incoming.form)):
+                raise ProtocolError('invalid_payload', 'Only a CSRF token and upload metadata are accepted.')
+            if len(incoming.form['metadata'].encode('utf-8')) > 4096:
+                raise ProtocolError('payload_too_large', 'Upload metadata is too large.', 413)
+            return self._json(self._service()._v2_issue_mobile_upload_grant(
+                room_id, parse_payload(incoming.form['metadata'])))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
+    @http.route('/bchat/api/v2/mobile-upload-grants/<string:grant_id>', type='http', auth='none',
+                methods=['GET'], csrf=False, save_session=False)
+    def native_upload_status(self, grant_id, **kwargs):
+        try:
+            incoming = request.httprequest
+            if incoming.content_length not in (None, 0):
+                raise ProtocolError('invalid_payload', 'This capability route does not accept a body.')
+            snapshot = self._native_capability(grant_id)
+            status = 200 if snapshot['state'] == 'resolved' else 202
+            return self._native_json(self._native_result(snapshot), status)
+        except (AccessError, ProtocolError) as error:
+            return self._native_json({'api_version': 2, 'error': {
+                'code': error.code if isinstance(error, ProtocolError) else 'forbidden',
+                'message': str(error) if isinstance(error, ProtocolError) else 'This media is unavailable.',
+            }}, error.status if isinstance(error, ProtocolError) else 403)
+
+    @http.route('/bchat/api/v2/mobile-upload-grants/<string:grant_id>/content', type='http', auth='none',
+                methods=['POST'], csrf=False, save_session=False, max_content_length=MAX_UPLOAD_LIMIT)
+    def native_upload_content(self, grant_id, **kwargs):
+        snapshot = None
+        try:
+            incoming = request.httprequest
+            snapshot = self._native_capability(grant_id, claim=True)
+            if snapshot['state'] == 'resolved':
+                return self._native_json(self._native_result(snapshot))
+            if snapshot['state'] == 'uploading' and not snapshot.get('claimed'):
+                return self._native_json(self._native_result(snapshot), 202)
+            if (incoming.content_type.split(';', 1)[0].strip().lower() != snapshot['mime']
+                    or incoming.content_length is None or incoming.content_length != snapshot['size']):
+                raise ProtocolError('invalid_payload', 'The native upload body does not match its capability.')
+            raw = incoming.stream.read(snapshot['size'] + 1)
+            if len(raw) != snapshot['size']:
+                raise ProtocolError('invalid_payload', 'The native upload body is incomplete.')
+            service = request.env['baseer.bchat.service'].with_user(snapshot['user_id']).with_context({
+                'allowed_company_ids': [snapshot['company_id']],
+            })
+            upload = service._v2_mobile_upload_from_capability(snapshot, raw)
+            resolved = request.env['baseer.bchat.mobile.upload.grant']._resolve_claimed_capability(
+                snapshot, upload['media_id'])
+            return self._native_json(self._native_result(resolved))
+        except (AccessError, ProtocolError) as error:
+            if snapshot and snapshot.get('state') == 'uploading':
+                request.env['baseer.bchat.mobile.upload.grant']._deny_claimed_capability(
+                    snapshot, error.code if isinstance(error, ProtocolError) else 'access_revoked')
+            return self._native_json({'api_version': 2, 'error': {
+                'code': error.code if isinstance(error, ProtocolError) else 'forbidden',
+                'message': str(error) if isinstance(error, ProtocolError) else 'This media is unavailable.',
+            }}, error.status if isinstance(error, ProtocolError) else 403)
+
     @http.route('/bchat/api/v2/rooms/<int:room_id>/uploads', type='http', auth='user',
                 methods=['POST'], csrf=True, save_session=True,
                 max_content_length=MAX_UPLOAD_LIMIT + 32 * 1024)

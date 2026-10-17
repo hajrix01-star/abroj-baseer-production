@@ -2,6 +2,8 @@
 import base64
 import hashlib
 import logging
+import secrets
+import uuid
 from datetime import timedelta
 
 from psycopg2.errors import UniqueViolation
@@ -12,6 +14,7 @@ from odoo.exceptions import AccessError
 from .. import media_contracts
 from ..contracts import ProtocolError, positive_id
 from .media import _MEDIA_TOKEN
+from .mobile_upload_grant import _MOBILE_UPLOAD_GRANT_TOKEN
 
 
 _logger = logging.getLogger(__name__)
@@ -19,6 +22,48 @@ _logger = logging.getLogger(__name__)
 
 class BChatMediaService(models.AbstractModel):
     _inherit = 'baseer.bchat.service'
+
+    @api.model
+    def _v2_issue_mobile_upload_grant(self, room_id, metadata):
+        """Create the short-lived capability used by Android's native HTTPS uploader."""
+        normalized = self._v2_upload_scope(room_id, metadata)
+        room = self._v2_lock_room(room_id)
+        member = self._v2_current_member(room)
+        if member.id != normalized['membership_id']:
+            raise ProtocolError('membership_changed', 'The room membership period changed.', 409)
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        grants._expire_active_for_issue(self.env.uid, normalized['upload_uuid'])
+        secret = secrets.token_urlsafe(32)
+        now = fields.Datetime.now()
+        grant = grants._create_verified({
+            'grant_id': str(uuid.uuid4()),
+            'secret_hash': hashlib.sha256(secret.encode('ascii')).hexdigest(),
+            'user_id': self.env.uid, 'company_id': room.company_id.id, 'room_id': room.id,
+            'membership_id': member.id, 'upload_uuid': normalized['upload_uuid'],
+            'kind': normalized['kind'], 'mime': normalized['mime'], 'name': normalized['name'],
+            'size_bytes': normalized['size'], 'sha256': normalized['sha256'],
+            'state': 'issued', 'expires_at': now + timedelta(seconds=120),
+        }, _MOBILE_UPLOAD_GRANT_TOKEN)
+        return {
+            'api_version': 2, 'grant_id': grant.grant_id, 'secret': secret,
+            'expires_at': fields.Datetime.to_string(grant.expires_at),
+        }
+
+    @api.model
+    def _v2_mobile_upload_from_capability(self, snapshot, raw):
+        """Recheck all room rights at redemption, then reuse the verified v2 upload path."""
+        if not isinstance(snapshot, dict):
+            raise ProtocolError('invalid_capability', 'The upload capability is invalid.', 401)
+        room_id = positive_id(snapshot.get('room_id'), 'room_id')
+        metadata = {
+            'api_version': 2, 'membership_id': positive_id(snapshot.get('membership_id'), 'membership_id'),
+            'upload_uuid': snapshot.get('upload_uuid'), 'kind': snapshot.get('kind'),
+            'mime': snapshot.get('mime'), 'size': snapshot.get('size'),
+            'sha256': snapshot.get('sha256'), 'name': snapshot.get('name'),
+        }
+        # _v2_upload calls _v2_upload_scope again: permissions, active user, company, room and
+        # membership are deliberately re-evaluated after the byte stream has arrived.
+        return self._v2_upload(room_id, metadata, raw)
 
     @api.model
     def _v2_upload_scope(self, room_id, metadata):

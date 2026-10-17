@@ -570,6 +570,35 @@ class BChatMediaHttpCase(HttpCase):
             'size': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(),
             'name': 'multipart.png',
         }
+        native_metadata = {**upload_metadata, 'upload_uuid': str(uuid4()), 'name': 'native.png'}
+        issued = self.url_open('/bchat/api/v2/rooms/%s/mobile-upload-grants' % room.id,
+                               data={'csrf_token': csrf, 'metadata': json.dumps(native_metadata)},
+                               method='POST')
+        self.assertEqual(issued.status_code, 200)
+        grant = issued.json()
+        self.assertRegex(grant['grant_id'], r'^[0-9a-f-]{36}$')
+        self.assertRegex(grant['secret'], r'^[A-Za-z0-9_-]{43,128}$')
+        native_url = '/bchat/api/v2/mobile-upload-grants/%s/content' % grant['grant_id']
+        capability_headers = {
+            'Authorization': 'BChatUpload %s.%s' % (grant['grant_id'], grant['secret']),
+            'Content-Type': 'image/png',
+        }
+        # A session cookie must not silently authenticate a native route.
+        cookie_rejected = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
+        self.assertEqual(cookie_rejected.status_code, 401)
+        self.opener.cookies.clear()
+        native_uploaded = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
+        self.assertEqual(native_uploaded.status_code, 200)
+        self.assertEqual(native_uploaded.json()['upload_uuid'], native_metadata['upload_uuid'])
+        native_media_id = native_uploaded.json()['media_id']
+        # Retrying a POST after a lost client response returns the persisted receipt, not a new row.
+        native_replay = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
+        self.assertEqual((native_replay.status_code, native_replay.json()['media_id']), (200, native_media_id))
+        native_status = self.url_open('/bchat/api/v2/mobile-upload-grants/%s' % grant['grant_id'],
+                                      headers={'Authorization': capability_headers['Authorization']})
+        self.assertEqual((native_status.status_code, native_status.json()['media_id']), (200, native_media_id))
+        self.authenticate(user.login, password)
+        csrf = self.url_open('/bchat/api/v2/bootstrap').json()['csrf_token']
         uploaded = self.url_open('/bchat/api/v2/rooms/%s/uploads' % room.id,
                                  data={'csrf_token': csrf, 'metadata': json.dumps(upload_metadata)},
                                  files={'file': ('multipart.png', raw, 'image/png')}, method='POST')

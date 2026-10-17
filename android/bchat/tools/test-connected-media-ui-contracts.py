@@ -121,9 +121,14 @@ checks = {
         and "bubbleSize.leftMargin = mine ? 0 : dp(39);" in body(
             "private View createMessageBubble(Room room, JSONObject item,")
         and "boolean smallLeft = !mine;" in body("private GradientDrawable chatBubbleBackground("),
-    "Media chunks are decoded and encoded off UI thread":
+    "Native media upload streams off UI without passing file bytes through WebMessagePort":
         "mediaIo.execute" in body("private void readConnectedMedia(")
-        and "mediaIo.execute" in body("private void sendNextMediaChunk("),
+        and "mediaIo.execute" in body("private void beginNativeMediaUpload(")
+        and "BChatNativeMediaUploader.upload" in body("private void beginNativeMediaUpload(")
+        and "postSmallFormDirectlyInWebView(path, \"metadata\"" in body(
+            "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
+        and "bchat-media-upload" not in source
+        and "BChatConnectedMediaBridge.uploadScript" not in source,
 }
 
 for label, passed in checks.items():

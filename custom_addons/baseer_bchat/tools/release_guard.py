@@ -43,6 +43,7 @@ REQUIRED_IDS = {
     "guard-engine-integrity",
     "task-push-fastlane-and-private-avatars",
     "media-send-ack-reconciliation",
+    "native-capability-media-upload",
 }
 
 

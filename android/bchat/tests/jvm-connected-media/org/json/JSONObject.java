@@ -26,5 +26,14 @@ public final class JSONObject {
     public String optString(String key, String fallback) { return object.has(key) ? getString(key) : fallback; }
     public int optInt(String key, int fallback) { return object.has(key) ? getInt(key) : fallback; }
     public long optLong(String key, long fallback) { return object.has(key) ? getLong(key) : fallback; }
+    /** Primitive-only fixture surface; removal mutates the object like Android JSONObject. */
+    public Object remove(String key) {
+        JsonElement previous = object.remove(key);
+        if (previous == null || previous.isJsonNull()) return null;
+        JsonPrimitive primitive = previous.getAsJsonPrimitive();
+        if (primitive.isBoolean()) return primitive.getAsBoolean();
+        if (primitive.isNumber()) return primitive.getAsNumber();
+        return primitive.getAsString();
+    }
     public String toString() { return object.toString(); }
 }

@@ -127,7 +127,8 @@ class BChatMessageSocialCase(TransactionCase):
             'room_id': self.room.id, 'user_id': self.reader.id})
         self.assertNotEqual(old.id, new.id)
         self.assertEqual(self._service(self.reader)._v2_saved_messages()['saved'], [])
-        with self.assertRaises((AccessError, ProtocolError)):
+        # The current epoch matches; only the old message is outside its visibility boundary.
+        with self.assertRaises(AccessError):
             self._service(self.reader)._v2_social_metadata(self.room.id, new.id, [self.message_id])
 
     def test_saved_unset_and_current_permission_revocation(self):

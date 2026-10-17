@@ -247,6 +247,22 @@ public final class ConnectedMediaStoreTest {
             } finally { workers.shutdownNow(); workers.awaitTermination(3, TimeUnit.SECONDS); }
         }
     }
+    static void immutableTicketFingerprint() throws Exception {
+        try (Fixture f = new Fixture()) {
+            BChatConnectedMediaStore.Entry entry = f.stage(1);
+            String original = entry.requestFingerprint();
+            check(original.matches("[0-9a-f]{64}"), "Ticket fingerprint is a SHA256 value");
+            check(original.equals(f.store.lookup(ACCOUNT, entry.uploadUuid).requestFingerprint()),
+                    "Ticket fingerprint survives disk reload");
+            entry = f.store.markUploaded(ACCOUNT, entry, 55);
+            check(original.equals(entry.requestFingerprint()), "Server media receipt does not change immutable ticket identity");
+            entry = f.store.renewExpiredUpload(ACCOUNT, entry, "upload_expired");
+            check(original.equals(entry.requestFingerprint()), "Upload capability renewal does not change immutable ticket identity");
+            entry = f.store.markUploadBlocked(ACCOUNT, entry, "upload_rejected");
+            check(original.equals(entry.requestFingerprint()), "Upload rejection does not change immutable ticket identity");
+            check(!original.equals(f.stage(2).requestFingerprint()), "A different request cannot share the ticket fingerprint");
+        }
+    }
     static void boundedDiagnostics() throws Exception {
         try (Fixture f = new Fixture()) {
             for (int i = 0; i < 105; i++) Files.write(f.file(UUID.randomUUID().toString(), ".bin").toPath(), new byte[]{1});
@@ -260,7 +276,7 @@ public final class ConnectedMediaStoreTest {
     }
     public static void main(String[] args) throws Exception {
         corruptedRoomIsolation(); backupAndBounds(); missingBytesAndScope(); quotasAndCleanup();
-        activeCopyAndRevocation(); concurrentReceiptAndScan(); boundedDiagnostics();
+        activeCopyAndRevocation(); concurrentReceiptAndScan(); immutableTicketFingerprint(); boundedDiagnostics();
         System.out.println("PASS " + checks + " production-store JVM checks; Android/device NOT executed");
     }
 }

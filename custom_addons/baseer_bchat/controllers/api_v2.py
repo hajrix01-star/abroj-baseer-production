@@ -305,8 +305,15 @@ class BChatTextApi(http.Controller):
             if incoming.content_length is not None and incoming.content_length > 1024:
                 raise ProtocolError('payload_too_large', 'Receipt request is too large.', 413)
             form = incoming.form
-            if set(form) != {'csrf_token', 'kind'} or any(len(form.getlist(key)) != 1 for key in form):
+            if (set(form) not in ({'csrf_token', 'kind'}, {'csrf_token', 'kind', 'membership_id'})
+                    or any(len(form.getlist(key)) != 1 for key in form)):
                 raise ProtocolError('invalid_payload', 'A CSRF token and receipt kind are required.')
+            if 'membership_id' in form:
+                raw = form['membership_id']
+                if not re.fullmatch(r'[1-9][0-9]{0,9}', raw) or int(raw) > 2147483647:
+                    raise ProtocolError('invalid_payload', 'A positive membership ID is required.')
+                return self._response(self._service()._v2_receipt_ack(
+                    room_id, message_id, form['kind'], membership_id=int(raw)))
             return self._response(self._service()._v2_receipt_ack(room_id, message_id, form['kind']))
         except (AccessError, ProtocolError) as error:
             return self._error(error)

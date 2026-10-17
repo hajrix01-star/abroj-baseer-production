@@ -990,4 +990,21 @@
     <string name="notification_choice_superseded">The original request was confirmed, then the server preference changed. Review and choose again.</string>
     <string name="notification_server_registration">Server registration</string>
     <string name="notification_registration_confirmed">Confirmed in the last response</string>
+    <string name="receipt_details_title">Message delivery details</string>
+    <string name="receipt_details_scope_note">Counts include currently eligible recipients. Times are UTC.</string>
+    <string name="receipt_details_counts">Recipients: %1$s\nDelivery confirmed: %2$s\nRead confirmed: %3$s</string>
+    <string name="receipt_details_state_sent">Message sent</string>
+    <string name="receipt_details_state_delivered">Delivered to all eligible recipients</string>
+    <string name="receipt_details_state_read">Read by all eligible recipients</string>
+    <string name="receipt_details_delivered">Delivered: %1$s</string>
+    <string name="receipt_details_read">Read: %1$s</string>
+    <string name="receipt_details_not_confirmed">Not confirmed yet</string>
+    <string name="receipt_details_unknown">Status not checked yet</string>
+    <string name="receipt_details_loading">Loading details</string>
+    <string name="receipt_details_empty">No recipients on this page</string>
+    <string name="receipt_details_refresh">Refresh from the start</string>
+    <string name="receipt_details_next">Next page</string>
+    <string name="receipt_details_close">Close</string>
+    <string name="receipt_details_unconfirmed">Details could not be confirmed. Try refreshing.</string>
+    <string name="receipt_details_unavailable">These message details are unavailable in your current context.</string>
 </resources>

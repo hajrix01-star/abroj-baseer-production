@@ -14,6 +14,9 @@ from .media import _MEDIA_TOKEN
 from .message_receipt import _RECEIPT_TOKEN
 
 
+_ACK_MEMBERSHIP_ABSENT = object()
+
+
 class BChatTextService(models.AbstractModel):
     _inherit = 'baseer.bchat.service'
 
@@ -28,6 +31,7 @@ class BChatTextService(models.AbstractModel):
             'company_ids': allowed_company_ids,
             'current_company_id': (user.company_id.id
                                    if user.company_id.id in allowed_company_ids else None),
+            'receipt_delivery_contract_version': 1,
             'capabilities': {
                 'rooms': True, 'messages': True, 'history': True,
                 'attachments': True, 'tasks': False, 'shifts': False,
@@ -238,16 +242,22 @@ class BChatTextService(models.AbstractModel):
         # Names are read only for messages visible in this membership period.
         author_names = self._v2_author_names(page + list(parents))
         while page:
-            payload = self._v2_history_payload(page, more, author_names, parent_by_id)
+            payload = {**self._v2_history_payload(page, more, author_names, parent_by_id),
+                       'room_id': room.id, 'membership_id': member.id}
             if len(json.dumps(payload, ensure_ascii=False).encode('utf-8')) <= 131072:
                 return payload
             page.pop()
             more = True
-        return {'api_version': 2, 'messages': [], 'next_before_id': None}
+        return {'api_version': 2, 'room_id': room.id, 'membership_id': member.id,
+                'messages': [], 'next_before_id': None}
 
     @api.model
     def _v2_author_names(self, page):
-        author_ids = sorted({message.author_user_id.id for message in page})
+        return self._v2_visible_user_names({message.author_user_id.id for message in page})
+
+    @api.model
+    def _v2_visible_user_names(self, user_ids):
+        author_ids = sorted(set(user_ids))
         names = {author_id: 'User' for author_id in author_ids}
         if not author_ids:
             return names
@@ -270,12 +280,7 @@ class BChatTextService(models.AbstractModel):
     def _v2_history_payload(self, page, more, author_names, parent_by_id=None):
         parent_by_id = parent_by_id or {}
         own_ids = [message.id for message in page if message.author_user_id.id == self.env.uid]
-        receipt_rows = self.env['baseer.bchat.message.receipt'].sudo().search([
-            ('message_id', 'in', own_ids),
-        ]) if own_ids else self.env['baseer.bchat.message.receipt']
-        receipts = {}
-        for receipt in receipt_rows:
-            receipts.setdefault(receipt.message_id.id, []).append(receipt)
+        receipts = self._v2_receipt_summaries(own_ids)
         def message_data(message):
             row = {
                 'id': message.id,
@@ -285,16 +290,9 @@ class BChatTextService(models.AbstractModel):
                 'created_at': fields.Datetime.to_string(message.create_date),
             }
             if message.author_user_id.id == self.env.uid:
-                all_receipts = receipts.get(message.id, [])
-                eligible = [item for item in all_receipts
-                            if not item._eligibility_exclusion_reason()]
-                state = ('read' if eligible and all(row.read_at for row in eligible)
-                         else 'delivered' if eligible and all(row.delivered_at for row in eligible)
-                         else 'sent')
-                row['delivery_state'] = state
-                completion_times = [item.read_at for item in eligible if item.read_at]
-                row['read_at'] = (fields.Datetime.to_string(max(completion_times))
-                                  if state == 'read' and completion_times else None)
+                summary = receipts[message.id]
+                row['delivery_state'] = summary['state']
+                row['read_at'] = summary['read_at']
             if (message.media_id and message.media_id.state == 'attached'
                     and message.media_id.message_id.id == message.id
                     and message.media_id.room_id.id == message.room_id.id
@@ -437,10 +435,11 @@ class BChatTextService(models.AbstractModel):
             raise AccessError(self.env._('This BChat message is unavailable.'))
         authors = self._v2_author_names([message])
         payload = self._v2_history_payload([message], False, authors)
-        return {'api_version': 2, 'message': payload['messages'][0]}
+        return {'api_version': 2, 'room_id': room.id, 'membership_id': member.id,
+                'message': payload['messages'][0]}
 
     @api.model
-    def _v2_receipt_ack(self, room_id, message_id, kind):
+    def _v2_receipt_ack(self, room_id, message_id, kind, membership_id=_ACK_MEMBERSHIP_ABSENT):
         self._require_bchat_permission('chat_view')
         if kind not in ('delivered', 'read'):
             raise ProtocolError('invalid_payload', 'Unknown BChat receipt kind.')
@@ -448,6 +447,11 @@ class BChatTextService(models.AbstractModel):
         with self.env.cr.savepoint():
             room = self._v2_lock_room(room_id)
             member = self._v2_current_member(room)
+            if membership_id is not _ACK_MEMBERSHIP_ABSENT:
+                if type(membership_id) is not int or not 0 < membership_id <= 2147483647:
+                    raise ProtocolError('invalid_payload', 'A positive membership ID is required.')
+                if membership_id != member.id:
+                    raise ProtocolError('membership_changed', 'The membership period changed.', 409)
             message = self.env['baseer.bchat.message'].sudo().browse(message_id).exists()
             if (not message or message.room_id.id != room.id
                     or message.company_id.id != room.company_id.id

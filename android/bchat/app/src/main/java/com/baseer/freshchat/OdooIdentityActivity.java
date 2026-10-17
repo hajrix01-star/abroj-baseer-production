@@ -75,6 +75,7 @@ import com.baseer.freshchat.sync.AccountScope;
 import com.baseer.freshchat.sync.BChatV2Outbox;
 import com.baseer.freshchat.sync.BChatConnectedMediaStore;
 import com.baseer.freshchat.sync.ConnectedHistoryCache;
+import com.baseer.freshchat.sync.ReceiptDeliveryProtocol;
 import com.baseer.freshchat.sync.BChatLocalState;
 import com.baseer.freshchat.sync.BChatComposerSnapshot;
 import com.baseer.freshchat.sync.BChatCartResolver;
@@ -225,6 +226,15 @@ public final class OdooIdentityActivity extends Activity {
     private int liveNonce, busNonce;
     private boolean liveBusy, feedQueued, snapshotInProgress, liveStarted, liveForeground, busConnected;
     private boolean receiptsAvailable;
+    private boolean receiptDeliverySupported, receiptSyncBusy, receiptPassActive;
+    private long receiptPendingCursor;
+    private int receiptPendingPages;
+    private int receiptStorageGeneration;
+    private int receiptPassToken;
+    private int receiptRebindGeneration;
+    private boolean receiptNeedsRoomRebind;
+    private Runnable receiptSyncTimer;
+    private final Set<String> receiptPassAttempted = new HashSet<>();
     private long feedCursor, feedRetryAt;
     private int feedFailures, busFailures;
     private Runnable feedTimer, busReconnect;
@@ -284,6 +294,7 @@ public final class OdooIdentityActivity extends Activity {
     private boolean mediaClaimHandedOff;
     private BChatTransferCoordinator transferCoordinator;
     private BChatNotificationSettingsPanel notificationSettingsPanel;
+    private BChatReceiptDetailsPanel receiptDetailsPanel;
     private final BChatStageAdmission.Observer stageAdmissionObserver=this::onTransferChanged;
     private final BChatTransferCoordinator.Observer transferObserver = this::onTransferChanged;
     private void onTransferChanged(String key,long roomId,long memberId) {
@@ -3881,10 +3892,16 @@ public final class OdooIdentityActivity extends Activity {
         final String method, path, formKey, formValue;
         final AccountScope scope;
         final V2Callback callback;
+        final long receiptMembershipId;
         LiveRequest(String method, String path, String formKey, String formValue,
                     AccountScope scope, V2Callback callback) {
+            this(method, path, formKey, formValue, scope, callback, 0);
+        }
+        LiveRequest(String method, String path, String formKey, String formValue,
+                    AccountScope scope, V2Callback callback, long receiptMembershipId) {
             this.method = method; this.path = path; this.formKey = formKey;
             this.formValue = formValue; this.scope = scope; this.callback = callback;
+            this.receiptMembershipId = receiptMembershipId;
         }
     }
 
@@ -3894,6 +3911,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void closeLiveSync() {
+        resetReceiptPass();
         ++livePersistenceGeneration;
         liveStarted = false;
         busConnected = false;
@@ -3938,6 +3956,12 @@ public final class OdooIdentityActivity extends Activity {
         if (liveBusy || liveQueue.isEmpty()) return;
         LiveRequest item = liveQueue.removeFirst();
         if (!liveReady(item.scope)) { item.callback.complete(0, null); pumpLiveQueue(); return; }
+        if (item.receiptMembershipId > 0) {
+            boolean current = false;
+            for (Room room : rooms) if (room.membershipId == item.receiptMembershipId
+                    && item.path.startsWith(V2_ROOMS + "/" + room.id + "/messages/")) current = true;
+            if (!receiptSyncReady() || !current) { item.callback.complete(0, null); pumpLiveQueue(); return; }
+        }
         liveBusy = true;
         final int nonce = ++liveNonce, currentWeb = webEpoch, currentPage = pageEpoch,
                 currentEpoch = epoch;
@@ -3989,6 +4013,7 @@ public final class OdooIdentityActivity extends Activity {
                     ? "o.headers['Content-Type']='application/x-www-form-urlencoded;charset=UTF-8';"
                     + "o.body=new URLSearchParams({csrf_token:" + JSONObject.quote(csrfToken)
                     + (item.formKey.isEmpty() ? "" : "," + item.formKey + ":" + JSONObject.quote(item.formValue))
+                    + (item.receiptMembershipId > 0 ? ",membership_id:" + item.receiptMembershipId : "")
                     + "}).toString();" : "")
                 + "fetch(u.href,o).then(function(r){if(r.type==='opaqueredirect')return {nonce:"
                 + nonce + ",status:401,type:'application/json',url:u.href,body:'{}'};"
@@ -4035,6 +4060,7 @@ public final class OdooIdentityActivity extends Activity {
         feedFailures = busFailures = 0;
         scheduleFeed(0);
         connectLiveBus();
+        scheduleReceiptSync(0);
     }
 
     private void scheduleFeed(long delayMs) {
@@ -4130,6 +4156,7 @@ public final class OdooIdentityActivity extends Activity {
         } else if ("message".equals(kind) || "receipt".equals(kind)) {
             liveRoomsDirty = true;
             if (selectedRoom != null && selectedRoom.id == roomId) liveMessagesDirty = true;
+            scheduleReceiptSync(0); // A hint only; the independent metadata scan is authoritative.
         } else if ("task".equals(kind)) {
             liveTasksDirty = true;
             if (roomId > 0) liveRoomsDirty = true;
@@ -4494,6 +4521,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void applyPermissionSet(AccountScope scope, PermissionSet next) {
         PermissionSet previous = permissionSet;
+        if (!next.chatView) closeReceiptDetails();
         if(!next.chatView&&!next.taskView&&notificationSettingsPanel!=null){
             notificationSettingsPanel.dismiss();notificationSettingsPanel=null;
         }
@@ -4556,6 +4584,7 @@ public final class OdooIdentityActivity extends Activity {
             offlinePolicyReady(error == null && Boolean.TRUE.equals(saved));
         });
         if (!next.chatView) {
+            invalidateReceiptRoomBinding();
             ++historyWriteGeneration;
             ++historyGlobalGeneration;
             rooms.clear();
@@ -4620,6 +4649,7 @@ public final class OdooIdentityActivity extends Activity {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
         if(transferCoordinator!=null)transferCoordinator.revoke(scope);
+        invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
         ++mediaSessionGeneration;
@@ -4880,6 +4910,10 @@ public final class OdooIdentityActivity extends Activity {
                         ? rememberedOrderCompany : selectedChatCompanyId;
                 receiptsAvailable = flag(caps, "delivery_receipts", true)
                         && flag(caps, "read_receipts", true);
+                receiptDeliverySupported = ReceiptDeliveryProtocol.supported(result);
+                receiptStorageGeneration = historyGlobalGeneration;
+                receiptNeedsRoomRebind = false;
+                receiptRebindGeneration = 0;
                 loadLocalContext(account);
                 shellNotice.setText(R.string.chat_v2_loading);
                 if (chatAllowed()) loadRooms();
@@ -5137,6 +5171,9 @@ public final class OdooIdentityActivity extends Activity {
                     finishPushNavigation();
                     return;
                 }
+                requireReceiptEpoch(body, targetRoom);
+                JSONObject canonical = validateMessageList(new JSONArray().put(body.getJSONObject("message")), 0).get(0);
+                persistReceiptCanonical(scopedAccount, targetRoom, Collections.singletonList(canonical));
                 selectRoom(targetRoom, messageId);
             } catch (Exception invalid) { pushUnavailable(); }
             finishPushNavigation();
@@ -5318,6 +5355,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeHistory() {
+        invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
         ++offlinePolicySerial;
@@ -5337,6 +5375,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeCachedRoom(AccountScope scopedAccount, long roomId) {
+        invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
         final ConnectedHistoryCache cache = historyCache;
@@ -5671,6 +5710,8 @@ public final class OdooIdentityActivity extends Activity {
                             throw new IllegalArgumentException();
                         JSONObject message = validateMessageList(new JSONArray().put(result.getJSONObject("message")), 0).get(0);
                         if (positiveId(message.get("id")) != replyId) throw new IllegalArgumentException();
+                        requireReceiptEpoch(result, room);
+                        persistReceiptCanonical(scope, room, Collections.singletonList(message));
                         draftReplyBlocked = false;
                         selectReply(room, replyId, message.getString("author_name"), message.getString("text"));
                     } catch (Exception denied) {
@@ -5717,6 +5758,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void clearChatView() {
+        closeReceiptDetails();
         if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
         ++mediaDownloadGeneration;
         restorationIntent = null;
@@ -5746,6 +5788,10 @@ public final class OdooIdentityActivity extends Activity {
         offlineChatVerifiedAt = offlineTaskVerifiedAt = 0;
         offlineUncertainWrite = false;
         receiptsAvailable = false;
+        receiptDeliverySupported = false;
+        receiptStorageGeneration = 0;
+        receiptNeedsRoomRebind = false;
+        receiptRebindGeneration = 0;
         liveRoomsDirty = liveMessagesDirty = liveTasksDirty = liveOrdersDirty = false;
         stopInlineAudio();
         stopRecordingBadge();
@@ -5945,6 +5991,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showRooms() {
         if (!chatAllowed() && !offlineHistory) return;
+        closeReceiptDetails();
         restoringContext = false;
         if (roomActionMenu != null) roomActionMenu.dismiss();
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
@@ -6124,6 +6171,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!chatAllowed()) return;
         boolean initial = chatRoot.getVisibility() != View.VISIBLE;
         final int requestUnreadMetadataGeneration = unreadMetadataGeneration;
+        final int requestHistoryGeneration = historyGlobalGeneration;
         if (initial) shellNotice.setText(R.string.chat_v2_loading);
         else chatNotice.setText(R.string.chat_v2_loading);
         fetchV2("GET", V2_ROOMS, null, (statusCode, result) -> {
@@ -6134,6 +6182,9 @@ public final class OdooIdentityActivity extends Activity {
                 if (requestUnreadMetadataGeneration != unreadMetadataGeneration) {
                     loadRooms();
                     return;
+                }
+                if (requestHistoryGeneration != historyGlobalGeneration) {
+                    loadRooms(); return; // A pre-revocation response cannot re-arm the new receipt generation.
                 }
                 JSONArray list = result.getJSONArray("rooms");
                 if (list.length() > 100) throw new IllegalArgumentException();
@@ -6223,8 +6274,7 @@ public final class OdooIdentityActivity extends Activity {
                     AccountScope scopedAccount = account;
                     ConnectedHistoryCache cache = historyCache;
                     boolean remembered = preferences().getBoolean(REMEMBER, false);
-                    queueHistoryWrite(scopedAccount, cache,
-                            () -> cache.reconcile(scopedAccount, remembered, snapshot));
+                    persistReceiptRooms(scopedAccount, cache, remembered, snapshot);
                 }
                 if (initial) {
                     shell.setVisibility(View.GONE);
@@ -6415,6 +6465,7 @@ public final class OdooIdentityActivity extends Activity {
     private void selectRoom(Room room, long notifiedMessageId) {
         if ((!chatAllowed() && !offlineHistory) || room == null || !rooms.contains(room)
                 || v2Busy || (!offlineHistory && csrfToken == null)) return;
+        closeReceiptDetails();
         flushDraftSave();
         ++localReadSerial;
         roomLocal = null; localTextRows.clear(); localReadBusy = false;
@@ -7633,6 +7684,7 @@ public final class OdooIdentityActivity extends Activity {
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
+                requireReceiptEpoch(result, room);
                 JSONArray list = result.getJSONArray("messages");
                 List<JSONObject> validated = validateMessageList(list, beforeId);
                 // A media POST can reach Odoo while its one-shot bridge ACK is lost.  Never
@@ -7655,12 +7707,7 @@ public final class OdooIdentityActivity extends Activity {
                     if (!found) throw new IllegalArgumentException("Notification message not in page");
                 }
                 if (historyCache != null && account != null) {
-                    AccountScope scopedAccount = account;
-                    ConnectedHistoryCache cache = historyCache;
-                    queueHistoryWrite(scopedAccount, cache, () -> {
-                        try { cache.savePage(scopedAccount, room.id, room.membershipId, validated); }
-                        catch (Exception storage) { throw new IllegalStateException(storage); }
-                    });
+                    persistReceiptCanonical(account, room, validated);
                 }
                 ScrollAnchor anchor = restoringContext
                         ? new ScrollAnchor(restorationAnchor, restorationOffset, false) : currentScrollAnchor();
@@ -7717,9 +7764,6 @@ public final class OdooIdentityActivity extends Activity {
                     retryPending();
                 }
                 if (receiptsAvailable && !offlineHistory) {
-                    for (JSONObject item : validated)
-                        if (account != null && positiveId(item.opt("author_user_id")) != account.userId)
-                            acknowledgeMessage(room, positiveId(item.opt("id")), "delivered");
                     messageScroll.post(this::scanVisibleMessageReceipts);
                 }
             } catch (Exception invalid) {
@@ -7826,6 +7870,7 @@ public final class OdooIdentityActivity extends Activity {
                         if (statusCode != 200 || result == null
                                 || positiveId(result.get("api_version")) != 2)
                             throw new IllegalArgumentException();
+                        requireReceiptEpoch(result, room);
                         JSONArray one = new JSONArray().put(result.getJSONObject("message"));
                         JSONObject message = validateMessageList(one, 0).get(0);
                         // A reply may be sent while viewing an older, bounded page.  Do not
@@ -7860,11 +7905,7 @@ public final class OdooIdentityActivity extends Activity {
                             // larger window after paging, while this just-acknowledged row is
                             // already fully verified and can be merged by the cache itself.
                             final List<JSONObject> saved = Collections.singletonList(message);
-                            final ConnectedHistoryCache cache = historyCache;
-                            queueHistoryWrite(scopedAccount, cache, () -> {
-                                try { cache.savePage(scopedAccount, room.id, room.membershipId, saved); }
-                                catch (Exception storage) { throw new IllegalStateException(storage); }
-                            });
+                            persistReceiptCanonical(scopedAccount, room, saved);
                         }
                         renderMessageWindow(room, window, true, 0, currentScrollAnchor());
                         updateOlderControl();
@@ -8502,6 +8543,47 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showMessageDetails(JSONObject item) {
         if (item == null) return;
+        final AccountScope scopedAccount = account;
+        final Room room = selectedRoom;
+        final long messageId = positiveId(item.opt("id"));
+        if (scopedAccount == null || room == null || messageId <= 0
+                || positiveId(item.opt("author_user_id")) != scopedAccount.userId
+                || !stillCurrent(scopedAccount, room) || !chatAllowed() || offlineHistory) return;
+        if (receiptDeliverySupported && receiptsAvailable) {
+            closeReceiptDetails();
+            final int session = epoch;
+            final long generation = mediaSessionGeneration;
+            receiptDetailsPanel = new BChatReceiptDetailsPanel(this, new BChatReceiptDetailsPanel.Host() {
+                @Override public AccountScope account() { return OdooIdentityActivity.this.account; }
+                @Override public boolean current(AccountScope captured, long requestedRoom, long requestedMembership,
+                                                 long requestedMessage, long requestedGeneration) {
+                    return captured == scopedAccount && requestedRoom == room.id
+                            && requestedMembership == room.membershipId && requestedMessage == messageId
+                            && requestedGeneration == generation
+                            && receiptDetailsBinding(scopedAccount, room, session, generation);
+                }
+                @Override public boolean load(long afterId, BChatReceiptDetailsPanel.Reply reply) {
+                    if (reply == null || !liveForeground || v2Busy || csrfToken == null
+                            || !receiptDetailsBinding(scopedAccount, room, session, generation)) return false;
+                    final String path;
+                    try { path = ReceiptDetailsProtocol.path(room.id, messageId, afterId); }
+                    catch (IllegalArgumentException invalid) { return false; }
+                    fetchV2("GET", path, null, (statusCode, body) -> {
+                        if (!receiptDetailsBinding(scopedAccount, room, session, generation)) {
+                            reply.complete(0, null); return;
+                        }
+                        if (statusCode == 401) {
+                            handleV2TransportFailure(statusCode); reply.complete(401, null); return;
+                        }
+                        reply.complete(statusCode, body);
+                    });
+                    return true;
+                }
+            }, scopedAccount, room.id, room.membershipId, messageId, generation);
+            receiptDetailsPanel.show();
+            return;
+        }
+        // Read-only legacy aggregate, not a fallback path for delivery/read ACKs.
         String state = item.optString("delivery_state", "");
         Object readAt = item.opt("read_at");
         Ui.decorateDialog(new AlertDialog.Builder(this)
@@ -8512,6 +8594,16 @@ public final class OdooIdentityActivity extends Activity {
                         ? "\n" + getString(R.string.chat_v2_message_read_at,
                                 formatMessageTime((String) readAt)) : ""))
                 .setPositiveButton(R.string.bchat_group_ok, null).show());
+    }
+
+    private boolean receiptDetailsBinding(AccountScope scope, Room room, int session, long generation) {
+        return !offlineHistory && !recheckOnResume && session == epoch && generation == mediaSessionGeneration
+                && roomsVerifiedForSession && v1Companies.contains(room.companyId)
+                && receiptDeliverySupported && receiptsAvailable && chatAllowed() && stillCurrent(scope, room);
+    }
+
+    private void closeReceiptDetails() {
+        if (receiptDetailsPanel != null) { receiptDetailsPanel.dismiss(); receiptDetailsPanel = null; }
     }
 
     private GradientDrawable chatBubbleBackground(boolean mine, boolean sameSender) {
@@ -8565,75 +8657,321 @@ public final class OdooIdentityActivity extends Activity {
         return asciiDigits(android.text.format.DateFormat.getDateFormat(this).format(date));
     }
 
-    private void acknowledgeMessage(Room room, long messageId, String kind) {
-        AccountScope scope = account;
-        if (!receiptsAvailable || !liveReady(scope) || room == null || selectedRoom != room
-                || messageId <= 0 || !("delivered".equals(kind) || "read".equals(kind))) return;
-        String key = room.id + ":" + messageId + ":" + kind;
-        if (acknowledgedMessages.contains(key) || !pendingAcknowledgements.add(key)) return;
-        final int requestRoomMetadataGeneration = roomMetadataGeneration;
-        String path = V2_ROOMS + "/" + room.id + "/messages/" + messageId + "/receipts";
-        enqueueLive("POST", path, "kind", kind, (statusCode, result) -> {
-            pendingAcknowledgements.remove(key);
-            if (!liveReady(scope)) return;
-            if (statusCode == 401) { logout(); return; }
-            try {
-                if (statusCode != 200 || result == null
-                        || nonnegativeCursor(result.get("api_version")) != 2
-                        || positiveId(result.get("message_id")) != messageId
-                        || !(result.opt("delivered_at") instanceof String)
-                        || ("read".equals(kind) && !(result.opt("read_at") instanceof String)))
-                    throw new IllegalArgumentException();
-                long unread = nonnegativeCursor(result.get("unread_count"));
-                long responseLastMessageId = nonnegativeCursor(result.get("last_message_id"));
-                if (unread > Integer.MAX_VALUE) throw new IllegalArgumentException();
-                acknowledgedMessages.add(key);
-                if ("read".equals(kind)) {
-                    acknowledgedMessages.add(room.id + ":" + messageId + ":delivered");
-                    // The server committed this exact read receipt. Apply its
-                    // count only to the same active membership and only if a
-                    // newer room snapshot has not arrived while it was in flight.
-                    boolean refreshUnreadMetadata = false;
-                    for (Room candidate : rooms) {
-                        if (!candidate.sameMembership(room)) continue;
-                        if (requestRoomMetadataGeneration != roomMetadataGeneration
-                                || candidate.lastMessageId != responseLastMessageId) {
-                            // A list response may have replaced the badge with data fetched
-                            // before this receipt committed. It is not safe to merge the ACK
-                            // into that snapshot; fence every in-flight list and fetch a fresh one.
-                            refreshUnreadMetadata = true;
-                            break;
-                        }
-                        candidate.unreadCount = (int) unread;
-                        if (selectedRoom == candidate) selectedRoom.unreadCount = (int) unread;
-                        ++unreadMetadataGeneration;
-                        if (selectedRoom == null && "chats".equals(visibleSection)) renderRooms();
-                        break;
-                    }
-                    if (refreshUnreadMetadata) {
-                        ++unreadMetadataGeneration;
-                        // The receipt runs on the live queue while a v2 request may still be
-                        // active. Defer the refresh through the existing v2-idle pump so a
-                        // synthetic busy status cannot be mistaken for a transport failure.
-                        liveRoomsDirty = true;
-                        handler.post(this::flushLiveUi);
-                    }
-                }
-            } catch (Exception invalid) {
-                if (statusCode == 0 || statusCode >= 500) handler.postDelayed(() -> {
-                    if (selectedRoom == room && liveReady(scope)) {
-                        if ("read".equals(kind)) scanVisibleMessageReceipts();
-                        else acknowledgeMessage(room, messageId, "delivered");
-                    }
-                }, 3000);
+    /** Disk + generation gate shared by every delivery/read source, never selected-room ownership. */
+    private void resetReceiptPass() {
+        ++receiptPassToken;
+        if (receiptSyncTimer != null) { handler.removeCallbacks(receiptSyncTimer); receiptSyncTimer = null; }
+        receiptSyncBusy = receiptPassActive = false;
+        receiptPendingCursor = 0; receiptPendingPages = 0; receiptPassAttempted.clear();
+        pendingAcknowledgements.clear();
+    }
+
+    private void invalidateReceiptRoomBinding() {
+        // Only the owner of the previous verified generation can request re-arm from a fresh room snapshot.
+        receiptNeedsRoomRebind = receiptStorageGeneration == historyGlobalGeneration
+                || receiptNeedsRoomRebind && receiptRebindGeneration == historyGlobalGeneration;
+        receiptRebindGeneration = receiptNeedsRoomRebind ? historyGlobalGeneration + 1 : 0;
+        receiptStorageGeneration = 0;
+        resetReceiptPass();
+    }
+
+    private void persistReceiptRooms(AccountScope scope, ConnectedHistoryCache cache, boolean remembered,
+                                     List<ConnectedHistoryCache.RoomRecord> snapshot) {
+        final int session = epoch, generation = historyWriteGeneration, global = historyGlobalGeneration;
+        final boolean mayRebind = receiptNeedsRoomRebind && receiptRebindGeneration == global
+                || receiptStorageGeneration == global;
+        // Capturing another Activity's newer global value is not ownership of its account or memberships.
+        // Refuse the SQL write itself, not just the later attempt to re-arm the receipt pump.
+        if (!verified || scope == null || cache == null || !mayRebind) return;
+        BChatStorageRepository.submit(null, () -> {
+            synchronized (historyStorageLock) {
+                if (closed || !verified || account != scope || cache != historyCache || session != epoch
+                        || generation != historyWriteGeneration || global != historyGlobalGeneration
+                        || !(receiptStorageGeneration == global
+                        || receiptNeedsRoomRebind && receiptRebindGeneration == global))
+                    throw new IllegalStateException("Room snapshot scope changed");
+                cache.reconcile(scope, remembered, snapshot); return true;
+            }
+        }, (saved, error) -> {
+            if (closed || !verified || account != scope || cache != historyCache || session != epoch
+                    || generation != historyWriteGeneration || global != historyGlobalGeneration
+                    || !(receiptStorageGeneration == global
+                    || receiptNeedsRoomRebind && receiptRebindGeneration == global)) return;
+            if (error != null || !Boolean.TRUE.equals(saved)) return;
+            if (mayRebind) {
+                receiptStorageGeneration = global; receiptNeedsRoomRebind = false;
+                receiptRebindGeneration = 0;
+                scheduleReceiptSync(0);
+                if (messageScroll != null) messageScroll.post(this::scanVisibleMessageReceipts);
             }
         });
+    }
+
+    private void requireReceiptEpoch(JSONObject result, Room room) throws Exception {
+        if (receiptDeliverySupported && (positiveId(result.get("room_id")) != room.id
+                || positiveId(result.get("membership_id")) != room.membershipId))
+            throw new IllegalArgumentException("Canonical receipt epoch changed");
+    }
+
+    private <T> void receiptDisk(AccountScope scope, ConnectedHistoryCache cache,
+            BChatStorageRepository.Work<T> work, BChatStorageRepository.Ready<T> ready) {
+        final int session = epoch, generation = historyWriteGeneration, global = historyGlobalGeneration;
+        final int token = receiptPassToken;
+        final long repositoryGeneration = BChatStorageRepository.generation(scope);
+        // An unscoped callback is deliberate: repository invalidation must not withhold the only busy completion.
+        // Every action is manually fenced below; stale work cannot execute or settle, but its pass can be reset.
+        BChatStorageRepository.submit(null, () -> {
+            synchronized (historyStorageLock) {
+                if (closed || scope != account || cache != historyCache || session != epoch
+                        || generation != historyWriteGeneration || global != historyGlobalGeneration
+                        || receiptStorageGeneration != global || token != receiptPassToken
+                        || repositoryGeneration != BChatStorageRepository.generation(scope))
+                    throw new IllegalStateException("Receipt scope changed");
+                return work.run();
+            }
+        }, (value, error) -> {
+            if (closed || scope != account || cache != historyCache || session != epoch || token != receiptPassToken) return;
+            if (generation != historyWriteGeneration || global != historyGlobalGeneration
+                    || receiptStorageGeneration != global
+                    || repositoryGeneration != BChatStorageRepository.generation(scope)) {
+                resetReceiptPass(); scheduleReceiptSync(0);
+                if (messageScroll != null) messageScroll.post(this::scanVisibleMessageReceipts);
+                return;
+            }
+            ready.complete(value, error);
+        });
+    }
+
+    private void persistReceiptCanonical(AccountScope scope, Room room, List<JSONObject> page) {
+        final ConnectedHistoryCache cache = historyCache;
+        if (scope == null || cache == null || room == null || !verified || offlineHistory) return;
+        final boolean delivery = receiptsAvailable && receiptDeliverySupported;
+        receiptDisk(scope, cache, () -> {
+            if (delivery) cache.savePageAndQueueDelivered(scope, room.id, room.membershipId, page);
+            else cache.savePage(scope, room.id, room.membershipId, page);
+            return true;
+        }, (saved, error) -> {
+            if (error != null) {
+                if (selectedRoom != null && selectedRoom.sameMembership(room))
+                    chatNotice.setText(R.string.chat_v2_save_failed);
+                return; // No ACK on failure. Independent pending scan can recover without blocking the composer.
+            }
+            scheduleReceiptSync(0);
+            if (selectedRoom != null && selectedRoom.sameMembership(room) && messageScroll != null)
+                messageScroll.post(this::scanVisibleMessageReceipts);
+        });
+    }
+
+    private Room receiptRoom(ConnectedHistoryCache.ReceiptWork work) {
+        if (!chatAllowed() || !roomsVerifiedForSession) return null;
+        for (Room room : rooms)
+            if (room.id == work.roomId && room.membershipId == work.membershipId) return room;
+        return null;
+    }
+
+    private boolean receiptSyncReady() {
+        return receiptsAvailable && receiptDeliverySupported && liveReady(account) && chatAllowed()
+                && receiptStorageGeneration == historyGlobalGeneration
+                && roomsVerifiedForSession && historyCache != null;
+    }
+
+    private void scheduleReceiptSync(long delay) {
+        if (!receiptSyncReady()) return;
+        if (receiptSyncTimer != null) {
+            if (delay > 0) return;
+            handler.removeCallbacks(receiptSyncTimer);
+        }
+        receiptSyncTimer = () -> {
+            receiptSyncTimer = null;
+            if (!receiptSyncReady() || receiptSyncBusy) return;
+            if (!receiptPassActive) {
+                receiptPassActive = true; receiptPendingCursor = 0; receiptPendingPages = 0;
+                receiptPassAttempted.clear();
+            }
+            drainReceiptSync();
+        };
+        handler.postDelayed(receiptSyncTimer, Math.max(0, delay));
+    }
+
+    private void finishReceiptPass() {
+        receiptSyncBusy = receiptPassActive = false;
+        receiptPendingCursor = 0; receiptPendingPages = 0;
+        scheduleReceiptSync(15000); // RAM cursor resets each pass: late commits and restored rights are revisited.
+    }
+
+    private void drainReceiptSync() {
+        if (!receiptSyncReady() || receiptSyncBusy) return;
+        if (receiptPassAttempted.size() >= 2000) { finishReceiptPass(); return; }
+        receiptSyncBusy = true;
+        final AccountScope scope = account;
+        final ConnectedHistoryCache cache = historyCache;
+        receiptDisk(scope, cache, () -> cache.receiptWork(scope), (work, error) -> {
+            if (!receiptSyncReady()) { receiptSyncBusy = false; return; }
+            if (error != null) { finishReceiptPass(); return; }
+            for (ConnectedHistoryCache.ReceiptWork item : work) {
+                if (receiptPassAttempted.contains(item.key())) continue;
+                receiptPassAttempted.add(item.key());
+                Room room = receiptRoom(item);
+                if (room == null) { liveRoomsDirty = true; continue; }
+                if ("fetch".equals(item.kind) || "verify".equals(item.kind)) fetchReceiptCanonical(scope, cache, room, item);
+                else dispatchReceiptIntent(scope, cache, room, item);
+                return;
+            }
+            if (!receiptDeliverySupported || receiptPendingPages >= 40) { finishReceiptPass(); return; }
+            requestPendingReceiptReferences(scope, cache);
+        });
+    }
+
+    private void nextReceiptWork() {
+        receiptSyncBusy = false;
+        if (receiptSyncReady()) handler.post(this::drainReceiptSync);
+    }
+
+    private void requestPendingReceiptReferences(AccountScope scope, ConnectedHistoryCache cache) {
+        final long requestedAfter = receiptPendingCursor;
+        final int token = receiptPassToken;
+        enqueueLive("GET", "/bchat/api/v2/receipts/pending?after_id=" + requestedAfter, null, null,
+                (statusCode, result) -> {
+            if (token != receiptPassToken) return;
+            if (!receiptSyncReady() || account != scope) { receiptSyncBusy = false; return; }
+            if (statusCode == 401) { logout(); return; }
+            try {
+                if (statusCode != 200) throw new IllegalArgumentException();
+                ReceiptDeliveryProtocol.Page page = ReceiptDeliveryProtocol.pending(result, requestedAfter);
+                receiptDisk(scope, cache, () -> { cache.admitReceiptReferences(scope, page.refs); return true; },
+                        (saved, error) -> {
+                    if (error != null) {
+                        // All-or-nothing admission and no cursor advance. ACKs get the first chance next pass.
+                        liveRoomsDirty = true; handler.post(this::flushLiveUi); finishReceiptPass(); return;
+                    }
+                    receiptPendingCursor = page.nextAfterId; ++receiptPendingPages;
+                    // Drain this final page before ending; no additional HTTP query is needed.
+                    if (!page.hasMore) receiptPendingPages = 40;
+                    nextReceiptWork();
+                });
+            } catch (Exception invalid) { finishReceiptPass(); }
+        });
+    }
+
+    private void fetchReceiptCanonical(AccountScope scope, ConnectedHistoryCache cache, Room room,
+                                       ConnectedHistoryCache.ReceiptWork work) {
+        final int token = receiptPassToken;
+        enqueueLive("GET", V2_ROOMS + "/" + room.id + "/messages/" + work.messageId, null, null,
+                (statusCode, result) -> {
+            if (token != receiptPassToken) return;
+            if (!receiptSyncReady() || scope != account) { receiptSyncBusy = false; return; }
+            if (statusCode == 401) { logout(); return; }
+            try {
+                if (statusCode != 200 || receiptRoom(work) == null || result == null
+                        || positiveId(result.get("api_version")) != 2
+                        || positiveId(result.get("room_id")) != work.roomId
+                        || positiveId(result.get("membership_id")) != work.membershipId) throw new IllegalArgumentException();
+                JSONObject canonical = validateMessageList(new JSONArray().put(result.getJSONObject("message")), 0).get(0);
+                if (positiveId(canonical.get("id")) != work.messageId
+                        || positiveId(canonical.get("author_user_id")) == scope.userId) throw new IllegalArgumentException();
+                receiptDisk(scope, cache, () -> {
+                    cache.savePageAndQueueDelivered(scope, work.roomId, work.membershipId, Collections.singletonList(canonical));
+                    return true;
+                }, (saved, error) -> {
+                    if (error == null && "verify".equals(work.kind) && selectedRoom != null
+                            && selectedRoom.sameMembership(room) && messageScroll != null)
+                        messageScroll.post(this::scanVisibleMessageReceipts);
+                    nextReceiptWork();
+                });
+            } catch (Exception invalid) {
+                if (statusCode == 403 || statusCode == 404 || statusCode == 409) {
+                    liveRoomsDirty = true; handler.post(this::flushLiveUi);
+                }
+                nextReceiptWork(); // One rejected/failed reference never blocks its page's other messages.
+            }
+        });
+    }
+
+    private void dispatchReceiptIntent(AccountScope scope, ConnectedHistoryCache cache, Room room,
+                                       ConnectedHistoryCache.ReceiptWork work) {
+        final int token = receiptPassToken;
+        receiptDisk(scope, cache, () -> cache.hasReceiptEvidence(scope, work), (present, error) -> {
+            if (error != null || !Boolean.TRUE.equals(present) || !receiptSyncReady() || receiptRoom(work) == null) {
+                nextReceiptWork(); return;
+            }
+            final int requestRoomMetadataGeneration = roomMetadataGeneration;
+            String path = V2_ROOMS + "/" + room.id + "/messages/" + work.messageId + "/receipts";
+            V2Callback callback = (statusCode, result) -> {
+                if (token != receiptPassToken) return;
+                if (account != scope) return;
+                if (statusCode == 401) { logout(); return; }
+                try {
+                    if (statusCode != 200) throw new IllegalArgumentException();
+                    ReceiptDeliveryProtocol.acknowledged(result, work);
+                    // This authentic matching ACK remains useful after room navigation or onPause.
+                    receiptDisk(scope, cache, () -> cache.settleReceipt(scope, work), (settled, failure) -> {
+                        if (failure == null && Boolean.TRUE.equals(settled))
+                            applyReceiptUnread(room, work.kind, result, requestRoomMetadataGeneration);
+                        nextReceiptWork();
+                    });
+                } catch (Exception invalid) { nextReceiptWork(); }
+            };
+            if (liveQueue.size() >= 128 || csrfToken == null) { nextReceiptWork(); return; }
+            liveQueue.addLast(new LiveRequest("POST", path, "kind", work.kind, scope, callback, work.membershipId));
+            pumpLiveQueue();
+        });
+    }
+
+    private void applyReceiptUnread(Room room, String kind, JSONObject result, int requestRoomMetadataGeneration) {
+        if (!"read".equals(kind)) return;
+        long unread = nonnegativeCursor(result.opt("unread_count"));
+        long responseLastMessageId = nonnegativeCursor(result.opt("last_message_id"));
+        boolean refreshUnreadMetadata = false;
+        for (Room candidate : rooms) {
+            if (!candidate.sameMembership(room)) continue;
+            if (requestRoomMetadataGeneration != roomMetadataGeneration
+                    || candidate.lastMessageId != responseLastMessageId) {
+                refreshUnreadMetadata = true; break;
+            }
+            candidate.unreadCount = (int) unread;
+            if (selectedRoom == candidate) selectedRoom.unreadCount = (int) unread;
+            ++unreadMetadataGeneration;
+            if (selectedRoom == null && "chats".equals(visibleSection)) renderRooms();
+            break;
+        }
+        if (refreshUnreadMetadata) {
+            ++unreadMetadataGeneration; liveRoomsDirty = true; handler.post(this::flushLiveUi);
+        }
+    }
+
+    private void acknowledgeMessage(Room room, long messageId, String kind) {
+        AccountScope scope = account;
+        if (!"read".equals(kind) || !receiptSyncReady() || !receiptViewportActive()
+                || room == null || selectedRoom != room || messageId <= 0) return;
+        String key = room.id + ":" + room.membershipId + ":" + messageId + ":read";
+        if (!pendingAcknowledgements.add(key)) return;
+        JSONObject canonical = null;
+        for (JSONObject item : displayedMessages) if (positiveId(item.opt("id")) == messageId) { canonical = item; break; }
+        if (canonical == null) { pendingAcknowledgements.remove(key); return; }
+        final JSONObject message = canonical;
+        final ConnectedHistoryCache cache = historyCache;
+        receiptDisk(scope, cache, () -> { cache.queueRead(scope, room.id, room.membershipId, message); return true; },
+                (saved, error) -> {
+            pendingAcknowledgements.remove(key);
+            if (error instanceof ConnectedHistoryCache.MissingReceiptEvidence) {
+                receiptDisk(scope, cache, () -> {
+                    cache.requestReadEvidence(scope, room.id, room.membershipId, messageId); return true;
+                }, (requested, failure) -> { if (failure == null) scheduleReceiptSync(0); });
+            } else if (error == null) scheduleReceiptSync(0);
+        });
+    }
+
+    private boolean receiptViewportActive() {
+        android.os.PowerManager power = (android.os.PowerManager)getSystemService(POWER_SERVICE);
+        android.app.KeyguardManager keyguard = (android.app.KeyguardManager)getSystemService(KEYGUARD_SERVICE);
+        return liveForeground && hasWindowFocus() && power != null && power.isInteractive()
+                && keyguard != null && !keyguard.isKeyguardLocked();
     }
 
     /** A read ACK is emitted only while the message bubble is actually on screen. */
     private void scanVisibleMessageReceipts() {
         Room room = selectedRoom;
-        if (!receiptsAvailable || !liveReady(account) || room == null || messageFrame == null
+        if (!receiptsAvailable || !liveReady(account) || !receiptViewportActive() || room == null || messageFrame == null
                 || messageFrame.getVisibility() != View.VISIBLE
                 || !"chats".equals(visibleSection) || messageScroll == null
                 || !messageScroll.isShown()) return;
@@ -14675,11 +15013,13 @@ public final class OdooIdentityActivity extends Activity {
 
     @Override public void onWindowFocusChanged(boolean focused){
         super.onWindowFocusChanged(focused);
+        if (focused && messageScroll != null) messageScroll.post(this::scanVisibleMessageReceipts);
         if(focused&&liveForeground&&verified&&!offlineHistory&&selectedRoom!=null&&outbox!=null)
             handler.post(()->{if(!closed&&verified&&selectedRoom!=null)refreshLocalRoom(selectedRoom,false);});
     }
 
     @Override protected void onPause() {
+        if (receiptDetailsPanel != null) receiptDetailsPanel.pause();
         if(notificationSettingsPanel!=null)notificationSettingsPanel.pause();
         if (connectedAudioFocus != null) connectedAudioFocus.stop();
         saveLocalContext();
@@ -14715,6 +15055,7 @@ public final class OdooIdentityActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (receiptDetailsPanel != null) receiptDetailsPanel.resume();
         if(notificationSettingsPanel!=null)notificationSettingsPanel.resume();
         liveForeground = true;
         if (recheckOnResume && verified && !closed) {
@@ -14763,6 +15104,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        closeReceiptDetails();
         BChatStageAdmission.unobserve(stageAdmissionObserver);
         if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
         if(transferCoordinator!=null)transferCoordinator.unobserve(transferObserver);

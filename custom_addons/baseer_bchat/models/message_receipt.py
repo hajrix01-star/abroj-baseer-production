@@ -2,6 +2,7 @@
 
 from odoo import api, fields, models
 from odoo.exceptions import AccessError
+from odoo.tools import SQL
 
 
 _RECEIPT_TOKEN = object()
@@ -38,6 +39,33 @@ class BChatMessageReceipt(models.Model):
             ON baseer_bchat_message_receipt (membership_id, message_id)
             WHERE read_at IS NULL
         ''')
+        self.env.cr.execute('''
+            CREATE INDEX IF NOT EXISTS baseer_bchat_receipt_pending_recipient_member_idx
+            ON baseer_bchat_message_receipt (recipient_user_id, membership_id, id)
+            WHERE delivered_at IS NULL
+        ''')
+
+    @api.model
+    def _delivery_eligibility_sql(self):
+        """Private read predicate for aliases r/m/u/msg, before pagination or totals.
+
+        Same current eligibility as _eligibility_exclusion_reason; never repairs
+        old receipts or treats exclusion as a delivered/read acknowledgement.
+        """
+        self.flush_model(['message_id', 'membership_id', 'recipient_user_id', 'company_id',
+                          'delivered_at', 'read_at'])
+        self.env['baseer.bchat.membership'].flush_model([
+            'active', 'user_id', 'room_id', 'company_id', 'joined_after_message_id'])
+        self.env['baseer.bchat.message'].flush_model(['room_id', 'company_id'])
+        users = self.env['res.users']
+        users.flush_model(['active', 'share', 'bchat_chat_view', 'company_ids'])
+        company = users._fields['company_ids']
+        return SQL('''m.active AND u.active AND NOT u.share AND u.bchat_chat_view
+            AND m.user_id=r.recipient_user_id AND u.id=r.recipient_user_id
+            AND m.room_id=msg.room_id AND m.company_id=msg.company_id
+            AND r.company_id=msg.company_id AND msg.id>m.joined_after_message_id
+            AND EXISTS(SELECT 1 FROM %s c WHERE c.%s=u.id AND c.%s=r.company_id)''',
+            SQL.identifier(company.relation), SQL.identifier(company.column1), SQL.identifier(company.column2))
 
     @api.model_create_multi
     def create(self, vals_list):

@@ -69,6 +69,7 @@ jobs:
           set -Eeuo pipefail
           python3 android/bchat/tools/test-connected-media-store.py
           python3 android/bchat/tools/test-notification-presentation.py
+          python3 android/bchat/tools/test-notification-contract.py
           python3 android/bchat/tools/test-push-routing-state.py
           python3 android/bchat/tools/test-appearance-foundations.py
 

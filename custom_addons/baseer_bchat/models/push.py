@@ -6,6 +6,7 @@ system notification; Android still fetches the referenced event through its
 authenticated session before opening anything.
 """
 import base64
+import calendar
 from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
@@ -14,7 +15,6 @@ import random
 import re
 import threading
 import time
-import unicodedata
 from datetime import timedelta
 from uuid import UUID, uuid4
 
@@ -24,6 +24,7 @@ from odoo.modules.registry import Registry
 
 from ..contracts import ProtocolError, positive_id
 from ..push_contracts import classify_fcm_failure, retry_after_seconds, retry_delay_seconds
+from ..notification_presentation import chat_data, notification_text as _notification_text
 
 
 _PUSH_TOKEN = object()
@@ -58,20 +59,6 @@ def _fcm_token(value):
     if any(ord(char) < 33 or ord(char) > 126 for char in value):
         raise ProtocolError('invalid_payload', 'Invalid FCM token.')
     return value
-
-
-def _notification_text(value, limit):
-    """Return a small, non-formatting preview suitable for an opted-in FCM payload."""
-    if not isinstance(value, str):
-        return ''
-    value = re.sub(r'<[^>\r\n]{0,256}>', '', value)
-    cleaned = []
-    for char in value:
-        if unicodedata.category(char).startswith('C'):
-            cleaned.append(' ' if char in '\r\n\t' else '')
-        else:
-            cleaned.append(char)
-    return ' '.join(''.join(cleaned).split())[:limit]
 
 
 class _PushTransportError(Exception):
@@ -420,17 +407,33 @@ class BChatPushEvent(models.Model):
                     'event_id': str(event.id)}
             if diagnostic:
                 data['diagnostic_uuid'] = event.diagnostic_uuid
-            elif event.message_id and event.device_id.preview_mode in ('sender', 'full'):
+            elif event.message_id:
                 message = event.message_id
-                sender = _notification_text(message.author_user_id.name, 120)
-                if sender:
-                    data['sender_name'] = sender
-                if event.device_id.preview_mode == 'full':
-                    preview = _notification_text(message.text, 160)
-                    if preview:
-                        data['message_preview'] = preview
-                    elif message.media_id:
-                        data['message_preview_kind'] = 'attachment'
+                # Reuse recipient authorization; never substitute the author's
+                # membership or expose a room title in sender-only mode.
+                member = self.env['baseer.bchat.membership'].sudo().search([
+                    ('room_id', '=', message.room_id.id), ('user_id', '=', event.recipient_id.id),
+                    ('active', '=', True), ('joined_after_message_id', '<', message.id),
+                ], limit=1) if self._event_recipient_still_allowed(event) else None
+                if member:
+                    sender = ''
+                    if event.device_id.preview_mode in ('sender', 'full'):
+                        try:
+                            names = self.env['res.users'].with_user(event.recipient_id).with_context(
+                                active_test=False).search_read([
+                                    ('id', '=', message.author_user_id.id)], ['name'], limit=1)
+                            sender = names[0]['name'] if names else ''
+                        except AccessError:
+                            pass  # Hidden native user names are not read through sudo.
+                    created = fields.Datetime.to_datetime(message.create_date)
+                    data = chat_data(
+                        account=event.device_id.account_key, event=event.id,
+                        company=message.company_id.id, room=message.room_id.id,
+                        membership=member.id, message=message.id, author=message.author_user_id.id,
+                        sent_at_ms=calendar.timegm(created.utctimetuple()) * 1000 + created.microsecond // 1000,
+                        mode=event.device_id.preview_mode, sender=sender,
+                        title=message.room_id.name, is_group=message.room_id.is_group,
+                        text=message.text, attachment=bool(message.media_id))
             response = requests.post(
                 'https://fcm.googleapis.com/v1/projects/%s/messages:send' % config['project_id'],
                 headers={'Authorization': 'Bearer %s' % access_token},

@@ -504,9 +504,9 @@
         "C08"
       ],
       "owner": "Odoo و Android",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Recipient-only pending refs/sender-only details/shared eligible SQL totals, recipient-epoch echoes and optional fenced ACK preserve v87. Cachev2 strict canonical/pin/intent, bounded foreground recovery and post-viewport read; reviewed invalidation/legacy-proof/old-Activity ownership fixes. Native paged details panel and real GET-only Activity Host integrated",
+      "verificationEvidence": "Independent limited backend/cache/Activity/UI/Host source GO DEV085/086.11 new tests (9ORM/2HTTP) and2 realPG witnesses NOT executed yet. Android69 SQLite/nativeJSON+12 restart;1746 extracted coordinator assertions on prior fixed source; residual ownership fix separately RED then15 ownership/14 re-arm GREEN, no full1746 rerun claim. UI897 assertions/8render cases/16decor captures with fakeHost. Firebase-enabled product javac PASS22s. No fullActivity/realHTTP/FCM/OEM or complete C13 acceptance",
       "acceptance": "قائمة الغرف والخلفية والغرفة المفتوحة وأجهزة متعددة؛ لا تسليم من قبول FCM ولا قراءة بمجرد وصول Push."
     },
     {
@@ -523,9 +523,9 @@
         "C17"
       ],
       "owner": "Android والتنبيهات",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Reviewed server/Java display identity/UTF8/privacy contract, durable512/7day sound reservation and nondisruptive audio tryAcquireIdle foundations. FCM system route now reserves bymessagekey; invalid/oldchat payload generic silent; summary best-effort quiet, nonchat only-alert-once preserved. Channel opt-in UI/live-soft broker and C15 per-room MessagingStyle still pending",
+      "verificationEvidence": "10 purePython/567 JVM contract assertions;31 extracted actualcallback/ledger checks with explicit Android adapters PASS.187 actualAndroid media assertions including5 idle-focus regressions PASS with injected focus/call boundary. Limited source GO after2 FCM edge-case fixes; outgoing payload ORM and OS/FCM/sound/OEM runtime pending",
       "acceptance": "صوت واحد لكل حدث؛ لا صوت للتاريخ أو عند تفعيل DND أو كتم القناة. ترحيل القنوات يحفظ اختيارات المستخدم."
     },
     {
@@ -833,7 +833,7 @@
       "owner": "المنتج والخادم و Android",
       "status": "in_progress",
       "implementationEvidence": "C32 server reactions, private saved references and explicit mentions implemented; legacy empty-mentions fingerprint preserved; author-name reads batched under native ACLs. Android UI pending",
-      "verificationEvidence": "Independent limited source GO after N+1 correction. Eleven new ORM/HTTP tests and4 real-RR probe phases await CI execution;27 cumulative maturity gate selftests PASS (synthetic only). No product or social capability acceptance",
+      "verificationEvidence": "Independent limited checkpoint GO DEV075: CI39068308144 frozen mergee2c34f0f/headb1ed350f;191 unique test starts including11 new C32 ORM/HTTP,14 real-RR phases including4 C32,114/114 source hashes PASS. Fresh helper proves read-only replay/digest refusal, not forced UniqueViolation. Android UI/social capability/product acceptance pending",
       "acceptance": "فائدة مثبتة وسياسة خصوصية وأثر، واختبار كل شريحة؛ لا مكالمات أو بوتات دون نطاق معتمد."
     },
     {
@@ -886,11 +886,11 @@
   "readinessGates": {
     "G0": "independently approved; DEV005; one integrated final result",
     "G1": "independently approved bounds; DEV005/014; actual growth and device capacity not measured",
-    "G2": "approved only for registered slices; C09 design conditional on core checkpoint acceptance; later API/data/meaning changes need explicit review",
+    "G2": "approved only for registered slices; checkpoint condition satisfied DEV075; C13 strict canonical/pin/intent and C14/C15 bounded presentation/audio designs reviewed with corrections; later API/data/meaning changes need explicit review",
     "G3": "independently approved; existing Java/Views/SQLite/Odoo and dependencies; no new product libraries",
     "G4": "foundations approved; full Activity and later notification UI acceptance pending",
-    "G5": "Independent limited core checkpoint GO DEV057: CI39063628834 at c25ee2df/frozen merge89722e88,180 core,10 real PostgreSQL phases and two lock witnesses PASS; no whole-program/procurement/device acceptance",
-    "G6": "Independent early limited GO DEV060: CI39064493632 source67071834/merge82bca539,64 real service+DB/JSON/commit samples,10 paired sends; no HTTP/device/SLA/general capacity acceptance; history/search baseline needs C30 profiling",
+    "G5": "Independent limited cumulative checkpoint GO DEV075: CI39068308144 headb1ed350f/frozen mergee2c34f0f,191 unique starts (169 ORM/11 HTTP/11 BaseCase),14 real PostgreSQL phases and two lock witnesses,114 source hashes PASS; no whole-program/procurement/device acceptance",
+    "G6": "Independent limited checkpoint GO DEV075: same isolated100room/50member/500seed fixture,64 service+DB/JSON/commit samples (4warmup/60measured),10 paired sends,74 attempts/10 bounded40001 retries; history median464.377ms/search461.305ms. Comparison with DEV060 descriptive only (different cloud/cache); no HTTP/device/FPS/SLA/general capacity acceptance",
     "G7": "DEV061 approved slices in progress; no whole-program integration acceptance",
     "G8": "not started; no new product APK or final independent delivery decision"
   },

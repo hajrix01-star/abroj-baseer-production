@@ -6,6 +6,7 @@ container exit code alone. ORM/HTTP and pure BaseCase tests remain distinguishab
 """
 import argparse
 import ast
+from datetime import datetime
 import json
 from pathlib import Path
 import re
@@ -78,6 +79,80 @@ def verify_message_social(value):
             or value.get('fresh_replay_witness') != 'direct_read_only_helper_not_forced_unique_violation'
             or type(value.get('independent_backends')) is not int or value['independent_backends'] < 2):
         raise ValueError('Message social receipt/fresh-helper/cleanup proof incomplete')
+
+
+def verify_receipt_delivery(value):
+    if not isinstance(value, dict) or value.get('database') != 'bchat_maturity_test_20261017':
+        raise ValueError('Missing receipt delivery real PostgreSQL proof')
+    late = value.get('late_commit', {})
+    pids = late.get('writer_pids')
+    if (not isinstance(pids, list) or len(pids) != 2
+            or any(type(pid) is not int or pid <= 0 for pid in pids) or len(set(pids)) != 2
+            or late.get('writer_isolations') != ['repeatable read', 'repeatable read']
+            or any(type(late.get(key)) is not int or not 0 < late[key] <= 2147483647
+                   for key in ('low_receipt_id', 'high_receipt_id'))
+            or late['low_receipt_id'] >= late['high_receipt_id']
+            or any(late.get(key) is not True for key in (
+                'first_page_only_high', 'continuation_excludes_late_low',
+                'reset_finds_late_low', 'canonical_has_current_epoch'))
+            or late.get('writer_fixture') != 'protected_seed_no_feed_send_claim'):
+        raise ValueError('Receipt delivery late-commit/reset proof incomplete')
+    reads = late.get('reads')
+    if not isinstance(reads, list) or len(reads) != 3:
+        raise ValueError('Receipt delivery needs three fresh reader snapshots')
+    transactions = set()
+    for index, row in enumerate(reads):
+        if (not isinstance(row, dict) or type(row.get('backend_pid')) is not int or row['backend_pid'] <= 0
+                or row['backend_pid'] in pids or row.get('isolation') != 'repeatable read'
+                or type(row.get('transaction_id')) is not int or row['transaction_id'] <= 0
+                or type(row.get('after_id')) is not int
+                or row['after_id'] != (late['high_receipt_id'] if index == 1 else 0)):
+            raise ValueError('Receipt delivery reader transaction/after cursor invalid')
+        transactions.add(row['transaction_id'])
+        ids = row.get('receipt_ids')
+        if (not isinstance(ids, list) or len(ids) > 30
+                or any(type(item) is not int or not row['after_id'] < item <= 2147483647 for item in ids)
+                or ids != sorted(set(ids)) or type(row.get('next_after_id')) is not int
+                or row['next_after_id'] != (ids[-1] if ids else 0)):
+            raise ValueError('Receipt delivery reader page evidence invalid')
+    if (len(transactions) != 3 or late['high_receipt_id'] not in reads[0]['receipt_ids']
+            or late['low_receipt_id'] in reads[0]['receipt_ids']
+            or late['low_receipt_id'] in reads[1]['receipt_ids']
+            or late['low_receipt_id'] not in reads[2]['receipt_ids']):
+        raise ValueError('Receipt delivery late commit was not witnessed across fresh snapshots')
+    rows = value.get('ack_two_devices')
+    if (not isinstance(rows, list) or len(rows) != 2
+            or any(not isinstance(row, dict) or row.get('state') != 'ok'
+                   or type(row.get('initial_backend_pid')) is not int or row['initial_backend_pid'] <= 0
+                   or row.get('isolation') != 'repeatable read' or type(row.get('attempts')) is not int
+                   or not 1 <= row['attempts'] <= 6 for row in rows)
+            or len({row['initial_backend_pid'] for row in rows}) != 2):
+        raise ValueError('Receipt delivery ACK needs two genuine RR backends')
+    results = [row.get('result') for row in rows]
+    fields = {'api_version', 'message_id', 'delivered_at', 'read_at', 'unread_count', 'last_message_id', 'replayed'}
+    for result in results:
+        if (not isinstance(result, dict) or not fields <= set(result)
+                or type(result['api_version']) is not int or result['api_version'] != 2
+                or any(type(result.get(key)) is not int or not 0 < result[key] <= 2147483647
+                       for key in ('message_id', 'last_message_id'))
+                or type(result['unread_count']) is not int or result['unread_count'] < 0
+                or type(result['replayed']) is not bool or result['read_at'] is not None
+                or not isinstance(result['delivered_at'], str)
+                or not re.fullmatch(r'\d{4}-\d\d-\d\d \d\d:\d\d:\d\d', result['delivered_at'])):
+            raise ValueError('Receipt delivery ACK result shape invalid')
+        try:
+            datetime.strptime(result['delivered_at'], '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            raise ValueError('Receipt delivery ACK timestamp invalid') from None
+    if (sorted(result['replayed'] for result in results) != [False, True]
+            or any(results[0][key] != results[1][key] for key in fields - {'replayed'})
+            or type(value.get('receipt_rows')) is not int or value['receipt_rows'] != 1
+            or any(value.get(key) is not True for key in (
+                'stable_delivered_timestamp', 'read_not_fabricated', 'original_receipts_unchanged', 'cleanup_completed'))
+            or not isinstance(value.get('cleanup_counts'), dict)
+            or type(value['cleanup_counts'].get('remaining_owned')) is not int
+            or value['cleanup_counts']['remaining_owned'] != 0):
+        raise ValueError('Receipt delivery ACK stable replay/count/cleanup proof incomplete')
 
 
 def expected_tests(addon):
@@ -185,12 +260,14 @@ def verify(addon, orm_log, probe_log, source_commit):
     if denied.get('status') != 429 or not denied.get('retry_after_seconds'):
         raise ValueError('Quota refusal must be explicit 429 with retry guidance')
     verify_message_social(probes.get('message_social'))
+    verify_receipt_delivery(probes.get('receipt_delivery'))
     return {
         'source_commit': source_commit, 'core_tests': len(expected), 'skipped': 0,
         'core_test_kinds': {kind: sum(value == kind for value in kinds.values()) for kind in sorted(set(kinds.values()))},
         'real_postgres_phases': 10, 'dispatcher_skip_locked_proof': True,
         'room_lock_compatibility_proof': True, 'probes': probes,
         'message_social_real_postgres_phases': 4, 'fresh_mention_read_only_helper_proof': True,
+        'receipt_delivery_real_postgres_phases': 2,
         'limitations': ['Core module only; procurement bridge not executed',
                         'Synthetic DB and provider boundary; no live/OEM/FCM delivery or phone performance acceptance'],
     }
@@ -206,7 +283,7 @@ def main():
     args = parser.parse_args()
     evidence = verify(args.root, args.orm_log.read_text(encoding='utf-8'), args.probe_log.read_text(encoding='utf-8'), args.source_commit)
     args.output.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    print('BCHAT_CORE_ORM_EVIDENCE=PASS tests=%s phases=10 message_social_phases=4 skips=0' % evidence['core_tests'])
+    print('BCHAT_CORE_ORM_EVIDENCE=PASS tests=%s phases=10 message_social_phases=4 receipt_delivery_phases=2 skips=0' % evidence['core_tests'])
 
 
 if __name__ == '__main__':

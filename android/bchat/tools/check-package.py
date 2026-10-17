@@ -93,9 +93,16 @@ print('PASS QA Gradle release version, installed-package About version and in-ap
 
 push=(root/'app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java').read_text(encoding='utf-8')
 for required in ('bchat-events-v3', 'setSound(Settings.System.DEFAULT_NOTIFICATION_URI',
-                 'setVisibility(Notification.VISIBILITY_PRIVATE)', 'message_preview',
-                 'sender_name', 'Notification.BigTextStyle'):
+                 'setVisibility(Notification.VISIBILITY_PRIVATE)', 'NotificationPresentation.parse(data)',
+                 'frame.sender', 'frame.preview', 'Notification.BigTextStyle'):
  assert required in push, required
+presentation=(root/'app/src/main/java/com/baseer/freshchat/NotificationPresentation.java').read_text(encoding='utf-8')
+for required in ('message_preview', 'sender_name', 'MAX_DATA_BYTES = 3072', 'presentation_v',
+                 'sender != name', 'title != group', '"[0-9a-f]{64}"'):
+ assert required in presentation, required
+assert 'BChatNotificationLedger.claimSound(' in push
+assert '.setOnlyAlertOnce(!"chat".equals(kind) || !audible)' in push
+assert 'Notification.GROUP_ALERT_SUMMARY' in push and 'Notification.GROUP_ALERT_CHILDREN' in push
 assert 'android.permission.ACCESS_NETWORK_STATE' in permissions
 
 assert notifications.index('channel.setVibrationPattern(') < notifications.index('channel.enableVibration(settings.vibration(CATEGORY))'), 'Apply vibration Off after Android pattern setter'

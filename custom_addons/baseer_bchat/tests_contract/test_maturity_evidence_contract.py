@@ -40,6 +40,27 @@ def message_social_fixture():
     }
 
 
+def receipt_delivery_fixture():
+    first = {'state': 'ok', 'attempts': 1, 'initial_backend_pid': 51, 'isolation': 'repeatable read'}
+    result = {'api_version': 2, 'message_id': 81, 'delivered_at': '2026-10-18 01:02:03',
+              'read_at': None, 'unread_count': 2, 'last_message_id': 82, 'replayed': False}
+    return {'database': 'bchat_maturity_test_20261017',
+            'late_commit': {'writer_pids': [61, 62], 'writer_isolations': ['repeatable read', 'repeatable read'],
+                'low_receipt_id': 71, 'high_receipt_id': 72, 'first_page_only_high': True,
+                'continuation_excludes_late_low': True, 'reset_finds_late_low': True,
+                'canonical_has_current_epoch': True, 'writer_fixture': 'protected_seed_no_feed_send_claim',
+                'reads': [{'backend_pid': 63, 'isolation': 'repeatable read', 'transaction_id': 1001,
+                           'after_id': 0, 'receipt_ids': [72], 'next_after_id': 72},
+                          {'backend_pid': 63, 'isolation': 'repeatable read', 'transaction_id': 1002,
+                           'after_id': 72, 'receipt_ids': [], 'next_after_id': 0},
+                          {'backend_pid': 63, 'isolation': 'repeatable read', 'transaction_id': 1003,
+                           'after_id': 0, 'receipt_ids': [71, 72], 'next_after_id': 72}]},
+            'ack_two_devices': [dict(first, result=result),
+                                dict(first, initial_backend_pid=52, result=dict(result, replayed=True))],
+            'receipt_rows': 1, 'stable_delivered_timestamp': True, 'read_not_fabricated': True,
+            'original_receipts_unchanged': True, 'cleanup_counts': {'remaining_owned': 0}, 'cleanup_completed': True}
+
+
 class MaturityEvidenceGateTests(unittest.TestCase):
     def test_isolated_images_are_valid_sha256_and_match_the_existing_project_pin(self):
         workflow = (ADDON.parents[1] / '.github/workflows/bchat-cumulative-contracts.yml').read_text(encoding='utf-8')
@@ -91,6 +112,7 @@ class MaturityEvidenceGateTests(unittest.TestCase):
                        'room_preference_rows': 1, 'diagnostic_events': 10, 'diagnostic_idempotent_events': 1,
                        'daily_quota_winners': 1},
             'message_social': message_social_fixture(),
+            'receipt_delivery': receipt_delivery_fixture(),
         }
         self.probes['social']['phases']['diagnostic_distinct_devices_daily_quota'] = [one, quota_loser]
 
@@ -101,12 +123,57 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         report = self.verify()
         self.assertEqual(report['real_postgres_phases'], 10)
         self.assertEqual(report['message_social_real_postgres_phases'], 4)
+        self.assertEqual(report['receipt_delivery_real_postgres_phases'], 2)
         self.assertGreater(report['core_test_kinds']['http'], 0)
         self.assertGreater(report['core_test_kinds']['orm'], 0)
         self.assertGreater(report['core_test_kinds']['basecase'], 0)
         _expected, kinds = gate.expected_tests(ADDON)
         self.assertEqual(kinds[('test_mobile_upload_grants',
                                'BChatMobileUploadGrantCase.test_grant_is_single_use_scope_and_direct_model_access_is_denied')], 'orm')
+
+    def test_receipt_delivery_witness_cannot_be_omitted(self):
+        del self.probes['receipt_delivery']
+        with self.assertRaisesRegex(ValueError, 'receipt delivery'):
+            self.verify()
+
+    def test_receipt_late_commit_ids_backends_reset_and_truthful_fixture_are_required(self):
+        for key, bad in (('writer_pids', [61, 61]), ('writer_pids', [True, 62]),
+                         ('writer_isolations', ['read committed', 'repeatable read']),
+                         ('low_receipt_id', True), ('low_receipt_id', 72), ('high_receipt_id', '72'),
+                         ('first_page_only_high', False), ('continuation_excludes_late_low', False),
+                         ('reset_finds_late_low', False), ('canonical_has_current_epoch', False),
+                         ('writer_fixture', 'normal_service_concurrency')):
+            value = receipt_delivery_fixture(); value['late_commit'][key] = bad
+            with self.subTest(key=key, bad=bad), self.assertRaises(ValueError):
+                gate.verify_receipt_delivery(value)
+
+    def test_receipt_ack_requires_independent_rr_stable_timestamps_and_no_read(self):
+        for key, bad in (('initial_backend_pid', 51), ('initial_backend_pid', True), ('isolation', 'read committed'),
+                         ('attempts', True), ('attempts', 7), ('state', '40P01')):
+            value = receipt_delivery_fixture(); value['ack_two_devices'][1][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError): gate.verify_receipt_delivery(value)
+
+    def test_receipt_fresh_reader_transactions_and_raw_page_ids_cannot_be_faked(self):
+        for index, key, bad in ((0, 'backend_pid', 61), (0, 'transaction_id', True),
+                                (1, 'transaction_id', 1001), (1, 'after_id', 0),
+                                (0, 'receipt_ids', [71, 72]), (2, 'receipt_ids', [72]),
+                                (0, 'next_after_id', 0), (1, 'receipt_ids', [71])):
+            value = receipt_delivery_fixture(); value['late_commit']['reads'][index][key] = bad
+            with self.subTest(index=index, key=key), self.assertRaises(ValueError):
+                gate.verify_receipt_delivery(value)
+        for key, bad in (('api_version', True), ('message_id', 1.0), ('unread_count', True),
+                         ('read_at', '2026-10-18 01:02:03'), ('replayed', False),
+                         ('delivered_at', '2026-02-31 01:02:03'), ('delivered_at', '2026-10-18 01:02:04')):
+            value = receipt_delivery_fixture(); value['ack_two_devices'][1]['result'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError): gate.verify_receipt_delivery(value)
+
+    def test_receipt_ack_counts_and_cleanup_must_be_actual_booleans_integers(self):
+        for key, bad in (('receipt_rows', True), ('receipt_rows', 2), ('stable_delivered_timestamp', 1),
+                         ('read_not_fabricated', False), ('original_receipts_unchanged', False),
+                         ('cleanup_counts', {'remaining_owned': True}), ('cleanup_counts', {'remaining_owned': 1}),
+                         ('cleanup_completed', False)):
+            value = receipt_delivery_fixture(); value[key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError): gate.verify_receipt_delivery(value)
 
     def test_missing_test_start_is_rejected(self):
         del self.lines[0]

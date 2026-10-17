@@ -114,16 +114,34 @@ class BChatNotificationSettingsCase(TransactionCase):
 
     def test_actual_outgoing_http_data_none_sender_full_and_downgrade(self):
         event = self._send_event()
-        minimal = {'account_key': self.key, 'kind': 'chat', 'event_id': str(event.id)}
-        self.assertEqual(self._outgoing_data(event), minimal)
+        minimal = self._outgoing_data(event)
+        self.assertEqual(set(minimal), {'account_key', 'kind', 'event_id', 'presentation_v',
+                                        'room_key', 'message_key', 'sent_at_ms'})
+        self.assertEqual((minimal['account_key'], minimal['kind'], minimal['event_id'], minimal['presentation_v']),
+                         (self.key, 'chat', str(event.id), '1'))
+        member = self.env['baseer.bchat.membership'].sudo().search([
+            ('room_id', '=', event.message_id.room_id.id), ('user_id', '=', self.recipient.id),
+            ('active', '=', True)], limit=1)
+        from ..notification_presentation import presentation_keys
+        keys = presentation_keys(self.key, self.company.id, event.message_id.room_id.id,
+                                 member.id, event.message_id.id, self.actor.id)
+        self.assertEqual(minimal['room_key'], keys['room_key'])
+        self.assertEqual(minimal['message_key'], keys['message_key'])
+        self.assertTrue(all(type(value) is str for value in minimal.values()))
         self._preferences('sender')
         sender = self._outgoing_data(event)
-        self.assertEqual(set(sender), set(minimal) | {'sender_name'})
+        self.assertEqual(set(sender), set(minimal) | {'sender_name', 'sender_key'})
+        self.assertEqual(sender['sender_key'], keys['sender_key'])
         self.assertNotIn('Secret', json.dumps(sender))
+        self.assertNotIn('conversation_title', sender)
+        self.assertNotIn('is_group', sender)
         self._preferences('full')
         full = self._outgoing_data(event)
         self.assertEqual(full['message_preview'], 'Secret content private')
         self.assertIn('sender_name', full)
+        self.assertEqual(full['conversation_title'], 'Private preview fixture')
+        self.assertEqual(full['is_group'], 'true')
+        self.assertEqual(full['sent_at_ms'], minimal['sent_at_ms'])
         event._write_verified({'state': 'retry'}, _PUSH_TOKEN)
         self._preferences('none')
         self.assertEqual(self._outgoing_data(event), minimal)

@@ -19,6 +19,7 @@ final class BChatNotificationLedger {
     static final long MAX_AGE_MILLIS = 7L * 24 * 60 * 60 * 1000;
     private static final String PREFS = "bchat-presented-events-v1";
     private static final String EVENTS = "shown";
+    private static final String SOUND_CLAIMS = "sound-claims-v1";
     private static final Object LOCK = new Object();
 
     private BChatNotificationLedger() { }
@@ -51,6 +52,52 @@ final class BChatNotificationLedger {
             Set<String> stored = new HashSet<>();
             for (Record item : entries) stored.add(item.key + "|" + item.at);
             return prefs(context).edit().putStringSet(EVENTS, stored).commit();
+        }
+    }
+
+    /**
+     * Worker-only durable reservation BEFORE any audible effect. The route may
+     * subsequently become silent, never switch to a second audible route. No
+     * claim is evicted to admit a newer sound; full/corrupt/unwritable is quiet.
+     * A crash after this commit may lose a tone, not replay it after restart.
+     */
+    static boolean claimSound(Context context, String account, String messageKey,
+                              long sentAt, long now, String route) {
+        if (account == null || !account.matches(
+                "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")
+                || messageKey == null || !messageKey.matches("[0-9a-f]{64}")
+                || !("system".equals(route) || "soft".equals(route) || "silent".equals(route))
+                || now < 0 || sentAt <= 0 || sentAt > 253402300799999L
+                || sentAt > now && sentAt - now > 300000L
+                || now >= sentAt && now - sentAt > MAX_AGE_MILLIS) return false;
+        synchronized (LOCK) {
+            try {
+                Set<String> raw = prefs(context).getStringSet(SOUND_CLAIMS, Collections.emptySet());
+                if (raw == null || raw.size() > MAX_EVENTS) return false;
+                Set<String> retained = new HashSet<>();
+                String wanted = account + ":" + messageKey;
+                boolean seen = false;
+                for (String encoded : new HashSet<>(raw)) {
+                    if (encoded == null) return false;
+                    String[] parts = encoded.split("\\|", -1);
+                    if (parts.length != 3 || !parts[0].matches(
+                            "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:[0-9a-f]{64}")
+                            || !parts[1].matches("[0-9]{1,15}")
+                            || !("system".equals(parts[2]) || "soft".equals(parts[2]) || "silent".equals(parts[2])))
+                        return false;
+                    long at = Long.parseLong(parts[1]);
+                    if (at > 253402300799999L) return false;
+                    // Backward wall-clock movement cannot free an unexpired claim.
+                    if (now >= at && now - at > MAX_AGE_MILLIS) continue;
+                    retained.add(encoded);
+                    if (parts[0].equals(wanted)) seen = true;
+                }
+                if (seen || retained.size() >= MAX_EVENTS) return false;
+                retained.add(wanted + "|" + now + "|" + route);
+                return prefs(context).edit().putStringSet(SOUND_CLAIMS, retained).commit();
+            } catch (RuntimeException storageUnavailable) {
+                return false;
+            }
         }
     }
 

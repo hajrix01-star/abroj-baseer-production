@@ -304,6 +304,24 @@ public final class MediaInstrumentation extends Instrumentation {
                 "reentrant old callback does not overwrite replacement owner");
         coordinator.stop();
         check(!nested[0].active() && port.receiver == null, "Activity stop releases current owner");
+        AudioFocusLease.Lease foregroundTone = coordinator.tryAcquireIdle(attributes(), reason -> { });
+        check(foregroundTone != null && foregroundTone.active(), "idle message tone may acquire focus");
+        int idleRequests = port.requested;
+        check(coordinator.tryAcquireIdle(attributes(), reason -> { }) == null
+                        && foregroundTone.active() && port.requested == idleRequests,
+                "second soft tone does not steal or request existing ownership");
+        foregroundTone.close();
+        AudioFocusLease.Lease voiceOwner = coordinator.reserve(reason -> { });
+        check(coordinator.tryAcquireIdle(attributes(), reason -> { }) == null && voiceOwner.active(),
+                "preparing recording/player also excludes a message tone");
+        voiceOwner.close();
+        port.call = true;
+        check(coordinator.tryAcquireIdle(attributes(), reason -> { }) == null,
+                "soft tone does not request focus during communication");
+        port.call = false; port.grant = false;
+        check(coordinator.tryAcquireIdle(attributes(), reason -> { }) == null && port.receiver == null,
+                "soft tone focus denial never registers or delays replay");
+        port.grant = true;
         coordinator.acquire(attributes(), false, reason -> { throw new IllegalStateException("Synthetic cleanup failure"); });
         int requests = port.requested;
         check(coordinator.acquire(attributes(), false, reason -> { }) == null && port.requested == requests,

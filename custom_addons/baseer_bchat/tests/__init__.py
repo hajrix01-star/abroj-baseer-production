@@ -15,3 +15,4 @@ from . import test_direct_rooms
 from . import test_group_audit
 from . import test_search_v2
 from . import test_message_social
+from . import test_delivery_receipts_v2

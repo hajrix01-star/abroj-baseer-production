@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.baseer.bchat.receipt.details.test">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+    <application android:label="Isolated receipt details test" android:allowBackup="false"
+        android:debuggable="true" android:supportsRtl="true" android:theme="@style/AppTheme">
+        <activity android:name="com.baseer.freshchat.ReceiptDetailsTestActivity" android:exported="false" />
+    </application>
+    <instrumentation android:name="com.baseer.freshchat.ReceiptDetailsInstrumentation"
+        android:targetPackage="com.baseer.bchat.receipt.details.test"
+        android:label="Receipt details component checks" />
+</manifest>

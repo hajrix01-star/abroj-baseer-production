@@ -1,0 +1,326 @@
+package com.baseer.freshchat;
+
+import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import com.baseer.freshchat.sync.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
+import org.json.*;
+
+/** Extracted production receipt methods; only transport, room/view state and lifecycle host are adapters.
+ * SQLite, disk lane, JSON parser and canonical validator are real. This is not the product Activity or HTTP.
+ */
+public final class ReceiptActivityProbe {
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final AccountScope account = new AccountScope("https://coordinator.invalid", "synthetic", 7);
+    private final ConnectedHistoryCache historyCache;
+    private final List<Room> rooms = new ArrayList<>();
+    private final List<JSONObject> displayedMessages = new ArrayList<>();
+    private final LinkedList<LiveRequest> liveQueue = new LinkedList<>(), requests = new LinkedList<>();
+    private final Set<String> pendingAcknowledgements = new HashSet<>(), receiptPassAttempted = new HashSet<>();
+    private final Object historyStorageLock = new Object();
+    private int epoch=1, historyWriteGeneration=1, historyGlobalGeneration=1, roomMetadataGeneration=1, unreadMetadataGeneration;
+    private boolean closed, verified=true, offlineHistory, liveStarted=true, liveForeground=true, viewport=true;
+    private boolean receiptsAvailable=true,receiptDeliverySupported=true,receiptSyncBusy,receiptPassActive,roomsVerifiedForSession=true,liveRoomsDirty;
+    private long receiptPendingCursor;private int receiptPendingPages;
+    private int receiptStorageGeneration=1;
+    private int receiptPassToken;
+    private int receiptRebindGeneration;
+    private boolean receiptNeedsRoomRebind, scanForRead;
+    private long visibleMessageId;
+    private Runnable receiptSyncTimer;
+    private Room selectedRoom;
+    private String visibleSection="chats",csrfToken="synthetic-only";
+    private final StubView chatNotice=new StubView(), messageScroll=new StubView();
+    private int checks, refreshes, scans;
+    private static final String V2_ROOMS="/bchat/api/v2/rooms";
+    private interface V2Callback {void complete(int status,JSONObject body);}
+    private static final class StubView {void setText(int id){}void post(Runnable action){new Handler(Looper.getMainLooper()).post(action);}}
+    private static final class R {static final class string {static final int chat_v2_save_failed=1;}}
+    private static final class MediaRecord {MediaRecord(JSONObject value){throw new IllegalArgumentException("Media fixture is outside this focused probe");}}
+    private static final class Room {
+        final long id,membershipId;long lastMessageId=3;int unreadCount=3;
+        Room(long id,long member){this.id=id;membershipId=member;}
+        boolean sameMembership(Room other){return other!=null&&id==other.id&&membershipId==other.membershipId;}
+    }
+    private ReceiptActivityProbe(Context context)throws Exception{
+        context.deleteDatabase("bchat-v2-history-v1.db");historyCache=new ConnectedHistoryCache(context);
+        rooms.add(new Room(11,21));rooms.add(new Room(12,22));selectedRoom=rooms.get(0);
+        historyCache.reconcile(account,true,Arrays.asList(
+                new ConnectedHistoryCache.RoomRecord(11,21,3,"One","off",1),new ConnectedHistoryCache.RoomRecord(12,22,3,"Two","off",1)));
+    }
+    private boolean liveReady(AccountScope scope){return liveStarted&&liveForeground&&!closed&&verified&&account==scope;}
+    private boolean chatAllowed(){return true;}
+    private boolean receiptViewportActive(){return viewport&&liveForeground;}
+    private void scanVisibleMessageReceipts(){++scans;if(scanForRead&&viewport&&selectedRoom!=null)acknowledgeMessage(selectedRoom,visibleMessageId,"read");}
+    private void flushLiveUi(){++refreshes;}
+    private void renderRooms(){}
+    private void logout(){verified=false;liveStarted=false;}
+    private void purgeHistory(){verified=false;}
+    private static long positiveId(Object value){return ReceiptDeliveryProtocol.number(value,true);}
+    private static long nonnegativeCursor(Object value){return ReceiptDeliveryProtocol.number(value,false);}
+    private void enqueueLive(String method,String path,String formKey,String formValue,V2Callback callback){
+        requests.add(new LiveRequest(method,path,formKey,formValue,account,callback));
+    }
+    private void pumpLiveQueue(){if(!liveQueue.isEmpty())requests.add(liveQueue.removeFirst());}
+    %LIVE_REQUEST%
+    %CANONICAL_VALIDATOR%
+    %REQUIRE_EPOCH%
+    %RESET%
+    %INVALIDATE%
+    %ROOM_SNAPSHOT%
+    %PURGE_ROOM%
+    %DISK%
+    %PERSIST%
+    %ROOM%
+    %READY%
+    %SCHEDULE%
+    %FINISH%
+    %DRAIN%
+    %NEXT%
+    %PENDING%
+    %FETCH%
+    %DISPATCH%
+    %UNREAD%
+    %READ%
+
+    private void check(boolean value){++checks;if(!value)throw new AssertionError("Coordinator assertion "+checks);}
+    private static void main(Runnable action)throws Exception{
+        CountDownLatch done=new CountDownLatch(1);Throwable[] error={null};
+        new Handler(Looper.getMainLooper()).post(()->{try{action.run();}catch(Throwable value){error[0]=value;}finally{done.countDown();}});
+        if(!done.await(5,TimeUnit.SECONDS))throw new AssertionError("Main adapter timed out");
+        if(error[0]!=null)throw new AssertionError(error[0]);
+    }
+    private void until(BooleanSupplier ready)throws Exception{
+        long end=System.nanoTime()+TimeUnit.SECONDS.toNanos(5);
+        while(System.nanoTime()<end){boolean[] value={false};main(()->value[0]=ready.getAsBoolean());if(value[0])return;Thread.sleep(5);}
+        throw new AssertionError("Coordinator adapter timed out");
+    }
+    private LiveRequest next(String method,String suffix)throws Exception{
+        until(()->!requests.isEmpty());LiveRequest[] value={null};main(()->value[0]=requests.removeFirst());
+        check(method.equals(value[0].method)&&value[0].path.endsWith(suffix));return value[0];
+    }
+    private void reply(LiveRequest request,int status,JSONObject body)throws Exception{main(()->request.callback.complete(status,body));}
+    private JSONObject message(long id)throws Exception{return new JSONObject().put("id",id).put("author_user_id",9)
+            .put("author_name","Synthetic").put("text","Message "+id).put("created_at","2026-10-18 01:00:00");}
+    private JSONObject canonical(long id,long epoch)throws Exception{return new JSONObject().put("api_version",2)
+            .put("room_id",11).put("membership_id",epoch).put("message",message(id));}
+    private JSONObject ack(long id,boolean read)throws Exception{return new JSONObject().put("api_version",2).put("message_id",id)
+            .put("delivered_at","2026-10-18 01:00:00").put("read_at",read?"2026-10-18 01:00:01":JSONObject.NULL)
+            .put("unread_count",read?0:3).put("last_message_id",3).put("replayed",false);}
+    private JSONObject refs(long...ids)throws Exception{
+        JSONArray rows=new JSONArray();for(long id:ids)rows.put(new JSONObject().put("room_id",11).put("membership_id",21)
+                .put("message_id",id).put("receipt_id",id+1000));
+        return new JSONObject().put("api_version",2).put("refs",rows).put("next_after_id",ids.length==0?0:ids[ids.length-1]+1000).put("has_more",false);
+    }
+    private ConnectedHistoryCache.ReceiptWork work(long id,String kind){return new ConnectedHistoryCache.ReceiptWork(11,21,id,0,kind);}
+    private void stop()throws Exception{
+        main(()->{closed=true;handler.removeCallbacksAndMessages(null);});
+        CountDownLatch drained=new CountDownLatch(1);BChatStorageRepository.executor().execute(drained::countDown);
+        if(!drained.await(5,TimeUnit.SECONDS))throw new AssertionError("Disk lane did not drain");historyCache.close();
+    }
+    private static int failedRefAndNavigation(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            main(()->p.scheduleReceiptSync(0));p.reply(p.next("GET","pending?after_id=0"),200,p.refs(1,2));
+            p.reply(p.next("GET","/messages/1"),403,null);
+            p.reply(p.next("GET","/messages/2"),200,p.canonical(2,21));
+            LiveRequest post=p.next("POST","/messages/2/receipts");
+            p.check(p.historyCache.hasReceiptEvidence(p.account,p.work(2,"delivered")));
+            p.check(post.receiptMembershipId==21&&"delivered".equals(post.formValue));
+            main(()->p.selectedRoom=p.rooms.get(1));p.reply(post,200,p.ack(2,false));
+            p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).size()==1);
+            p.check("fetch".equals(p.historyCache.receiptWork(p.account).get(0).kind));
+            p.check(!p.historyCache.hasReceiptEvidence(p.account,p.work(2,"delivered")));
+            p.check(p.receiptPendingCursor==0&&p.requests.isEmpty());
+            return p.checks;
+        }finally{p.stop();}
+    }
+    private static int lostAck(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            p.historyCache.savePageAndQueueDelivered(p.account,11,21,Collections.singletonList(p.message(1)));
+            main(()->p.scheduleReceiptSync(0));LiveRequest first=p.next("POST","/messages/1/receipts");
+            p.reply(first,0,null);p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.hasReceiptEvidence(p.account,p.work(1,"delivered")));
+            main(()->p.scheduleReceiptSync(0));LiveRequest retry=p.next("POST","/messages/1/receipts");
+            p.check(first.path.equals(retry.path)&&retry.receiptMembershipId==first.receiptMembershipId);
+            p.reply(retry,200,p.ack(1,false));p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty());return p.checks;
+        }finally{p.stop();}
+    }
+    private static int failedCommit(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            main(()->p.scheduleReceiptSync(0));p.reply(p.next("GET","pending?after_id=0"),200,p.refs(1));
+            LiveRequest get=p.next("GET","/messages/1");
+            p.historyCache.getWritableDatabase().execSQL("CREATE TRIGGER synthetic_receipt_failure BEFORE INSERT ON receipt_work BEGIN SELECT RAISE(ABORT,'synthetic'); END");
+            p.reply(get,200,p.canonical(1,21));p.until(()->!p.receiptPassActive);
+            p.check(p.requests.isEmpty()&&p.historyCache.receiptWork(p.account).size()==1);
+            p.check(!p.historyCache.hasReceiptEvidence(p.account,p.work(1,"delivered")));
+            p.historyCache.getWritableDatabase().execSQL("DROP TRIGGER synthetic_receipt_failure");
+            main(()->p.scheduleReceiptSync(0));p.reply(p.next("GET","/messages/1"),200,p.canonical(1,21));
+            p.reply(p.next("POST","/messages/1/receipts"),200,p.ack(1,false));
+            p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty());return p.checks;
+        }finally{p.stop();}
+    }
+    private static int wrongEpochAndRead(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            main(()->p.scheduleReceiptSync(0));p.reply(p.next("GET","pending?after_id=0"),200,p.refs(1,2));
+            p.reply(p.next("GET","/messages/1"),200,p.canonical(1,31));
+            JSONObject missing=p.canonical(2,21);missing.remove("membership_id");
+            p.reply(p.next("GET","/messages/2"),200,missing);p.until(()->!p.receiptPassActive);
+            p.check(p.requests.isEmpty()&&p.historyCache.receiptWork(p.account).size()==2);
+            p.check(!p.historyCache.hasReceiptEvidence(p.account,p.work(1,"delivered")));
+            p.historyCache.purgeAll();p.historyCache.reconcile(p.account,true,Arrays.asList(new ConnectedHistoryCache.RoomRecord(11,21,3,"One","off",1)));
+            JSONObject item=p.message(3);p.historyCache.savePageAndQueueDelivered(p.account,11,21,Collections.singletonList(item));
+            p.historyCache.settleReceipt(p.account,p.work(3,"delivered"));
+            main(()->{p.displayedMessages.add(item);p.viewport=false;p.acknowledgeMessage(p.selectedRoom,3,"read");});
+            p.check(p.historyCache.receiptWork(p.account).isEmpty());
+            main(()->{p.viewport=true;p.acknowledgeMessage(p.selectedRoom,3,"read");});
+            LiveRequest read=p.next("POST","/messages/3/receipts");p.check("read".equals(read.formValue));
+            main(()->p.selectedRoom=null);p.reply(read,200,p.ack(3,true));
+            p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty()&&p.rooms.get(0).unreadCount==0);
+            return p.checks;
+        }finally{p.stop();}
+    }
+    private static int unsupported(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            JSONObject item=p.message(1);
+            main(()->{p.receiptDeliverySupported=false;p.persistReceiptCanonical(p.account,p.selectedRoom,Collections.singletonList(item));p.scheduleReceiptSync(0);});
+            CountDownLatch drained=new CountDownLatch(1);BChatStorageRepository.executor().execute(drained::countDown);p.check(drained.await(5,TimeUnit.SECONDS));
+            main(()->{});p.check(p.historyCache.receiptWork(p.account).isEmpty());
+            p.check(p.requests.isEmpty()&&!p.offlineHistory);return p.checks;
+        }finally{p.stop();}
+    }
+    private static int backlogBeyondCacheWindow(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            main(()->{p.selectedRoom=null;p.scheduleReceiptSync(0);});
+            for(int start=1;start<=550;start+=30){
+                int end=Math.min(start+29,550);long[] ids=new long[end-start+1];
+                for(int i=0;i<ids.length;i++)ids[i]=start+i;
+                long cursor=start==1?0:start-1+1000;
+                JSONObject page=p.refs(ids).put("has_more",end<550);
+                p.reply(p.next("GET","pending?after_id="+cursor),200,page);
+                for(int id=start;id<=end;id++){
+                    p.reply(p.next("GET","/messages/"+id),200,p.canonical(id,21));
+                    LiveRequest ack=p.next("POST","/messages/"+id+"/receipts");
+                    p.check(p.historyCache.hasReceiptEvidence(p.account,p.work(id,"delivered")));
+                    p.reply(ack,200,p.ack(id,false));
+                }
+            }
+            p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty()&&p.receiptPendingCursor==0);
+            try(android.database.Cursor rows=p.historyCache.getReadableDatabase().rawQuery("SELECT COUNT(*),MIN(message_id),MAX(message_id) FROM cached_message",null)){
+                rows.moveToFirst();p.check(rows.getLong(0)==500&&rows.getLong(1)==51&&rows.getLong(2)==550);
+            }
+            p.check(p.requests.isEmpty());return p.checks;
+        }finally{p.stop();}
+    }
+    private static int overlappingActivityGeneration(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            p.historyCache.savePageAndQueueDelivered(p.account,11,21,Collections.singletonList(p.message(1)));
+            main(()->p.scheduleReceiptSync(0));LiveRequest sent=p.next("POST","/messages/1/receipts");
+            main(()->++p.historyGlobalGeneration); // A different verified Activity owns the process's cache generation now.
+            p.reply(sent,200,p.ack(1,false));
+            CountDownLatch drained=new CountDownLatch(1);BChatStorageRepository.executor().execute(drained::countDown);
+            p.check(drained.await(5,TimeUnit.SECONDS));main(()->{});
+            p.check(p.historyCache.hasReceiptEvidence(p.account,p.work(1,"delivered")));
+            p.check(!p.receiptSyncReady()&&p.requests.isEmpty());return p.checks;
+        }finally{p.stop();}
+    }
+    private static int revokedUnrelatedRoom(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            p.historyCache.savePageAndQueueDelivered(p.account,12,22,Collections.singletonList(p.message(2)));
+            CountDownLatch blocked=new CountDownLatch(1),release=new CountDownLatch(1);
+            BChatStorageRepository.executor().execute(()->{blocked.countDown();try{release.await(5,TimeUnit.SECONDS);}catch(InterruptedException e){throw new RuntimeException(e);}});
+            p.check(blocked.await(5,TimeUnit.SECONDS));
+            main(()->p.scheduleReceiptSync(0));p.until(()->p.receiptSyncBusy);
+            main(()->{
+                p.purgeCachedRoom(p.account,11); // Exact production invalidation hook while B's disk completion is pending.
+                BChatStorageRepository.invalidate(p.account); // This used to withhold a scoped callback completely.
+                p.rooms.remove(0);p.selectedRoom=p.rooms.get(0);
+            });
+            boolean invalidated=!p.receiptSyncBusy&&!p.receiptSyncReady()&&p.receiptNeedsRoomRebind;
+            release.countDown();
+            p.check(invalidated);
+            CountDownLatch drained=new CountDownLatch(1);BChatStorageRepository.executor().execute(drained::countDown);p.check(drained.await(5,TimeUnit.SECONDS));
+            main(()->{});p.check(p.requests.isEmpty()); // No implicit borrowing of the new generation.
+            main(()->p.persistReceiptRooms(p.account,p.historyCache,true,Collections.singletonList(
+                    new ConnectedHistoryCache.RoomRecord(12,22,3,"Two","off",1))));
+            LiveRequest resumed=p.next("POST","/messages/2/receipts");p.check(resumed.receiptMembershipId==22&&p.receiptSyncBusy);
+            p.reply(resumed,200,p.ack(2,false));p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty()&&p.receiptSyncReady());return p.checks;
+        }finally{p.stop();}
+    }
+    private static int oldAckCannotClearNewPass(Context context)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            p.historyCache.savePageAndQueueDelivered(p.account,12,22,Collections.singletonList(p.message(2)));
+            main(()->p.scheduleReceiptSync(0));LiveRequest old=p.next("POST","/messages/2/receipts");
+            main(()->{
+                p.purgeCachedRoom(p.account,11);p.rooms.remove(0);p.selectedRoom=p.rooms.get(0);
+                p.persistReceiptRooms(p.account,p.historyCache,true,Collections.singletonList(new ConnectedHistoryCache.RoomRecord(12,22,3,"Two","off",1)));
+            });
+            LiveRequest fresh=p.next("POST","/messages/2/receipts");
+            p.reply(old,200,p.ack(2,false));
+            p.check(p.receiptSyncBusy&&p.historyCache.hasReceiptEvidence(p.account,new ConnectedHistoryCache.ReceiptWork(12,22,2,0,"delivered")));
+            p.reply(fresh,200,p.ack(2,false));p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty());return p.checks;
+        }finally{p.stop();}
+    }
+    private static int migratedForwardCacheRevalidation(Context context,boolean moveViewport)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);try{
+            // A migrated/already-delivered row from the next cached page has no v2 receipt proof.
+            p.historyCache.savePage(p.account,11,21,Collections.singletonList(p.message(101)));
+            JSONObject forward=p.historyCache.pageAfter(p.account,11,21,100).get(0);
+            p.check(forward.getLong("id")==101);
+            main(()->{p.displayedMessages.add(forward);p.scanForRead=true;p.visibleMessageId=101;p.acknowledgeMessage(p.selectedRoom,101,"read");});
+            LiveRequest proof=p.next("GET","/messages/101");
+            p.check(p.historyCache.receiptWork(p.account).size()==1&&"verify".equals(p.historyCache.receiptWork(p.account).get(0).kind));
+            p.check(!p.historyCache.hasReceiptEvidence(p.account,p.work(101,"read")));
+            if(moveViewport)main(()->{p.viewport=false;p.selectedRoom=p.rooms.get(1);});
+            p.reply(proof,200,p.canonical(101,21));
+            LiveRequest ack=p.next("POST","/messages/101/receipts");
+            p.check((moveViewport?"delivered":"read").equals(ack.formValue));
+            p.check(p.historyCache.hasReceiptEvidence(p.account,p.work(101,ack.formValue)));
+            p.reply(ack,200,p.ack(101,!moveViewport));
+            p.reply(p.next("GET","pending?after_id=0"),200,p.refs());p.until(()->!p.receiptPassActive);
+            p.check(p.historyCache.receiptWork(p.account).isEmpty()&&p.requests.isEmpty());return p.checks;
+        }finally{p.stop();}
+    }
+    public static int run(Context context)throws Exception{
+        return failedRefAndNavigation(context)+lostAck(context)+failedCommit(context)+wrongEpochAndRead(context)+unsupported(context)+backlogBeyondCacheWindow(context)+overlappingActivityGeneration(context)
+                +revokedUnrelatedRoom(context)+oldAckCannotClearNewPass(context)+migratedForwardCacheRevalidation(context,false)+migratedForwardCacheRevalidation(context,true);
+    }
+    public static int runInvalidation(Context context)throws Exception{return revokedUnrelatedRoom(context)+oldAckCannotClearNewPass(context);}
+    public static int runRevalidation(Context context)throws Exception{return migratedForwardCacheRevalidation(context,false)+migratedForwardCacheRevalidation(context,true);}
+    private static int staleRoomSnapshotOwnership(Context context,boolean differentAccount)throws Exception{
+        ReceiptActivityProbe p=new ReceiptActivityProbe(context);
+        try(ConnectedHistoryCache current=new ConnectedHistoryCache(context)){
+            AccountScope verified=differentAccount?new AccountScope("https://coordinator.invalid","synthetic",8):p.account;
+            current.reconcile(verified,true,Arrays.asList(new ConnectedHistoryCache.RoomRecord(11,31,3,"Current one","off",1),
+                    new ConnectedHistoryCache.RoomRecord(12,32,3,"Current two","off",1)));
+            current.savePageAndQueueDelivered(verified,11,31,Collections.singletonList(p.message(10)));
+            current.admitReceiptReferences(verified,Collections.singletonList(new ConnectedHistoryCache.ReceiptWork(12,32,11,1011,"fetch")));
+            ConnectedHistoryCache.ReceiptWork canonical=new ConnectedHistoryCache.ReceiptWork(11,31,10,0,"delivered");
+            p.check(current.hasReceiptEvidence(verified,canonical)&&current.receiptWork(verified).size()==2);
+            // The stale helper is called AFTER another Activity advanced global ownership. Capturing that new
+            // global at invocation is not permission to reconcile the stale Activity's account/membership list.
+            main(()->{++p.historyGlobalGeneration;p.persistReceiptRooms(p.account,p.historyCache,true,Arrays.asList(
+                    new ConnectedHistoryCache.RoomRecord(11,21,3,"Old one","off",1),new ConnectedHistoryCache.RoomRecord(12,22,3,"Old two","off",1)));});
+            CountDownLatch drained=new CountDownLatch(1);BChatStorageRepository.executor().execute(drained::countDown);
+            p.check(drained.await(5,TimeUnit.SECONDS));main(()->{});
+            p.check(current.hasReceiptEvidence(verified,canonical));
+            p.check(current.receiptWork(verified).size()==2);
+            p.check(current.rooms(verified).size()==2&&current.rooms(verified).get(0).membershipId==31);
+            p.check(current.page(verified,11,31,0).size()==1);
+            p.check(!p.receiptSyncReady()&&p.requests.isEmpty());
+            return p.checks;
+        }finally{p.stop();}
+    }
+    public static int runRoomOwnership(Context context)throws Exception{
+        return staleRoomSnapshotOwnership(context,false)+staleRoomSnapshotOwnership(context,true);
+    }
+}

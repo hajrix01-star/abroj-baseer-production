@@ -72,6 +72,13 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         // Extras select a candidate only. The authenticated endpoint rechecks current access.
         PendingIntent open = PendingIntent.getActivity(this, (account + ":" + kind + ":" + event).hashCode(),
                 intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        NotificationPresentation frame = NotificationPresentation.parse(data);
+        // Worker callback: a durable shared message claim precedes any system sound.
+        // Legacy/malformed chat metadata gets a generic silent notification, not a
+        // guessed room/message identity. Other existing event kinds are unchanged.
+        boolean audible = !"chat".equals(kind) || frame != null && BChatNotificationLedger.claimSound(
+                this, account, frame.messageKey, frame.sentAt, System.currentTimeMillis(), "system");
+        String group = account + ":bchat-events";
         int textId = "chat".equals(kind) ? R.string.bchat_push_chat
                 : "task".equals(kind) ? R.string.bchat_push_task
                 : diagnostic ? R.string.bchat_push_diagnostic : R.string.bchat_push_order;
@@ -79,10 +86,9 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         // crash window after notify but before the durable presentation receipt.
         try {
             boolean posted = BChatPushState.present(delivery, mode -> {
-                String sender = "chat".equals(kind) && !"none".equals(mode) ? notificationText(data.get("sender_name"), 120) : "";
-                String preview = "chat".equals(kind) && "full".equals(mode) ? notificationText(data.get("message_preview"), 160) : "";
-                if ("chat".equals(kind) && "full".equals(mode) && preview.isEmpty()
-                        && "attachment".equals(data.get("message_preview_kind")))
+                String sender = frame != null && !"none".equals(mode) ? frame.sender : "";
+                String preview = frame != null && "full".equals(mode) ? frame.preview : "";
+                if (frame != null && "full".equals(mode) && preview.isEmpty() && frame.attachment)
                     preview = getString(R.string.bchat_push_attachment);
                 Notification publicView = new Notification.Builder(this, CHANNEL)
                         .setSmallIcon(R.drawable.ic_notification).setContentTitle("BChat")
@@ -91,12 +97,30 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
                         .setSmallIcon(R.drawable.ic_notification)
                         .setContentTitle(sender.isEmpty() ? "BChat" : sender)
                         .setContentText(preview.isEmpty() ? getString(textId) : preview)
-                        .setContentIntent(open).setAutoCancel(true).setOnlyAlertOnce(true)
+                        .setContentIntent(open).setAutoCancel(true)
+                        .setOnlyAlertOnce(!"chat".equals(kind) || !audible)
+                        .setGroup(group).setGroupAlertBehavior(audible
+                                ? Notification.GROUP_ALERT_CHILDREN : Notification.GROUP_ALERT_SUMMARY)
                         .setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicView)
                         .setCategory("chat".equals(kind) ? Notification.CATEGORY_MESSAGE : Notification.CATEGORY_REMINDER);
                 if (!preview.isEmpty()) builder.setStyle(new Notification.BigTextStyle().bigText(preview));
                 // The final account/intent ceiling check and notify share the same short RAM lock.
                 manager.notify(presentationKey, 0, builder.build());
+                // A real group summary is required on Android26+. It is generic,
+                // independently silent even on a loud channel, and never retired
+                // as a chat receipt or as an audible message claim.
+                Notification summary = new Notification.Builder(this, CHANNEL)
+                        .setSmallIcon(R.drawable.ic_notification).setContentTitle("BChat")
+                        .setContentText(getString(textId)).setContentIntent(open)
+                        .setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicView)
+                        .setGroup(group).setGroupSummary(true)
+                        .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
+                        .setOnlyAlertOnce(true).setAutoCancel(true).build();
+                try { manager.notify(account + ":bchat-summary", 1, summary); }
+                catch (SecurityException summaryRevoked) {
+                    // The child was already accepted. A best-effort summary
+                    // failure must not turn that into a failed/unknown event.
+                }
             });
             if (!posted) return;
             if (diagnostic) BChatNotificationDiagnostics.record(this, account, event, diagnosticUuid,
@@ -110,6 +134,7 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
     }
 
     private void ensureChannel(NotificationManager manager) {
+        if (manager.getNotificationChannel(CHANNEL) != null) return;
         NotificationChannel channel = new NotificationChannel(CHANNEL, "BChat",
                 NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription(getString(R.string.bchat_push_channel_description));
@@ -121,22 +146,4 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         manager.createNotificationChannel(channel);
     }
 
-    /** Do not let a malformed push create bidi/control tricks or split surrogate pairs. */
-    private static String notificationText(String raw, int maximum) {
-        if (raw == null || raw.isEmpty()) return "";
-        StringBuilder clean = new StringBuilder();
-        for (int offset = 0; offset < raw.length() && clean.codePointCount(0, clean.length()) < maximum;) {
-            int point = raw.codePointAt(offset);
-            offset += Character.charCount(point);
-            int type = Character.getType(point);
-            if (type == Character.CONTROL || type == Character.FORMAT
-                    || type == Character.SURROGATE || type == Character.UNASSIGNED) continue;
-            if (Character.isWhitespace(point)) {
-                if (clean.length() > 0 && clean.charAt(clean.length() - 1) != ' ') clean.append(' ');
-            } else clean.appendCodePoint(point);
-        }
-        int last = clean.length();
-        while (last > 0 && clean.charAt(last - 1) == ' ') last--;
-        return clean.substring(0, last);
-    }
 }

@@ -422,6 +422,49 @@
         "custom_addons/baseer_bchat/tests_contract/test_message_social_contract.py"
       ],
       "suites": ["backend-contracts", "source-structure"]
+    },
+    {
+      "id": "durable-receipt-evidence-and-current-epoch",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Delivery requires authenticated canonical data committed with a pinned receipt intent; read also requires a visible focused unlocked viewport. Discovery/details/counts and every ACK remain current-membership scoped, with bounded late-commit recovery and no FCM-as-delivery shortcut.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/receipt_delivery_service.py",
+        "custom_addons/baseer_bchat/models/message_receipt.py",
+        "custom_addons/baseer_bchat/models/v2_service.py",
+        "custom_addons/baseer_bchat/controllers/receipt_delivery_api.py",
+        "custom_addons/baseer_bchat/tests/test_delivery_receipts_v2.py",
+        "custom_addons/baseer_bchat/tests/receipt_delivery_concurrency_probe.py",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/ConnectedHistoryCache.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/ReceiptDeliveryProtocol.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatReceiptDetailsPanel.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/ReceiptDetailsProtocol.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "android/bchat/tests/receipts-android/**",
+        "android/bchat/tests/receipt-details-android/**",
+        "android/bchat/tools/build-receipt-tests.py",
+        "android/bchat/tools/test-receipt-details-android.py",
+        "android/bchat/tools/test-receipt-details-hook.py",
+        "android/bchat/tools/test-unread-receipts-contract.py"
+      ],
+      "suites": ["backend-contracts", "source-structure", "android-source-contract"]
+    },
+    {
+      "id": "notification-presentation-identity-and-sound-reservation",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Presentation keys bind the registered account UUID and recipient membership epoch; no/sender/full privacy and UTF-8 limits precede FCM. Durable bounded audio reservations may lose a tone after a crash, never evict an unexpired claim or authorize content.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/notification_presentation.py",
+        "custom_addons/baseer_bchat/models/push.py",
+        "custom_addons/baseer_bchat/tests/test_notification_settings.py",
+        "custom_addons/baseer_bchat/tests_contract/test_notification_presentation.py",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/NotificationPresentation.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.java",
+        "android/bchat/tests/NotificationPresentationContractTest.java",
+        "android/bchat/tools/test-notification-contract.py"
+      ],
+      "suites": ["backend-contracts", "source-structure", "android-source-contract"]
     }
   ]
 }

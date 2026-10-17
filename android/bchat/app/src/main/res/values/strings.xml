@@ -990,4 +990,21 @@
     <string name="notification_choice_superseded">ثبت حفظ الطلب الأصلي، ثم تغيّر اختيار الخادم. راجع الإعداد واختر مجددًا.</string>
     <string name="notification_server_registration">حالة التسجيل في الخادم</string>
     <string name="notification_registration_confirmed">مؤكد في آخر رد</string>
+    <string name="receipt_details_title">تفاصيل وصول الرسالة</string>
+    <string name="receipt_details_scope_note">تشمل الأعداد المستلمين المؤهلين حاليًا. الأوقات بتوقيت UTC.</string>
+    <string name="receipt_details_counts">المستلمون: %1$s\nالوصول المؤكد: %2$s\nالقراءة المؤكدة: %3$s</string>
+    <string name="receipt_details_state_sent">الرسالة مُرسلة</string>
+    <string name="receipt_details_state_delivered">وصلت إلى جميع المستلمين المؤهلين</string>
+    <string name="receipt_details_state_read">قرأها جميع المستلمين المؤهلين</string>
+    <string name="receipt_details_delivered">الوصول: %1$s</string>
+    <string name="receipt_details_read">القراءة: %1$s</string>
+    <string name="receipt_details_not_confirmed">غير مؤكد بعد</string>
+    <string name="receipt_details_unknown">لم يُتحقق من الحالة بعد</string>
+    <string name="receipt_details_loading">جارٍ جلب التفاصيل</string>
+    <string name="receipt_details_empty">لا مستلمين في هذه الصفحة</string>
+    <string name="receipt_details_refresh">تحديث من البداية</string>
+    <string name="receipt_details_next">الصفحة التالية</string>
+    <string name="receipt_details_close">إغلاق</string>
+    <string name="receipt_details_unconfirmed">تعذّر تأكيد التفاصيل. حاول تحديثها.</string>
+    <string name="receipt_details_unavailable">تفاصيل الرسالة غير متاحة في سياقك الحالي.</string>
 </resources>

@@ -27,7 +27,7 @@ def method(marker):
 
 
 callback = method("public void onMessageReceived(")
-text = method("private static String notificationText(")
+text = method("private static String notificationText(") if "private static String notificationText(" in service else ""
 context = r"""
 package android.content;
 public class Context {
@@ -80,9 +80,14 @@ public class NotificationPresentationHarness extends Context {
  static void check(boolean ok,String label){if(!ok)throw new AssertionError(label);checks++;System.out.println("PASS "+label);}
  static class Prefs implements SharedPreferences,SharedPreferences.Editor {
    Set<String> items=new HashSet<>(); boolean writable=true;
-   public Set<String> getStringSet(String key,Set<String> fallback){return items;}
+   String primary; final Map<String,Set<String>> other=new HashMap<>();
+   public Set<String> getStringSet(String key,Set<String> fallback){
+     if(primary==null)primary=key;return primary.equals(key)?items:other.getOrDefault(key,fallback);
+   }
    public SharedPreferences.Editor edit(){return this;}
-   public SharedPreferences.Editor putStringSet(String key,Set<String> value){if(writable)items=new HashSet<>(value);return this;}
+   public SharedPreferences.Editor putStringSet(String key,Set<String> value){
+     if(primary==null)primary=key;if(writable){if(primary.equals(key))items=new HashSet<>(value);else other.put(key,new HashSet<>(value));}return this;
+   }
    public boolean commit(){return writable;}
  }
  static class Manifest {static class permission {static String POST_NOTIFICATIONS="notifications";}}
@@ -90,7 +95,12 @@ public class NotificationPresentationHarness extends Context {
  static class PackageManager {static int PERMISSION_GRANTED=0;}
  static class RemoteMessage {
    final Map<String,String> data=new HashMap<>();
-   RemoteMessage(String kind,String event){data.put("account_key",ACCOUNT);data.put("kind",kind);data.put("event_id",event);}
+   RemoteMessage(String kind,String event){data.put("account_key",ACCOUNT);data.put("kind",kind);data.put("event_id",event);
+     if("chat".equals(kind)){data.put("presentation_v","1");
+       data.put("room_key",NotificationPresentation.roomKey(ACCOUNT,1,1,1));
+       data.put("message_key",NotificationPresentation.messageKey(ACCOUNT,1,1,1,Long.parseLong(event)));
+       data.put("sent_at_ms",String.valueOf(System.currentTimeMillis()));}
+   }
    Map<String,String> getData(){return data;}
  }
  static class Intent {
@@ -110,14 +120,16 @@ public class NotificationPresentationHarness extends Context {
  }
  static class NotificationChannel {int getImportance(){return 4;}}
  static class Notification {
-   static int VISIBILITY_PRIVATE=1,VISIBILITY_PUBLIC=2;static String CATEGORY_MESSAGE="message",CATEGORY_REMINDER="reminder";
-   String title,text;Notification publicView;
+   static int VISIBILITY_PRIVATE=1,VISIBILITY_PUBLIC=2,GROUP_ALERT_CHILDREN=2,GROUP_ALERT_SUMMARY=1;static String CATEGORY_MESSAGE="message",CATEGORY_REMINDER="reminder";
+   String title,text,group;Notification publicView;int alertBehavior;boolean summary,onlyAlertOnce;
    static class Builder {
      Notification n=new Notification();
      Builder(Object c,String channel){} Builder setSmallIcon(int i){return this;}
      Builder setContentTitle(String s){n.title=s;return this;}Builder setContentText(String s){n.text=s;return this;}
      Builder setContentIntent(PendingIntent p){return this;}Builder setAutoCancel(boolean v){return this;}
-     Builder setOnlyAlertOnce(boolean v){return this;}Builder setVisibility(int i){return this;}
+     Builder setOnlyAlertOnce(boolean v){n.onlyAlertOnce=v;return this;}Builder setVisibility(int i){return this;}
+     Builder setGroup(String v){n.group=v;return this;}Builder setGroupSummary(boolean v){n.summary=v;return this;}
+     Builder setGroupAlertBehavior(int v){n.alertBehavior=v;return this;}
      Builder setPublicVersion(Notification v){n.publicView=v;return this;}
      Builder setCategory(String s){return this;}Builder setStyle(BigTextStyle s){return this;}
      Notification build(){return n;}
@@ -126,11 +138,12 @@ public class NotificationPresentationHarness extends Context {
  }
  static class NotificationManager {
    static int IMPORTANCE_NONE=0;
-   int calls;boolean fail,blocked;Notification last;
+   int calls,summaryCalls;boolean fail,blocked,failSummary;Notification last,lastSummary;
    NotificationChannel getNotificationChannel(String channel){return new NotificationChannel();}
    boolean areNotificationsEnabled(){return !blocked;}
    void notify(int id,Notification n){if(fail)throw new SecurityException();calls++;}
-   void notify(String tag,int id,Notification n){if(fail)throw new SecurityException();calls++;last=n;}
+   void notify(String tag,int id,Notification n){if(fail||n.summary&&failSummary)throw new SecurityException();
+     if(n.summary){summaryCalls++;lastSummary=n;}else{calls++;last=n;}}
  }
  __CALLBACK__
  __TEXT__
@@ -139,8 +152,18 @@ public class NotificationPresentationHarness extends Context {
    first.onMessageReceived(new RemoteMessage("chat","41"));
    first.onMessageReceived(new RemoteMessage("chat","41"));
    check(first.manager.calls==1,"Repeated provider event is presented once");
+   check(first.manager.summaryCalls==1&&first.manager.lastSummary.alertBehavior==Notification.GROUP_ALERT_CHILDREN,
+     "Generic group summary is independently silent on an audible channel");
+   check(first.manager.last.alertBehavior==Notification.GROUP_ALERT_CHILDREN&&!first.manager.last.onlyAlertOnce,
+     "First durable message claim may use the system alert route");
    first.onMessageReceived(new RemoteMessage("task","41"));
    check(first.manager.calls==2,"Same event ID in another kind is independent");
+   check(first.manager.last.onlyAlertOnce,"Task retains its prior only-alert-once behavior");
+   NotificationPresentationHarness unretiredTask=new NotificationPresentationHarness();unretiredTask.prefs.writable=false;
+   unretiredTask.onMessageReceived(new RemoteMessage("task","71"));
+   unretiredTask.onMessageReceived(new RemoteMessage("task","71"));
+   check(unretiredTask.manager.calls==2&&unretiredTask.manager.last.onlyAlertOnce,
+     "Lost shown receipt still updates an already visible task with only-alert-once");
    NotificationPresentationHarness restarted=new NotificationPresentationHarness();
    restarted.prefs.items=new HashSet<>(first.prefs.items);
    restarted.onMessageReceived(new RemoteMessage("chat","41"));
@@ -166,6 +189,8 @@ public class NotificationPresentationHarness extends Context {
    check(BChatNotificationLedger.contains(bounded,BChatNotificationLedger.key(ACCOUNT,"chat","600"),now-1),"Backwards clock does not replay a recent event");
    RemoteMessage privateMessage=new RemoteMessage("chat","51");
    privateMessage.data.put("sender_name","Secret sender");privateMessage.data.put("message_preview","Private text");
+   privateMessage.data.put("sender_key",NotificationPresentation.senderKey(ACCOUNT,1,1,1,2));
+   privateMessage.data.put("conversation_title","Secret room");privateMessage.data.put("is_group","true");
    NotificationPresentationHarness none=new NotificationPresentationHarness();none.onMessageReceived(privateMessage);
    check(none.manager.last.title.equals("BChat")&&none.manager.last.text.equals("private notification"),"Local none strips even a stale full payload");
    NotificationPresentationHarness sender=new NotificationPresentationHarness();sender.previewMode="sender";sender.onMessageReceived(privateMessage);
@@ -173,6 +198,19 @@ public class NotificationPresentationHarness extends Context {
    NotificationPresentationHarness full=new NotificationPresentationHarness();full.previewMode="full";full.onMessageReceived(privateMessage);
    check(full.manager.last.title.equals("Secret sender")&&full.manager.last.text.equals("Private text"),"Explicit full permits filtered preview");
    check(full.manager.last.publicView.title.equals("BChat")&&full.manager.last.publicView.text.equals("private notification"),"Public lockscreen version remains generic");
+   RemoteMessage legacy=new RemoteMessage("chat","52");legacy.data.remove("presentation_v");
+   legacy.data.put("sender_name","Old sender");legacy.data.put("message_preview","Old private text");
+   full.onMessageReceived(legacy);
+   check(full.manager.last.title.equals("BChat")&&full.manager.last.text.equals("private notification")
+     &&full.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY&&full.manager.last.onlyAlertOnce,
+     "Old or incomplete chat payload is generic and silent, not guessed identity");
+   RemoteMessage duplicateMessage=new RemoteMessage("chat","53");
+   String messageKey=duplicateMessage.data.get("message_key");
+   BChatNotificationLedger.claimSound(full,ACCOUNT,messageKey,Long.parseLong(duplicateMessage.data.get("sent_at_ms")),
+     System.currentTimeMillis(),"soft");
+   full.onMessageReceived(duplicateMessage);
+   check(full.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
+     "A live-reserved message cannot acquire a second FCM sound route");
    String uuid="00000000-0000-4000-8000-000000000004";
    RemoteMessage test=new RemoteMessage("diagnostic","61");test.data.put("diagnostic_uuid",uuid);
    NotificationPresentationHarness denied=new NotificationPresentationHarness();denied.permission=false;denied.onMessageReceived(test);
@@ -187,6 +225,16 @@ public class NotificationPresentationHarness extends Context {
    NotificationPresentationHarness failedTest=new NotificationPresentationHarness();failedTest.manager.fail=true;failedTest.onMessageReceived(test);
    received=BChatNotificationDiagnostics.read(failedTest,ACCOUNT,"61",uuid,System.currentTimeMillis());
    check(received.displayedAt==0&&received.outcome.equals("presentation_failed"),"notify failure is not a displayed test");
+   NotificationPresentationHarness failedSummary=new NotificationPresentationHarness();failedSummary.manager.failSummary=true;
+   failedSummary.onMessageReceived(test);
+   received=BChatNotificationDiagnostics.read(failedSummary,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(failedSummary.manager.calls==1&&failedSummary.manager.summaryCalls==0
+     &&received.displayedAt>0&&received.outcome.equals("displayed"),
+     "Summary-only failure does not undo accepted child diagnostics");
+   failedSummary.onMessageReceived(test);
+   check(failedSummary.manager.calls==1&&BChatNotificationLedger.contains(failedSummary,
+     BChatNotificationLedger.key(ACCOUNT,"diagnostic","61"),System.currentTimeMillis()),
+     "Accepted child is retired even when best-effort summary failed");
    NotificationPresentationHarness diagRestart=new NotificationPresentationHarness();diagRestart.named.putAll(denied.named);
    check(BChatNotificationDiagnostics.read(diagRestart,ACCOUNT,"61",uuid,System.currentTimeMillis()).displayedAt>0,"Diagnostic receipt survives process recreation");
    check(BChatNotificationDiagnostics.read(diagRestart,other,"61",uuid,System.currentTimeMillis())==null,"Another account cannot see local test receipt");
@@ -219,6 +267,7 @@ with tempfile.TemporaryDirectory(prefix="bchat-presentation-", dir=temp_root) as
         path.write_text(value, encoding="utf-8")
     ledger = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.java"
     diagnostic = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationDiagnostics.java"
-    sources = [str(path) for path in target.rglob("*.java")] + [str(ledger), str(diagnostic)]
+    contract = root / "app/src/main/java/com/baseer/freshchat/NotificationPresentation.java"
+    sources = [str(path) for path in target.rglob("*.java")] + [str(ledger), str(diagnostic), str(contract)]
     subprocess.run([shutil.which("javac") or "javac", "-encoding", "UTF-8", "-d", str(target), *sources], check=True)
     subprocess.run([shutil.which("java") or "java", "-cp", str(target), "com.baseer.freshchat.NotificationPresentationHarness"], check=True)

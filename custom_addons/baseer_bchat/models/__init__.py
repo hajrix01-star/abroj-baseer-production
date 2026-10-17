@@ -26,3 +26,4 @@ from . import group_audit
 from . import search_service
 from . import avatar_service
 from . import message_social
+from . import receipt_delivery_service

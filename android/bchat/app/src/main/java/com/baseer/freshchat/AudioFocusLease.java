@@ -45,6 +45,19 @@ final class AudioFocusLease {
         return next != null && next.gainFocus(attributes, recording) ? next : null;
     }
 
+    /** A foreground message tone must never interrupt a recording/player/preview. */
+    Lease tryAcquireIdle(AudioAttributes attributes, Interrupted interrupted) {
+        requireMain();
+        if (attributes == null || interrupted == null) throw new IllegalArgumentException("Audio owner required");
+        if (current != null) return null;
+        try { if (platform.callActive()) return null; }
+        catch (RuntimeException unavailable) { return null; }
+        Lease next = new Lease(interrupted);
+        ++generation;
+        current = next;
+        return next.gainFocus(attributes, false) ? next : null;
+    }
+
     /** Reserve at the user action, before asynchronous media preparation/download completes. */
     Lease reserve(Interrupted interrupted) {
         requireMain();

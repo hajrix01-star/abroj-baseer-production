@@ -17,7 +17,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -274,18 +277,29 @@ public final class BChatConnectedMediaStore {
     }
 
     public synchronized Entry pending(AccountScope account, long roomId, long membershipId) throws IOException {
+        List<Entry> matches = pendingForRoom(account, roomId, membershipId);
+        return matches.isEmpty() ? null : matches.get(0);
+    }
+
+    /**
+     * Lists every durable request for one room.  A lost client ACK can leave several records
+     * even though their messages reached Odoo; callers that reconcile authenticated history
+     * must see the whole set rather than treating the normal recoverable state as corruption.
+     */
+    public synchronized List<Entry> pendingForRoom(AccountScope account, long roomId, long membershipId)
+            throws IOException {
         File[] files = scope(account).listFiles((folder, name) -> name.endsWith(".json"));
         if (files == null) throw new IOException("Cannot read media scope");
-        Entry match = null;
+        List<Entry> matches = new ArrayList<>();
         for (File file : files) {
             String name = file.getName();
             Entry candidate = read(account, name.substring(0, name.length() - 5));
             if (candidate.roomId == roomId && candidate.membershipId == membershipId) {
-                if (match != null) throw new IOException("Multiple pending media requests");
-                match = candidate;
+                matches.add(candidate);
             }
         }
-        return match;
+        Collections.sort(matches, (left, right) -> left.uploadUuid.compareTo(right.uploadUuid));
+        return matches;
     }
 
     public synchronized Entry markUploaded(AccountScope account, Entry entry, long mediaId) throws IOException {

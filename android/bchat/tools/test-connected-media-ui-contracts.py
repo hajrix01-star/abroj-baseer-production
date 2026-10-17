@@ -3,6 +3,7 @@
 from pathlib import Path
 
 source = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java").read_text(encoding="utf-8")
+store = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java").read_text(encoding="utf-8")
 
 def body(signature):
     start = source.index("{", source.index(signature))
@@ -33,7 +34,7 @@ checks = {
         "setPositiveButton(R.string.bchat_media_preview_send" in body("private void showVoicePreview("),
     "Audio download survives same-media redraw while pending":
         "inlineAudioMediaId > 0" in body("private void renderMessageWindow("),
-    "Verified history clears only the matching author's acknowledged staged media":
+    "Verified history clears every matching author's acknowledged staged media":
         "private void reconcilePendingMediaFromVerifiedHistory(" in source
         and "reconcilePendingMediaFromVerifiedHistory(account, room, validated);" in body(
             "private void loadMessages(long beforeId)")
@@ -43,9 +44,16 @@ checks = {
             "private void showCachedMessages(Room room, long beforeId, boolean firstOpen)")
         and "positiveId(message.opt(\"author_user_id\")) != scopedAccount.userId" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
-        and "serverMedia.id == pending.mediaId" in body(
+        and "confirmedMediaIds.add(serverMedia.id);" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
-        and "mediaStore.acknowledge(scopedAccount, pending);" in body(
+        and "mediaStore.acknowledge(scopedAccount, entry);" in body(
+            "private void reconcilePendingMediaFromVerifiedHistory("),
+    "Several locally staged media records are a recoverable queue, not a storage error":
+        "public synchronized List<Entry> pendingForRoom(" in store
+        and "matches.add(candidate);" in store
+        and "mediaStore.pendingForRoom(scopedAccount" in body(
+            "private void reconcilePendingMediaFromVerifiedHistory(")
+        and "for (BChatConnectedMediaStore.Entry entry : pending)" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
     "Known uploaded media is replayed idempotently when its room opens":
         "handler.post(() -> replayKnownConnectedMedia(scopedAccount, room));" in body(
@@ -78,10 +86,16 @@ checks = {
             "recoverUncertainMediaConfirmation(scopedAccount, room);")
         < body("private void sendConnectedMedia(").index(
             "handleV2TransportFailure(statusCode, true)")
-        and "pending.mediaId <= 0" in body(
+        and "pendingForRoom(scopedAccount" in body(
+            "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,")
+        and "hasUploadedRecord" in body(
             "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,")
         and "loadMessages(0);" in body(
             "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,"),
+    "Malformed 2xx media replies reconcile verified history rather than trapping staged media":
+        "if (statusCode >= 200 && statusCode < 300)" in body("private void sendConnectedMedia(")
+        and body("private void sendConnectedMedia(").count(
+            "recoverUncertainMediaConfirmation(scopedAccount, room);") >= 2,
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":

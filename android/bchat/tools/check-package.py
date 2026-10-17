@@ -53,7 +53,12 @@ assert 'addMainSections()' in source and 'showSettings()' in source
 assert 'mainSection = "list"' in source
 canonical=root.parent.parent/'custom_addons/baseer_basser_workspace/static/description/baseer-mark-b.png'
 if canonical.exists(): assert (root/'app/src/main/res/drawable-nodpi/baseer_mark_b.png').read_bytes()==canonical.read_bytes(), 'Original B must remain byte-identical'
-print('PASS BChat identity, current version, original B asset bytes, main sections, settings and shared audio controls')
+login_mark=(root/'app/src/main/java/com/baseer/freshchat/EntryMarkView.java').read_text(encoding='utf-8')
+vector_mark=(root/'app/src/main/res/drawable/bchat_mark_hq.xml').read_text(encoding='utf-8')
+master_mark=(root/'app/src/main/res/raw/bchat_mark_hq.svg').read_text(encoding='utf-8')
+assert 'R.drawable.bchat_mark_hq' in login_mark and 'original.draw(canvas)' in login_mark
+assert 'android:pathData' in vector_mark and 'viewBox="0 0 2048 2048"' in master_mark
+print('PASS BChat identity, supplied vector login mark, original launcher asset, main sections, settings and shared audio controls')
 
 waveforms=(root/'app/src/main/java/com/baseer/freshchat/AudioWaveforms.java').read_text(encoding='utf-8')
 player_view=(root/'app/src/main/java/com/baseer/freshchat/VoicePlayerView.java').read_text(encoding='utf-8')
@@ -70,7 +75,7 @@ build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
 assert version_match and int(version_match.group(1)) >= 73, 'BChat instant-push profile candidate requires versionCode 73 or newer'
-assert "versionName '0.7.61-qa-brand-motion'" in gradle
+assert "versionName '0.7.62-qa-vector-brand'" in gradle
 assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'false'" in gradle
 assert "BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source

@@ -3,12 +3,15 @@ package com.baseer.freshchat;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Instrumentation;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.text.Layout;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +26,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import com.baseer.freshchat.sync.BChatStorageRepository;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -48,9 +52,14 @@ public final class NotificationSettingsInstrumentation extends Instrumentation {
             check(getTargetContext().getPackageName().equals("com.baseer.bchat.notification.settings.test"), "test package isolation");
             check(android.os.Build.VERSION.SDK_INT == 35, "Android35 runtime");
             bind();
+            journey("channel_unknown_is_not_default_or_blocked", this::channelsUnknown);
             for (String language : new String[]{"ar", "en"})
                 for (boolean dark : new boolean[]{false, true})
                     for (float scale : new float[]{1f, 2f}) render(language, dark, scale);
+            journey("channel_explicit_confirmation_cancel_and_quiet", this::channelsConfirm);
+            journey("channel_three_fixed_android_settings_intents", this::channelIntents);
+            journey("channel_explicit_revert_keeps_existing_channels", this::channelsRevert);
+            journey("channel_late_worker_never_mutates_stale_view", this::channelsLate);
             journey("unsupported_is_not_offline", this::unsupported);
             journey("quiet_is_not_blocked", this::quiet);
             journey("privacy_lost_ack_same_uuid_revision", this::privacyRetry);
@@ -68,7 +77,7 @@ public final class NotificationSettingsInstrumentation extends Instrumentation {
                     .put("passed", failures.isEmpty());
             write("notification-settings-results.json", evidence.toString(2).getBytes(StandardCharsets.UTF_8));
         } catch (Throwable error) { failures.add("Evidence: " + error); }
-        String message = failures.isEmpty() ? "PASS 8 actual Android notification settings renders and 7 focused journeys; " + assertions + " assertions"
+        String message = failures.isEmpty() ? "PASS 8 actual Android notification settings renders and 12 focused journeys; " + assertions + " assertions"
                 : "FAIL notification settings: " + failures;
         result.putString("stream", message + "\n");
         finish(failures.isEmpty() ? Activity.RESULT_OK : Activity.RESULT_CANCELED, result);
@@ -101,6 +110,7 @@ public final class NotificationSettingsInstrumentation extends Instrumentation {
         activity = (NotificationSettingsTestActivity) startActivitySync(intent);
         waitForIdleSync();
         waitFor(() -> !field(activity.panel, "busy", Boolean.class), "panel refresh settles");
+        waitFor(() -> !field(activity.panel, "channelBusy", Boolean.class), "worker channel read settles");
         return activity;
     }
     private void close() {
@@ -134,6 +144,10 @@ public final class NotificationSettingsInstrumentation extends Instrumentation {
                 capture(decor, name + "-top.png");
                 if (scroll != null) {
                     check(scroll.canScrollVertically(1), name + ": content can scroll to all settings");
+                    scroll.scrollTo(0, field(current.panel, "channelSection", android.widget.LinearLayout.class).getTop());
+                    capture(decor, name + "-channels-top.png");
+                    scroll.scrollTo(0, Math.max(0, field(current.panel, "channelSection", android.widget.LinearLayout.class).getBottom() - scroll.getHeight()));
+                    capture(decor, name + "-channels-bottom.png");
                     scroll.fullScroll(View.FOCUS_DOWN);
                 }
             });
@@ -149,7 +163,7 @@ public final class NotificationSettingsInstrumentation extends Instrumentation {
                         .put("font_scale", scale).put("logical_width_dp", dialog.getWindow().getDecorView().getWidth()
                                 / current.getResources().getDisplayMetrics().density)
                         .put("density_dpi", current.getResources().getConfiguration().densityDpi)
-                        .put("passed", failures.size() == before).put("frames", new JSONArray(new String[]{name + "-top.png", name + "-bottom.png"}))); }
+                        .put("passed", failures.size() == before).put("frames", new JSONArray(new String[]{name + "-top.png", name + "-channels-top.png", name + "-channels-bottom.png", name + "-bottom.png"}))); }
                 catch (Exception invalid) { throw new AssertionError(invalid); }
             });
         } catch (Throwable error) { failures.add(name + ": " + error); }
@@ -198,12 +212,144 @@ public final class NotificationSettingsInstrumentation extends Instrumentation {
             check(!field(current.panel, "runTest", Button.class).isEnabled(), "unsupported test disabled");
         });
     }
+    private void channelsUnknown() throws Exception {
+        Context context = getTargetContext();
+        check(!BChatNotificationChannels.state().known, "routing starts unobserved in this fresh test process");
+        check(context.getSharedPreferences("bchat-notification-channels-v1", 0).edit()
+                .putString("separated", "malformed-test-value").commit(), "test-only malformed routing fixture");
+        NotificationSettingsTestActivity current = open("ar", false, 1, true);
+        runOnMainSync(() -> {
+            check(!BChatNotificationChannels.state().known, "unreadable choice remains unknown");
+            check(field(current.panel, "channelRouting", TextView.class).getText().toString()
+                    .equals(current.getString(R.string.notification_channels_unknown)), "unknown is not reported as default off");
+            check(!field(current.panel, "separateChannels", Button.class).isEnabled()
+                    && !field(current.panel, "legacyChannels", Button.class).isEnabled(), "unknown cannot silently choose a route");
+            Button legacy = field(current.panel, "legacyChannelSettings", Button.class);
+            check(legacy.isEnabled() && legacy.performClick() && current.host.legacySettingsCalls == 1,
+                    "original v3 settings remain available even with unknown routing");
+        });
+        check(context.getSharedPreferences("bchat-notification-channels-v1", 0).edit().remove("separated").commit(),
+                "repair only the standalone fixture preference");
+        runOnMainSync(() -> field(current.panel, "refreshChannels", Button.class).performClick());
+        waitFor(() -> BChatNotificationChannels.state().known && !field(current.panel, "channelBusy", Boolean.class), "fresh default routing observed");
+        check(!BChatNotificationChannels.state().separated, "absent preference defaults off, never auto opts in");
+    }
+    private void channelsConfirm() throws Exception {
+        NotificationSettingsTestActivity current = open("ar", true, 2, true);
+        BChatNotificationChannels.Snapshot before = BChatNotificationChannels.state();
+        runOnMainSync(() -> field(current.panel, "separateChannels", Button.class).performClick()); waitForIdleSync();
+        runOnMainSync(() -> {
+            AlertDialog confirmation = field(current.panel, "channelConfirmation", AlertDialog.class);
+            check(confirmation != null && confirmation.isShowing(), "opt in requires a visible confirmation");
+            check(!BChatNotificationChannels.state().separated, "opening confirmation changes no routing");
+            inspect(confirmation.getWindow().getDecorView(), confirmation.getWindow().getDecorView(), "channel-confirm-ar-dark-2.0");
+            capture(confirmation.getWindow().getDecorView(), "notification-channels-confirm-ar-dark-2.0.png");
+            confirmation.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        }); waitForIdleSync();
+        check(BChatNotificationChannels.state().revision == before.revision && !BChatNotificationChannels.state().separated,
+                "cancel leaves the exact routing snapshot unchanged");
+        confirmChannelChoice(current, true);
+        waitFor(() -> BChatNotificationChannels.state().separated && !field(current.panel, "channelBusy", Boolean.class), "confirmed device choice commits on worker");
+        runOnMainSync(() -> {
+            String statuses = field(current.panel, "channelStatus", TextView.class).getText().toString();
+            for (int label : new int[]{R.string.notification_channels_chat_name, R.string.notification_channels_task_name,
+                    R.string.notification_channels_order_name})
+                check(statuses.contains(row(current, label, R.string.notification_quiet)), "real channel quiet not blocked " + label);
+            check(current.host.posts.isEmpty() && current.host.testCalls == 0, "channel choice makes no server preference/test mutation");
+            ScrollView scroll = findScroll(field(current.panel, "dialog", AlertDialog.class).getWindow().getDecorView());
+            scroll.scrollTo(0, field(current.panel, "channelRouting", TextView.class).getTop()
+                    + field(current.panel, "channelSection", android.widget.LinearLayout.class).getTop());
+            capture(field(current.panel, "dialog", AlertDialog.class).getWindow().getDecorView(), "notification-channels-separated-ar-dark-2.0.png");
+        });
+    }
+    private void channelIntents() throws Exception {
+        NotificationSettingsTestActivity current = open("en", false, 1, true);
+        runOnMainSync(() -> {
+            Button[] buttons = field(current.panel, "channelSettings", Button[].class);
+            String[] expected = {BChatNotificationChannels.CHAT, BChatNotificationChannels.TASKS, BChatNotificationChannels.ORDERS};
+            for (int index = 0; index < buttons.length; index++) {
+                check(buttons[index].isEnabled() && buttons[index].performClick(), "channel settings action enabled " + index);
+                Intent intent = current.channelIntents.get(index);
+                check(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS.equals(intent.getAction())
+                        && current.getPackageName().equals(intent.getStringExtra(Settings.EXTRA_APP_PACKAGE))
+                        && expected[index].equals(intent.getStringExtra(Settings.EXTRA_CHANNEL_ID))
+                        && intent.getData() == null, "fixed own-package native settings intent " + index);
+            }
+            check(current.channelIntents.size() == 3 && current.host.posts.isEmpty(), "three captured intents, no external navigation or HTTP writes");
+        });
+    }
+    private void channelsRevert() throws Exception {
+        NotificationSettingsTestActivity current = open("en", false, 2, true);
+        NotificationManager manager = current.getSystemService(NotificationManager.class);
+        List<NotificationChannel> before = manager.getNotificationChannels();
+        runOnMainSync(() -> field(current.panel, "legacyChannels", Button.class).performClick()); waitForIdleSync();
+        runOnMainSync(() -> {
+            AlertDialog confirmation = field(current.panel, "channelConfirmation", AlertDialog.class);
+            inspect(confirmation.getWindow().getDecorView(), confirmation.getWindow().getDecorView(), "channel-confirm-en-light-2.0");
+            capture(confirmation.getWindow().getDecorView(), "notification-channels-confirm-en-light-2.0.png");
+            confirmation.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        }); waitForIdleSync();
+        check(BChatNotificationChannels.state().separated, "cancel revert leaves separate routing");
+        confirmChannelChoice(current, false);
+        waitFor(() -> !BChatNotificationChannels.state().separated && !field(current.panel, "channelBusy", Boolean.class), "explicit revert committed");
+        for (NotificationChannel old : before) {
+            NotificationChannel retained = manager.getNotificationChannel(old.getId());
+            check(retained != null && old.getImportance() == retained.getImportance()
+                    && java.util.Objects.equals(old.getSound(), retained.getSound())
+                    && old.shouldVibrate() == retained.shouldVibrate()
+                    && java.util.Arrays.equals(old.getVibrationPattern(), retained.getVibrationPattern()),
+                    "revert does not delete/reset existing channel " + old.getId());
+        }
+        check(BChatNotificationChannels.LEGACY.equals(BChatNotificationChannels.resolve("chat").channelId), "revert routes to current original channel");
+        check(current.host.posts.isEmpty() && current.host.testCalls == 0, "revert remains device-local only");
+    }
+    private void channelsLate() throws Exception {
+        for (int variant = 0; variant < 3; variant++) {
+            BChatStorageRepository.executor().submit(() -> BChatNotificationChannels.setSeparated(getTargetContext(), false, null)).get(5, TimeUnit.SECONDS);
+            NotificationSettingsTestActivity current = open("en", false, 1, true);
+            CountDownLatch started = new CountDownLatch(1), release = new CountDownLatch(1);
+            BChatStorageRepository.executor().execute(() -> {
+                started.countDown(); try { release.await(5, TimeUnit.SECONDS); }
+                catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+            });
+            require(started.await(2, TimeUnit.SECONDS), "test-only worker gate reserved");
+            final int mode = variant; final String[] text = {null};
+            try {
+                confirmChannelChoice(current, true);
+                runOnMainSync(() -> {
+                    check(field(current.panel, "channelBusy", Boolean.class), "explicit choice queued before lifetime change");
+                    if (mode == 0) current.panel.dismiss();
+                    else if (mode == 1) callActivityOnPause(current);
+                    else current.host.active = false;
+                    text[0] = field(current.panel, "channelNotice", TextView.class).getText().toString();
+                });
+            } finally { release.countDown(); }
+            waitFor(() -> BChatNotificationChannels.state().separated, "confirmed device-wide choice survives view lifetime change"); waitForIdleSync();
+            runOnMainSync(() -> {
+                check(text[0].equals(field(current.panel, "channelNotice", TextView.class).getText().toString()), "late worker does not change stale/paused/wrong-account view " + mode);
+                check(current.host.posts.isEmpty(), "late channel choice has no server mutation " + mode);
+                if (mode == 1) callActivityOnResume(current);
+            });
+            if (mode == 1) waitFor(() -> !field(current.panel, "channelBusy", Boolean.class), "resume reads channel status without repeating a choice");
+            close();
+        }
+        BChatStorageRepository.executor().submit(() -> BChatNotificationChannels.setSeparated(getTargetContext(), false, null)).get(5, TimeUnit.SECONDS);
+    }
+    private void confirmChannelChoice(NotificationSettingsTestActivity current, boolean separated) throws Exception {
+        runOnMainSync(() -> check(field(current.panel, separated ? "separateChannels" : "legacyChannels", Button.class).performClick(), "explicit channel action"));
+        waitForIdleSync();
+        runOnMainSync(() -> {
+            AlertDialog confirmation = field(current.panel, "channelConfirmation", AlertDialog.class);
+            require(confirmation != null && confirmation.isShowing(), "confirmation exists before persistence");
+            confirmation.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        });
+    }
     private void quiet() throws Exception {
         NotificationSettingsTestActivity current = open("en", false, 1, true);
         runOnMainSync(() -> {
             String text = field(current.panel, "deviceStatus", TextView.class).getText().toString();
-            String quiet = current.getString(R.string.notification_status_row, current.getString(R.string.notification_channel), current.getString(R.string.notification_quiet));
-            String blocked = current.getString(R.string.notification_status_row, current.getString(R.string.notification_channel), current.getString(R.string.notification_blocked));
+            String quiet = current.getString(R.string.notification_status_row, current.getString(R.string.notification_channels_legacy), current.getString(R.string.notification_quiet));
+            String blocked = current.getString(R.string.notification_status_row, current.getString(R.string.notification_channels_legacy), current.getString(R.string.notification_blocked));
             check(text.contains(quiet) && !text.contains(blocked), "actual quiet channel is not blocked");
         });
     }

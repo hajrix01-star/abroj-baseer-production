@@ -5,11 +5,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -40,15 +43,23 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
         void requestPermission();
         void openSystemSettings(boolean channel);
     }
-    private static final String CHANNEL = "bchat-events-v3";
     private final Activity activity;
     private final Host host;
     private final AccountScope scope;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final TextView deviceStatus, serverStatus, privacyStatus, testStatus, notice;
-    private final Button refresh, retry, runTest, permission;
+    private final Button refresh, retry, runTest, permission, legacyChannelSettings;
+    private final LinearLayout channelSection;
+    private final TextView channelRouting, channelStatus, channelNotice;
+    private final Button separateChannels, legacyChannels, refreshChannels;
+    private final Button[] channelSettings = new Button[3];
     private final RadioGroup modes;
     private final AlertDialog dialog;
+    private AlertDialog channelConfirmation;
+    private int channelGeneration;
+    private boolean channelBusy;
+    private int[] channelStates = {R.string.notification_unknown, R.string.notification_unknown,
+            R.string.notification_unknown, R.string.notification_unknown};
     private String accountKey, installation, testUuid;
     private long testEventId, lastCheckAt;
     private int generation, pollAttempts;
@@ -68,7 +79,24 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
         deviceStatus = body(device);
         permission = action(device, R.string.bchat_notifications_enable, () -> host.requestPermission());
         action(device, R.string.bchat_notifications_manage, () -> host.openSystemSettings(false));
-        action(device, R.string.notification_channel_settings, () -> host.openSystemSettings(true));
+        legacyChannelSettings = action(device, R.string.notification_channel_settings, () -> host.openSystemSettings(true));
+        channelSection = section(content, R.string.notification_channels_section);
+        body(channelSection).setText(R.string.notification_channels_explanation);
+        channelRouting = body(channelSection);
+        channelStatus = body(channelSection);
+        separateChannels = action(channelSection, R.string.notification_channels_enable,
+                () -> confirmChannels(true));
+        legacyChannels = action(channelSection, R.string.notification_channels_revert,
+                () -> confirmChannels(false));
+        refreshChannels = action(channelSection, R.string.notification_channels_refresh, this::readChannels);
+        channelSettings[0] = action(channelSection, R.string.notification_channels_chat_settings,
+                () -> openTypeChannel(BChatNotificationChannels.CHAT));
+        channelSettings[1] = action(channelSection, R.string.notification_channels_task_settings,
+                () -> openTypeChannel(BChatNotificationChannels.TASKS));
+        channelSettings[2] = action(channelSection, R.string.notification_channels_order_settings,
+                () -> openTypeChannel(BChatNotificationChannels.ORDERS));
+        channelNotice = body(channelSection);
+        channelNotice.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         LinearLayout server = section(content, R.string.notification_server_section);
         serverStatus = body(server);
         refresh = action(server, R.string.notification_refresh, this::refresh);
@@ -112,18 +140,26 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
         dialog.show(); BChatPushState.observe(activity, this);
         host.registerPush(); draw(); refresh();
     }
-    void pause() { paused = true; main.removeCallbacks(poll); }
+    void pause() {
+        paused = true; main.removeCallbacks(poll);
+        if (channelBusy) channelNotice.setText(R.string.notification_channels_unknown);
+        ++channelGeneration; channelBusy = false;
+        if (channelConfirmation != null) channelConfirmation.dismiss();
+        drawChannels();
+    }
     void resume() {
         if (closed) return;
         paused = false;
         if (!current()) { dialog.dismiss(); return; }
-        draw(); readLocal();
+        draw(); readLocal(); readChannels();
         if (testEventId > 0 && pollAttempts < 10) schedulePoll();
     }
     void dismiss() { dialog.dismiss(); close(); }
     private void close() {
         if (closed) return;
         closed = true; ++generation; main.removeCallbacks(poll);
+        ++channelGeneration; channelBusy = false;
+        if (channelConfirmation != null) channelConfirmation.dismiss();
         BChatPushState.stopObserving(activity, this);
     }
     private boolean current() { return !closed && dialog.isShowing() && host.current(scope); }
@@ -140,6 +176,7 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
     }
     private void refresh(boolean preserveNotice) {
         if (!current() || paused || busy) return;
+        readChannels();
         if (!preserveNotice) notice.setText("");
         host.registerPush();
         accountKey = BChatPushState.accountKey(activity); installation = BChatPushState.installationId(activity);
@@ -325,14 +362,10 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
                 == PackageManager.PERMISSION_GRANTED;
         NotificationManager manager = activity.getSystemService(NotificationManager.class);
         boolean appEnabled = manager != null && manager.areNotificationsEnabled();
-        NotificationChannel channel = manager == null ? null : manager.getNotificationChannel(CHANNEL);
-        int channelStatus = channel == null ? R.string.notification_unknown
-                : channel.getImportance() == NotificationManager.IMPORTANCE_NONE ? R.string.notification_blocked
-                : channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT || channel.getSound() == null
-                ? R.string.notification_quiet : R.string.notification_allowed;
+        int channelStatus = channelStates[0];
         deviceStatus.setText(row(R.string.notification_permission, granted ? R.string.notification_allowed : R.string.notification_blocked)
                 + "\n" + row(R.string.notification_app_display, appEnabled ? R.string.notification_allowed : R.string.notification_blocked)
-                + "\n" + row(R.string.notification_channel, channelStatus));
+                + "\n" + row(R.string.notification_channels_legacy, channelStatus));
         permission.setVisibility(granted ? View.GONE : View.VISIBLE);
         boolean registered = BChatPushState.accountKey(activity) != null && BChatPushState.installationId(activity) != null;
         String checked = lastCheckAt == 0 ? activity.getString(R.string.notification_not_checked)
@@ -378,6 +411,118 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
                 ? R.string.notification_unknown : localReceipt.displayedAt > 0
                 ? R.string.notification_display_accepted : R.string.notification_display_not_accepted)
                 + "\n" + activity.getString(R.string.notification_test_note));
+        drawChannels();
+    }
+
+    /** Only the routing preference is persisted; OS channel settings remain owned by Android. */
+    private void readChannels() {
+        if (!current() || paused || channelBusy) return;
+        final int request = ++channelGeneration;
+        final Context application = activity.getApplicationContext();
+        channelBusy = true; drawChannels();
+        BChatStorageRepository.executor().execute(() -> {
+            BChatNotificationChannels.load(application);
+            final int[] states = readChannelStates(application);
+            main.post(() -> {
+                if (request != channelGeneration) return;
+                channelBusy = false;
+                if (!current() || paused) return;
+                channelStates = states; channelNotice.setText(""); draw();
+            });
+        });
+    }
+
+    private int[] readChannelStates(Context application) {
+        int[] result = {R.string.notification_unknown, R.string.notification_unknown,
+                R.string.notification_unknown, R.string.notification_unknown};
+        try {
+            NotificationManager manager = application.getSystemService(NotificationManager.class);
+            if (manager == null) return result;
+            String[] ids = {BChatNotificationChannels.LEGACY, BChatNotificationChannels.CHAT,
+                    BChatNotificationChannels.TASKS, BChatNotificationChannels.ORDERS};
+            for (int index = 0; index < ids.length; index++) {
+                try {
+                    NotificationChannel channel = manager.getNotificationChannel(ids[index]);
+                    result[index] = channel == null ? R.string.notification_unknown
+                            : channel.getImportance() == NotificationManager.IMPORTANCE_NONE ? R.string.notification_blocked
+                            : channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT || channel.getSound() == null
+                            ? R.string.notification_quiet : R.string.notification_allowed;
+                } catch (RuntimeException unavailable) { /* One unavailable channel cannot describe the others. */ }
+            }
+        } catch (RuntimeException unavailable) { /* Unknown is not blocked or quiet. */ }
+        return result;
+    }
+
+    private void drawChannels() {
+        if (!current()) return;
+        BChatNotificationChannels.Snapshot routing = BChatNotificationChannels.state();
+        channelRouting.setText(channelBusy ? R.string.notification_channels_checking
+                : !routing.known ? R.string.notification_channels_unknown
+                : routing.separated ? R.string.notification_channels_separated : R.string.notification_channels_original);
+        channelStatus.setText(row(R.string.notification_channels_chat_name, channelStates[1])
+                + "\n" + row(R.string.notification_channels_task_name, channelStates[2])
+                + "\n" + row(R.string.notification_channels_order_name, channelStates[3]));
+        boolean editable = !paused && !channelBusy && routing.known;
+        separateChannels.setEnabled(editable && !routing.separated);
+        legacyChannels.setEnabled(editable && routing.separated);
+        refreshChannels.setEnabled(!paused && !channelBusy);
+        for (int index = 0; index < channelSettings.length; index++)
+            channelSettings[index].setEnabled(!paused && !channelBusy && channelStates[index + 1] != R.string.notification_unknown);
+    }
+
+    private void confirmChannels(boolean separated) {
+        if (!current() || paused || channelBusy || !BChatNotificationChannels.state().known
+                || channelConfirmation != null) return;
+        final AlertDialog confirmation = new AlertDialog.Builder(activity)
+                .setTitle(separated ? R.string.notification_channels_enable : R.string.notification_channels_revert)
+                .setMessage(separated ? R.string.notification_channels_confirm_enable : R.string.notification_channels_confirm_revert)
+                .setPositiveButton(separated ? R.string.notification_channels_confirm_separate : R.string.notification_channels_confirm_original,
+                        (ignored, which) -> saveChannels(separated))
+                .setNegativeButton(R.string.chat_v2_cancel, null).create();
+        channelConfirmation = confirmation;
+        confirmation.setOnDismissListener(ignored -> {
+            if (channelConfirmation == confirmation) channelConfirmation = null;
+        });
+        confirmation.show(); Ui.decorateDialog(confirmation);
+        for (int button : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE}) {
+            Button action = confirmation.getButton(button);
+            action.setSingleLine(false); action.setMaxLines(Integer.MAX_VALUE); action.setEllipsize(null);
+        }
+    }
+
+    private void saveChannels(boolean separated) {
+        if (!current() || paused || channelBusy) return;
+        final int request = ++channelGeneration;
+        final Context application = activity.getApplicationContext();
+        final BChatNotificationChannels.Names names = separated ? new BChatNotificationChannels.Names(
+                activity.getString(R.string.notification_channels_chat_name),
+                activity.getString(R.string.notification_channels_task_name),
+                activity.getString(R.string.notification_channels_order_name)) : null;
+        channelBusy = true; channelNotice.setText(R.string.notification_channels_saving); drawChannels();
+        BChatStorageRepository.executor().execute(() -> {
+            BChatNotificationChannels.Result result = BChatNotificationChannels.setSeparated(application, separated, names);
+            final int[] states = readChannelStates(application);
+            main.post(() -> {
+                if (request != channelGeneration) return;
+                channelBusy = false;
+                if (!current() || paused) return;
+                channelStates = states;
+                channelNotice.setText(result.accepted ? R.string.notification_channels_saved
+                        : "baseline_missing".equals(result.code) ? R.string.notification_channels_baseline_missing
+                        : R.string.notification_channels_failed);
+                draw();
+            });
+        });
+    }
+
+    private void openTypeChannel(String channel) {
+        if (!current() || paused || channelBusy || !(BChatNotificationChannels.CHAT.equals(channel)
+                || BChatNotificationChannels.TASKS.equals(channel) || BChatNotificationChannels.ORDERS.equals(channel))) return;
+        try {
+            activity.startActivity(new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, activity.getPackageName())
+                    .putExtra(Settings.EXTRA_CHANNEL_ID, channel));
+        } catch (RuntimeException unavailable) { channelNotice.setText(R.string.notification_channels_settings_unavailable); }
     }
     private int modeLabel(String mode) {
         return "full".equals(mode) ? R.string.notification_preview_full
@@ -406,6 +551,7 @@ final class BChatNotificationSettingsPanel implements SharedPreferences.OnShared
     }
     private Button action(LinearLayout parent, int label, Runnable action) {
         Button button = new Button(activity); button.setText(label); Ui.styleAction(button, Ui.ActionTone.SECONDARY);
+        button.setSingleLine(false); button.setMaxLines(Integer.MAX_VALUE); button.setEllipsize(null);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2); layout.topMargin = Ui.dp(activity, 6);
         parent.addView(button, layout); button.setOnClickListener(ignored -> action.run()); return button;
     }

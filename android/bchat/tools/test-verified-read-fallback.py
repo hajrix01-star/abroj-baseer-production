@@ -104,7 +104,11 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         self.assertIn('private final Runnable poll = this::pollTest;', panel)
         self.assertIn('pollAttempts < 10', panel)
         self.assertIn('main.postDelayed(poll, 3000)', panel)
-        self.assertIn('void pause() { paused = true; main.removeCallbacks(poll); }', panel)
+        pause = panel[panel.index('void pause()'):panel.index('void resume()')]
+        self.assertIn('paused = true;', pause)
+        self.assertIn('main.removeCallbacks(poll);', pause)
+        self.assertIn('++channelGeneration;', pause)
+        self.assertIn('channelConfirmation.dismiss();', pause)
         self.assertIn('BChatPushState.stopObserving(activity, this);', panel)
         self.assertIn('row(R.string.notification_server_registration,', panel)
         self.assertIn('row(R.string.notification_callback,', panel)

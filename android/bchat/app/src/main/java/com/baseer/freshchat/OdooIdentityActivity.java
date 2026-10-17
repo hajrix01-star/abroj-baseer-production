@@ -2665,6 +2665,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void ensureBChatNotificationChannel(NotificationManager notifications) {
         if (Build.VERSION.SDK_INT < 26 || notifications == null) return;
+        if (notifications.getNotificationChannel("bchat-events-v3") != null) return;
         NotificationChannel channel = new NotificationChannel("bchat-events-v3", "BChat",
                 NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription(getString(R.string.bchat_push_channel_description));

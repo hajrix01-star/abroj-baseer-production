@@ -58,7 +58,34 @@ final class BChatPushState {
  static String previewMode(Context c,String account){return ((NotificationPresentationHarness)c).previewMode;}
  static boolean awaitReady(Context c,long wait){return true;}
  static Delivery delivery(Context c,String key){return matches(c,key)?new Delivery(c):null;}
- static boolean present(Delivery d,Presentation p){p.show(previewMode(d.context,null));return true;}
+ static boolean present(Delivery d,Presentation p){
+   NotificationPresentationHarness host=(NotificationPresentationHarness)d.context;
+   if(host.beforePresent!=null){Runnable once=host.beforePresent;host.beforePresent=null;once.run();}
+   p.show(previewMode(d.context,null));return true;
+ }
+}
+"""
+channels = r"""
+package com.baseer.freshchat;
+import android.content.Context;
+/** Explicit channel-state adapter; the real channels module has separate behavior tests. */
+final class BChatNotificationChannels {
+ static NotificationPresentationHarness owner;
+ static final class Selection {
+   final String channelId;final boolean known;final long revision;
+   Selection(String id,boolean k,long r){channelId=id;known=k;revision=r;}
+ }
+ static void load(Context c){owner=(NotificationPresentationHarness)c;}
+ static Selection resolve(String kind){
+   String id=owner.separated&&owner.channelKnown?("chat".equals(kind)?"bchat-chat-v1":
+       "task".equals(kind)?"bchat-tasks-v1":"order".equals(kind)?"bchat-orders-v1":"bchat-events-v3"):
+       "bchat-events-v3";
+   return new Selection(id,owner.channelKnown,owner.channelRevision);
+ }
+ static boolean present(Selection value,Runnable render){
+   if(value.revision!=owner.channelRevision||value.known!=owner.channelKnown)return false;
+   render.run();return true;
+ }
 }
 """
 harness = r"""
@@ -71,7 +98,8 @@ public class NotificationPresentationHarness extends Context {
  final Prefs prefs=new Prefs();
  final Map<String,Prefs> named=new HashMap<>();
  final NotificationManager manager=new NotificationManager();
- String previewMode="none";boolean permission=true;
+ String previewMode="none";boolean permission=true,channelKnown=true,separated;
+ long channelRevision;Runnable beforePresent;
  public SharedPreferences getSharedPreferences(String name,int mode){return name.equals("bchat-presented-events-v1")?prefs:named.computeIfAbsent(name,key->new Prefs());}
  @SuppressWarnings("unchecked") <T> T getSystemService(Class<T> kind){return (T)manager;}
  int checkSelfPermission(String ignored){return permission?PackageManager.PERMISSION_GRANTED:1;}
@@ -121,10 +149,10 @@ public class NotificationPresentationHarness extends Context {
  static class NotificationChannel {int getImportance(){return 4;}}
  static class Notification {
    static int VISIBILITY_PRIVATE=1,VISIBILITY_PUBLIC=2,GROUP_ALERT_CHILDREN=2,GROUP_ALERT_SUMMARY=1;static String CATEGORY_MESSAGE="message",CATEGORY_REMINDER="reminder";
-   String title,text,group;Notification publicView;int alertBehavior;boolean summary,onlyAlertOnce;
+   String title,text,group,channelId;Notification publicView;int alertBehavior;boolean summary,onlyAlertOnce;
    static class Builder {
      Notification n=new Notification();
-     Builder(Object c,String channel){} Builder setSmallIcon(int i){return this;}
+     Builder(Object c,String channel){n.channelId=channel;} Builder setSmallIcon(int i){return this;}
      Builder setContentTitle(String s){n.title=s;return this;}Builder setContentText(String s){n.text=s;return this;}
      Builder setContentIntent(PendingIntent p){return this;}Builder setAutoCancel(boolean v){return this;}
      Builder setOnlyAlertOnce(boolean v){n.onlyAlertOnce=v;return this;}Builder setVisibility(int i){return this;}
@@ -240,6 +268,34 @@ public class NotificationPresentationHarness extends Context {
    check(BChatNotificationDiagnostics.read(diagRestart,other,"61",uuid,System.currentTimeMillis())==null,"Another account cannot see local test receipt");
    RemoteMessage invalidTest=new RemoteMessage("diagnostic","62");invalidTest.data.put("diagnostic_uuid","not-a-uuid");denied.onMessageReceived(invalidTest);
    check(denied.manager.calls==1,"Malformed diagnostic cannot display or enter ledger");
+   NotificationPresentationHarness split=new NotificationPresentationHarness();split.separated=true;
+   split.onMessageReceived(new RemoteMessage("chat","71"));
+   check(split.manager.last.channelId.equals("bchat-chat-v1"),"Chat uses the explicit committed messages channel");
+   split.onMessageReceived(new RemoteMessage("task","72"));
+   check(split.manager.last.channelId.equals("bchat-tasks-v1"),"Task uses the explicit committed tasks channel");
+   split.onMessageReceived(new RemoteMessage("order","73"));
+   check(split.manager.last.channelId.equals("bchat-orders-v1"),"Order uses the explicit committed orders channel");
+   split.onMessageReceived(test);
+   check(split.manager.last.channelId.equals("bchat-events-v3"),"Diagnostic remains on the original channel after split opt-in");
+   NotificationPresentationHarness unknown=new NotificationPresentationHarness();unknown.channelKnown=false;
+   unknown.previewMode="full";unknown.onMessageReceived(privateMessage);
+   check(unknown.manager.last.channelId.equals("bchat-events-v3")&&unknown.manager.last.title.equals("BChat")
+     &&unknown.manager.last.text.equals("private notification")
+     &&unknown.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
+     "Unknown channel preference renders generic silent legacy fallback even with a full payload");
+   unknown.onMessageReceived(new RemoteMessage("task","74"));
+   check(unknown.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
+     "Unknown channel routing cannot make non-chat events audible");
+   NotificationPresentationHarness changedRoute=new NotificationPresentationHarness();
+   changedRoute.beforePresent=()->{changedRoute.channelRevision++;changedRoute.separated=true;};
+   changedRoute.onMessageReceived(new RemoteMessage("chat","75"));
+   check(changedRoute.manager.calls==0&&!BChatNotificationLedger.contains(changedRoute,
+     BChatNotificationLedger.key(ACCOUNT,"chat","75"),System.currentTimeMillis()),
+     "Routing changed after selection rejects final presentation without retiring the event");
+   changedRoute.onMessageReceived(new RemoteMessage("chat","75"));
+   check(changedRoute.manager.calls==1&&changedRoute.manager.last.channelId.equals("bchat-chat-v1")
+     &&changedRoute.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
+     "Retry uses current routing and cannot replay an already reserved sound");
    NotificationPresentationHarness diagBound=new NotificationPresentationHarness();
    for(int i=1;i<=40;i++)BChatNotificationDiagnostics.record(diagBound,ACCOUNT,String.valueOf(i),uuid,"received",now+i);
    Prefs diagnosticPrefs=diagBound.named.get("bchat-notification-diagnostics-v1");
@@ -259,6 +315,7 @@ with tempfile.TemporaryDirectory(prefix="bchat-presentation-", dir=temp_root) as
         "android/content/SharedPreferences.java": preferences,
         "android/net/Uri.java": uri,
         "com/baseer/freshchat/BChatPushState.java": push_state,
+        "com/baseer/freshchat/BChatNotificationChannels.java": channels,
         "com/baseer/freshchat/NotificationPresentationHarness.java": harness,
     }
     for relative, value in files.items():

@@ -461,7 +461,11 @@
         "custom_addons/baseer_bchat/tests_contract/test_notification_presentation.py",
         "android/bchat/app/src/main/java/com/baseer/freshchat/NotificationPresentation.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationChannels.java",
         "android/bchat/tests/NotificationPresentationContractTest.java",
+        "android/bchat/tests/notification-channels/**",
+        "android/bchat/tools/test-notification-channels*.py",
+        "android/bchat/tools/build-notification-channel-tests.py",
         "android/bchat/tools/test-notification-contract.py"
       ],
       "suites": ["backend-contracts", "source-structure", "android-source-contract"]

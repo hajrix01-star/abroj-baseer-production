@@ -58,16 +58,16 @@ def run(*command, timeout=90):
 
 names = ("Ui", "UiPalette", "ChatAppearance", "AvatarInitials", "AppLocale", "AppLocalePolicy",
          "LocalSettings", "LocalSettingsPolicy", "BChatNotificationSettingsPanel", "BChatPushState",
-         "NotificationSettingsProtocol", "BChatNotificationDiagnostics", "BChatNotificationLedger")
+         "NotificationSettingsProtocol", "BChatNotificationDiagnostics", "BChatNotificationLedger", "BChatNotificationChannels")
 source = root / "app/src/main/java/com/baseer/freshchat"
 production = [source / (name + ".java") for name in names]
 production += [source / "sync/AccountScope.java", source / "sync/OutboxPolicy.java"]
 tests = root / "tests/android-notification-settings"
 resources = sorted(path for path in (root / "app/src/main/res").rglob("*") if path.is_file())
-hashes = {str(path.relative_to(root)).replace("\\", "/"): hashlib.sha256(path.read_bytes()).hexdigest()
-          for path in production + resources + sorted(tests.rglob("*.java")) + [tests / "AndroidManifest.xml", Path(__file__).resolve()]}
+inputs = production + resources + sorted(tests.rglob("*.java")) + [tests / "AndroidManifest.xml", Path(__file__).resolve()]
+hashes = {str(path.relative_to(root)).replace("\\", "/"): hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
 (output / "source-manifest.json").write_text(json.dumps({"schema": 1, "source_sha256": hashes,
-    "scope": "Real test Activity/Dialog/JSONObject/SharedPreferences, fake Host and executor-only adapter; no real HTTP/FCM/SQLite"},
+    "scope": "Real test Activity/Dialog/JSONObject/SharedPreferences and native channels; fake HTTP Host, captured settings Intents and executor-only adapter; no real HTTP/FCM/audio/SQLite"},
     ensure_ascii=False, indent=2), encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="build-", dir=output) as temporary:
@@ -108,7 +108,9 @@ with tempfile.TemporaryDirectory(prefix="build-", dir=output) as temporary:
         capture_names = ["notification-settings-results.json"]
         capture_names += [f"notification-settings-{language}-{mode}-{scale}-{position}.png"
                           for language in ("ar", "en") for mode in ("light", "dark")
-                          for scale in ("1.0", "2.0") for position in ("top", "bottom")]
+                          for scale in ("1.0", "2.0") for position in ("top", "channels-top", "channels-bottom", "bottom")]
+        capture_names += ["notification-channels-confirm-ar-dark-2.0.png", "notification-channels-confirm-en-light-2.0.png",
+                          "notification-channels-separated-ar-dark-2.0.png"]
         for name in capture_names:
             destination = output / name if name.endswith(".json") else captures / name
             # Keep available failure frames as well; a missing frame is not manufactured.
@@ -119,10 +121,14 @@ with tempfile.TemporaryDirectory(prefix="build-", dir=output) as temporary:
         print(result)
         evidence = json.loads((output / "notification-settings-results.json").read_text(encoding="utf-8"))
         if any(hashlib.sha256(path.read_bytes()).hexdigest() != hashes[str(path.relative_to(root)).replace("\\", "/")]
-               for path in production + resources):
-            raise SystemExit("Production sources changed during component test; evidence is not a frozen-source acceptance")
+               for path in inputs):
+            raise SystemExit("Inputs changed during component test; evidence is not a frozen-source acceptance")
         if not evidence.get("passed") or "PASS 8 actual Android notification settings renders" not in result or "INSTRUMENTATION_CODE: -1" not in result:
             raise SystemExit("Notification settings checks failed; inspect preserved native evidence and frames")
-        if len(evidence.get("renders", [])) != 8 or len(evidence.get("journeys", [])) != 7:
+        if len(evidence.get("renders", [])) != 8 or len(evidence.get("journeys", [])) != 12:
             raise SystemExit("Incomplete notification settings evidence")
-        print("Captured 16 actual Dialog-decor frames (top/bottom), 8 configurations and 7 journeys")
+        for name in capture_names[1:]:
+            frame = captures / name
+            if not frame.is_file() or not frame.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+                raise SystemExit("Missing actual native frame: " + name)
+        print("Captured 35 actual Dialog-decor frames, 8 configurations and 12 journeys")

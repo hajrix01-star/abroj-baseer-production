@@ -56,7 +56,11 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         String presentationKey = BChatNotificationLedger.key(account, kind, event);
         if (BChatNotificationLedger.contains(this, presentationKey, System.currentTimeMillis())) return;
         ensureChannel(manager);
-        NotificationChannel channel = manager.getNotificationChannel(CHANNEL);
+        // FCM runs on a worker. Routing is published only from a committed
+        // installation-wide choice; a failed/cold read never enables a tone.
+        BChatNotificationChannels.load(this);
+        BChatNotificationChannels.Selection channelRoute = BChatNotificationChannels.resolve(kind);
+        NotificationChannel channel = manager.getNotificationChannel(channelRoute.channelId);
         if (!manager.areNotificationsEnabled() || channel != null && channel.getImportance() == NotificationManager.IMPORTANCE_NONE) {
             if (diagnostic) BChatNotificationDiagnostics.record(this, account, event, diagnosticUuid,
                     "channel_blocked", System.currentTimeMillis());
@@ -76,8 +80,10 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         // Worker callback: a durable shared message claim precedes any system sound.
         // Legacy/malformed chat metadata gets a generic silent notification, not a
         // guessed room/message identity. Other existing event kinds are unchanged.
-        boolean audible = !"chat".equals(kind) || frame != null && BChatNotificationLedger.claimSound(
-                this, account, frame.messageKey, frame.sentAt, System.currentTimeMillis(), "system");
+        boolean claimed = frame != null && BChatNotificationLedger.claimSound(
+                this, account, frame.messageKey, frame.sentAt, System.currentTimeMillis(),
+                channelRoute.known ? "system" : "silent");
+        boolean audible = channelRoute.known && (!"chat".equals(kind) || claimed);
         String group = account + ":bchat-events";
         int textId = "chat".equals(kind) ? R.string.bchat_push_chat
                 : "task".equals(kind) ? R.string.bchat_push_task
@@ -85,15 +91,18 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         // A tag avoids hash collisions, and onlyAlertOnce also protects the short
         // crash window after notify but before the durable presentation receipt.
         try {
+            boolean[] channelPosted = {false};
             boolean posted = BChatPushState.present(delivery, mode -> {
-                String sender = frame != null && !"none".equals(mode) ? frame.sender : "";
-                String preview = frame != null && "full".equals(mode) ? frame.preview : "";
-                if (frame != null && "full".equals(mode) && preview.isEmpty() && frame.attachment)
+                channelPosted[0] = BChatNotificationChannels.present(channelRoute, () -> {
+                String privateMode = channelRoute.known ? mode : "none";
+                String sender = frame != null && !"none".equals(privateMode) ? frame.sender : "";
+                String preview = frame != null && "full".equals(privateMode) ? frame.preview : "";
+                if (frame != null && "full".equals(privateMode) && preview.isEmpty() && frame.attachment)
                     preview = getString(R.string.bchat_push_attachment);
-                Notification publicView = new Notification.Builder(this, CHANNEL)
+                Notification publicView = new Notification.Builder(this, channelRoute.channelId)
                         .setSmallIcon(R.drawable.ic_notification).setContentTitle("BChat")
                         .setContentText(getString(textId)).setVisibility(Notification.VISIBILITY_PUBLIC).build();
-                Notification.Builder builder = new Notification.Builder(this, CHANNEL)
+                Notification.Builder builder = new Notification.Builder(this, channelRoute.channelId)
                         .setSmallIcon(R.drawable.ic_notification)
                         .setContentTitle(sender.isEmpty() ? "BChat" : sender)
                         .setContentText(preview.isEmpty() ? getString(textId) : preview)
@@ -109,7 +118,7 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
                 // A real group summary is required on Android26+. It is generic,
                 // independently silent even on a loud channel, and never retired
                 // as a chat receipt or as an audible message claim.
-                Notification summary = new Notification.Builder(this, CHANNEL)
+                Notification summary = new Notification.Builder(this, channelRoute.channelId)
                         .setSmallIcon(R.drawable.ic_notification).setContentTitle("BChat")
                         .setContentText(getString(textId)).setContentIntent(open)
                         .setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicView)
@@ -121,8 +130,9 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
                     // The child was already accepted. A best-effort summary
                     // failure must not turn that into a failed/unknown event.
                 }
+                });
             });
-            if (!posted) return;
+            if (!posted || !channelPosted[0]) return;
             if (diagnostic) BChatNotificationDiagnostics.record(this, account, event, diagnosticUuid,
                     "displayed", System.currentTimeMillis());
             BChatNotificationLedger.recordShown(this, presentationKey, System.currentTimeMillis());

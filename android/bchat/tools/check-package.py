@@ -103,6 +103,20 @@ for required in ('message_preview', 'sender_name', 'MAX_DATA_BYTES = 3072', 'pre
 assert 'BChatNotificationLedger.claimSound(' in push
 assert '.setOnlyAlertOnce(!"chat".equals(kind) || !audible)' in push
 assert 'Notification.GROUP_ALERT_SUMMARY' in push and 'Notification.GROUP_ALERT_CHILDREN' in push
+assert push.index('BChatNotificationChannels.load(this)') < push.index('BChatNotificationChannels.resolve(kind)')
+assert 'BChatNotificationChannels.present(channelRoute, () -> {' in push
+assert 'if (!posted || !channelPosted[0]) return;' in push
+assert 'String privateMode = channelRoute.known ? mode : "none";' in push
+assert 'boolean audible = channelRoute.known &&' in push
+channels=(root/'app/src/main/java/com/baseer/freshchat/BChatNotificationChannels.java').read_text(encoding='utf-8')
+for channel_id in ('bchat-events-v3', 'bchat-chat-v1', 'bchat-tasks-v1', 'bchat-orders-v1'):
+ assert channel_id in channels, channel_id
+assert 'if (manager.getNotificationChannel(ids[i]) == null)' in channels
+assert 'if (!saved) return result(false, false, "commit_failed", before);' in channels
+channel_change=channels[channels.index('public static Result setSeparated('):channels.index('private static NotificationChannel copyBaseline(')]
+assert channel_change.index('.commit();') < channel_change.index('if (!saved) return') < channel_change.index('current = new Snapshot(true, separated, before.revision + 1);')
+assert 'if (selection.owner != current) return false;' in channels
+assert 'deleteNotificationChannel' not in channels and 'copy.setBypassDnd(false)' in channels
 assert 'android.permission.ACCESS_NETWORK_STATE' in permissions
 
 assert notifications.index('channel.setVibrationPattern(') < notifications.index('channel.enableVibration(settings.vibration(CATEGORY))'), 'Apply vibration Off after Android pattern setter'

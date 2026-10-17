@@ -5,8 +5,10 @@ import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.WindowManager;
 import android.widget.TextView;
 import com.baseer.freshchat.sync.AccountScope;
@@ -24,6 +26,15 @@ public final class NotificationSettingsTestActivity extends Activity {
     static float scale = 1;
     BChatNotificationSettingsPanel panel;
     FakeHost host;
+    final List<Intent> channelIntents = new ArrayList<>();
+
+    @Override public void startActivity(Intent intent) {
+        if (Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS.equals(intent.getAction())) {
+            // Deliberately capture this boundary: no external settings screen is opened by the harness.
+            channelIntents.add(new Intent(intent)); return;
+        }
+        super.startActivity(intent);
+    }
 
     @Override protected void attachBaseContext(Context base) {
         Configuration config = new Configuration(base.getResources().getConfiguration());
@@ -62,12 +73,13 @@ public final class NotificationSettingsTestActivity extends Activity {
         String mode = "full", diagnosticUuid;
         long revision = 1;
         int bootstrapCalls, preferenceCalls, testCalls, statusCalls, registerCalls;
-        boolean loseNextAck, holdNextAck;
+        boolean loseNextAck, holdNextAck, active = true;
+        int legacySettingsCalls;
         BChatNotificationSettingsPanel.Reply heldReply;
         JSONObject heldBody;
         FakeHost(Activity activity, boolean supported) { this.activity = activity; this.supported = supported; }
         public AccountScope account() { return ACCOUNT; }
-        public boolean current(AccountScope value) { return value != null && ACCOUNT.key.equals(value.key); }
+        public boolean current(AccountScope value) { return active && value != null && ACCOUNT.key.equals(value.key); }
         public boolean bootstrap(BChatNotificationSettingsPanel.Reply reply) {
             bootstrapCalls++;
             JSONObject response = json().put("api_version", 2).put("user_id", ACCOUNT.userId).put("database", ACCOUNT.database).value;
@@ -110,7 +122,7 @@ public final class NotificationSettingsTestActivity extends Activity {
         }
         public void registerPush() { registerCalls++; }
         public void requestPermission() { /* No system mutation from fake host. */ }
-        public void openSystemSettings(boolean channel) { /* No navigation outside test package. */ }
+        public void openSystemSettings(boolean channel) { if (channel) legacySettingsCalls++; /* No external navigation. */ }
     }
     private static Builder json() { return new Builder(); }
     private static void put(JSONObject object, Object... pairs) {

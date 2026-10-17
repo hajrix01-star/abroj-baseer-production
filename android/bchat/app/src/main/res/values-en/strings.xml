@@ -570,6 +570,13 @@
     <string name="chat_v2_invalid_text">"Enter non-empty text up to 16 KB."</string>
     <string name="bchat_media_attach">"Image or file"</string>
     <string name="bchat_media_pending">"An attachment awaits confirmation. Review it before sending another message."</string>
+    <string name="bchat_media_review_pending">Review attachment status</string>
+    <string name="bchat_media_review_intro">%1$d attachment(s) are pending locally. Check now never uploads a file again.</string>
+    <string name="bchat_media_check_now">Check now</string>
+    <string name="bchat_media_checking">Checking verified conversation history…</string>
+    <string name="bchat_media_status_upload_pending">The server has not confirmed the file upload yet. Diagnostic code: M01.</string>
+    <string name="bchat_media_status_message_pending">Attachment %1$d was uploaded, but its message link is not confirmed yet. Diagnostic code: M02.</string>
+    <string name="bchat_media_status_rejected">The server rejected the attachment upload (%1$s). Diagnostic code: M04.</string>
     <string name="bchat_media_invalid">"Could not prepare the attachment. Images can be up to 5 MB; files and audio up to 10 MB."</string>
     <string name="bchat_media_uploading">"Uploading attachment…"</string>
     <string name="bchat_media_sending">"Sending attachment…"</string>

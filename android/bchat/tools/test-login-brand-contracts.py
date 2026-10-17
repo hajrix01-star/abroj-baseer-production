@@ -45,7 +45,7 @@ class LoginBrandContracts(unittest.TestCase):
         self.assertIn('loginReleaseFooter.setVisibility(View.GONE)', identity)
         self.assertNotIn('bchat_login_tagline', identity)
         self.assertNotIn('footerSpacer', identity)
-        self.assertIn("versionCode 82; versionName '0.7.66-qa-media-batch-reconcile'", build)
+        self.assertIn("versionCode 83; versionName '0.7.67-qa-media-diagnostics'", build)
         for path in ('values/strings.xml', 'values-ar/strings.xml', 'values-en/strings.xml'):
             strings = (ROOT / 'app/src/main/res' / path).read_text(encoding='utf-8')
             self.assertIn('name="bchat_login_release_footer"', strings)

@@ -96,6 +96,23 @@ checks = {
         "if (statusCode >= 200 && statusCode < 300)" in body("private void sendConnectedMedia(")
         and body("private void sendConnectedMedia(").count(
             "recoverUncertainMediaConfirmation(scopedAccount, room);") >= 2,
+    "Pending-media review is available with an explicit local diagnosis":
+        "mediaReviewButton.setText(R.string.bchat_media_review_pending);" in source
+        and "CONNECTED_MEDIA_UI_ENABLED && mediaPending && !inFlight" in body(
+            "private void updatePendingUi()")
+        and "private String connectedMediaPendingStatus(" in source
+        and "R.string.bchat_media_status_upload_pending" in body(
+            "private String connectedMediaPendingStatus(")
+        and "R.string.bchat_media_status_message_pending" in body(
+            "private String connectedMediaPendingStatus(")
+        and "R.string.bchat_media_status_rejected" in body(
+            "private String connectedMediaPendingStatus("),
+    "Manual confirmation check is read-only and never resends media":
+        "private void checkConnectedMediaStatus(" in source
+        and "recoverUncertainMediaConfirmation(scopedAccount, room);" in body(
+            "private void checkConnectedMediaStatus(")
+        and "sendConnectedMedia(" not in body("private void checkConnectedMediaStatus(")
+        and "retryConnectedMedia(" not in body("private void checkConnectedMediaStatus("),
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":

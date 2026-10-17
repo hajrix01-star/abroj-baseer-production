@@ -338,8 +338,9 @@ class BChatTaskHttpCase(HttpCase):
         event = self.env['baseer.bchat.push.event'].sudo().search([
             ('task_id', '=', task_id), ('recipient_id', '=', user.id),
         ], limit=1)
-        # Registration happens after this task, so create another to exercise
-        # the endpoint through the authenticated browser session.
+        self.assertFalse(event)
+        # Even with a registered installation, a business action must not
+        # notify its own actor. The explicit diagnostic self-test is separate.
         second_payload = {**json.loads(payload), 'client_uuid': str(uuid4()), 'title': 'HTTP push task'}
         second = self.url_open('/bchat/api/v2/tasks', data={
             'csrf_token': bootstrap['csrf_token'], 'payload': json.dumps(second_payload),
@@ -348,11 +349,24 @@ class BChatTaskHttpCase(HttpCase):
         event = self.env['baseer.bchat.push.event'].sudo().search([
             ('task_id', '=', second.json()['task']['id']), ('recipient_id', '=', user.id),
         ], limit=1)
+        self.assertFalse(event)
+        sender = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat task HTTP sender', 'login': 'bchat-task-sender-%s' % uuid4().hex,
+            'company_id': company.id, 'company_ids': [Command.set(company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        notified = self.env['baseer.bchat.service'].with_user(sender)._v2_task_create({
+            **second_payload, 'client_uuid': str(uuid4()), 'title': 'Other actor task',
+        })
+        event = self.env['baseer.bchat.push.event'].sudo().search([
+            ('task_id', '=', notified['task']['id']), ('recipient_id', '=', user.id),
+        ], limit=1)
+        self.assertTrue(event)
         notification = self.url_open('/bchat/api/v2/notifications/%s' % event.id,
                                      allow_redirects=False)
         self.assertEqual(notification.status_code, 200)
         self.assertEqual(notification.json()['notification']['source_ref']['task_id'],
-                         second.json()['task']['id'])
+                         notified['task']['id'])
         replay = self.url_open('/bchat/api/v2/tasks', data={
             'csrf_token': bootstrap['csrf_token'], 'payload': payload,
         }, allow_redirects=False)

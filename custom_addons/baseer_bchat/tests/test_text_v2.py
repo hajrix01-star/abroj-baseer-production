@@ -224,7 +224,8 @@ class BChatTextCase(TransactionCase):
 
         add_employee('Self one', self.company, 'Z Manager')
         add_employee('Inactive self', empty, 'Hidden inactive', active=False)
-        add_employee('Another user', self.company, 'Hidden colleague', user=self.manager)
+        colleague = self._user('profile-colleague', 'base.group_user', self.company)
+        add_employee('Another user', self.company, 'Hidden colleague', user=colleague)
         add_employee('Self second company', second, 'Second title')
         add_employee('Self excluded company', excluded, 'Hidden company')
         self.member.write({'company_ids': [Command.set([
@@ -257,12 +258,16 @@ class BChatTextCase(TransactionCase):
         Image.new('RGB', (12, 12), '#aa1122').save(user_image, format='PNG')
         employee_image = io.BytesIO()
         Image.new('RGB', (12, 12), '#2474a7').save(employee_image, format='PNG')
-        self.member.write({'image_128': base64.b64encode(user_image.getvalue())})
-        self.env['hr.employee'].sudo().create({
+        self.member.write({'image_1920': base64.b64encode(user_image.getvalue())})
+        employee = self.env['hr.employee'].sudo().create({
             'name': 'BChat avatar employee', 'user_id': self.member.id,
             'company_id': self.company.id,
-            'image_128': base64.b64encode(employee_image.getvalue()),
+            # HR create synchronizes from user.image_1920 unless the employee
+            # receives its own original image, not only a derived thumbnail.
+            'image_1920': base64.b64encode(employee_image.getvalue()),
         })
+        with Image.open(io.BytesIO(base64.b64decode(employee.image_128))) as prepared:
+            self.assertEqual(prepared.convert('RGB').getpixel((4, 4)), (36, 116, 167))
         raw = self._service(self.manager)._v2_member_avatar(self.room.id, self.member.id)
         with Image.open(io.BytesIO(raw)) as avatar:
             self.assertEqual(avatar.size, (12, 12))
@@ -284,14 +289,18 @@ class BChatTextCase(TransactionCase):
         second_image = io.BytesIO()
         Image.new('RGB', (12, 12), '#2474a7').save(second_image, format='PNG')
         employees = self.env['hr.employee'].sudo()
-        employees.create({
+        first_employee = employees.create({
             'name': 'BChat first-company avatar', 'user_id': self.member.id,
-            'company_id': self.company.id, 'image_128': base64.b64encode(first_image.getvalue()),
+            'company_id': self.company.id, 'image_1920': base64.b64encode(first_image.getvalue()),
         })
-        employees.create({
+        second_employee = employees.create({
             'name': 'BChat second-company avatar', 'user_id': self.member.id,
-            'company_id': second.id, 'image_128': base64.b64encode(second_image.getvalue()),
+            'company_id': second.id, 'image_1920': base64.b64encode(second_image.getvalue()),
         })
+        for employee, expected in ((first_employee, (170, 17, 34)),
+                                   (second_employee, (36, 116, 167))):
+            with Image.open(io.BytesIO(base64.b64decode(employee.image_128))) as prepared:
+                self.assertEqual(prepared.convert('RGB').getpixel((4, 4)), expected)
         raw = self._service(self.member).with_company(second)._v2_profile_avatar()
         with Image.open(io.BytesIO(raw)) as avatar:
             self.assertEqual(avatar.convert('RGB').getpixel((4, 4)), (36, 116, 167))

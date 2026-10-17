@@ -54,7 +54,10 @@ test "$ready" = 1
 # namespace. No cron, operational database, host network, filestore or FCM access.
 common=(--network "container:$db" --read-only --memory 2048m --cpus 2 --pids-limit 256
     --security-opt no-new-privileges -e PYTHONDONTWRITEBYTECODE=1
-    -e ODOO_TEST_MAX_FAILED_TESTS=5
+    # Gather the remaining fixture failures in one bounded run instead of
+    # revealing them five at a time. The exact inventory gate still rejects
+    # any failure/skip, and SQL/container hard deadlines remain in force.
+    -e ODOO_TEST_MAX_FAILED_TESTS=20
     --tmpfs /tmp:rw,nosuid,size=128m --tmpfs /var/lib/odoo:rw,uid=100,gid=101,size=256m
     --mount "type=bind,src=$ROOT/custom_addons/baseer_bchat,dst=/mnt/maturity/baseer_bchat,readonly"
     --entrypoint /usr/bin/odoo)

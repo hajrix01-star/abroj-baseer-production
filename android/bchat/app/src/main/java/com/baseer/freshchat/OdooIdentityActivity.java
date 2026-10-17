@@ -8730,7 +8730,7 @@ public final class OdooIdentityActivity extends Activity {
                     (statusCode, result) -> {
                         mediaConfirmBusy = false;
                         mediaConfirmRoom = null;
-                        if (!stillCurrent(scopedAccount, room) || handleV2TransportFailure(statusCode, true)) return;
+                        if (handleV2TransportFailure(statusCode, true)) return;
                         try {
                             if (statusCode != 200 && statusCode != 201) throw new IOException("Media send denied");
                             if (result == null || positiveId(result.get("api_version")) != 2
@@ -8741,11 +8741,17 @@ public final class OdooIdentityActivity extends Activity {
                                     || !"sent".equals(result.getString("state")))
                                 throw new IOException("Unverified media ACK");
                             long sentMessageId = positiveId(result.get("message_id"));
+                            // The server receipt is enough to retire this exact local request.
+                            // Do this before testing the current screen: a room reload or a
+                            // quick navigation must not leave an already-sent image blocking
+                            // the next message on the device.
                             mediaStore.acknowledge(scopedAccount, entry);
+                            if (!stillCurrent(scopedAccount, room)) return;
                             chatNotice.setText(R.string.chat_v2_sent);
                             updatePendingUi();
                             appendAcknowledgedMessage(scopedAccount, room, sentMessageId);
                         } catch (Exception invalid) {
+                            if (!stillCurrent(scopedAccount, room)) return;
                             JSONObject error = result == null ? null : result.optJSONObject("error");
                             boolean policyChanged = statusCode == 409 && error != null
                                     && "document_policy_changed".equals(error.optString("code"));

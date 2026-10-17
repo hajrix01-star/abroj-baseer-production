@@ -169,7 +169,9 @@ checks = {
         and "BChatNativeMediaUploader.upload" not in body("private void requestNativeMediaGrant(")
         and "statusCode == 0 && dispatchedAttempts < MAX_NATIVE_GRANT_DISPATCHES" in body(
             "private void beginNativeMediaUpload(")
-        and "requestNativeMediaGrant(request, scopedAccount, room, entry, staged," in body(
+        and "metadata, dispatchedAttempts, controlRetries);" in body(
+            "private void beginNativeMediaUpload(")
+        and "metadata, dispatchedAttempts, 0);" not in body(
             "private void beginNativeMediaUpload("),
 }
 

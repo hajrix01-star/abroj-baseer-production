@@ -8736,7 +8736,8 @@ public final class OdooIdentityActivity extends Activity {
         String path = V2_ROOMS + "/" + room.id + "/mobile-upload-grants";
         if (!postSmallFormDirectlyInWebView(path, "metadata", metadata,
                 (statusCode, result) -> beginNativeMediaUpload(request, scopedAccount, room, entry,
-                        staged, metadata, statusCode, result, dispatchedAttempts + 1))) {
+                        staged, metadata, statusCode, result, dispatchedAttempts + 1,
+                        controlRetries))) {
             // No JavaScript was dispatched.  Keep this separate from the bounded renewal count.
             if (controlRetries < MAX_NATIVE_GRANT_CONTROL_RETRIES) {
                 handler.postDelayed(() -> requestNativeMediaGrant(request, scopedAccount, room, entry,
@@ -8751,7 +8752,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private void beginNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
                                         BChatConnectedMediaStore.Entry entry, File staged, String metadata,
-                                        int statusCode, JSONObject result, int dispatchedAttempts) {
+                                        int statusCode, JSONObject result, int dispatchedAttempts,
+                                        int controlRetries) {
         if (closed || request != mediaUploadNonce || !mediaUploadBusy
                 || !stillCurrent(scopedAccount, room)) return;
         try {
@@ -8760,7 +8762,7 @@ public final class OdooIdentityActivity extends Activity {
             // same UUID is safe and bounded.  Explicit HTTP errors are never retried here.
             if (statusCode == 0 && dispatchedAttempts < MAX_NATIVE_GRANT_DISPATCHES) {
                 requestNativeMediaGrant(request, scopedAccount, room, entry, staged,
-                        metadata, dispatchedAttempts, 0);
+                        metadata, dispatchedAttempts, controlRetries);
                 return;
             }
             if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)

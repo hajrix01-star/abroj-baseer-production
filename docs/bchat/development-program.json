@@ -447,7 +447,7 @@
       "owner": "Android والوسائط",
       "status": "in_progress",
       "implementationEvidence": "EXIF-correct bounded connected decoder/tiles and shared audio ownership reservation wired into Activity; F09 cache retention pending",
-      "verificationEvidence": "182 Android media assertions plus11 Activity inline audio checks within cumulative253; declared delayed-player/focus/transport fixtures; no OEM audio/peak RAM/fullscreens claim",
+      "verificationEvidence": "182 Android media assertions rerun PASS after per-view draw-matrix reuse and independent limited GO; plus11 Activity inline audio checks within cumulative253; declared delayed-player/focus/transport fixtures; no OEM audio/peak RAM/fullscreens claim",
       "acceptance": "اتجاه EXIF وتكبير وفصل سماعة ومكالمة وكوتا وحقوق الكاش؛ قياس ذروة الذاكرة في السيناريو المختبر."
     },
     {

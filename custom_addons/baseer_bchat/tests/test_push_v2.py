@@ -247,11 +247,7 @@ class BChatPushCase(TransactionCase):
         })
         self.assertNotIn(self.assignee.id, updated_events.mapped('recipient_id').ids)
 
-    def test_postgres_skip_locked_excludes_a_row_locked_by_another_worker(self):
-        """The dispatcher lock primitive must not hand a locked row to a second worker."""
-        with self.env.registry.cursor() as first_worker:
-            first_worker.execute('SELECT id FROM res_users WHERE id = %s FOR UPDATE', [1])
-            with self.env.registry.cursor() as second_worker:
-                second_worker.execute(
-                    'SELECT id FROM res_users WHERE id = %s FOR UPDATE SKIP LOCKED', [1])
-                self.assertFalse(second_worker.fetchall())
+    # The real two-cursor SKIP LOCKED journey lives in the explicit gated
+    # permission_hint_concurrency_probe.run() result skip_locked_exclusion.
+    # Never lock res_users(1) from a TransactionCase child cursor: this class's
+    # uncommitted fixture/audit FKs may already hold that row's key-share lock.

@@ -12,11 +12,15 @@ user.write, message send, or hint persistence. Call run(env) from Odoo shell.
 """
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, Event, local
+from types import SimpleNamespace
+from unittest.mock import patch
 from uuid import uuid4
 
 from psycopg2.errors import SerializationFailure
 
 from odoo import Command, api
+
+from ..models.push import _PUSH_TOKEN
 
 
 def run(env):
@@ -48,6 +52,18 @@ def run(env):
         'client_uuid': str(uuid4()), 'title': task_title,
         'description': '', 'due_at': None, 'assignee_id': a.id,
     })['task']['id']
+    skip_installation = str(uuid4())
+    skip_token = 'synthetic-skip-locked-' + marker + 'x' * 40
+    registration = env['baseer.bchat.service'].with_user(a)._v2_push_register({
+        'api_version': 2, 'installation_id': skip_installation, 'fcm_token': skip_token})
+    skip_device = env['baseer.bchat.push.device'].sudo().search([
+        ('account_key', '=', registration['account_key'])], limit=1)
+    skip_event = env['baseer.bchat.push.event']._queue_verified([{
+        'recipient_id': a.id, 'device_id': skip_device.id, 'task_id': task_id,
+        'company_id': company.id, 'event_kind': 'assigned', 'task_revision': 1,
+        'state': 'pending',
+    }], _PUSH_TOKEN)
+    skip_device_id, skip_event_id = skip_device.id, skip_event.id
     revoke_member_id = env['baseer.bchat.membership'].sudo().search([
         ('room_id', '=', room_id), ('user_id', '=', b.id), ('active', '=', True)]).id
     sender_member = env['baseer.bchat.membership'].sudo().search([
@@ -61,6 +77,71 @@ def run(env):
     observed = {}
     backend_pids = set()
     phases = []
+
+    def remove_skip_fixture(cursor):
+        cursor.execute('''SELECT user_id,installation_id,fcm_token FROM baseer_bchat_push_device
+                          WHERE id=%s''', [skip_device_id])
+        device = cursor.fetchone()
+        if device and device != (a.id, skip_installation, skip_token):
+            raise RuntimeError('Refusing cleanup: skip-locked device ownership changed')
+        cursor.execute('SELECT recipient_id,device_id,task_id FROM baseer_bchat_push_event WHERE id=%s', [skip_event_id])
+        event = cursor.fetchone()
+        if event and event != (a.id, skip_device_id, task_id):
+            raise RuntimeError('Refusing cleanup: skip-locked event ownership changed')
+        cursor.execute('DELETE FROM baseer_bchat_push_event WHERE id=%s', [skip_event_id])
+        cursor.execute('DELETE FROM baseer_bchat_push_device WHERE id=%s', [skip_device_id])
+
+    def skip_locked_dispatch_witness():
+        """Committed synthetic queue row, real dispatch SQL, two real workers.
+
+        Only FCM configuration/OAuth/HTTP are stubbed. The claimed row, locks,
+        authorization, state write, cursor isolation and deadlines are real.
+        """
+        pids, isolations = [], []
+        event_class = type(env['baseer.bchat.push.event'])
+        with registry.cursor() as first_worker, registry.cursor() as second_worker:
+            for worker in (first_worker, second_worker):
+                worker.execute("SET LOCAL statement_timeout='3s'")
+                worker.execute("SET LOCAL lock_timeout='2s'")
+                worker.execute('SHOW transaction_isolation')
+                isolation = worker.fetchone()[0].strip().lower()
+                if isolation != 'repeatable read':
+                    raise AssertionError('SKIP LOCKED witness requires PostgreSQL REPEATABLE READ')
+                isolations.append(isolation)
+                worker.execute('SELECT pg_backend_pid()')
+                pids.append(worker.fetchone()[0])
+            if pids[0] == pids[1]:
+                raise AssertionError('SKIP LOCKED witness requires two independent workers')
+            first_worker.execute('SELECT id FROM baseer_bchat_push_event WHERE id=%s FOR UPDATE', [skip_event_id])
+            if first_worker.fetchall() != [(skip_event_id,)]:
+                raise AssertionError('The committed synthetic queue row was not visible to the first worker')
+            second_env = api.Environment(second_worker, admin_id, {'allowed_company_ids': [company_id]})
+            dispatcher = second_env['baseer.bchat.push.event']
+            with patch.object(event_class, '_fcm_config', return_value={'project_id': 'synthetic-project'}), \
+                    patch.object(event_class, '_fcm_access_token', return_value='synthetic-access-token'), \
+                    patch('requests.post', return_value=SimpleNamespace(status_code=200)) as provider:
+                dispatcher._dispatch_event_ids([skip_event_id])
+                locked_calls = provider.call_count
+                locked_state = dispatcher.sudo().browse(skip_event_id).state
+                if locked_calls or locked_state != 'pending':
+                    raise AssertionError('A locked queue row reached the second dispatcher worker')
+                first_worker.rollback()  # Release its real lock, not a mocked claim result.
+                dispatcher._dispatch_event_ids([skip_event_id])
+                final_state = dispatcher.sudo().browse(skip_event_id).state
+                if provider.call_count != 1 or final_state != 'sent':
+                    raise AssertionError('The same dispatcher could not claim the row after release')
+                second_worker.commit()
+        with registry.cursor() as cleanup:
+            # Remove this event and device before the permission races, so
+            # they cannot introduce post-commit FCM scheduling into those cases.
+            remove_skip_fixture(cleanup)
+            cleanup.commit()
+        return {'initial_backend_pids': pids, 'isolations': isolations,
+                'statement_timeout_ms': 3000, 'lock_timeout_ms': 2000,
+                'locked_excluded': locked_calls == 0 and locked_state == 'pending',
+                'claimed_after_release': final_state == 'sent',
+                'provider_calls_while_locked': locked_calls, 'provider_calls_after_release': 1,
+                'final_state': final_state, 'synthetic_fixture_removed_before_races': True}
 
     def publish_with_window(service, user_ids, kind, **kwargs):
         result = original_publish(service, user_ids, kind, **kwargs)
@@ -127,6 +208,7 @@ def run(env):
 
     service_class._change_publish = publish_with_window
     try:
+        skip_locked_exclusion = skip_locked_dispatch_witness()
         phases.append(phase([
             ('a', lambda scoped: scoped['res.users'].browse(a.id).write({'bchat_media_download': False})),
             ('b', lambda scoped: scoped['res.users'].browse(b.id).write({'bchat_media_download': False})),
@@ -183,7 +265,8 @@ def run(env):
             if len(sequences) != 3 or any(high - low + 1 != total for _user, low, high, total in sequences):
                 raise AssertionError('Committed per-user change sequences contain a gap')
         return {'independent_backends': len(backend_pids), 'phases': phases,
-                'message_count': 1, 'task_revision': 2, 'sequence_continuity': True}
+                'message_count': 1, 'task_revision': 2, 'sequence_continuity': True,
+                'skip_locked_exclusion': skip_locked_exclusion}
     finally:
         service_class._change_publish = original_publish
         # Exact synthetic ownership is checked before removing fixtures. No
@@ -200,6 +283,7 @@ def run(env):
             if logins != {'bchat-cursor-race-%s-%s' % (label, marker)
                           for label in ('a', 'b', 'sender')}:
                 raise RuntimeError('Refusing cleanup: synthetic users changed')
+            remove_skip_fixture(cursor)
             cursor.execute('''DELETE FROM baseer_bchat_push_event WHERE message_id IN
                               (SELECT id FROM baseer_bchat_message WHERE room_id = %s)''', [room_id])
             cursor.execute('DELETE FROM baseer_bchat_push_event WHERE task_id = %s', [task_id])

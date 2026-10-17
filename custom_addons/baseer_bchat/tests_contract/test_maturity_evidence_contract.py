@@ -26,6 +26,13 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         postgres = next(image for image in images if image.startswith('postgres@'))
         self.assertIn(postgres, existing)
         self.assertIn('preparation.log', workflow)
+        self.assertIn('--kill-after=15s --signal=TERM 16m', runner)
+        self.assertIn('--kill-after=15s --signal=TERM 4m', runner)
+        self.assertIn('statement_timeout=45000 -c lock_timeout=10000', runner)
+        self.assertIn('failure-db-state.log', runner)
+        self.assertIn('pg_blocking_pids(pid)', runner)
+        self.assertIn('timeout --kill-after=2s 5s docker inspect', runner)
+        self.assertNotIn('query FROM pg_stat_activity', runner)
 
     def setUp(self):
         expected, _kinds = gate.expected_tests(ADDON)
@@ -37,7 +44,13 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         self.probes = {
             'database': 'bchat_maturity_test_20261017',
             'permissions': {'phases': [{'first': deepcopy(one), 'second': deepcopy(two)} for _ in range(5)],
-                            'message_count': 1, 'task_revision': 2, 'sequence_continuity': True},
+                            'message_count': 1, 'task_revision': 2, 'sequence_continuity': True,
+                            'skip_locked_exclusion': {
+                                'initial_backend_pids': [17, 18], 'isolations': ['repeatable read', 'repeatable read'],
+                                'statement_timeout_ms': 3000, 'lock_timeout_ms': 2000,
+                                'locked_excluded': True, 'claimed_after_release': True,
+                                'provider_calls_while_locked': 0, 'provider_calls_after_release': 1,
+                                'final_state': 'sent', 'synthetic_fixture_removed_before_races': True}},
             'social': {'phases': {name: [deepcopy(one), deepcopy(two)] for name in gate.SOCIAL_PHASES},
                        'room_preference_rows': 1, 'diagnostic_events': 10, 'diagnostic_idempotent_events': 1,
                        'daily_quota_winners': 1},
@@ -78,6 +91,23 @@ class MaturityEvidenceGateTests(unittest.TestCase):
     def test_missing_probe_completion_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'completion'):
             gate.verify(ADDON, '\n'.join(self.lines), 'container exited 0', 'a' * 40)
+
+    def test_skip_locked_primitive_cannot_be_dropped_or_faked_by_the_same_connection(self):
+        witness = self.probes['permissions'].pop('skip_locked_exclusion')
+        with self.assertRaisesRegex(ValueError, 'SKIP LOCKED'):
+            self.verify()
+        self.probes['permissions']['skip_locked_exclusion'] = witness
+        witness['initial_backend_pids'] = [17, 17]
+        with self.assertRaisesRegex(ValueError, 'SKIP LOCKED'):
+            self.verify()
+        witness['initial_backend_pids'] = [17, 18]
+        witness['provider_calls_while_locked'] = 1
+        with self.assertRaisesRegex(ValueError, 'SKIP LOCKED'):
+            self.verify()
+        witness['provider_calls_while_locked'] = 0
+        witness['synthetic_fixture_removed_before_races'] = False
+        with self.assertRaisesRegex(ValueError, 'SKIP LOCKED'):
+            self.verify()
 
     def test_missing_phase_or_stale_daily_count_is_rejected(self):
         self.probes['social']['diagnostic_events'] = 11

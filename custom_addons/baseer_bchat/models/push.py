@@ -579,6 +579,9 @@ class BChatPushEvent(models.Model):
         ids = sorted({event_id for event_id in event_ids if isinstance(event_id, int) and event_id > 0})
         if not ids:
             return True
+        # This private entry point also accepts verified writes made earlier
+        # in this transaction. Raw SQL cannot see Odoo's pending field cache.
+        self.flush_model(['state', 'next_attempt_at'])
         now = fields.Datetime.now()
         self.env.cr.execute('''
             SELECT id FROM baseer_bchat_push_event
@@ -593,6 +596,7 @@ class BChatPushEvent(models.Model):
 
     @api.model
     def _cron_dispatch(self):
+        self.flush_model(['state', 'next_attempt_at'])
         now = fields.Datetime.now()
         # Candidate discovery holds no event locks. Each independent cursor
         # below rechecks eligibility/due state with SKIP LOCKED and persists

@@ -20,17 +20,30 @@ for name in "$db" "$runner" "$probe"; do
 done
 # Preserve source/logs/stopped containers for the job; never touch another container.
 stop_ours() {
+    result=$?
+    if [ "$result" -ne 0 ]; then
+        # Metadata only: no SQL text, payload, user names or token/config data.
+        timeout --kill-after=2s 5s docker exec "$db" psql -h 127.0.0.1 -p 5432 \
+            -U bchat_test -d bchat_maturity_test_20261017 -A -F , -t -c \
+            "SELECT pid,state,wait_event_type,wait_event,pg_blocking_pids(pid),EXTRACT(EPOCH FROM (clock_timestamp()-query_start))::integer FROM pg_stat_activity WHERE datname='bchat_maturity_test_20261017' AND pid<>pg_backend_pid()" \
+            > "$ROOT/failure-db-state.log" 2>&1 || true
+        timeout --kill-after=2s 5s docker inspect --format '{{.State.OOMKilled}} {{.State.ExitCode}}' "$runner" \
+            > "$ROOT/failure-runtime-state.log" 2>&1 || true
+    fi
     for name in "$probe" "$runner" "$db"; do
-        docker stop --time 5 "$name" >/dev/null 2>&1 || true
+        timeout --kill-after=2s 8s docker stop --time 5 "$name" >/dev/null 2>&1 || true
     done
 }
 trap stop_ours EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 printf 'SOURCE_COMMIT=%s\nTEST_ROOT=%s\nODOO_IMAGE=%s\nPG_IMAGE=%s\n' "$BCHAT_SOURCE_COMMIT" "$ROOT" "$ODOO" "$PG" | tee "$ROOT/provenance.log"
 find custom_addons/baseer_bchat -type f -print0 | sort -z | xargs -0 sha256sum > "$ROOT/source.sha256"
 docker run --detach --name "$db" --network none --memory 512m --cpus .5 --pids-limit 128 \
     --security-opt no-new-privileges --tmpfs /var/lib/postgresql/data:rw,nosuid,size=384m \
     -e PGDATA=/var/lib/postgresql/data/pgdata -e POSTGRES_USER=bchat_test \
-    -e POSTGRES_DB=postgres -e POSTGRES_HOST_AUTH_METHOD=trust "$PG" >/dev/null
+    -e POSTGRES_DB=postgres -e POSTGRES_HOST_AUTH_METHOD=trust "$PG" \
+    -c statement_timeout=45000 -c lock_timeout=10000 >/dev/null
 ready=0
 for n in {1..30}; do
     if docker exec "$db" pg_isready -h 127.0.0.1 -p 5432 -U bchat_test -d postgres >/dev/null 2>&1; then ready=1; break; fi
@@ -41,6 +54,7 @@ test "$ready" = 1
 # namespace. No cron, operational database, host network, filestore or FCM access.
 common=(--network "container:$db" --read-only --memory 2048m --cpus 2 --pids-limit 256
     --security-opt no-new-privileges -e PYTHONDONTWRITEBYTECODE=1
+    -e ODOO_TEST_MAX_FAILED_TESTS=5
     --tmpfs /tmp:rw,nosuid,size=128m --tmpfs /var/lib/odoo:rw,uid=100,gid=101,size=256m
     --mount "type=bind,src=$ROOT/custom_addons/baseer_bchat,dst=/mnt/maturity/baseer_bchat,readonly"
     --entrypoint /usr/bin/odoo)
@@ -49,7 +63,7 @@ options=(--addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/maturity
     --database=bchat_maturity_test_20261017 --db-filter='^bchat_maturity_test_20261017$'
     --no-database-list --workers=0 --max-cron-threads=0 --without-demo=all)
 set +e
-timeout --signal=TERM 16m docker run --name "$runner" "${common[@]}" "$ODOO" "${options[@]}" \
+timeout --kill-after=15s --signal=TERM 16m docker run --name "$runner" "${common[@]}" "$ODOO" "${options[@]}" \
     --http-interface=127.0.0.1 --http-port=8069 --init=hr,baseer_bchat \
     --test-enable --test-tags=/baseer_bchat --stop-after-init --log-level=test \
     2>&1 | tee "$ROOT/orm.log"
@@ -60,7 +74,7 @@ test "$result" = 0
 # These probes commit synthetic fixtures and MUST be invoked explicitly; Odoo
 # discovery intentionally does not import them as TransactionCase tests.
 set +e
-timeout --signal=TERM 4m docker run --interactive --name "$probe" "${common[@]}" "$ODOO" shell \
+timeout --kill-after=15s --signal=TERM 4m docker run --interactive --name "$probe" "${common[@]}" "$ODOO" shell \
     "${options[@]}" --no-http --log-level=info \
     < "$ROOT/custom_addons/baseer_bchat/tools/run_maturity_probes.py" 2>&1 | tee "$ROOT/probes.log"
 result=${PIPESTATUS[0]}

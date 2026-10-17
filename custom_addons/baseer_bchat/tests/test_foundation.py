@@ -16,9 +16,16 @@ class BChatFoundationCase(TransactionCase):
         cls.company = cls.env.company
         cls.other_company = cls.env['res.company'].create({'name': 'BChat isolated test company'})
         cls.user = cls._make_user('user', 'baseer_bchat.group_bchat_user')
-        cls.manager = cls._make_user('manager', 'baseer_bchat.group_bchat_manager')
+        cls.role_only_manager = cls._make_user('manager-role-only', 'baseer_bchat.group_bchat_manager')
+        # Room administration deliberately belongs to the original admin,
+        # not to every account bearing the legacy manager group.
+        cls.manager = cls.env.ref('base.user_admin')
+        cls.manager.write({
+            'group_ids': [Command.link(cls.env.ref('baseer_bchat.group_bchat_manager').id)],
+            'company_ids': [Command.link(cls.other_company.id)],
+        })
         cls.other_member = cls._make_user('other', 'baseer_bchat.group_bchat_user', cls.other_company)
-        cls.other_manager = cls._make_user('other-manager', 'baseer_bchat.group_bchat_manager', cls.other_company)
+        cls.other_manager = cls.manager
         cls.plain = cls._make_user('plain', 'base.group_user')
         cls.portal = cls._make_user('portal', 'base.group_portal')
         cls.inactive = cls._make_user('inactive', 'base.group_user')
@@ -39,14 +46,15 @@ class BChatFoundationCase(TransactionCase):
 
     @classmethod
     def _make_binding(cls, label, manager, member):
-        channel = cls.env['discuss.channel'].with_user(manager).create({
+        company = member.company_id
+        channel = cls.env['discuss.channel'].with_user(manager).with_company(company).create({
             'name': 'BChat test %s group' % label,
             'channel_type': 'group',
             'channel_partner_ids': [Command.link(member.partner_id.id)],
         })
-        return cls.env['baseer.bchat.binding'].with_user(manager).with_company(manager.company_id).create({
+        return cls.env['baseer.bchat.binding'].with_user(manager).with_company(company).create({
             'name': 'BChat test %s binding' % label,
-            'company_id': manager.company_id.id,
+            'company_id': company.id,
             'channel_id': channel.id,
             'purpose': 'chat',
             'policy_reference': 'isolated-test',
@@ -86,6 +94,8 @@ class BChatFoundationCase(TransactionCase):
         self.assertFalse(self.plain.has_group('baseer_bchat.group_bchat_manager'))
         self.assertFalse(self.user.has_group('baseer_bchat.group_bchat_manager'))
         self.assertFalse(self.user.has_group('project.group_project_manager'))
+        with self.assertRaises(AccessError):
+            self._service(self.role_only_manager)._require_room_manager()
 
     def test_direct_read_acl_and_global_member_company_rules(self):
         for user in [self.user, self.plain]:

@@ -20,6 +20,10 @@ final class ZoomableImageView extends ImageView {
     private static final float MAX_ZOOM = 6f;
     private final Matrix display = new Matrix();
     private final Matrix inverse = new Matrix();
+    // View-owned scratch transforms: drawing must not allocate per frame.
+    private final Matrix detailOrientation = new Matrix();
+    private final Matrix sourceTransform = new Matrix();
+    private final Matrix tileTransform = new Matrix();
     private final RectF bounds = new RectF();
     private final float[] point = new float[2];
     private final ScaleGestureDetector pinch;
@@ -110,11 +114,11 @@ final class ZoomableImageView extends ImageView {
     }
 
     private Matrix sourceToView() {
-        Matrix source = detailInfo.orientationMatrix();
-        source.postScale(bitmap.getWidth() / (float)detailInfo.displayWidth,
+        sourceTransform.set(detailOrientation);
+        sourceTransform.postScale(bitmap.getWidth() / (float)detailInfo.displayWidth,
                 bitmap.getHeight() / (float)detailInfo.displayHeight);
-        source.postConcat(display);
-        return source;
+        sourceTransform.postConcat(display);
+        return sourceTransform;
     }
 
     private void refreshDetail() {
@@ -129,6 +133,7 @@ final class ZoomableImageView extends ImageView {
                 }
                 detailRequest = null; detailInFlight = false;
                 detailInfo = ready.info;
+                if (detailInfo != null) detailOrientation.set(detailInfo.orientationMatrix());
                 if (ready.busy || detailInfo != null) scheduleDetail();
             });
             if (detailInFlight) detailRequest = submitted;
@@ -177,14 +182,13 @@ final class ZoomableImageView extends ImageView {
         if (overviewSuppressed) return;
         super.onDraw(canvas);
         if (detailBitmap == null || detailRegion == null || detailInfo == null || bitmap == null) return;
-        Matrix tile = new Matrix();
-        tile.setScale(detailRegion.width() / (float)detailBitmap.getWidth(),
+        tileTransform.setScale(detailRegion.width() / (float)detailBitmap.getWidth(),
                 detailRegion.height() / (float)detailBitmap.getHeight());
-        tile.postTranslate(detailRegion.left, detailRegion.top);
-        tile.postConcat(sourceToView());
+        tileTransform.postTranslate(detailRegion.left, detailRegion.top);
+        tileTransform.postConcat(sourceToView());
         int saved = canvas.save();
         canvas.clipRect(0, 0, getWidth(), getHeight());
-        canvas.drawBitmap(detailBitmap, tile, detailPaint);
+        canvas.drawBitmap(detailBitmap, tileTransform, detailPaint);
         canvas.restoreToCount(saved);
     }
 

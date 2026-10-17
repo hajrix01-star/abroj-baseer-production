@@ -39,6 +39,9 @@ previews = read("app/src/main/java/com/baseer/freshchat/ImagePreviews.java")
 assert "loadConnectedDetail(" in previews and "getCanonicalFile()" in previews
 zoom = read("app/src/main/java/com/baseer/freshchat/ZoomableImageView.java")
 assert "overviewSuppressed" in zoom and "!canShowDetail()" in zoom and "onDetachedFromWindow()" in zoom
+draw = zoom[zoom.index("@Override protected void onDraw("):zoom.index("@Override protected void onDetachedFromWindow(")]
+assert "new Matrix(" not in draw and "tileTransform.postConcat(sourceToView())" in draw
+assert "sourceTransform.set(detailOrientation)" in zoom
 for mode in ("values", "values-night"):
     assert (ROOT / f"app/src/main/res/{mode}/chat_colors.xml").is_file()
 workflow = (REPO / ".github/workflows/bchat-cumulative-contracts.yml").read_text(encoding="utf-8")

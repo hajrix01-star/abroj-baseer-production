@@ -41,9 +41,10 @@ class BChatMaturityPushCase(TransactionCase):
         model = type(self.events)
         with patch.object(model, '_fcm_config', return_value={'project_id': 'synthetic-project'}), \
                 patch.object(model, '_fcm_access_token', return_value='synthetic-access-token'), \
-                patch('requests.post', return_value=response), \
+                patch('requests.post', return_value=response) as post, \
                 patch.object(push_module.random, 'random', return_value=0.0):
             self.events._dispatch_event_ids([self.event.id])
+        post.assert_called_once()
         self.event.invalidate_recordset()
         self.event.device_id.invalidate_recordset()
 
@@ -81,6 +82,7 @@ class BChatMaturityPushCase(TransactionCase):
         self._dispatch_response(400, {'error': {'status': 'INVALID_ARGUMENT'}})
         self.assertEqual(self.event.state, 'failed')
         self.assertEqual(self.event.last_error, 'invalid_payload')
+        self.assertEqual(self.event.attempts, 2)
         self.assertTrue(self.event.device_id.active)
 
 
@@ -90,11 +92,12 @@ class BChatPushRecoveryBoundaryCase(BaseCase):
         cursor = MagicMock()
         cursor.dbname = 'synthetic_isolated_database'
         cursor.fetchall.return_value = [(17,), (18,)]
-        fake_self = SimpleNamespace(env=SimpleNamespace(cr=cursor))
+        fake_self = SimpleNamespace(env=SimpleNamespace(cr=cursor), flush_model=MagicMock())
         with patch.object(push_module.time, 'monotonic', side_effect=[0, 0, 21]), \
                 patch.object(push_module, '_fast_dispatch_event') as dispatch:
             self.assertTrue(push_module.BChatPushEvent._cron_dispatch(fake_self))
         dispatch.assert_called_once_with('synthetic_isolated_database', 17)
+        fake_self.flush_model.assert_called_once_with(['state', 'next_attempt_at'])
         query = cursor.execute.call_args.args[0]
         self.assertIn('LIMIT 100', query)
         self.assertNotIn('FOR UPDATE', query)

@@ -79,6 +79,16 @@ def verify(addon, orm_log, probe_log, source_commit):
     if probes.get('database') != 'bchat_maturity_test_20261017':
         raise ValueError('Unexpected probe database')
     permissions, social = probes['permissions'], probes['social']
+    skip_locked = permissions.get('skip_locked_exclusion', {})
+    pids = skip_locked.get('initial_backend_pids', [])
+    if (len(pids) != 2 or any(type(pid) is not int or pid <= 0 for pid in pids) or len(set(pids)) != 2
+            or skip_locked.get('isolations') != ['repeatable read', 'repeatable read']
+            or skip_locked.get('statement_timeout_ms') != 3000 or skip_locked.get('lock_timeout_ms') != 2000
+            or skip_locked.get('locked_excluded') is not True or skip_locked.get('claimed_after_release') is not True
+            or skip_locked.get('provider_calls_while_locked') != 0 or skip_locked.get('provider_calls_after_release') != 1
+            or skip_locked.get('final_state') != 'sent'
+            or skip_locked.get('synthetic_fixture_removed_before_races') is not True):
+        raise ValueError('Missing genuine dispatcher SKIP LOCKED exclusion/release proof')
     if (len(permissions['phases']) != 5 or permissions['message_count'] != 1
             or permissions['task_revision'] != 2 or permissions['sequence_continuity'] is not True):
         raise ValueError('Incomplete permission/sequence proof')
@@ -89,6 +99,7 @@ def verify(addon, orm_log, probe_log, source_commit):
     phases = [list(phase.values()) for phase in permissions['phases']] + list(social['phases'].values())
     for phase in phases:
         if (len(phase) != 2 or len({row['initial_backend_pid'] for row in phase}) != 2
+                or any(type(row['initial_backend_pid']) is not int or row['initial_backend_pid'] <= 0 for row in phase)
                 or any(row.get('isolation') != 'repeatable read' or not 1 <= row['attempts'] <= 6 for row in phase)):
             raise ValueError('Each phase needs two actual independent RR transactions with bounded attempts')
     quota = social['phases']['diagnostic_distinct_devices_daily_quota']
@@ -100,7 +111,7 @@ def verify(addon, orm_log, probe_log, source_commit):
     return {
         'source_commit': source_commit, 'core_tests': len(expected), 'skipped': 0,
         'core_test_kinds': {kind: sum(value == kind for value in kinds.values()) for kind in sorted(set(kinds.values()))},
-        'real_postgres_phases': 10, 'probes': probes,
+        'real_postgres_phases': 10, 'dispatcher_skip_locked_proof': True, 'probes': probes,
         'limitations': ['Core module only; procurement bridge not executed',
                         'Synthetic DB and provider boundary; no live/OEM/FCM delivery or phone performance acceptance'],
     }

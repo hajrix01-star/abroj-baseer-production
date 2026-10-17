@@ -75,7 +75,7 @@ build_script=(root/'tools/build-apk.sh').read_text(encoding='utf-8')
 # Gradle overrides legacy source-manifest labels; it is the signed APK's version source.
 version_match = re.search(r"versionCode\s+(\d+)\b", gradle)
 assert version_match and int(version_match.group(1)) >= 73, 'BChat instant-push profile candidate requires versionCode 73 or newer'
-assert "versionName '0.7.70-qa-native-media-db-header'" in gradle
+assert "versionName '0.7.71-qa-media-journey'" in gradle
 assert "BCHAT_TRANSPORT_DIAGNOSTICS', 'false'" in gradle
 assert "BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'" in gradle
 assert 'installed.versionName' in source and 'getLongVersionCode()' in source

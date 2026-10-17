@@ -215,11 +215,13 @@
         "custom_addons/baseer_bchat/models/mobile_upload_grant.py",
         "custom_addons/baseer_bchat/data/media_cleanup_cron.xml",
         "custom_addons/baseer_bchat/tests/test_mobile_upload_grants.py",
+        "custom_addons/baseer_bchat/tests/test_native_upload_body.py",
         "custom_addons/baseer_bchat/tests_contract/test_native_media_upload_contract.py",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNativeMediaUploader.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatConnectedMediaBridge.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
-        "android/bchat/tools/test-connected-media-ui-contracts.py"
+        "android/bchat/tools/test-connected-media-ui-contracts.py",
+        "android/bchat/tools/test-connected-media-journey.py"
       ],
       "suites": ["backend-contracts", "android-source-contract", "source-structure"]
     }

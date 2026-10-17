@@ -255,6 +255,8 @@ public final class OdooIdentityActivity extends Activity {
     private int mediaUploadNonce;
     private boolean mediaUploadBusy;
     private boolean mediaConfirmBusy;
+    /** Fences a media-message dispatch waiting for the authenticated control lane. */
+    private int mediaConfirmDispatchGeneration;
     private boolean mediaReplayAfterInitialHistory;
     private Room mediaConfirmRoom;
     /** Generation fence for a read-only recovery after a lost media-message reply. */
@@ -3329,15 +3331,19 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     /**
-     * Sends only a bounded, idempotency-safe control payload in the authenticated WebView.
-     * Native media bytes never use this path: it issues a one-time capability only.
+     * Sends one bounded control payload in the authenticated WebView. Native media bytes
+     * never use this path; a media message references its already-verified server media ID.
      */
     private boolean postSmallFormDirectlyInWebView(String path, String field, String payload,
                                                    V2Callback callback) {
-        boolean supported = V2_PUSH_REGISTER.equals(path)
+        boolean mediaMessage = path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/messages");
+        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage
                 || path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/mobile-upload-grants");
         if (closed || !verified || account == null || csrfToken == null || callback == null
-                || payload == null || payload.length() > (V2_PUSH_REGISTER.equals(path) ? 8192 : 4096) || field == null
+                || payload == null || payload.length() > (mediaMessage ? 49152
+                        : V2_PUSH_REGISTER.equals(path) ? 8192 : 4096) || field == null
+                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)
+                        ? "payload".equals(field) : "metadata".equals(field))
                 || !field.matches("[a-z_]{1,32}") || !supported || webV2GetFallbackBusy
                 || v2Busy || web == null || web.getUrl() == null
                 || !isBridgeUrl(Uri.parse(web.getUrl()))) return false;
@@ -8513,7 +8519,11 @@ public final class OdooIdentityActivity extends Activity {
                         || positiveId(result.get("room_id")) != room.id
                         || positiveId(result.get("membership_id")) != room.membershipId
                         || !uploadUuid.equals(result.getString("upload_uuid"))) throw new IOException();
-                long mediaId = positiveId(result.opt("media_id"));
+                // Missing/in-flight uploads deliberately have no media_id.  Treat only an
+                // absent/null or numeric zero as unassigned; resolved IDs remain strict.
+                Object rawMediaId = result.opt("media_id");
+                long mediaId = rawMediaId == null || rawMediaId == JSONObject.NULL
+                        ? 0 : nonnegativeCursor(rawMediaId);
                 String state = result.getString("state");
                 if (mediaId > 0 && ("staged".equals(state) || "attached".equals(state))) {
                     BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry, mediaId);
@@ -8528,7 +8538,7 @@ public final class OdooIdentityActivity extends Activity {
                     handler.postDelayed(() -> reconcileNativeMediaUpload(scopedAccount, room, entry), 1500);
                     return;
                 }
-                if (!"missing".equals(state)) throw new IOException();
+                if (mediaId != 0 || !"missing".equals(state)) throw new IOException();
                 updatePendingUi();
                 showMissingNativeMediaRetry(scopedAccount, room, entry);
             } catch (Exception unavailable) {
@@ -8859,7 +8869,7 @@ public final class OdooIdentityActivity extends Activity {
     private void sendConnectedMedia(AccountScope scopedAccount, Room room,
                                     BChatConnectedMediaStore.Entry entry) {
         if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed()
-                || entry.mediaId <= 0 || v2Busy) return;
+                || entry.mediaId <= 0 || mediaConfirmBusy) return;
         try {
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
@@ -8873,13 +8883,17 @@ public final class OdooIdentityActivity extends Activity {
             if (entry.replyToMessageId > 0) payload.put("reply_to_message_id", entry.replyToMessageId);
             mediaConfirmBusy = true;
             mediaConfirmRoom = room;
+            final int dispatch = ++mediaConfirmDispatchGeneration;
             updatePendingUi();
-            fetchV2("POST", V2_ROOMS + "/" + room.id + "/messages", payload.toString(),
+            dispatchConnectedMediaMessage(scopedAccount, room, payload.toString(), dispatch,
+                    mediaSessionGeneration, 0,
                     (statusCode, result) -> {
-                        mediaConfirmBusy = false;
-                        mediaConfirmRoom = null;
+                        if (dispatch == mediaConfirmDispatchGeneration) {
+                            mediaConfirmBusy = false;
+                            mediaConfirmRoom = null;
+                        }
                         // The POST may have committed on Odoo while this Android WebView loses
-                        // its transferred reply port.  The existing media ID is a verified
+                        // its result callback.  The existing media ID is a verified
                         // server receipt, so read the room history once before the generic
                         // transport path clears the chat.  This never retries the POST.
                         if (statusCode == 0) {
@@ -8932,6 +8946,37 @@ public final class OdooIdentityActivity extends Activity {
             mediaConfirmRoom = null;
             chatNotice.setText(R.string.chat_v2_uncertain);
             updatePendingUi();
+        }
+    }
+
+    /**
+     * Wait only before dispatch.  Native upload can finish while a background GET owns the
+     * WebView; retaining this scoped intent prevents a successful upload silently stopping
+     * before message creation.  The small POST uses the direct result slot because transferred
+     * MessagePorts are unreliable on the affected device.  An uncertain dispatched POST is
+     * never repeated here: its callback reconciles authenticated history with the media ID.
+     */
+    private void dispatchConnectedMediaMessage(AccountScope scopedAccount, Room room, String payload,
+                                               int dispatch, int session, int attempt,
+                                               V2Callback callback) {
+        if (dispatch != mediaConfirmDispatchGeneration) return;
+        if (session != mediaSessionGeneration || !stillCurrent(scopedAccount, room)
+                || !mediaUploadAllowed()) {
+            mediaConfirmBusy = false;
+            mediaConfirmRoom = null;
+            updatePendingUi();
+            return;
+        }
+        if (postSmallFormDirectlyInWebView(V2_ROOMS + "/" + room.id + "/messages",
+                "payload", payload, callback)) return;
+        if (attempt < MAX_NATIVE_GRANT_CONTROL_RETRIES) {
+            handler.postDelayed(() -> dispatchConnectedMediaMessage(scopedAccount, room, payload,
+                    dispatch, session, attempt + 1, callback), NATIVE_GRANT_CONTROL_RETRY_MILLIS);
+        } else {
+            mediaConfirmBusy = false;
+            mediaConfirmRoom = null;
+            updatePendingUi();
+            chatNotice.setText(R.string.chat_v2_uncertain);
         }
     }
 

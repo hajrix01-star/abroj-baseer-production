@@ -27,7 +27,7 @@ android {
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
   // Native capability upload replaces the diagnostic-only WebView media transport.
-  versionCode 86; versionName '0.7.70-qa-native-media-db-header'
+  versionCode 87; versionName '0.7.71-qa-media-journey'
   buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
   buildConfigField 'boolean', 'BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'

@@ -156,3 +156,28 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         result = grants.with_user(SUPERUSER_ID)._cron_expire_mobile_upload_grants()
         self.assertGreaterEqual(result['purged_count'], 1)
         self.assertFalse(grant.exists())
+
+    def test_cron_expires_finished_grant_receipts_before_their_later_purge(self):
+        raw = self._image()
+        metadata, issued = self._issue(raw)
+        service = self.env['baseer.bchat.service'].with_user(self.manager)
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        resolved = grants.search([('grant_id', '=', issued['grant_id'])], limit=1)
+        media_id = service._v2_upload(self.room.id, metadata, raw)['media_id']
+        resolved._write_verified({
+            'state': 'resolved', 'media_id': media_id,
+            'result_expires_at': fields.Datetime.now() - timedelta(seconds=1),
+        }, _MOBILE_UPLOAD_GRANT_TOKEN)
+
+        denied_metadata, denied_issued = self._issue(raw, uuid=str(uuid4()))
+        denied = grants.search([('grant_id', '=', denied_issued['grant_id'])], limit=1)
+        denied._write_verified({
+            'state': 'denied', 'failure_code': 'access_revoked',
+            'result_expires_at': fields.Datetime.now() - timedelta(seconds=1),
+        }, _MOBILE_UPLOAD_GRANT_TOKEN)
+
+        result = grants.with_user(SUPERUSER_ID)._cron_expire_mobile_upload_grants()
+        resolved.invalidate_recordset(['state'])
+        denied.invalidate_recordset(['state'])
+        self.assertEqual((resolved.state, denied.state), ('expired', 'expired'))
+        self.assertGreaterEqual(result['expired_count'], 2)

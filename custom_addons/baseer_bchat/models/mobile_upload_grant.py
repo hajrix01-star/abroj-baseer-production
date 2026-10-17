@@ -372,7 +372,8 @@ class BChatMobileUploadGrant(models.Model):
             grant = row and self.sudo().browse(row[0]).exists()
             if not grant:
                 continue
-            grant.invalidate_recordset(['state', 'expires_at', 'upload_started_at'])
+            grant.invalidate_recordset(['state', 'expires_at', 'upload_started_at',
+                                       'result_expires_at'])
             if grant.state == 'issued' and grant.expires_at < now:
                 grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
                 expired_count += 1
@@ -380,6 +381,10 @@ class BChatMobileUploadGrant(models.Model):
                   and grant.upload_started_at < now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)):
                 grant._write_verified({'state': 'expired', 'failure_code': 'upload_timeout'},
                                       _MOBILE_UPLOAD_GRANT_TOKEN)
+                expired_count += 1
+            elif (grant.state in ('resolved', 'denied') and grant.result_expires_at
+                  and grant.result_expires_at < now):
+                grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
                 expired_count += 1
         purge = self.sudo().search([
             ('state', '=', 'expired'),

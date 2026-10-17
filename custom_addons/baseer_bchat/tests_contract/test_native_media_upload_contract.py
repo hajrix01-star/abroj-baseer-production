@@ -64,6 +64,7 @@ class NativeMediaUploadContractTests(unittest.TestCase):
         self.assertIn("for stale_id in stale.ids", cron)
         self.assertIn("WHERE id = %s FOR UPDATE", cron)
         self.assertIn("grant.state == 'uploading'", cron)
+        self.assertIn("grant.state in ('resolved', 'denied')", cron)
 
 
 if __name__ == '__main__':

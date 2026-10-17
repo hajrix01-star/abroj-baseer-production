@@ -599,6 +599,10 @@ class BChatMediaHttpCase(HttpCase):
         self.assertEqual((native_status.status_code, native_status.json()['media_id']), (200, native_media_id))
         self.authenticate(user.login, password)
         csrf = self.url_open('/bchat/api/v2/bootstrap').json()['csrf_token']
+        reconciled_native = self.url_open(
+            '/bchat/api/v2/rooms/%s/uploads/%s/reconcile' % (room.id, native_metadata['upload_uuid']))
+        self.assertEqual((reconciled_native.status_code, reconciled_native.json()['media_id']),
+                         (200, native_media_id))
         uploaded = self.url_open('/bchat/api/v2/rooms/%s/uploads' % room.id,
                                  data={'csrf_token': csrf, 'metadata': json.dumps(upload_metadata)},
                                  files={'file': ('multipart.png', raw, 'image/png')}, method='POST')

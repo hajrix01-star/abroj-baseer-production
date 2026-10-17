@@ -3,7 +3,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from odoo import fields
+from odoo import SUPERUSER_ID, fields
 from odoo.exceptions import AccessError
 from odoo.tests import tagged
 
@@ -68,6 +68,10 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         })
         with self.assertRaises(AccessError):
             service._v2_mobile_upload_from_capability(snapshot, raw)
+        # The HTTP boundary denies this claim after a service rejection.  This direct
+        # service test performs the equivalent cleanup before requesting a new grant.
+        grant._write_verified({'state': 'denied', 'failure_code': 'access_revoked'},
+                              _MOBILE_UPLOAD_GRANT_TOKEN)
 
         # A fresh grant can resolve normally.  Its durable receipt remains readable for the
         # result-retention window even though the short upload privilege has ended.
@@ -100,3 +104,40 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         self.assertEqual(metadata['mime'], snapshot['mime'])
         with self.assertRaises(AccessError):
             grant.write({'mime': 'application/pdf'})
+
+    def test_issue_is_bounded_and_reconcile_is_scoped_to_current_membership_epoch(self):
+        raw = self._image()
+        metadata, issued = self._issue(raw)
+        service = self.env['baseer.bchat.service'].with_user(self.manager)
+        with self.assertRaises(ProtocolError) as second_active:
+            service._v2_issue_mobile_upload_grant(self.room.id, {
+                **metadata, 'upload_uuid': str(uuid4()),
+            })
+        self.assertEqual(second_active.exception.status, 429)
+
+        # A lost grant response may be renewed for the same logical upload, but an in-flight
+        # body cannot be superseded.  The service serializes both decisions by user.
+        renewed = service._v2_issue_mobile_upload_grant(self.room.id, metadata)
+        self.assertNotEqual(issued['grant_id'], renewed['grant_id'])
+        media_id = service._v2_upload(self.room.id, metadata, raw)['media_id']
+        reconciled = service._v2_reconcile_native_upload(self.room.id, metadata['upload_uuid'])
+        self.assertEqual((reconciled['state'], reconciled['media_id']), ('staged', media_id))
+
+        self.manager_epoch.with_user(self.room_admin).with_company(self.company).action_revoke()
+        self.manager_epoch = self._join(self.manager)
+        missing = service._v2_reconcile_native_upload(self.room.id, metadata['upload_uuid'])
+        self.assertEqual((missing['state'], missing.get('media_id')), ('missing', None))
+
+    def test_expired_tombstones_are_purged_only_by_the_verified_cron(self):
+        raw = self._image()
+        _, issued = self._issue(raw)
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        grant = grants.search([('grant_id', '=', issued['grant_id'])], limit=1)
+        grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
+        self.env.cr.execute('''
+            UPDATE baseer_bchat_mobile_upload_grant
+            SET write_date = %s WHERE id = %s
+        ''', [fields.Datetime.now() - timedelta(hours=25), grant.id])
+        result = grants.with_user(SUPERUSER_ID)._cron_expire_mobile_upload_grants()
+        self.assertGreaterEqual(result['purged_count'], 1)
+        self.assertFalse(grant.exists())

@@ -113,6 +113,18 @@ checks = {
             "private void checkConnectedMediaStatus(")
         and "sendConnectedMedia(" not in body("private void checkConnectedMediaStatus(")
         and "retryConnectedMedia(" not in body("private void checkConnectedMediaStatus("),
+    "Native upload recovery polls through its deadline and survives a process response loss":
+        "response.status == 202 || response.isTransportFailure()" in body(
+            "private void checkNativeMediaUpload(")
+        and "attempt < 4" not in body("private void checkNativeMediaUpload(")
+        and "reconcileNativeMediaUpload(scopedAccount, room, entry);" in body(
+            "private void mediaUploadDeadline(")
+        and '"/uploads/" + uploadUuid + "/reconcile"' in body(
+            "private void reconcileNativeMediaUpload(")
+        and "mediaStore.markUploaded(scopedAccount, entry, mediaId);" in body(
+            "private void reconcileNativeMediaUpload(")
+        and "sendConnectedMedia(scopedAccount, room, saved);" in body(
+            "private void reconcileNativeMediaUpload("),
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":

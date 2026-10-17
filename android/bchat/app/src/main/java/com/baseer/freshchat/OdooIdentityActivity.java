@@ -8460,17 +8460,60 @@ public final class OdooIdentityActivity extends Activity {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
             boolean hasUploadedRecord = false;
+            BChatConnectedMediaStore.Entry unresolvedNativeUpload = null;
             for (BChatConnectedMediaStore.Entry entry : mediaStore.pendingForRoom(scopedAccount,
-                    room.id, room.membershipId))
+                    room.id, room.membershipId)) {
                 if (entry.mediaId > 0 && entry.policyVersion == room.invoicePolicyVersion
                         && entry.uploadBlockCode.isEmpty()) hasUploadedRecord = true;
-            if (!hasUploadedRecord) {
-                chatNotice.setText(R.string.bchat_media_status_upload_pending);
-                return;
+                if (entry.mediaId <= 0 && entry.policyVersion == room.invoicePolicyVersion
+                        && entry.uploadBlockCode.isEmpty() && unresolvedNativeUpload == null)
+                    unresolvedNativeUpload = entry;
             }
-            chatNotice.setText(R.string.bchat_media_checking);
-            recoverUncertainMediaConfirmation(scopedAccount, room);
+            if (unresolvedNativeUpload != null) {
+                reconcileNativeMediaUpload(scopedAccount, room, unresolvedNativeUpload);
+            } else if (!hasUploadedRecord) {
+                chatNotice.setText(R.string.bchat_media_status_upload_pending);
+            } else {
+                chatNotice.setText(R.string.bchat_media_checking);
+                recoverUncertainMediaConfirmation(scopedAccount, room);
+            }
         } catch (IOException unavailable) { chatNotice.setText(R.string.chat_v2_save_failed); }
+    }
+
+    /** Authenticated read only: recover a persisted native upload after response/process loss. */
+    private void reconcileNativeMediaUpload(AccountScope scopedAccount, Room room,
+                                            BChatConnectedMediaStore.Entry entry) {
+        if (!stillCurrent(scopedAccount, room) || mediaStore == null || entry == null
+                || entry.mediaId > 0 || entry.policyVersion != room.invoicePolicyVersion
+                || !entry.uploadBlockCode.isEmpty()) return;
+        String uploadUuid = entry.networkUploadUuid();
+        if (!uploadUuid.matches("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")) {
+            chatNotice.setText(R.string.bchat_media_status_upload_pending); return;
+        }
+        chatNotice.setText(R.string.bchat_media_checking);
+        String path = V2_ROOMS + "/" + room.id + "/uploads/" + uploadUuid + "/reconcile";
+        fetchV2("GET", path, null, (statusCode, result) -> {
+            if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
+            try {
+                if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2
+                        || positiveId(result.get("room_id")) != room.id
+                        || positiveId(result.get("membership_id")) != room.membershipId
+                        || !uploadUuid.equals(result.getString("upload_uuid"))) throw new IOException();
+                long mediaId = positiveId(result.opt("media_id"));
+                String state = result.getString("state");
+                if (mediaId > 0 && ("staged".equals(state) || "attached".equals(state))) {
+                    BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry, mediaId);
+                    sendConnectedMedia(scopedAccount, room, saved);
+                    return;
+                }
+                if (!"missing".equals(state)) throw new IOException();
+                updatePendingUi();
+                chatNotice.setText(R.string.bchat_media_status_upload_pending);
+            } catch (Exception unavailable) {
+                updatePendingUi();
+                chatNotice.setText(R.string.chat_v2_uncertain);
+            }
+        });
     }
 
     private void discardConnectedMedia(AccountScope scope, Room room,
@@ -8588,12 +8631,13 @@ public final class OdooIdentityActivity extends Activity {
         if (mediaNativeUpload != null) { mediaNativeUpload.cancel(); mediaNativeUpload = null; }
     }
 
-    private void mediaUploadDeadline(int request, AccountScope scopedAccount, Room room) {
+    private void mediaUploadDeadline(int request, AccountScope scopedAccount, Room room,
+                                     BChatConnectedMediaStore.Entry entry) {
         if (mediaUploadTimeout != null) handler.removeCallbacks(mediaUploadTimeout);
         mediaUploadTimeout = () -> {
             if (request != mediaUploadNonce || !mediaUploadBusy) return;
             closeMediaUpload();
-            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+            if (stillCurrent(scopedAccount, room)) reconcileNativeMediaUpload(scopedAccount, room, entry);
         };
         handler.postDelayed(mediaUploadTimeout, 90000);
     }
@@ -8608,7 +8652,7 @@ public final class OdooIdentityActivity extends Activity {
         final int request = ++mediaUploadNonce;
         final String path = V2_ROOMS + "/" + room.id + "/mobile-upload-grants";
         chatNotice.setText(R.string.bchat_media_uploading);
-        mediaUploadDeadline(request, scopedAccount, room);
+        mediaUploadDeadline(request, scopedAccount, room, entry);
         if (!postSmallFormDirectlyInWebView(path, "metadata", entry.uploadMetadata().toString(),
                 (statusCode, result) -> beginNativeMediaUpload(request, scopedAccount, room, entry,
                         staged, statusCode, result))) {
@@ -8667,9 +8711,9 @@ public final class OdooIdentityActivity extends Activity {
             handler.post(() -> {
                 if (closed || request != mediaUploadNonce || !mediaUploadBusy
                         || !stillCurrent(scopedAccount, room)) return;
-                if (response.status == 202 && attempt < 4) {
+                if (response.status == 202 || response.isTransportFailure()) {
                     handler.postDelayed(() -> checkNativeMediaUpload(request, scopedAccount, room, entry,
-                            grantId, secret, attempt + 1), 500);
+                            grantId, secret, attempt + 1), 1000);
                 } else applyNativeMediaResult(request, scopedAccount, room, entry, response, attempt);
             });
         });

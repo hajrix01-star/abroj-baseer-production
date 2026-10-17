@@ -7,12 +7,15 @@ from datetime import timedelta
 from odoo import SUPERUSER_ID, api, fields, models
 from odoo.exceptions import AccessError
 
-from ..contracts import ProtocolError, positive_id
+from ..contracts import ProtocolError, canonical_uuid, positive_id
 
 
 _MOBILE_UPLOAD_GRANT_TOKEN = object()
 _GRANT_ID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
 _SECRET_RE = re.compile(r'^[A-Za-z0-9_-]{43,128}$')
+_UPLOAD_LEASE_SECONDS = 90
+_TOMBSTONE_RETENTION_HOURS = 24
+_MAX_ACTIVE_GRANTS_PER_USER = 1
 
 
 class BChatMobileUploadGrant(models.Model):
@@ -62,6 +65,10 @@ class BChatMobileUploadGrant(models.Model):
             CREATE INDEX IF NOT EXISTS baseer_bchat_mobile_upload_grant_cleanup_idx
             ON baseer_bchat_mobile_upload_grant (state, expires_at, result_expires_at, id)
         ''')
+        self.env.cr.execute('''
+            CREATE INDEX IF NOT EXISTS baseer_bchat_mobile_upload_grant_purge_idx
+            ON baseer_bchat_mobile_upload_grant (write_date, id) WHERE state = 'expired'
+        ''')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -72,6 +79,46 @@ class BChatMobileUploadGrant(models.Model):
         if token is not _MOBILE_UPLOAD_GRANT_TOKEN:
             raise AccessError(self.env._('A verified BChat service operation is required.'))
         return super(BChatMobileUploadGrant, self.sudo()).create(vals)
+
+    @api.model
+    def _issue_verified(self, vals, token):
+        """Issue one scoped capability without racing an upload already in flight.
+
+        The advisory lock is per user rather than just per UUID: it bounds a compromised
+        session to the same single active native body that the Android UI can produce.
+        It is held only during issuance, never during a file stream.
+        """
+        if token is not _MOBILE_UPLOAD_GRANT_TOKEN:
+            raise AccessError(self.env._('A verified BChat service operation is required.'))
+        user_id = positive_id(vals.get('user_id'), 'user_id')
+        upload_uuid = canonical_uuid(vals.get('upload_uuid'))
+        now = fields.Datetime.now()
+        self.env.cr.execute('SELECT pg_advisory_xact_lock(%s)', [user_id])
+        self.env.cr.execute('''
+            SELECT id FROM baseer_bchat_mobile_upload_grant
+            WHERE user_id = %s AND state IN ('issued', 'uploading')
+            ORDER BY id FOR UPDATE
+        ''', [user_id])
+        active = self.sudo().browse([row[0] for row in self.env.cr.fetchall()]).exists()
+        for grant in active:
+            if grant.state == 'issued' and grant.expires_at < now:
+                grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
+            elif (grant.state == 'uploading' and grant.upload_started_at
+                  and grant.upload_started_at < now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)):
+                grant._write_verified({'state': 'expired', 'failure_code': 'upload_timeout'},
+                                      _MOBILE_UPLOAD_GRANT_TOKEN)
+        active.invalidate_recordset(['state', 'upload_started_at', 'expires_at'])
+        active = active.filtered(lambda grant: grant.state in ('issued', 'uploading'))
+        same_upload = active.filtered(lambda grant: grant.upload_uuid == upload_uuid)
+        if same_upload:
+            grant = same_upload[0]
+            if grant.state == 'uploading':
+                raise ProtocolError('upload_in_progress', 'This media upload is already in progress.', 409)
+            grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
+            active -= grant
+        if len(active) >= _MAX_ACTIVE_GRANTS_PER_USER:
+            raise ProtocolError('upload_in_progress', 'Another media upload is already in progress.', 429)
+        return self._create_verified(vals, _MOBILE_UPLOAD_GRANT_TOKEN)
 
     def _write_verified(self, vals, token):
         allowed = {'state', 'media_id', 'failure_code', 'upload_started_at', 'result_expires_at'}
@@ -84,6 +131,11 @@ class BChatMobileUploadGrant(models.Model):
 
     def unlink(self):
         raise AccessError(self.env._('BChat upload capabilities cannot be deleted directly.'))
+
+    def _purge_verified(self, token):
+        if token is not _MOBILE_UPLOAD_GRANT_TOKEN or any(grant.state != 'expired' for grant in self):
+            raise AccessError(self.env._('A verified BChat cleanup operation is required.'))
+        return super(BChatMobileUploadGrant, self.sudo()).unlink()
 
     def copy_data(self, default=None):
         raise AccessError(self.env._('BChat upload capabilities cannot be copied.'))
@@ -178,7 +230,7 @@ class BChatMobileUploadGrant(models.Model):
             grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
             raise ProtocolError('grant_expired', 'The upload capability is no longer usable.', 410)
         elif (grant.state == 'uploading' and grant.upload_started_at
-              and grant.upload_started_at < now - timedelta(minutes=5)):
+              and grant.upload_started_at < now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)):
             grant._write_verified({'state': 'expired', 'failure_code': 'upload_timeout'},
                                   _MOBILE_UPLOAD_GRANT_TOKEN)
             raise ProtocolError('grant_expired', 'The upload capability is no longer usable.', 410)
@@ -188,6 +240,26 @@ class BChatMobileUploadGrant(models.Model):
         if grant.state in ('expired', 'denied'):
             raise ProtocolError('grant_%s' % grant.state,
                                 'The upload capability is no longer usable.', 410)
+        return grant._snapshot()
+
+    @api.model
+    def _ensure_claim_current(self, snapshot):
+        """Fence a body that outlived its short server-side upload lease before persisting it."""
+        if not isinstance(snapshot, dict):
+            raise ProtocolError('invalid_capability', 'The upload capability is invalid.', 401)
+        grant_id = positive_id(snapshot.get('id'), 'grant_id')
+        self.env.cr.execute('SELECT id FROM baseer_bchat_mobile_upload_grant WHERE id = %s FOR UPDATE',
+                            [grant_id])
+        grant = self.sudo().browse(grant_id).exists()
+        if (not grant or grant.grant_id != snapshot.get('grant_id')
+                or grant.state != 'uploading'):
+            raise ProtocolError('grant_expired', 'The upload capability is no longer usable.', 410)
+        now = fields.Datetime.now()
+        if (not grant.upload_started_at
+                or grant.upload_started_at < now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)):
+            grant._write_verified({'state': 'expired', 'failure_code': 'upload_timeout'},
+                                  _MOBILE_UPLOAD_GRANT_TOKEN)
+            raise ProtocolError('grant_expired', 'The upload capability is no longer usable.', 410)
         return grant._snapshot()
 
     @api.model
@@ -216,19 +288,6 @@ class BChatMobileUploadGrant(models.Model):
             }, _MOBILE_UPLOAD_GRANT_TOKEN)
 
     @api.model
-    def _expire_active_for_issue(self, user_id, upload_uuid):
-        """One active capability per logical upload; never supersede a body in flight."""
-        active = self.sudo().search([
-            ('user_id', '=', user_id), ('upload_uuid', '=', upload_uuid),
-            ('state', 'in', ('issued', 'uploading')),
-        ], order='id desc', limit=1)
-        if not active:
-            return
-        if active.state == 'uploading':
-            raise ProtocolError('upload_in_progress', 'This media upload is already in progress.', 409)
-        active._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
-
-    @api.model
     def _cron_expire_mobile_upload_grants(self, limit=100):
         if self.env.uid != SUPERUSER_ID:
             raise AccessError(self.env._('A service account is required.'))
@@ -238,7 +297,8 @@ class BChatMobileUploadGrant(models.Model):
         stale = self.sudo().search([
             '|', '|', '|',
             '&', ('state', '=', 'issued'), ('expires_at', '<', now),
-            '&', ('state', '=', 'uploading'), ('upload_started_at', '<', now - timedelta(minutes=5)),
+            '&', ('state', '=', 'uploading'),
+                 ('upload_started_at', '<', now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)),
             '&', ('state', '=', 'resolved'), ('result_expires_at', '<', now),
             '&', ('state', '=', 'denied'), ('result_expires_at', '<', now),
         ], order='id', limit=limit)
@@ -246,4 +306,9 @@ class BChatMobileUploadGrant(models.Model):
             values = {'state': 'expired'}
             if grant.state == 'uploading': values['failure_code'] = 'upload_timeout'
             grant._write_verified(values, _MOBILE_UPLOAD_GRANT_TOKEN)
-        return {'api_version': 2, 'expired_count': len(stale)}
+        purge = self.sudo().search([
+            ('state', '=', 'expired'),
+            ('write_date', '<', now - timedelta(hours=_TOMBSTONE_RETENTION_HOURS)),
+        ], order='write_date, id', limit=limit)
+        purge._purge_verified(_MOBILE_UPLOAD_GRANT_TOKEN)
+        return {'api_version': 2, 'expired_count': len(stale), 'purged_count': len(purge)}

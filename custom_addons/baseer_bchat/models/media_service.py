@@ -12,7 +12,7 @@ from odoo import SUPERUSER_ID, api, fields, models
 from odoo.exceptions import AccessError
 
 from .. import media_contracts
-from ..contracts import ProtocolError, positive_id
+from ..contracts import ProtocolError, canonical_uuid, positive_id
 from .media import _MEDIA_TOKEN
 from .mobile_upload_grant import _MOBILE_UPLOAD_GRANT_TOKEN
 
@@ -32,10 +32,9 @@ class BChatMediaService(models.AbstractModel):
         if member.id != normalized['membership_id']:
             raise ProtocolError('membership_changed', 'The room membership period changed.', 409)
         grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
-        grants._expire_active_for_issue(self.env.uid, normalized['upload_uuid'])
         secret = secrets.token_urlsafe(32)
         now = fields.Datetime.now()
-        grant = grants._create_verified({
+        grant = grants._issue_verified({
             'grant_id': str(uuid.uuid4()),
             'secret_hash': hashlib.sha256(secret.encode('ascii')).hexdigest(),
             'user_id': self.env.uid, 'company_id': room.company_id.id, 'room_id': room.id,
@@ -54,6 +53,7 @@ class BChatMediaService(models.AbstractModel):
         """Recheck all room rights at redemption, then reuse the verified v2 upload path."""
         if not isinstance(snapshot, dict):
             raise ProtocolError('invalid_capability', 'The upload capability is invalid.', 401)
+        self.env['baseer.bchat.mobile.upload.grant']._ensure_claim_current(snapshot)
         room_id = positive_id(snapshot.get('room_id'), 'room_id')
         metadata = {
             'api_version': 2, 'membership_id': positive_id(snapshot.get('membership_id'), 'membership_id'),
@@ -64,6 +64,27 @@ class BChatMediaService(models.AbstractModel):
         # _v2_upload calls _v2_upload_scope again: permissions, active user, company, room and
         # membership are deliberately re-evaluated after the byte stream has arrived.
         return self._v2_upload(room_id, metadata, raw)
+
+    @api.model
+    def _v2_reconcile_native_upload(self, room_id, upload_uuid):
+        """Return only this member epoch's persisted media after a lost native response."""
+        self._require_bchat_permission('chat_send')
+        self._require_bchat_permission('media')
+        room = self._v2_lock_room(room_id)
+        member = self._v2_current_member(room)
+        upload_uuid = canonical_uuid(upload_uuid)
+        media = self.env['baseer.bchat.media'].sudo().search([
+            ('room_id', '=', room.id), ('company_id', '=', room.company_id.id),
+            ('membership_id', '=', member.id), ('author_user_id', '=', self.env.uid),
+            ('upload_uuid', '=', upload_uuid), ('state', 'in', ('staged', 'attached')),
+        ], limit=1)
+        payload = {
+            'api_version': 2, 'room_id': room.id, 'membership_id': member.id,
+            'upload_uuid': upload_uuid, 'state': 'missing',
+        }
+        if media:
+            payload.update({'media_id': media.id, 'state': media.state})
+        return payload
 
     @api.model
     def _v2_upload_scope(self, room_id, metadata):

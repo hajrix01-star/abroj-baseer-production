@@ -91,6 +91,17 @@ class BChatMediaApi(http.Controller):
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/rooms/<int:room_id>/uploads/<string:upload_uuid>/reconcile',
+                type='http', auth='user', methods=['GET'], csrf=False, save_session=True)
+    def reconcile_mobile_upload(self, room_id, upload_uuid, **kwargs):
+        """Session-authenticated read for a persisted local upload UUID after process loss."""
+        try:
+            if request.httprequest.args:
+                raise ProtocolError('invalid_payload', 'Unexpected query fields.')
+            return self._json(self._service()._v2_reconcile_native_upload(room_id, upload_uuid))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/mobile-upload-grants/<string:grant_id>', type='http', auth='none',
                 methods=['GET'], csrf=False, save_session=False)
     def native_upload_status(self, grant_id, **kwargs):
@@ -121,7 +132,10 @@ class BChatMediaApi(http.Controller):
             if (incoming.content_type.split(';', 1)[0].strip().lower() != snapshot['mime']
                     or incoming.content_length is None or incoming.content_length != snapshot['size']):
                 raise ProtocolError('invalid_payload', 'The native upload body does not match its capability.')
-            raw = incoming.stream.read(snapshot['size'] + 1)
+            try:
+                raw = incoming.stream.read(snapshot['size'] + 1)
+            except Exception as interrupted:
+                raise ProtocolError('upload_interrupted', 'The native upload stream was interrupted.', 408) from interrupted
             if len(raw) != snapshot['size']:
                 raise ProtocolError('invalid_payload', 'The native upload body is incomplete.')
             service = request.env['baseer.bchat.service'].with_user(snapshot['user_id']).with_context({

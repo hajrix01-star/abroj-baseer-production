@@ -6,7 +6,7 @@ case "$ROOT" in /tmp/bchat-maturity-20261017-*) ;; *) echo 'Refusing non-test ro
 test -f "$ROOT/custom_addons/baseer_bchat/__manifest__.py"
 [[ "${BCHAT_SOURCE_COMMIT:-}" =~ ^[0-9a-f]{40}$ ]] || { echo 'Frozen commit required' >&2; exit 2; }
 ODOO='odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd'
-PG='postgres@sha256:f1c3376c26f2609abf29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94'
+PG='postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94'
 suffix="${ROOT##*/}"
 db="${suffix}-db"
 runner="${suffix}-orm"

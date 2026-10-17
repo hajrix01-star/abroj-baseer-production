@@ -313,12 +313,14 @@
         "custom_addons/baseer_bchat/tools/run_maturity_isolated.sh",
         "custom_addons/baseer_bchat/tools/check_maturity_evidence.py",
         "custom_addons/baseer_bchat/tools/run_maturity_probes.py",
+        "android/bchat/tools/test-bchat-user-permissions.py",
         "android/bchat/app/src/main/java/com/baseer/freshchat/MediaRights.java",
         "android/bchat/tests/MediaRightsTest.java"
       ],
       "suites": [
         "backend-contracts",
-        "source-structure"
+        "source-structure",
+        "android-source-contract"
       ]
     },
     {

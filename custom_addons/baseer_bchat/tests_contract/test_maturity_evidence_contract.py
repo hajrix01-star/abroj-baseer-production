@@ -3,6 +3,7 @@ from copy import deepcopy
 import importlib.util
 import json
 from pathlib import Path
+import re
 import unittest
 
 
@@ -13,6 +14,19 @@ spec.loader.exec_module(gate)
 
 
 class MaturityEvidenceGateTests(unittest.TestCase):
+    def test_isolated_images_are_valid_sha256_and_match_the_existing_project_pin(self):
+        workflow = (ADDON.parents[1] / '.github/workflows/bchat-cumulative-contracts.yml').read_text(encoding='utf-8')
+        runner = (ADDON / 'tools/run_maturity_isolated.sh').read_text(encoding='utf-8')
+        existing = (ADDON.parents[1] / '.github/workflows/test-baseer-aged-receivable.yml').read_text(encoding='utf-8')
+        images = re.findall(r'(?:odoo|postgres)@sha256:[0-9a-f]+', workflow)
+        self.assertEqual(len(images), 3)  # Native body plus isolated Odoo/PG.
+        for image in images:
+            self.assertRegex(image, r'@sha256:[0-9a-f]{64}$')
+            self.assertIn(image, runner)
+        postgres = next(image for image in images if image.startswith('postgres@'))
+        self.assertIn(postgres, existing)
+        self.assertIn('preparation.log', workflow)
+
     def setUp(self):
         expected, _kinds = gate.expected_tests(ADDON)
         self.lines = ['INFO fixture odoo.addons.baseer_bchat.tests.%s: Starting %s ...' % key for key in sorted(expected)]

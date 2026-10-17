@@ -91,8 +91,9 @@ jobs:
           git archive --format=tar HEAD custom_addons/baseer_bchat | tar -x -C "$fixture_root"
           printf 'root=%s\n' "$fixture_root" >> "$GITHUB_OUTPUT"
           printf 'BCHAT_SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          docker pull odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
-          docker pull postgres@sha256:f1c3376c26f2609abf29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+          printf 'SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)" > "$fixture_root/preparation.log"
+          docker pull odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd 2>&1 | tee -a "$fixture_root/preparation.log"
+          docker pull postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94 2>&1 | tee -a "$fixture_root/preparation.log"
 
       - name: Run every core regression and both explicit concurrency probes
         shell: bash

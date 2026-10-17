@@ -75,6 +75,7 @@ jobs:
           python3 android/bchat/tools/test-notification-messaging.py
           python3 android/bchat/tools/test-push-routing-state.py
           python3 android/bchat/tools/test-notification-rights-reset.py
+          python3 android/bchat/tools/test-room-preferences-protocol.py
           python3 android/bchat/tools/test-appearance-foundations.py
 
   isolated-core-orm:

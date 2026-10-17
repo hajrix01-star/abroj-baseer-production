@@ -577,8 +577,8 @@
       ],
       "owner": "الخادم و Android",
       "status": "in_progress",
-      "implementationEvidence": "Private per-membership mute/pin/archive service with revision CAS and dispatch-time mute recheck; Android UI pending",
-      "verificationEvidence": "Core180 PASS CI39063628834 includes preference ORM; actual absent-row CAS returns one accepted/one409; Android UI pending",
+      "implementationEvidence": "Private per-membership mute/pin/archive service with revision CAS and dispatch-time mute recheck. Android immutable RoomPreferencesProtocol validates exact native types/UTC/UUID, fixed8field replay payloads, current-epoch binding, ACK operation revision and monotone snapshot merge. No deviceclock expiry or manufactured freshness. Store/controller/HTTP/FCM integration and Android UI pending",
+      "verificationEvidence": "Backend included accepted202 checkpoint CI39071574755; actual absent-row CAS oneaccepted/one409 retained. Protocol935BDA6D independent source/component GO:363JVM semantic JSONObject-adapter checks separate from414 actualAndroid35 (363shared+51rawJSONtext).10/10native inputs matched; Firebaseproductjavac14s and currentAndroidsource/structure/guardintegrityPASS. No storage/controller/auth/HTTP/FCM/UI/completeC17acceptance; caller owns currentGET freshness and rights",
       "acceptance": "تفضيل المستخدم لا يغير غيره، ويستمر وفق العقد دون حذف تاريخ."
     },
     {
@@ -727,9 +727,9 @@
         "C00"
       ],
       "owner": "الأداء والجودة",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Isolated noInternet harness compiles full tracked2570 Activity/Views/SQLite with synthetic reflection fixture. Initial diagnostic retained nativeForm alongside chatRoot: timeline height0 with IME259px; pending UUID was in durableSQLite/localTextRows/adapter, not proof of ownership or auto-scroll defect. Fixture-only showShell correction independently reviewed; no C11 product change",
+      "verificationEvidence": "Initial18 and diagnostic108 harness assertions are NOT a valid full-chat-layout performance baseline. Independent GO for one corrected frozen run: instrumentation7BD34D07/tool6A91AAA0, manifest9CF4C4FC and standalone test APK B08F281E. Exact compiled inputs verified before/after; current HEAD may differ but provenance must distinguish compiled2570. Corrected result not yet accepted; no phone/FCM/network/codec/audio/SLA or product APK acceptance",
       "acceptance": "قياس أجهزة فعلية موثق قبل وبعد؛ لا تسجيل لمحتوى الرسائل ولا ادعاء FPS من المصدر."
     },
     {

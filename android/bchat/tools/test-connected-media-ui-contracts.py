@@ -153,10 +153,26 @@ checks = {
         "mediaIo.execute" in body("private void readConnectedMedia(")
         and "mediaIo.execute" in body("private void beginNativeMediaUpload(")
         and "BChatNativeMediaUploader.upload" in body("private void beginNativeMediaUpload(")
-        and "postSmallFormDirectlyInWebView(path, \"metadata\"" in body(
+        and "String metadata = entry.uploadMetadata().toString();" in body(
+            "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
+        and "requestNativeMediaGrant(request, scopedAccount, room, entry, staged, metadata, 0, 0);" in body(
             "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
         and "bchat-media-upload" not in source
         and "BChatConnectedMediaBridge.uploadScript" not in source,
+    "Native grant waits for a busy control lane and renews only the small capability request":
+        "MAX_NATIVE_GRANT_DISPATCHES = 3" in source
+        and "MAX_NATIVE_GRANT_CONTROL_RETRIES = 40" in source
+        and "!v2Busy && !webV2GetFallbackBusy" in body("private void requestNativeMediaGrant(")
+        and "NATIVE_GRANT_CONTROL_RETRY_MILLIS" in body("private void requestNativeMediaGrant(")
+        and "postSmallFormDirectlyInWebView(path, \"metadata\"" in body(
+            "private void requestNativeMediaGrant(")
+        and "BChatNativeMediaUploader.upload" not in body("private void requestNativeMediaGrant(")
+        and "statusCode == 0 && dispatchedAttempts < MAX_NATIVE_GRANT_DISPATCHES" in body(
+            "private void beginNativeMediaUpload(")
+        and "metadata, dispatchedAttempts, controlRetries);" in body(
+            "private void beginNativeMediaUpload(")
+        and "metadata, dispatchedAttempts, 0);" not in body(
+            "private void beginNativeMediaUpload("),
 }
 
 for label, passed in checks.items():

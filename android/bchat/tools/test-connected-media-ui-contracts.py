@@ -48,7 +48,13 @@ checks = {
         and "mediaStore.acknowledge(scopedAccount, pending);" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
     "Known uploaded media is replayed idempotently when its room opens":
-        "replayKnownConnectedMedia(account, room);" in body(
+        "handler.post(() -> replayKnownConnectedMedia(scopedAccount, room));" in body(
+            "private void loadMessages(long beforeId)")
+        and "reconcilePendingMediaFromVerifiedHistory(account, room, validated);" in body(
+            "private void loadMessages(long beforeId)")
+        and "if (mediaReplayAfterInitialHistory)" in body(
+            "private void loadMessages(long beforeId)")
+        and "mediaReplayAfterInitialHistory = true;" in body(
             "private void selectRoom(Room room, long notifiedMessageId)")
         and "entry.mediaId <= 0" in body("private void replayKnownConnectedMedia(")
         and "sendConnectedMedia(scopedAccount, room, entry);" in body(

@@ -215,6 +215,7 @@ def run_android_source_contract() -> None:
         "android/bchat/tools/test-orders-ui-contracts.py",
         "android/bchat/tools/test-bchat-user-permissions.py",
         "android/bchat/tools/test-connected-media-ui-contracts.py",
+        "android/bchat/tools/test-connected-media-journey.py",
         "android/bchat/tools/test-verified-read-fallback.py",
         "android/bchat/tools/test-login-brand-contracts.py",
     ):

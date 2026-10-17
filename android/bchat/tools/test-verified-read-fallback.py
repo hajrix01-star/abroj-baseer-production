@@ -112,7 +112,7 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         screen = method('buildScreen')
         self.assertIn('bchat_login_release_footer', screen)
         self.assertIn('installedBChatReleaseName()', screen)
-        self.assertIn("versionCode 86; versionName '0.7.70-qa-native-media-db-header'", GRADLE)
+        self.assertIn("versionCode 87; versionName '0.7.71-qa-media-journey'", GRADLE)
 
     def test_recovery_candidate_disables_diagnostic_ui(self):
         self.assertIn("BCHAT_TRANSPORT_DIAGNOSTICS', 'false'", GRADLE)

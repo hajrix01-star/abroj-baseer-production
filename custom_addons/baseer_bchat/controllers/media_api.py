@@ -2,6 +2,7 @@
 from urllib.parse import quote
 
 from psycopg2.extensions import TransactionRollbackError
+from werkzeug.exceptions import ClientDisconnected
 
 from odoo import http
 from odoo.exceptions import AccessError
@@ -135,8 +136,11 @@ class BChatMediaApi(http.Controller):
                     or incoming.content_length is None or incoming.content_length != snapshot['size']):
                 raise ProtocolError('invalid_payload', 'The native upload body does not match its capability.')
             try:
-                raw = incoming.stream.read(snapshot['size'] + 1)
-            except Exception as interrupted:
+                # Odoo's HTTPRequest deliberately exposes get_data(), not Werkzeug's
+                # stream attribute. Content-Length has already been matched to the
+                # capability and the route enforces MAX_UPLOAD_LIMIT before this read.
+                raw = incoming.get_data(cache=False)
+            except (OSError, ClientDisconnected) as interrupted:
                 raise ProtocolError('upload_interrupted', 'The native upload stream was interrupted.', 408) from interrupted
             if len(raw) != snapshot['size']:
                 raise ProtocolError('invalid_payload', 'The native upload body is incomplete.')

@@ -257,6 +257,8 @@ public final class OdooIdentityActivity extends Activity {
     private boolean mediaConfirmBusy;
     private boolean mediaReplayAfterInitialHistory;
     private Room mediaConfirmRoom;
+    /** Generation fence for a read-only recovery after a lost media-message reply. */
+    private int mediaConfirmRecoveryGeneration;
     private AccountScope mediaPickerAccount;
     private Room mediaPickerRoom;
     private int mediaPickerGeneration;
@@ -8730,6 +8732,14 @@ public final class OdooIdentityActivity extends Activity {
                     (statusCode, result) -> {
                         mediaConfirmBusy = false;
                         mediaConfirmRoom = null;
+                        // The POST may have committed on Odoo while this Android WebView loses
+                        // its transferred reply port.  The existing media ID is a verified
+                        // server receipt, so read the room history once before the generic
+                        // transport path clears the chat.  This never retries the POST.
+                        if (statusCode == 0) {
+                            recoverUncertainMediaConfirmation(scopedAccount, room);
+                            return;
+                        }
                         if (handleV2TransportFailure(statusCode, true)) return;
                         try {
                             if (statusCode != 200 && statusCode != 201) throw new IOException("Media send denied");
@@ -8770,6 +8780,40 @@ public final class OdooIdentityActivity extends Activity {
             chatNotice.setText(R.string.chat_v2_uncertain);
             updatePendingUi();
         }
+    }
+
+    /**
+     * A media send with a lost response is an uncertain write: retain the local file until
+     * authenticated history proves the exact media ID belongs to this account.  Unlike the
+     * generic failure path this keeps the visible room alive long enough for the direct GET
+     * fallback to reconcile it; it never sends another message.
+     */
+    private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room) {
+        final int recovery = ++mediaConfirmRecoveryGeneration;
+        recoverUncertainMediaConfirmation(scopedAccount, room, recovery, 0);
+    }
+
+    private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,
+                                                    int recovery, int attempt) {
+        handler.postDelayed(() -> {
+            if (recovery != mediaConfirmRecoveryGeneration || !stillCurrent(scopedAccount, room)
+                    || mediaStore == null) return;
+            try {
+                BChatConnectedMediaStore.Entry pending = mediaStore.pending(scopedAccount,
+                        room.id, room.membershipId);
+                if (pending == null || pending.mediaId <= 0) return;
+            } catch (IOException unavailable) {
+                return;
+            }
+            if (v2Busy) {
+                if (attempt < 2)
+                    recoverUncertainMediaConfirmation(scopedAccount, room, recovery, attempt + 1);
+                return;
+            }
+            // loadMessages validates the authenticated history and calls the exact-ID
+            // reconciliation helper; an absent message remains pending for explicit review.
+            loadMessages(0);
+        }, attempt == 0 ? 180L : 360L);
     }
 
     private void retryPending() {

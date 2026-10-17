@@ -634,17 +634,15 @@ public final class OdooIdentityActivity extends Activity {
         signIn.setEnabled(false);
         signIn.setOnClickListener(v -> submitLogin());
         fields.addView(signIn, fieldSize(12));
-        View footerSpacer = new View(this);
-        fields.addView(footerSpacer, new LinearLayout.LayoutParams(-1, 0, 1));
         View footerDivider = Ui.line(this);
-        fields.addView(footerDivider, fieldSize(16));
+        fields.addView(footerDivider, fieldSize(20));
         TextView releaseFooter = new TextView(this);
         releaseFooter.setText(getString(R.string.bchat_login_release_footer,
                 installedBChatReleaseName(), getString(R.string.bchat_login_release_date)));
         releaseFooter.setTextSize(12);
         releaseFooter.setTextColor(0xff64748b);
         releaseFooter.setGravity(Gravity.CENTER);
-        fields.addView(releaseFooter, fieldSize(10));
+        fields.addView(releaseFooter, fieldSize(8));
         layout.addView(nativeForm, new LinearLayout.LayoutParams(-1, 0, 1));
 
         shell = new LinearLayout(this);

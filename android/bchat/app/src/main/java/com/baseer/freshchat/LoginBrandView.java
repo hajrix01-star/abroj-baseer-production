@@ -1,6 +1,5 @@
 package com.baseer.freshchat;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,15 +8,12 @@ import android.graphics.RadialGradient;
 import android.graphics.Shader;
 import android.view.Gravity;
 import android.view.View;
-import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
 
-/** Login-only presentation of the canonical B mark. The identity asset is never recolored or replaced. */
+/** Login-only presentation of the canonical B mark with one quiet ambient shadow. */
 final class LoginBrandView extends FrameLayout {
-    private static final long FLOAT_CYCLE_MILLIS = 2600L;
     private final EntryMarkView mark;
     private final ShadowView shadow;
-    private ValueAnimator floatAnimator;
 
     LoginBrandView(Context context) {
         super(context);
@@ -28,9 +24,9 @@ final class LoginBrandView extends FrameLayout {
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
 
         shadow = new ShadowView(context);
-        LayoutParams shadowSize = new LayoutParams(Ui.dp(context, 104), Ui.dp(context, 18),
+        LayoutParams shadowSize = new LayoutParams(Ui.dp(context, 96), Ui.dp(context, 12),
                 Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
-        shadowSize.bottomMargin = Ui.dp(context, 8);
+        shadowSize.bottomMargin = Ui.dp(context, 9);
         addView(shadow, shadowSize);
 
         mark = new EntryMarkView(context);
@@ -41,53 +37,7 @@ final class LoginBrandView extends FrameLayout {
                 Gravity.CENTER_HORIZONTAL | Gravity.TOP);
         markSize.topMargin = Ui.dp(context, 2);
         addView(mark, markSize);
-        setRestingState();
-    }
-
-    @Override public void onVisibilityAggregated(boolean isVisible) {
-        super.onVisibilityAggregated(isVisible);
-        if (isVisible) startFloating(); else stopFloating();
-    }
-
-    @Override protected void onDetachedFromWindow() {
-        stopFloating();
-        super.onDetachedFromWindow();
-    }
-
-    private void startFloating() {
-        if (floatAnimator != null) return;
-        if (!ValueAnimator.areAnimatorsEnabled()) {
-            setRestingState();
-            return;
-        }
-        final float liftDistance = Ui.dp(getContext(), 6);
-        floatAnimator = ValueAnimator.ofFloat(0f, 1f, 0f);
-        floatAnimator.setDuration(FLOAT_CYCLE_MILLIS);
-        floatAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        floatAnimator.setInterpolator(new PathInterpolator(.37f, 0f, .63f, 1f));
-        floatAnimator.addUpdateListener(animation -> {
-            float lift = (float) animation.getAnimatedValue();
-            mark.setTranslationY(-liftDistance * lift);
-            shadow.setScaleX(1f + .22f * lift);
-            shadow.setScaleY(1f + .06f * lift);
-            shadow.setAlpha(.32f - .14f * lift);
-        });
-        floatAnimator.start();
-    }
-
-    private void stopFloating() {
-        if (floatAnimator != null) {
-            floatAnimator.cancel();
-            floatAnimator = null;
-        }
-        setRestingState();
-    }
-
-    private void setRestingState() {
-        mark.setTranslationY(0f);
-        shadow.setScaleX(1f);
-        shadow.setScaleY(1f);
-        shadow.setAlpha(.32f);
+        shadow.setAlpha(.22f);
     }
 
     private static final class ShadowView extends View {

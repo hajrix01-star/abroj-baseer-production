@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static contracts for the authenticated BChat login brand and motion guardrails."""
+"""Static contracts for the authenticated BChat login brand presentation."""
 from pathlib import Path
 import unittest
 
@@ -16,17 +16,14 @@ class LoginBrandContracts(unittest.TestCase):
         self.assertNotIn('setColorFilter', mark + login_brand)
         self.assertNotIn('setTint', mark + login_brand)
 
-    def test_float_uses_gpu_properties_and_respects_reduced_motion(self):
+    def test_brand_is_static_with_one_subtle_ambient_shadow(self):
         login_brand = (JAVA / 'LoginBrandView.java').read_text(encoding='utf-8')
-        self.assertIn('ValueAnimator.areAnimatorsEnabled()', login_brand)
-        self.assertIn('mark.setTranslationY(', login_brand)
-        self.assertIn('shadow.setScaleX(', login_brand)
-        self.assertIn('shadow.setAlpha(', login_brand)
-        self.assertIn('setRestingState();', login_brand)
-        self.assertIn('shadow.setAlpha(.32f);', login_brand)
+        self.assertIn('setDrawShadow(false)', login_brand)
+        self.assertIn('shadow.setAlpha(.22f);', login_brand)
         self.assertIn('mark.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO)', login_brand)
-        self.assertIn('floatAnimator.cancel()', login_brand)
-        self.assertIn('onVisibilityAggregated', login_brand)
+        self.assertNotIn('ValueAnimator', login_brand)
+        self.assertNotIn('onVisibilityAggregated', login_brand)
+        self.assertNotIn('setTranslationY(', login_brand)
         self.assertNotIn('setRotation(', login_brand)
 
     def test_login_has_only_brand_controls_and_release_footer(self):
@@ -37,11 +34,13 @@ class LoginBrandContracts(unittest.TestCase):
         self.assertIn('bchat_login_release_date', identity)
         self.assertIn('installedBChatReleaseName()', identity)
         self.assertNotIn('bchat_login_tagline', identity)
+        self.assertNotIn('footerSpacer', identity)
         self.assertIn("versionCode 77; versionName '0.7.61-qa-brand-motion'", build)
         for path in ('values/strings.xml', 'values-ar/strings.xml', 'values-en/strings.xml'):
             strings = (ROOT / 'app/src/main/res' / path).read_text(encoding='utf-8')
             self.assertIn('name="bchat_login_release_footer"', strings)
             self.assertIn('name="bchat_login_release_date"', strings)
+            self.assertIn('•', strings)
 
 
 if __name__ == '__main__':

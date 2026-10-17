@@ -884,10 +884,15 @@
     }
   ],
   "readinessGates": {
-    "G0": "draft",
-    "G1": "draft; use current bounds, owner volume still not measured",
-    "G2": "draft; D04 and persistent queue need explicit compatible API/storage contract review",
-    "G3": "draft; reuse Java/Views and existing dependencies, no additions"
+    "G0": "independently approved; DEV005; one integrated final result",
+    "G1": "independently approved bounds; DEV005/014; actual growth and device capacity not measured",
+    "G2": "approved only for registered slices; C09 design conditional on core checkpoint acceptance; later API/data/meaning changes need explicit review",
+    "G3": "independently approved; existing Java/Views/SQLite/Odoo and dependencies; no new product libraries",
+    "G4": "foundations approved; full Activity and later notification UI acceptance pending",
+    "G5": "checkpoint verification in PR413; no whole-program acceptance",
+    "G6": "not started; measured capacity proof required",
+    "G7": "not started; source/checkpoint commits are not final integration acceptance",
+    "G8": "not started; no new product APK or final independent delivery decision"
   },
   "sources": [
     {

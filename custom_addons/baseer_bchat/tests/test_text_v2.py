@@ -993,10 +993,16 @@ class BChatTextHttpCase(HttpCase):
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
         })
-        room = self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
+                'name': 'Role-only manager remains unauthorized', 'company_id': company.id,
+            })
+        room_admin = self.env.ref('base.user_admin')
+        room_admin.write({'group_ids': [Command.link(self.env.ref('baseer_bchat.group_bchat_manager').id)]})
+        room = self.env['baseer.bchat.room'].with_user(room_admin).with_company(company).create({
             'name': 'BChat v2 HTTP room', 'company_id': company.id,
         })
-        joined = self.env['baseer.bchat.membership'].with_user(manager).with_company(company).create({
+        joined = self.env['baseer.bchat.membership'].with_user(room_admin).with_company(company).create({
             'room_id': room.id, 'user_id': member.id,
         })
         self.authenticate(member.login, password)

@@ -78,14 +78,16 @@ class BChatPushCase(TransactionCase):
         self._register(self.replacement, shared_token)
         devices = self.env['baseer.bchat.push.device'].sudo().search([('fcm_token', '=', shared_token)])
         self.assertEqual(devices.user_id, self.replacement)
-        replaced = self.env['baseer.bchat.push.device'].sudo().search([
+        replaced = self.env['baseer.bchat.push.device'].sudo().with_context(active_test=False).search([
             ('account_key', '=', first['account_key']),
         ])
-        self.assertTrue(replaced)
+        self.assertEqual(len(replaced), 1)
+        self.assertEqual(replaced.user_id, self.assignee)
         self.assertFalse(replaced.active)
         self.assertEqual(replaced.inactive_reason, 'replaced')
         self.assertTrue(replaced.inactive_at)
         self.assertNotEqual(replaced.fcm_token, shared_token)
+        self.assertFalse(self.env['baseer.bchat.push.device'].sudo().search([('id', '=', replaced.id)]))
         self._register(self.creator, 'c' * 64)
         task = self._create()['task']
         self._service(self.creator)._v2_task_transition(task['id'], {
@@ -122,12 +124,15 @@ class BChatPushCase(TransactionCase):
         self._service(self.assignee)._v2_push_unregister({
             'api_version': 2, 'installation_id': registration['installation_id'],
         })
-        device = self.env['baseer.bchat.push.device'].sudo().search([
+        device = self.env['baseer.bchat.push.device'].sudo().with_context(active_test=False).search([
             ('account_key', '=', registration['account_key']),
         ])
+        self.assertEqual(len(device), 1)
+        self.assertEqual(device.user_id, self.assignee)
         self.assertFalse(device.active)
         self.assertEqual(device.inactive_reason, 'logout')
         self.assertTrue(device.inactive_at)
+        self.assertFalse(self.env['baseer.bchat.push.device'].sudo().search([('id', '=', device.id)]))
         for model in ('baseer.bchat.push.device', 'baseer.bchat.push.event'):
             self.assertFalse(self.env[model].with_user(self.creator).has_access('read'))
             self.assertFalse(self.env[model].with_user(self.creator).has_access('create'))

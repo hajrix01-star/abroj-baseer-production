@@ -98,7 +98,10 @@ class BChatTaskCase(TransactionCase):
     def test_room_current_member_visibility_and_revocation(self):
         task_id = self._create(self.room)['task']['id']
         self.assertEqual(self._service(self.rescuer)._v2_task_detail(task_id)['task']['room_id'], self.room.id)
-        self.memberships[self.rescuer.id].with_user(self.manager).with_company(self.company).action_revoke()
+        with self.assertRaises(AccessError):
+            self.memberships[self.rescuer.id].with_user(self.manager).with_company(self.company).action_revoke()
+        self.assertTrue(self.memberships[self.rescuer.id].active)
+        self.memberships[self.rescuer.id].with_user(self.room_admin).with_company(self.company).action_revoke()
         with self.assertRaises(AccessError):
             self._service(self.rescuer)._v2_task_detail(task_id)
         self.assertNotIn(task_id, [row['id'] for row in self._service(self.rescuer)._v2_tasks()['tasks']])
@@ -219,7 +222,7 @@ class BChatTaskCase(TransactionCase):
         task_id = self._create(self.room)['task']['id']
         with self.assertRaises(AccessError):
             self._change(self.rescuer, task_id, 1, 'rescue', self.rescuer, 'Neither actor is absent')
-        self.memberships[self.assignee.id].with_user(self.manager).with_company(self.company).action_revoke()
+        self.memberships[self.assignee.id].with_user(self.room_admin).with_company(self.company).action_revoke()
         with self.assertRaises(AccessError):
             self._change(self.rescuer, task_id, 1, 'rescue', self.foreign,
                          'The replacement belongs to another company')
@@ -246,7 +249,7 @@ class BChatTaskCase(TransactionCase):
 
     def test_rescue_when_creator_leaves_but_assignee_remains(self):
         task_id = self._create(self.room)['task']['id']
-        self.memberships[self.creator.id].with_user(self.manager).with_company(self.company).action_revoke()
+        self.memberships[self.creator.id].with_user(self.room_admin).with_company(self.company).action_revoke()
         saved = self._change(self.rescuer, task_id, 1, 'rescue', self.rescuer,
                              'The original creator left this room')
         self.assertEqual(saved['task']['assignee_id'], self.rescuer.id)

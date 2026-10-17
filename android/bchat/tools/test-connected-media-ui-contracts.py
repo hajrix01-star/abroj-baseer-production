@@ -63,6 +63,13 @@ checks = {
         "if (entry.mediaId > 0)" in body("private void retryConnectedMedia()")
         and "sendConnectedMedia(scopedAccount, room, entry);" in body(
             "private void retryConnectedMedia()"),
+    "Verified media ACK retires local state before screen-lifetime checks":
+        body("private void sendConnectedMedia(").index(
+            "mediaStore.acknowledge(scopedAccount, entry);")
+        < body("private void sendConnectedMedia(").index(
+            "if (!stillCurrent(scopedAccount, room)) return;",
+            body("private void sendConnectedMedia(").index(
+                "mediaStore.acknowledge(scopedAccount, entry);")),
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":

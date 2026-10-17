@@ -587,7 +587,7 @@ class BChatMediaHttpCase(HttpCase):
         self.assertEqual(cookie_rejected.status_code, 401)
         self.opener.cookies.clear()
         native_uploaded = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
-        self.assertEqual(native_uploaded.status_code, 200)
+        self.assertEqual(native_uploaded.status_code, 200, native_uploaded.json())
         self.assertEqual(native_uploaded.json()['upload_uuid'], native_metadata['upload_uuid'])
         native_media_id = native_uploaded.json()['media_id']
         # Retrying a POST after a lost client response returns the persisted receipt, not a new row.

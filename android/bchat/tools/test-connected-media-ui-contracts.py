@@ -71,6 +71,18 @@ checks = {
         "if (entry.mediaId > 0)" in body("private void retryConnectedMedia()")
         and "sendConnectedMedia(scopedAccount, room, entry);" in body(
             "private void retryConnectedMedia()"),
+    "Restored M01 media reconciles before a byte retry after an app restart":
+        "uploadConnectedMedia(scopedAccount, room, finalStaged);" in body(
+            "private void stageConnectedMedia(")
+        and "retryConnectedMedia();" not in body("private void stageConnectedMedia(")
+        and "checkConnectedMediaStatus(scopedAccount, room);" in body(
+            "private void retryConnectedMedia()")
+        and "uploadConnectedMedia(scopedAccount, room, entry);" not in body(
+            "private void retryConnectedMedia()")
+        and "showMissingNativeMediaRetry(scopedAccount, room, entry);" in body(
+            "private void reconcileNativeMediaUpload(")
+        and "uploadConnectedMedia(scopedAccount, room, current);" in body(
+            "private void showMissingNativeMediaRetry("),
     "Verified media ACK retires local state before screen-lifetime checks":
         body("private void sendConnectedMedia(").index(
             "mediaStore.acknowledge(scopedAccount, entry);")
@@ -113,6 +125,22 @@ checks = {
             "private void checkConnectedMediaStatus(")
         and "sendConnectedMedia(" not in body("private void checkConnectedMediaStatus(")
         and "retryConnectedMedia(" not in body("private void checkConnectedMediaStatus("),
+    "Native upload recovery polls through its deadline and survives a process response loss":
+        "response.status == 202 || response.isTransportFailure()" in body(
+            "private void checkNativeMediaUpload(")
+        and "attempt < 4" not in body("private void checkNativeMediaUpload(")
+        and "reconcileNativeMediaUpload(scopedAccount, room, entry);" in body(
+            "private void mediaUploadDeadline(")
+        and '"/uploads/" + uploadUuid + "/reconcile"' in body(
+            "private void reconcileNativeMediaUpload(")
+        and "mediaStore.markUploaded(scopedAccount, entry, mediaId);" in body(
+            "private void reconcileNativeMediaUpload(")
+        and "sendConnectedMedia(scopedAccount, room, saved);" in body(
+            "private void reconcileNativeMediaUpload(")
+        and 'mediaId == 0 && "uploading".equals(state)' in body(
+            "private void reconcileNativeMediaUpload(")
+        and "handler.postDelayed(() -> reconcileNativeMediaUpload(scopedAccount, room, entry), 1500);" in body(
+            "private void reconcileNativeMediaUpload("),
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":
@@ -121,9 +149,14 @@ checks = {
         and "bubbleSize.leftMargin = mine ? 0 : dp(39);" in body(
             "private View createMessageBubble(Room room, JSONObject item,")
         and "boolean smallLeft = !mine;" in body("private GradientDrawable chatBubbleBackground("),
-    "Media chunks are decoded and encoded off UI thread":
+    "Native media upload streams off UI without passing file bytes through WebMessagePort":
         "mediaIo.execute" in body("private void readConnectedMedia(")
-        and "mediaIo.execute" in body("private void sendNextMediaChunk("),
+        and "mediaIo.execute" in body("private void beginNativeMediaUpload(")
+        and "BChatNativeMediaUploader.upload" in body("private void beginNativeMediaUpload(")
+        and "postSmallFormDirectlyInWebView(path, \"metadata\"" in body(
+            "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
+        and "bchat-media-upload" not in source
+        and "BChatConnectedMediaBridge.uploadScript" not in source,
 }
 
 for label, passed in checks.items():

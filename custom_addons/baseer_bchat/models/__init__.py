@@ -9,6 +9,7 @@ from . import membership
 from . import message
 from . import message_receipt
 from . import media
+from . import mobile_upload_grant
 from . import v2_service
 from . import group_service
 from . import media_service

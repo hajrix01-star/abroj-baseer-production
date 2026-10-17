@@ -534,12 +534,11 @@ class BChatMediaHttpCase(HttpCase):
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
         })
-        manager = self.env['res.users'].with_context(no_reset_password=True).create({
-            'name': 'BChat media HTTP manager',
-            'login': 'bchat-media-http-manager-%s' % uuid4().hex,
-            'company_id': company.id,
-            'company_ids': [Command.set(company.ids)],
-            'group_ids': [Command.set([self.env.ref('baseer_bchat.group_bchat_manager').id])],
+        # Room administration intentionally belongs only to the canonical Odoo
+        # administrator; a manager group alone must never gain that capability.
+        manager = self.env.ref('base.user_admin')
+        manager.sudo().write({
+            'group_ids': [Command.link(self.env.ref('baseer_bchat.group_bchat_manager').id)],
         })
         room = self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
             'name': 'Media HTTP room', 'company_id': company.id,
@@ -570,6 +569,42 @@ class BChatMediaHttpCase(HttpCase):
             'size': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(),
             'name': 'multipart.png',
         }
+        native_metadata = {**upload_metadata, 'upload_uuid': str(uuid4()), 'name': 'native.png'}
+        issued = self.url_open('/bchat/api/v2/rooms/%s/mobile-upload-grants' % room.id,
+                               data={'csrf_token': csrf, 'metadata': json.dumps(native_metadata)},
+                               method='POST')
+        self.assertEqual(issued.status_code, 200)
+        grant = issued.json()
+        self.assertRegex(grant['grant_id'], r'^[0-9a-f-]{36}$')
+        self.assertRegex(grant['secret'], r'^[A-Za-z0-9_-]{43,128}$')
+        native_url = '/bchat/api/v2/mobile-upload-grants/%s/content' % grant['grant_id']
+        capability_headers = {
+            'Authorization': 'BChatUpload %s.%s' % (grant['grant_id'], grant['secret']),
+            'Content-Type': 'image/png',
+        }
+        # A session cookie must not silently authenticate a native route.
+        cookie_rejected = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
+        self.assertEqual(cookie_rejected.status_code, 401)
+        # HttpCase itself requires a test-only routing cookie, which the production endpoint
+        # deliberately rejects.  Redeem the claimed capability at the service boundary here;
+        # the HTTP controller contributes only raw-body reading and this cookie policy.
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        claimed = grants._claim_capability(grant['grant_id'], grant['secret'])
+        self.assertTrue(claimed['claimed'])
+        self.assertTrue(grants._release_claimed_capability(claimed))
+        claimed = grants._claim_capability(grant['grant_id'], grant['secret'])
+        self.assertTrue(claimed['claimed'])
+        native_media_id = self.env['baseer.bchat.service'].with_user(user).with_context({
+            'allowed_company_ids': [room.company_id.id],
+        })._v2_mobile_upload_from_capability(claimed, raw)['media_id']
+        resolved = grants._resolve_claimed_capability(claimed, native_media_id)
+        self.assertEqual((resolved['state'], resolved['media_id']), ('resolved', native_media_id))
+        self.authenticate(user.login, password)
+        csrf = self.url_open('/bchat/api/v2/bootstrap').json()['csrf_token']
+        reconciled_native = self.url_open(
+            '/bchat/api/v2/rooms/%s/uploads/%s/reconcile' % (room.id, native_metadata['upload_uuid']))
+        self.assertEqual((reconciled_native.status_code, reconciled_native.json()['media_id']),
+                         (200, native_media_id))
         uploaded = self.url_open('/bchat/api/v2/rooms/%s/uploads' % room.id,
                                  data={'csrf_token': csrf, 'metadata': json.dumps(upload_metadata)},
                                  files={'file': ('multipart.png', raw, 'image/png')}, method='POST')

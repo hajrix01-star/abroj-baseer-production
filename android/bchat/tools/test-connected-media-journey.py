@@ -144,6 +144,73 @@ public class MediaJourneyHarness {
   }
 '''
 
+direct_fixture = r'''
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
+public class SmallPostHarness {
+  static final String V2_PUSH_REGISTER="/bchat/api/v2/notifications/register";
+  static final String ORIGIN="https://bchat.example", BRIDGE=ORIGIN+"/bchat/app/bridge";
+  static final int MAX_V2_RESPONSE=131072;
+  boolean closed,verified=true,webV2GetFallbackBusy,v2Busy;
+  int webV2GetFallbackGeneration,webEpoch=1,pageEpoch=1,epoch=1,polls;
+  Object account=new Object();String csrfToken="fixture-csrf";
+  Web web=new Web();
+  interface V2Callback {void complete(int status,Object body);}
+  static class Uri {static String parse(String s){return s;}}
+  static class JSONObject {static String quote(String s){return "\""+s.replace("\\","\\\\").replace("\"","\\\"")+"\"";}}
+  static class Web {String script;int evaluations;String getUrl(){return BRIDGE;}void evaluateJavascript(String s,Consumer<String> callback){script=s;evaluations++;callback.accept(null);}}
+  boolean isBridgeUrl(String s){return BRIDGE.equals(s);}
+  void releaseV2Port(){v2Busy=false;}
+  void pollVerifiedGetFallback(String slot,int generation,String path,int max,int w,int p,int e,V2Callback callback,int attempt){polls++;}
+  static void check(boolean v,String reason){if(!v)throw new AssertionError(reason);}
+  public static void main(String[] args){
+    SmallPostHarness h=new SmallPostHarness();
+    check(h.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/messages","payload","fixture-payload",(s,b)->{}),"Media message not admitted");
+    check(h.web.evaluations==1&&h.polls==1&&h.v2Busy&&h.webV2GetFallbackBusy,"Dispatch/poll did not own lane");
+    check(!h.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/messages","payload","fixture-payload",(s,b)->{}),"Busy lane dispatched twice");
+    SmallPostHarness blocked=new SmallPostHarness();
+    check(!blocked.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/messages/other","payload","x",(s,b)->{}),"Unlisted route admitted");
+    check(!blocked.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/messages","metadata","x",(s,b)->{}),"Wrong message form key admitted");
+    check(blocked.web.evaluations==0,"Rejected request dispatched JavaScript");
+    System.out.println("PASS production direct POST route/form allowlist and busy admission");
+    System.out.println("SCRIPT:"+Base64.getEncoder().encodeToString(h.web.script.getBytes(StandardCharsets.UTF_8)));
+  }
+'''
+
+node_fixture = r'''
+const assert = require('node:assert/strict');
+const vm = require('node:vm');
+global.window = {};
+global.location = {href:'https://bchat.example/bchat/app/bridge',origin:'https://bchat.example'};
+let calls=0;
+global.fetch=async(url,options)=>{
+  calls++;
+  assert.equal(url,'https://bchat.example/bchat/api/v2/rooms/1/messages');
+  assert.equal(options.method,'POST');
+  assert.equal(options.credentials,'same-origin');
+  assert.equal(options.redirect,'manual');
+  const form=new URLSearchParams(options.body);
+  assert.equal(form.get('csrf_token'),'fixture-csrf');
+  assert.equal(form.get('payload'),'fixture-payload');
+  let sent=false;
+  return {status:200,type:'basic',url,headers:{get:()=> 'application/json'},body:{getReader:()=>({read:async()=>{
+    if(sent)return {done:true};sent=true;
+    return {done:false,value:new TextEncoder().encode('{"api_version":2,"state":"sent"}')};
+  }})}};
+};
+vm.runInThisContext(Buffer.from(process.argv[1],'base64').toString('utf8'));
+setImmediate(()=>{
+  assert.equal(calls,1);
+  const envelope=JSON.parse(window.__bchatSmallPost1);
+  assert.equal(envelope.status,200);
+  assert.equal(JSON.parse(envelope.body).state,'sent');
+  for(let i=0;i<20;i++)JSON.parse(window.__bchatSmallPost1);
+  assert.equal(calls,1);
+  console.log('PASS production-generated WebView script: one authenticated POST, bounded result polling, no MessagePort');
+});
+'''
+
 javac, java = shutil.which('javac'), shutil.which('java')
 if not javac or not java:
     raise SystemExit('Existing JDK is required; no dependencies are installed by this test.')
@@ -153,3 +220,13 @@ with tempfile.TemporaryDirectory(prefix='bchat-media-journey-') as temporary:
     harness.write_text(fixture + '\n' + production + '\n}\n', encoding='utf-8')
     subprocess.run([javac, '-encoding', 'UTF-8', '-d', str(folder), str(harness)], check=True)
     subprocess.run([java, '-cp', str(folder), 'MediaJourneyHarness'], check=True)
+    direct = folder / 'SmallPostHarness.java'
+    direct.write_text(direct_fixture + '\n' + method('private boolean postSmallFormDirectlyInWebView(') + '\n}\n', encoding='utf-8')
+    subprocess.run([javac, '-encoding', 'UTF-8', '-d', str(folder), str(direct)], check=True)
+    output = subprocess.check_output([java, '-cp', str(folder), 'SmallPostHarness'], text=True)
+    script = next(line.removeprefix('SCRIPT:') for line in output.splitlines() if line.startswith('SCRIPT:'))
+    print(next(line for line in output.splitlines() if line.startswith('PASS ')))
+    node = shutil.which('node')
+    if not node:
+        raise SystemExit('Existing Node.js is required to execute the production-generated WebView script.')
+    subprocess.run([node, '-e', node_fixture, script], check=True)

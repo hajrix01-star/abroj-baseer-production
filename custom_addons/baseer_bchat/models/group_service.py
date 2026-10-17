@@ -26,7 +26,7 @@ class BChatGroupService(models.AbstractModel):
     @api.model
     def _v2_group_can_manage(self, room, member):
         rights = self._require_user()._bchat_effective_permissions()
-        return bool((rights['group_manage'] and member and member.is_group_admin)
+        return bool((member and member._is_effective_group_admin())
                     or rights['room_admin'])
 
     @api.model
@@ -49,6 +49,7 @@ class BChatGroupService(models.AbstractModel):
     @api.model
     def _v2_group_create(self, payload):
         self._require_bchat_permission('group_create')
+        self._require_bchat_permission('group_manage')
         data = group_contracts.normalize_create(payload)
         user = self._require_user()
         company_id = data['company_id']
@@ -112,6 +113,8 @@ class BChatGroupService(models.AbstractModel):
                 'joined_after_message_id': 0, 'active': True,
                 'is_group_admin': member_id == user.id,
             } for member_id in [user.id] + data['member_user_ids']], _GROUP_TOKEN)
+            own = members.filtered(lambda row: row.user_id.id == user.id)
+            self._group_record_event(room, 'create', actor_membership_id=own.id, client_uuid=data['client_uuid'])
             self._change_publish(members.mapped('user_id').ids, 'room',
                                  room_id=room.id, company_id=company_id,
                                  memberships={row.user_id.id: row.id for row in members})
@@ -139,6 +142,7 @@ class BChatGroupService(models.AbstractModel):
             try:
                 service = fresh['baseer.bchat.service']
                 service._require_bchat_permission('group_create')
+                service._require_bchat_permission('group_manage')
                 room = fresh['baseer.bchat.room'].sudo().search([
                     ('group_creator_user_id', '=', user_id), ('group_create_uuid', '=', client_uuid),
                 ], limit=1)
@@ -234,28 +238,45 @@ class BChatGroupService(models.AbstractModel):
                     target = self.env['baseer.bchat.membership'].sudo()._create_group_verified({
                         'room_id': room.id, 'company_id': room.company_id.id,
                         'user_id': target_id, 'joined_after_message_id': last.id or 0,
+                        'joined_after_group_event_id': self._group_last_event_id(room),
                         'active': True, 'is_group_admin': False,
                     }, _GROUP_TOKEN)
                 else:
                     if not target:
                         raise ProtocolError('not_a_member', 'This user is not a current group member.', 409)
-                    if data['action'] in ('remove_member', 'leave', 'demote_admin') and target.is_group_admin:
-                        other_admins = self.env['baseer.bchat.membership'].sudo().search_count([
-                            ('room_id', '=', room.id), ('active', '=', True),
-                            ('is_group_admin', '=', True), ('id', '!=', target.id),
-                        ])
+                    if (data['action'] in ('remove_member', 'leave', 'demote_admin')
+                            and target._is_effective_group_admin()):
+                        other_admins = self.env['baseer.bchat.membership']._effective_group_admins(
+                            room, [target.id])
                         if not other_admins:
                             raise ProtocolError('last_admin', 'Assign another group admin first.', 409)
                     if data['action'] in ('remove_member', 'leave'):
+                        members = self.env['baseer.bchat.membership'].sudo().search([
+                            ('room_id', '=', room.id), ('active', '=', True),
+                        ], limit=51)
+                        if len(members) > 50:
+                            raise ProtocolError('too_many_members', 'This group exceeds its supported member limit.', 409)
+                        # Includes the departing user AND every remaining peer
+                        # before the first revoked hint acquires any cursor.
+                        self._change_lock_recipients(members.mapped('user_id').ids)
                         target._write_group_verified({
                             'active': False, 'left_at': fields.Datetime.now(),
                         }, _GROUP_TOKEN)
                         self._change_publish([target_id], 'revoked',
                                              room_id=room.id, company_id=room.company_id.id)
                     elif data['action'] == 'promote_admin':
+                        candidate = target.user_id
+                        rights = candidate._bchat_effective_permissions()
+                        if (not candidate.active or not candidate._is_internal()
+                                or room.company_id not in candidate.company_ids
+                                or not rights['chat_view'] or not rights['group_manage']):
+                            raise ProtocolError('admin_ineligible', 'Choose an eligible active group member.', 409)
                         target._write_group_verified({'is_group_admin': True}, _GROUP_TOKEN)
                     elif data['action'] == 'demote_admin':
                         target._write_group_verified({'is_group_admin': False}, _GROUP_TOKEN)
+            self._group_record_event(room, data['action'],
+                                     target_id if data['action'] not in ('rename', 'set_description') else None,
+                                     actor_membership_id=caller.id if caller else None)
             room._publish_room_change()
             return {'api_version': 2, 'room_id': room.id, 'action': data['action']}
 
@@ -293,6 +314,56 @@ class BChatGroupService(models.AbstractModel):
                 'avatar_png': base64.b64encode(encoded),
                 'avatar_version': room.avatar_version + 1,
             }, _GROUP_TOKEN)
+            self._group_record_event(room, 'avatar', metadata={'avatar_version': room.avatar_version})
             room._publish_room_change()
             return {'api_version': 2, 'room_id': room.id,
                     'avatar_version': room.avatar_version}
+
+
+class BChatGroupAdminRecovery(models.TransientModel):
+    """Explicit management-only rescue; this wizard never reads room messages."""
+    _name = 'baseer.bchat.group.admin.recovery'
+    _description = 'Recover BChat group administration'
+
+    room_id = fields.Many2one('baseer.bchat.room', required=True, readonly=True)
+    company_id = fields.Many2one(related='room_id.company_id', readonly=True)
+    user_id = fields.Many2one('res.users', required=True, string='New group administrator')
+    eligible_user_ids = fields.Many2many('res.users', compute='_compute_eligible_user_ids')
+
+    @api.depends('room_id')
+    def _compute_eligible_user_ids(self):
+        self.env['baseer.bchat.service']._require_room_manager()
+        for wizard in self:
+            room = wizard.room_id
+            if not room:
+                wizard.eligible_user_ids = False
+                continue
+            room.check_access('read')
+            candidates = self.env['baseer.bchat.membership'].sudo().search([
+                ('room_id', '=', room.id), ('active', '=', True),
+            ], order='id', limit=51).mapped('user_id')
+            wizard.eligible_user_ids = candidates.filtered(
+                lambda user: user.active and user._is_internal()
+                and room.company_id in user.company_ids
+                and user._bchat_effective_permissions()['group_manage'])
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        self.env['baseer.bchat.service']._require_room_manager()
+        return super().create(vals_list)
+
+    def action_recover(self):
+        self.ensure_one()
+        service = self.env['baseer.bchat.service']
+        service._require_room_manager()
+        with self.env.cr.savepoint():
+            room, _member = service._v2_group_room(self.room_id.id, mutate=True, manager=True)
+            if self.env['baseer.bchat.membership']._effective_group_admins(room):
+                raise ProtocolError('recovery_unnecessary', 'This group already has an effective administrator.', 409)
+            # The established manager-only group operation validates the
+            # target's active membership, company and effective permissions.
+            service._v2_group_change(room.id, {
+                'api_version': 2, 'action': 'promote_admin', 'user_id': self.user_id.id,
+            })
+            service._group_record_event(room, 'recover', self.user_id.id)
+        return {'type': 'ir.actions.act_window_close'}

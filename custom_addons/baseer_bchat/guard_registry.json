@@ -225,6 +225,159 @@
         "android/bchat/tools/test-connected-media-journey.py"
       ],
       "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+    },
+    {
+      "id": "isolated-local-media-recovery",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "A corrupt local record cannot block unrelated rooms; AtomicFile recovery precedes bounded quota/cleanup and original bytes remain diagnostic-only without a verified scope.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java",
+        "android/bchat/tests/jvm-connected-media/**",
+        "android/bchat/tools/test-connected-media-store.py"
+      ],
+      "suites": [
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "durable-connected-context-and-queue",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "Account-scoped SQLite migrations preserve text UUIDs, reply drafts and raw cart intent; restore is authorized afresh and pending messages remain bounded and ordered.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatLocalState.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatStorageRepository.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatCartResolver.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatComposerSnapshot.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatIntentPersistence.java",
+        "android/bchat/tests/outbox-android/**",
+        "android/bchat/tools/build-connected-state-tests.py"
+      ],
+      "suites": [
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "bounded-device-notification-presentation",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "Device presentation receipts are account/kind/event scoped, bounded, recorded after accepted notification posting and never substitute for delivered/read message receipts.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+        "android/bchat/tools/test-notification-presentation.py"
+      ],
+      "suites": [
+        "android-source-contract"
+      ]
+    },
+    {
+      "id": "semantic-chat-appearance-and-accessibility",
+      "introduced": "2026-10-17",
+      "risk": "medium",
+      "scope": "Chat appearance is context-resolved and bidi/grapheme safe; timestamps remain neutral with accessible vector status, flexible sizing and preserved canonical BChat branding.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/Ui.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/UiPalette.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/ChatAppearance.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/AvatarInitials.java",
+        "android/bchat/tests/AvatarInitialsTest.java",
+        "android/bchat/tests/android-appearance/**",
+        "android/bchat/tools/test-appearance-foundations.py",
+        "android/bchat/tools/test-appearance-android.py",
+        "android/bchat/tools/test-maturity-source-contracts.py"
+      ],
+      "suites": [
+        "android-source-contract"
+      ]
+    },
+    {
+      "id": "effective-membership-rights-and-provider-recovery",
+      "introduced": "2026-10-17",
+      "risk": "critical",
+      "scope": "Effective group administration, eligibility and split media rights remain company/membership scoped; provider errors and recovery never silently grant content access or fabricate receipt times.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/user_permissions.py",
+        "custom_addons/baseer_bchat/models/change.py",
+        "custom_addons/baseer_bchat/models/group_service.py",
+        "custom_addons/baseer_bchat/models/membership.py",
+        "custom_addons/baseer_bchat/models/room.py",
+        "custom_addons/baseer_bchat/models/task_service.py",
+        "custom_addons/baseer_bchat/push_contracts.py",
+        "custom_addons/baseer_bchat/migrations/19.0.0.4.15/**",
+        "custom_addons/baseer_bchat/views/**",
+        "custom_addons/baseer_bchat/tools/run_maturity_isolated.sh",
+        "custom_addons/baseer_bchat/tools/check_maturity_evidence.py",
+        "custom_addons/baseer_bchat/tools/run_maturity_probes.py",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/MediaRights.java",
+        "android/bchat/tests/MediaRightsTest.java"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "reviewed-release-source-provenance",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "The unified artifact is signed only from a clean reviewed commit using the documented external key; version/source/date/Firebase and signer evidence are retained without secrets.",
+      "source_paths": [
+        "android/bchat/README.md",
+        "android/bchat/app/build.gradle",
+        "android/bchat/tools/build-unified-preview.ps1"
+      ],
+      "suites": [
+        "android-source-contract",
+        "apk-artifact"
+      ]
+    },
+    {
+      "id": "bounded-original-image-and-audio-ownership",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "Original image decode/tiles remain private, EXIF-correct, allocation-bounded and current-rights fenced; asynchronous audio preparation cannot steal a newer recording or playback owner.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/ImagePreviews.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/ImagePreviewPolicy.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/ZoomableImageView.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/AudioFocusLease.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/AudioPlayback.java",
+        "android/bchat/tests/android-media/**",
+        "android/bchat/tools/test-media-foundations-android.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "private-notification-preview-and-self-diagnostics",
+      "introduced": "2026-10-17",
+      "risk": "critical",
+      "scope": "Per-device preview is conservative by default, scoped presentation is serialized against logout, and diagnostic provider/device/posting states never create business messages or delivery/read ACKs.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationDiagnostics.java",
+        "android/bchat/tools/test-push-routing-state.py",
+        "custom_addons/baseer_bchat/models/notification_service.py",
+        "custom_addons/baseer_bchat/models/social_operation.py"
+      ],
+      "suites": ["android-source-contract", "backend-contracts", "source-structure"]
+    },
+    {
+      "id": "private-social-state-and-direct-pair-boundaries",
+      "introduced": "2026-10-17",
+      "risk": "critical",
+      "scope": "Personal room metadata is private, direct rooms enforce their canonical pair even on administrative membership creation, and social/group metadata never grants message or attachment content access.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/models/membership_preference.py",
+        "custom_addons/baseer_bchat/models/direct_service.py",
+        "custom_addons/baseer_bchat/models/group_audit.py",
+        "custom_addons/baseer_bchat/models/search_service.py"
+      ],
+      "suites": ["backend-contracts", "source-structure"]
     }
   ]
 }

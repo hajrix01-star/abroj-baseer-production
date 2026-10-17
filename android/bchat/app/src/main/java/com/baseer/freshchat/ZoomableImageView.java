@@ -2,13 +2,18 @@ package com.baseer.freshchat;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.widget.ImageView;
+import java.io.File;
+import java.util.function.BooleanSupplier;
 
 /** A single-image, bounded viewer. The caller owns the bitmap and its lifetime. */
 final class ZoomableImageView extends ImageView {
@@ -29,6 +34,18 @@ final class ZoomableImageView extends ImageView {
     private float lastAngle;
     private boolean tracking;
     private boolean rotating;
+    private ImagePreviews details;
+    private File detailFile;
+    private BooleanSupplier originalAllowed;
+    private ImagePreviews.SourceInfo detailInfo;
+    private ImagePreviews.Request detailRequest;
+    private Bitmap detailBitmap;
+    private Rect detailRegion;
+    private int detailSample;
+    private long detailGeneration;
+    private boolean detailInFlight, overviewSuppressed;
+    private final Paint detailPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Runnable detailRefresh = this::refreshDetail;
 
     ZoomableImageView(Context context) { this(context, null); }
 
@@ -37,8 +54,7 @@ final class ZoomableImageView extends ImageView {
         setScaleType(ScaleType.MATRIX);
         pinch = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
             @Override public boolean onScale(ScaleGestureDetector detector) {
-                transform(Math.max(1f, Math.min(MAX_ZOOM, zoom * detector.getScaleFactor())),
-                        degrees, detector.getFocusX(), detector.getFocusY());
+                zoomBy(detector.getScaleFactor(), detector.getFocusX(), detector.getFocusY());
                 return true;
             }
         });
@@ -50,10 +66,130 @@ final class ZoomableImageView extends ImageView {
     }
 
     @Override public void setImageBitmap(Bitmap value) {
+        clearDetailSource();
+        originalAllowed = null;
+        overviewSuppressed = false;
         bitmap = value;
         super.setImageBitmap(value);
         resetToFit();
     }
+
+    /** Optional original-resolution tiles. The overview remains bounded and caller-owned. */
+    void setConnectedDetailSource(ImagePreviews decoder, File source, BooleanSupplier currentDownloadRights) {
+        clearDetailSource();
+        if (decoder == null || source == null || currentDownloadRights == null)
+            throw new IllegalArgumentException("Authorized detail source required");
+        details = decoder; detailFile = source; originalAllowed = currentDownloadRights;
+        overviewSuppressed = !currentDownloadRights.getAsBoolean();
+        scheduleDetail();
+    }
+
+    void clearDetailSource() {
+        ++detailGeneration;
+        removeCallbacks(detailRefresh);
+        if (detailRequest != null) detailRequest.cancel();
+        detailRequest = null; detailInFlight = false;
+        // The original bitmap may survive detach. Its account/right fence must survive too.
+        details = null; detailFile = null; detailInfo = null;
+        clearTile();
+    }
+
+    private void clearTile() {
+        Bitmap old = detailBitmap; detailBitmap = null; detailRegion = null; detailSample = 0;
+        if (old != null) old.recycle();
+        invalidate();
+    }
+
+    private boolean canShowDetail() {
+        return details != null && detailFile != null && originalAllowed != null && originalAllowed.getAsBoolean();
+    }
+
+    private void scheduleDetail() {
+        removeCallbacks(detailRefresh);
+        if (details != null && isAttachedToWindow()) postDelayed(detailRefresh, 90);
+    }
+
+    private Matrix sourceToView() {
+        Matrix source = detailInfo.orientationMatrix();
+        source.postScale(bitmap.getWidth() / (float)detailInfo.displayWidth,
+                bitmap.getHeight() / (float)detailInfo.displayHeight);
+        source.postConcat(display);
+        return source;
+    }
+
+    private void refreshDetail() {
+        if (!canShowDetail() || bitmap == null || !isAttachedToWindow()) { clearTile(); return; }
+        if (detailInfo == null) {
+            if (detailInFlight) return;
+            long generation = ++detailGeneration;
+            detailInFlight = true;
+            ImagePreviews.Request submitted = details.loadConnectedDetail(detailFile, null, 1, ready -> {
+                if (generation != detailGeneration || !canShowDetail() || !isAttachedToWindow()) {
+                    if (ready.bitmap != null) ready.bitmap.recycle(); return;
+                }
+                detailRequest = null; detailInFlight = false;
+                detailInfo = ready.info;
+                if (ready.busy || detailInfo != null) scheduleDetail();
+            });
+            if (detailInFlight) detailRequest = submitted;
+            return;
+        }
+        if (zoom <= 1.05f) {
+            if (detailRequest != null) detailRequest.cancel();
+            detailRequest = null; detailInFlight = false; ++detailGeneration;
+            clearTile(); return;
+        }
+        Matrix source = sourceToView(), inverted = new Matrix();
+        if (!source.invert(inverted)) return;
+        RectF visible = new RectF(0, 0, getWidth(), getHeight());
+        inverted.mapRect(visible);
+        if (!visible.intersect(0, 0, detailInfo.width, detailInfo.height)) { clearTile(); return; }
+        Rect wanted = new Rect(Math.max(0, (int)Math.floor(visible.left)), Math.max(0, (int)Math.floor(visible.top)),
+                Math.min(detailInfo.width, (int)Math.ceil(visible.right)),
+                Math.min(detailInfo.height, (int)Math.ceil(visible.bottom)));
+        if (wanted.isEmpty()) return;
+        float[] values = new float[9]; source.getValues(values);
+        float scale = (float)Math.hypot(values[Matrix.MSCALE_X], values[Matrix.MSKEW_Y]);
+        int sample = ImagePreviewPolicy.detailSample(wanted.width(), wanted.height(), scale);
+        if (detailRegion != null && detailRegion.contains(wanted) && detailSample <= sample) return;
+        if (detailRequest != null) detailRequest.cancel();
+        long generation = ++detailGeneration;
+        detailInFlight = true;
+        ImagePreviews.Request submitted = details.loadConnectedDetail(detailFile, wanted, sample, ready -> {
+            if (generation != detailGeneration || !canShowDetail() || !isAttachedToWindow()) {
+                if (ready.bitmap != null) ready.bitmap.recycle(); return;
+            }
+            detailRequest = null; detailInFlight = false;
+            if (ready.busy) { scheduleDetail(); return; }
+            clearTile();
+            detailBitmap = ready.bitmap; detailRegion = ready.region; detailSample = sample;
+            invalidate();
+        });
+        if (detailInFlight) detailRequest = submitted;
+    }
+
+    @Override protected void onDraw(Canvas canvas) {
+        // A current permission fence is checked at draw as well as at asynchronous completion.
+        if (originalAllowed != null && !originalAllowed.getAsBoolean()) {
+            if (!overviewSuppressed) { overviewSuppressed = true; clearDetailSource(); }
+            return;
+        }
+        if (overviewSuppressed) return;
+        super.onDraw(canvas);
+        if (detailBitmap == null || detailRegion == null || detailInfo == null || bitmap == null) return;
+        Matrix tile = new Matrix();
+        tile.setScale(detailRegion.width() / (float)detailBitmap.getWidth(),
+                detailRegion.height() / (float)detailBitmap.getHeight());
+        tile.postTranslate(detailRegion.left, detailRegion.top);
+        tile.postConcat(sourceToView());
+        int saved = canvas.save();
+        canvas.clipRect(0, 0, getWidth(), getHeight());
+        canvas.drawBitmap(detailBitmap, tile, detailPaint);
+        canvas.restoreToCount(saved);
+    }
+
+    @Override protected void onAttachedToWindow() { super.onAttachedToWindow(); scheduleDetail(); }
+    @Override protected void onDetachedFromWindow() { clearDetailSource(); super.onDetachedFromWindow(); }
 
     /** Restores the original upright image, fitted entirely inside this view. */
     void resetToFit() {
@@ -72,6 +208,11 @@ final class ZoomableImageView extends ImageView {
         centerX = getWidth() / 2f;
         centerY = getHeight() / 2f;
         updateMatrix();
+    }
+
+    void zoomBy(float factor, float focusX, float focusY) {
+        if (!Float.isFinite(factor) || factor <= 0) return;
+        transform(Math.max(1f, Math.min(MAX_ZOOM, zoom * factor)), degrees, focusX, focusY);
     }
 
     private float fitScale() {
@@ -110,6 +251,7 @@ final class ZoomableImageView extends ImageView {
         centerY += shiftY;
         display.postTranslate(shiftX, shiftY);
         setImageMatrix(display);
+        scheduleDetail();
     }
 
     /** Keeps the bitmap point under the gesture focus stationary while scaling/rotating. */

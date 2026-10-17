@@ -111,7 +111,9 @@ class BChatPushCase(TransactionCase):
         })
         with self.assertRaises(AccessError):
             self._service(self.assignee)._v2_push_event(old_event.id)
-        self.env['baseer.bchat.push.event']._cron_dispatch()
+        # This transaction has not committed the fixture. Exercise the locked
+        # event dispatcher directly; cron now owns independent committed cursors.
+        self.env['baseer.bchat.push.event']._dispatch_event_ids([old_event.id])
         old_event.invalidate_recordset()
         self.assertEqual(old_event.state, 'discarded')
 

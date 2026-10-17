@@ -1,0 +1,58 @@
+package com.baseer.freshchat;
+
+import org.json.JSONObject;
+
+/** Exact production PermissionSet body, with actual Android JSONObject and production MediaRights. */
+public final class PermissionPolicyProbe {
+%PRODUCTION_PERMISSION_SET%
+    private static int count;
+    private static void check(boolean condition) {
+        count++;
+        if (!condition) throw new AssertionError("Permission policy assertion " + count);
+    }
+    private static JSONObject policy(boolean legacy) throws Exception {
+        return new JSONObject().put("version", 1).put("revision", 5)
+                .put("chat_view", true).put("chat_send", true).put("media", legacy)
+                .put("group_create", false).put("group_manage", false)
+                .put("task_view", false).put("task_manage", false).put("room_admin", false);
+    }
+    private static JSONObject granular(boolean view, boolean upload, boolean download) throws Exception {
+        return policy(view && upload && download).put("media_view", view)
+                .put("media_upload", upload).put("media_download", download);
+    }
+    public static int run() throws Exception {
+        count = 0;
+        PermissionSet legacy = PermissionSet.parse(policy(true));
+        check(legacy.mediaRights.view && legacy.mediaRights.upload && legacy.mediaRights.download);
+        check(!legacy.mediaRights.granular);
+        PermissionSet viewOnly = PermissionSet.parse(granular(true, false, false));
+        check(viewOnly.mediaRights.view && !viewOnly.mediaRights.upload && !viewOnly.mediaRights.download && !viewOnly.media);
+        check(viewOnly.sameAs(PermissionSet.parse(viewOnly.toJson())));
+        PermissionSet oldServer = legacy.constrainMedia(viewOnly);
+        check(oldServer.mediaRights.view && !oldServer.mediaRights.upload && !oldServer.mediaRights.download);
+        PermissionSet reopened = PermissionSet.parse(oldServer.toJson());
+        check(legacy.constrainMedia(reopened).sameAs(oldServer));
+        PermissionSet explicitGrant = PermissionSet.parse(granular(true, true, true)).constrainMedia(viewOnly);
+        check(explicitGrant.mediaRights.view && explicitGrant.mediaRights.upload && explicitGrant.mediaRights.download);
+        PermissionSet uploadOnly = PermissionSet.parse(granular(true, true, false));
+        PermissionSet downloadOnly = PermissionSet.parse(granular(true, false, true));
+        check(!uploadOnly.sameAs(downloadOnly) && !uploadOnly.media && !downloadOnly.media);
+        check(uploadOnly.mediaRights.canUpload(true) && !uploadOnly.mediaRights.canUpload(false));
+        PermissionSet noChat = PermissionSet.parse(granular(true, true, true).put("chat_view", false));
+        check(!noChat.mediaRights.view && !noChat.mediaRights.upload && !noChat.mediaRights.download);
+        check(noChat.sameAs(PermissionSet.parse(noChat.toJson())));
+        PermissionSet deniedLegacy = PermissionSet.parse(policy(false));
+        check(!deniedLegacy.mediaRights.view && !deniedLegacy.mediaRights.upload && !deniedLegacy.mediaRights.download);
+        for (int invalid = 0; invalid < 5; invalid++) {
+            JSONObject raw = granular(true, false, false);
+            if (invalid == 0) raw.remove("media_upload");
+            if (invalid == 1) raw.put("media_download", "false");
+            if (invalid == 2) raw.put("media_view", JSONObject.NULL);
+            if (invalid == 3) raw.put("media", true);
+            if (invalid == 4) raw.put("media_view", false).put("media_upload", true);
+            try { PermissionSet.parse(raw); throw new AssertionError("Accepted invalid granular flags " + invalid); }
+            catch (IllegalArgumentException expected) { check(true); }
+        }
+        return count;
+    }
+}

@@ -10,6 +10,8 @@
                     <field name="bchat_chat_view"/>
                     <field name="bchat_chat_send" readonly="not bchat_chat_view"/>
                     <field name="bchat_media" readonly="not bchat_chat_view"/>
+                    <field name="bchat_media_view" readonly="not bchat_chat_view"/>
+                    <field name="bchat_media_download" readonly="not bchat_chat_view or not bchat_media_view"/>
                     <field name="bchat_group_create" readonly="not bchat_chat_view"/>
                     <field name="bchat_group_manage" readonly="not bchat_chat_view"/>
                     <field name="bchat_task_view"/>

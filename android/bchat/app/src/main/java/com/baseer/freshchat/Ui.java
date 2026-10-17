@@ -1,4 +1,4 @@
-// Original Baseer offline demo. No network transport or real recipient data.
+// Shared presentation components used by connected BChat and the isolated demo.
 package com.baseer.freshchat;
 
 import android.content.Context;
@@ -38,10 +38,10 @@ final class Ui {
     static final int CHAT_PREVIEW_SP = 14;
     static final int CHAT_META_SP = 12;
     static final int CHAT_TIME_SP = 13;
-    static final int CHAT_HEADER_TITLE_SP = 16;
+    static final int CHAT_HEADER_TITLE_SP = 18;
     static final int CHAT_TEXT_LINE_DP = 22;
     static final int ROOM_TITLE_SP = 17;
-    static final int ROOM_ROW_MIN_DP = 75;
+    static final int ROOM_ROW_MIN_DP = 76;
     static final int ROOM_AVATAR_DP = 48;
 
     enum ActionTone { PRIMARY, SECONDARY, TEXT }
@@ -53,14 +53,14 @@ final class Ui {
 
     static GradientDrawable bg(int color, float radius, Context c) {
         GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
+        d.setColor(UiPalette.background(c, color));
         d.setCornerRadius(dp(c, radius));
         return d;
     }
 
     static GradientDrawable outline(int color, int stroke, float radius, Context c) {
         GradientDrawable d = bg(color, radius, c);
-        d.setStroke(dp(c, 1), stroke);
+        d.setStroke(dp(c, 1), UiPalette.foreground(c, stroke));
         return d;
     }
 
@@ -68,13 +68,68 @@ final class Ui {
         TextView t = new TextView(c);
         t.setText(s);
         t.setTextSize(size);
-        t.setTextColor(color);
+        t.setTextColor(UiPalette.foreground(c, color));
         t.setFontFeatureSettings("kern");
         t.setTextDirection(AppLocale.textDirection(c));
         t.setLayoutDirection(AppLocale.direction(c));
         if (bold) t.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         t.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         return t;
+    }
+
+    static TextView chatText(Context context, CharSequence body) {
+        int size = ChatAppearance.bodySp(context);
+        TextView text = text(context, body == null ? "" : body.toString(), size, INK, false);
+        // Extra spacing is in physical pixels derived from sp, preserving the system's font scale.
+        text.setLineSpacing(android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_SP, size * .25f,
+                context.getResources().getDisplayMetrics()), 1f);
+        return text;
+    }
+
+    /** Use the owning container's measured width, not the entire physical display. */
+    static int bubbleMaxWidth(View container) {
+        Context context = container.getContext();
+        int available = container.getWidth() - container.getPaddingLeft() - container.getPaddingRight();
+        if (available <= 0) available = dp(context,
+                context.getResources().getConfiguration().screenWidthDp);
+        return Math.max(1, Math.min(available, Math.max(dp(context, 120),
+                Math.min(dp(context, 520), Math.min((int) (available * .84f),
+                        available - dp(context, 44))))));
+    }
+
+    /** Time stays neutral; the status icon alone changes colour. Parent owns accessibility. */
+    static LinearLayout messageMeta(Context context, String time, String state, Runnable details) {
+        LinearLayout row = row(context);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        row.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        TextView label = text(context, time, CHAT_TIME_SP, MUTED, false);
+        label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        row.addView(label, lp(-2, -2));
+        int statusLabel = 0;
+        String kind = null;
+        if ("sent".equals(state)) { kind = "receipt-sent"; statusLabel = R.string.appearance_status_sent; }
+        else if ("delivered".equals(state)) { kind = "receipt-delivered"; statusLabel = R.string.appearance_status_delivered; }
+        else if ("read".equals(state)) { kind = "receipt-read"; statusLabel = R.string.appearance_status_read; }
+        else if ("queued".equals(state) || "sending".equals(state)) {
+            kind = "receipt-pending"; statusLabel = R.string.appearance_status_pending;
+        } else if (state != null) { kind = "receipt-error"; statusLabel = R.string.appearance_status_review; }
+        if (kind != null) {
+            Icon status = new Icon(context, kind, "read".equals(state) ? SKY : MUTED);
+            LinearLayout.LayoutParams size = lp(dp(context, 20), dp(context, 20));
+            size.leftMargin = dp(context, 4);
+            row.addView(status, size);
+        }
+        row.setContentDescription(statusLabel == 0 ? time
+                : time + ", " + AppLocale.s(context, statusLabel));
+        row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        if (details != null) {
+            row.setMinimumHeight(dp(context, ACTION_TOUCH_DP));
+            row.setMinimumWidth(dp(context, ACTION_TOUCH_DP));
+            clickable(row);
+            row.setOnClickListener(v -> details.run());
+        }
+        return row;
     }
 
     static LinearLayout column(Context c) {
@@ -102,7 +157,7 @@ final class Ui {
 
     static View line(Context c) {
         View v = new View(c);
-        v.setBackgroundColor(LINE);
+        v.setBackgroundColor(UiPalette.line(c));
         v.setLayoutParams(lp(-1, dp(c, 1)));
         return v;
     }
@@ -129,8 +184,8 @@ final class Ui {
                 : tone == ActionTone.SECONDARY ? ACTION_TONAL_PRESSED : LIME;
         button.setBackground(actionBackground(context, normal, pressed,
                 tone == ActionTone.TEXT ? Color.TRANSPARENT : ACTION_DISABLED, 12));
-        int textColor = tone == ActionTone.PRIMARY ? Color.WHITE : GREEN;
-        button.setTextColor(actionTextColors(textColor, MUTED));
+        int textColor = tone == ActionTone.PRIMARY ? Color.WHITE : UiPalette.accent(context);
+        button.setTextColor(actionTextColors(textColor, UiPalette.muted(context)));
         button.setStateListAnimator(null);
         button.setForeground(null);
         button.setClickable(true);
@@ -191,7 +246,7 @@ final class Ui {
                 child.invalidate();
             }
         }
-        label.setTextColor(selected ? GREEN : MUTED);
+        label.setTextColor(selected ? UiPalette.accent(context) : UiPalette.muted(context));
         label.setTypeface(Typeface.create(selected ? "sans-serif-medium" : "sans-serif",
                 Typeface.NORMAL));
         label.setTextDirection(AppLocale.textDirection(context));
@@ -232,7 +287,8 @@ final class Ui {
         button.setMinimumHeight(dp(context, ACTION_TOUCH_DP));
         button.setPaddingRelative(dp(context, 6), dp(context, 6),
                 dp(context, 6), dp(context, 6));
-        button.setTextColor(actionTextColors(selected ? GREEN : MUTED, MUTED));
+        button.setTextColor(actionTextColors(selected ? UiPalette.accent(context)
+                : UiPalette.muted(context), UiPalette.muted(context)));
         button.setBackground(actionBackground(context, Color.TRANSPARENT,
                 ACTION_TONAL_PRESSED, Color.TRANSPARENT, 0));
         button.setForeground(null);
@@ -252,8 +308,10 @@ final class Ui {
         fills.addState(new int[] {-android.R.attr.state_enabled}, bg(disabled, radius, context));
         fills.addState(new int[] {android.R.attr.state_pressed}, bg(pressed, radius, context));
         fills.addState(new int[] {}, bg(normal, radius, context));
+        // Own the child ConstantState before View applies its background tint.
+        // A late mutate can recreate the selector with an empty (disabled) state.
         return new RippleDrawable(ColorStateList.valueOf(0x242566b7), fills,
-                bg(Color.WHITE, radius, context));
+                bg(Color.WHITE, radius, context)).mutate();
     }
 
     static TextView pill(Context c, String s, boolean selected) {
@@ -283,7 +341,8 @@ final class Ui {
     static void decorateDialog(AlertDialog dialog) {
         if (dialog == null || dialog.getWindow() == null) return;
         dialog.getWindow().setBackgroundDrawable(bg(SURFACE, 20, dialog.getContext()));
-        int screen = dialog.getContext().getResources().getDisplayMetrics().widthPixels;
+        int screen = dp(dialog.getContext(),
+                dialog.getContext().getResources().getConfiguration().screenWidthDp);
         dialog.getWindow().setLayout(Math.min(screen - dp(dialog.getContext(), 32),
                 dp(dialog.getContext(), 560)), -2);
         Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
@@ -384,7 +443,7 @@ final class Ui {
             c.save();
             c.translate((getWidth() - 24 * k) / 2, (getHeight() - 24 * k) / 2);
             c.scale(k, k);
-            p.setColor(color);
+            p.setColor(UiPalette.foreground(getContext(), color));
             p.setStrokeWidth(1.8F);
             p.setStyle(Paint.Style.STROKE);
             p.setStrokeCap(Paint.Cap.ROUND);
@@ -404,6 +463,26 @@ final class Ui {
             case "close":
                 line(c, 6, 6, 18, 18);
                 line(c, 18, 6, 6, 18);
+                break;
+
+            case "receipt-sent":
+            case "receipt-delivered":
+            case "receipt-read":
+                p.setStrokeWidth(1.9F);
+                line(c, 3, 12, 7, 16, 17, 6);
+                if (!"receipt-sent".equals(kind)) line(c, 12, 16, 22, 6);
+                break;
+
+            case "receipt-pending":
+                circle(c, 12, 12, 8);
+                line(c, 12, 7, 12, 12, 16, 14);
+                break;
+
+            case "receipt-error":
+                circle(c, 12, 12, 8);
+                line(c, 12, 7, 12, 12);
+                p.setStyle(Paint.Style.FILL);
+                circle(c, 12, 16, 1);
                 break;
 
             case "down":
@@ -644,8 +723,7 @@ final class Ui {
             p.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             p.setTextAlign(Paint.Align.CENTER);
             p.setTextSize(r * 0.86F);
-            String[] words = name.trim().split("\\s+");
-            String s = words.length > 1 ? words[0].substring(0, 1) + " " + words[1].substring(0, 1) : name.substring(0, Math.min(2, name.length()));
+            String s = AvatarInitials.of(name);
             Paint.FontMetrics f = p.getFontMetrics();
             c.drawText(s, w / 2, h / 2 - (f.ascent + f.descent) / 2, p);
         }
@@ -653,6 +731,6 @@ final class Ui {
 
     /** A warm, quiet canvas separates the message thread from surrounding chrome. */
     static class Wallpaper extends View {
-        Wallpaper(Context c) { super(c); setBackgroundColor(CHAT_CANVAS); }
+        Wallpaper(Context c) { super(c); setBackgroundColor(UiPalette.canvas(c)); }
     }
 }

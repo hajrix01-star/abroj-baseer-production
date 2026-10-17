@@ -723,6 +723,228 @@ class BChatOrderCase(TransactionCase):
         self.assertEqual([row['id'] for row in returned['items']],
                          [row['id'] for row in first['items']])
 
+    def _resolve_payload(self, option_ids=None, **extra):
+        return {
+            'api_version': 2, 'company_id': self.company.id,
+            'warehouse_id': self.warehouse.id, 'purchase_route': 'cash',
+            'representative_partner_id': None,
+            'option_ids': [self.option.id] if option_ids is None else option_ids,
+            **extra,
+        }
+
+    def test_resolve_reuses_catalog_shape_and_current_price_without_writes(self):
+        catalog = self.service._v2_order_catalog(self.company.id)
+        expected = next(row for row in catalog['items'] if row['id'] == self.option.id)
+        before_orders = self.env['baseer.procurement.request'].sudo().search_count([])
+        before_options = self.env['baseer.procurement.purchase.option'].sudo().search_count([])
+        resolved = self.service._v2_order_catalog_resolve(self._resolve_payload())
+        self.assertEqual(resolved, {'api_version': 2, 'items': [expected], 'missing_ids': [],
+                                   'processed_option_ids': [self.option.id], 'next_after_option_id': None})
+        self.option.sudo().with_company(self.company).with_context(**{
+            OPTION_SYSTEM_WRITE: True,
+        }).write({'last_price': 8.86})
+        fresh = self.service._v2_order_catalog_resolve(self._resolve_payload())
+        self.assertEqual(fresh['items'][0]['last_price'], '8.86')
+        self.assertEqual(self.env['baseer.procurement.request'].sudo().search_count([]), before_orders)
+        self.assertEqual(self.env['baseer.procurement.purchase.option'].sudo().search_count([]), before_options)
+
+    def test_resolve_requires_create_grant_role_internal_and_active(self):
+        payload = self._resolve_payload()
+        self.user.write({'bchat_order_create': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_catalog_resolve(payload)
+        self.user.write({'bchat_order_create': True, 'baseer_access_role': 'accountant'})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_catalog_resolve(payload)
+        self.user.write({'baseer_access_role': 'owner'})
+        self.assertEqual(self.service._v2_order_catalog_resolve(payload)['items'][0]['id'], self.option.id)
+        self.user.write({'active': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_catalog_resolve(payload)
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.service'].with_user(self.env.ref('base.public_user'))._v2_order_catalog_resolve(payload)
+        portal = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Resolve portal', 'login': 'bchat-resolve-portal-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_portal').id])],
+        })
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.service'].with_user(portal)._v2_order_catalog_resolve(payload)
+
+    def test_resolve_rejects_foreign_company_warehouse_and_current_context(self):
+        payload = self._resolve_payload()
+        with self.assertRaises(AccessError):
+            self.service._v2_order_catalog_resolve({**payload, 'company_id': self.other_company.id})
+        foreign_warehouse = self.env['stock.warehouse'].search([
+            ('company_id', '=', self.other_company.id)], limit=1)
+        if not foreign_warehouse:
+            foreign_warehouse = self.env['stock.warehouse'].create({
+                'name': 'Resolve foreign warehouse', 'code': 'RF%s' % self.other_company.id,
+                'company_id': self.other_company.id,
+            })
+        for warehouse_id in (2147483647, foreign_warehouse.id):
+            with self.subTest(warehouse_id=warehouse_id), self.assertRaises(ProtocolError) as denied:
+                self.service._v2_order_catalog_resolve({**payload, 'warehouse_id': warehouse_id})
+            self.assertEqual(denied.exception.code, 'invalid_warehouse')
+        self.warehouse.active = False
+        with self.assertRaises(ProtocolError) as archived:
+            self.service._v2_order_catalog_resolve(payload)
+        self.assertEqual(archived.exception.code, 'invalid_warehouse')
+        self.warehouse.active = True
+        # A stale active-company selection cannot be used after company revocation.
+        self.user.write({'company_id': self.other_company.id,
+                         'company_ids': [Command.set(self.other_company.ids)]})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_catalog_resolve(payload)
+
+    def test_resolve_representative_policy_matches_create(self):
+        payload = self._resolve_payload(purchase_route='representative')
+        with self.assertRaises(ProtocolError) as none_available:
+            self.service._v2_order_catalog_resolve(payload)
+        self.assertEqual(none_available.exception.code, 'no_representative')
+        first = self._representative('Resolve buyer one', self.company)
+        self.assertTrue(self.service._v2_order_catalog_resolve(payload)['items'])
+        second = self._representative('Resolve buyer two', self.company)
+        with self.assertRaises(ProtocolError) as choose:
+            self.service._v2_order_catalog_resolve(payload)
+        self.assertEqual(choose.exception.code, 'representative_required')
+        self.assertTrue(self.service._v2_order_catalog_resolve({
+            **payload, 'representative_partner_id': first.id})['items'])
+        foreign = self._representative('Resolve foreign buyer', self.other_company)
+        with self.assertRaises(ProtocolError) as foreign_denied:
+            self.service._v2_order_catalog_resolve({**payload, 'representative_partner_id': foreign.id})
+        self.assertEqual(foreign_denied.exception.code, 'invalid_representative')
+        second.active = False
+        with self.assertRaises(ProtocolError) as stale:
+            self.service._v2_order_catalog_resolve({**payload, 'representative_partner_id': second.id})
+        self.assertEqual(stale.exception.code, 'invalid_representative')
+        for route in ('cash', 'bank_transfer'):
+            self.assertTrue(self.service._v2_order_catalog_resolve(self._resolve_payload(purchase_route=route))['items'])
+            with self.assertRaises(ProtocolError) as direct:
+                self.service._v2_order_catalog_resolve(self._resolve_payload(
+                    purchase_route=route, representative_partner_id=first.id))
+            self.assertEqual(direct.exception.code, 'invalid_representative')
+
+    def test_resolve_foreign_archived_and_ineligible_are_non_disclosing_missing_ids(self):
+        foreign_product = self.env['product.product'].with_company(self.other_company).create({
+            'name': 'Foreign metadata must not escape', 'company_id': self.other_company.id,
+            'uom_id': self.option.uom_id.id, 'purchase_ok': True, 'is_storable': True,
+        })
+        foreign = self.env['baseer.procurement.purchase.option'].with_company(self.other_company).create({
+            'name': 'Private foreign option', 'company_id': self.other_company.id,
+            'product_id': foreign_product.id, 'uom_id': self.option.uom_id.id,
+        })
+        self.option.sudo().write({'active': False})
+        ids = [self.option.id, foreign.id, 2147483647]
+        result = self.service._v2_order_catalog_resolve(self._resolve_payload(ids))
+        self.assertEqual(result['items'], [])
+        self.assertEqual(result['missing_ids'], sorted(ids))
+        self.assertEqual(result['processed_option_ids'], sorted(ids))
+        self.assertNotIn('Foreign metadata', json.dumps(result))
+        self.option.sudo().write({'active': True})
+        self.product.write({'purchase_ok': False})
+        self.assertEqual(self.service._v2_order_catalog_resolve(self._resolve_payload())['missing_ids'], [self.option.id])
+
+    def test_resolve_uses_native_uom_eligibility(self):
+        # An intentionally inconsistent synthetic fixture proves the native
+        # read guard still fails closed; normal option writes reject this.
+        self.env.cr.execute('UPDATE baseer_procurement_purchase_option SET uom_id = %s WHERE id = %s',
+                            [self.env.ref('uom.product_uom_kgm').id, self.option.id])
+        self.option.invalidate_recordset(['uom_id'])
+        result = self.service._v2_order_catalog_resolve(self._resolve_payload())
+        self.assertEqual(result['items'], [])
+        self.assertEqual(result['missing_ids'], [self.option.id])
+
+    def test_resolve_100_requested_ids_progresses_through_missing_without_catalog_scan(self):
+        options = self.env['baseer.procurement.purchase.option'].with_company(self.company).create([{
+            'name': 'Resolve option %02d' % number, 'company_id': self.company.id,
+            'product_id': self.product.id, 'uom_id': self.option.uom_id.id,
+            'packaging_note': 'Resolve pack %02d' % number,
+        } for number in range(28)]) | self.option
+        absent = list(range(2147483500, 2147483571))
+        requested = list(reversed(options.ids + absent))
+        payload = self._resolve_payload(requested)
+        Order = type(self.env['baseer.procurement.request'])
+        Option = type(self.env['baseer.procurement.purchase.option'])
+        original_search = Option.search
+        def id_search(recordset, domain, *args, **kwargs):
+            self.assertTrue(any(term[0] == 'id' and term[1] == 'in' and len(term[2]) <= 24
+                                for term in domain if isinstance(term, tuple)))
+            return original_search(recordset, domain, *args, **kwargs)
+        processed, found, missing = [], [], []
+        with patch.object(Order, '_catalog_product_domain', side_effect=AssertionError('No catalogue scan')), \
+                patch.object(Order, '_default_options_for_products', side_effect=AssertionError('No option mutation')), \
+                patch.object(Option, 'search', id_search):
+            for _page in range(100):
+                result = self.service._v2_order_catalog_resolve(payload)
+                page_ids = result['processed_option_ids']
+                self.assertTrue(page_ids)
+                self.assertLessEqual(len(page_ids), 24)
+                self.assertFalse(set(processed) & set(page_ids))
+                processed.extend(page_ids)
+                found.extend(row['id'] for row in result['items'])
+                missing.extend(result['missing_ids'])
+                self.assertLessEqual(len(json.dumps(result, ensure_ascii=False).encode('utf-8')), 65536)
+                if result['next_after_option_id'] is None:
+                    break
+                self.assertEqual(result['next_after_option_id'], page_ids[-1])
+                payload['after_option_id'] = result['next_after_option_id']
+            else:
+                self.fail('Resolve failed to terminate through the requested IDs')
+        self.assertEqual(processed, sorted(requested))
+        self.assertEqual(found, sorted(options.ids))
+        self.assertEqual(missing, absent)
+
+    def test_resolve_utf8_limit_shrinks_page_and_never_skips_or_loops(self):
+        self.product.name = 'منتج' * 40
+        options = self.env['baseer.procurement.purchase.option'].with_company(self.company).create([{
+            'name': ('عبوة' * 35) + str(number), 'company_id': self.company.id,
+            'product_id': self.product.id, 'uom_id': self.option.uom_id.id,
+            'packaging_note': 'UTF-8 pack %s' % number,
+        } for number in range(3)])
+        single = self.service._v2_order_catalog_resolve(self._resolve_payload([options[0].id]))
+        limit = len(json.dumps(single, ensure_ascii=False).encode('utf-8')) + 64
+        payload = self._resolve_payload(options.ids)
+        processed = []
+        with patch('odoo.addons.baseer_bchat_procurement.models.service.MAX_RESPONSE_BYTES', limit):
+            for _page in range(3):
+                result = self.service._v2_order_catalog_resolve(payload)
+                self.assertLess(len(result['processed_option_ids']), 3)
+                self.assertLessEqual(len(json.dumps(result, ensure_ascii=False).encode('utf-8')), limit)
+                processed.extend(result['processed_option_ids'])
+                if result['next_after_option_id'] is None:
+                    break
+                self.assertGreater(result['next_after_option_id'], payload.get('after_option_id', 0))
+                payload['after_option_id'] = result['next_after_option_id']
+        self.assertEqual(processed, sorted(options.ids))
+
+    def test_resolve_clear_oversize_refusal_does_not_consume_intent(self):
+        payload = self._resolve_payload()
+        before = json.dumps(payload, sort_keys=True)
+        with patch('odoo.addons.baseer_bchat_procurement.models.service.MAX_RESPONSE_BYTES', 32):
+            with self.assertRaises(ProtocolError) as oversized:
+                self.service._v2_order_catalog_resolve(payload)
+        self.assertEqual((oversized.exception.code, oversized.exception.status), ('page_too_large', 413))
+        self.assertEqual(json.dumps(payload, sort_keys=True), before)
+        self.assertTrue(self.service._v2_order_catalog_resolve(payload)['items'])
+
+    def test_resolve_strict_input_and_cursor_after_final_requested_id(self):
+        payload = self._resolve_payload()
+        for malformed in (
+                {**payload, 'api_version': True}, {**payload, 'company_id': True},
+                {**payload, 'option_ids': []}, {**payload, 'option_ids': list(range(1, 102))},
+                {**payload, 'option_ids': [self.option.id, self.option.id]},
+                {**payload, 'option_ids': [True]}, {**payload, 'option_ids': [2147483648]},
+                {**payload, 'option_ids': ['1']}, {**payload, 'option_ids': [0]},
+                {**payload, 'after_option_id': True}, {**payload, 'after_option_id': 2147483647},
+                {**payload, 'representative_partner_id': False}, {**payload, 'purchase_route': 'unknown'},
+                {**payload, 'unexpected': 1}):
+            with self.subTest(payload=malformed), self.assertRaises(ProtocolError):
+                self.service._v2_order_catalog_resolve(malformed)
+        finished = self.service._v2_order_catalog_resolve({**payload, 'after_option_id': self.option.id})
+        self.assertEqual(finished, {'api_version': 2, 'items': [], 'missing_ids': [],
+                                    'processed_option_ids': [], 'next_after_option_id': None})
+
 
 @tagged('post_install', '-at_install', 'baseer_bchat_procurement')
 class BChatOrderHttpCase(HttpCase):
@@ -829,6 +1051,31 @@ class BChatOrderHttpCase(HttpCase):
         self.assertEqual(quote.status_code, 200, quote.text)
         self.assertEqual(quote.json()['cart_revision'], 3)
         self.assertEqual(quote.json()['lines'][0]['quantity'], '2.00')
+        resolve_path = '/bchat/api/v2/orders/catalog/resolve'
+        resolve_payload = {
+            'api_version': 2, 'company_id': company.id, 'warehouse_id': warehouse.id,
+            'purchase_route': 'representative', 'representative_partner_id': representative.id,
+            'option_ids': [option.id, 2147483647], 'after_option_id': None,
+        }
+        self.assertNotEqual(self.url_open(resolve_path, allow_redirects=False).status_code, 200)
+        self.assertNotEqual(self.url_open(resolve_path, data={
+            'payload': json.dumps(resolve_payload),
+        }, allow_redirects=False).status_code, 200)
+        resolved = self.url_open(resolve_path, data={
+            'csrf_token': csrf, 'payload': json.dumps(resolve_payload),
+        }, allow_redirects=False)
+        self.assertEqual(resolved.status_code, 200, resolved.text)
+        self.assertEqual(resolved.json()['processed_option_ids'], [option.id, 2147483647])
+        self.assertEqual(resolved.json()['missing_ids'], [2147483647])
+        self.assertEqual(resolved.json()['items'], [shown])
+        self.assertLessEqual(len(resolved.content), 65536)
+        self.assertEqual(resolved.headers['Cache-Control'], 'no-store')
+        for path, candidate in (
+                (resolve_path, {**resolve_payload, 'company_id': foreign.id}),
+                (resolve_path + '?company_id=%s' % company.id, resolve_payload)):
+            denied = self.url_open(path, data={'csrf_token': csrf, 'payload': json.dumps(candidate)},
+                                   allow_redirects=False)
+            self.assertEqual(denied.status_code, 403 if candidate['company_id'] == foreign.id else 400)
         self.assertEqual(self.env['baseer.procurement.request'].sudo().search_count([
             ('company_id', '=', company.id), ('source_channel', '=', 'bchat'),
         ]), before_quote)

@@ -1,0 +1,153 @@
+package com.baseer.freshchat;
+
+import android.app.Instrumentation;
+import android.content.SharedPreferences;
+import android.os.Looper;
+import com.baseer.freshchat.sync.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** Extracted production dispatch gates. Explicit UI/HTTP/preferences fakes, not Activity screens. */
+public final class IntentDispatchProbe {
+%LOCAL%
+%INTENT_KEY%
+%INTENT_BUSY%
+%INTENT_WORK%
+%PERSIST_INTENT%
+%CONTEXT%
+%MEMBERSHIP%
+%ORDER_DISPATCH%
+%RECEIPT_DISPATCH%
+%SHARE_DISPATCH%
+    AccountScope account = new AccountScope("https://intent.invalid", "synthetic", ++user);
+    boolean verified = true, closed, v2Busy, ordersDenied, orderCanCreate = true, orderCanReceive = true;
+    int epoch, orderViewSerial, orderCartRevision, posts, failures;
+    long lastOrder;
+    String dispatched;
+    static long user = 100;
+    final Set<String> intentWrites = new HashSet<>();
+    final Set<Long> v1Companies = new HashSet<>(Collections.singleton(1L));
+    final List<Room> rooms = new ArrayList<>(Collections.singletonList(new Room()));
+    final FakePreferences orders = new FakePreferences(), receipts = new FakePreferences(), shares = new FakePreferences();
+    final Notice orderNotice = new Notice();
+    static final class Room { long id = 9, companyId = 1, membershipId = 19; }
+    static final class Notice { void setText(int ignored) { } }
+    static final class R { static final class string { static final int order_save_failed=1, receipt_save_failed=2, receipt_share_failed=3; } }
+    static final class PendingOrder {
+        final String scope, raw; final long companyId=1, roomId=9;
+        PendingOrder(AccountScope scope) { this.scope=scope.key; raw="{\"client_uuid\":\"order-uuid\",\"quantity\":\"3.50\"}"; }
+    }
+    static final class PendingReceipt {
+        final String scope, stored; final long companyId=1;
+        PendingReceipt(AccountScope scope) { this.scope=scope.key; stored="9:{\"client_uuid\":\"receipt-uuid\",\"actual_qty\":\"3.50\"}"; }
+    }
+    SharedPreferences orderCreatePreferences() { return orders; }
+    SharedPreferences receiptConfirmPreferences() { return receipts; }
+    SharedPreferences receiptSharePreferences() { return shares; }
+    String orderCartFingerprint() { return "unchanged-cart"; }
+    boolean pendingOrderMatchesCart(PendingOrder ignored) { return true; }
+    String receiptShareKey(AccountScope account, long order) { return account.key+":"+order; }
+    void sendPendingOrderDurable(PendingOrder pending,int view,int revision,String fingerprint,boolean matched) { posts++; dispatched=pending.raw; }
+    void sendPendingReceiptDurable(PendingReceipt pending) { posts++; dispatched=pending.stored; }
+    void shareConfirmedReceiptDurable(long order,long company,AccountScope scope) { posts++; lastOrder=order; }
+    void showReceiptShareRetry(long order,long company,AccountScope scope,int message) { failures++; }
+
+    /** Models commit(false) changing memory without changing disk; no actual HTTP. */
+    static final class FakePreferences implements SharedPreferences {
+        final Map<String,Object> memory = new ConcurrentHashMap<>(), disk = new ConcurrentHashMap<>();
+        volatile int fail, calls, mainCalls;
+        void seed(String key,Object value) { memory.put(key,value);disk.put(key,value); }
+        public Map<String,?> getAll(){return new HashMap<>(memory);}
+        public String getString(String key,String fallback){Object v=memory.get(key);return v==null?fallback:(String)v;}
+        @SuppressWarnings("unchecked") public Set<String> getStringSet(String key,Set<String> fallback){Object v=memory.get(key);return v==null?fallback:(Set<String>)v;}
+        public int getInt(String key,int fallback){Object v=memory.get(key);return v==null?fallback:(Integer)v;}
+        public long getLong(String key,long fallback){Object v=memory.get(key);return v==null?fallback:(Long)v;}
+        public float getFloat(String key,float fallback){Object v=memory.get(key);return v==null?fallback:(Float)v;}
+        public boolean getBoolean(String key,boolean fallback){Object v=memory.get(key);return v==null?fallback:(Boolean)v;}
+        public boolean contains(String key){return memory.containsKey(key);}
+        public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener ignored){}
+        public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener ignored){}
+        public Editor edit(){return new Editor(){
+            final Map<String,Object> updates=new HashMap<>(); boolean clear;
+            public Editor putString(String k,String v){updates.put(k,v);return this;}
+            public Editor putStringSet(String k,Set<String> v){updates.put(k,v);return this;}
+            public Editor putInt(String k,int v){updates.put(k,v);return this;}
+            public Editor putLong(String k,long v){updates.put(k,v);return this;}
+            public Editor putFloat(String k,float v){updates.put(k,v);return this;}
+            public Editor putBoolean(String k,boolean v){updates.put(k,v);return this;}
+            public Editor remove(String k){updates.put(k,null);return this;}
+            public Editor clear(){clear=true;return this;}
+            private void copy(Map<String,Object> target){if(clear)target.clear();for(Map.Entry<String,Object> e:updates.entrySet())if(e.getValue()==null)target.remove(e.getKey());else target.put(e.getKey(),e.getValue());}
+            public boolean commit(){calls++;if(Looper.myLooper()==Looper.getMainLooper())mainCalls++;copy(memory);if(fail-->0)return false;copy(disk);return true;}
+            public void apply(){throw new AssertionError("Durability must not use apply()");}
+        };}
+    }
+    private static int checks;
+    private static void check(boolean condition){checks++;if(!condition)throw new AssertionError("Intent dispatch "+checks);}
+    private static void drain()throws Exception {
+        CountDownLatch finished=new CountDownLatch(1);
+        BChatStorageRepository.submit(null,()->true,(v,e)->finished.countDown());
+        if(!finished.await(5,TimeUnit.SECONDS))throw new AssertionError("Storage lane timeout");
+    }
+    private static CountDownLatch block()throws Exception {
+        CountDownLatch started=new CountDownLatch(1), release=new CountDownLatch(1);
+        BChatStorageRepository.submit(null,()->{started.countDown();if(!release.await(5,TimeUnit.SECONDS))throw new AssertionError("Release timeout");return true;},(v,e)->{});
+        if(!started.await(5,TimeUnit.SECONDS))throw new AssertionError("Start timeout");
+        return release;
+    }
+    public static int run(Instrumentation instrumentation)throws Exception {
+        checks=0;
+        IntentDispatchProbe order=new IntentDispatchProbe(); PendingOrder raw=new PendingOrder(order.account);
+        order.orders.seed(order.account.key,raw.raw); order.orders.fail=1;
+        instrumentation.runOnMainSync(()->order.sendPendingOrder(raw)); drain();
+        check(order.posts==0 && raw.raw.equals(order.orders.getString(raw.scope,null)));
+        int failedCalls=order.orders.calls;
+        instrumentation.runOnMainSync(()->order.sendPendingOrder(raw)); drain();
+        check(order.posts==1 && raw.raw.equals(order.dispatched) && order.orders.calls==failedCalls+1);
+        check(order.orders.mainCalls==0);
+        IntentDispatchProbe twice=new IntentDispatchProbe(); PendingOrder twiceRaw=new PendingOrder(twice.account);
+        twice.orders.seed(twice.account.key,twiceRaw.raw); CountDownLatch release=block();
+        instrumentation.runOnMainSync(()->{twice.sendPendingOrder(twiceRaw);twice.sendPendingOrder(twiceRaw);});
+        check(twice.posts==0 && twice.orders.calls==0);
+        release.countDown();drain();check(twice.posts==1 && twice.orders.calls==1);
+        // All of these change after admission begins but before its worker/dispatch callback.
+        for(int scenario=0;scenario<7;scenario++){
+            IntentDispatchProbe stale=new IntentDispatchProbe();PendingOrder pending=new PendingOrder(stale.account);
+            stale.orders.seed(stale.account.key,pending.raw); CountDownLatch gate=block();
+            final int change=scenario;
+            instrumentation.runOnMainSync(()->{
+                stale.sendPendingOrder(pending);
+                if(change==0)stale.orderViewSerial++;
+                if(change==1)stale.epoch++;
+                if(change==2)stale.account=new AccountScope("https://intent.invalid","synthetic",9999);
+                if(change==3)stale.v1Companies.clear();
+                if(change==4)stale.orderCanCreate=false;
+                if(change==5)stale.rooms.get(0).membershipId++;
+                if(change==6)BChatStorageRepository.invalidate(stale.account);
+            });
+            gate.countDown();drain();check(stale.posts==0);
+            if(change==6)check(stale.orders.calls==0);
+            check(stale.orders.mainCalls==0);
+        }
+        IntentDispatchProbe receipt=new IntentDispatchProbe();PendingReceipt pendingReceipt=new PendingReceipt(receipt.account);
+        receipt.receipts.seed(receipt.account.key,pendingReceipt.stored);receipt.receipts.fail=1;
+        instrumentation.runOnMainSync(()->receipt.sendPendingReceipt(pendingReceipt));drain();check(receipt.posts==0);
+        instrumentation.runOnMainSync(()->receipt.sendPendingReceipt(pendingReceipt));drain();
+        check(receipt.posts==1 && pendingReceipt.stored.equals(receipt.dispatched) && receipt.receipts.calls==2);
+        check(receipt.receipts.mainCalls==0);
+        IntentDispatchProbe share=new IntentDispatchProbe();AccountScope shareAccount=share.account;
+        String shareKey=share.receiptShareKey(shareAccount,9);share.shares.seed(shareKey,1L);share.shares.fail=1;
+        instrumentation.runOnMainSync(()->share.shareConfirmedReceipt(9,1,shareAccount));drain();
+        check(share.posts==0 && share.failures==1);
+        instrumentation.runOnMainSync(()->share.shareConfirmedReceipt(9,1,shareAccount));drain();
+        check(share.posts==1 && share.lastOrder==9 && share.shares.calls==2);
+        check(share.shares.getAll().get(shareKey) instanceof Long && share.shares.mainCalls==0);
+        IntentDispatchProbe replaced=new IntentDispatchProbe();AccountScope replacedAccount=replaced.account;
+        String replacedKey=replaced.receiptShareKey(replacedAccount,9);replaced.shares.seed(replacedKey,1L);
+        CountDownLatch replacementGate=block();
+        instrumentation.runOnMainSync(()->{replaced.shareConfirmedReceipt(9,1,replacedAccount);replaced.shares.seed(replacedKey,2L);});
+        replacementGate.countDown();drain();
+        check(replaced.posts==0 && replaced.shares.getLong(replacedKey,0)==2 && replaced.shares.calls==0);
+        return checks;
+    }
+}

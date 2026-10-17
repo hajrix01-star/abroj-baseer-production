@@ -928,18 +928,47 @@ class BChatTextCase(TransactionCase):
         self.assertEqual(add_limit.exception.code, 'too_many_rooms')
         self.assertEqual(len(service._v2_rooms()['rooms']), 100)
 
+    def test_admin_membership_batch_99_plus_two_rolls_back_without_crossing_100(self):
+        rooms = self.env['baseer.bchat.room'].with_user(self.manager).with_company(self.company)
+        memberships = self.env['baseer.bchat.membership'].with_user(self.manager).with_company(self.company)
+        for number in range(99):
+            room = rooms.create({'name': 'Batch capacity %s' % number, 'company_id': self.company.id})
+            memberships.create({'room_id': room.id, 'user_id': self.member.id})
+        targets = rooms.create([{'name': 'Batch capacity target %s' % number,
+                                 'company_id': self.company.id} for number in range(2)])
+        before_changes = self.env['baseer.bchat.change'].sudo().search_count([('user_id', '=', self.member.id)])
+        with self.assertRaises(ProtocolError) as limited:
+            memberships.create([{'room_id': room.id, 'user_id': self.member.id} for room in targets])
+        self.assertEqual(limited.exception.code, 'too_many_rooms')
+        # The first row is rolled back as part of the same protected batch.
+        self.assertEqual(memberships.sudo().search_count([
+            ('user_id', '=', self.member.id), ('active', '=', True)]), 99)
+        self.assertFalse(memberships.sudo().search_count([
+            ('user_id', '=', self.member.id), ('room_id', 'in', targets.ids)]))
+        self.assertEqual(self.env['baseer.bchat.change'].sudo().search_count([
+            ('user_id', '=', self.member.id)]), before_changes)
+        memberships.create({'room_id': targets[0].id, 'user_id': self.member.id})
+        self.assertEqual(memberships.sudo().search_count([
+            ('user_id', '=', self.member.id), ('active', '=', True)]), 100)
+        with self.assertRaises(ProtocolError) as full:
+            memberships.create({'room_id': targets[1].id, 'user_id': self.member.id})
+        self.assertEqual(full.exception.code, 'too_many_rooms')
+
     def test_read_completion_excludes_departed_recipient(self):
         one = self._join(self.member)
         other = self._user('other-reader', 'base.group_user', self.company)
         second = self._join(other)
         message_id = self._send(self.manager, self.manager_membership)['message_id']
         self._service(self.member)._v2_receipt_ack(self.room.id, message_id, 'read')
+        genuine_read_at = self.env['baseer.bchat.message.receipt'].sudo().search([
+            ('message_id', '=', message_id), ('membership_id', '=', one.id),
+        ]).read_at
         self.assertEqual(self._service(self.manager)._v2_history(self.room.id)['messages'][0]['delivery_state'], 'sent')
         second.with_user(self.manager).with_company(self.company).action_revoke()
         row = self._service(self.manager)._v2_history(self.room.id)['messages'][0]
         self.assertEqual(row['delivery_state'], 'read')
         self.assertIsNotNone(row['read_at'])
-        self.assertEqual(row['read_at'], second.left_at.strftime('%Y-%m-%d %H:%M:%S'))
+        self.assertEqual(row['read_at'], genuine_read_at.strftime('%Y-%m-%d %H:%M:%S'))
         late = self._join(other)
         self.assertNotEqual(late.id, second.id)
         with self.assertRaises(AccessError):

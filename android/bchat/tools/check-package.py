@@ -180,9 +180,10 @@ v2_outbox=(root/'app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java'
 for required in ('/bchat/api/v2/bootstrap', '/bchat/api/v2/rooms', 'author_name',
                  'new WebMessagePort[]{channel[1]}', 'redirect:\'manual\'',
                  'MAX_V2_RESPONSE = 131072', 'probeV1AfterTransportFailure(writeRequest)',
-                 'room.membershipId', 'outbox.acknowledge(account, entry)'):
+                 'room.membershipId', 'box.acknowledge(scope, entry)', 'box.recordReceipt(scope, entry, receiptId)'):
  assert required in identity, required
-for required in ('account_key', 'membership_id', 'client_uuid', 'Resolve the pending message first'):
+for required in ('account_key', 'membership_id', 'client_uuid', 'Text queue capacity reached',
+                 'MAX_PER_ACCOUNT', 'MAX_PER_ROOM', 'MAX_ACCOUNT_BYTES'):
  assert required in v2_outbox, required
 for required in ('firstStale(AccountScope account', 'convertToDraft(AccountScope account',
                  'discard(AccountScope account', 'createDraftTable(db)',
@@ -190,14 +191,15 @@ for required in ('firstStale(AccountScope account', 'convertToDraft(AccountScope
                  'pageForAccount(AccountScope account', 'recordRejected(AccountScope account',
                  'review_code INTEGER NOT NULL DEFAULT 0'):
  assert required in v2_outbox, required
-for required in ('clearChatView();\n            account = nextAccount',
+assert re.search(r'clearChatView\(\);\s+account = nextAccount;', identity)
+for required in (
                  'if (initial) {\n                    shell.setVisibility(View.GONE);',
-                 'outbox.firstStale(account, selectedRoom.id, selectedRoom.membershipId)',
+                 'box.firstStale(scope, room.id, room.membershipId)',
                  'confirmConvertToDraft(verifiedAccount, room, entry)',
                  'confirmDiscard(verifiedAccount, room, entry)',
                  'flushDraftSave();', 'chat_v2_uncertain', 'draftActive = true;',
                  'showGlobalPending(0)', 'confirmGlobalConvert(verifiedAccount, entry, choices.get(which))',
-                 'outbox.recordRejected(account, entry)', 'pending.reviewCode == 1'):
+                 'box.recordFailure(scope, entry, permanent, System.currentTimeMillis())', 'pending.reviewCode == 1'):
  assert required in identity, required
 assert 'new ChatStore(' not in identity and 'MainActivity.class' not in identity
 assert 'CookieManager.getInstance().getCookie(' not in identity

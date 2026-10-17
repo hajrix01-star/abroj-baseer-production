@@ -80,18 +80,17 @@ class BChatChange(models.Model):
         raise AccessError(self.env._('Direct BChat change creation is unavailable.'))
 
     @api.model
-    def _append_verified(self, user_ids, kind, *, token, room_id=None,
-                         message_id=None, task_id=None, order_id=None,
-                         company_id=None, memberships=None):
-        """Append one hint per recipient under stable lock order.
+    def _lock_recipient_cursors(self, user_ids, *, token):
+        """Reserve the WHOLE transaction's recipient union before its first hint.
 
-        Call only after source ACL checks and while the source transaction is
-        open.  No text, filename, price or other content belongs here.
+        Sorting an individual append is insufficient if that transaction has
+        already locked a higher user cursor for an earlier append. Composite
+        publishers must call this helper with their complete bounded union.
+        It never advances a sequence or publishes a hint.
         """
-        if token is not _CHANGE_TOKEN or kind not in dict(self._fields['kind'].selection):
+        if token is not _CHANGE_TOKEN:
             raise AccessError(self.env._('A verified BChat change is required.'))
         recipients = sorted({user_id for user_id in user_ids if type(user_id) is int and user_id > 0})
-        memberships = memberships or {}
         if not recipients:
             return []
         cursor_model = self.env['baseer.bchat.change.cursor']
@@ -109,6 +108,24 @@ class BChatChange(models.Model):
         ''', [recipients])
         if [row[0] for row in self.env.cr.fetchall()] != recipients:
             raise AccessError(self.env._('A BChat change cursor is unavailable.'))
+        return recipients
+
+    @api.model
+    def _append_verified(self, user_ids, kind, *, token, room_id=None,
+                         message_id=None, task_id=None, order_id=None,
+                         company_id=None, memberships=None):
+        """Append one content-free hint per already-authorized recipient.
+
+        Single-append callers reserve their complete set here. A publisher
+        emitting multiple hints reserves its union before the first call.
+        """
+        if token is not _CHANGE_TOKEN or kind not in dict(self._fields['kind'].selection):
+            raise AccessError(self.env._('A verified BChat change is required.'))
+        recipients = self._lock_recipient_cursors(user_ids, token=token)
+        memberships = memberships or {}
+        if not recipients:
+            return []
+        cursor_model = self.env['baseer.bchat.change.cursor']
         self.env.cr.execute('''
             UPDATE baseer_bchat_change_cursor
             SET sequence = sequence + 1, write_uid = %s, write_date = NOW()
@@ -152,6 +169,11 @@ class BChatChange(models.Model):
 
 class BChatChangeService(models.AbstractModel):
     _inherit = 'baseer.bchat.service'
+
+    @api.model
+    def _change_lock_recipients(self, user_ids):
+        return self.env['baseer.bchat.change'].sudo()._lock_recipient_cursors(
+            user_ids, token=_CHANGE_TOKEN)
 
     @api.model
     def _change_publish(self, user_ids, kind, **kwargs):

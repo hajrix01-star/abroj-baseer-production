@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
 import os
+import random
 import re
 import threading
 import time
@@ -22,6 +23,7 @@ from odoo.exceptions import AccessError
 from odoo.modules.registry import Registry
 
 from ..contracts import ProtocolError, positive_id
+from ..push_contracts import classify_fcm_failure, retry_after_seconds, retry_delay_seconds
 
 
 _PUSH_TOKEN = object()
@@ -34,6 +36,7 @@ _FAST_DISPATCH_WORKERS = 8
 # This bounds queued *lanes*, not individual device events. A large room is
 # divided over at most eight lanes so its tail is not silently left for cron.
 _FAST_DISPATCH_CAPACITY = 128
+_CRON_DISPATCH_BUDGET_SECONDS = 20
 _FAST_DISPATCH_EXECUTOR = ThreadPoolExecutor(
     max_workers=_FAST_DISPATCH_WORKERS, thread_name_prefix='bchat-push')
 _FAST_DISPATCH_SLOTS = threading.BoundedSemaphore(_FAST_DISPATCH_CAPACITY)
@@ -72,10 +75,11 @@ def _notification_text(value, limit):
 
 
 class _PushTransportError(Exception):
-    def __init__(self, code, retry=True, invalid_token=False):
+    def __init__(self, code, retry=True, invalid_token=False, retry_after=None):
         self.code = code
         self.retry = retry
         self.invalid_token = invalid_token
+        self.retry_after = retry_after
         super().__init__(code)
 
 
@@ -95,9 +99,11 @@ def _fast_dispatch_event(dbname, event_id):
             # event state before releasing this independent cursor, otherwise
             # cron can retry an already-delivered notification.
             cursor.commit()
+        return True
     except Exception:
         _LOGGER.warning('BChat fast push dispatch failed for event %s', event_id,
                         exc_info=False)
+        return False
 
 
 def _fast_dispatch_events(dbname, event_ids):
@@ -117,6 +123,11 @@ class BChatPushDevice(models.Model):
     fcm_token = fields.Char(required=True, readonly=True, size=4096, index=True)
     active = fields.Boolean(required=True, readonly=True, default=True, index=True)
     last_seen_at = fields.Datetime(required=True, readonly=True, default=fields.Datetime.now, index=True)
+    preview_mode = fields.Selection([
+        ('none', 'No preview'), ('sender', 'Sender only'), ('full', 'Message preview'),
+    ], required=True, readonly=True, default='none')
+    preference_revision = fields.Integer(required=True, readonly=True, default=1)
+    last_test_at = fields.Datetime(readonly=True)
     inactive_reason = fields.Selection([
         ('logout', 'Logout'), ('provider_invalid', 'Provider token invalid'),
         ('replaced', 'Replaced by another account'),
@@ -201,6 +212,23 @@ class BChatPushDevice(models.Model):
     def copy_data(self, default=None):
         raise AccessError(self.env._('BChat push registrations cannot be copied.'))
 
+    def _set_preview_verified(self, mode, expected_revision, token):
+        self.ensure_one()
+        if token is not _PUSH_TOKEN or mode not in ('none', 'sender', 'full'):
+            raise AccessError(self.env._('A verified notification preference is required.'))
+        self.invalidate_recordset(['preference_revision', 'preview_mode'])
+        if self.preference_revision != expected_revision:
+            raise ProtocolError('revision_conflict', 'Notification settings changed; refresh before continuing.', 409)
+        super(BChatPushDevice, self).write({
+            'preview_mode': mode, 'preference_revision': self.preference_revision + 1,
+        })
+
+    def _touch_diagnostic_verified(self, now, token):
+        self.ensure_one()
+        if token is not _PUSH_TOKEN:
+            raise AccessError(self.env._('A verified notification test is required.'))
+        super(BChatPushDevice, self).write({'last_test_at': now})
+
 
 class BChatPushEvent(models.Model):
     _name = 'baseer.bchat.push.event'
@@ -215,7 +243,9 @@ class BChatPushEvent(models.Model):
     company_id = fields.Many2one('res.company', required=True, readonly=True, ondelete='restrict', index=True)
     event_kind = fields.Selection([
         ('assigned', 'Assigned'), ('updated', 'Updated'), ('message', 'Message'),
+        ('diagnostic', 'Notification test'),
     ], required=True, readonly=True)
+    diagnostic_uuid = fields.Char(readonly=True, size=36)
     task_revision = fields.Integer(readonly=True)
     state = fields.Selection([
         ('pending', 'Pending'), ('retry', 'Retry'), ('configuration', 'Configuration'),
@@ -230,13 +260,21 @@ class BChatPushEvent(models.Model):
         'UNIQUE(task_id, device_id, event_kind, task_revision)',
         'One BChat push event exists for each task revision and device.',
     )
+    _diagnostic_uuid_format = models.Constraint(
+        "CHECK(diagnostic_uuid IS NULL OR diagnostic_uuid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')",
+        'A notification test requires a canonical UUIDv4.',
+    )
     _event_source_shape = models.Constraint(
         """CHECK (
             (task_id IS NOT NULL AND message_id IS NULL
-             AND task_revision IS NOT NULL AND event_kind IN ('assigned', 'updated'))
+             AND task_revision IS NOT NULL AND diagnostic_uuid IS NULL
+             AND event_kind IN ('assigned', 'updated'))
             OR
             (task_id IS NULL AND message_id IS NOT NULL
-             AND task_revision IS NULL AND event_kind = 'message')
+             AND task_revision IS NULL AND diagnostic_uuid IS NULL AND event_kind = 'message')
+            OR
+            (task_id IS NULL AND message_id IS NULL AND task_revision IS NULL
+             AND diagnostic_uuid IS NOT NULL AND event_kind = 'diagnostic')
         )""",
         'A BChat push event must have one valid source.',
     )
@@ -257,6 +295,17 @@ class BChatPushEvent(models.Model):
             ON baseer_bchat_push_event (message_id, device_id)
             WHERE message_id IS NOT NULL
         ''')
+        self.env.cr.execute('''
+            CREATE UNIQUE INDEX IF NOT EXISTS baseer_bchat_push_diagnostic_device_uuid_unique
+            ON baseer_bchat_push_event (device_id, diagnostic_uuid)
+            WHERE event_kind = 'diagnostic'
+        ''')
+        for field in ('device_id', 'recipient_id'):
+            self.env.cr.execute('''
+                CREATE INDEX IF NOT EXISTS baseer_bchat_push_diagnostic_%s_time_idx
+                ON baseer_bchat_push_event (%s, create_date DESC, id DESC)
+                WHERE event_kind = 'diagnostic'
+            ''' % (field, field))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -341,6 +390,11 @@ class BChatPushEvent(models.Model):
                     'assertion': assertion,
                 }, timeout=(3.05, 10))
                 if response.status_code != 200:
+                    if response.status_code == 429 or response.status_code >= 500:
+                        raise _PushTransportError(
+                            'transport', retry=True,
+                            retry_after=retry_after_seconds(
+                                response.headers.get('Retry-After'), fields.Datetime.now()))
                     raise _PushTransportError('configuration', retry=False)
                 payload = response.json()
                 access_token = payload.get('access_token')
@@ -360,19 +414,23 @@ class BChatPushEvent(models.Model):
         try:
             import requests
             access_token = self._fcm_access_token(config)
+            diagnostic = event.event_kind == 'diagnostic'
             data = {'account_key': event.device_id.account_key,
-                    'kind': 'chat' if event.message_id else 'task',
+                    'kind': 'diagnostic' if diagnostic else 'chat' if event.message_id else 'task',
                     'event_id': str(event.id)}
-            if event.message_id:
+            if diagnostic:
+                data['diagnostic_uuid'] = event.diagnostic_uuid
+            elif event.message_id and event.device_id.preview_mode in ('sender', 'full'):
                 message = event.message_id
                 sender = _notification_text(message.author_user_id.name, 120)
-                preview = _notification_text(message.text, 160)
                 if sender:
                     data['sender_name'] = sender
-                if preview:
-                    data['message_preview'] = preview
-                elif message.media_id:
-                    data['message_preview_kind'] = 'attachment'
+                if event.device_id.preview_mode == 'full':
+                    preview = _notification_text(message.text, 160)
+                    if preview:
+                        data['message_preview'] = preview
+                    elif message.media_id:
+                        data['message_preview_kind'] = 'attachment'
             response = requests.post(
                 'https://fcm.googleapis.com/v1/projects/%s/messages:send' % config['project_id'],
                 headers={'Authorization': 'Bearer %s' % access_token},
@@ -383,16 +441,17 @@ class BChatPushEvent(models.Model):
                 }}, timeout=(3.05, 10))
             if response.status_code == 200:
                 return
-            status = ''
+            payload = None
             try:
-                status = response.json().get('error', {}).get('status', '')
+                payload = response.json()
             except (TypeError, ValueError):
                 pass
-            if status == 'UNREGISTERED':
-                raise _PushTransportError('unregistered', retry=False, invalid_token=True)
-            if response.status_code in (400, 401, 403):
-                raise _PushTransportError('configuration', retry=False)
-            raise _PushTransportError('transport', retry=True)
+            failure = classify_fcm_failure(
+                response.status_code, payload, response.headers.get('Retry-After'),
+                fields.Datetime.now())
+            raise _PushTransportError(failure['code'], retry=failure['retry'],
+                                      invalid_token=failure['invalid_token'],
+                                      retry_after=failure['retry_after'])
         except _PushTransportError:
             raise
         except Exception:
@@ -402,8 +461,11 @@ class BChatPushEvent(models.Model):
     def _event_recipient_still_allowed(self, event):
         user = event.recipient_id
         if (not event.device_id or not event.device_id.active or not user.active
-                or not user._is_internal()):
+                or not user._is_internal() or event.device_id.user_id != user):
             return False
+        if event.event_kind == 'diagnostic':
+            rights = user._bchat_effective_permissions()
+            return bool(event.company_id in user.company_ids and (rights['chat_view'] or rights['task_view']))
         if event.message_id:
             message = event.message_id
             if (not message or event.company_id != message.company_id
@@ -430,6 +492,15 @@ class BChatPushEvent(models.Model):
                 ('room_id', '=', task.room_id.id), ('user_id', '=', user.id), ('active', '=', True),
             ], limit=1))
         return user in (task.creator_id, task.assignee_id)
+
+    @api.model
+    def _muted_user_ids_for_push(self, room_id, user_ids):
+        if not room_id or not user_ids:
+            return set()
+        # Runtime import preserves service inheritance registration order.
+        from .membership_preference import _PREFERENCE_TOKEN
+        return self.env['baseer.bchat.membership.preference']._muted_user_ids_verified(
+            user_ids, room_id, fields.Datetime.now(), _PREFERENCE_TOKEN)
 
     @api.model
     def _schedule_fast_dispatch(self, event_ids):
@@ -469,6 +540,11 @@ class BChatPushEvent(models.Model):
                 event._write_verified({'state': 'discarded', 'last_error': 'access_revoked',
                                        'next_attempt_at': False}, _PUSH_TOKEN)
                 continue
+            room_id = event.message_id.room_id.id if event.message_id else event.task_id.room_id.id if event.task_id else None
+            if event.recipient_id.id in self._muted_user_ids_for_push(room_id, [event.recipient_id.id]):
+                event._write_verified({'state': 'discarded', 'last_error': 'muted',
+                                       'next_attempt_at': False}, _PUSH_TOKEN)
+                continue
             if not config:
                 event._write_verified({'state': 'configuration', 'last_error': 'configuration',
                                        'next_attempt_at': now + timedelta(minutes=30)}, _PUSH_TOKEN)
@@ -493,7 +569,8 @@ class BChatPushEvent(models.Model):
                     attempts = event.attempts + 1
                     event._write_verified({'state': 'retry', 'attempts': attempts,
                                            'last_error': error.code,
-                                           'next_attempt_at': now + timedelta(minutes=min(60, 2 ** attempts))},
+                                           'next_attempt_at': now + timedelta(seconds=retry_delay_seconds(
+                                               attempts, error.retry_after, random.random() * 0.2))},
                                           _PUSH_TOKEN)
         return True
 
@@ -517,18 +594,24 @@ class BChatPushEvent(models.Model):
     @api.model
     def _cron_dispatch(self):
         now = fields.Datetime.now()
-        # Do not let two Odoo workers deliver the same durable event.  The locks
-        # live until this cron transaction completes, so another worker skips them.
+        # Candidate discovery holds no event locks. Each independent cursor
+        # below rechecks eligibility/due state with SKIP LOCKED and persists
+        # one result, just like the fast lane. A late provider timeout cannot
+        # roll back the successful results of the preceding 99 events.
         self.env.cr.execute('''
             SELECT id FROM baseer_bchat_push_event
             WHERE state IN ('pending', 'retry', 'configuration')
               AND (next_attempt_at IS NULL OR next_attempt_at <= %s)
             ORDER BY id
-            FOR UPDATE SKIP LOCKED
             LIMIT 100
         ''', [now])
-        rows = self.sudo().browse([row[0] for row in self.env.cr.fetchall()]).exists()
-        return self._dispatch_selected(rows, now)
+        event_ids = [row[0] for row in self.env.cr.fetchall()]
+        started = time.monotonic()
+        for event_id in event_ids:
+            if time.monotonic() - started >= _CRON_DISPATCH_BUDGET_SECONDS:
+                break
+            _fast_dispatch_event(self.env.cr.dbname, event_id)
+        return True
 
     def copy_data(self, default=None):
         raise AccessError(self.env._('BChat push events cannot be copied.'))
@@ -567,9 +650,17 @@ class BChatPushService(models.AbstractModel):
     @api.model
     def _v2_push_event(self, event_id):
         event = self.env['baseer.bchat.push.event'].sudo().browse(positive_id(event_id, 'event_id')).exists()
-        self._require_bchat_permission('chat_view' if event and event.message_id else 'task_view')
+        if event and event.event_kind == 'diagnostic':
+            self._require_any_bchat_permission('chat_view', 'task_view')
+        else:
+            self._require_bchat_permission('chat_view' if event and event.message_id else 'task_view')
         if not event or event.recipient_id.id != self.env.uid or not self.env['baseer.bchat.push.event']._event_recipient_still_allowed(event):
             raise AccessError(self.env._('This BChat notification is unavailable.'))
+        if event.event_kind == 'diagnostic':
+            return {'api_version': 2, 'notification': {
+                'id': event.id, 'kind': 'diagnostic',
+                'source_ref': {'destination': 'notification_settings'},
+            }}
         if event.message_id:
             return {'api_version': 2, 'notification': {
                 'id': event.id, 'kind': 'chat',
@@ -599,9 +690,12 @@ class BChatPushService(models.AbstractModel):
         if isinstance(actor_id, int):
             recipient_ids.discard(actor_id)
         recipients = self.env['res.users'].sudo().browse(sorted(recipient_ids)).exists()
+        muted = self.env['baseer.bchat.push.event']._muted_user_ids_for_push(task.room_id.id, recipient_ids)
         rows = []
         devices = self.env['baseer.bchat.push.device'].sudo()
         for recipient in recipients:
+            if recipient.id in muted:
+                continue
             if not recipient.active or not recipient._is_internal() or task.company_id not in recipient.company_ids:
                 continue
             if task.room_id and not self.env['baseer.bchat.membership'].sudo().search([
@@ -623,9 +717,11 @@ class BChatPushService(models.AbstractModel):
     def _message_queue_push(self, message, recipients):
         rows = []
         devices = self.env['baseer.bchat.push.device'].sudo()
+        muted = self.env['baseer.bchat.push.event']._muted_user_ids_for_push(
+            message.room_id.id, recipients.mapped('user_id').ids)
         for recipient in recipients:
             user = recipient.user_id
-            if (not user.active or not user._is_internal()
+            if (user.id in muted or not user.active or not user._is_internal()
                     or message.company_id not in user.company_ids
                     or not user._bchat_effective_permissions().get('chat_view')):
                 continue

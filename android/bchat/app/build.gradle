@@ -2,6 +2,13 @@ plugins { id 'com.android.application' }
 // Firebase is opt-in: no credentials, SDK, service, or fake push path in local builds.
 def bchatFirebaseConfig = file('google-services.json')
 def bchatPushEnabled = bchatFirebaseConfig.exists() && project.findProperty('bchatEnablePush') == 'true'
+def sourceCommitInput = System.getenv('BCHAT_SOURCE_COMMIT') ?: ''
+def bchatSourceCommit = sourceCommitInput ==~ /[0-9a-f]{40}/ ? sourceCommitInput : 'unrecorded'
+def sourceEpochInput = System.getenv('SOURCE_DATE_EPOCH') ?: ''
+def releaseDateFormatter = new java.text.SimpleDateFormat('yyyy-MM-dd', java.util.Locale.ROOT)
+releaseDateFormatter.setTimeZone(java.util.TimeZone.getTimeZone('UTC'))
+def bchatReleaseDate = sourceEpochInput ==~ /[0-9]{1,10}/
+        ? releaseDateFormatter.format(new Date(Long.parseLong(sourceEpochInput) * 1000L)) : ''
 if (bchatPushEnabled) {
  apply plugin: 'com.google.gms.google-services'
 }
@@ -31,6 +38,8 @@ android {
   buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
   buildConfigField 'boolean', 'BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'
+  buildConfigField 'String', 'BCHAT_SOURCE_COMMIT', '"' + bchatSourceCommit + '"'
+  buildConfigField 'String', 'BCHAT_RELEASE_DATE', '"' + bchatReleaseDate + '"'
  }
  // Independent preview signer, supplied only through local environment paths.
  // No debug fallback or automatic key generation is permitted.

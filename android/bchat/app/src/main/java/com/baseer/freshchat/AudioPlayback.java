@@ -1,9 +1,6 @@
 package com.baseer.freshchat;
 
 import android.content.Context;
-import android.content.BroadcastReceiver;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.*;
 import android.os.*;
 import java.io.File;
@@ -19,26 +16,21 @@ final class AudioPlayback {
         default void playbackError(AudioDiagnostic.Event event) { }
     }
     interface Error { void show(String text); }
+    interface Players { MediaPlayer create(); }
     private static final long PREPARE_TIMEOUT_MS = 15_000;
     private final Context context;
     private final Error error;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final PlaybackState state = new PlaybackState();
     private final AudioDiagnostic diagnostics = new AudioDiagnostic();
-    private final AudioManager manager;
+    private final AudioFocusLease audioFocus;
+    private final Players players;
     private MediaPlayer player;
     private Target target;
     private ChatStore.Attachment selected;
     private boolean targetDetached;
     private Runnable prepareTimeout, detachStop;
-    private AudioFocusRequest focus;
-    private boolean noisyRegistered;
-    private final BroadcastReceiver noisyReceiver = new BroadcastReceiver() {
-        @Override public void onReceive(Context ignored, Intent intent) {
-            if (intent != null && AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) routeLost();
-        }
-    };
-    private long focusGeneration;
+    private AudioFocusLease.Lease focus;
     private float appliedSpeed = 1f;
     private Stage stage = Stage.SOURCE;
     private final Runnable ticker = new Runnable() {
@@ -49,8 +41,14 @@ final class AudioPlayback {
         }
     };
     AudioPlayback(Context context, Error error) {
+        this(context, error, new AudioFocusLease(context));
+    }
+    AudioPlayback(Context context, Error error, AudioFocusLease audioFocus) {
+        this(context, error, audioFocus, MediaPlayer::new);
+    }
+    AudioPlayback(Context context, Error error, AudioFocusLease audioFocus, Players players) {
         this.context = AppLocale.wrap(context.getApplicationContext()); this.error = error;
-        manager = (AudioManager)this.context.getSystemService(Context.AUDIO_SERVICE);
+        this.audioFocus = audioFocus; this.players = players;
     }
     void toggle(ChatStore.Attachment file, Target view) {
         if (view == target && player != null) {
@@ -67,13 +65,18 @@ final class AudioPlayback {
             return;
         }
         stop(); target = view; selected = file;
+        focus = audioFocus.reserve(reason -> {
+            if (state.phase() == PlaybackState.Phase.PREPARING) stop();
+            else try { pause(); } catch (RuntimeException failure) { fail(diagnostics.exception(Stage.PAUSE, failure)); }
+        });
+        if (focus == null) { fail(diagnostics.record(Stage.FOCUS, Kind.DENIED, 0, 0)); return; }
         stage = Stage.SOURCE;
         try {
             File source = AttachmentSupport.requirePrivateFile(context, file);
             if (source.length() <= 0) throw new IOException("Empty local audio");
             long token = state.select(file.id);
             stage = Stage.SETUP;
-            MediaPlayer next = new MediaPlayer(); player = next;
+            MediaPlayer next = players.create(); player = next;
             // Install listeners before setup so native setup errors are not silently discarded.
             next.setOnPreparedListener(ready -> prepared(ready, token));
             next.setOnCompletionListener(done -> {
@@ -111,7 +114,10 @@ final class AudioPlayback {
         try {
             stage = Stage.DURATION;
             if (!state.prepared(token, ready.getDuration())) { fail(diagnostics.record(stage, Kind.INVALID, 0, 0)); return; }
-            if (!gainFocus()) return;
+            if (focus == null || !focus.active()) { stop(); return; }
+            if (!focus.gainFocus(attributes(), false)) {
+                fail(diagnostics.record(Stage.FOCUS, Kind.DENIED, 0, 0)); return;
+            }
             stage = Stage.START;
             ready.start(); notifyTarget(); main.post(ticker);
         } catch (RuntimeException failure) { fail(diagnostics.exception(stage, failure)); }
@@ -147,42 +153,16 @@ final class AudioPlayback {
     }
     private boolean gainFocus() {
         abandonFocus(); stage = Stage.FOCUS;
-        if (manager == null) { fail(diagnostics.record(stage, Kind.DENIED, 0, 0)); return false; }
-        final long requestGeneration = ++focusGeneration;
-        focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                .setAudioAttributes(attributes()).setWillPauseWhenDucked(true)
-                .setOnAudioFocusChangeListener(change -> focusChanged(requestGeneration, change), main).build();
-        if (manager.requestAudioFocus(focus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            try {
-                IntentFilter filter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-                if (Build.VERSION.SDK_INT >= 33) context.registerReceiver(noisyReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                else context.registerReceiver(noisyReceiver, filter);
-                noisyRegistered = true; return true;
-            } catch (RuntimeException unavailable) {
-                fail(diagnostics.exception(Stage.FOCUS, unavailable)); return false;
-            }
-        }
-        fail(diagnostics.record(stage, Kind.DENIED, 0, 0)); return false;
-    }
-    private void focusChanged(long requestGeneration, int change) {
-        if (requestGeneration == focusGeneration && change < 0) {
+        focus = audioFocus.acquire(attributes(), false, reason -> {
             try { pause(); } catch (RuntimeException failure) { fail(diagnostics.exception(Stage.PAUSE, failure)); }
-        }
-    }
-    private void routeLost() {
-        if (!noisyRegistered || state.phase() != PlaybackState.Phase.PLAYING) return;
-        try { pause(); } catch (RuntimeException failure) { fail(diagnostics.exception(Stage.PAUSE, failure)); }
-        // Reconnection never starts playback. The user must press Play again.
+        });
+        if (focus != null && focus.active()) return true;
+        fail(diagnostics.record(stage, Kind.DENIED, 0, 0)); return false;
     }
     private AudioAttributes attributes() { return new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build(); }
     private void abandonFocus() {
-        if (noisyRegistered) {
-            noisyRegistered = false;
-            try { context.unregisterReceiver(noisyReceiver); } catch (RuntimeException ignored) { }
-        }
-        ++focusGeneration;
-        AudioFocusRequest old = focus; focus = null;
-        if (old != null && manager != null) try { manager.abandonAudioFocusRequest(old); } catch (RuntimeException ignored) { }
+        AudioFocusLease.Lease old = focus; focus = null;
+        if (old != null) old.close();
     }
     private void notifyTarget() { if (target != null && !targetDetached) target.playback(state.phase(), state.position(), state.duration(), state.speed()); }
     private void fail(AudioDiagnostic.Event event) {

@@ -284,16 +284,13 @@ class BChatTextService(models.AbstractModel):
             }
             if message.author_user_id.id == self.env.uid:
                 all_receipts = receipts.get(message.id, [])
-                eligible = [item for item in all_receipts if item.membership_id.active]
+                eligible = [item for item in all_receipts
+                            if not item._eligibility_exclusion_reason()]
                 state = ('read' if eligible and all(row.read_at for row in eligible)
                          else 'delivered' if eligible and all(row.delivered_at for row in eligible)
                          else 'sent')
                 row['delivery_state'] = state
-                completion_times = [
-                    item.read_at or item.membership_id.left_at
-                    for item in all_receipts
-                    if item.read_at or (not item.membership_id.active and item.membership_id.left_at)
-                ]
+                completion_times = [item.read_at for item in eligible if item.read_at]
                 row['read_at'] = (fields.Datetime.to_string(max(completion_times))
                                   if state == 'read' and completion_times else None)
             if (message.media_id and message.media_id.state == 'attached'
@@ -339,7 +336,7 @@ class BChatTextService(models.AbstractModel):
                     raise AccessError(self.env._('The referenced BChat message is unavailable.'))
             media = None
             if 'media_id' in normalized:
-                self._require_bchat_permission('media')
+                self._require_media_right('upload')
                 media = self.env['baseer.bchat.media'].sudo().browse(normalized['media_id']).exists()
                 if (not media or media.author_user_id.id != self.env.uid
                         or media.room_id.id != room.id
@@ -391,7 +388,8 @@ class BChatTextService(models.AbstractModel):
             if len(members) > 2048:
                 raise ProtocolError('too_many_members', 'This room exceeds its supported member limit.', 409)
             members = members.filtered(lambda row: row.user_id.active
-                                      and row.company_id in row.user_id.company_ids)
+                                      and row.company_id in row.user_id.company_ids
+                                      and row.user_id._bchat_effective_permissions()['chat_view'])
             recipients = members.filtered(lambda row: row.user_id.id != self.env.uid)
             if recipients:
                 self.env['baseer.bchat.message.receipt'].sudo()._create_verified([{
@@ -546,7 +544,7 @@ class BChatTextService(models.AbstractModel):
                 raise AccessError(self.env._('This room is unavailable.'))
             fresh['baseer.bchat.service']._require_bchat_permission('chat_send')
             if 'media_id' in normalized:
-                fresh['baseer.bchat.service']._require_bchat_permission('media')
+                fresh['baseer.bchat.service']._require_media_right('upload')
             room = fresh['baseer.bchat.room'].sudo().browse(room_id)
             if not room.exists() or room.company_id not in user.company_ids:
                 raise AccessError(self.env._('This room is unavailable.'))

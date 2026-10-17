@@ -77,14 +77,16 @@ public class MediaJourneyHarness {
   }
   static class AccountScope {long userId; AccountScope(long id){userId=id;}}
   static class Room {long id,membershipId;int invoicePolicyVersion=1;Room(long id,long m){this.id=id;membershipId=m;}}
-  static class BChatConnectedMediaStore {
+  static abstract class BChatConnectedMediaStore {
     static class Entry {
       long mediaId,invoiceCaseId,replyToMessageId;int policyVersion=1;
       String uploadBlockCode="",clientUuid="message-uuid",text="caption",documentType="other";
       String networkUploadUuid(){return "00000000-0000-4000-8000-000000000001";}
     }
+    abstract List<Entry> pendingForRoom(AccountScope a,long r,long m)throws IOException;
+    abstract void acknowledge(AccountScope a,Entry e)throws IOException;
   }
-  static class Store {
+  static class Store extends BChatConnectedMediaStore {
     List<BChatConnectedMediaStore.Entry> pending=new ArrayList<>();int marks,acks;
     List<BChatConnectedMediaStore.Entry> pendingForRoom(AccountScope a,long r,long m)throws IOException{return new ArrayList<>(pending);}
     BChatConnectedMediaStore.Entry markUploaded(AccountScope a,BChatConnectedMediaStore.Entry e,long id)throws IOException{e.mediaId=id;marks++;return e;}
@@ -105,6 +107,14 @@ public class MediaJourneyHarness {
   boolean stillCurrent(AccountScope a,Room r){return a==account&&r==selectedRoom;}
   boolean mediaUploadAllowed(){return allowed;}
   void updatePendingUi(){updates++;}
+  interface DiskWork<T>{T run()throws Exception;}
+  interface DiskReady<T>{void complete(T value,Exception error);}
+  // Explicit deterministic storage adapter: production schedules this work off-main; the fixture
+  // runs it immediately so network-loss cases retain their original deterministic event order.
+  <T> void local(AccountScope a,DiskWork<T> work,DiskReady<T> ready){
+    try{ready.complete(work.run(),null);}catch(Exception error){ready.complete(null,error);}
+  }
+  void refreshLocalRoom(Room room,boolean restoreDraft){updatePendingUi();}
   void showMissingNativeMediaRetry(AccountScope a,Room r,BChatConnectedMediaStore.Entry e){retries++;}
   void fetchV2(String method,String path,String payload,V2Callback callback){
     if("GET".equals(method)){reads++;callback.complete(200,receipt);}
@@ -214,7 +224,9 @@ setImmediate(()=>{
 javac, java = shutil.which('javac'), shutil.which('java')
 if not javac or not java:
     raise SystemExit('Existing JDK is required; no dependencies are installed by this test.')
-with tempfile.TemporaryDirectory(prefix='bchat-media-journey-') as temporary:
+runtime = root / 'artifacts/test-runtime'
+runtime.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix='bchat-media-journey-', dir=runtime) as temporary:
     folder = Path(temporary)
     harness = folder / 'MediaJourneyHarness.java'
     harness.write_text(fixture + '\n' + production + '\n}\n', encoding='utf-8')

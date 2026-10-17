@@ -162,6 +162,11 @@ public final class OdooIdentityActivity extends Activity {
     private static final int MEDIA_RECORD_PERMISSION_REQUEST = 1208;
     private static final int GROUP_PHOTO_REQUEST = 1209;
     private static final int MEDIA_READ_CHUNK_BYTES = 64 * 1024;
+    // A capability request carries metadata only.  Its response may be lost by the affected
+    // WebView, so it is safe to renew it for the same upload UUID.  Body bytes remain at-most-once.
+    private static final int MAX_NATIVE_GRANT_DISPATCHES = 3;
+    private static final int MAX_NATIVE_GRANT_CONTROL_RETRIES = 40;
+    private static final long NATIVE_GRANT_CONTROL_RETRY_MILLIS = 250L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final SharedPreferences.OnSharedPreferenceChangeListener pushTokenListener =
@@ -8693,29 +8698,71 @@ public final class OdooIdentityActivity extends Activity {
 
     private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
                                       BChatConnectedMediaStore.Entry entry) throws IOException {
-        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy || web == null
-                || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) return;
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy) return;
         File staged = mediaStore.file(scopedAccount, entry);
+        String metadata = entry.uploadMetadata().toString();
         mediaUploadBusy = true;
         updatePendingUi();
         final int request = ++mediaUploadNonce;
-        final String path = V2_ROOMS + "/" + room.id + "/mobile-upload-grants";
         chatNotice.setText(R.string.bchat_media_uploading);
         mediaUploadDeadline(request, scopedAccount, room, entry);
-        if (!postSmallFormDirectlyInWebView(path, "metadata", entry.uploadMetadata().toString(),
+        requestNativeMediaGrant(request, scopedAccount, room, entry, staged, metadata, 0, 0);
+    }
+
+    /**
+     * The small grant request is a control-plane operation.  A busy WebView means it has not
+     * been dispatched at all, so wait for its authenticated lane rather than leaving a staged
+     * file behind.  Once JavaScript has dispatched, only three renewals are allowed: the server
+     * itself uses the same bound for an upload UUID.  No retry from here ever writes media bytes.
+     */
+    private void requestNativeMediaGrant(int request, AccountScope scopedAccount, Room room,
+                                         BChatConnectedMediaStore.Entry entry, File staged,
+                                         String metadata, int dispatchedAttempts, int controlRetries) {
+        if (closed || request != mediaUploadNonce || !mediaUploadBusy
+                || !stillCurrent(scopedAccount, room)) return;
+        boolean controlPlaneReady = csrfToken != null && web != null && web.getUrl() != null
+                && isBridgeUrl(Uri.parse(web.getUrl())) && !v2Busy && !webV2GetFallbackBusy;
+        if (!controlPlaneReady) {
+            if (controlRetries < MAX_NATIVE_GRANT_CONTROL_RETRIES) {
+                handler.postDelayed(() -> requestNativeMediaGrant(request, scopedAccount, room, entry,
+                        staged, metadata, dispatchedAttempts, controlRetries + 1),
+                        NATIVE_GRANT_CONTROL_RETRY_MILLIS);
+            } else {
+                closeMediaUpload();
+                if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+            }
+            return;
+        }
+        String path = V2_ROOMS + "/" + room.id + "/mobile-upload-grants";
+        if (!postSmallFormDirectlyInWebView(path, "metadata", metadata,
                 (statusCode, result) -> beginNativeMediaUpload(request, scopedAccount, room, entry,
-                        staged, statusCode, result))) {
-            closeMediaUpload();
-            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+                        staged, metadata, statusCode, result, dispatchedAttempts + 1))) {
+            // No JavaScript was dispatched.  Keep this separate from the bounded renewal count.
+            if (controlRetries < MAX_NATIVE_GRANT_CONTROL_RETRIES) {
+                handler.postDelayed(() -> requestNativeMediaGrant(request, scopedAccount, room, entry,
+                        staged, metadata, dispatchedAttempts, controlRetries + 1),
+                        NATIVE_GRANT_CONTROL_RETRY_MILLIS);
+            } else {
+                closeMediaUpload();
+                if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
+            }
         }
     }
 
     private void beginNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
-                                        BChatConnectedMediaStore.Entry entry, File staged,
-                                        int statusCode, JSONObject result) {
+                                        BChatConnectedMediaStore.Entry entry, File staged, String metadata,
+                                        int statusCode, JSONObject result, int dispatchedAttempts) {
         if (closed || request != mediaUploadNonce || !mediaUploadBusy
                 || !stillCurrent(scopedAccount, room)) return;
         try {
+            // A zero means Android did not receive the small WebView response.  The server may
+            // have issued a capability, but it has not received media bytes yet, so renewing the
+            // same UUID is safe and bounded.  Explicit HTTP errors are never retried here.
+            if (statusCode == 0 && dispatchedAttempts < MAX_NATIVE_GRANT_DISPATCHES) {
+                requestNativeMediaGrant(request, scopedAccount, room, entry, staged,
+                        metadata, dispatchedAttempts, 0);
+                return;
+            }
             if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                 throw new IOException("Native grant rejected");
             String grantId = result.getString("grant_id");

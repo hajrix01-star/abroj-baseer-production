@@ -4,6 +4,7 @@ from pathlib import Path
 
 source = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java").read_text(encoding="utf-8")
 store = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java").read_text(encoding="utf-8")
+uploader = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/BChatNativeMediaUploader.java").read_text(encoding="utf-8")
 
 def body(signature):
     start = source.index("{", source.index(signature))
@@ -153,6 +154,9 @@ checks = {
         "mediaIo.execute" in body("private void readConnectedMedia(")
         and "mediaIo.execute" in body("private void beginNativeMediaUpload(")
         and "BChatNativeMediaUploader.upload" in body("private void beginNativeMediaUpload(")
+        and "call, ORIGIN, DATABASE, grantId, secret" in body("private void beginNativeMediaUpload(")
+        and 'setRequestProperty("X-Odoo-Database", database)' in uploader
+        and 'database.matches("[a-z0-9_]{1,63}")' in uploader
         and "String metadata = entry.uploadMetadata().toString();" in body(
             "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
         and "requestNativeMediaGrant(request, scopedAccount, room, entry, staged, metadata, 0, 0);" in body(

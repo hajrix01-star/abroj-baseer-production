@@ -55,14 +55,14 @@ final class BChatNativeMediaUploader {
 
     private BChatNativeMediaUploader() { }
 
-    static Result upload(Call call, String origin, String grantId, String secret, File source,
+    static Result upload(Call call, String origin, String database, String grantId, String secret, File source,
                          int expectedSize, String mime) {
-        if (!validInputs(call, origin, grantId, secret) || source == null || expectedSize < 1
+        if (!validInputs(call, origin, database, grantId, secret) || source == null || expectedSize < 1
                 || source.length() != expectedSize || mime == null || mime.isEmpty())
             return new Result(0, "", "NATIVE_UPLOAD_INPUT");
         HttpsURLConnection connection = null;
         try {
-            connection = open(call, endpoint(origin, grantId, "/content"), grantId, secret, "POST");
+            connection = open(call, endpoint(origin, grantId, "/content"), database, grantId, secret, "POST");
             if (connection == null) return new Result(0, "", "NATIVE_UPLOAD_CANCELLED");
             connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", mime);
@@ -93,11 +93,11 @@ final class BChatNativeMediaUploader {
         }
     }
 
-    static Result status(Call call, String origin, String grantId, String secret) {
-        if (!validInputs(call, origin, grantId, secret)) return new Result(0, "", "NATIVE_STATUS_INPUT");
+    static Result status(Call call, String origin, String database, String grantId, String secret) {
+        if (!validInputs(call, origin, database, grantId, secret)) return new Result(0, "", "NATIVE_STATUS_INPUT");
         HttpsURLConnection connection = null;
         try {
-            connection = open(call, endpoint(origin, grantId, ""), grantId, secret, "GET");
+            connection = open(call, endpoint(origin, grantId, ""), database, grantId, secret, "GET");
             if (connection == null) return new Result(0, "", "NATIVE_STATUS_CANCELLED");
             return response(call, connection);
         } catch (IOException failure) {
@@ -110,8 +110,9 @@ final class BChatNativeMediaUploader {
         }
     }
 
-    private static boolean validInputs(Call call, String origin, String grantId, String secret) {
+    private static boolean validInputs(Call call, String origin, String database, String grantId, String secret) {
         return call != null && origin != null && origin.startsWith("https://")
+                && database != null && database.matches("[a-z0-9_]{1,63}")
                 && grantId != null && grantId.matches("[0-9a-f-]{36}")
                 && secret != null && secret.matches("[A-Za-z0-9_-]{43,128}");
     }
@@ -125,7 +126,7 @@ final class BChatNativeMediaUploader {
         return target;
     }
 
-    private static HttpsURLConnection open(Call call, URL target, String grantId, String secret,
+    private static HttpsURLConnection open(Call call, URL target, String database, String grantId, String secret,
                                            String method) throws IOException {
         if (call.isCancelled()) return null;
         HttpsURLConnection connection = (HttpsURLConnection) target.openConnection();
@@ -136,6 +137,9 @@ final class BChatNativeMediaUploader {
         connection.setUseCaches(false);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("Accept", "application/json");
+        // Native capability requests have no WebView session cookie. Odoo uses this pinned
+        // build-time database selector solely to create the scoped request environment.
+        connection.setRequestProperty("X-Odoo-Database", database);
         connection.setRequestProperty("Authorization", "BChatUpload " + grantId + "." + secret);
         connection.setRequestProperty("Cache-Control", "no-store");
         return connection;

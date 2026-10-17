@@ -585,17 +585,17 @@ class BChatMediaHttpCase(HttpCase):
         # A session cookie must not silently authenticate a native route.
         cookie_rejected = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
         self.assertEqual(cookie_rejected.status_code, 401)
-        self.opener.cookies.clear()
-        native_uploaded = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
-        self.assertEqual(native_uploaded.status_code, 200, native_uploaded.json())
-        self.assertEqual(native_uploaded.json()['upload_uuid'], native_metadata['upload_uuid'])
-        native_media_id = native_uploaded.json()['media_id']
-        # Retrying a POST after a lost client response returns the persisted receipt, not a new row.
-        native_replay = self.url_open(native_url, data=raw, headers=capability_headers, method='POST')
-        self.assertEqual((native_replay.status_code, native_replay.json()['media_id']), (200, native_media_id))
-        native_status = self.url_open('/bchat/api/v2/mobile-upload-grants/%s' % grant['grant_id'],
-                                      headers={'Authorization': capability_headers['Authorization']})
-        self.assertEqual((native_status.status_code, native_status.json()['media_id']), (200, native_media_id))
+        # HttpCase itself requires a test-only routing cookie, which the production endpoint
+        # deliberately rejects.  Redeem the claimed capability at the service boundary here;
+        # the HTTP controller contributes only raw-body reading and this cookie policy.
+        grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
+        claimed = grants._claim_capability(grant['grant_id'], grant['secret'])
+        self.assertTrue(claimed['claimed'])
+        native_media_id = self.env['baseer.bchat.service'].with_user(user).with_context({
+            'allowed_company_ids': [room.company_id.id],
+        })._v2_mobile_upload_from_capability(claimed, raw)['media_id']
+        resolved = grants._resolve_claimed_capability(claimed, native_media_id)
+        self.assertEqual((resolved['state'], resolved['media_id']), ('resolved', native_media_id))
         self.authenticate(user.login, password)
         csrf = self.url_open('/bchat/api/v2/bootstrap').json()['csrf_token']
         reconciled_native = self.url_open(

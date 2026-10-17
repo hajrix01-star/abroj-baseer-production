@@ -95,6 +95,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -349,7 +350,6 @@ public final class OdooIdentityActivity extends Activity {
     private Button orderDetailsButton, orderPreviousButton;
     private Button orderWarehouseButton, orderRepresentativeButton, orderCartRouteButton,
             orderCartRepresentativeButton;
-    private TextView orderCartContextView;
     private TextView orderHeaderCompanyButton;
     private TextView chatHeaderCompanyButton;
     private long selectedChatCompanyId;
@@ -5762,6 +5762,7 @@ public final class OdooIdentityActivity extends Activity {
         suppressDraftChanges = false;
         draftActive = true; // Every new text is a draft until persisted into the outbox.
         updatePendingUi();
+        replayKnownConnectedMedia(account, room);
         showCachedMessages(room, 0, true);
         loadMessages(notifiedMessageId > 0 && notifiedMessageId < 2147483647L
                 ? notifiedMessageId + 1 : 0);
@@ -7019,7 +7020,10 @@ public final class OdooIdentityActivity extends Activity {
                         if (trimmedOldest && !window.isEmpty())
                             nextBeforeId = positiveId(window.get(0).get("id"));
                         if (historyCache != null) {
-                            final List<JSONObject> saved = new ArrayList<>(window);
+                            // savePage accepts one bounded page only.  The thread may show a
+                            // larger window after paging, while this just-acknowledged row is
+                            // already fully verified and can be merged by the cache itself.
+                            final List<JSONObject> saved = Collections.singletonList(message);
                             final ConnectedHistoryCache cache = historyCache;
                             queueHistoryWrite(scopedAccount, cache, () -> {
                                 try { cache.savePage(scopedAccount, room.id, room.membershipId, saved); }
@@ -7506,20 +7510,23 @@ public final class OdooIdentityActivity extends Activity {
         bubbleSize.bottomMargin = sameSender ? dp(3) : dp(8);
         if (!mine && !sameSender) {
             LinearLayout incoming = Ui.row(this);
+            // Ui.row inherits Arabic RTL.  Its match-parent wrapper must use physical
+            // placement so an incoming avatar/bubble stays on the left in every locale.
+            incoming.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             incoming.setGravity(Gravity.BOTTOM);
             String avatarKey = account.key + ":room:" + room.id + ":member:" + authorId;
             String avatarPath = V2_ROOMS + "/" + room.id + "/members/" + authorId + "/avatar";
             View avatar = privateAvatarView(avatarKey, avatarPath, authorName,
                     (int) ((authorId * 47) % 360));
             LinearLayout.LayoutParams avatarSize = new LinearLayout.LayoutParams(dp(32), dp(32));
-            avatarSize.setMarginEnd(dp(7));
+            avatarSize.rightMargin = dp(7);
             avatarSize.bottomMargin = dp(8);
             incoming.addView(avatar, avatarSize);
             incoming.addView(bubble, bubbleSize);
             outer.addView(incoming, new LinearLayout.LayoutParams(-1, -2));
         } else {
-            bubbleSize.setMarginStart(mine ? 0 : dp(39));
-            bubbleSize.setMarginEnd(mine ? dp(18) : 0);
+            bubbleSize.leftMargin = mine ? 0 : dp(39);
+            bubbleSize.rightMargin = mine ? dp(18) : 0;
             outer.addView(bubble, bubbleSize);
         }
         return outer;
@@ -7648,7 +7655,7 @@ public final class OdooIdentityActivity extends Activity {
         background.setColor(mine ? Ui.CHAT_SENT : Ui.CHAT_RECEIVED);
         float large = dp(17);
         float small = dp(6);
-        boolean smallLeft = mine != (AppLocale.direction(this) == View.LAYOUT_DIRECTION_RTL);
+        boolean smallLeft = !mine;
         float left = !sameSender && smallLeft ? small : large;
         float right = !sameSender && !smallLeft ? small : large;
         background.setCornerRadii(new float[]{left, left, right, right,
@@ -8458,11 +8465,36 @@ public final class OdooIdentityActivity extends Activity {
             if (outbox.first(scopedAccount, room.id, room.membershipId) != null) {
                 chatNotice.setText(R.string.chat_v2_pending); return;
             }
-            // A server ACK for the upload is not proof that its staged original
-            // survived storage unchanged. Replaying the same UUID lets the
-            // server verify/repair a legacy resized camera copy before send.
+            // media_id means upload was already acknowledged.  Replaying its immutable
+            // client UUID is idempotent and must not upload the original bytes again.
+            if (entry.mediaId > 0) {
+                sendConnectedMedia(scopedAccount, room, entry);
+                return;
+            }
+            // No server media identity exists yet, so this is a genuine upload retry.
             uploadConnectedMedia(scopedAccount, room, entry);
         } catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
+    }
+
+    /**
+     * Recover the narrow crash/transport gap after upload acknowledgement but before the
+     * message acknowledgement reached local storage.  V2 deduplicates client_uuid, so this
+     * sends no file bytes and cannot create a duplicate message.
+     */
+    private void replayKnownConnectedMedia(AccountScope scopedAccount, Room room) {
+        if (!stillCurrent(scopedAccount, room) || mediaStore == null || outbox == null
+                || mediaStageBusy || mediaUploadBusy || mediaConfirmBusy || v2Busy) return;
+        try {
+            BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id,
+                    room.membershipId);
+            if (entry == null || entry.mediaId <= 0
+                    || entry.policyVersion != room.invoicePolicyVersion
+                    || !entry.uploadBlockCode.isEmpty()
+                    || outbox.first(scopedAccount, room.id, room.membershipId) != null) return;
+            sendConnectedMedia(scopedAccount, room, entry);
+        } catch (IOException ignored) {
+            // Keep the explicit recovery action if local storage itself cannot be read.
+        }
     }
 
     private void closeMediaUpload() {
@@ -11137,7 +11169,8 @@ public final class OdooIdentityActivity extends Activity {
         String label = option.option;
         if (!option.packaging.isEmpty() && !option.packaging.equals(option.option))
             label += " · " + option.packaging;
-        return label + " · " + option.uom;
+        return option.uom.equals(option.option) || option.uom.equals(option.packaging)
+                ? label : label + " · " + option.uom;
     }
 
     private LinearLayout orderQuantityStepper(OrderCartLine selected) {
@@ -12104,13 +12137,6 @@ public final class OdooIdentityActivity extends Activity {
                     orderChoiceName(orderRepresentatives, orderRepresentativeId,
                             R.string.order_choose_representative));
         }
-        if (orderCartContextView != null) {
-            orderCartContextView.setText(getString(R.string.order_cart_context,
-                    companyNameForId(orderCompanyId, orderChoiceName(orderCompanies,
-                            orderCompanyId, R.string.order_choose_company)),
-                    orderChoiceName(orderWarehouses, orderWarehouseId,
-                            R.string.order_choose_warehouse)));
-        }
     }
 
     private void chooseOrderPurchaseRoute() {
@@ -12141,10 +12167,6 @@ public final class OdooIdentityActivity extends Activity {
         if (orderCartDialog != null && orderCartDialog.isShowing()) return;
         LinearLayout content = Ui.column(this);
         Ui.pad(content, 14, 6);
-        orderCartContextView = Ui.text(this, "", 12, Ui.MUTED, false);
-        Ui.pad(orderCartContextView, 10, 8);
-        orderCartContextView.setBackground(Ui.bg(Ui.TASK_ACTIVE_TINT, 10, this));
-        content.addView(orderCartContextView);
         orderCartRouteButton = orderChoiceButton(R.string.order_purchase_route,
                 this::chooseOrderPurchaseRoute);
         content.addView(orderCartRouteButton, fieldSize(4));
@@ -12158,7 +12180,7 @@ public final class OdooIdentityActivity extends Activity {
         scroll.addView(orderCartLinesView);
         int visibleHeight = Math.min(400, Math.max(130,
                 getResources().getConfiguration().screenHeightDp - 300));
-        int desiredHeight = Math.min(visibleHeight, Math.max(100, orderCart.size() * 104));
+        int desiredHeight = Math.min(visibleHeight, Math.max(150, orderCart.size() * 146));
         content.addView(scroll, new LinearLayout.LayoutParams(-1, dp(desiredHeight)));
         orderCartTotalView = Ui.text(this, orderQuoteLabel(), 17, Ui.INK, true);
         Ui.pad(orderCartTotalView, 10, 10);
@@ -12176,7 +12198,6 @@ public final class OdooIdentityActivity extends Activity {
             orderCartDialog = null;
             orderCartLinesView = null;
             orderCartTotalView = null;
-            orderCartContextView = null;
             orderCartRouteButton = null;
             orderCartRepresentativeButton = null;
         });

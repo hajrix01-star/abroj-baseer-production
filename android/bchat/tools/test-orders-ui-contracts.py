@@ -106,16 +106,23 @@ class OrdersUiContracts(unittest.TestCase):
         self.assertIn('setMinWidth(dp(48))', action)
         self.assertIn('setMinHeight(dp(48))', action)
 
-    def test_cart_keeps_context_concise_and_uses_one_quantity_control_per_line(self):
+    def test_cart_avoids_repeated_context_and_uses_one_quantity_control_per_line(self):
         route = method('refreshOrderCartRoute')
         self.assertIn('orderCartRouteButton.setText(orderRouteLabel(orderPurchaseRoute));', route)
-        self.assertIn('companyNameForId(orderCompanyId', route)
+        self.assertNotIn('orderCartContextView', SOURCE)
+        self.assertNotIn('companyNameForId(orderCompanyId', route)
         self.assertNotIn('String route = orderRouteLabel(orderPurchaseRoute);', route)
+        review = method('reviewOrderCart')
+        self.assertIn('Math.max(150, orderCart.size() * 146)', review)
         cart = method('renderOrderCartLines')
         self.assertIn('Ui.iconButton(this, "close", getString(R.string.order_remove)', cart)
         self.assertIn('controls.addView(orderQuantityStepper(line)', cart)
         self.assertNotIn('new EditText(this)', cart)
         self.assertNotIn('orderQuantityAction("✓"', cart)
+        option_label = SOURCE[SOURCE.index('private String orderOptionLabel('):
+                              SOURCE.index('private LinearLayout orderQuantityStepper(')]
+        self.assertIn('option.uom.equals(option.option)', option_label)
+        self.assertIn('option.uom.equals(option.packaging)', option_label)
 
 
 if __name__ == '__main__':

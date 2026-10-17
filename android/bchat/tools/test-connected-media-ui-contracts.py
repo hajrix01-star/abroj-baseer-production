@@ -47,9 +47,24 @@ checks = {
             "private void reconcilePendingMediaFromVerifiedHistory(")
         and "mediaStore.acknowledge(scopedAccount, pending);" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
+    "Known uploaded media is replayed idempotently when its room opens":
+        "replayKnownConnectedMedia(account, room);" in body(
+            "private void selectRoom(Room room, long notifiedMessageId)")
+        and "entry.mediaId <= 0" in body("private void replayKnownConnectedMedia(")
+        and "sendConnectedMedia(scopedAccount, room, entry);" in body(
+            "private void replayKnownConnectedMedia("),
+    "Manual media retry does not upload a known server media record again":
+        "if (entry.mediaId > 0)" in body("private void retryConnectedMedia()")
+        and "sendConnectedMedia(scopedAccount, room, entry);" in body(
+            "private void retryConnectedMedia()"),
+    "Acknowledged rows never disable the cache after a long visible thread":
+        "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":
-        "outer.setGravity(mine ? Gravity.RIGHT : Gravity.LEFT);" in body(
-            "private View createMessageBubble(Room room, JSONObject item,"),
+        "incoming.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);" in body(
+            "private View createMessageBubble(Room room, JSONObject item,")
+        and "bubbleSize.leftMargin = mine ? 0 : dp(39);" in body(
+            "private View createMessageBubble(Room room, JSONObject item,")
+        and "boolean smallLeft = !mine;" in body("private GradientDrawable chatBubbleBackground("),
     "Media chunks are decoded and encoded off UI thread":
         "mediaIo.execute" in body("private void readConnectedMedia(")
         and "mediaIo.execute" in body("private void sendNextMediaChunk("),

@@ -282,6 +282,36 @@ class BChatMobileUploadGrant(models.Model):
         return grant._snapshot()
 
     @api.model
+    def _release_claimed_capability(self, snapshot):
+        """Release an unpersisted body attempt before Odoo retries its transaction."""
+        if not isinstance(snapshot, dict):
+            return False
+        try:
+            grant_id = positive_id(snapshot.get('id'), 'grant_id')
+        except ProtocolError:
+            return False
+        started_at = snapshot.get('upload_started_at')
+        if not started_at:
+            return False
+        with self.env.registry.cursor() as cursor:
+            env = api.Environment(cursor, SUPERUSER_ID, {})
+            cursor.execute('''
+                SELECT id FROM baseer_bchat_mobile_upload_grant WHERE id = %s FOR UPDATE
+            ''', [grant_id])
+            row = cursor.fetchone()
+            grant = row and env['baseer.bchat.mobile.upload.grant'].sudo().browse(row[0]).exists()
+            released = bool(
+                grant and grant.grant_id == snapshot.get('grant_id')
+                and grant.state == 'uploading' and grant.upload_started_at == started_at
+            )
+            if released:
+                grant._write_verified({
+                    'state': 'issued', 'upload_started_at': False,
+                }, _MOBILE_UPLOAD_GRANT_TOKEN)
+            cursor.commit()
+            return released
+
+    @api.model
     def _deny_claimed_capability(self, snapshot, code):
         if not isinstance(snapshot, dict) or not isinstance(code, str) or not re.fullmatch(r'[a-z_]{1,64}', code):
             return

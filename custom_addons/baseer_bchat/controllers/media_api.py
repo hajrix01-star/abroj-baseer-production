@@ -1,6 +1,8 @@
 """Same-session BChat media transport; no public attachment URL is returned."""
 from urllib.parse import quote
 
+from psycopg2.extensions import TransactionRollbackError
+
 from odoo import http
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -145,6 +147,12 @@ class BChatMediaApi(http.Controller):
             resolved = request.env['baseer.bchat.mobile.upload.grant']._resolve_claimed_capability(
                 snapshot, upload['media_id'])
             return self._native_json(self._native_result(resolved))
+        except TransactionRollbackError:
+            # Odoo retries after a serialization/deadlock rollback.  The capability claim
+            # is independent, so release this attempt before the retry sees ``uploading``.
+            if snapshot and snapshot.get('claimed'):
+                request.env['baseer.bchat.mobile.upload.grant']._release_claimed_capability(snapshot)
+            raise
         except (AccessError, ProtocolError) as error:
             if snapshot and snapshot.get('state') == 'uploading':
                 request.env['baseer.bchat.mobile.upload.grant']._deny_claimed_capability(

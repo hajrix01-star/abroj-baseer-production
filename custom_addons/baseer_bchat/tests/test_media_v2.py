@@ -591,6 +591,9 @@ class BChatMediaHttpCase(HttpCase):
         grants = self.env['baseer.bchat.mobile.upload.grant'].sudo()
         claimed = grants._claim_capability(grant['grant_id'], grant['secret'])
         self.assertTrue(claimed['claimed'])
+        self.assertTrue(grants._release_claimed_capability(claimed))
+        claimed = grants._claim_capability(grant['grant_id'], grant['secret'])
+        self.assertTrue(claimed['claimed'])
         native_media_id = self.env['baseer.bchat.service'].with_user(user).with_context({
             'allowed_company_ids': [room.company_id.id],
         })._v2_mobile_upload_from_capability(claimed, raw)['media_id']

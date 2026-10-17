@@ -8,6 +8,7 @@
                 <field name="name"/>
                 <field name="company_id"/>
                 <field name="invoice_policy"/>
+                <field name="admin_recovery_required"/>
             </list>
         </field>
     </record>
@@ -16,12 +17,18 @@
         <field name="model">baseer.bchat.room</field>
         <field name="arch" type="xml">
             <form string="BChat Room" delete="0" duplicate="0">
+                <header>
+                    <button name="action_open_admin_recovery" type="object"
+                            string="Recover Group Administration" class="btn-primary"
+                            invisible="not admin_recovery_required"/>
+                </header>
                 <sheet>
                     <group>
                         <field name="name"/>
                         <field name="company_id" readonly="id"/>
                         <field name="invoice_policy"/>
                         <field name="invoice_policy_version" readonly="1"/>
+                        <field name="admin_recovery_required" readonly="1"/>
                     </group>
                     <notebook>
                         <page string="Members">
@@ -36,6 +43,24 @@
                         </page>
                     </notebook>
                 </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_bchat_group_admin_recovery_form" model="ir.ui.view">
+        <field name="name">baseer.bchat.group.admin.recovery.form</field>
+        <field name="model">baseer.bchat.group.admin.recovery</field>
+        <field name="arch" type="xml">
+            <form string="Recover Group Administration">
+                <group>
+                    <field name="room_id"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="eligible_user_ids" invisible="1"/>
+                    <field name="user_id" domain="[('id', 'in', eligible_user_ids)]"/>
+                </group>
+                <footer>
+                    <button name="action_recover" type="object" string="Assign Administrator" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
             </form>
         </field>
     </record>

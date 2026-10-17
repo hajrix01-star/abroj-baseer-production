@@ -19,7 +19,8 @@ class BChatService(models.AbstractModel):
     @api.model
     def _require_bchat_permission(self, key):
         user = self._require_user()
-        if key not in ('chat_view', 'chat_send', 'media', 'group_create',
+        if key not in ('chat_view', 'chat_send', 'media', 'media_view',
+                       'media_upload', 'media_download', 'group_create',
                        'group_manage', 'task_view', 'task_manage', 'room_admin'):
             raise ValueError('Unknown BChat permission')
         if not user._bchat_effective_permissions()[key]:
@@ -30,13 +31,21 @@ class BChatService(models.AbstractModel):
     def _require_any_bchat_permission(self, *keys):
         user = self._require_user()
         permitted = user._bchat_effective_permissions()
-        allowed = {'chat_view', 'chat_send', 'media', 'group_create',
+        allowed = {'chat_view', 'chat_send', 'media', 'media_view',
+                   'media_upload', 'media_download', 'group_create',
                    'group_manage', 'task_view', 'task_manage', 'room_admin'}
         if not keys or any(key not in allowed for key in keys):
             raise ValueError('Unknown BChat permission')
         if not any(permitted[key] for key in keys):
             raise AccessError(self.env._('This BChat action is not enabled for your user.'))
         return user
+
+    @api.model
+    def _require_media_right(self, operation):
+        """One boundary shared by previews, originals and optional DMS readers."""
+        if operation not in ('view', 'upload', 'download'):
+            raise ValueError('Unknown BChat media operation')
+        return self._require_bchat_permission('media_' + operation)
 
     @api.model
     def _require_room_manager(self):

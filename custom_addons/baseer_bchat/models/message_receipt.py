@@ -57,6 +57,30 @@ class BChatMessageReceipt(models.Model):
             raise AccessError(self.env._('A verified BChat acknowledgement is required.'))
         return super(BChatMessageReceipt, self.sudo()).write(vals)
 
+    def _eligibility_exclusion_reason(self):
+        """Current eligibility is not evidence that somebody read a message.
+
+        This internal, content-free reason is computed without changing either
+        original acknowledgement timestamp. Restoring a right restores the
+        original outstanding receipt, never a fabricated acknowledgement.
+        """
+        self.ensure_one()
+        member = self.membership_id
+        user = self.recipient_user_id
+        message = self.message_id
+        if (not member.active or member.user_id != user
+                or member.room_id != message.room_id
+                or member.company_id != message.company_id
+                or message.id <= member.joined_after_message_id):
+            return 'membership_ended'
+        if not user.active or not user._is_internal():
+            return 'account_inactive'
+        if message.company_id not in user.company_ids:
+            return 'company_revoked'
+        if not user._bchat_effective_permissions()['chat_view']:
+            return 'chat_revoked'
+        return False
+
     def unlink(self):
         raise AccessError(self.env._('BChat message receipts cannot be deleted.'))
 

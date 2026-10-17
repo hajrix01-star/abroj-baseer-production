@@ -1,0 +1,17 @@
+<resources>
+    <color name="bchat_surface">#FFFFFF</color>
+    <color name="bchat_background">#F8FAFC</color>
+    <color name="bchat_ink">#182A3B</color>
+    <color name="bchat_muted">#5F6F7E</color>
+    <color name="bchat_accent">#0B6DB8</color>
+    <color name="bchat_accent_bright">#127DBB</color>
+    <color name="bchat_line">#E5EAEE</color>
+    <color name="bchat_canvas">#F8F6F2</color>
+    <color name="bchat_sent">#E3F9E9</color>
+    <color name="bchat_received">#FFFFFF</color>
+    <color name="bchat_tonal">#EAF3FC</color>
+    <color name="bchat_tonal_pressed">#D6E7F8</color>
+    <color name="bchat_disabled">#EFF1F4</color>
+    <color name="bchat_success_tint">#E6F6EC</color>
+    <color name="bchat_success">#18794E</color>
+</resources>

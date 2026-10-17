@@ -224,7 +224,8 @@ class BChatTextCase(TransactionCase):
 
         add_employee('Self one', self.company, 'Z Manager')
         add_employee('Inactive self', empty, 'Hidden inactive', active=False)
-        add_employee('Another user', self.company, 'Hidden colleague', user=self.manager)
+        colleague = self._user('profile-colleague', 'base.group_user', self.company)
+        add_employee('Another user', self.company, 'Hidden colleague', user=colleague)
         add_employee('Self second company', second, 'Second title')
         add_employee('Self excluded company', excluded, 'Hidden company')
         self.member.write({'company_ids': [Command.set([
@@ -257,12 +258,16 @@ class BChatTextCase(TransactionCase):
         Image.new('RGB', (12, 12), '#aa1122').save(user_image, format='PNG')
         employee_image = io.BytesIO()
         Image.new('RGB', (12, 12), '#2474a7').save(employee_image, format='PNG')
-        self.member.write({'image_128': base64.b64encode(user_image.getvalue())})
-        self.env['hr.employee'].sudo().create({
+        self.member.write({'image_1920': base64.b64encode(user_image.getvalue())})
+        employee = self.env['hr.employee'].sudo().create({
             'name': 'BChat avatar employee', 'user_id': self.member.id,
             'company_id': self.company.id,
-            'image_128': base64.b64encode(employee_image.getvalue()),
+            # HR create synchronizes from user.image_1920 unless the employee
+            # receives its own original image, not only a derived thumbnail.
+            'image_1920': base64.b64encode(employee_image.getvalue()),
         })
+        with Image.open(io.BytesIO(base64.b64decode(employee.image_128))) as prepared:
+            self.assertEqual(prepared.convert('RGB').getpixel((4, 4)), (36, 116, 167))
         raw = self._service(self.manager)._v2_member_avatar(self.room.id, self.member.id)
         with Image.open(io.BytesIO(raw)) as avatar:
             self.assertEqual(avatar.size, (12, 12))
@@ -284,14 +289,18 @@ class BChatTextCase(TransactionCase):
         second_image = io.BytesIO()
         Image.new('RGB', (12, 12), '#2474a7').save(second_image, format='PNG')
         employees = self.env['hr.employee'].sudo()
-        employees.create({
+        first_employee = employees.create({
             'name': 'BChat first-company avatar', 'user_id': self.member.id,
-            'company_id': self.company.id, 'image_128': base64.b64encode(first_image.getvalue()),
+            'company_id': self.company.id, 'image_1920': base64.b64encode(first_image.getvalue()),
         })
-        employees.create({
+        second_employee = employees.create({
             'name': 'BChat second-company avatar', 'user_id': self.member.id,
-            'company_id': second.id, 'image_128': base64.b64encode(second_image.getvalue()),
+            'company_id': second.id, 'image_1920': base64.b64encode(second_image.getvalue()),
         })
+        for employee, expected in ((first_employee, (170, 17, 34)),
+                                   (second_employee, (36, 116, 167))):
+            with Image.open(io.BytesIO(base64.b64decode(employee.image_128))) as prepared:
+                self.assertEqual(prepared.convert('RGB').getpixel((4, 4)), expected)
         raw = self._service(self.member).with_company(second)._v2_profile_avatar()
         with Image.open(io.BytesIO(raw)) as avatar:
             self.assertEqual(avatar.convert('RGB').getpixel((4, 4)), (36, 116, 167))
@@ -928,18 +937,47 @@ class BChatTextCase(TransactionCase):
         self.assertEqual(add_limit.exception.code, 'too_many_rooms')
         self.assertEqual(len(service._v2_rooms()['rooms']), 100)
 
+    def test_admin_membership_batch_99_plus_two_rolls_back_without_crossing_100(self):
+        rooms = self.env['baseer.bchat.room'].with_user(self.manager).with_company(self.company)
+        memberships = self.env['baseer.bchat.membership'].with_user(self.manager).with_company(self.company)
+        for number in range(99):
+            room = rooms.create({'name': 'Batch capacity %s' % number, 'company_id': self.company.id})
+            memberships.create({'room_id': room.id, 'user_id': self.member.id})
+        targets = rooms.create([{'name': 'Batch capacity target %s' % number,
+                                 'company_id': self.company.id} for number in range(2)])
+        before_changes = self.env['baseer.bchat.change'].sudo().search_count([('user_id', '=', self.member.id)])
+        with self.assertRaises(ProtocolError) as limited:
+            memberships.create([{'room_id': room.id, 'user_id': self.member.id} for room in targets])
+        self.assertEqual(limited.exception.code, 'too_many_rooms')
+        # The first row is rolled back as part of the same protected batch.
+        self.assertEqual(memberships.sudo().search_count([
+            ('user_id', '=', self.member.id), ('active', '=', True)]), 99)
+        self.assertFalse(memberships.sudo().search_count([
+            ('user_id', '=', self.member.id), ('room_id', 'in', targets.ids)]))
+        self.assertEqual(self.env['baseer.bchat.change'].sudo().search_count([
+            ('user_id', '=', self.member.id)]), before_changes)
+        memberships.create({'room_id': targets[0].id, 'user_id': self.member.id})
+        self.assertEqual(memberships.sudo().search_count([
+            ('user_id', '=', self.member.id), ('active', '=', True)]), 100)
+        with self.assertRaises(ProtocolError) as full:
+            memberships.create({'room_id': targets[1].id, 'user_id': self.member.id})
+        self.assertEqual(full.exception.code, 'too_many_rooms')
+
     def test_read_completion_excludes_departed_recipient(self):
         one = self._join(self.member)
         other = self._user('other-reader', 'base.group_user', self.company)
         second = self._join(other)
         message_id = self._send(self.manager, self.manager_membership)['message_id']
         self._service(self.member)._v2_receipt_ack(self.room.id, message_id, 'read')
+        genuine_read_at = self.env['baseer.bchat.message.receipt'].sudo().search([
+            ('message_id', '=', message_id), ('membership_id', '=', one.id),
+        ]).read_at
         self.assertEqual(self._service(self.manager)._v2_history(self.room.id)['messages'][0]['delivery_state'], 'sent')
         second.with_user(self.manager).with_company(self.company).action_revoke()
         row = self._service(self.manager)._v2_history(self.room.id)['messages'][0]
         self.assertEqual(row['delivery_state'], 'read')
         self.assertIsNotNone(row['read_at'])
-        self.assertEqual(row['read_at'], second.left_at.strftime('%Y-%m-%d %H:%M:%S'))
+        self.assertEqual(row['read_at'], genuine_read_at.strftime('%Y-%m-%d %H:%M:%S'))
         late = self._join(other)
         self.assertNotEqual(late.id, second.id)
         with self.assertRaises(AccessError):
@@ -964,10 +1002,16 @@ class BChatTextHttpCase(HttpCase):
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
         })
-        room = self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
+                'name': 'Role-only manager remains unauthorized', 'company_id': company.id,
+            })
+        room_admin = self.env.ref('base.user_admin')
+        room_admin.write({'group_ids': [Command.link(self.env.ref('baseer_bchat.group_bchat_manager').id)]})
+        room = self.env['baseer.bchat.room'].with_user(room_admin).with_company(company).create({
             'name': 'BChat v2 HTTP room', 'company_id': company.id,
         })
-        joined = self.env['baseer.bchat.membership'].with_user(manager).with_company(company).create({
+        joined = self.env['baseer.bchat.membership'].with_user(room_admin).with_company(company).create({
             'room_id': room.id, 'user_id': member.id,
         })
         self.authenticate(member.login, password)

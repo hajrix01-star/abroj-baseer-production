@@ -98,7 +98,10 @@ class BChatTaskCase(TransactionCase):
     def test_room_current_member_visibility_and_revocation(self):
         task_id = self._create(self.room)['task']['id']
         self.assertEqual(self._service(self.rescuer)._v2_task_detail(task_id)['task']['room_id'], self.room.id)
-        self.memberships[self.rescuer.id].with_user(self.manager).with_company(self.company).action_revoke()
+        with self.assertRaises(AccessError):
+            self.memberships[self.rescuer.id].with_user(self.manager).with_company(self.company).action_revoke()
+        self.assertTrue(self.memberships[self.rescuer.id].active)
+        self.memberships[self.rescuer.id].with_user(self.room_admin).with_company(self.company).action_revoke()
         with self.assertRaises(AccessError):
             self._service(self.rescuer)._v2_task_detail(task_id)
         self.assertNotIn(task_id, [row['id'] for row in self._service(self.rescuer)._v2_tasks()['tasks']])
@@ -219,7 +222,7 @@ class BChatTaskCase(TransactionCase):
         task_id = self._create(self.room)['task']['id']
         with self.assertRaises(AccessError):
             self._change(self.rescuer, task_id, 1, 'rescue', self.rescuer, 'Neither actor is absent')
-        self.memberships[self.assignee.id].with_user(self.manager).with_company(self.company).action_revoke()
+        self.memberships[self.assignee.id].with_user(self.room_admin).with_company(self.company).action_revoke()
         with self.assertRaises(AccessError):
             self._change(self.rescuer, task_id, 1, 'rescue', self.foreign,
                          'The replacement belongs to another company')
@@ -246,7 +249,7 @@ class BChatTaskCase(TransactionCase):
 
     def test_rescue_when_creator_leaves_but_assignee_remains(self):
         task_id = self._create(self.room)['task']['id']
-        self.memberships[self.creator.id].with_user(self.manager).with_company(self.company).action_revoke()
+        self.memberships[self.creator.id].with_user(self.room_admin).with_company(self.company).action_revoke()
         saved = self._change(self.rescuer, task_id, 1, 'rescue', self.rescuer,
                              'The original creator left this room')
         self.assertEqual(saved['task']['assignee_id'], self.rescuer.id)
@@ -335,8 +338,9 @@ class BChatTaskHttpCase(HttpCase):
         event = self.env['baseer.bchat.push.event'].sudo().search([
             ('task_id', '=', task_id), ('recipient_id', '=', user.id),
         ], limit=1)
-        # Registration happens after this task, so create another to exercise
-        # the endpoint through the authenticated browser session.
+        self.assertFalse(event)
+        # Even with a registered installation, a business action must not
+        # notify its own actor. The explicit diagnostic self-test is separate.
         second_payload = {**json.loads(payload), 'client_uuid': str(uuid4()), 'title': 'HTTP push task'}
         second = self.url_open('/bchat/api/v2/tasks', data={
             'csrf_token': bootstrap['csrf_token'], 'payload': json.dumps(second_payload),
@@ -345,11 +349,24 @@ class BChatTaskHttpCase(HttpCase):
         event = self.env['baseer.bchat.push.event'].sudo().search([
             ('task_id', '=', second.json()['task']['id']), ('recipient_id', '=', user.id),
         ], limit=1)
+        self.assertFalse(event)
+        sender = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BChat task HTTP sender', 'login': 'bchat-task-sender-%s' % uuid4().hex,
+            'company_id': company.id, 'company_ids': [Command.set(company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        notified = self.env['baseer.bchat.service'].with_user(sender)._v2_task_create({
+            **second_payload, 'client_uuid': str(uuid4()), 'title': 'Other actor task',
+        })
+        event = self.env['baseer.bchat.push.event'].sudo().search([
+            ('task_id', '=', notified['task']['id']), ('recipient_id', '=', user.id),
+        ], limit=1)
+        self.assertTrue(event)
         notification = self.url_open('/bchat/api/v2/notifications/%s' % event.id,
                                      allow_redirects=False)
         self.assertEqual(notification.status_code, 200)
         self.assertEqual(notification.json()['notification']['source_ref']['task_id'],
-                         second.json()['task']['id'])
+                         notified['task']['id'])
         replay = self.url_open('/bchat/api/v2/tasks', data={
             'csrf_token': bootstrap['csrf_token'], 'payload': payload,
         }, allow_redirects=False)

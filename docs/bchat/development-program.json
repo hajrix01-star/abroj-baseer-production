@@ -1,0 +1,928 @@
+{
+  "date": "2026-10-17",
+  "baseCommit": "9a3abda312b739f62fba62c284b1c8d206f454d7",
+  "baseAuditFindings": 40,
+  "sourceIncident": "Image send fixed, closed by owner on v87",
+  "purpose": "Authorized execution of the entire audit and design plan; one integrated final candidate only",
+  "skills": [
+    "alpha-efficient-orchestration",
+    "alpha-architects-team",
+    "alpha-build-team",
+    "emil-design-eng"
+  ],
+  "runtimeDeviceVerified": false,
+  "productCodeChanged": true,
+  "designSpecifications": [
+    {
+      "id": "D01",
+      "title": "حجم الخط وارتفاع السطر",
+      "maps": [
+        "F04",
+        "F34",
+        "F35"
+      ],
+      "before": "النص 16sp، المعاينة 14sp، الوقت 13sp، عنوان الغرفة 17sp، عنوان المحادثة 16sp. ارتفاع السطر الأدنى 22dp مع حماية Math.max؛ لا يوجد اختيار حجم محادثة مستقل واضح.",
+      "after": "نحافظ على 16sp للنص المعتاد، مع صغير 14 وعادي 16 وكبير 18sp؛ اسم القائمة 17sp، العنوان 18sp، المعاينة 14sp، البيانات الثانوية 12–13sp. ارتفاع سطر دلالي مرن يقارب 22–24sp للنص 16، ويكبر مع خط النظام دون قص.",
+      "why": "ليس المطلوب تصغير كل شيء؛ المطلوب تدرج ثابت وقراءة عربية مريحة. المقاسات المقترحة لبشات وليست قياسًا منسوخًا من واتساب أو تلغرام.",
+      "acceptance": "أسماء عربية وإنجليزية طويلة وأرقام 0–9 وإيموجي على fontScale1/1.3/2 وعرض 360dp، دون قص أو تراكب؛ استعادة تفضيل الحجم للحساب/الجهاز وفق العقد.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/Ui.java",
+          37
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7510
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          980
+        ]
+      ]
+    },
+    {
+      "id": "D02",
+      "title": "صف المحادثة والتباعد",
+      "maps": [
+        "F11",
+        "F25",
+        "F35"
+      ],
+      "before": "صف الغرفة بحد أدنى 75dp وصورة 48dp وفاصل يبدأ بعد 72dp، مع اسم حتى سطرين ومعاينة ووقت وعدّاد، وسطر شركة إضافي عند تعدد الشركات.",
+      "after": "صف متكيف بحد أدنى 76dp تقريبًا، لا ارتفاع إجباري؛ صورة 48dp، مسافة 12dp للنص، اسم واضح ومعاينة سطر واحد ووقت وشارة غير مقروء. الشركة كسياق مختصر عند الحاجة لا تكرار يطيل كل صف. غرف مثبتة وكتم ظاهر دون زحام.",
+      "why": "معظم البنية موجودة؛ التحسين في الاتساق مع الاسم الطويل والكثافة والسياق، لا إعلان أن التباعد الحالي كله خطأ.",
+      "acceptance": "لقطات عند أسماء قصيرة وطويلة وعدّاد 99+ وشركات متعددة وخط 200%؛ لا يتصادم الوقت مع الاسم أو الشارة مع المعاينة.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          5380
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          5407
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          5431
+        ]
+      ]
+    },
+    {
+      "id": "D03",
+      "title": "علامات الصح وأسهم الإجراءات",
+      "maps": [
+        "F05",
+        "F14",
+        "F29",
+        "F35"
+      ],
+      "before": "الحالات sent/delivered/read موجودة، بعلامات Unicode ✓ و✓✓ داخل نص الوقت؛ القراءة تلوّن نص الوقت كله بلون Ui.GREEN الذي قيمته الفعلية أزرق. أزرار التنقل لها معالجة منفصلة.",
+      "after": "أيقونات متجهية ثابتة: انتظار، صح واحد، صحان، صحان أزرقان، وتعذر محدد. يظل الوقت محايدًا وتتغير أيقونة الحالة فقط. رمز الحالة لا يعتمد على اللون وحده. سهم الرجوع يتبع RTL/LTR؛ الوارد يبقى يسارًا والصادر يمينًا كما هو الآن. سهم الرد يتجه للمحتوى المقتبس لا يُعكس عشوائيًا.",
+      "why": "منع اختلاف شكل الصح بين الخطوط، وفصل دلالته عن الوقت، وعدم خلط اتجاه واجهة العربية بجهة فقاعة المرسل.",
+      "acceptance": "كل حالة بعلامة ونص وصول واضح؛ محاذاة baseline في العربي والإنجليزي، ولمس 48dp للتفاصيل، وصور مقارنة على Android26 وأحدث إصدار مستهدف.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7549
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7454
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/Ui.java",
+          16
+        ]
+      ]
+    },
+    {
+      "id": "D04",
+      "title": "تعريف الإرسال والتسليم والقراءة",
+      "maps": [
+        "F05",
+        "F14",
+        "F17",
+        "F19"
+      ],
+      "before": "الخادم يجمع إيصالات الأعضاء المؤهلين؛ التسليم يصدر عند جلب تاريخ الغرفة، و acknowledgeMessage يشترط أن تكون هي الغرفة المختارة. Push يعرض التنبيه لكنه لا يثبت receipt. شاشة التفاصيل تعرض الإرسال ووقت اكتمال القراءة، لا تفاصيل التسليم لكل مستلم.",
+      "after": "عقد بشات المقترح الأقرب لواتساب: sent=رسالة محفوظة بالخادم، delivered=جلب موثق من تطبيق مستلم مؤهل ولو كان خارج الغرفة، read=ظهور الرسالة في محادثة نشطة للمستلم. في المجموعة يكتمل الصحان حسب جميع المستلمين المؤهلين، وتوضح التفاصيل عددهم وأوقاتهم ضمن الحقوق. لا نعطي delivered من قبول FCM أو ظهور بانر وحده.",
+      "why": "واتساب وتلغرام لا يستعملان المعنى نفسه للصحين. اختيار بشات يجب أن يكون صريحًا. قيد الغرفة الحالي فجوة منتج قياسًا بعقد device-delivery المقترح، وليس تلف بيانات أو اختراقًا.",
+      "acceptance": "حسابان: التطبيق في قائمة الغرف ثم داخل الغرفة ثم في الخلفية. تنفصل حالات قبول الخادم ووصول البيانات وظهور الرسالة؛ اختبار أجهزة متعددة وسحب حقوق ومجموعة وتكرار ACK. لا قراءة أثناء قفل/خلفية أو بمجرد فتح التنبيه.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          6957
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7766
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7831
+        ],
+        [
+          "custom_addons/baseer_bchat/models/v2_service.py",
+          287
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7701
+        ]
+      ]
+    },
+    {
+      "id": "D05",
+      "title": "النغمات وأصوات المحادثة",
+      "maps": [
+        "F08",
+        "F12",
+        "F18",
+        "F19",
+        "F25"
+      ],
+      "before": "قناة واحدة bchat-events-v3 للمحادثات والمهام والطلبات بصوت النظام واهتزاز موحد. لا سياسة واضحة في خدمة FCM لكون الغرفة مفتوحة، ولا setOnlyAlertOnce أو سجل منع إعادة التنبيه الدائم في هذا المسار؛ لا أصوات إرسال/استقبال داخلية مخصصة ظاهرة.",
+      "after": "إعدادات واضحة لصوت الرسائل والمهام والطلبات والاهتزاز والكتم، مع توجيه لاختيارات قناة Android. الصوت الداخلي اختياري وهادئ للرسالة الجديدة فقط؛ لا صوت عند استرجاع التاريخ أو ACK أو رسالة المستخدم نفسه. الغرفة المفتوحة لا تنتج بانر ونغمة نظام ثم نغمة داخلية للحدث نفسه. نغمة بشات أصلية/مرخصة؛ لا نسخ أصوات المنافسين.",
+      "why": "هذه سياسة تجربة وسلامة مقاطعة، لا دليل أن صوتًا مزدوجًا وقع فعليًا. بعد إنشاء القناة يتحكم المستخدم بسلوكها؛ لا نبدل معرفها فقط لتجاوز الكتم.",
+      "acceptance": "إذن مرفوض وقناة مكتومة و DND ومكالمة وصوت قيد التشغيل و Push مكرر؛ لا تجاوز لاختيار النظام ولا تشغيل نغمتين. التحديث يحافظ على تفضيلات القنوات القديمة.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          23
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          30
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          63
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          76
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          2396
+        ]
+      ]
+    },
+    {
+      "id": "D06",
+      "title": "إشعار محادثة واضح في الستارة",
+      "maps": [
+        "F19",
+        "F20",
+        "F25"
+      ],
+      "before": "Notification.Builder يعرض المرسل ومقتطف النص بأيقونة التطبيق الصغيرة و BigTextStyle، وكل حدث له إشعار مستقل. لا MessagingStyle/Person أو تجميع محادثة فعلي في هذا المسار.",
+      "after": "أيقونة إشعار أحادية اللون مناسبة للنظام؛ صورة مرسل مصرح بها عند توفرها؛ اسم المجموعة ثم المرسل، وتجميع الأحداث حسب الحساب والغرفة. MessagingStyle وهوية Person و Shortcuts عند ملاءمة الإصدار. ملخص خاص على شاشة القفل؛ الرد المباشر يؤجل إلى أن يملك مصادقة وإعادة تحقق حقوق، لا فتح API موازٍ.",
+      "why": "المرسل واسم المجموعة يختلفان عن شعار التطبيق. إشعار كثير العناصر يحتاج سياقًا وتجميعًا وخصوصية، لا مجرد تكبير الأيقونة.",
+      "acceptance": "غرفتان ومرسلان وحساب متبدل وإشعارات متكررة ومعاينة مخفية؛ فتح الإشعار يصل للمحادثة المسموحة فقط، والتجميع لا يخلط شركات أو حسابات.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          45
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          62
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+          71
+        ]
+      ]
+    },
+    {
+      "id": "D07",
+      "title": "الأسماء وصور الأعضاء وهوية بشات",
+      "maps": [
+        "F07",
+        "F09",
+        "F13",
+        "F27",
+        "F33",
+        "F35"
+      ],
+      "before": "صور مجموعة وأعضاء خاصة موجودة مع بديل أحرف، وقائمة الغرف 48dp وداخل المحادثة 32dp وهيدر 48dp. أسماء المرسل تظهر عند بدء مجموعة رسائل؛ ترجمة الشركات تحسنت بالفعل.",
+      "after": "بشات له الشعار الحقيقي المتجهي المتفق عليه؛ المستخدم له صورته، والمجموعة صورتها. اسم عرض واحد مناسب للغة مع عزل Bidi للأكواد، وبديل حرف/حرفين على حدود الحرف المركب لا قطع إيموجي أو تشكيل. صورة قائمة 48dp وهيدر 40–44dp ورسالة 28–32dp، بأصل مناسب الكثافة وتخزين مصرح محدود.",
+      "why": "لا نستبدل صور الناس بشعار التطبيق، ولا نكرر الصورة مع كل رسالة متجاورة. أحجام البداية المقترحة تحتاج قبولًا بصريًا على الجهاز.",
+      "acceptance": "صورة بلا أصل أو مع سحب عضوية، واسم عربي/إنجليزي/إيموجي وتغيير صورة؛ لا كشف من الكاش بعد استلام سحب الحقوق ولا قفز في موضع النص.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          787
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          5384
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7477
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7573
+        ]
+      ]
+    },
+    {
+      "id": "D08",
+      "title": "ثيم المحادثة والفقاعة وشريط الكتابة",
+      "maps": [
+        "F03",
+        "F05",
+        "F07",
+        "F29",
+        "F34",
+        "F35"
+      ],
+      "before": "الوارد يسار والصادر يمين، وتجميع خلال 5 دقائق وفواصل أيام موجودة. خلفية هادئة وصادر أخضر فاتح ومستقبل أبيض، وحشوة 12×8dp وتباعد 3/8dp؛ محرر 1–4 أسطر وهدف 48dp.",
+      "after": "نحافظ على هذه الأساسات ونوحدها في ChatThemeTokens؛ فاتح/داكن/حسب النظام بألوان بشات ودون خلفية متحركة. تباعد المجموعة 4dp وبين المرسلين 8–10dp، وحواف 16–18dp وعرض أقصى من النافذة المتاحة لا displayMetrics العام. محرر ينمو دون تغطية آخر رسالة، ومعاينة رد ومرفق واضحة وزر انتقال للأحدث دون قفزة قراءة.",
+      "why": "الاحترافية هنا ضبط التفاصيل، لا استنساخ شعار ولون واتساب أو زيادة الظلال والمؤثرات. لا نغير موضع القراءة أثناء مراجعة التاريخ.",
+      "acceptance": "عربي وإنجليزي وداكن وفاتح و 360dp وخط 200% و IME وإيماءات النظام و Split Screen؛ اختبار كل الحالات دون قص أو إعادة إنشاء المحادثة كاملة.",
+      "refs": [
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7415
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7470
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          7571
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+          976
+        ],
+        [
+          "android/bchat/app/src/main/java/com/baseer/freshchat/Ui.java",
+          22
+        ]
+      ]
+    }
+  ],
+  "implementationTasks": [
+    {
+      "id": "C00",
+      "phase": "التحضير",
+      "title": "تجميد المصدر وعقد البناء وبوابات G0–G3",
+      "findings": [],
+      "dependencies": [],
+      "owner": "قائد البناء وحارس البوابات",
+      "status": "in_progress",
+      "implementationEvidence": "codex/bchat-unified-maturity-20261017; BCH-DEV-20261017",
+      "verificationEvidence": "Independent G0/G1/G2-C01/C03/C04/C02/C07/C08 and G3 approved; later slice gates remain explicit",
+      "acceptance": "فرع مستقل، أثر معلوم، حقوق وأرقام محفوظة، تقنيات قائمة، ومراجع مستقل؛ لا علامة تنفيذ بمجرد كتابة الخطة."
+    },
+    {
+      "id": "C01",
+      "phase": "الحماية",
+      "title": "عزل السجل المتضرر والتعافي الذري وتنظيف المرحلي",
+      "findings": [
+        "F01",
+        "F02"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "Android والتخزين",
+      "status": "in_progress",
+      "implementationEvidence": "BChatConnectedMediaStore; diagnostics and AtomicFile recovery plus async settings integration implemented",
+      "verificationEvidence": "40 JVM behavioral checks + red baseline + Java compile; not Android storage acceptance",
+      "acceptance": "تلف عنصر في أ لا يمنع ب؛ قتل عملية واستعادة بلا حذف أو تكرار."
+    },
+    {
+      "id": "C02",
+      "phase": "الحماية",
+      "title": "حفظ الجلسة وموضع القراءة والسلة ومسودة الرد",
+      "findings": [
+        "F03",
+        "F10"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "Android والحالة",
+      "status": "in_progress",
+      "implementationEvidence": "SQLite v5, serial storage, auth-gated context/reply-draft restore and ID-only cart resolve integration implemented",
+      "verificationEvidence": "253 cumulative Android assertions at C07 checkpoint, plus focused order-policy32 regression after independent finding; declared UI/HTTP fixtures, composed Activity lifecycle/cart HTTP still pending",
+      "acceptance": "خلفية ودوران وقتل عملية وحساب آخر؛ استعادة المسموح فقط."
+    },
+    {
+      "id": "C03",
+      "phase": "الحماية",
+      "title": "المشرف الفعّال وأهلية الإيصالات وفصل حقوق الوسائط",
+      "findings": [
+        "F13",
+        "F14",
+        "F15"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "Odoo والحقوق",
+      "status": "in_progress",
+      "implementationEvidence": "Effective admin, eligible receipts, separate media permissions and migration4.15 implemented",
+      "verificationEvidence": "Core ORM/HTTP included in180 PASS at f75d105b/CI39062882727; real permission-vs-send probe found40P01, correction under verification; full Activity journey pending",
+      "acceptance": "حالات سحب صلاحيات وشركات وآخر مشرف وقراءة دون رفع."
+    },
+    {
+      "id": "C04",
+      "phase": "الحماية",
+      "title": "FCM وتصنيف الخطأ وتعافي الدفعات",
+      "findings": [
+        "F12",
+        "F18"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "الخادم والتنبيهات",
+      "status": "in_progress",
+      "implementationEvidence": "FCM provider classifier/retry and independent cron recovery plus bounded Android event presentation ledger implemented",
+      "verificationEvidence": "Provider classifier contracts and Android callback/ledger checks pass; core180 PASS inCI39062882727 includes provider-boundary tests; real dispatcher/race gate and actual FCM/OEM delivery acceptance remain pending",
+      "acceptance": "استجابة UNREGISTERED فعلية الشكل، وأخطاء 429 و 503 ودفعة بطيئة؛ لا تكرار مرئي."
+    },
+    {
+      "id": "C05",
+      "phase": "الحماية",
+      "title": "خصوصية معاينة التنبيه",
+      "findings": [
+        "F20"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "الخادم و Android",
+      "status": "in_progress",
+      "implementationEvidence": "Private per-device server preferences and outgoing payload filtering; source-reviewed Android none/sender/full routing with registration tickets and durable conservative pending intent; settings UI pending",
+      "verificationEvidence": "23 callback/ledger and160 production routing adapter checks; core180 PASS inCI39062882727 includes outbound privacy HTTP-payload tests; settings UI and full real concurrency gate pending",
+      "acceptance": "خيار بلا مقتطف لا يرسل النص للمزود؛ لا كشف شاشة القفل."
+    },
+    {
+      "id": "C06",
+      "phase": "الحماية",
+      "title": "صحة التنبيهات والاتصال واختبار ذاتي",
+      "findings": [
+        "F19"
+      ],
+      "dependencies": [
+        "C04"
+      ],
+      "owner": "Android والتشغيل",
+      "status": "in_progress",
+      "implementationEvidence": "Server diagnostic-only push API and Android bounded received/displayed/blocked receipts implemented; settings integration and connection health pending",
+      "verificationEvidence": "23 callback/ledger checks distinguish denied/channel/notify/restart; notification ORM/HTTP included incore180 PASS CI39062882727; cross-device quota probe not completed and no actual FCM delivery claim",
+      "acceptance": "فرق بين الإذن والتسجيل والخادم والطابور ووصول الجهاز، دون إنشاء رسائل أعمال وهمية."
+    },
+    {
+      "id": "C07",
+      "phase": "السلاسة",
+      "title": "مستودع تخزين خارج الواجهة",
+      "findings": [
+        "F04"
+      ],
+      "dependencies": [
+        "C01",
+        "C02"
+      ],
+      "owner": "Android",
+      "status": "in_progress",
+      "implementationEvidence": "Serial SQLite repository and persist-before-dispatch financial intents integrated; independent order-policy save-generation finding corrected, media I/O migration still pending",
+      "verificationEvidence": "253 cumulative Android assertions; targeted order-policy BEFORE regression fails and AFTER32 passes with actual repository/MAIN and declared policy/UI/prefs fakes; compile PASS and independent source GO; no integrated StrictMode/FPS acceptance",
+      "acceptance": "StrictMode ورحلات كتابة وتمرير؛ لا I/O حابس ولا ضياع مسودة."
+    },
+    {
+      "id": "C08",
+      "phase": "السلاسة",
+      "title": "طابور متعدد وفقاعات محلية",
+      "findings": [
+        "F05"
+      ],
+      "dependencies": [
+        "C07"
+      ],
+      "owner": "Android وعقد الرسائل",
+      "status": "in_progress",
+      "implementationEvidence": "Bounded ordered text queue with durable UUID/claim/retry/receipt and local timeline rows implemented; mixed media remains C09",
+      "verificationEvidence": "185 cumulative Android assertions including SQLite migration and queue scenarios; no full 10-text-plus-2-media Activity journey yet",
+      "acceptance": "10 رسائل وصورتان مع انقطاع الشبكة وقتل العملية؛ لا تكرار UUID ولا منع إدخال بسبب عنصر آخر."
+    },
+    {
+      "id": "C09",
+      "phase": "السلاسة",
+      "title": "مدير نقل مستقل عن الغرفة",
+      "findings": [
+        "F06"
+      ],
+      "dependencies": [
+        "C07",
+        "C08"
+      ],
+      "owner": "Android والخادم",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "التنقل والخلفية لا يلغيان نية الإرسال؛ تصالح آمن وإعادة حقوق."
+    },
+    {
+      "id": "C10",
+      "phase": "السلاسة",
+      "title": "الصور والصوت وذاكرة الوسائط",
+      "findings": [
+        "F07",
+        "F08",
+        "F09"
+      ],
+      "dependencies": [
+        "C07"
+      ],
+      "owner": "Android والوسائط",
+      "status": "in_progress",
+      "implementationEvidence": "EXIF-correct bounded connected decoder/tiles and shared audio ownership reservation wired into Activity; F09 cache retention pending",
+      "verificationEvidence": "182 Android media assertions rerun PASS after per-view draw-matrix reuse and independent limited GO; plus11 Activity inline audio checks within cumulative253; declared delayed-player/focus/transport fixtures; no OEM audio/peak RAM/fullscreens claim",
+      "acceptance": "اتجاه EXIF وتكبير وفصل سماعة ومكالمة وكوتا وحقوق الكاش؛ قياس ذروة الذاكرة في السيناريو المختبر."
+    },
+    {
+      "id": "C11",
+      "phase": "السلاسة",
+      "title": "تحديث القوائم بالفروق",
+      "findings": [
+        "F11"
+      ],
+      "dependencies": [
+        "C07",
+        "C26"
+      ],
+      "owner": "Android والأداء",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "مقارنة نفس الجهاز والبيانات؛ حفظ الموضع وتراجع العمل الزائد."
+    },
+    {
+      "id": "C12",
+      "phase": "التجربة",
+      "title": "التوكنات والخط والتباعد والثيم والوصول",
+      "findings": [
+        "F34",
+        "F35",
+        "D01",
+        "D02",
+        "D03",
+        "D07",
+        "D08"
+      ],
+      "dependencies": [
+        "C00",
+        "C26"
+      ],
+      "owner": "التصميم و Android",
+      "status": "in_progress",
+      "implementationEvidence": "Semantic palette/day-night, body sizes, grapheme avatars, vector status/time, context/Insets and Activity settings integrated",
+      "verificationEvidence": "36 standalone Android render cases/656 assertions, 13 grapheme checks/18 contrast checks; source checkpoint GO; full Activity screenshots/TalkBack/lifecycle pending",
+      "acceptance": "مقارنة قبل/بعد على الجهاز، وعرض 360dp وخط 200% و RTL/LTR وثيم داكن و TalkBack؛ لا تغيير حق أو مبلغ."
+    },
+    {
+      "id": "C13",
+      "phase": "التجربة",
+      "title": "عقد تسليم وقراءة مستقلان عن فتح الغرفة",
+      "findings": [
+        "F14",
+        "F17",
+        "D04"
+      ],
+      "dependencies": [
+        "C03",
+        "C08"
+      ],
+      "owner": "Odoo و Android",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "قائمة الغرف والخلفية والغرفة المفتوحة وأجهزة متعددة؛ لا تسليم من قبول FCM ولا قراءة بمجرد وصول Push."
+    },
+    {
+      "id": "C14",
+      "phase": "التجربة",
+      "title": "الأصوات والكتم وترحيل القنوات",
+      "findings": [
+        "F25",
+        "D05"
+      ],
+      "dependencies": [
+        "C04",
+        "C05",
+        "C17"
+      ],
+      "owner": "Android والتنبيهات",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "صوت واحد لكل حدث؛ لا صوت للتاريخ أو عند تفعيل DND أو كتم القناة. ترحيل القنوات يحفظ اختيارات المستخدم."
+    },
+    {
+      "id": "C15",
+      "phase": "التجربة",
+      "title": "عرض إشعار المحادثة وتجميعه",
+      "findings": [
+        "F19",
+        "F20",
+        "D06"
+      ],
+      "dependencies": [
+        "C05",
+        "C13",
+        "C14"
+      ],
+      "owner": "Android والتنبيهات",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "MessagingStyle وسياق الغرفة والمرسل وأيقونة صحيحة؛ حسابان وغرفتان دون خلط."
+    },
+    {
+      "id": "C16",
+      "phase": "التجربة",
+      "title": "بحث التاريخ ومركز الملفات",
+      "findings": [
+        "F24"
+      ],
+      "dependencies": [
+        "C03",
+        "C07"
+      ],
+      "owner": "الخادم و Android",
+      "status": "in_progress",
+      "implementationEvidence": "Bounded epoch/rights-scoped text and filename search/media API implemented; Android search/media UI pending",
+      "verificationEvidence": "Independent source review and core180 PASS CI39062882727 include search ORM/HTTP and EXPLAIN planning; no measured query latency/throughput claim; Android UI pending",
+      "acceptance": "بحث قديم عربي/إنجليزي وفلاتر وصفحات؛ لا محتوى قبل حقبة العضوية."
+    },
+    {
+      "id": "C17",
+      "phase": "التجربة",
+      "title": "كتم وتثبيت وأرشفة شخصية",
+      "findings": [
+        "F25"
+      ],
+      "dependencies": [
+        "C03"
+      ],
+      "owner": "الخادم و Android",
+      "status": "in_progress",
+      "implementationEvidence": "Private per-membership mute/pin/archive service with revision CAS and dispatch-time mute recheck; Android UI pending",
+      "verificationEvidence": "Core180 PASS CI39062882727 includes preference ORM; real absent-row CAS probe not reached because preceding permission race failed; Android UI pending",
+      "acceptance": "تفضيل المستخدم لا يغير غيره، ويستمر وفق العقد دون حذف تاريخ."
+    },
+    {
+      "id": "C18",
+      "phase": "التجربة",
+      "title": "محادثة مباشرة فريدة بين زميلين",
+      "findings": [
+        "F26"
+      ],
+      "dependencies": [
+        "C03"
+      ],
+      "owner": "الخادم و Android",
+      "status": "in_progress",
+      "implementationEvidence": "Canonical unique direct-pair service and third-party membership guard; no legacy room reclassification; Android UI pending",
+      "verificationEvidence": "Core180 PASS CI39062882727 includes direct-room ORM; real reverse-pair probe not reached because preceding permission race failed; Android UI pending",
+      "acceptance": "بدء متزامن يعيد غرفة واحدة مع سياسة الشركات والدليل."
+    },
+    {
+      "id": "C19",
+      "phase": "التجربة",
+      "title": "اختيار أعضاء متعدد وسجل إدارة المجموعة",
+      "findings": [
+        "F27"
+      ],
+      "dependencies": [
+        "C03",
+        "C12"
+      ],
+      "owner": "الخادم و Android",
+      "status": "in_progress",
+      "implementationEvidence": "Paged member directory, atomic batch selection and append-only epoch-visible group audit API; Android UI pending",
+      "verificationEvidence": "Core180 PASS CI39062882727 includes directory/group-event ORM and99+2 rollback regression; no full Android UI or device acceptance",
+      "acceptance": "صفحات مرشحين وسجل actor/action/target مع رؤية الحقبة الصحيحة."
+    },
+    {
+      "id": "C20",
+      "phase": "التجربة",
+      "title": "مشاركة النظام ومعاينة الملفات",
+      "findings": [
+        "F28"
+      ],
+      "dependencies": [
+        "C08",
+        "C09",
+        "C12"
+      ],
+      "owner": "Android والوسائط",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "جهة ووصف وملفات وحدود وموافقة صريحة؛ الإلغاء لا يرسل شيئًا."
+    },
+    {
+      "id": "C21",
+      "phase": "التجربة",
+      "title": "قفز لأصل الرد وروابط آمنة",
+      "findings": [
+        "F29"
+      ],
+      "dependencies": [
+        "C12",
+        "C16"
+      ],
+      "owner": "Android والخادم",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "أصل خارج النافذة يُجلب ضمن الحقوق؛ مخطط رابط غير آمن لا يُفتح."
+    },
+    {
+      "id": "C22",
+      "phase": "التجربة",
+      "title": "تنظيم المهام وبطاقات الأعمال",
+      "findings": [
+        "F31"
+      ],
+      "dependencies": [
+        "C12"
+      ],
+      "owner": "Android وخدمة المهام/الطلبات",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "مهامي ومتأخر وبحث وشركة مرة واحدة؛ القيم المالية من الخادم."
+    },
+    {
+      "id": "C23",
+      "phase": "التجربة",
+      "title": "سلة متكيفة بإجراء إتمام واضح",
+      "findings": [
+        "F32"
+      ],
+      "dependencies": [
+        "C02",
+        "C12"
+      ],
+      "owner": "Android والمشتريات",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "20 صنفًا وخط 200% ولوحة مفاتيح؛ كل قيمة وإجراء قابلان للوصول، دون حساب مالي جديد في العميل."
+    },
+    {
+      "id": "C24",
+      "phase": "التجربة",
+      "title": "الملف والأسماء والصور",
+      "findings": [
+        "F33",
+        "D07"
+      ],
+      "dependencies": [
+        "C03",
+        "C12"
+      ],
+      "owner": "Android و Odoo",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "اسم واحد مناسب للغة وصورة عالية الكثافة وتعديل مسموح فقط."
+    },
+    {
+      "id": "C25",
+      "phase": "مرافق لكل مرحلة",
+      "title": "تفكيك تدريجي وتوحيد الفعلي والتجريبي",
+      "findings": [
+        "F36"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "المعمارية و Android",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "نقل مسؤولية مع اختبارات الرحلة من Launcher؛ لا إعادة كتابة ولا حذف لمكوّن مشترك بناءً على اسمه."
+    },
+    {
+      "id": "C26",
+      "phase": "مرافق لكل مرحلة",
+      "title": "خط أساس قياس وسجل أخطاء منقح",
+      "findings": [
+        "F37"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "الأداء والجودة",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "قياس أجهزة فعلية موثق قبل وبعد؛ لا تسجيل لمحتوى الرسائل ولا ادعاء FPS من المصدر."
+    },
+    {
+      "id": "C27",
+      "phase": "الاستدامة",
+      "title": "بناء متكرر وتوقيع قابل للاستعادة",
+      "findings": [
+        "F38"
+      ],
+      "dependencies": [
+        "C00"
+      ],
+      "owner": "التشغيل والإصدار",
+      "status": "in_progress",
+      "implementationEvidence": "Clean reviewed commit/branch preflight, fixed existing signing paths, source/date BuildConfig and artifact manifest implemented; no key backup destination inferred",
+      "verificationEvidence": "PowerShell parse plus wrong commit/branch/dirty preflight tests and independent source GO; integrated product APK not built",
+      "acceptance": "بيئة نظيفة وترقية فوق v87 بنفس الهوية، ونسخة توقيع مرجعية بلا أسرار في Git."
+    },
+    {
+      "id": "C28",
+      "phase": "الاستدامة",
+      "title": "بيئة تشغيل ومراقبة وتمرين استعادة",
+      "findings": [
+        "F39"
+      ],
+      "dependencies": [
+        "C27"
+      ],
+      "owner": "التشغيل",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "قاعدة و filestore وصلاحيات وبصمات، مع RPO/RTO معلنين، في بيئة معزولة."
+    },
+    {
+      "id": "C29",
+      "phase": "الاستدامة",
+      "title": "احتفاظ واختزال تقني آمن",
+      "findings": [
+        "F16"
+      ],
+      "dependencies": [
+        "C28"
+      ],
+      "owner": "Odoo والبيانات",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "عميل قديم يتصالح بعد الاختزال؛ سجل العمل والأصول لا تُحذف دون سياسة معتمدة."
+    },
+    {
+      "id": "C30",
+      "phase": "التوسع",
+      "title": "قياس السعة والحدود ومعدل الطلبات والملفات الكبيرة",
+      "findings": [
+        "F17",
+        "F21",
+        "F22",
+        "F23"
+      ],
+      "dependencies": [
+        "C26",
+        "C29"
+      ],
+      "owner": "السعة والخادم",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "حجم استخدام محدد وحمل معزول وقياس p95 و RAM والأقفال؛ لا رفع للحدود بلا قياس."
+    },
+    {
+      "id": "C31",
+      "phase": "التوزيع",
+      "title": "Android16 وقناة المتجر أو التوزيع المؤسسي",
+      "findings": [
+        "F40"
+      ],
+      "dependencies": [
+        "C27",
+        "C12",
+        "C28"
+      ],
+      "owner": "Android والإصدار",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "إصدار API المطلوب، و AAB عند انطباقه، وفحص 16KiB الكامل، وخصوصية وترقية تحفظ البيانات."
+    },
+    {
+      "id": "C32",
+      "phase": "التعاون",
+      "title": "الإشارات والتفاعلات والمحفوظات وسياسة تعديل الرسائل",
+      "findings": [
+        "F30"
+      ],
+      "dependencies": [
+        "C08",
+        "C12",
+        "C16"
+      ],
+      "owner": "المنتج والخادم و Android",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "فائدة مثبتة وسياسة خصوصية وأثر، واختبار كل شريحة؛ لا مكالمات أو بوتات دون نطاق معتمد."
+    },
+    {
+      "id": "C33",
+      "phase": "القبول",
+      "title": "مراجعة مستقلة للمرشح واختبار هاتف",
+      "findings": [],
+      "dependencies": [
+        "C00",
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14",
+        "C15",
+        "C16",
+        "C17",
+        "C18",
+        "C19",
+        "C20",
+        "C21",
+        "C22",
+        "C23",
+        "C24",
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "owner": "فريق التسليم المستقل",
+      "status": "pending",
+      "implementationEvidence": null,
+      "verificationEvidence": null,
+      "acceptance": "مرشح موحد واحد يغطي F01–F40 وD01–D08، ولكل بند دليل تنفيذ واختبار أو حد خارجي معلن يمنع قبول اكتماله. لا APK جزئي، ولا قبول نهائي قبل المراجعة المستقلة وقائمة اختبار هاتف المالك."
+    }
+  ],
+  "readinessGates": {
+    "G0": "independently approved; DEV005; one integrated final result",
+    "G1": "independently approved bounds; DEV005/014; actual growth and device capacity not measured",
+    "G2": "approved only for registered slices; C09 design conditional on core checkpoint acceptance; later API/data/meaning changes need explicit review",
+    "G3": "independently approved; existing Java/Views/SQLite/Odoo and dependencies; no new product libraries",
+    "G4": "foundations approved; full Activity and later notification UI acceptance pending",
+    "G5": "PR413: core180 PASS CI39062882727; actual permission race found40P01 and remains NO GO pending correction/probe verification; no whole-program acceptance",
+    "G6": "not started; measured capacity proof required",
+    "G7": "not started; source/checkpoint commits are not final integration acceptance",
+    "G8": "not started; no new product APK or final independent delivery decision"
+  },
+  "sources": [
+    {
+      "title": "WhatsApp read receipts",
+      "url": "https://faq.whatsapp.com/665923838265756/"
+    },
+    {
+      "title": "Telegram check marks",
+      "url": "https://telegram.org/faq#q-what-do-the-check-marks-mean"
+    },
+    {
+      "title": "Telegram notification sounds",
+      "url": "https://telegram.org/blog/notifications-bots"
+    },
+    {
+      "title": "Telegram themes",
+      "url": "https://telegram.org/blog/chat-themes-interactive-emoji-read-receipts"
+    },
+    {
+      "title": "Android channels",
+      "url": "https://developer.android.com/develop/ui/views/notifications/channels"
+    },
+    {
+      "title": "Android conversation notifications",
+      "url": "https://developer.android.com/develop/ui/views/notifications/conversations"
+    }
+  ],
+  "programId": "BCH-DEV-20261017",
+  "deliveryPolicy": "one final integrated candidate; no partial APK handoffs",
+  "baseMainCommit": "5e061ac97eaf2e6a5cba7019895ae383f1216d49",
+  "branch": "codex/bchat-unified-maturity-20261017",
+  "governance": "docs/build-governance/BCHAT-DEVELOPMENT-PROGRAM.md"
+}

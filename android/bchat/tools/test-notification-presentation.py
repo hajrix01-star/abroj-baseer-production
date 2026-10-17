@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+"""Execute the real service callback and ledger with deterministic Android API fixtures.
+
+--source checks the previous callback too; fixtures do not assert Android audio/device behavior.
+"""
+from pathlib import Path
+import argparse
+import shutil
+import subprocess
+import tempfile
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--source", type=Path)
+args = parser.parse_args()
+root = Path(__file__).resolve().parents[1]
+service = (args.source or root / "app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java").read_text(encoding="utf-8")
+
+
+def method(marker):
+    start = service.index(marker)
+    opening = service.index("{", start)
+    depth, end = 1, opening + 1
+    while depth:
+        depth += (service[end] == "{") - (service[end] == "}")
+        end += 1
+    return service[start:end]
+
+
+callback = method("public void onMessageReceived(")
+text = method("private static String notificationText(")
+context = r"""
+package android.content;
+public class Context {
+ public static final int MODE_PRIVATE=0;
+ public Context getApplicationContext(){return this;}
+ public SharedPreferences getSharedPreferences(String name,int mode){throw new UnsupportedOperationException();}
+}
+"""
+preferences = r"""
+package android.content;
+import java.util.Set;
+public interface SharedPreferences {
+ Set<String> getStringSet(String key,Set<String> fallback);
+ Editor edit();
+ interface Editor {Editor putStringSet(String key,Set<String> value);boolean commit();}
+}
+"""
+uri = "package android.net; public final class Uri {public static String parse(String value){return value;}}"
+push_state = r"""
+package com.baseer.freshchat;
+import android.content.Context;
+/** Deterministic authenticated routing/preference boundary; PushState has separate tests. */
+final class BChatPushState {
+ interface Presentation {void show(String mode);}
+ static final class Delivery {Context context;Delivery(Context c){context=c;}}
+ static String EXTRA_ACCOUNT_KEY="account",EXTRA_KIND="kind",EXTRA_EVENT_ID="event";
+ static boolean matches(Context c,String account){return NotificationPresentationHarness.ACCOUNT.equals(account);}
+ static String previewMode(Context c,String account){return ((NotificationPresentationHarness)c).previewMode;}
+ static boolean awaitReady(Context c,long wait){return true;}
+ static Delivery delivery(Context c,String key){return matches(c,key)?new Delivery(c):null;}
+ static boolean present(Delivery d,Presentation p){p.show(previewMode(d.context,null));return true;}
+}
+"""
+harness = r"""
+package com.baseer.freshchat;
+import android.content.*;
+import java.util.*;
+public class NotificationPresentationHarness extends Context {
+ static final String CHANNEL="bchat-events-v3", ACCOUNT="00000000-0000-4000-8000-000000000001";
+ static int checks;
+ final Prefs prefs=new Prefs();
+ final Map<String,Prefs> named=new HashMap<>();
+ final NotificationManager manager=new NotificationManager();
+ String previewMode="none";boolean permission=true;
+ public SharedPreferences getSharedPreferences(String name,int mode){return name.equals("bchat-presented-events-v1")?prefs:named.computeIfAbsent(name,key->new Prefs());}
+ @SuppressWarnings("unchecked") <T> T getSystemService(Class<T> kind){return (T)manager;}
+ int checkSelfPermission(String ignored){return permission?PackageManager.PERMISSION_GRANTED:1;}
+ String getString(int id){return "private notification";}
+ void ensureChannel(NotificationManager manager){}
+ static void check(boolean ok,String label){if(!ok)throw new AssertionError(label);checks++;System.out.println("PASS "+label);}
+ static class Prefs implements SharedPreferences,SharedPreferences.Editor {
+   Set<String> items=new HashSet<>(); boolean writable=true;
+   public Set<String> getStringSet(String key,Set<String> fallback){return items;}
+   public SharedPreferences.Editor edit(){return this;}
+   public SharedPreferences.Editor putStringSet(String key,Set<String> value){if(writable)items=new HashSet<>(value);return this;}
+   public boolean commit(){return writable;}
+ }
+ static class Manifest {static class permission {static String POST_NOTIFICATIONS="notifications";}}
+ static class Build {static class VERSION {static int SDK_INT=35;}}
+ static class PackageManager {static int PERMISSION_GRANTED=0;}
+ static class RemoteMessage {
+   final Map<String,String> data=new HashMap<>();
+   RemoteMessage(String kind,String event){data.put("account_key",ACCOUNT);data.put("kind",kind);data.put("event_id",event);}
+   Map<String,String> getData(){return data;}
+ }
+ static class Intent {
+   static String ACTION_VIEW="view";static int FLAG_ACTIVITY_CLEAR_TOP=1,FLAG_ACTIVITY_SINGLE_TOP=2;
+   Intent(Object c,Class<?> a){} void setAction(String a){}void setData(String a){}
+   void putExtra(String k,String v){}void addFlags(int f){}
+ }
+ static class OdooIdentityActivity {}
+ static class PendingIntent {
+   static int FLAG_UPDATE_CURRENT=1,FLAG_IMMUTABLE=2;
+   static PendingIntent getActivity(Object c,int id,Intent i,int f){return new PendingIntent();}
+ }
+ static class R {
+   static class string {static int bchat_push_chat=1,bchat_push_task=2,bchat_push_order=3,bchat_push_attachment=4,bchat_push_diagnostic=5;}
+   static class mipmap {static int ic_launcher=1;}
+   static class drawable {static int ic_notification=2;}
+ }
+ static class NotificationChannel {int getImportance(){return 4;}}
+ static class Notification {
+   static int VISIBILITY_PRIVATE=1,VISIBILITY_PUBLIC=2;static String CATEGORY_MESSAGE="message",CATEGORY_REMINDER="reminder";
+   String title,text;Notification publicView;
+   static class Builder {
+     Notification n=new Notification();
+     Builder(Object c,String channel){} Builder setSmallIcon(int i){return this;}
+     Builder setContentTitle(String s){n.title=s;return this;}Builder setContentText(String s){n.text=s;return this;}
+     Builder setContentIntent(PendingIntent p){return this;}Builder setAutoCancel(boolean v){return this;}
+     Builder setOnlyAlertOnce(boolean v){return this;}Builder setVisibility(int i){return this;}
+     Builder setPublicVersion(Notification v){n.publicView=v;return this;}
+     Builder setCategory(String s){return this;}Builder setStyle(BigTextStyle s){return this;}
+     Notification build(){return n;}
+   }
+   static class BigTextStyle {BigTextStyle bigText(String s){return this;}}
+ }
+ static class NotificationManager {
+   static int IMPORTANCE_NONE=0;
+   int calls;boolean fail,blocked;Notification last;
+   NotificationChannel getNotificationChannel(String channel){return new NotificationChannel();}
+   boolean areNotificationsEnabled(){return !blocked;}
+   void notify(int id,Notification n){if(fail)throw new SecurityException();calls++;}
+   void notify(String tag,int id,Notification n){if(fail)throw new SecurityException();calls++;last=n;}
+ }
+ __CALLBACK__
+ __TEXT__
+ public static void main(String[] args){
+   NotificationPresentationHarness first=new NotificationPresentationHarness();
+   first.onMessageReceived(new RemoteMessage("chat","41"));
+   first.onMessageReceived(new RemoteMessage("chat","41"));
+   check(first.manager.calls==1,"Repeated provider event is presented once");
+   first.onMessageReceived(new RemoteMessage("task","41"));
+   check(first.manager.calls==2,"Same event ID in another kind is independent");
+   NotificationPresentationHarness restarted=new NotificationPresentationHarness();
+   restarted.prefs.items=new HashSet<>(first.prefs.items);
+   restarted.onMessageReceived(new RemoteMessage("chat","41"));
+   check(restarted.manager.calls==0,"Receipt survives service/process recreation");
+   NotificationPresentationHarness failed=new NotificationPresentationHarness();
+   failed.manager.fail=true;
+   failed.onMessageReceived(new RemoteMessage("chat","42"));
+   failed.manager.fail=false;
+   failed.onMessageReceived(new RemoteMessage("chat","42"));
+   check(failed.manager.calls==1,"Failed presentation is not retired");
+   RemoteMessage foreign=new RemoteMessage("chat","43");foreign.data.put("account_key","foreign");
+   first.onMessageReceived(foreign);
+   check(first.manager.calls==2,"Account route is verified before presentation");
+   String other="00000000-0000-4000-8000-000000000002";
+   check(!BChatNotificationLedger.key(ACCOUNT,"chat","1").equals(BChatNotificationLedger.key(other,"chat","1")),"Ledger keys isolate accounts");
+   NotificationPresentationHarness bounded=new NotificationPresentationHarness();
+   long now=1000000000L;
+   for(int i=1;i<=600;i++)BChatNotificationLedger.recordShown(bounded,BChatNotificationLedger.key(ACCOUNT,"chat",String.valueOf(i)),now+i);
+   check(bounded.prefs.items.size()==512,"Presentation ledger has a hard count bound");
+   check(!BChatNotificationLedger.contains(bounded,BChatNotificationLedger.key(ACCOUNT,"chat","600"),now+601+BChatNotificationLedger.MAX_AGE_MILLIS),"Expired presentation receipt is not retained indefinitely");
+   bounded.prefs.items.add("broken|not-a-time");
+   check(BChatNotificationLedger.contains(bounded,BChatNotificationLedger.key(ACCOUNT,"chat","600"),now+700),"Malformed receipt does not break valid receipts");
+   check(BChatNotificationLedger.contains(bounded,BChatNotificationLedger.key(ACCOUNT,"chat","600"),now-1),"Backwards clock does not replay a recent event");
+   RemoteMessage privateMessage=new RemoteMessage("chat","51");
+   privateMessage.data.put("sender_name","Secret sender");privateMessage.data.put("message_preview","Private text");
+   NotificationPresentationHarness none=new NotificationPresentationHarness();none.onMessageReceived(privateMessage);
+   check(none.manager.last.title.equals("BChat")&&none.manager.last.text.equals("private notification"),"Local none strips even a stale full payload");
+   NotificationPresentationHarness sender=new NotificationPresentationHarness();sender.previewMode="sender";sender.onMessageReceived(privateMessage);
+   check(sender.manager.last.title.equals("Secret sender")&&!sender.manager.last.text.equals("Private text"),"Sender mode never displays message preview");
+   NotificationPresentationHarness full=new NotificationPresentationHarness();full.previewMode="full";full.onMessageReceived(privateMessage);
+   check(full.manager.last.title.equals("Secret sender")&&full.manager.last.text.equals("Private text"),"Explicit full permits filtered preview");
+   check(full.manager.last.publicView.title.equals("BChat")&&full.manager.last.publicView.text.equals("private notification"),"Public lockscreen version remains generic");
+   String uuid="00000000-0000-4000-8000-000000000004";
+   RemoteMessage test=new RemoteMessage("diagnostic","61");test.data.put("diagnostic_uuid",uuid);
+   NotificationPresentationHarness denied=new NotificationPresentationHarness();denied.permission=false;denied.onMessageReceived(test);
+   BChatNotificationDiagnostics.Receipt received=BChatNotificationDiagnostics.read(denied,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(received!=null&&received.receivedAt>0&&received.displayedAt==0&&received.outcome.equals("permission_denied"),"Denied notification permission still records device reception, not display");
+   denied.permission=true;denied.onMessageReceived(test);denied.onMessageReceived(test);
+   received=BChatNotificationDiagnostics.read(denied,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(denied.manager.calls==1&&received.displayedAt>0&&received.outcome.equals("displayed"),"Diagnostic retry/duplicate preserves first display receipt");
+   NotificationPresentationHarness blocked=new NotificationPresentationHarness();blocked.manager.blocked=true;blocked.onMessageReceived(test);
+   received=BChatNotificationDiagnostics.read(blocked,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(blocked.manager.calls==0&&received.outcome.equals("channel_blocked")&&received.displayedAt==0,"Channel/application block is separate from reception");
+   NotificationPresentationHarness failedTest=new NotificationPresentationHarness();failedTest.manager.fail=true;failedTest.onMessageReceived(test);
+   received=BChatNotificationDiagnostics.read(failedTest,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(received.displayedAt==0&&received.outcome.equals("presentation_failed"),"notify failure is not a displayed test");
+   NotificationPresentationHarness diagRestart=new NotificationPresentationHarness();diagRestart.named.putAll(denied.named);
+   check(BChatNotificationDiagnostics.read(diagRestart,ACCOUNT,"61",uuid,System.currentTimeMillis()).displayedAt>0,"Diagnostic receipt survives process recreation");
+   check(BChatNotificationDiagnostics.read(diagRestart,other,"61",uuid,System.currentTimeMillis())==null,"Another account cannot see local test receipt");
+   RemoteMessage invalidTest=new RemoteMessage("diagnostic","62");invalidTest.data.put("diagnostic_uuid","not-a-uuid");denied.onMessageReceived(invalidTest);
+   check(denied.manager.calls==1,"Malformed diagnostic cannot display or enter ledger");
+   NotificationPresentationHarness diagBound=new NotificationPresentationHarness();
+   for(int i=1;i<=40;i++)BChatNotificationDiagnostics.record(diagBound,ACCOUNT,String.valueOf(i),uuid,"received",now+i);
+   Prefs diagnosticPrefs=diagBound.named.get("bchat-notification-diagnostics-v1");
+   check(diagnosticPrefs.items.size()==32,"Diagnostic receipt count hard bound 32");
+   check(BChatNotificationDiagnostics.read(diagBound,ACCOUNT,"40",uuid,now+41+BChatNotificationDiagnostics.MAX_AGE_MILLIS)==null,"Diagnostic receipts expire after seven days");
+   System.out.println("PASS "+checks+" callback/ledger checks; Android audio/device NOT executed");
+ }
+}
+"""
+harness = harness.replace("__CALLBACK__", callback).replace("__TEXT__", text)
+temp_root = (root / "artifacts/test-runtime").resolve()
+temp_root.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix="bchat-presentation-", dir=temp_root) as folder:
+    target = Path(folder)
+    files = {
+        "android/content/Context.java": context,
+        "android/content/SharedPreferences.java": preferences,
+        "android/net/Uri.java": uri,
+        "com/baseer/freshchat/BChatPushState.java": push_state,
+        "com/baseer/freshchat/NotificationPresentationHarness.java": harness,
+    }
+    for relative, value in files.items():
+        path = target / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(value, encoding="utf-8")
+    ledger = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.java"
+    diagnostic = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationDiagnostics.java"
+    sources = [str(path) for path in target.rglob("*.java")] + [str(ledger), str(diagnostic)]
+    subprocess.run([shutil.which("javac") or "javac", "-encoding", "UTF-8", "-d", str(target), *sources], check=True)
+    subprocess.run([shutil.which("java") or "java", "-cp", str(target), "com.baseer.freshchat.NotificationPresentationHarness"], check=True)

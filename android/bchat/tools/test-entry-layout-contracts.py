@@ -6,7 +6,7 @@ import unittest
 import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 JAVA = ROOT / 'app/src/main/java/com/baseer/freshchat'
-MAIN = (JAVA / 'MainActivity.java').read_text()
+MAIN = (JAVA / 'MainActivity.java').read_text(encoding='utf-8')
 
 
 def method(name):
@@ -19,11 +19,11 @@ def method(name):
 
 class EntryLayoutContracts(unittest.TestCase):
     def test_demo_default_is_signed_out_without_touching_store(self):
-        settings = (JAVA / 'LocalSettings.java').read_text()
+        settings = (JAVA / 'LocalSettings.java').read_text(encoding='utf-8')
         self.assertIn('getBoolean("demo-entry-active", false)', settings)
         self.assertIn('if (!settings.demoSessionActive()) {', MAIN)
         self.assertIn('showEntry(); return;', MAIN)
-        self.assertNotIn('demo-entry', (JAVA / 'ChatStore.java').read_text())
+        self.assertNotIn('demo-entry', (JAVA / 'ChatStore.java').read_text(encoding='utf-8'))
 
     def test_only_read_only_credential_shell_and_separate_demo_action(self):
         entry, field = method('showEntry'), method('entryField')
@@ -43,7 +43,7 @@ class EntryLayoutContracts(unittest.TestCase):
         permissions = {p.get(ns+'name') for p in manifest.findall('uses-permission')}
         self.assertIn('android.permission.INTERNET', permissions)
         self.assertIn('startActivity(new Intent(this, OdooIdentityActivity.class))', method('showEntry'))
-        identity = (JAVA / 'OdooIdentityActivity.java').read_text()
+        identity = (JAVA / 'OdooIdentityActivity.java').read_text(encoding='utf-8')
         # The connected client may reuse the attachment DTO for local recording, but it must
         # never open or own the offline-demo store.
         self.assertNotIn('new ChatStore(', identity)
@@ -53,7 +53,7 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertFalse(manifest.find('application').findall('service'))
 
     def test_back_from_real_chat_root_does_not_sign_out(self):
-        identity = (JAVA / 'OdooIdentityActivity.java').read_text()
+        identity = (JAVA / 'OdooIdentityActivity.java').read_text(encoding='utf-8')
         back = identity.split('@Override public void onBackPressed() {', 1)[1]
         back = back.split('@Override protected void onDestroy()', 1)[0]
         self.assertIn('accountMenu.dismiss()', back)
@@ -113,9 +113,9 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertIn('onViewDetachedFromWindow', entry)
         self.assertIn('observer.removeOnGlobalFocusChangeListener(focusObserver)', entry)
         self.assertIn('observer.removeOnGlobalLayoutListener(layoutObserver)', entry)
-        mark = (JAVA/'EntryMarkView.java').read_text()
-        vector = (ROOT/'app/src/main/res/drawable/bchat_mark_hq.xml').read_text()
-        master = (ROOT/'app/src/main/res/raw/bchat_mark_hq.svg').read_text()
+        mark = (JAVA/'EntryMarkView.java').read_text(encoding='utf-8')
+        vector = (ROOT/'app/src/main/res/drawable/bchat_mark_hq.xml').read_text(encoding='utf-8')
+        master = (ROOT/'app/src/main/res/raw/bchat_mark_hq.svg').read_text(encoding='utf-8')
         self.assertIn('R.drawable.bchat_mark_hq', mark)
         self.assertIn('original.draw(canvas)', mark)
         self.assertNotIn('canvas.drawBitmap(', mark)
@@ -124,7 +124,7 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertNotIn('setColorFilter', mark)
 
     def test_remember_demo_does_not_store_credentials(self):
-        settings = (JAVA/'LocalSettings.java').read_text()
+        settings = (JAVA/'LocalSettings.java').read_text(encoding='utf-8')
         self.assertIn('processDemoSession || values.getBoolean("demo-entry-active", false)', settings)
         self.assertIn('"demo-entry-active", active && remember', settings)
         self.assertIn('"remember-demo-entry", false', settings)
@@ -136,13 +136,13 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertNotIn('new SimpleDateFormat("HH:mm"', MAIN)
 
     def test_neutral_theme_does_not_modify_brand(self):
-        ui = (JAVA/'Ui.java').read_text()
+        ui = (JAVA/'Ui.java').read_text(encoding='utf-8')
         self.assertIn('Color.rgb(24, 42, 59)', ui)
         self.assertIn('Color.rgb(248, 250, 252)', ui)
         wallpaper = ui[ui.index('static class Wallpaper'):]
         self.assertNotIn('onDraw', wallpaper)
         for folder in ('values-v29', 'values-v35'):
-            self.assertIn('forceDarkAllowed">false', (ROOT/'app/src/main/res'/folder/'styles.xml').read_text())
+            self.assertIn('forceDarkAllowed">false', (ROOT/'app/src/main/res'/folder/'styles.xml').read_text(encoding='utf-8'))
         self.assertIn('setBackgroundColor(Color.WHITE)', method('addMainToolbar'))
 
     def test_readable_palette_contrast(self):

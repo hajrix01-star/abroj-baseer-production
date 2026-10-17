@@ -47,14 +47,16 @@ checks = {
             "private void reconcilePendingMediaFromVerifiedHistory(")
         and "confirmedMediaIds.add(serverMedia.id);" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
-        and "mediaStore.acknowledge(scopedAccount, entry);" in body(
+        and "store.acknowledge(scopedAccount, entry);" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
     "Several locally staged media records are a recoverable queue, not a storage error":
-        "public synchronized List<Entry> pendingForRoom(" in store
+        "public List<Entry> pendingForRoom(" in store
+        and "synchronized (STORE_LOCK)" in store[store.index("public List<Entry> pendingForRoom("):]
+        and "new AtomicFile(json).openRead()" in store
         and "matches.add(candidate);" in store
-        and "mediaStore.pendingForRoom(scopedAccount" in body(
+        and "store.pendingForRoom(scopedAccount" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
-        and "for (BChatConnectedMediaStore.Entry entry : pending)" in body(
+        and "for (BChatConnectedMediaStore.Entry entry : store.pendingForRoom(scopedAccount, room.id, room.membershipId))" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
     "Known uploaded media is replayed idempotently when its room opens":
         "handler.post(() -> replayKnownConnectedMedia(scopedAccount, room));" in body(

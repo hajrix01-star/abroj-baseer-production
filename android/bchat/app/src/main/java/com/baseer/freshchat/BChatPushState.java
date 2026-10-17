@@ -1,116 +1,378 @@
 package com.baseer.freshchat;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-
+import android.os.Handler;
+import android.os.Looper;
 import com.baseer.freshchat.sync.AccountScope;
-
+import com.baseer.freshchat.sync.BChatStorageRepository;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-/** Local push identity only. It never grants access to a BChat event or stores a session. */
+/** Routing hints, not authentication. Odoo must re-authorize any opened notification target. */
 public final class BChatPushState {
     public static final String EXTRA_EVENT_ID = "com.baseer.bchat.PUSH_EVENT_ID";
     public static final String EXTRA_ACCOUNT_KEY = "com.baseer.bchat.PUSH_ACCOUNT_KEY";
     public static final String EXTRA_KIND = "com.baseer.bchat.PUSH_KIND";
     private static final String PREFS = "bchat-push-v1";
-    private static final String SCOPE = "verified-account-scope";
-    private static final String ACCOUNT = "registered-account-key";
-    private static final String TOKEN = "fcm-token";
-    private static final String REGISTERED_TOKEN = "registered-fcm-token";
+    private static final String SCOPE = "verified-account-scope", ACCOUNT = "registered-account-key";
+    private static final String TOKEN = "fcm-token", REGISTERED_TOKEN = "registered-fcm-token";
     private static final String INSTALLATION = "installation-id";
+    private static final String PREVIEW_ACCOUNT = "preview-account-key", PREVIEW_MODE = "preview-mode";
+    private static final String PREVIEW_REVISION = "preview-revision";
+    private static final String PREVIEW_DESIRED = "preview-pending-mode";
+    private static final String PREVIEW_SCOPE = "preview-pending-scope", PREVIEW_INSTALLATION = "preview-pending-installation";
+    private static final Object ROUTING = new Object();
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private static final IdentityHashMap<SharedPreferences.OnSharedPreferenceChangeListener, Boolean> OBSERVERS
+            = new IdentityHashMap<>();
+    private static State state;
 
-    private BChatPushState() { }
-
-    private static SharedPreferences prefs(Context context) {
-        return context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    public interface Ready<T> { void complete(T result, boolean durable); }
+    interface Presentation { void show(String currentPreviewMode); }
+    private static final class State {
+        final Context context;
+        final NotificationManager notifications;
+        final CountDownLatch loaded = new CountDownLatch(1);
+        SharedPreferences prefs;
+        boolean ready, scopeTouched, tokenTouched, routeCleared, routeDurable, storageHealthy;
+        String scope, account, token, registeredToken, installation, savedInstallation;
+        String preview = "none", previewDesired, privacyScope, privacyInstallation;
+        long epoch, intent, previewRevision = -1, sequence, registrationSerial;
+        State(Context context, NotificationManager manager) { this.context = context; notifications = manager; }
     }
-
+    public static final class Registration {
+        public final String token, installationId;
+        private final State owner;
+        private final String scope;
+        private final long epoch, serial;
+        private Registration(State owner) {
+            this.owner = owner; scope = owner.scope; epoch = owner.epoch; serial = ++owner.registrationSerial;
+            token = owner.token; installationId = owner.installation;
+        }
+    }
+    static final class PreviewRequest {
+        private final State owner;
+        private final String account;
+        private final long epoch, intent;
+        private PreviewRequest(State owner) {
+            this.owner = owner; account = owner.account; epoch = owner.epoch; intent = owner.intent;
+        }
+    }
+    static final class Delivery {
+        private final State owner;
+        private final String account;
+        private final long epoch;
+        private Delivery(State owner) { this.owner = owner; account = owner.account; epoch = owner.epoch; }
+    }
+    private static State current(Context context) {
+        synchronized (ROUTING) { if (state != null) return state; }
+        Context app = context.getApplicationContext();
+        NotificationManager manager = app.getSystemService(NotificationManager.class);
+        synchronized (ROUTING) {
+            if (state == null) {
+                state = new State(app, manager);
+                State created = state;
+                BChatStorageRepository.executor().execute(() -> load(created));
+            }
+            return state;
+        }
+    }
+    /** Disk is initialized off main. A cold FCM callback may wait briefly on its worker thread. */
+    public static boolean awaitReady(Context context, long timeoutMillis) {
+        State s = current(context);
+        if (Looper.myLooper() == Looper.getMainLooper()) return ready(context);
+        try { s.loaded.await(Math.max(0, Math.min(3000, timeoutMillis)), TimeUnit.MILLISECONDS); }
+        catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); return false; }
+        synchronized (ROUTING) { return state == s && s.ready; }
+    }
+    public static boolean ready(Context context) {
+        State s = current(context);
+        synchronized (ROUTING) { return s.ready; }
+    }
+    private static void load(State s) {
+        SharedPreferences prefs = s.context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String scope = null, account = null, token = null, registered = null, installation = null;
+        String pendingScope = null, pendingInstallation = null, desired = null;
+        boolean read = true;
+        try {
+            scope = prefs.getString(SCOPE, null); account = prefs.getString(ACCOUNT, null);
+            token = prefs.getString(TOKEN, null); registered = prefs.getString(REGISTERED_TOKEN, null);
+            installation = prefs.getString(INSTALLATION, null);
+            pendingScope = prefs.getString(PREVIEW_SCOPE, null);
+            pendingInstallation = prefs.getString(PREVIEW_INSTALLATION, null);
+            desired = prefs.getString(PREVIEW_DESIRED, null);
+        } catch (RuntimeException unavailable) { read = false; }
+        synchronized (ROUTING) {
+            if (state != s) { s.loaded.countDown(); return; }
+            s.prefs = prefs;
+            boolean changedScope = s.scopeTouched && !Objects.equals(s.scope, scope);
+            boolean changedToken = s.tokenTouched && !Objects.equals(s.token, token);
+            if (!s.scopeTouched) s.scope = validScope(scope) ? scope : null;
+            if (!s.tokenTouched) s.token = validToken(token) ? token : null;
+            if (read && validUuid(installation) && !s.routeCleared && !changedScope && !changedToken
+                    && s.scope != null && validUuid(account) && s.token != null && s.token.equals(registered)) {
+                s.account = account; s.registeredToken = registered; s.routeDurable = true;
+            }
+            s.installation = validUuid(installation) ? installation : UUID.randomUUID().toString();
+            s.savedInstallation = validUuid(installation) ? installation : null;
+            // Never restore an opt-in from possibly stale/failed preference writes after process death.
+            // Only a fresh authenticated preference response can enable sender/full in this process.
+            s.preview = "none"; s.previewRevision = -1; s.storageHealthy = read; s.ready = true;
+            if (read && validPreview(desired) && s.scope != null && s.scope.equals(pendingScope)
+                    && s.installation.equals(pendingInstallation)) {
+                s.previewDesired = desired; s.privacyScope = pendingScope; s.privacyInstallation = pendingInstallation;
+            }
+            if (s.scopeTouched || s.tokenTouched || s.routeCleared || !read || s.savedInstallation == null)
+                persistLocked(s, null);
+            s.loaded.countDown();
+            changedLocked();
+        }
+    }
+    private static void invalidateRouteLocked(State s, boolean preservePrivacyIntent) {
+        ++s.epoch; ++s.intent; s.routeCleared = true; s.routeDurable = false;
+        s.account = null; s.registeredToken = null; s.preview = "none"; s.previewRevision = -1;
+        if (!preservePrivacyIntent) { s.previewDesired = null; s.privacyScope = null; s.privacyInstallation = null; }
+        // Serialized with the final notification gate: no old notify can run after cancellation.
+        if (s.notifications != null) try { s.notifications.cancelAll(); } catch (RuntimeException ignored) { }
+    }
     public static void verifiedAccount(Context context, AccountScope account) {
-        if (account == null) throw new IllegalArgumentException("Verified account is required");
-        SharedPreferences state = prefs(context);
-        // A bridge recheck after opening Android settings verifies the same authenticated account.
-        // Keep its already-confirmed push route until a different account, logout, or new FCM
-        // token explicitly replaces it. The notification target is still re-authorized by Odoo.
-        if (account.key.equals(state.getString(SCOPE, null))) return;
-        state.edit().putString(SCOPE, account.key)
-                .remove(ACCOUNT).remove(REGISTERED_TOKEN).apply();
+        if (account == null) throw new IllegalArgumentException("Verified account required");
+        State s = current(context);
+        synchronized (ROUTING) {
+            if (account.key.equals(s.scope)) return;
+            invalidateRouteLocked(s, false); s.scope = account.key; s.scopeTouched = true;
+            persistLocked(s, null);
+        }
     }
-
     public static void clearAccount(Context context) {
-        prefs(context).edit().remove(SCOPE).remove(ACCOUNT).remove(REGISTERED_TOKEN).apply();
+        State s = current(context);
+        synchronized (ROUTING) {
+            invalidateRouteLocked(s, false); s.scope = null; s.scopeTouched = true;
+            persistLocked(s, null);
+        }
     }
-
     public static String installationId(Context context) {
-        SharedPreferences state = prefs(context);
-        String existing = state.getString(INSTALLATION, null);
-        if (existing != null && validUuid(existing)) return existing;
-        String created = UUID.randomUUID().toString();
-        return state.edit().putString(INSTALLATION, created).commit() ? created : null;
+        State s = current(context);
+        synchronized (ROUTING) {
+            return s.ready && Objects.equals(s.installation, s.savedInstallation) ? s.installation : null;
+        }
     }
-
     public static boolean needsRegistration(Context context, AccountScope account) {
-        SharedPreferences state = prefs(context);
-        String token = state.getString(TOKEN, null);
-        return account != null && account.key.equals(state.getString(SCOPE, null))
-                && token != null && (state.getString(ACCOUNT, null) == null
-                || !token.equals(state.getString(REGISTERED_TOKEN, null)));
+        State s = current(context);
+        synchronized (ROUTING) {
+            return s.ready && account != null && account.key.equals(s.scope) && s.token != null
+                    && (!s.routeDurable || s.account == null || !s.token.equals(s.registeredToken));
+        }
     }
-
-    public static boolean registered(Context context, AccountScope account, String token,
-                                     String installationId, String serverAccountKey) {
-        SharedPreferences state = prefs(context);
-        if (account == null || token == null || !validUuid(installationId)
-                || !validUuid(serverAccountKey) || !account.key.equals(state.getString(SCOPE, null))
-                || !token.equals(state.getString(TOKEN, null))
-                || !installationId.equals(state.getString(INSTALLATION, null))) return false;
-        return state.edit().putString(ACCOUNT, serverAccountKey)
-                .putString(REGISTERED_TOKEN, token).commit();
+    /** Capture before the authenticated HTTP request, not after its response. */
+    public static Registration registration(Context context, AccountScope account) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            return s.ready && account != null && account.key.equals(s.scope) && validToken(s.token)
+                    && Objects.equals(s.installation, s.savedInstallation) ? new Registration(s) : null;
+        }
     }
-
+    private static boolean currentRegistration(Registration request) {
+        State s = state;
+        return request != null && s == request.owner && s.ready && s.epoch == request.epoch
+                && s.registrationSerial == request.serial
+                && Objects.equals(s.scope, request.scope) && Objects.equals(s.token, request.token)
+                && Objects.equals(s.installation, request.installationId);
+    }
+    public static void registeredAsync(Context context, Registration request, String serverAccountKey, Ready<Boolean> callback) {
+        current(context);
+        synchronized (ROUTING) {
+            if (!validUuid(serverAccountKey) || !currentRegistration(request)) {
+                deliver(callback, false, false); return;
+            }
+            State s = state;
+            boolean sameBinding = serverAccountKey.equals(s.account) && request.token.equals(s.registeredToken);
+            s.account = serverAccountKey; s.registeredToken = request.token; s.routeDurable = false;
+            if (!sameBinding) {
+                s.preview = "none"; s.previewRevision = -1; ++s.intent;
+                if (!Objects.equals(s.scope, s.privacyScope) || !Objects.equals(s.installation, s.privacyInstallation)) {
+                    s.previewDesired = null; s.privacyScope = null; s.privacyInstallation = null;
+                }
+            }
+            persistLocked(s, saved -> MAIN.post(() -> {
+                boolean accepted;
+                synchronized (ROUTING) {
+                    accepted = saved && currentRegistration(request) && serverAccountKey.equals(s.account) && s.routeDurable;
+                }
+                if (callback != null) callback.complete(accepted, accepted);
+            }));
+        }
+    }
+    public static String accountKey(Context context) {
+        State s = current(context);
+        synchronized (ROUTING) { return active(s) ? s.account : null; }
+    }
+    private static boolean active(State s) {
+        return s.ready && s.routeDurable && s.scope != null && validUuid(s.account)
+                && validToken(s.token) && s.token.equals(s.registeredToken);
+    }
+    public static boolean matches(Context context, String key) {
+        State s = current(context);
+        synchronized (ROUTING) { return validUuid(key) && active(s) && key.equals(s.account); }
+    }
+    public static String scopeForKey(Context context, String key) {
+        State s = current(context);
+        synchronized (ROUTING) { return validUuid(key) && active(s) && key.equals(s.account) ? s.scope : null; }
+    }
+    static Delivery delivery(Context context, String key) {
+        State s = current(context);
+        synchronized (ROUTING) { return validUuid(key) && active(s) && key.equals(s.account) ? new Delivery(s) : null; }
+    }
+    /** No preferences/disk work in the gate. The callback may only build/post a notification. */
+    static boolean present(Delivery delivery, Presentation presentation) {
+        synchronized (ROUTING) {
+            State s = state;
+            if (delivery == null || s != delivery.owner || !active(s) || s.epoch != delivery.epoch
+                    || !delivery.account.equals(s.account)) return false;
+            presentation.show(s.preview);
+            return true;
+        }
+    }
+    static String previewMode(Context context, String accountKey) {
+        State s = current(context);
+        synchronized (ROUTING) { return active(s) && Objects.equals(accountKey, s.account) ? s.preview : "none"; }
+    }
+    static PreviewRequest previewRequest(Context context, String accountKey) {
+        State s = current(context);
+        synchronized (ROUTING) { return active(s) && Objects.equals(accountKey, s.account) ? new PreviewRequest(s) : null; }
+    }
+    private static boolean currentPreview(PreviewRequest request) {
+        State s = state;
+        return request != null && s == request.owner && active(s) && s.epoch == request.epoch
+                && s.intent == request.intent && request.account.equals(s.account);
+    }
+    static boolean currentPreviewRequest(PreviewRequest request) {
+        synchronized (ROUTING) { return currentPreview(request); }
+    }
+    /** Restriction takes effect now; caller receives a sendable ticket only after local commit succeeds. */
+    static void beginPreviewChange(Context context, String key, String desired, Ready<PreviewRequest> callback) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            if (!active(s) || !Objects.equals(key, s.account) || !validPreview(desired)) {
+                deliver(callback, null, false); return;
+            }
+            ++s.intent; s.previewDesired = desired; s.privacyScope = s.scope; s.privacyInstallation = s.installation;
+            if (rank(desired) < rank(s.preview)) s.preview = desired;
+            PreviewRequest request = new PreviewRequest(s);
+            persistLocked(s, saved -> MAIN.post(() -> {
+                boolean valid;
+                synchronized (ROUTING) { valid = saved && currentPreview(request); }
+                if (callback != null) callback.complete(valid ? request : null, valid);
+            }));
+        }
+    }
+    static void acceptPreviewMode(Context context, PreviewRequest request, String mode, long revision, Ready<Boolean> callback) {
+        current(context);
+        synchronized (ROUTING) {
+            if (!currentPreview(request) || !validPreview(mode) || revision < state.previewRevision
+                    || revision < 0 || state.previewDesired != null && !state.previewDesired.equals(mode)
+                    || revision == state.previewRevision && !state.preview.equals(mode)) {
+                deliver(callback, false, false); return;
+            }
+            State s = state; s.preview = mode; s.previewRevision = revision; s.previewDesired = null;
+            s.privacyScope = null; s.privacyInstallation = null;
+            persistLocked(s, saved -> MAIN.post(() -> {
+                boolean valid;
+                synchronized (ROUTING) { valid = saved && currentPreview(request) && mode.equals(s.preview); }
+                if (callback != null) callback.complete(valid, valid);
+            }));
+        }
+    }
+    public static void token(Context context, String token) {
+        if (!validToken(token)) return;
+        State s = current(context);
+        synchronized (ROUTING) {
+            if (token.equals(s.token)) return;
+            invalidateRouteLocked(s, true); s.token = token; s.tokenTouched = true; persistLocked(s, null);
+        }
+    }
+    public static void clearToken(Context context) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            invalidateRouteLocked(s, true); s.token = null; s.tokenTouched = true; persistLocked(s, null);
+        }
+    }
+    public static String pendingToken(Context context) {
+        State s = current(context);
+        synchronized (ROUTING) { return s.ready ? s.token : null; }
+    }
+    public static void observe(Context context, SharedPreferences.OnSharedPreferenceChangeListener listener) {
+        current(context);
+        synchronized (ROUTING) { OBSERVERS.put(listener, Boolean.TRUE); changedLocked(); }
+    }
+    public static void stopObserving(Context context, SharedPreferences.OnSharedPreferenceChangeListener listener) {
+        synchronized (ROUTING) { OBSERVERS.remove(listener); }
+    }
+    private interface Saved { void complete(boolean saved); }
+    /** Queue while holding ROUTING to preserve snapshot order; the worker never commits under it. */
+    private static void persistLocked(State s, Saved callback) {
+        if (!s.ready) return; // load merges memory intents and queues their first complete snapshot.
+        final String scope = s.scope, account = s.account, token = s.token, registered = s.registeredToken;
+        final String installation = s.installation, mode = s.preview, desired = s.previewDesired;
+        final String privacyScope = s.privacyScope, privacyInstallation = s.privacyInstallation;
+        final long revision = s.previewRevision, sequence = ++s.sequence, epoch = s.epoch;
+        BChatStorageRepository.executor().execute(() -> {
+            boolean saved;
+            try {
+                SharedPreferences.Editor edit = s.prefs.edit();
+                put(edit, SCOPE, scope); put(edit, ACCOUNT, account); put(edit, TOKEN, token);
+                put(edit, REGISTERED_TOKEN, registered); put(edit, INSTALLATION, installation);
+                put(edit, PREVIEW_ACCOUNT, account); put(edit, PREVIEW_MODE, mode);
+                put(edit, PREVIEW_DESIRED, desired);
+                put(edit, PREVIEW_SCOPE, privacyScope); put(edit, PREVIEW_INSTALLATION, privacyInstallation);
+                saved = edit.putLong(PREVIEW_REVISION, revision).commit();
+            } catch (RuntimeException failure) { saved = false; }
+            synchronized (ROUTING) {
+                if (state == s) {
+                    s.storageHealthy = saved;
+                    if (saved && Objects.equals(installation, s.installation)) s.savedInstallation = installation;
+                    if (epoch == s.epoch && Objects.equals(scope, s.scope) && Objects.equals(account, s.account)
+                            && Objects.equals(token, s.token) && Objects.equals(registered, s.registeredToken))
+                        s.routeDurable = saved && validUuid(account);
+                    // A failed broader preview write is never left enabled in RAM or restored on cold load.
+                    if (!saved && sequence == s.sequence) { s.preview = "none"; ++s.intent; }
+                    changedLocked();
+                }
+            }
+            if (callback != null) callback.complete(saved);
+        });
+    }
+    private static void put(SharedPreferences.Editor edit, String key, String value) {
+        if (value == null) edit.remove(key); else edit.putString(key, value);
+    }
+    private static <T> void deliver(Ready<T> callback, T value, boolean durable) {
+        if (callback != null) MAIN.post(() -> callback.complete(value, durable));
+    }
+    private static void changedLocked() {
+        MAIN.post(() -> {
+            ArrayList<SharedPreferences.OnSharedPreferenceChangeListener> listeners;
+            SharedPreferences prefs;
+            synchronized (ROUTING) { listeners = new ArrayList<>(OBSERVERS.keySet()); prefs = state == null ? null : state.prefs; }
+            if (prefs != null) for (SharedPreferences.OnSharedPreferenceChangeListener listener : listeners)
+                listener.onSharedPreferenceChanged(prefs, "routing-state");
+        });
+    }
+    private static boolean validScope(String value) { return value != null && value.matches("[0-9a-f]{64}"); }
     private static boolean validUuid(String value) {
         return value != null && value.matches("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
     }
-
-    public static void observe(Context context, SharedPreferences.OnSharedPreferenceChangeListener listener) {
-        prefs(context).registerOnSharedPreferenceChangeListener(listener);
+    private static boolean validToken(String value) {
+        if (value == null || value.length() < 32 || value.length() > 4096) return false;
+        for (int i = 0; i < value.length(); i++) if (value.charAt(i) < '!' || value.charAt(i) > '~') return false;
+        return true;
     }
-
-    public static void stopObserving(Context context, SharedPreferences.OnSharedPreferenceChangeListener listener) {
-        prefs(context).unregisterOnSharedPreferenceChangeListener(listener);
-    }
-
-    public static String accountKey(Context context) {
-        return prefs(context).getString(ACCOUNT, null);
-    }
-
-    public static boolean matches(Context context, String key) {
-        String saved = accountKey(context);
-        return validUuid(key) && key.equals(saved) && prefs(context).getString(SCOPE, null) != null;
-    }
-
-    /** Only a local routing hint; server authorization is mandatory before showing a target. */
-    public static String scopeForKey(Context context, String key) {
-        return matches(context, key) ? prefs(context).getString(SCOPE, null) : null;
-    }
-
-    public static void token(Context context, String token) {
-        if (token == null || token.length() < 32 || token.length() > 4096) return;
-        for (int i = 0; i < token.length(); i++) {
-            char value = token.charAt(i);
-            if (value < '!' || value > '~') return;
-        }
-        SharedPreferences state = prefs(context);
-        if (token.equals(state.getString(TOKEN, null))) return;
-        state.edit().putString(TOKEN, token)
-                .remove(ACCOUNT).remove(REGISTERED_TOKEN).apply();
-    }
-
-    /** Registration still requires the authenticated same-origin BChat endpoint. */
-    public static String pendingToken(Context context) {
-        return prefs(context).getString(TOKEN, null);
-    }
-
-    public static void clearToken(Context context) {
-        prefs(context).edit().remove(TOKEN).apply();
-    }
+    private static boolean validPreview(String value) { return "none".equals(value) || "sender".equals(value) || "full".equals(value); }
+    private static int rank(String value) { return "full".equals(value) ? 2 : "sender".equals(value) ? 1 : 0; }
+    private BChatPushState() { }
 }

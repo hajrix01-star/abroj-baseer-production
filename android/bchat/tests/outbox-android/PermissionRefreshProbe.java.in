@@ -1,0 +1,92 @@
+package com.baseer.freshchat;
+
+import android.os.SystemClock;
+import android.view.View;
+import com.baseer.freshchat.sync.AccountScope;
+import org.json.JSONObject;
+import org.json.JSONArray;
+import java.util.*;
+
+/** Production refresh/deny control flow; explicit UI/transport fakes, NOT a screen acceptance test. */
+public final class PermissionRefreshProbe {
+%PRODUCTION_PERMISSION_SET%
+%PRODUCTION_POSITIVE_ID%
+%PRODUCTION_REFRESH%
+%PRODUCTION_DENY%
+    static final String DATABASE="synthetic", V2_BOOTSTRAP="/bootstrap";
+    AccountScope account=new AccountScope("https://policy.invalid", DATABASE, 7), permissionAccount;
+    PermissionSet permissionSet=PermissionSet.legacy();
+    Set<Long> v1Companies=new HashSet<>(Collections.singleton(1L));
+    Object web=new Object();
+    boolean verified=true,offlineHistory,closed,v2Busy,permissionRefreshScheduled;
+    long lastPermissionRefreshAt;
+    int epoch,denied,cachesCleared,transportRecovery,applied;
+    boolean probing,submitting;
+    String csrfToken="fixture", uncertainUuid="preserve-this-uuid";
+    FakeHandler handler=new FakeHandler();
+    FakeView shellNotice=new FakeView(),shellRetry=new FakeView();
+    int status=200;
+    JSONObject body;
+    V2Callback held;
+    boolean defer;
+    static final class R { static final class string { static final int chat_v2_denied=1; } }
+    static final class FakeView { void setText(int ignored){} void setVisibility(int ignored){} }
+    static final class FakeHandler { void postDelayed(Runnable ignored,long delay){} }
+    static final class BChatPushState { static void clearAccount(PermissionRefreshProbe ignored){} }
+    interface V2Callback { void complete(int status,JSONObject value); }
+    void fetchV2(String method,String path,String payload,V2Callback callback) {
+        if(defer) held=callback; else callback.complete(status,body);
+    }
+    boolean handleV2TransportFailure(int status) {
+        if(status==0||status==401) {transportRecovery++;return true;}return false;
+    }
+    PermissionSet permissionContract(JSONObject object,AccountScope scope)throws Exception {
+        return PermissionSet.parse(object.getJSONObject("permissions"));
+    }
+    void applyPermissionSet(AccountScope scope,PermissionSet next){applied++;permissionSet=next;permissionAccount=scope;}
+    void restrictCompanyScope(AccountScope scope,Set<Long> allowed){v1Companies.retainAll(allowed);}
+    void revalidateCompanyIdentity(AccountScope scope){verified=false;}
+    void loadRooms(){} void maybeProbeOrderCapability(){}
+    void purgeHistory(){denied++;} void closeV2Port(){}
+    void clearChatView(){cachesCleared++;}
+    void releaseWeb(){web=null;} void showShell(){}
+    private static JSONObject permission()throws Exception {
+        return new JSONObject().put("version",1).put("revision",5).put("chat_view",true)
+                .put("chat_send",true).put("media",true).put("group_create",false)
+                .put("group_manage",false).put("task_view",false).put("task_manage",false).put("room_admin",false);
+    }
+    private static PermissionRefreshProbe fixture()throws Exception {
+        PermissionRefreshProbe test=new PermissionRefreshProbe();
+        test.body=new JSONObject().put("api_version",2).put("user_id",7).put("database",DATABASE)
+                .put("company_ids",new JSONArray().put(1)).put("permissions",permission());
+        return test;
+    }
+    private static int checks;
+    private static void check(boolean value){checks++;if(!value)throw new AssertionError("Permission refresh "+checks);}
+    public static int run()throws Exception {
+        checks=0;
+        for(int status:new int[]{0,401,429,500,503}) {
+            PermissionRefreshProbe test=fixture();test.status=status;test.refreshPermissionSet();
+            check(test.denied==0&&test.cachesCleared==0&&"preserve-this-uuid".equals(test.uncertainUuid));
+        }
+        PermissionRefreshProbe accepted=fixture();accepted.refreshPermissionSet();
+        check(accepted.verified&&accepted.account!=null&&accepted.applied==1&&accepted.denied==0);
+        for(int invalid=0;invalid<6;invalid++) {
+            PermissionRefreshProbe test=fixture();
+            if(invalid==0)test.status=403;
+            if(invalid==1)test.body.put("api_version",1);
+            if(invalid==2)test.body.put("user_id",8);
+            if(invalid==3)test.body.put("company_ids",new JSONArray().put(1).put(1));
+            if(invalid==4)test.body.getJSONObject("permissions").put("media_view",true);
+            if(invalid==5)test.body=null;
+            test.refreshPermissionSet();
+            check(test.denied==1&&test.cachesCleared==1&&!test.verified&&test.account==null
+                    &&test.csrfToken==null&&test.web==null&&"preserve-this-uuid".equals(test.uncertainUuid));
+        }
+        PermissionRefreshProbe stale=fixture();stale.defer=true;stale.refreshPermissionSet();
+        stale.account=new AccountScope("https://policy.invalid",DATABASE,8);
+        stale.held.complete(403,null);
+        check(stale.denied==0&&stale.account.userId==8&&stale.verified);
+        return checks;
+    }
+}

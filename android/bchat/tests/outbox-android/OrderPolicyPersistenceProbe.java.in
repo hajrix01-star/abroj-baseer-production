@@ -1,0 +1,118 @@
+package com.baseer.freshchat;
+
+import android.app.Instrumentation;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Looper;
+import com.baseer.freshchat.sync.*;
+import org.json.JSONObject;
+import java.util.*;
+import java.util.concurrent.*;
+
+/** Actual repository/Android callbacks, extracted production policy; explicit disk/UI fakes. */
+public final class OrderPolicyPersistenceProbe {
+%APPLY%
+%PERSIST%
+%READY%
+%LOCAL%
+    static final String ORDER_PERMISSION_PREFS="policy",REMEMBER="remember";
+    static final int MODE_PRIVATE=0;
+    AccountScope account=new AccountScope("https://order-policy.invalid","synthetic",++user);
+    static long user=400;
+    boolean closed,offlinePersistenceReady=true,offlinePolicyDiskReady=true,orderPolicyDiskReady=true;
+    boolean orderCanView=true,orderCanCreate=true,orderCanReceive=true;
+    int epoch,orderPolicyWriteSerial,losses;
+    String orderAccess;
+    final Map<String,String> rememberedOrderRights=new HashMap<>();
+    final PolicyPreferences policy=new PolicyPreferences(),auth=new PolicyPreferences();
+    final PermissionSet permissionSet=new PermissionSet();
+    static final class PermissionSet { long revision=-1;boolean orderView=true,orderCreate=true,orderReceive=true; }
+    SharedPreferences getSharedPreferences(String name,int mode){return policy;}
+    SharedPreferences preferences(){return auth;}
+    // Simulates only setOrderRights' real loss fence, not the screen/purge implementation.
+    void setOrderRights(AccountScope scope,boolean view,boolean create,boolean receive){
+        if(orderCanView&&!view||orderCanCreate&&!create||orderCanReceive&&!receive){losses++;BChatStorageRepository.invalidate(scope);}
+        orderCanView=view;orderCanCreate=view&&create;orderCanReceive=view&&receive;
+    }
+    static final class PolicyPreferences implements SharedPreferences {
+        final Map<String,Object> memory=new ConcurrentHashMap<>(),disk=new ConcurrentHashMap<>();
+        volatile int fail,throwsNext,calls,mainCalls;
+        void restart(){memory.clear();memory.putAll(disk);}
+        void seed(String key,Object value){memory.put(key,value);disk.put(key,value);}
+        public Map<String,?> getAll(){return new HashMap<>(memory);}
+        public String getString(String k,String f){Object v=memory.get(k);return v==null?f:(String)v;}
+        public boolean getBoolean(String k,boolean f){Object v=memory.get(k);return v==null?f:(Boolean)v;}
+        public int getInt(String k,int f){return f;}public long getLong(String k,long f){return f;}public float getFloat(String k,float f){return f;}
+        public Set<String> getStringSet(String k,Set<String> f){return f;}public boolean contains(String k){return memory.containsKey(k);}
+        public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener ignored){}
+        public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener ignored){}
+        public Editor edit(){return new Editor(){
+            Map<String,Object> writes=new HashMap<>();boolean clear;
+            public Editor putString(String k,String v){writes.put(k,v);return this;}public Editor putBoolean(String k,boolean v){writes.put(k,v);return this;}
+            public Editor putStringSet(String k,Set<String> v){writes.put(k,v);return this;}public Editor putInt(String k,int v){writes.put(k,v);return this;}
+            public Editor putLong(String k,long v){writes.put(k,v);return this;}public Editor putFloat(String k,float v){writes.put(k,v);return this;}
+            public Editor remove(String k){writes.put(k,null);return this;}public Editor clear(){clear=true;return this;}
+            private void write(Map<String,Object> target){if(clear)target.clear();for(Map.Entry<String,Object> e:writes.entrySet())if(e.getValue()==null)target.remove(e.getKey());else target.put(e.getKey(),e.getValue());}
+            public boolean commit(){calls++;if(Looper.myLooper()==Looper.getMainLooper())mainCalls++;write(memory);if(throwsNext-->0)throw new IllegalStateException("Injected policy write failure");if(fail-->0)return false;write(disk);return true;}
+            public void apply(){throw new AssertionError("Policy durability cannot use apply()");}
+        };}
+    }
+    static int checks;
+    static void check(boolean value){checks++;if(!value)throw new AssertionError("Order policy "+checks);}
+    static JSONObject rights(boolean create)throws Exception{return new JSONObject().put("access","operator").put("can_view",true).put("can_create",create).put("can_receive",create);}
+    static OrderPolicyPersistenceProbe fixture()throws Exception{
+        OrderPolicyPersistenceProbe p=new OrderPolicyPersistenceProbe();
+        p.policy.seed(p.account.key,rights(true).toString());p.auth.seed(REMEMBER,true);return p;
+    }
+    static CountDownLatch block()throws Exception{
+        CountDownLatch started=new CountDownLatch(1),release=new CountDownLatch(1);
+        BChatStorageRepository.submit(null,()->{started.countDown();if(!release.await(5,TimeUnit.SECONDS))throw new AssertionError("Lane release timeout");return true;},(v,e)->{});
+        check(started.await(5,TimeUnit.SECONDS));return release;
+    }
+    static void drain()throws Exception{
+        CountDownLatch done=new CountDownLatch(1);BChatStorageRepository.submit(null,()->true,(v,e)->done.countDown());check(done.await(5,TimeUnit.SECONDS));
+    }
+    static void apply(Instrumentation instrumentation,OrderPolicyPersistenceProbe p,JSONObject data){
+        instrumentation.runOnMainSync(()->{try{p.applyOrderRights(data,p.account);}catch(Exception e){throw new AssertionError(e);}});
+    }
+    public static int run(Instrumentation instrumentation,Context context)throws Exception{
+        checks=0;
+        JSONObject denied=rights(false),granted=rights(true);
+        OrderPolicyPersistenceProbe success=fixture();CountDownLatch first=block();apply(instrumentation,success,denied);
+        boolean immediateDenied=!success.offlinePersistenceReady&&success.losses==1&&success.policy.calls==0;
+        // A callback belonging to a general snapshot must not bypass the pending order gate.
+        instrumentation.runOnMainSync(()->success.offlinePolicyReady(true));boolean oldCallbackDenied=!success.offlinePersistenceReady;
+        first.countDown();drain();success.policy.restart();
+        // The negative-control build must reach this read: pre-fix generation cancellation
+        // leaves the old grant on disk, rather than merely failing an immediate-UI assertion.
+        check(!new JSONObject(success.policy.getString(success.account.key,null)).getBoolean("can_create"));
+        check(immediateDenied);check(oldCallbackDenied);
+        check(success.offlinePersistenceReady&&success.orderPolicyDiskReady&&success.policy.calls==1&&success.policy.mainCalls==0);
+        for(boolean throwing:new boolean[]{false,true}){
+            OrderPolicyPersistenceProbe failed=fixture();if(throwing)failed.policy.throwsNext=1;else failed.policy.fail=1;
+            CountDownLatch gate=block();apply(instrumentation,failed,denied);check(!failed.offlinePersistenceReady);
+            gate.countDown();drain();failed.policy.restart();failed.auth.restart();
+            check(!failed.auth.getBoolean(REMEMBER,true)); // A restarted client cannot trust the older on-disk grant.
+            check(!failed.offlinePersistenceReady&&!failed.orderPolicyDiskReady);
+            instrumentation.runOnMainSync(()->failed.offlinePolicyReady(true));check(!failed.offlinePersistenceReady);
+            check(failed.auth.mainCalls==0&&failed.policy.mainCalls==0);
+        }
+        OrderPolicyPersistenceProbe changed=fixture();AccountScope old=changed.account;
+        CountDownLatch accountGate=block();apply(instrumentation,changed,denied);
+        instrumentation.runOnMainSync(()->{changed.account=new AccountScope("https://order-policy.invalid","synthetic",9999);changed.epoch++;changed.offlinePolicyReady(false);});
+        accountGate.countDown();drain();changed.policy.restart();
+        check(!new JSONObject(changed.policy.getString(old.key,null)).getBoolean("can_create"));
+        check(!changed.offlinePersistenceReady); // Write retained for old key, no old callback authorizes new account.
+        OrderPolicyPersistenceProbe purged=fixture();CountDownLatch purgeGate=block();apply(instrumentation,purged,denied);
+        instrumentation.runOnMainSync(()->{BChatStorageRepository.invalidate(purged.account);purged.offlinePolicyReady(false);});
+        purgeGate.countDown();drain();purged.policy.restart();
+        check(!new JSONObject(purged.policy.getString(purged.account.key,null)).getBoolean("can_create"));
+        check(!purged.offlinePersistenceReady); // Policy survives another generation; purge's denial survives its callback.
+        OrderPolicyPersistenceProbe superseded=fixture();CountDownLatch staleGate=block();
+        apply(instrumentation,superseded,granted);apply(instrumentation,superseded,denied);
+        staleGate.countDown();drain();superseded.policy.restart();
+        check(!new JSONObject(superseded.policy.getString(superseded.account.key,null)).getBoolean("can_create"));
+        check(superseded.policy.calls==2&&superseded.orderPolicyDiskReady&&superseded.offlinePersistenceReady);
+        return checks;
+    }
+}

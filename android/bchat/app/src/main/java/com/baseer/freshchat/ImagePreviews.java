@@ -139,6 +139,19 @@ final class ImagePreviews {
 
     /** One bounded original-resolution viewport tile per inspector; no retained native decoder. */
     Request loadDetail(ChatStore.Attachment file, Rect region, int sample, DetailReady callback) {
+        return loadDetailSource(() -> {
+            if (file == null || !file.mime.startsWith("image/")) throw new IOException("Not an image attachment");
+            return AttachmentSupport.requirePrivateFile(context, file);
+        }, region, sample, callback);
+    }
+
+    /** Caller must still hold current download rights; this path check is not authorization. */
+    Request loadConnectedDetail(File file, Rect region, int sample, DetailReady callback) {
+        return loadDetailSource(() -> requireConnectedCache(context, file), region, sample, callback);
+    }
+
+    private interface FileSource { File resolve() throws IOException; }
+    private Request loadDetailSource(FileSource source, Rect region, int sample, DetailReady callback) {
         if (closed) { callback.show(new DetailResult(null, null, null, false)); return COMPLETE; }
         if (pending.size() + detailPending.size() >= MAX_PENDING) {
             callback.show(new DetailResult(null, null, null, true)); return COMPLETE;
@@ -148,7 +161,7 @@ final class ImagePreviews {
         try {
             job.task = worker.submit(() -> {
                 DetailResult result;
-                try { result = decodeDetail(context, file, requested, sample); }
+                try { result = decodeDetailFile(source.resolve(), requested, sample); }
                 catch (IOException | RuntimeException | OutOfMemoryError unsupported) { result = new DetailResult(null, null, null, false); }
                 final DetailResult ready = result;
                 main.post(() -> {
@@ -170,6 +183,12 @@ final class ImagePreviews {
         if (Looper.myLooper() == Looper.getMainLooper()) throw new IllegalStateException("Detail decode must run off main");
         if (file == null || !file.mime.startsWith("image/") || Thread.currentThread().isInterrupted()) throw new IOException("Cancelled detail preview");
         File source = AttachmentSupport.requirePrivateFile(context, file);
+        return decodeDetailFile(source, region, sample);
+    }
+
+    private static DetailResult decodeDetailFile(File source, Rect region, int sample) throws IOException {
+        if (Looper.myLooper() == Looper.getMainLooper()) throw new IllegalStateException("Detail decode must run off main");
+        if (Thread.currentThread().isInterrupted()) throw new IOException("Cancelled detail preview");
         BitmapFactory.Options bounds = new BitmapFactory.Options(); bounds.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(source.getPath(), bounds);
         if (!ImagePreviewPolicy.validSource(bounds.outWidth, bounds.outHeight)) throw new IOException("Invalid image bounds");
@@ -204,6 +223,27 @@ final class ImagePreviews {
         if (Looper.myLooper() == Looper.getMainLooper()) throw new IllegalStateException("Decode must run off the UI thread");
         if (attachment == null || !attachment.mime.startsWith("image/")) throw new IOException("Not an image attachment");
         File file = AttachmentSupport.requirePrivateFile(context, attachment);
+        return decodeBounded(file, maxEdge);
+    }
+
+    static Bitmap decodeConnectedCache(Context context, File file, int maxEdge) throws IOException {
+        return decodeBounded(requireConnectedCache(context, file), maxEdge);
+    }
+
+    private static File requireConnectedCache(Context context, File file) throws IOException {
+        if (Looper.myLooper() == Looper.getMainLooper()) throw new IllegalStateException("File validation must run off main");
+        if (Thread.currentThread().isInterrupted()) throw new IOException("Cancelled connected image");
+        if (file == null) throw new IOException("Missing connected image");
+        File root = new File(context.getCacheDir(), "bchat-v2-media-read").getCanonicalFile();
+        File source = file.getCanonicalFile();
+        if (!root.equals(source.getParentFile()) || !source.getName().matches("read-[0-9]+\\.bin")
+                || !source.isFile() || source.length() < 1 || source.length() > 10L * 1024 * 1024)
+            throw new IOException("Invalid private connected image");
+        return source;
+    }
+
+    private static Bitmap decodeBounded(File file, int maxEdge) throws IOException {
+        if (Looper.myLooper() == Looper.getMainLooper()) throw new IllegalStateException("Decode must run off the UI thread");
         if (file.length() < 1 || Thread.currentThread().isInterrupted()) throw new IOException("Empty or cancelled preview");
         int target = ImagePreviewPolicy.checkedTarget(maxEdge);
         Bitmap bitmap = Build.VERSION.SDK_INT >= 28 ? Modern.decode(file, target) : decodeLegacy(file, target);

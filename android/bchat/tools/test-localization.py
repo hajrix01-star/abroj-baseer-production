@@ -22,7 +22,7 @@ def strings(folder):
     return values
 
 def source(name):
-    return (JAVA / name).read_text()
+    return (JAVA / name).read_text(encoding='utf-8')
 
 class LocalizationContracts(unittest.TestCase):
     def test_room_list_shows_every_authorized_company(self):
@@ -61,7 +61,7 @@ class LocalizationContracts(unittest.TestCase):
     def test_every_ui_reference_resolves(self):
         keys = set(strings('values'))
         for path in JAVA.glob('*.java'):
-            for key in re.findall(r'R\.string\.(\w+)', path.read_text()): self.assertIn(key, keys, f'{path.name}: {key}')
+            for key in re.findall(r'R\.string\.(\w+)', path.read_text(encoding='utf-8')): self.assertIn(key, keys, f'{path.name}: {key}')
 
     def test_user_facing_classes_have_no_arabic_literals(self):
         for filename in ('MainActivity.java', 'Ui.java', 'AnchoredMenu.java', 'VoicePlayerView.java', 'AudioPlayback.java', 'DemoNotifications.java'):

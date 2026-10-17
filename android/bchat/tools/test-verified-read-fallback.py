@@ -90,7 +90,8 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         self.assertNotIn('companyLabelWidth', screen)
 
     def test_recheck_preserves_confirmed_push_route_and_dialog_updates(self):
-        self.assertIn('if (account.key.equals(state.getString(SCOPE, null))) return;', PUSH_STATE)
+        self.assertIn('if (account.key.equals(s.scope)) return;', PUSH_STATE)
+        self.assertIn('s.routeDurable', PUSH_STATE)
         resume_start = SOURCE.index('@Override protected void onResume()')
         resume_end = SOURCE.index('@Override public void onBackPressed()', resume_start)
         self.assertNotIn('BChatPushState.clearAccount(this)', SOURCE[resume_start:resume_end])

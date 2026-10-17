@@ -8,5 +8,17 @@
     <item name="android:windowActionModeOverlay">true</item>
   </style>
   <style name="AppTheme" parent="AppTheme.Base" />
+  <style name="AppTheme.Dark" parent="android:style/Theme.Material.NoActionBar">
+    <item name="android:fontFamily">sans</item>
+    <item name="android:colorAccent">@color/bchat_accent</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:statusBarColor">@color/bchat_background</item>
+    <item name="android:navigationBarColor">@color/bchat_background</item>
+    <item name="android:windowBackground">@color/bchat_background</item>
+    <item name="android:colorBackground">@color/bchat_background</item>
+    <item name="android:textColorPrimary">@color/bchat_ink</item>
+    <item name="android:textColorSecondary">@color/bchat_muted</item>
+    <item name="android:windowActionModeOverlay">true</item>
+  </style>
   <color name="icon_bg">#0D3F68</color>
 </resources>

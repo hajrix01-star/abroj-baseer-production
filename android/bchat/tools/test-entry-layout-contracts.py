@@ -97,7 +97,7 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertIn('store.unreadCount(c.companyId, c.id) > 99 ? "99+"', row)
         self.assertIn('s(R.string.unread_count, store.unreadCount(c.companyId, c.id))', row)
 
-    def test_single_original_b_and_reduced_motion_lifecycle(self):
+    def test_vector_bchat_mark_and_reduced_motion_lifecycle(self):
         entry = method('showEntry')
         self.assertIn('new EntryMarkView(this)', entry)
         self.assertNotIn('BChatWordmarkView', entry)
@@ -114,8 +114,13 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertIn('observer.removeOnGlobalFocusChangeListener(focusObserver)', entry)
         self.assertIn('observer.removeOnGlobalLayoutListener(layoutObserver)', entry)
         mark = (JAVA/'EntryMarkView.java').read_text()
-        self.assertIn('R.drawable.baseer_mark_b', mark)
-        self.assertEqual(mark.count('canvas.drawBitmap('), 1)
+        vector = (ROOT/'app/src/main/res/drawable/bchat_mark_hq.xml').read_text()
+        master = (ROOT/'app/src/main/res/raw/bchat_mark_hq.svg').read_text()
+        self.assertIn('R.drawable.bchat_mark_hq', mark)
+        self.assertIn('original.draw(canvas)', mark)
+        self.assertNotIn('canvas.drawBitmap(', mark)
+        self.assertIn('android:pathData', vector)
+        self.assertIn('viewBox="0 0 2048 2048"', master)
         self.assertNotIn('setColorFilter', mark)
 
     def test_remember_demo_does_not_store_credentials(self):

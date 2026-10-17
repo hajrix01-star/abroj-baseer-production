@@ -5,6 +5,7 @@ from pathlib import Path
 source = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java").read_text(encoding="utf-8")
 store = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java").read_text(encoding="utf-8")
 uploader = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/BChatNativeMediaUploader.java").read_text(encoding="utf-8")
+coordinator = (Path(__file__).resolve().parents[1] / "app/src/main/java/com/baseer/freshchat/BChatTransferCoordinator.java").read_text(encoding="utf-8")
 
 def body(signature):
     start = source.index("{", source.index(signature))
@@ -45,9 +46,13 @@ checks = {
             "private void showCachedMessages(Room room, long beforeId, boolean firstOpen)")
         and "positiveId(message.opt(\"author_user_id\")) != scopedAccount.userId" in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
-        and "confirmedMediaIds.add(serverMedia.id);" in body(
+        and 'confirmedMediaIds.put(serverMedia.id,positiveId(message.get("id")));' in body(
             "private void reconcilePendingMediaFromVerifiedHistory(")
-        and "store.acknowledge(scopedAccount, entry);" in body(
+        and "box.tickets().receipt(scopedAccount,ticket,confirmedMediaIds.get(entry.mediaId))" in body(
+            "private void reconcilePendingMediaFromVerifiedHistory(")
+        and "box.tickets().retireMedia(scopedAccount,receipt," in body(
+            "private void reconcilePendingMediaFromVerifiedHistory(")
+        and "store.retireReceipted(scopedAccount,entry.uploadUuid,receipt.fingerprint)" in body(
             "private void reconcilePendingMediaFromVerifiedHistory("),
     "Several locally staged media records are a recoverable queue, not a storage error":
         "public List<Entry> pendingForRoom(" in store
@@ -67,8 +72,8 @@ checks = {
             "private void loadMessages(long beforeId)")
         and "mediaReplayAfterInitialHistory = true;" in body(
             "private void selectRoom(Room room, long notifiedMessageId)")
-        and "entry.mediaId <= 0" in body("private void replayKnownConnectedMedia(")
-        and "sendConnectedMedia(scopedAccount, room, entry);" in body(
+        and 'head.legacy||"review".equals(head.state)||"uncertain".equals(head.state)' in body("private void replayKnownConnectedMedia(")
+        and "if(entry.mediaId>0)sendConnectedMedia(scopedAccount,room,entry);" in body(
             "private void replayKnownConnectedMedia("),
     "Manual media retry does not upload a known server media record again":
         "if (entry.mediaId > 0)" in body("private void retryConnectedMedia()")
@@ -84,32 +89,34 @@ checks = {
             "private void retryConnectedMedia()")
         and "showMissingNativeMediaRetry(scopedAccount, room, entry);" in body(
             "private void reconcileNativeMediaUpload(")
-        and "uploadConnectedMedia(scopedAccount, room, current);" in body(
+        and "box.tickets().approveLegacyMedia(scopedAccount,t)" in body(
+            "private void showMissingNativeMediaRetry(")
+        and "uploadConnectedMedia(scopedAccount,room,entry);" in body(
             "private void showMissingNativeMediaRetry("),
     "Verified media ACK retires local state before screen-lifetime checks":
-        body("private void sendConnectedMedia(").index(
-            "mediaStore.acknowledge(scopedAccount, entry);")
-        < body("private void sendConnectedMedia(").index(
-            "if (!stillCurrent(scopedAccount, room)) return;",
-            body("private void sendConnectedMedia(").index(
-                "mediaStore.acknowledge(scopedAccount, entry);")),
+        body("private void sendClaimedConnectedMedia(").index(
+            "box.tickets().receipt(scopedAccount,claim,sentMessageId)")
+        < body("private void sendClaimedConnectedMedia(").index(
+            "box.tickets().retireMedia(scopedAccount,receipt,")
+        < body("private void sendClaimedConnectedMedia(").index(
+            "if(!stillCurrent(scopedAccount,room))return;"),
     "Lost media-message replies reconcile verified history before generic transport recovery":
-        "if (statusCode == 0)" in body("private void sendConnectedMedia(")
+        "if (statusCode == 0)" in body("private void sendClaimedConnectedMedia(")
         and "recoverUncertainMediaConfirmation(scopedAccount, room);" in body(
-            "private void sendConnectedMedia(")
-        and body("private void sendConnectedMedia(").index(
+            "private void sendClaimedConnectedMedia(")
+        and body("private void sendClaimedConnectedMedia(").index(
             "recoverUncertainMediaConfirmation(scopedAccount, room);")
-        < body("private void sendConnectedMedia(").index(
+        < body("private void sendClaimedConnectedMedia(").index(
             "handleV2TransportFailure(statusCode, true)")
-        and "pendingForRoom(scopedAccount" in body(
+        and "List<BChatConnectedMediaStore.Entry> pending = roomLocal.media;" in body(
             "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,")
         and "hasUploadedRecord" in body(
             "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,")
         and "loadMessages(0);" in body(
             "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,"),
     "Malformed 2xx media replies reconcile verified history rather than trapping staged media":
-        "if (statusCode >= 200 && statusCode < 300)" in body("private void sendConnectedMedia(")
-        and body("private void sendConnectedMedia(").count(
+        "if (statusCode >= 200 && statusCode < 300)" in body("private void sendClaimedConnectedMedia(")
+        and body("private void sendClaimedConnectedMedia(").count(
             "recoverUncertainMediaConfirmation(scopedAccount, room);") >= 2,
     "Pending-media review is available with an explicit local diagnosis":
         "mediaReviewButton.setText(R.string.bchat_media_review_pending);" in source
@@ -128,17 +135,19 @@ checks = {
             "private void checkConnectedMediaStatus(")
         and "sendConnectedMedia(" not in body("private void checkConnectedMediaStatus(")
         and "retryConnectedMedia(" not in body("private void checkConnectedMediaStatus("),
-    "Native upload recovery polls through its deadline and survives a process response loss":
-        "response.status == 202 || response.isTransportFailure()" in body(
-            "private void checkNativeMediaUpload(")
-        and "attempt < 4" not in body("private void checkNativeMediaUpload(")
+    "Native upload recovery is bounded and reconciles persisted response loss through authenticated reads":
+        "response.status==202||response.isTransportFailure()" in coordinator
+        and "attempt<3;attempt++" in coordinator
+        and "BChatNativeMediaUploader.status(w.call,w.scope.origin,w.scope.database,w.grant,w.secret)" in coordinator
         and "reconcileNativeMediaUpload(scopedAccount, room, entry);" in body(
             "private void mediaUploadDeadline(")
         and '"/uploads/" + uploadUuid + "/reconcile"' in body(
             "private void reconcileNativeMediaUpload(")
-        and "mediaStore.markUploaded(scopedAccount, entry, mediaId);" in body(
+        and "box.tickets().saveUploaded(scopedAccount,captured,mediaId," in body(
             "private void reconcileNativeMediaUpload(")
-        and "sendConnectedMedia(scopedAccount, room, saved);" in body(
+        and "store.markUploaded(scopedAccount,entry,mediaId)" in body(
+            "private void reconcileNativeMediaUpload(")
+        and "recoverUncertainMediaConfirmation(scopedAccount,room);" in body(
             "private void reconcileNativeMediaUpload(")
         and 'mediaId == 0 && "uploading".equals(state)' in body(
             "private void reconcileNativeMediaUpload(")
@@ -154,14 +163,17 @@ checks = {
         and "boolean smallLeft = !mine;" in body("private GradientDrawable chatBubbleBackground("),
     "Native media upload streams off UI without passing file bytes through WebMessagePort":
         "mediaIo.execute" in body("private void readConnectedMedia(")
-        and "mediaIo.execute" in body("private void beginNativeMediaUpload(")
-        and "BChatNativeMediaUploader.upload" in body("private void beginNativeMediaUpload(")
-        and "call, ORIGIN, DATABASE, grantId, secret" in body("private void beginNativeMediaUpload(")
+        and "transferCoordinator.schedule(scopedAccount,mediaClaim,entry," in body("private void beginNativeMediaUpload(")
+        and 'newSingleThreadExecutor(r->new Thread(r,"bchat-transfer-http"))' in coordinator
+        and "network.execute(()->run(w));" in coordinator
+        and "BChatNativeMediaUploader.upload(w.call,w.scope.origin,w.scope.database," in coordinator
+        and "w.grant,w.secret,w.source,w.entry.size,w.entry.mime" in coordinator
+        and "BChatNativeMediaUploader.upload" not in body("private void beginNativeMediaUpload(")
         and 'setRequestProperty("X-Odoo-Database", database)' in uploader
         and 'database.matches("[a-z0-9_]{1,63}")' in uploader
-        and "String metadata = entry.uploadMetadata().toString();" in body(
+        and "mediaStore.file(scopedAccount,entry),entry.uploadMetadata().toString()" in body(
             "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
-        and "requestNativeMediaGrant(request, scopedAccount, room, entry, staged, metadata, 0, 0);" in body(
+        and "requestNativeMediaGrant(request,scopedAccount,room,entry,(File)prepared[1],(String)prepared[2],0,0);" in body(
             "private void uploadConnectedMedia(AccountScope scopedAccount, Room room,")
         and "bchat-media-upload" not in source
         and "BChatConnectedMediaBridge.uploadScript" not in source,
@@ -182,6 +194,6 @@ checks = {
 }
 
 for label, passed in checks.items():
-    assert passed, label
-    print("PASS", label)
+    print("PASS" if passed else "FAIL", label)
+assert all(checks.values()), "; ".join(label for label, passed in checks.items() if not passed)
 print(f"PASS {len(checks)} source contracts; device behavior not asserted")

@@ -44,6 +44,23 @@ assert "new Matrix(" not in draw and "tileTransform.postConcat(sourceToView())" 
 assert "sourceTransform.set(detailOrientation)" in zoom
 for mode in ("values", "values-night"):
     assert (ROOT / f"app/src/main/res/{mode}/chat_colors.xml").is_file()
+transfer = read("app/src/main/java/com/baseer/freshchat/BChatTransferCoordinator.java")
+for required in (
+    'scope.key.equals(entry.accountKey)', 'ticket.matches(entry)',
+    'if(Build.VERSION.SDK_INT>=34)', '.setUserInitiated(true)',
+    '.removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)',
+    'visibleUserEligible.getAsBoolean()', 'app.startForegroundService(intent)',
+    'PendingIntent.FLAG_IMMUTABLE', 'new WeakReference<>(observer)',
+):
+    assert required in transfer, required
+for forbidden in ('NET_CAPABILITY_VALIDATED', 'NET_CAPABILITY_NOT_METERED',
+                  'bindProcessToNetwork', 'getCookie(', 'AlarmManager', '.setPersisted(true)'):
+    assert forbidden not in transfer, forbidden
+assert 'extras.putInt(EXTRA_ID,w.id)' in transfer
+assert transfer.count('extras.put') == 1  # Platform extras never carry grant/account/file data.
+for test in ('TransferInstrumentation.java', 'TransferProcessDeathInstrumentation.java',
+             'DraftRevisionInstrumentation.java'):
+    assert (ROOT / 'tests/transfers-android/com/baseer/freshchat' / test).is_file()
 workflow = (REPO / ".github/workflows/bchat-cumulative-contracts.yml").read_text(encoding="utf-8")
 for test in ("test-connected-media-store.py", "test-notification-presentation.py", "test-push-routing-state.py", "test-appearance-foundations.py"):
     assert test in workflow and (ROOT / "tools" / test).is_file()

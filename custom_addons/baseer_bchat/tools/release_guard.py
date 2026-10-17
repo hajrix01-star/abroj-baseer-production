@@ -184,8 +184,10 @@ def check_android_source() -> None:
             "private employee-avatar presentation is absent")
     require("reconcilePendingMediaFromVerifiedHistory" in activity
             and "store.pendingForRoom(scopedAccount" in activity
-            and "confirmedMediaIds.contains(entry.mediaId)" in activity
-            and "store.acknowledge(scopedAccount, entry);" in activity
+            and "confirmedMediaIds.containsKey(entry.mediaId)" in activity
+            and "box.tickets().receipt(scopedAccount,ticket,confirmedMediaIds.get(entry.mediaId))" in activity
+            and "box.tickets().retireMedia(scopedAccount,receipt," in activity
+            and "store.retireReceipted(scopedAccount,entry.uploadUuid,receipt.fingerprint)" in activity
             and "local(scopedAccount, () ->" in activity,
             "media send acknowledgement recovery is absent")
 

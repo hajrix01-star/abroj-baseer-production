@@ -362,8 +362,8 @@
       ],
       "owner": "الخادم و Android",
       "status": "in_progress",
-      "implementationEvidence": "Private per-device server preferences and outgoing payload filtering; source-reviewed Android none/sender/full routing with registration tickets and durable conservative pending intent; settings UI pending",
-      "verificationEvidence": "23 callback/ledger and160 production routing adapter checks; CI39063628834 core180 and real preview UUID/CAS races PASS; settings UI/durable control intent not yet implemented; no device delivery claim",
+      "implementationEvidence": "Per-device server filtering plus Android durable control UUID/revision/payload in the existing snapshot; settings Panel and strict response protocol implemented, Activity hook in progress",
+      "verificationEvidence": "349 production PushState adapter assertions and47 protocol-object checks PASS, including real cold-load RED/GREEN; independent limited source GO. Native Android35 Panel:8 renders/7 journeys/1120 assertions with Host/executor fakes, real Dialog/JSONObject/SharedPreferences and16 reviewed frames. Server UUID/CAS races accepted at CI39063628834; no FCM/OEM delivery acceptance",
       "acceptance": "خيار بلا مقتطف لا يرسل النص للمزود؛ لا كشف شاشة القفل."
     },
     {
@@ -378,8 +378,8 @@
       ],
       "owner": "Android والتشغيل",
       "status": "in_progress",
-      "implementationEvidence": "Server diagnostic-only push API and Android bounded received/displayed/blocked receipts implemented; settings integration and connection health pending",
-      "verificationEvidence": "23 callback/ledger checks; CI39063628834 core180 and actual same-UUID/cross-device daily quota races PASS (one accepted/one429,10 total). Settings UI/health pending; no actual FCM delivery claim",
+      "implementationEvidence": "Diagnostic-only API and bounded local receipts; Panel distinguishes device permission/channel, local/server registration, provider acceptance, callback and posting request; foreground polling is bounded and paused/dismissed views stop requests",
+      "verificationEvidence": "23 callback/ledger checks; server same-UUID/cross-device daily quota races accepted at CI39063628834. Native Panel8 renders/7 journeys/1120 assertions PASS with fake Host and real Android UI/Preferences; independent source GO excludes Activity integration and real FCM/phone delivery",
       "acceptance": "فرق بين الإذن والتسجيل والخادم والطابور ووصول الجهاز، دون إنشاء رسائل أعمال وهمية."
     },
     {
@@ -427,9 +427,9 @@
         "C08"
       ],
       "owner": "Android والخادم",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Shared SQLite v6 text/media commit sequence, owner/generation CAS, durable draft revision and process-scoped UIDT34+/FGS26-33 coordinator integrated; serial stage fence/recovery and settings Activity hooks source-reviewed",
+      "verificationEvidence": "342 actual Android35 SQLite and70 transfer assertions with declared fake HTTP/FGS adapters; draft/scope/ACK/quota RED-GREEN and limited core source GO. Activity source blockers closed independently at DEV069 with gap9/drain24/import6; three synthetic-package process restarts PASS29. JVM11 journeys and source guards PASS. No real HTTP, owner phone/OEM or complete C09 acceptance",
       "acceptance": "التنقل والخلفية لا يلغيان نية الإرسال؛ تصالح آمن وإعادة حقوق."
     },
     {
@@ -831,9 +831,9 @@
         "C16"
       ],
       "owner": "المنتج والخادم و Android",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "C32 server reactions, private saved references and explicit mentions implemented; legacy empty-mentions fingerprint preserved; author-name reads batched under native ACLs. Android UI pending",
+      "verificationEvidence": "Independent limited source GO after N+1 correction. Eleven new ORM/HTTP tests and4 real-RR probe phases await CI execution;27 cumulative maturity gate selftests PASS (synthetic only). No product or social capability acceptance",
       "acceptance": "فائدة مثبتة وسياسة خصوصية وأثر، واختبار كل شريحة؛ لا مكالمات أو بوتات دون نطاق معتمد."
     },
     {
@@ -890,8 +890,8 @@
     "G3": "independently approved; existing Java/Views/SQLite/Odoo and dependencies; no new product libraries",
     "G4": "foundations approved; full Activity and later notification UI acceptance pending",
     "G5": "Independent limited core checkpoint GO DEV057: CI39063628834 at c25ee2df/frozen merge89722e88,180 core,10 real PostgreSQL phases and two lock witnesses PASS; no whole-program/procurement/device acceptance",
-    "G6": "DEV058 early isolated service+DB measurement in preparation; no measured capacity acceptance yet",
-    "G7": "not started; source/checkpoint commits are not final integration acceptance",
+    "G6": "Independent early limited GO DEV060: CI39064493632 source67071834/merge82bca539,64 real service+DB/JSON/commit samples,10 paired sends; no HTTP/device/SLA/general capacity acceptance; history/search baseline needs C30 profiling",
+    "G7": "DEV061 approved slices in progress; no whole-program integration acceptance",
     "G8": "not started; no new product APK or final independent delivery decision"
   },
   "sources": [

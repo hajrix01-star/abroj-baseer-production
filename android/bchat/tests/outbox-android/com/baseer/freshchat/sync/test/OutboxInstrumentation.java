@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import com.baseer.freshchat.sync.AccountScope;
 import com.baseer.freshchat.sync.BChatConnectedMediaStore;
 import com.baseer.freshchat.sync.BChatV2Outbox;
+import com.baseer.freshchat.sync.BChatSendTickets;
 import com.baseer.freshchat.sync.BChatLocalState;
 import com.baseer.freshchat.sync.BChatComposerSnapshot;
 import com.baseer.freshchat.sync.BChatCartResolver;
@@ -36,7 +37,7 @@ import org.json.JSONArray;
 /** Explicit, disposable-device test. It uses only this test APK's own database namespace. */
 public final class OutboxInstrumentation extends Instrumentation {
     private int assertions;
-    private void check(boolean value) { assertions++; if (!value) throw new AssertionError("Assertion " + assertions); }
+    private void check(boolean value) { assertions++; if (!value) throw new AssertionError("Assertion " + assertions + " at " + new Throwable().getStackTrace()[1]); }
     private void rejects(Runnable action) {
         assertions++;
         try { action.run(); throw new AssertionError("Expected rejection " + assertions); }
@@ -131,7 +132,7 @@ public final class OutboxInstrumentation extends Instrumentation {
         final String database = "bchat-v2-text-outbox.db";
         AccountScope account = new AccountScope("https://queue.invalid", "synthetic", 7);
         AccountScope other = new AccountScope("https://queue.invalid", "synthetic", 8);
-        for (int version = 1; version <= 4; version++) {
+        for (int version = 1; version <= 5; version++) {
             context.deleteDatabase(database);
             String uuid = UUID.randomUUID().toString();
             try (SQLiteDatabase legacy = context.openOrCreateDatabase(database, Context.MODE_PRIVATE, null)) {
@@ -139,20 +140,32 @@ public final class OutboxInstrumentation extends Instrumentation {
                         + "room_id INTEGER NOT NULL,membership_id INTEGER NOT NULL,client_uuid TEXT NOT NULL UNIQUE,"
                         + "body TEXT NOT NULL,created_at INTEGER NOT NULL"
                         + (version >= 3 ? ",review_code INTEGER NOT NULL DEFAULT 0" : "")
-                        + (version >= 4 ? ",reply_to_message_id INTEGER" : "") + ")");
+                        + (version >= 4 ? ",reply_to_message_id INTEGER" : "")
+                        + (version >= 5 ? ",queue_state TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,"
+                            +"next_attempt_at INTEGER NOT NULL DEFAULT 0,lease_until INTEGER NOT NULL DEFAULT 0,message_id INTEGER NOT NULL DEFAULT 0" : "") + ")");
                 if (version >= 2) legacy.execSQL("CREATE TABLE draft_text (account_key TEXT NOT NULL,room_id INTEGER NOT NULL,"
-                        + "membership_id INTEGER NOT NULL,body TEXT NOT NULL,PRIMARY KEY(account_key,room_id,membership_id))");
+                        + "membership_id INTEGER NOT NULL,body TEXT NOT NULL"
+                        +(version>=5?",reply_to_message_id INTEGER":"")+",PRIMARY KEY(account_key,room_id,membership_id))");
+                if(version>=5){
+                    legacy.execSQL("CREATE TABLE local_context(account_key TEXT PRIMARY KEY,state_json TEXT NOT NULL)");
+                    legacy.execSQL("INSERT INTO draft_text(account_key,room_id,membership_id,body,reply_to_message_id) VALUES (?,1,101,'legacy draft',42)",new Object[]{account.key});
+                }
                 legacy.execSQL("INSERT INTO pending_text (_id,account_key,room_id,membership_id,client_uuid,body,created_at)"
                         + " VALUES (17,?,1,101,?,'legacy preserved',123)", new Object[]{account.key, uuid});
                 if (version >= 4) legacy.execSQL("UPDATE pending_text SET reply_to_message_id=42");
+                if(version>=5)legacy.execSQL("UPDATE pending_text SET queue_state='sending',attempts=2");
                 legacy.setVersion(version);
             }
             try (BChatV2Outbox box = new BChatV2Outbox(context)) {
                 BChatV2Outbox.Entry preserved = box.first(account, 1, 101);
                 check(preserved.id == 17 && uuid.equals(preserved.uuid) && "legacy preserved".equals(preserved.body));
-                check("uncertain".equals(preserved.state) && preserved.attempts == 0);
+                check("review".equals(preserved.state) && preserved.attempts == (version>=5?2:0));
                 check(preserved.replyToMessageId == (version >= 4 ? 42 : 0));
-                check(box.getReadableDatabase().getVersion() == 5);
+                check(box.getReadableDatabase().getVersion() == 6);
+                if(version>=5){
+                    check(box.draftRecord(account,1,101).editorRevision==-1&&"legacy draft".equals(box.draft(account,1,101)));
+                    check(box.tickets().head(account,1,101).legacy&&box.tickets().head(account,1,101).attempts==2);
+                }
                 box.saveDraft(account, 1, 101, "draft reply", 42);
                 check(box.draftRecord(account, 1, 101).replyToMessageId == 42);
             }
@@ -160,7 +173,7 @@ public final class OutboxInstrumentation extends Instrumentation {
         context.deleteDatabase(database);
         List<String> uuids = new ArrayList<>();
         try (BChatV2Outbox box = new BChatV2Outbox(context)) {
-            box.saveDraft(account, 1, 101, "draft consumed", 42);
+            box.saveDraft(account, 1, 101, "message 0", 42);
             for (int i = 0; i < 10; i++) {
                 BChatV2Outbox.Entry entry = box.enqueue(account, 1, 101, "message " + i, i == 0 ? 42 : 0);
                 uuids.add(entry.uuid);
@@ -296,6 +309,79 @@ public final class OutboxInstrumentation extends Instrumentation {
             directory.delete();
         }
     }
+
+    private BChatConnectedMediaStore.Entry fixtureMedia(Context context, AccountScope scope, long room,
+                                                       long member, String label) throws Exception {
+        String upload=UUID.randomUUID().toString();
+        byte[] bytes=("private synthetic "+label).getBytes(StandardCharsets.UTF_8);
+        File folder=new File(context.getFilesDir(),"bchat-v2-media/"+scope.key);folder.mkdirs();
+        StringBuilder digest=new StringBuilder();
+        for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))digest.append(String.format(Locale.ROOT,"%02x",b&255));
+        JSONObject json=new JSONObject().put("account_key",scope.key).put("room_id",room).put("membership_id",member)
+                .put("company_id",3).put("upload_uuid",upload).put("client_uuid",UUID.randomUUID().toString())
+                .put("kind","image").put("mime","image/jpeg").put("name",label+".jpg")
+                .put("size",bytes.length).put("sha256",digest.toString()).put("text","")
+                .put("reply_to_message_id",0).put("media_id",0);
+        try(FileOutputStream out=new FileOutputStream(new File(folder,upload+".bin"))){out.write(bytes);}
+        try(FileOutputStream out=new FileOutputStream(new File(folder,upload+".json"))){out.write(json.toString().getBytes(StandardCharsets.UTF_8));}
+        return new BChatConnectedMediaStore(context).lookup(scope,upload);
+    }
+
+    /** Real SQLite and private files, simulated ACKs: no network/session or ordering from clocks. */
+    private void mixedSendTickets(Context context)throws Exception {
+        context.deleteDatabase("bchat-v2-text-outbox.db");
+        AccountScope scope=new AccountScope("https://mixed.invalid","synthetic",19);
+        AccountScope other=new AccountScope("https://mixed.invalid","synthetic",20);
+        BChatConnectedMediaStore store=new BChatConnectedMediaStore(context);
+        try(BChatV2Outbox out=new BChatV2Outbox(context)){
+            BChatSendTickets tickets=out.tickets();List<String> expected=new ArrayList<>();
+            for(int i=0;i<10;i++){
+                BChatV2Outbox.Entry e=out.enqueue(scope,17,8,"mixed text "+i);expected.add(e.uuid);
+                if(i==2||i==6){BChatConnectedMediaStore.Entry m=fixtureMedia(context,scope,17,8,"m"+i);
+                    expected.add(tickets.admitMedia(scope,m,false).uuid);}
+            }
+            check(tickets.forAccount(scope).size()==12&&tickets.forAccount(other).isEmpty());
+            long previous=0;int mediaCount=0;
+            for(String uuid:expected){
+                BChatSendTickets.Ticket head=tickets.head(scope,17,8);
+                check(head.uuid.equals(uuid)&&head.sequence>previous);previous=head.sequence;
+                if("text".equals(head.kind)){
+                    check(tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),1000)==null);
+                    BChatV2Outbox.Entry claim=out.claimHead(scope,17,8,1000);
+                    check(claim.uuid.equals(uuid));check(out.recordReceipt(scope,claim,100+previous));
+                    check(out.acknowledge(scope,out.first(scope,17,8)));
+                }else{
+                    mediaCount++;check(out.claimHead(scope,17,8,1000)==null);
+                    BChatSendTickets.Ticket a=tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),1000);
+                    check(a!=null&&tickets.failed(scope,a,false,1001));
+                    check(tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),1002)==null);
+                    BChatSendTickets.Ticket b=tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),200000);
+                    check(b!=null&&b.generation>a.generation&&!tickets.receipt(scope,a,901));
+                    BChatConnectedMediaStore.Entry entry=store.lookup(scope,b.uploadUuid);
+                    check(tickets.saveUploaded(scope,b,800+previous,()->store.markUploaded(scope,entry,800+b.sequence)));
+                    check(!tickets.failed(scope,b,true,300000)); // upload proof cannot be overwritten by late transport failure.
+                    check(tickets.receipt(scope,b,900+previous));
+                    BChatSendTickets.Ticket receipt=tickets.find(scope,"media",uuid);
+                    try{tickets.retireMedia(scope,receipt,()->{throw new IOException("simulated cleanup interruption");});throw new AssertionError();}
+                    catch(IOException expectedFailure){check("receipt".equals(tickets.find(scope,"media",uuid).state));}
+                    check(tickets.retireMedia(scope,receipt,()->store.retireReceipted(scope,entry.uploadUuid,receipt.fingerprint)));
+                    check(!tickets.receipt(scope,b,900+previous));
+                }
+            }
+            check(mediaCount==2&&tickets.head(scope,17,8)==null);
+            BChatConnectedMediaStore.Entry orphan=fixtureMedia(context,scope,17,8,"orphan");
+            check(tickets.find(scope,"media",orphan.clientUuid)==null); // stage/ticket crash gap never autosends.
+            BChatSendTickets.Ticket legacy=tickets.admitMedia(scope,orphan,true);
+            out.enqueue(scope,17,8,"behind unknown old order");
+            check(tickets.head(scope,17,8).legacy&&out.claimHead(scope,17,8,900000)==null);
+            check(tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),900000)==null);
+            check(tickets.approveLegacyMedia(scope,legacy));
+            BChatSendTickets.Ticket claim=tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),900001);
+            check(claim.legacy&&out.claimHead(scope,17,8,900002)==null);
+            out.purgeAccount(scope);check(!tickets.uploaded(scope,claim,99)&&!tickets.receipt(scope,claim,99));
+            store.purgeAccount(scope);
+        }
+    }
     @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); start(); }
     @Override public void onStart() {
         Bundle result = new Bundle();
@@ -361,7 +447,9 @@ public final class OutboxInstrumentation extends Instrumentation {
             textBox = new BChatV2Outbox(context);
             BChatV2Outbox.Entry plain = textBox.enqueue(a, 2, 20, "Pending text");
             check(!textBox.acknowledge(b, plain));
-            check(textBox.acknowledge(a, plain));
+            check(!textBox.acknowledge(a, plain));
+            check(textBox.recordReceipt(a,plain,41));
+            check(textBox.acknowledge(a,textBox.first(a,2,20)));
             check(textBox.first(a, 2, 20) == null);
             BChatV2Outbox.Entry reply = textBox.enqueue(a, 2, 20, "Reply text", 42);
             check(textBox.convertToDraft(a, reply, 2, 20, false));
@@ -389,6 +477,7 @@ public final class OutboxInstrumentation extends Instrumentation {
             assertions += IntentPersistenceChecks.run(context);
             assertions += IntentDispatchProbe.run(this);
             mediaExpiryRecovery(context);
+            mixedSendTickets(context);
             result.putString("stream", "PASS: " + assertions + " outbox and media-expiry assertions\n");
             finish(0, result);
         } catch (Throwable error) {

@@ -27,6 +27,8 @@ public final class BChatPushState {
     private static final String PREVIEW_REVISION = "preview-revision";
     private static final String PREVIEW_DESIRED = "preview-pending-mode";
     private static final String PREVIEW_SCOPE = "preview-pending-scope", PREVIEW_INSTALLATION = "preview-pending-installation";
+    private static final String CONTROL_UUID = "preview-control-uuid", CONTROL_ACCOUNT = "preview-control-account";
+    private static final String CONTROL_REVISION = "preview-control-expected-revision";
     private static final Object ROUTING = new Object();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final IdentityHashMap<SharedPreferences.OnSharedPreferenceChangeListener, Boolean> OBSERVERS
@@ -43,6 +45,8 @@ public final class BChatPushState {
         boolean ready, scopeTouched, tokenTouched, routeCleared, routeDurable, storageHealthy;
         String scope, account, token, registeredToken, installation, savedInstallation;
         String preview = "none", previewDesired, privacyScope, privacyInstallation;
+        String controlUuid, controlAccount, durableControl;
+        long controlRevision = -1;
         long epoch, intent, previewRevision = -1, sequence, registrationSerial;
         State(Context context, NotificationManager manager) { this.context = context; notifications = manager; }
     }
@@ -62,6 +66,22 @@ public final class BChatPushState {
         private final long epoch, intent;
         private PreviewRequest(State owner) {
             this.owner = owner; account = owner.account; epoch = owner.epoch; intent = owner.intent;
+        }
+    }
+    /** An immutable control payload, never an authentication credential. */
+    static final class PreviewControl {
+        final String clientUuid, accountKey, installationId, mode;
+        final long expectedRevision;
+        private final State owner;
+        private final String fingerprint;
+        private final long epoch, intent;
+        private final boolean dispatchable;
+        private PreviewControl(State s, boolean dispatchable) {
+            owner = s; epoch = s.epoch; intent = s.intent;
+            clientUuid = s.controlUuid; accountKey = s.controlAccount;
+            installationId = s.privacyInstallation; mode = s.previewDesired;
+            expectedRevision = s.controlRevision; fingerprint = controlFingerprint(s);
+            this.dispatchable = dispatchable;
         }
     }
     static final class Delivery {
@@ -98,7 +118,8 @@ public final class BChatPushState {
     private static void load(State s) {
         SharedPreferences prefs = s.context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String scope = null, account = null, token = null, registered = null, installation = null;
-        String pendingScope = null, pendingInstallation = null, desired = null;
+        String pendingScope = null, pendingInstallation = null, desired = null, controlUuid = null, controlAccount = null;
+        long controlRevision = -1;
         boolean read = true;
         try {
             scope = prefs.getString(SCOPE, null); account = prefs.getString(ACCOUNT, null);
@@ -107,6 +128,9 @@ public final class BChatPushState {
             pendingScope = prefs.getString(PREVIEW_SCOPE, null);
             pendingInstallation = prefs.getString(PREVIEW_INSTALLATION, null);
             desired = prefs.getString(PREVIEW_DESIRED, null);
+            controlUuid = prefs.getString(CONTROL_UUID, null);
+            controlAccount = prefs.getString(CONTROL_ACCOUNT, null);
+            controlRevision = prefs.getLong(CONTROL_REVISION, -1);
         } catch (RuntimeException unavailable) { read = false; }
         synchronized (ROUTING) {
             if (state != s) { s.loaded.countDown(); return; }
@@ -127,6 +151,18 @@ public final class BChatPushState {
             if (read && validPreview(desired) && s.scope != null && s.scope.equals(pendingScope)
                     && s.installation.equals(pendingInstallation)) {
                 s.previewDesired = desired; s.privacyScope = pendingScope; s.privacyInstallation = pendingInstallation;
+                // A pending operation outlives token rotation and its temporarily absent route.
+                // The next current registration rechecks controlAccount before any sendable ticket.
+                if (validUuid(controlUuid) && validUuid(controlAccount)
+                        && controlRevision > 0 && controlRevision < Integer.MAX_VALUE) {
+                    s.controlUuid = controlUuid; s.controlAccount = controlAccount; s.controlRevision = controlRevision;
+                    s.durableControl = controlFingerprint(s);
+                    if (s.account != null && !s.account.equals(controlAccount)) {
+                        // Contradictory routing hints require a fresh authenticated registration.
+                        // Keep the operation until that response determines its rightful binding.
+                        s.account = null; s.registeredToken = null; s.routeDurable = false; s.routeCleared = true;
+                    }
+                }
             }
             if (s.scopeTouched || s.tokenTouched || s.routeCleared || !read || s.savedInstallation == null)
                 persistLocked(s, null);
@@ -137,7 +173,10 @@ public final class BChatPushState {
     private static void invalidateRouteLocked(State s, boolean preservePrivacyIntent) {
         ++s.epoch; ++s.intent; s.routeCleared = true; s.routeDurable = false;
         s.account = null; s.registeredToken = null; s.preview = "none"; s.previewRevision = -1;
-        if (!preservePrivacyIntent) { s.previewDesired = null; s.privacyScope = null; s.privacyInstallation = null; }
+        if (!preservePrivacyIntent) {
+            s.previewDesired = null; s.privacyScope = null; s.privacyInstallation = null;
+            clearControlLocked(s);
+        }
         // Serialized with the final notification gate: no old notify can run after cancellation.
         if (s.notifications != null) try { s.notifications.cancelAll(); } catch (RuntimeException ignored) { }
     }
@@ -196,8 +235,10 @@ public final class BChatPushState {
             s.account = serverAccountKey; s.registeredToken = request.token; s.routeDurable = false;
             if (!sameBinding) {
                 s.preview = "none"; s.previewRevision = -1; ++s.intent;
-                if (!Objects.equals(s.scope, s.privacyScope) || !Objects.equals(s.installation, s.privacyInstallation)) {
+                if (!Objects.equals(s.scope, s.privacyScope) || !Objects.equals(s.installation, s.privacyInstallation)
+                        || s.controlAccount != null && !serverAccountKey.equals(s.controlAccount)) {
                     s.previewDesired = null; s.privacyScope = null; s.privacyInstallation = null;
+                    clearControlLocked(s);
                 }
             }
             persistLocked(s, saved -> MAIN.post(() -> {
@@ -259,7 +300,7 @@ public final class BChatPushState {
     static void beginPreviewChange(Context context, String key, String desired, Ready<PreviewRequest> callback) {
         State s = current(context);
         synchronized (ROUTING) {
-            if (!active(s) || !Objects.equals(key, s.account) || !validPreview(desired)) {
+            if (!active(s) || !Objects.equals(key, s.account) || !validPreview(desired) || s.controlUuid != null) {
                 deliver(callback, null, false); return;
             }
             ++s.intent; s.previewDesired = desired; s.privacyScope = s.scope; s.privacyInstallation = s.installation;
@@ -275,7 +316,7 @@ public final class BChatPushState {
     static void acceptPreviewMode(Context context, PreviewRequest request, String mode, long revision, Ready<Boolean> callback) {
         current(context);
         synchronized (ROUTING) {
-            if (!currentPreview(request) || !validPreview(mode) || revision < state.previewRevision
+            if (!currentPreview(request) || state.controlUuid != null || !validPreview(mode) || revision < state.previewRevision
                     || revision < 0 || state.previewDesired != null && !state.previewDesired.equals(mode)
                     || revision == state.previewRevision && !state.preview.equals(mode)) {
                 deliver(callback, false, false); return;
@@ -285,6 +326,127 @@ public final class BChatPushState {
             persistLocked(s, saved -> MAIN.post(() -> {
                 boolean valid;
                 synchronized (ROUTING) { valid = saved && currentPreview(request) && mode.equals(s.preview); }
+                if (callback != null) callback.complete(valid, valid);
+            }));
+        }
+    }
+    private static void clearControlLocked(State s) {
+        s.controlUuid = null; s.controlAccount = null; s.controlRevision = -1; s.durableControl = null;
+    }
+    private static String controlFingerprint(State s) {
+        if (!validUuid(s.controlUuid) || !validUuid(s.controlAccount) || !validScope(s.privacyScope)
+                || !validUuid(s.privacyInstallation) || !validPreview(s.previewDesired)
+                || s.controlRevision < 1 || s.controlRevision >= Integer.MAX_VALUE) return null;
+        return s.controlUuid + "|" + s.controlAccount + "|" + s.privacyScope + "|"
+                + s.privacyInstallation + "|" + s.previewDesired + "|" + s.controlRevision;
+    }
+    private static boolean currentControl(PreviewControl request) {
+        State s = state;
+        return request != null && s == request.owner && active(s) && s.epoch == request.epoch
+                && s.intent == request.intent && request.accountKey.equals(s.account)
+                && Objects.equals(s.installation, request.installationId)
+                && request.fingerprint != null && request.fingerprint.equals(controlFingerprint(s));
+    }
+    static boolean currentPreviewControl(PreviewControl request) {
+        synchronized (ROUTING) {
+            return currentControl(request) && request.dispatchable && request.fingerprint.equals(state.durableControl);
+        }
+    }
+    /** Metadata for the panel only. It is deliberately not a sendable HTTP ticket. */
+    static PreviewControl pendingPreviewControl(Context context, String accountKey) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            return active(s) && Objects.equals(accountKey, s.account) && Objects.equals(s.controlAccount, s.account)
+                    && Objects.equals(s.scope, s.privacyScope) && Objects.equals(s.installation, s.privacyInstallation)
+                    && controlFingerprint(s) != null
+                    ? new PreviewControl(s, false) : null;
+        }
+    }
+    /** Called only from an explicit choice after a fresh validated GET captured by serverSnapshot. */
+    static void beginPreviewControl(Context context, PreviewRequest serverSnapshot, String desired,
+                                    long expectedRevision, Ready<PreviewControl> callback) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            if (!currentPreview(serverSnapshot) || !validPreview(desired) || expectedRevision < 1
+                    || expectedRevision >= Integer.MAX_VALUE || s.controlUuid != null) {
+                deliver(callback, null, false); return;
+            }
+            ++s.intent; s.previewDesired = desired; s.privacyScope = s.scope; s.privacyInstallation = s.installation;
+            s.controlUuid = UUID.randomUUID().toString(); s.controlAccount = s.account;
+            s.controlRevision = expectedRevision; s.durableControl = null;
+            if (rank(desired) < rank(s.preview)) s.preview = desired;
+            saveControlTicketLocked(s, callback);
+        }
+    }
+    /** Unknown outcomes retain the exact UUID, revision and payload, including after restart. */
+    static void retryPreviewControl(Context context, String accountKey, Ready<PreviewControl> callback) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            if (!active(s) || !Objects.equals(accountKey, s.account) || controlFingerprint(s) == null
+                    || !Objects.equals(s.scope, s.privacyScope) || !Objects.equals(s.installation, s.privacyInstallation)) {
+                deliver(callback, null, false); return;
+            }
+            // Every dispatch proves this payload's own durable snapshot, not just a registered route.
+            saveControlTicketLocked(s, callback);
+        }
+    }
+    private static void saveControlTicketLocked(State s, Ready<PreviewControl> callback) {
+        PreviewControl request = new PreviewControl(s, true);
+        persistLocked(s, saved -> MAIN.post(() -> {
+            boolean valid = saved && currentPreviewControl(request);
+            if (callback != null) callback.complete(valid ? request : null, valid);
+        }));
+    }
+    static void acceptPreviewControl(Context context, PreviewControl request, String mode, long revision,
+                                     long operationRevision, Ready<Boolean> callback) {
+        acceptPreviewControl(context, request, mode, revision, operationRevision, false, callback);
+    }
+    static void acceptPreviewControl(Context context, PreviewControl request, String mode, long revision,
+                                     long operationRevision, boolean replayed, Ready<Boolean> callback) {
+        current(context);
+        synchronized (ROUTING) {
+            if (!currentPreviewControl(request) || !validPreview(mode)
+                    || operationRevision != request.expectedRevision + 1 || revision < operationRevision
+                    || revision < state.previewRevision || revision >= Integer.MAX_VALUE
+                    || revision == operationRevision && !request.mode.equals(mode)
+                    || revision > operationRevision && !replayed) {
+                deliver(callback, false, false); return;
+            }
+            State s = state;
+            boolean superseded = revision > operationRevision;
+            String acceptedMode = superseded && rank(mode) > rank(s.preview) ? s.preview : mode;
+            s.preview = acceptedMode; s.previewRevision = revision;
+            // The original operation is proven, but its later replacement is not a new
+            // opt-in by this UI. Keep the stricter ceiling across GET and process death.
+            s.previewDesired = superseded ? acceptedMode : null;
+            s.privacyScope = superseded ? s.scope : null;
+            s.privacyInstallation = superseded ? s.installation : null; clearControlLocked(s);
+            long acceptedIntent = ++s.intent, acceptedEpoch = s.epoch;
+            persistLocked(s, saved -> MAIN.post(() -> {
+                boolean valid;
+                synchronized (ROUTING) {
+                    valid = saved && state == s && active(s) && s.epoch == acceptedEpoch
+                            && s.intent == acceptedIntent && s.controlUuid == null && acceptedMode.equals(s.preview);
+                }
+                if (callback != null) callback.complete(valid, valid);
+            }));
+        }
+    }
+    /** Only a definitive revision_conflict response may release this operation for a new choice. */
+    static void rejectPreviewControl(Context context, PreviewControl request, Ready<Boolean> callback) {
+        current(context);
+        synchronized (ROUTING) {
+            if (!currentPreviewControl(request)) { deliver(callback, false, false); return; }
+            State s = state;
+            // Keep the conservative ceiling until the next explicit choice is accepted.
+            s.previewDesired = s.preview; s.privacyScope = s.scope; s.privacyInstallation = s.installation;
+            clearControlLocked(s); long rejectedIntent = ++s.intent, rejectedEpoch = s.epoch;
+            persistLocked(s, saved -> MAIN.post(() -> {
+                boolean valid;
+                synchronized (ROUTING) {
+                    valid = saved && state == s && active(s) && s.epoch == rejectedEpoch
+                            && s.intent == rejectedIntent && s.controlUuid == null;
+                }
                 if (callback != null) callback.complete(valid, valid);
             }));
         }
@@ -321,6 +483,8 @@ public final class BChatPushState {
         final String scope = s.scope, account = s.account, token = s.token, registered = s.registeredToken;
         final String installation = s.installation, mode = s.preview, desired = s.previewDesired;
         final String privacyScope = s.privacyScope, privacyInstallation = s.privacyInstallation;
+        final String controlUuid = s.controlUuid, controlAccount = s.controlAccount, controlFingerprint = controlFingerprint(s);
+        final long controlRevision = s.controlRevision;
         final long revision = s.previewRevision, sequence = ++s.sequence, epoch = s.epoch;
         BChatStorageRepository.executor().execute(() -> {
             boolean saved;
@@ -331,11 +495,15 @@ public final class BChatPushState {
                 put(edit, PREVIEW_ACCOUNT, account); put(edit, PREVIEW_MODE, mode);
                 put(edit, PREVIEW_DESIRED, desired);
                 put(edit, PREVIEW_SCOPE, privacyScope); put(edit, PREVIEW_INSTALLATION, privacyInstallation);
+                put(edit, CONTROL_UUID, controlUuid); put(edit, CONTROL_ACCOUNT, controlAccount);
+                edit.putLong(CONTROL_REVISION, controlRevision);
                 saved = edit.putLong(PREVIEW_REVISION, revision).commit();
             } catch (RuntimeException failure) { saved = false; }
             synchronized (ROUTING) {
                 if (state == s) {
                     s.storageHealthy = saved;
+                    if (saved && epoch == s.epoch && Objects.equals(controlFingerprint, controlFingerprint(s)))
+                        s.durableControl = controlFingerprint;
                     if (saved && Objects.equals(installation, s.installation)) s.savedInstallation = installation;
                     if (epoch == s.epoch && Objects.equals(scope, s.scope) && Objects.equals(account, s.account)
                             && Objects.equals(token, s.token) && Objects.equals(registered, s.registeredToken))

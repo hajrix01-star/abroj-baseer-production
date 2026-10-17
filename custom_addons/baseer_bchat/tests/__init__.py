@@ -14,3 +14,4 @@ from . import test_membership_preferences
 from . import test_direct_rooms
 from . import test_group_audit
 from . import test_search_v2
+from . import test_message_social

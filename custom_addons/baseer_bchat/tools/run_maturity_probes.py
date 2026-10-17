@@ -4,6 +4,7 @@ import json
 from odoo import Command
 from odoo.addons.baseer_bchat.tests import permission_hint_concurrency_probe
 from odoo.addons.baseer_bchat.tests import social_preferences_concurrency_probe
+from odoo.addons.baseer_bchat.tests import message_social_concurrency_probe
 
 
 def run_probes(test_env):
@@ -15,8 +16,10 @@ def run_probes(test_env):
     test_env.cr.commit()
     permissions = permission_hint_concurrency_probe.run(test_env)
     social = social_preferences_concurrency_probe.run(test_env)
+    message_social = message_social_concurrency_probe.run(test_env)
     print('BCHAT_REAL_PROBES=' + json.dumps({
         'database': test_env.cr.dbname, 'permissions': permissions, 'social': social,
+        'message_social': message_social,
     }, sort_keys=True, default=str), flush=True)
 
 

@@ -262,6 +262,22 @@
       ]
     },
     {
+      "id": "durable-mixed-send-and-platform-transfer-ownership",
+      "introduced": "2026-10-17",
+      "risk": "critical",
+      "scope": "Text and staged media share a bounded durable per-room commit order, exact owner/generation receipts and cleanup; platform transfer admission is user-initiated, account-fenced and never bypasses VPN or UIDT refusal.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatSendTickets.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatStageAdmission.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTransferCoordinator.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTransferJobService.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTransferService.java",
+        "android/bchat/tests/transfers-android/**",
+        "android/bchat/tools/build-transfer-tests.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
       "id": "bounded-device-notification-presentation",
       "introduced": "2026-10-17",
       "risk": "high",
@@ -362,6 +378,11 @@
       "source_paths": [
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationDiagnostics.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationSettingsPanel.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/NotificationSettingsProtocol.java",
+        "android/bchat/tests/NotificationSettingsProtocolTest.java",
+        "android/bchat/tests/android-notification-settings/**",
+        "android/bchat/tools/test-notification-settings-android.py",
         "android/bchat/tools/test-push-routing-state.py",
         "custom_addons/baseer_bchat/models/notification_service.py",
         "custom_addons/baseer_bchat/models/social_operation.py"
@@ -391,7 +412,14 @@
         "custom_addons/baseer_bchat/models/membership_preference.py",
         "custom_addons/baseer_bchat/models/direct_service.py",
         "custom_addons/baseer_bchat/models/group_audit.py",
-        "custom_addons/baseer_bchat/models/search_service.py"
+        "custom_addons/baseer_bchat/models/search_service.py",
+        "custom_addons/baseer_bchat/models/message_social.py",
+        "custom_addons/baseer_bchat/controllers/message_social_api.py",
+        "custom_addons/baseer_bchat/social_contracts.py",
+        "custom_addons/baseer_bchat/v2_contracts.py",
+        "custom_addons/baseer_bchat/tests/message_social_concurrency_probe.py",
+        "custom_addons/baseer_bchat/tests/test_message_social.py",
+        "custom_addons/baseer_bchat/tests_contract/test_message_social_contract.py"
       ],
       "suites": ["backend-contracts", "source-structure"]
     }

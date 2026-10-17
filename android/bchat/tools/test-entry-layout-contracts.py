@@ -50,7 +50,11 @@ class EntryLayoutContracts(unittest.TestCase):
         self.assertNotIn('ChatStore.open(', identity)
         self.assertIn('credentials:\'same-origin\'', identity)
         self.assertIn('MIXED_CONTENT_NEVER_ALLOW', identity)
-        self.assertFalse(manifest.find('application').findall('service'))
+        services = manifest.find('application').findall('service')
+        self.assertEqual({item.get(ns+'name') for item in services}, {
+            'com.baseer.freshchat.BChatTransferJobService', 'com.baseer.freshchat.BChatTransferService'})
+        self.assertTrue(all(item.get(ns+'exported') == 'false' for item in services))
+        self.assertIn('android.permission.RUN_USER_INITIATED_JOBS', permissions)
 
     def test_back_from_real_chat_root_does_not_sign_out(self):
         identity = (JAVA / 'OdooIdentityActivity.java').read_text(encoding='utf-8')

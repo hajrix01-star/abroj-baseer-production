@@ -247,21 +247,23 @@ class BChatTextService(models.AbstractModel):
 
     @api.model
     def _v2_author_names(self, page):
-        names = {}
-        for author_id in {message.author_user_id.id for message in page}:
-            name = 'User'
-            try:
-                # Never use the message's sudoed author_user_id to read PII.
-                user = self.env['res.users'].browse(author_id)
-                user.check_access('read')
-                if user.exists():
-                    candidate = ''.join(char for char in (user.name or '')
-                                        if not unicodedata.category(char).startswith('C')).strip()
-                    if candidate:
-                        name = candidate[:120].encode('utf-8')[:256].decode('utf-8', 'ignore') or 'User'
-            except (AccessError, MissingError):
-                pass
-            names[author_id] = name
+        author_ids = sorted({message.author_user_id.id for message in page})
+        names = {author_id: 'User' for author_id in author_ids}
+        if not author_ids:
+            return names
+        try:
+            # Never read names through the sudoed messages. Native search/read
+            # applies the caller's ACL and record rules to this whole bounded
+            # page+reply batch. Archived authors retain their existing names.
+            rows = self.env['res.users'].with_context(active_test=False).search_read(
+                [('id', 'in', author_ids)], fields=['name'], order='id', limit=len(author_ids))
+        except (AccessError, MissingError):
+            return names
+        for row in rows:
+            candidate = ''.join(char for char in (row['name'] or '')
+                                if not unicodedata.category(char).startswith('C')).strip()
+            if candidate:
+                names[row['id']] = candidate[:120].encode('utf-8')[:256].decode('utf-8', 'ignore') or 'User'
         return names
 
     @api.model
@@ -321,7 +323,21 @@ class BChatTextService(models.AbstractModel):
     @api.model
     def _v2_send(self, room_id, payload):
         self._require_bchat_permission('chat_send')
-        normalized = v2_contracts.normalize_send(payload)
+        return self._v2_send_normalized(room_id, v2_contracts.normalize_send(payload))
+
+    @api.model
+    def _v2_send_metadata_scope(self, room, member, normalized):
+        """Additive metadata hook after current scope and replay checks."""
+        return None
+
+    @api.model
+    def _v2_create_send_metadata(self, room, member, message, normalized, metadata):
+        """Additive metadata must commit in the message's existing savepoint."""
+        return None
+
+    @api.model
+    def _v2_send_normalized(self, room_id, normalized):
+        self._require_bchat_permission('chat_send')
         with self.env.cr.savepoint():
             room = self._v2_lock_room(room_id, mutate=True)
             member = self._v2_current_member(room)
@@ -355,6 +371,7 @@ class BChatTextService(models.AbstractModel):
                 return self._v2_replay(room, member, normalized, digest, existing)
             if media and (media.state != 'staged' or media.message_id):
                 raise ProtocolError('media_already_sent', 'This media was already sent.', 409)
+            metadata = self._v2_send_metadata_scope(room, member, normalized)
             effective = self._v2_document_selection(room, normalized, media) if media else normalized
             vals = {
                 'room_id': room.id, 'company_id': room.company_id.id,
@@ -376,6 +393,7 @@ class BChatTextService(models.AbstractModel):
                             'document_type': effective['document_type'],
                             'document_policy_version': effective['policy_version'],
                         }, _MEDIA_TOKEN)
+                    self._v2_create_send_metadata(room, member, created, normalized, metadata)
             except UniqueViolation as error:
                 if error.diag.constraint_name != 'baseer_bchat_message_user_uuid_unique':
                     raise

@@ -15,6 +15,69 @@ SOCIAL_PHASES = {
     'absent_room_preference_cas', 'preview_same_uuid', 'diagnostic_same_uuid',
     'diagnostic_distinct_devices_daily_quota', 'direct_reverse_pair',
 }
+MESSAGE_SOCIAL_PHASES = {
+    'reaction_absent_cas', 'saved_same_uuid', 'legacy_social_empty_mentions', 'explicit_mentions_same_uuid',
+}
+
+
+def verify_message_social(value):
+    if not isinstance(value, dict) or value.get('database') != 'bchat_maturity_test_20261017':
+        raise ValueError('Missing message social real-race proof')
+    phases = value.get('phases', {})
+    if set(phases) != MESSAGE_SOCIAL_PHASES:
+        raise ValueError('Missing message social phases')
+    for rows in phases.values():
+        if (not isinstance(rows, list) or len(rows) != 2
+                or any(not isinstance(row, dict) or type(row.get('initial_backend_pid')) is not int or row['initial_backend_pid'] <= 0
+                       or row.get('isolation') != 'repeatable read' or type(row.get('attempts')) is not int
+                       or not 1 <= row['attempts'] <= 6 for row in rows)
+                or len({row['initial_backend_pid'] for row in rows}) != 2):
+            raise ValueError('Message social phases require independent real RR connections')
+        for row in rows:
+            if row.get('state') == 'ok' and (not isinstance(row.get('result'), dict)
+                                            or type(row['result'].get('api_version')) is not int
+                                            or row['result']['api_version'] != 2):
+                raise ValueError('Message social successful response must be API v2')
+    reaction = phases['reaction_absent_cas']
+    if sorted(row.get('state', '') for row in reaction) != ['ok', 'revision_conflict']:
+        raise ValueError('Message reaction CAS needs exactly one winner')
+    loser = next(row for row in reaction if row['state'] == 'revision_conflict')
+    winner = next(row for row in reaction if row['state'] == 'ok')
+    if loser.get('status') != 409 or loser.get('result') is not None:
+        raise ValueError('Message reaction loser must be explicit revision 409')
+    result = winner.get('result', {})
+    if any(type(result.get(key)) is not int or result[key] != 1
+           for key in ('reaction_revision', 'operation_revision')):
+        raise ValueError('Message reaction winner lost initial revision')
+    saved = phases['saved_same_uuid']
+    if (any(row.get('state') != 'ok'
+            or any(type(row.get('result', {}).get(key)) is not int or row['result'][key] != 1
+                   for key in ('operation_revision', 'saved_revision'))
+            or row['result'].get('saved') is not True
+            or type(row['result'].get('replayed')) is not bool for row in saved)
+            or sorted(row['result']['replayed'] for row in saved) != [False, True]
+            or not isinstance(saved[0]['result'].get('client_uuid'), str)
+            or not re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', saved[0]['result']['client_uuid'])
+            or saved[0]['result'].get('client_uuid') != saved[1]['result'].get('client_uuid')):
+        raise ValueError('Saved same UUID must persist once and replay once')
+    for name in ('legacy_social_empty_mentions', 'explicit_mentions_same_uuid'):
+        rows = phases[name]
+        if (any(row.get('state') != 'ok' or not isinstance(row.get('result'), dict)
+                or type(row['result'].get('message_id')) is not int or row['result']['message_id'] <= 0 for row in rows)
+                or rows[0]['result'] != rows[1]['result']):
+            raise ValueError('Message UUID proof lost stable canonical ACK')
+    for key, expected in {
+            'reaction_rows': 1, 'reaction_revision': 1, 'saved_rows': 1, 'saved_revision': 1,
+            'legacy_social_message_count': 1, 'explicit_message_count': 1, 'mention_rows': 1,
+            'operation_receipts': 2}.items():
+        if type(value.get(key)) is not int or value[key] != expected:
+            raise ValueError('Message social count/revision proof missing: ' + key)
+    if (any(value.get(key) is not True for key in (
+            'receipt_timestamps_unchanged', 'fresh_mention_replay_verified',
+            'fresh_mention_digest_conflict_rejected', 'cleanup_completed'))
+            or value.get('fresh_replay_witness') != 'direct_read_only_helper_not_forced_unique_violation'
+            or type(value.get('independent_backends')) is not int or value['independent_backends'] < 2):
+        raise ValueError('Message social receipt/fresh-helper/cleanup proof incomplete')
 
 
 def expected_tests(addon):
@@ -121,11 +184,13 @@ def verify(addon, orm_log, probe_log, source_commit):
     denied = next(row for row in quota if row['state'] == 'rate_limited')
     if denied.get('status') != 429 or not denied.get('retry_after_seconds'):
         raise ValueError('Quota refusal must be explicit 429 with retry guidance')
+    verify_message_social(probes.get('message_social'))
     return {
         'source_commit': source_commit, 'core_tests': len(expected), 'skipped': 0,
         'core_test_kinds': {kind: sum(value == kind for value in kinds.values()) for kind in sorted(set(kinds.values()))},
         'real_postgres_phases': 10, 'dispatcher_skip_locked_proof': True,
         'room_lock_compatibility_proof': True, 'probes': probes,
+        'message_social_real_postgres_phases': 4, 'fresh_mention_read_only_helper_proof': True,
         'limitations': ['Core module only; procurement bridge not executed',
                         'Synthetic DB and provider boundary; no live/OEM/FCM delivery or phone performance acceptance'],
     }
@@ -141,7 +206,7 @@ def main():
     args = parser.parse_args()
     evidence = verify(args.root, args.orm_log.read_text(encoding='utf-8'), args.probe_log.read_text(encoding='utf-8'), args.source_commit)
     args.output.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    print('BCHAT_CORE_ORM_EVIDENCE=PASS tests=%s phases=10 skips=0' % evidence['core_tests'])
+    print('BCHAT_CORE_ORM_EVIDENCE=PASS tests=%s phases=10 message_social_phases=4 skips=0' % evidence['core_tests'])
 
 
 if __name__ == '__main__':

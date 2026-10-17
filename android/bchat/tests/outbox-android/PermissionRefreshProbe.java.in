@@ -24,6 +24,9 @@ public final class PermissionRefreshProbe {
     boolean probing,submitting;
     String csrfToken="fixture", uncertainUuid="preserve-this-uuid";
     FakeHandler handler=new FakeHandler();
+    // Explicit coordinator fake: the real UIDT ownership/cancellation is covered separately.
+    FakeTransfers transferCoordinator=new FakeTransfers();
+    static final class FakeTransfers { void revoke(AccountScope scope){} }
     FakeView shellNotice=new FakeView(),shellRetry=new FakeView();
     int status=200;
     JSONObject body;

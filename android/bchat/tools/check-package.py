@@ -7,7 +7,7 @@ manifest=ET.parse(root/'app/src/main/AndroidManifest.xml').getroot()
 a='{http://schemas.android.com/apk/res/android}'
 assert manifest.attrib['package']=='com.baseer.bchat.preview'
 permissions={e.get(a+'name') for e in manifest.findall('uses-permission')}
-assert permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.VIBRATE','android.permission.RECORD_AUDIO','android.permission.INTERNET','android.permission.ACCESS_NETWORK_STATE'}, 'Only explicitly used demo and Odoo identity permissions are allowed'
+assert permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.VIBRATE','android.permission.RECORD_AUDIO','android.permission.INTERNET','android.permission.ACCESS_NETWORK_STATE','android.permission.RUN_USER_INITIATED_JOBS','android.permission.FOREGROUND_SERVICE','android.permission.FOREGROUND_SERVICE_DATA_SYNC'}, 'Only reviewed identity, notification and user-initiated transfer permissions are allowed'
 app=manifest.find('application')
 assert app.get(a+'allowBackup')=='false'
 assert app.get(a+'supportsRtl')=='true'
@@ -32,10 +32,15 @@ print('PASS manifest, isolated Odoo identity permission, adaptive icon, XML, and
 notifications=(root/'app/src/main/java/com/baseer/freshchat/DemoNotifications.java').read_text(encoding='utf-8')
 for required in ['FLAG_IMMUTABLE', 'IMPORTANCE_HIGH', 'TYPE_NOTIFICATION', 'postingBlockerId(context)', 'MAIN.postDelayed', 'OPEN_ACTION', 'setLocalOnly(true)']:
  assert required in notifications, required
-assert not app.findall('service') and not app.findall('receiver')
+transfer_services = {item.get(a+'name'): item for item in app.findall('service')}
+assert set(transfer_services) == {'com.baseer.freshchat.BChatTransferJobService', 'com.baseer.freshchat.BChatTransferService'}
+assert all(item.get(a+'exported') == 'false' for item in transfer_services.values())
+assert transfer_services['com.baseer.freshchat.BChatTransferJobService'].get(a+'permission') == 'android.permission.BIND_JOB_SERVICE'
+assert transfer_services['com.baseer.freshchat.BChatTransferService'].get(a+'foregroundServiceType') == 'dataSync'
+assert not app.findall('receiver')
 assert 'AlarmManager' not in notifications
 assert 'setBypassDnd' not in notifications
-print('PASS bounded user-triggered local notification source contracts; no alarm, service, receiver, or DND bypass')
+print('PASS bounded local notification and private user-initiated transfer services; no alarm, receiver, or DND bypass')
 
 list_screen=source[source.index('private void showList()'):source.index('private void updateInbox()')]
 assert 'addMainToolbar()' in list_screen and 'inboxSearchExpanded ? View.VISIBLE : View.GONE' in list_screen
@@ -131,8 +136,11 @@ print('PASS independent preview requires an explicitly supplied local signer; no
 identity=(root/'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text(encoding='utf-8')
 assert 'networkAvailable() && offerOfflineHistory()' in identity
 assert 'scrollAfterOwnSend = true;\n                            loadMessages(0);' in identity
-assert 'channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT' in identity
-assert 'channel.getSound() == null' in identity
+settings_panel=(root/'app/src/main/java/com/baseer/freshchat/BChatNotificationSettingsPanel.java').read_text(encoding='utf-8')
+assert 'channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT' in settings_panel
+assert 'channel.getSound() == null' in settings_panel
+assert 'R.string.notification_quiet' in settings_panel and 'R.string.notification_blocked' in settings_panel
+assert 'new BChatNotificationSettingsPanel(this,' in identity
 assert 'Settings.ACTION_APP_NOTIFICATION_SETTINGS' in identity
 verified_push = identity[identity.index('applyPermissionSet(account, granted);'):identity.index('profileSnapshot = verifiedProfile;')]
 assert 'maybeRegisterPush();' not in verified_push
@@ -236,4 +244,10 @@ push_app=push_manifest.find('application')
 push_service=next(e for e in push_app.findall('service') if e.get(a+'name')=='com.baseer.freshchat.BChatFirebaseMessagingService')
 assert any(action.get(a+'name')=='com.google.firebase.MESSAGING_EVENT'
            for action in push_service.findall('intent-filter/action'))
+assert push_service.get(a+'exported') == 'false'
+push_app.remove(push_service)
+push_sdk = push_manifest.find('uses-sdk')
+assert push_sdk is not None and push_sdk.attrib == standalone_sdk.attrib
+push_manifest.remove(push_sdk)
+assert ET.canonicalize(ET.tostring(canonical_manifest, encoding='unicode'), strip_text=True) == ET.canonicalize(ET.tostring(push_manifest, encoding='unicode'), strip_text=True), 'Push manifest must retain every reviewed app/transfer declaration, adding only the private FCM service'
 print('PASS package-free AGP input exactly matches standalone app manifest semantics')

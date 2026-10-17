@@ -35,7 +35,7 @@ public final class BChatConnectedMediaStore {
     public static final int PDF_LIMIT = 10 * 1024 * 1024;
     public static final int AUDIO_LIMIT = 10 * 1024 * 1024;
     private static final int MAX_METADATA_BYTES = 24 * 1024;
-    private static final int MAX_PENDING_REQUESTS = 20;
+    public static final int MAX_PENDING_REQUESTS = 20;
     private static final long MAX_STAGED_BYTES = 50L * 1024 * 1024;
     public static final long INACTIVE_PART_RETENTION_MILLIS = 24L * 60 * 60 * 1000;
     private static final int MAX_DIAGNOSTIC_PROBLEMS = 100;
@@ -264,9 +264,6 @@ public final class BChatConnectedMediaStore {
     private void requireStageCapacity(AccountScope account, long roomId, long membershipId,
                                       String currentUuid, int extraMetadataBytes) throws IOException {
         Scan scan = scan(account);
-        for (Entry existing : scan.metadata)
-            if (existing.roomId == roomId && existing.membershipId == membershipId)
-                throw new IOException("Resolve the pending media request first");
         int requests = scan.requestCount + (currentUuid == null ? 1 : 0);
         // At commit the current .part is already included in actual bytes and request count.
         if (requests > MAX_PENDING_REQUESTS || extraMetadataBytes > MAX_STAGED_BYTES - scan.usedBytes)
@@ -452,6 +449,28 @@ public final class BChatConnectedMediaStore {
         synchronized (STORE_LOCK) {
             List<Entry> matches = pendingForRoom(account, roomId, membershipId);
             return matches.isEmpty() ? null : matches.get(0);
+        }
+    }
+
+    /** Direct private-store lookup, including metadata-only recovery after receipt cleanup. */
+    public Entry lookup(AccountScope account, String uploadUuid) throws IOException {
+        synchronized (STORE_LOCK) { return readMetadata(account, uploadUuid); }
+    }
+
+    /** Called only after an exact durable SQLite receipt, or an explicit local discard.
+     * Data is removed before metadata, so a crash never turns a leftover original into an
+     * invisible unaccounted orphan. Repeated cleanup of the same receipt is harmless. */
+    public void retireReceipted(AccountScope account, String uploadUuid, String fingerprint) throws IOException {
+        synchronized (STORE_LOCK) {
+            File json=metadata(account,uploadUuid), bytes=data(account,uploadUuid);
+            if(!json.exists()&&!new File(json.getPath()+".bak").exists()) {
+                if(bytes.exists())throw new IOException("Unclassified media original retained");
+                return;
+            }
+            Entry current=readMetadata(account,uploadUuid);
+            if(!current.requestFingerprint().equals(fingerprint))throw new IOException("Media receipt identity changed");
+            if(bytes.exists()&&!bytes.delete())throw new IOException("Cannot retire receipted original");
+            deleteMetadata(account,uploadUuid);
         }
     }
 
@@ -666,6 +685,15 @@ public final class BChatConnectedMediaStore {
                     && replyToMessageId == other.replyToMessageId
                     && documentType.equals(other.documentType) && policyVersion == other.policyVersion
                     && invoiceCaseId == other.invoiceCaseId;
+        }
+
+        /** Immutable ticket identity; server upload receipt/renewal are deliberately excluded. */
+        public String requestFingerprint() {
+            try {
+                JSONObject immutable=toJson();immutable.remove("media_id");immutable.remove("remote_upload_uuid");
+                immutable.remove("upload_block_code");
+                return hex(MessageDigest.getInstance("SHA-256").digest(immutable.toString().getBytes(StandardCharsets.UTF_8)));
+            } catch (Exception invalid) { throw new IllegalStateException("Invalid media ticket fingerprint",invalid); }
         }
 
         private JSONObject toJson() throws IOException {

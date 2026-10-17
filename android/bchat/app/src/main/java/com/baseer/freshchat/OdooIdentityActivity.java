@@ -80,6 +80,8 @@ import com.baseer.freshchat.sync.BChatComposerSnapshot;
 import com.baseer.freshchat.sync.BChatCartResolver;
 import com.baseer.freshchat.sync.BChatStorageRepository;
 import com.baseer.freshchat.sync.BChatIntentPersistence;
+import com.baseer.freshchat.sync.BChatSendTickets;
+import com.baseer.freshchat.sync.BChatStageAdmission;
 import com.baseer.freshchat.sync.OutboxPolicy;
 import com.baseer.freshchat.sync.TaskOfflineCache;
 
@@ -263,7 +265,6 @@ public final class OdooIdentityActivity extends Activity {
     private boolean mediaAvailable;
     private View mediaPickButton;
     private Button mediaReviewButton;
-    private BChatNativeMediaUploader.Call mediaNativeUpload;
     private Runnable mediaUploadTimeout;
     private int mediaUploadNonce;
     private boolean mediaUploadBusy;
@@ -278,6 +279,18 @@ public final class OdooIdentityActivity extends Activity {
     private Room mediaPickerRoom;
     private int mediaPickerGeneration;
     private int mediaSessionGeneration;
+    private BChatSendTickets.Ticket mediaClaim;
+    private AccountScope mediaClaimAccount;
+    private boolean mediaClaimHandedOff;
+    private BChatTransferCoordinator transferCoordinator;
+    private BChatNotificationSettingsPanel notificationSettingsPanel;
+    private final BChatStageAdmission.Observer stageAdmissionObserver=this::onTransferChanged;
+    private final BChatTransferCoordinator.Observer transferObserver = this::onTransferChanged;
+    private void onTransferChanged(String key,long roomId,long memberId) {
+        Room room=selectedRoom;
+        if(!closed&&verified&&!offlineHistory&&account!=null&&account.key.equals(key)
+                &&room!=null)refreshLocalRoom(room,false);
+    }
     private File cameraCaptureFile;
     private VoiceRecorder connectedVoiceRecorder;
     private File voicePreviewFile;
@@ -531,11 +544,16 @@ public final class OdooIdentityActivity extends Activity {
         final BChatV2Outbox.Draft draft;
         final List<BChatConnectedMediaStore.Entry> media;
         final BChatConnectedMediaStore.Diagnostics diagnostics;
+        final BChatSendTickets.Ticket sendHead;
+        final BChatStageAdmission.Recovery recovery;
         RoomLocalSnapshot(long roomId, long membershipId, List<BChatV2Outbox.Entry> text,
                           BChatV2Outbox.Entry stale, BChatV2Outbox.Draft draft,
-                          List<BChatConnectedMediaStore.Entry> media, BChatConnectedMediaStore.Diagnostics diagnostics) {
+                          List<BChatConnectedMediaStore.Entry> media, BChatConnectedMediaStore.Diagnostics diagnostics,
+                          BChatSendTickets.Ticket sendHead,BChatStageAdmission.Recovery recovery) {
             this.roomId = roomId; this.membershipId = membershipId; this.text = text;
             this.stale = stale; this.draft = draft; this.media = media; this.diagnostics = diagnostics;
+            this.sendHead=sendHead;
+            this.recovery=recovery;
         }
         BChatV2Outbox.Entry head() { return text.isEmpty() ? null : text.get(0); }
     }
@@ -567,6 +585,9 @@ public final class OdooIdentityActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         setTheme(ChatAppearance.themeResource(this));
         super.onCreate(state);
+        transferCoordinator=BChatTransferCoordinator.get(this);
+        transferCoordinator.observe(transferObserver);
+        BChatStageAdmission.observe(stageAdmissionObserver);
         connectedImagePreviews = new ImagePreviews(this);
         connectedAudioFocus = new AudioFocusLease(this);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
@@ -2570,65 +2591,65 @@ public final class OdooIdentityActivity extends Activity {
                     .setPositiveButton(R.string.task_close, null).show();
             return;
         }
-        boolean permissionGranted = Build.VERSION.SDK_INT < 33
-                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                == PackageManager.PERMISSION_GRANTED;
-        NotificationManager notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        ensureBChatNotificationChannel(notifications);
-        boolean enabled = notifications != null && notifications.areNotificationsEnabled();
-        boolean channelMuted = false;
-        if (Build.VERSION.SDK_INT >= 26 && notifications != null) {
-            NotificationChannel channel = notifications.getNotificationChannel("bchat-events-v3");
-            // Android preserves a user's per-channel sound choice.  Treat a quiet
-            // channel as unavailable too, otherwise the status screen would claim
-            // that delivery has sound even after the user muted it.
-            channelMuted = channel != null && (channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT
-                    || channel.getSound() == null);
-        }
-        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
-        final boolean openChannelSettings = permissionGranted && enabled && channelMuted;
-        int action = !permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
-                ? R.string.bchat_notifications_enable : R.string.bchat_notifications_manage;
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.bchat_notifications)
-                .setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked))
-                .setNegativeButton(R.string.task_close, null)
-                .setPositiveButton(action, null).create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    if (!permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
-                            && Build.VERSION.SDK_INT >= 33) {
-                        preferences().edit().putBoolean(PUSH_PERMISSION_ASKED, true).apply();
-                        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                                PUSH_PERMISSION_REQUEST);
-                    } else openNotificationSettings(openChannelSettings);
-                    dialog.dismiss();
-                }));
-        dialog.show();
-        maybeRegisterPush();
-        refreshNotificationStatus(dialog, permissionGranted, enabled, channelMuted);
+        final AccountScope scope=account;final int session=epoch;
+        if(!notificationScopeCurrent(scope,session))return;
+        ensureBChatNotificationChannel((NotificationManager)getSystemService(NOTIFICATION_SERVICE));
+        if(notificationSettingsPanel!=null)notificationSettingsPanel.dismiss();
+        notificationSettingsPanel=new BChatNotificationSettingsPanel(this,new BChatNotificationSettingsPanel.Host(){
+            @Override public AccountScope account(){return notificationScopeCurrent(scope,session)?scope:null;}
+            @Override public boolean current(AccountScope candidate){
+                return candidate==scope&&notificationScopeCurrent(scope,session);
+            }
+            private boolean install(String value){
+                try{return value!=null&&UUID.fromString(value).toString().equals(value)
+                        &&value.equals(BChatPushState.installationId(OdooIdentityActivity.this));}
+                catch(IllegalArgumentException invalid){return false;}
+            }
+            private boolean read(String path,BChatNotificationSettingsPanel.Reply reply){
+                return notificationScopeCurrent(scope,session)&&reply!=null
+                        &&fetchV2ReadDirectlyInWebView(path,(status,result)->{
+                            if(notificationScopeCurrent(scope,session))reply.complete(status,result);
+                        });
+            }
+            private boolean write(String path,JSONObject payload,BChatNotificationSettingsPanel.Reply reply){
+                return notificationScopeCurrent(scope,session)&&payload!=null&&reply!=null
+                        &&install(payload.optString("installation_id",null))
+                        &&postSmallFormDirectlyInWebView(path,"payload",payload.toString(),(status,result)->{
+                            if(notificationScopeCurrent(scope,session))reply.complete(status,result);
+                        });
+            }
+            @Override public boolean bootstrap(BChatNotificationSettingsPanel.Reply reply){return read(V2_BOOTSTRAP,reply);}
+            @Override public boolean preferences(String installation,BChatNotificationSettingsPanel.Reply reply){
+                return install(installation)&&read("/bchat/api/v2/notifications/preferences?installation_id="+installation,reply);
+            }
+            @Override public boolean setPreferences(JSONObject payload,BChatNotificationSettingsPanel.Reply reply){
+                return write("/bchat/api/v2/notifications/preferences",payload,reply);
+            }
+            @Override public boolean test(JSONObject payload,BChatNotificationSettingsPanel.Reply reply){
+                return write("/bchat/api/v2/notifications/test",payload,reply);
+            }
+            @Override public boolean testStatus(long event,String installation,BChatNotificationSettingsPanel.Reply reply){
+                return event>0&&event<=OutboxPolicy.MAX_RECORD_ID&&install(installation)
+                        &&read("/bchat/api/v2/notifications/test/"+event+"?installation_id="+installation,reply);
+            }
+            @Override public void registerPush(){if(notificationScopeCurrent(scope,session))maybeRegisterPush();}
+            @Override public void requestPermission(){
+                if(notificationScopeCurrent(scope,session)&&Build.VERSION.SDK_INT>=33
+                        &&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
+                    OdooIdentityActivity.this.preferences().edit().putBoolean(PUSH_PERMISSION_ASKED,true).apply();
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},PUSH_PERMISSION_REQUEST);
+                }
+            }
+            @Override public void openSystemSettings(boolean channel){
+                if(notificationScopeCurrent(scope,session))openNotificationSettings(channel);
+            }
+        });
+        notificationSettingsPanel.show();
     }
 
-    private String notificationStatusMessage(boolean permissionGranted, boolean enabled,
-                                             boolean channelMuted, boolean linked) {
-        int state = !permissionGranted || !enabled || channelMuted
-                ? R.string.bchat_notifications_off
-                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
-        String message = getString(state, linked ? getString(R.string.bchat_device_linked)
-                : getString(R.string.bchat_device_linking));
-        return BuildConfig.BCHAT_PUSH_REGISTRATION_DIAGNOSTICS
-                ? message + "\nQA push: " + pushRegistrationDiagnostic : message;
-    }
-
-    /** Refresh only local state while the dialog is open; this never issues another registration. */
-    private void refreshNotificationStatus(AlertDialog dialog, boolean permissionGranted,
-                                           boolean enabled, boolean channelMuted) {
-        if (dialog == null || !dialog.isShowing()) return;
-        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
-        dialog.setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked));
-        if (!linked && permissionGranted && enabled && !channelMuted) {
-            handler.postDelayed(() -> refreshNotificationStatus(dialog, permissionGranted, enabled,
-                    channelMuted), 300);
-        }
+    private boolean notificationScopeCurrent(AccountScope scope,int session){
+        return !closed&&verified&&!offlineHistory&&session==epoch&&scope!=null&&account==scope
+                &&account.key.equals(scope.key)&&(chatAllowed()||permissionSet.taskView);
     }
 
     private void ensureBChatNotificationChannel(NotificationManager notifications) {
@@ -3573,12 +3594,15 @@ public final class OdooIdentityActivity extends Activity {
     private boolean postSmallFormDirectlyInWebView(String path, String field, String payload,
                                                    V2Callback callback) {
         boolean mediaMessage = path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/messages");
-        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage
+        boolean notificationControl="/bchat/api/v2/notifications/preferences".equals(path)
+                ||"/bchat/api/v2/notifications/test".equals(path);
+        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage ||notificationControl
                 || path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/mobile-upload-grants");
         if (closed || !verified || account == null || csrfToken == null || callback == null
                 || payload == null || payload.length() > (mediaMessage ? 49152
-                        : V2_PUSH_REGISTER.equals(path) ? 8192 : 4096) || field == null
-                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)
+                        : V2_PUSH_REGISTER.equals(path)||notificationControl ? 8192 : 4096) || field == null
+                || notificationControl&&payload.getBytes(StandardCharsets.UTF_8).length>8192
+                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)||notificationControl
                         ? "payload".equals(field) : "metadata".equals(field))
                 || !field.matches("[a-z_]{1,32}") || !supported || webV2GetFallbackBusy
                 || v2Busy || web == null || web.getUrl() == null
@@ -4400,6 +4424,15 @@ public final class OdooIdentityActivity extends Activity {
     private boolean mediaUploadAllowed() { return mediaAvailable && permissionSet.mediaRights.canUpload(sendAllowed()); }
     private boolean mediaDownloadAllowed() { return mediaAllowed() && permissionSet.mediaRights.download; }
 
+    private void refreshTransferAuthority() {
+        if(transferCoordinator==null||account==null)return;
+        Set<String> allowed=new HashSet<>();
+        if(verified&&!offlineHistory&&roomsVerifiedForSession&&mediaUploadAllowed())
+            for(Room room:rooms)if(v1Companies.contains(room.companyId))
+                allowed.add(BChatTransferCoordinator.roomKey(room.id,room.membershipId,room.companyId));
+        transferCoordinator.authorize(account,allowed);
+    }
+
     private void showPermittedRoot() {
         if (shell != null) shell.setVisibility(View.GONE);
         if (chatRoot != null) chatRoot.setVisibility(View.VISIBLE);
@@ -4408,6 +4441,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void cancelRevokedMediaSending(AccountScope scope) {
+        if(transferCoordinator!=null)transferCoordinator.revoke(scope);
         ++mediaSessionGeneration;
         closeMediaUpload();
         mediaStageBusy = false;
@@ -4424,7 +4458,7 @@ public final class OdooIdentityActivity extends Activity {
         }
         final BChatConnectedMediaStore store = mediaStore;
         if (store != null) BChatStorageRepository.submit(null, () -> {
-            try { store.purgeAccount(scope); return true; }
+            try { store.purgeAccount(scope); if(outbox!=null)outbox.tickets().purgeMedia(scope); return true; }
             catch (IOException unavailable) {
                 preferences().edit().putBoolean(REMEMBER, false).commit(); return false;
             }
@@ -4460,6 +4494,9 @@ public final class OdooIdentityActivity extends Activity {
 
     private void applyPermissionSet(AccountScope scope, PermissionSet next) {
         PermissionSet previous = permissionSet;
+        if(!next.chatView&&!next.taskView&&notificationSettingsPanel!=null){
+            notificationSettingsPanel.dismiss();notificationSettingsPanel=null;
+        }
         boolean revoked = previous != null && (previous.chatView && !next.chatView
                 || previous.chatSend && !next.chatSend || previous.media && !next.media
                 || previous.mediaRights.view && !next.mediaRights.view
@@ -4582,6 +4619,7 @@ public final class OdooIdentityActivity extends Activity {
     private void restrictCompanyScope(AccountScope scope, Set<Long> allowed) {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
+        if(transferCoordinator!=null)transferCoordinator.revoke(scope);
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
         ++mediaSessionGeneration;
@@ -4773,6 +4811,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void closeDeniedPermissionView() {
+        if(transferCoordinator!=null)transferCoordinator.revoke(account);
         // Reuse the same generation fences as logout/revocation, without deleting an uncertain UUID.
         purgeHistory();
         ++epoch;
@@ -5581,11 +5620,14 @@ public final class OdooIdentityActivity extends Activity {
         final long revision = editorRevision;
         final boolean hydrateDraft = restoreDraft || roomDraftNeedsRestore;
         localReadBusy = true;
-        local(scope, () -> new RoomLocalSnapshot(room.id, room.membershipId,
+        local(scope, () -> {
+            BChatStageAdmission.Recovery recovery=media==null?null:BChatStageAdmission.recover(box,media,scope,room.id,room.membershipId);
+            return new RoomLocalSnapshot(room.id, room.membershipId,
                 box.roomEntries(scope, room.id, room.membershipId),
                 box.firstStale(scope, room.id, room.membershipId), box.draftRecord(scope, room.id, room.membershipId),
-                media == null ? Collections.emptyList() : media.pendingForRoom(scope, room.id, room.membershipId),
-                media == null ? null : media.diagnostics(scope)), (snapshot, error) -> {
+                recovery==null?Collections.emptyList():recovery.media,
+                media == null ? null : media.diagnostics(scope),box.tickets().head(scope,room.id,room.membershipId),recovery);
+        }, (snapshot, error) -> {
             if (request != localReadSerial || selectedRoom != room) return;
             localReadBusy = false;
             if (error != null) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
@@ -5598,6 +5640,7 @@ public final class OdooIdentityActivity extends Activity {
                 draftActive = true;
                 if (snapshot.draft != null && snapshot.draft.replyToMessageId > 0)
                     restoreDraftReply(scope, room, snapshot.draft.replyToMessageId);
+                if(snapshot.draft!=null)scheduleDraftSave(scope,room,messageInput.getText().toString());
             }
             if (hydrateDraft) {
                 draftActive = true;
@@ -5608,6 +5651,7 @@ public final class OdooIdentityActivity extends Activity {
             messageAdapter.notifyDataSetChanged();
             updatePendingUi();
             handler.post(this::retryPending);
+            handler.post(()->replayKnownConnectedMedia(scope,room));
         });
     }
 
@@ -5643,6 +5687,7 @@ public final class OdooIdentityActivity extends Activity {
     private void scheduleDraftSave(AccountScope scopedAccount, Room scopedRoom, String body) {
         if (draftSaveTask != null) handler.removeCallbacks(draftSaveTask);
         final long reply = selectedReplyMessageId;
+        final long revision=editorRevision;
         final Runnable[] task = new Runnable[1];
         task[0] = () -> {
             if (draftSaveTask != task[0]) return;
@@ -5650,7 +5695,7 @@ public final class OdooIdentityActivity extends Activity {
             if (outbox == null) return;
             final BChatV2Outbox box = outbox;
             local(scopedAccount, () -> {
-                box.saveDraft(scopedAccount, scopedRoom.id, scopedRoom.membershipId, body, reply);
+                box.saveDraft(scopedAccount, scopedRoom.id, scopedRoom.membershipId, body, reply,revision);
                 return null;
             }, (ignored, invalid) -> {
                 if (invalid != null && selectedRoom == scopedRoom) {
@@ -5672,6 +5717,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void clearChatView() {
+        if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
         ++mediaDownloadGeneration;
         restorationIntent = null;
         contextLoaded = contextNavigationRestored = false;
@@ -6167,6 +6213,7 @@ public final class OdooIdentityActivity extends Activity {
                 rooms.clear();
                 rooms.addAll(validated);
                 roomsVerifiedForSession = true;
+                refreshTransferAuthority();
                 ++roomMetadataGeneration;
                 if (historyCache != null && account != null) {
                     List<ConnectedHistoryCache.RoomRecord> snapshot = new ArrayList<>();
@@ -6503,10 +6550,11 @@ public final class OdooIdentityActivity extends Activity {
         boolean inFlight = mediaStageBusy || mediaUploadBusy || mediaConfirmBusy
                 && mediaConfirmRoom != null && mediaConfirmRoom.sameMembership(selectedRoom);
         mediaReviewButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaPending && !inFlight
+                &&(roomLocal.recovery==null||!roomLocal.recovery.staging)
                 ? View.VISIBLE : View.GONE);
         sendButton.setEnabled(sendAllowed() && verified && !offlineHistory && !textEnqueueBusy
                 && draftActive && !draftReplyBlocked && roomLocal.text.size() < BChatV2Outbox.MAX_PER_ROOM
-                && !mediaPending && !inFlight);
+                && !mediaStageBusy);
         // The actionable review controls already explain pending messages below the thread.
         // Keep the conversation area free of a duplicate, non-actionable banner.
         if (pending != null || stale != null) chatNotice.setText("");
@@ -6514,6 +6562,8 @@ public final class OdooIdentityActivity extends Activity {
                 ? R.string.bchat_media_sending : R.string.bchat_media_uploading);
         else if (mediaPending) chatNotice.setText(mediaPolicyChanged
                 ? R.string.bchat_media_policy_changed : R.string.bchat_media_pending);
+        if(roomLocal.recovery!=null&&!roomLocal.recovery.issues.isEmpty())
+            chatNotice.setText(getString(R.string.chat_v2_save_failed)+" ("+roomLocal.recovery.issues.get(0).code+")");
     }
 
     private void showPendingDialog(AlertDialog.Builder builder) {
@@ -7692,20 +7742,26 @@ public final class OdooIdentityActivity extends Activity {
                                                            List<JSONObject> messages) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
-            Set<Long> confirmedMediaIds = new HashSet<>();
+            Map<Long,Long> confirmedMediaIds = new LinkedHashMap<>();
             for (JSONObject message : messages) {
                 if (positiveId(message.opt("author_user_id")) != scopedAccount.userId
                         || !message.has("media")) continue;
                 MediaRecord serverMedia = new MediaRecord(message.getJSONObject("media"));
-                confirmedMediaIds.add(serverMedia.id);
+                confirmedMediaIds.put(serverMedia.id,positiveId(message.get("id")));
             }
             if (confirmedMediaIds.isEmpty()) return;
             final BChatConnectedMediaStore store = mediaStore;
+            final BChatV2Outbox box=outbox;
             local(scopedAccount, () -> {
                 boolean changed = false;
                 for (BChatConnectedMediaStore.Entry entry : store.pendingForRoom(scopedAccount, room.id, room.membershipId))
-                    if (entry.mediaId > 0 && confirmedMediaIds.contains(entry.mediaId)) {
-                        store.acknowledge(scopedAccount, entry); changed = true;
+                    if (entry.mediaId > 0 && confirmedMediaIds.containsKey(entry.mediaId)) {
+                        BChatSendTickets.Ticket ticket=box.tickets().find(scopedAccount,"media",entry.clientUuid);
+                        if(ticket==null)ticket=box.tickets().admitMedia(scopedAccount,entry,true);
+                        if(!ticket.matches(entry)||!box.tickets().receipt(scopedAccount,ticket,confirmedMediaIds.get(entry.mediaId)))continue;
+                        BChatSendTickets.Ticket receipt=box.tickets().find(scopedAccount,"media",entry.clientUuid);
+                        changed|=box.tickets().retireMedia(scopedAccount,receipt,
+                                ()->store.retireReceipted(scopedAccount,entry.uploadUuid,receipt.fingerprint));
                     }
                 return changed;
             }, (changed, error) -> {
@@ -8657,7 +8713,6 @@ public final class OdooIdentityActivity extends Activity {
         Room room = selectedRoom;
         if (!verified || offlineHistory || !sendAllowed() || room == null || account == null
                 || outbox == null || mediaStageBusy || textEnqueueBusy || draftReplyBlocked || !localMatches(room)) return;
-        if (!roomLocal.media.isEmpty()) { chatNotice.setText(R.string.bchat_media_pending); return; }
         String body = messageInput.getText().toString();
         try {
             OutboxPolicy.requireText(body);
@@ -8669,7 +8724,7 @@ public final class OdooIdentityActivity extends Activity {
                     room.membershipId, revision, body, replyId);
             textEnqueueBusy = true;
             updatePendingUi();
-            local(scope, () -> box.enqueue(scope, room.id, room.membershipId, body, replyId), (entry, error) -> {
+            local(scope, () -> box.enqueue(scope, room.id, room.membershipId, body, replyId,revision), (entry, error) -> {
                 textEnqueueBusy = false;
                 if (selectedRoom != room) return;
                 if (error != null) {
@@ -8704,7 +8759,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed() || !stillCurrent(account, room)
                 || mediaStageBusy || voicePreviewFile != null || mediaUploadBusy || v2Busy) return;
         try {
-            if (!localMatches(room) || !roomLocal.media.isEmpty() || roomLocal.head() != null) {
+            if (!localMatches(room)) {
                 chatNotice.setText(R.string.bchat_media_pending); return;
             }
         } catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
@@ -8987,7 +9042,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed() || room == null || account == null
                 || mediaStore == null || mediaUploadBusy || mediaStageBusy || v2Busy) return;
         try {
-            if (!localMatches(room) || !roomLocal.media.isEmpty() || roomLocal.head() != null) {
+            if (!localMatches(room)) {
                 chatNotice.setText(R.string.bchat_media_pending); return;
             }
         } catch (Exception error) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
@@ -9020,31 +9075,35 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void captureConnectedPhoto(Room room) {
-        try {
-            File folder = new File(getFilesDir(), "attachments");
-            if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Camera directory unavailable");
-            String name = "bchat-" + account.key.substring(0, 16) + "-" + room.id
-                    + "-" + UUID.randomUUID() + ".jpg";
-            File output = new File(folder, name);
-            if (!output.createNewFile()) throw new IOException("Camera file unavailable");
-            Uri uri = new Uri.Builder().scheme("content")
-                    .authority(getPackageName() + ".files").appendPath(name).build();
-            Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            camera.putExtra(MediaStore.EXTRA_OUTPUT, uri);
-            camera.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            if (camera.resolveActivity(getPackageManager()) == null) {
-                output.delete(); chatNotice.setText(R.string.bchat_media_camera_unavailable); return;
+        final AccountScope scope=account;final int generation=mediaSessionGeneration;
+        if(!stillCurrent(scope,room)||!mediaUploadAllowed())return;
+        BChatStorageRepository.submit(null,()->{
+            File folder=new File(getFilesDir(),"attachments");
+            if(!folder.isDirectory()&&!folder.mkdirs())throw new IOException("Camera directory unavailable");
+            File output=new File(folder,"bchat-"+scope.key.substring(0,16)+"-"+room.id+"-"+UUID.randomUUID()+".jpg");
+            if(!output.createNewFile())throw new IOException("Camera file unavailable");
+            return output;
+        },(output,error)->{
+            if(error!=null){if(stillCurrent(scope,room))chatNotice.setText(R.string.bchat_media_camera_unavailable);return;}
+            if(!stillCurrent(scope,room)||generation!=mediaSessionGeneration||!mediaUploadAllowed()){
+                deleteTransientMedia(output);return;
             }
-            cameraCaptureFile = output;
-            mediaPickerAccount = account;
-            mediaPickerRoom = room;
-            mediaPickerGeneration = mediaSessionGeneration;
-            startActivityForResult(camera, MEDIA_CAMERA_REQUEST);
-        } catch (Exception failure) {
-            if (cameraCaptureFile != null) { cameraCaptureFile.delete(); cameraCaptureFile = null; }
-            mediaPickerAccount = null; mediaPickerRoom = null;
-            chatNotice.setText(R.string.bchat_media_camera_unavailable);
-        }
+            Uri uri=new Uri.Builder().scheme("content").authority(getPackageName()+".files").appendPath(output.getName()).build();
+            Intent camera=new Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT,uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            try{
+                if(camera.resolveActivity(getPackageManager())==null)throw new IllegalStateException("Camera unavailable");
+                cameraCaptureFile=output;mediaPickerAccount=scope;mediaPickerRoom=room;mediaPickerGeneration=generation;
+                startActivityForResult(camera,MEDIA_CAMERA_REQUEST);
+            }catch(RuntimeException unavailable){
+                deleteTransientMedia(output);cameraCaptureFile=null;mediaPickerAccount=null;mediaPickerRoom=null;
+                chatNotice.setText(R.string.bchat_media_camera_unavailable);
+            }
+        });
+    }
+
+    private void deleteTransientMedia(File file){
+        if(file!=null)BChatStorageRepository.submit(null,()->file.delete(),(removed,error)->{});
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -9117,12 +9176,20 @@ public final class OdooIdentityActivity extends Activity {
 
     private void classifyConnectedMedia(AccountScope scopedAccount, Room room, int generation, Uri selected,
                                         File temporary) {
-        String mime;
-        try { mime = getContentResolver().getType(selected); }
-        catch (RuntimeException unreadable) {
-            if (temporary != null) temporary.delete();
-            chatNotice.setText(R.string.bchat_media_invalid); return;
-        }
+        mediaIo.execute(()->{
+            String type=null;boolean failed=false;
+            try{type=getContentResolver().getType(selected);}catch(RuntimeException unreadable){failed=true;}
+            final String mime=type;final boolean invalid=failed;
+            handler.post(()->{
+                if(!stillCurrent(scopedAccount,room)||generation!=mediaSessionGeneration){deleteTransientMedia(temporary);return;}
+                if(invalid){deleteTransientMedia(temporary);chatNotice.setText(R.string.bchat_media_invalid);return;}
+                classifyConnectedMediaType(scopedAccount,room,generation,selected,temporary,mime);
+            });
+        });
+    }
+
+    private void classifyConnectedMediaType(AccountScope scopedAccount,Room room,int generation,Uri selected,
+                                            File temporary,String mime){
         boolean eligible = "image/jpeg".equals(mime) || "image/png".equals(mime)
                 || "image/webp".equals(mime) || "application/pdf".equals(mime);
         if (!eligible || "off".equals(room.invoicePolicy)) {
@@ -9190,6 +9257,11 @@ public final class OdooIdentityActivity extends Activity {
         }
         String text = messageInput.getText().toString();
         long replyId = selectedReplyMessageId;
+        final long stageEditorRevision=editorRevision;
+        BChatComposerSnapshot editor=new BChatComposerSnapshot(scopedAccount,room.id,room.membershipId,
+                stageEditorRevision,text,replyId);
+        long storageGeneration=BChatStorageRepository.generation(scopedAccount);
+        flushDraftSave();
         String captureName = null;
         if (temporary != null) {
             String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(new Date());
@@ -9200,41 +9272,45 @@ public final class OdooIdentityActivity extends Activity {
         mediaStageBusy = true;
         updatePendingUi();
         chatNotice.setText(R.string.bchat_media_uploading);
+        final BChatV2Outbox preparingBox=outbox;final BChatConnectedMediaStore stagingStore=mediaStore;
+        BChatStorageRepository.submit(null,()->BChatStageAdmission.begin(preparingBox,stagingStore,scopedAccount,room.id,room.membershipId),
+                (stageToken,prepareError)->{
+            if(prepareError!=null){mediaStageBusy=false;if(stillCurrent(scopedAccount,room))refreshLocalRoom(room,false);return;}
+            if(!stillCurrent(scopedAccount,room)||generation!=mediaSessionGeneration||!mediaUploadAllowed()){
+                BChatStorageRepository.write(null,()->{stageToken.close();return null;});return;
+            }
         new Thread(() -> {
             BChatConnectedMediaStore.Entry staged = null;
             try {
-                if (generation == mediaSessionGeneration) {
-                    staged = mediaStore.stage(getContentResolver(), scopedAccount, room.id, room.companyId,
+                if (storageGeneration == BChatStorageRepository.generation(scopedAccount)) {
+                    staged = stagingStore.stage(getContentResolver(), scopedAccount, room.id, room.companyId,
                             room.membershipId, selected, text, replyId, documentType,
                             room.invoicePolicyVersion, invoiceCaseId, stagedName);
                 }
-            } catch (Exception ignored) { /* The user sees a bounded, non-sensitive error. */ }
+            } catch (Exception ignored) { staged=null; /* Original remains diagnostic-only if admission failed. */ }
             finally { if (temporary != null) temporary.delete(); }
-            BChatConnectedMediaStore.Entry finalStaged = staged;
-            handler.post(() -> {
-                if (generation != mediaSessionGeneration || !stillCurrent(scopedAccount, room)) {
-                    if (finalStaged != null) {
-                        try { mediaStore.discard(scopedAccount, finalStaged); }
-                        catch (IOException ignored) { /* The old membership cannot upload. */ }
-                    }
-                    return;
-                }
+            BChatConnectedMediaStore.Entry copied=staged;
+            android.content.Context app=getApplicationContext();
+            BChatStorageRepository.submit(null,()->{
+                try{
+                    if(copied==null||!stageToken.owns())return null;
+                    // Same lane as recovery/purge; fence closes only after the admission TX ends.
+                    try(BChatV2Outbox box=new BChatV2Outbox(app)){box.tickets().admitMedia(scopedAccount,copied,false,stageEditorRevision);}
+                    return copied;
+                }finally{stageToken.close();}
+            },(finalStaged,admissionError)->{
+                if (generation != mediaSessionGeneration || !stillCurrent(scopedAccount, room)) return;
                 mediaStageBusy = false;
-                if (!mediaUploadAllowed()) {
-                    if (finalStaged != null) try { mediaStore.discard(scopedAccount, finalStaged); }
-                    catch (IOException ignored) { /* Sending was revoked after staging. */ }
-                    return;
-                }
-                if (finalStaged == null) { chatNotice.setText(R.string.bchat_media_invalid); return; }
-                flushDraftSave();
-                if (text.equals(messageInput.getText().toString())) {
-                    try { outbox.saveDraft(scopedAccount, room.id, room.membershipId, ""); }
-                    catch (Exception ignored) { chatNotice.setText(R.string.chat_v2_save_failed); }
+                if (!mediaUploadAllowed()) return;
+                if (admissionError!=null||finalStaged == null) { chatNotice.setText(R.string.bchat_media_invalid); return; }
+                if (editor.matches(account,room.id,room.membershipId,editorRevision,
+                        messageInput.getText().toString(),selectedReplyMessageId)) {
                     suppressDraftChanges = true;
                     messageInput.setText("");
                     suppressDraftChanges = false;
+                    clearSelectedReply();
+                    ++editorRevision;
                 }
-                if (selectedReplyMessageId == replyId) clearSelectedReply();
                 // A just-staged file has never crossed the native transport, so begin the
                 // first upload directly.  Stored pending rows take the separate recovery
                 // path below: they must reconcile with the server before any byte retry.
@@ -9243,9 +9319,10 @@ public final class OdooIdentityActivity extends Activity {
                 } catch (IOException unavailable) {
                     chatNotice.setText(R.string.chat_v2_uncertain);
                 }
-                updatePendingUi();
+                refreshLocalRoom(room,false);
             });
         }, "bchat-media-stage").start();
+        });
     }
 
     private void reviewConnectedMedia() {
@@ -9253,8 +9330,8 @@ public final class OdooIdentityActivity extends Activity {
         AccountScope scopedAccount = account;
         if (!CONNECTED_MEDIA_UI_ENABLED || !stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
-            List<BChatConnectedMediaStore.Entry> entries = mediaStore.pendingForRoom(scopedAccount,
-                    room.id, room.membershipId);
+            if(!localMatches(room)){refreshLocalRoom(room,false);return;}
+            List<BChatConnectedMediaStore.Entry> entries = roomLocal.media;
             if (entries.isEmpty()) { updatePendingUi(); return; }
             BChatConnectedMediaStore.Entry entry = entries.get(0);
             boolean policyChanged = entry.policyVersion != room.invoicePolicyVersion;
@@ -9262,6 +9339,8 @@ public final class OdooIdentityActivity extends Activity {
             boolean hasUploadedRecord = false;
             StringBuilder detail = new StringBuilder(getString(R.string.bchat_media_review_intro,
                     entries.size()));
+            if(roomLocal.recovery!=null)for(BChatStageAdmission.Issue issue:roomLocal.recovery.issues)
+                detail.append("\n\n").append(getString(R.string.storage_health_problem,issue.uploadUuid,issue.code));
             for (BChatConnectedMediaStore.Entry candidate : entries) {
                 detail.append("\n\n").append(candidate.name).append("\n")
                         .append(connectedMediaPendingStatus(candidate, room));
@@ -9286,8 +9365,12 @@ public final class OdooIdentityActivity extends Activity {
             if ((hasUploadedRecord || (!policyChanged && !uploadBlocked)) && mediaUploadAllowed())
                 review.setPositiveButton(R.string.bchat_media_check_now,
                         (dialog, which) -> checkConnectedMediaStatus(scopedAccount, room));
+            BChatSendTickets.Ticket head=roomLocal.sendHead;
+            if(entry.mediaId>0&&head!=null&&head.matches(entry)&&!policyChanged&&!uploadBlocked
+                    &&!(transferCoordinator!=null&&transferCoordinator.isBusy()))
+                review.setPositiveButton(R.string.chat_v2_retry,(dialog,which)->approveMediaLinkRetry(scopedAccount,room,entry,head));
             showPendingDialog(review);
-        } catch (IOException invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
+        } catch (RuntimeException invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
 
     private String connectedMediaPendingStatus(BChatConnectedMediaStore.Entry entry, Room room) {
@@ -9299,14 +9382,25 @@ public final class OdooIdentityActivity extends Activity {
         return getString(R.string.bchat_media_status_message_pending, entry.mediaId);
     }
 
+    /** Explicit same-UUID link retry, never a byte upload. A fresh claim fences any older ACK. */
+    private void approveMediaLinkRetry(AccountScope scope,Room room,BChatConnectedMediaStore.Entry entry,BChatSendTickets.Ticket expected){
+        if(!stillCurrent(scope,room)||!mediaUploadAllowed()||entry.mediaId<=0)return;
+        final BChatV2Outbox box=outbox;
+        local(scope,()->box.tickets().approveLegacyMedia(scope,expected),(saved,error)->{
+            if(!stillCurrent(scope,room))return;
+            if(error!=null||!Boolean.TRUE.equals(saved)){chatNotice.setText(R.string.chat_v2_save_failed);return;}
+            sendConnectedMedia(scope,room,entry);
+        });
+    }
+
     /** Re-reads verified room history only; it never uploads or posts a media message. */
     private void checkConnectedMediaStatus(AccountScope scopedAccount, Room room) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
             boolean hasUploadedRecord = false;
             BChatConnectedMediaStore.Entry unresolvedNativeUpload = null;
-            for (BChatConnectedMediaStore.Entry entry : mediaStore.pendingForRoom(scopedAccount,
-                    room.id, room.membershipId)) {
+            if(!localMatches(room)){refreshLocalRoom(room,false);return;}
+            for (BChatConnectedMediaStore.Entry entry : roomLocal.media) {
                 if (entry.mediaId > 0 && entry.policyVersion == room.invoicePolicyVersion
                         && entry.uploadBlockCode.isEmpty()) hasUploadedRecord = true;
                 if (entry.mediaId <= 0 && entry.policyVersion == room.invoicePolicyVersion
@@ -9321,7 +9415,7 @@ public final class OdooIdentityActivity extends Activity {
                 chatNotice.setText(R.string.bchat_media_checking);
                 recoverUncertainMediaConfirmation(scopedAccount, room);
             }
-        } catch (IOException unavailable) { chatNotice.setText(R.string.chat_v2_save_failed); }
+        } catch (RuntimeException unavailable) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
 
     /** Authenticated read only: recover a persisted native upload after response/process loss. */
@@ -9335,6 +9429,8 @@ public final class OdooIdentityActivity extends Activity {
             chatNotice.setText(R.string.bchat_media_status_upload_pending); return;
         }
         chatNotice.setText(R.string.bchat_media_checking);
+        final BChatSendTickets.Ticket captured=localMatches(room)?roomLocal.sendHead:null;
+        if(captured==null||!captured.matches(entry))return;
         String path = V2_ROOMS + "/" + room.id + "/uploads/" + uploadUuid + "/reconcile";
         fetchV2("GET", path, null, (statusCode, result) -> {
             if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
@@ -9350,8 +9446,11 @@ public final class OdooIdentityActivity extends Activity {
                         ? 0 : nonnegativeCursor(rawMediaId);
                 String state = result.getString("state");
                 if (mediaId > 0 && ("staged".equals(state) || "attached".equals(state))) {
-                    BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry, mediaId);
-                    sendConnectedMedia(scopedAccount, room, saved);
+                    final BChatV2Outbox box=outbox;final BChatConnectedMediaStore store=mediaStore;
+                    local(scopedAccount,()->box.tickets().saveUploaded(scopedAccount,captured,mediaId,
+                            ()->store.markUploaded(scopedAccount,entry,mediaId)),(saved,error)->{
+                        if(stillCurrent(scopedAccount,room)){refreshLocalRoom(room,false);recoverUncertainMediaConfirmation(scopedAccount,room);}
+                    });
                     return;
                 }
                 if (mediaId == 0 && "uploading".equals(state)) {
@@ -9387,18 +9486,15 @@ public final class OdooIdentityActivity extends Activity {
                 .setMessage(R.string.bchat_media_status_upload_pending)
                 .setPositiveButton(R.string.chat_v2_retry, (dialog, which) -> {
                     if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
-                    try {
-                        for (BChatConnectedMediaStore.Entry current : mediaStore.pendingForRoom(
-                                scopedAccount, room.id, room.membershipId)) {
-                            if (current.mediaId <= 0
-                                    && current.networkUploadUuid().equals(entry.networkUploadUuid())) {
-                                uploadConnectedMedia(scopedAccount, room, current);
-                                break;
-                            }
-                        }
-                    } catch (IOException unavailable) {
-                        chatNotice.setText(R.string.chat_v2_save_failed);
-                    }
+                    final BChatV2Outbox box=outbox;
+                    local(scopedAccount,()->{
+                        BChatSendTickets.Ticket t=box.tickets().find(scopedAccount,"media",entry.clientUuid);
+                        return t!=null&&t.matches(entry)&&box.tickets().approveLegacyMedia(scopedAccount,t);
+                    },(approved,error)->{
+                        if(!stillCurrent(scopedAccount,room))return;
+                        if(error!=null||!Boolean.TRUE.equals(approved)){chatNotice.setText(R.string.chat_v2_save_failed);return;}
+                        try{uploadConnectedMedia(scopedAccount,room,entry);}catch(IOException invalid){chatNotice.setText(R.string.chat_v2_save_failed);}
+                    });
                 })
                 .setNegativeButton(R.string.chat_v2_cancel, null));
     }
@@ -9449,15 +9545,21 @@ public final class OdooIdentityActivity extends Activity {
     private void discardLocalMediaAfterReview(AccountScope scope, Room room,
                                               BChatConnectedMediaStore.Entry entry, boolean remoteUncertain) {
         if (scope != account || mediaStore == null) return;
-        try {
-            mediaStore.discard(scope, entry);
-            if (stillCurrent(scope, room)) {
-                updatePendingUi();
-                if (remoteUncertain) chatNotice.setText(R.string.bchat_media_local_removed_only);
+        final BChatV2Outbox box=outbox;final BChatConnectedMediaStore store=mediaStore;
+        local(scope,()->{
+            BChatSendTickets.Ticket ticket=box.tickets().find(scope,"media",entry.clientUuid);
+            if(ticket==null&&!BChatStageAdmission.active(scope,room.id,room.membershipId)){
+                store.retireReceipted(scope,entry.uploadUuid,entry.requestFingerprint());return true;
             }
-        } catch (IOException invalid) {
-            if (stillCurrent(scope, room)) chatNotice.setText(R.string.chat_v2_save_failed);
-        }
+            return ticket!=null&&ticket.matches(entry)&&box.tickets().discardMedia(scope,ticket,
+                    ()->store.retireReceipted(scope,entry.uploadUuid,ticket.fingerprint));
+        },(removed,error)->{
+            if (stillCurrent(scope, room)) {
+                refreshLocalRoom(room,false);
+                if(error!=null||!Boolean.TRUE.equals(removed))chatNotice.setText(R.string.chat_v2_save_failed);
+                else if (remoteUncertain) chatNotice.setText(R.string.bchat_media_local_removed_only);
+            }
+        });
     }
 
     private void retryConnectedMedia() {
@@ -9466,7 +9568,10 @@ public final class OdooIdentityActivity extends Activity {
         if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaStore == null
                 || mediaUploadBusy || v2Busy || csrfToken == null) return;
         try {
-            BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id, room.membershipId);
+            if(!localMatches(room)||roomLocal.sendHead==null||!"media".equals(roomLocal.sendHead.kind))return;
+            BChatConnectedMediaStore.Entry entry = null;
+            for(BChatConnectedMediaStore.Entry candidate:roomLocal.media)
+                if(roomLocal.sendHead.matches(candidate)){entry=candidate;break;}
             if (entry == null) return;
             if (entry.policyVersion != room.invoicePolicyVersion) {
                 chatNotice.setText(R.string.bchat_media_policy_changed);
@@ -9475,9 +9580,6 @@ public final class OdooIdentityActivity extends Activity {
             if (!entry.uploadBlockCode.isEmpty()) {
                 chatNotice.setText(R.string.bchat_media_upload_blocked);
                 return;
-            }
-            if (outbox.first(scopedAccount, room.id, room.membershipId) != null) {
-                chatNotice.setText(R.string.chat_v2_pending); return;
             }
             // media_id means upload was already acknowledged.  Replaying its immutable
             // client UUID is idempotent and must not upload the original bytes again.
@@ -9498,15 +9600,20 @@ public final class OdooIdentityActivity extends Activity {
      */
     private void replayKnownConnectedMedia(AccountScope scopedAccount, Room room) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null || outbox == null
-                || mediaStageBusy || mediaUploadBusy || mediaConfirmBusy || v2Busy) return;
+                || mediaStageBusy || mediaUploadBusy || mediaConfirmBusy || v2Busy
+                || transferCoordinator!=null&&transferCoordinator.isBusy()) return;
+        if(localMatches(room)&&roomLocal.recovery!=null&&roomLocal.recovery.dispatchBlocked)return;
         try {
-            BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id,
-                    room.membershipId);
-            if (entry == null || entry.mediaId <= 0
-                    || entry.policyVersion != room.invoicePolicyVersion
-                    || !entry.uploadBlockCode.isEmpty()
-                    || outbox.first(scopedAccount, room.id, room.membershipId) != null) return;
-            sendConnectedMedia(scopedAccount, room, entry);
+            if(!localMatches(room)||roomLocal.sendHead==null)return;
+            BChatSendTickets.Ticket head=roomLocal.sendHead;
+            if(!"media".equals(head.kind)||head.legacy||"review".equals(head.state)||"uncertain".equals(head.state)
+                    ||"sending".equals(head.state)||"receipt".equals(head.state))return;
+            for(BChatConnectedMediaStore.Entry entry:roomLocal.media){
+                if(!head.matches(entry)||entry.policyVersion!=room.invoicePolicyVersion||!entry.uploadBlockCode.isEmpty())continue;
+                if(entry.mediaId>0)sendConnectedMedia(scopedAccount,room,entry);
+                else if("queued".equals(head.state))uploadConnectedMedia(scopedAccount,room,entry);
+                break;
+            }
         } catch (IOException ignored) {
             // Keep the explicit recovery action if local storage itself cannot be read.
         }
@@ -9516,7 +9623,13 @@ public final class OdooIdentityActivity extends Activity {
         ++mediaUploadNonce;
         mediaUploadBusy = false;
         if (mediaUploadTimeout != null) { handler.removeCallbacks(mediaUploadTimeout); mediaUploadTimeout = null; }
-        if (mediaNativeUpload != null) { mediaNativeUpload.cancel(); mediaNativeUpload = null; }
+        BChatSendTickets.Ticket claim=mediaClaim;AccountScope scope=mediaClaimAccount;
+        if(claim!=null&&!mediaClaimHandedOff&&scope!=null){
+            android.content.Context app=getApplicationContext();
+            BChatStorageRepository.submit(null,()->{try(BChatV2Outbox box=new BChatV2Outbox(app)){
+                return box.tickets().defer(scope,claim);}},(saved,error)->{});
+        }
+        mediaClaim=null;mediaClaimAccount=null;mediaClaimHandedOff=false;
     }
 
     private void mediaUploadDeadline(int request, AccountScope scopedAccount, Room room,
@@ -9532,15 +9645,33 @@ public final class OdooIdentityActivity extends Activity {
 
     private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
                                       BChatConnectedMediaStore.Entry entry) throws IOException {
-        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy) return;
-        File staged = mediaStore.file(scopedAccount, entry);
-        String metadata = entry.uploadMetadata().toString();
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy
+                || !liveForeground||!hasWindowFocus()
+                || transferCoordinator!=null&&transferCoordinator.isBusy()) return;
         mediaUploadBusy = true;
         updatePendingUi();
         final int request = ++mediaUploadNonce;
         chatNotice.setText(R.string.bchat_media_uploading);
-        mediaUploadDeadline(request, scopedAccount, room, entry);
-        requestNativeMediaGrant(request, scopedAccount, room, entry, staged, metadata, 0, 0);
+        final BChatV2Outbox box=outbox;
+        local(scopedAccount,()->{
+            if(BChatStageAdmission.recover(box,mediaStore,scopedAccount,room.id,room.membershipId).dispatchBlocked)return null;
+            BChatSendTickets.Ticket head=box.tickets().head(scopedAccount,room.id,room.membershipId);
+            if(head==null||!head.matches(entry))return null;
+            BChatSendTickets.Ticket claim=box.tickets().claimMediaHead(scopedAccount,room.id,room.membershipId,
+                    UUID.randomUUID().toString(),System.currentTimeMillis());
+            if(claim==null||!claim.matches(entry))return null;
+            return new Object[]{claim,mediaStore.file(scopedAccount,entry),entry.uploadMetadata().toString()};
+        },(prepared,error)->{
+            if(request!=mediaUploadNonce||!stillCurrent(scopedAccount,room)){
+                if(prepared!=null){BChatSendTickets.Ticket old=(BChatSendTickets.Ticket)prepared[0];
+                    BChatStorageRepository.write(scopedAccount,()->{box.tickets().defer(scopedAccount,old);return null;});}
+                return;
+            }
+            if(error!=null||prepared==null){closeMediaUpload();refreshLocalRoom(room,false);return;}
+            mediaClaim=(BChatSendTickets.Ticket)prepared[0];mediaClaimAccount=scopedAccount;mediaClaimHandedOff=false;
+            mediaUploadDeadline(request,scopedAccount,room,entry);
+            requestNativeMediaGrant(request,scopedAccount,room,entry,(File)prepared[1],(String)prepared[2],0,0);
+        });
     }
 
     /**
@@ -9605,85 +9736,16 @@ public final class OdooIdentityActivity extends Activity {
             String secret = result.getString("secret");
             if (!grantId.matches("[0-9a-f-]{36}") || !secret.matches("[A-Za-z0-9_-]{43,128}"))
                 throw new IOException("Invalid native grant");
-            BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
-            mediaNativeUpload = call;
-            mediaIo.execute(() -> {
-                BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.upload(
-                        call, ORIGIN, DATABASE, grantId, secret, staged, entry.size, entry.mime);
-                handler.post(() -> finishNativeMediaUpload(request, scopedAccount, room, entry,
-                        grantId, secret, response));
-            });
-        } catch (Exception invalid) {
+            refreshTransferAuthority();
+            mediaClaimHandedOff=mediaClaim!=null&&transferCoordinator.schedule(scopedAccount,mediaClaim,entry,
+                    staged,grantId,secret,()->!closed&&liveForeground&&hasWindowFocus()
+                            &&stillCurrent(scopedAccount,room)&&mediaUploadAllowed());
+            boolean accepted=mediaClaimHandedOff;
             closeMediaUpload();
-            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
-        }
-    }
-
-    private void finishNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
-                                         BChatConnectedMediaStore.Entry entry, String grantId,
-                                         String secret, BChatNativeMediaUploader.Result response) {
-        if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                || !stillCurrent(scopedAccount, room)) return;
-        if (response.isTransportFailure() || response.status == 202) {
-            checkNativeMediaUpload(request, scopedAccount, room, entry, grantId, secret, 0);
-            return;
-        }
-        applyNativeMediaResult(request, scopedAccount, room, entry, response, 0);
-    }
-
-    private void checkNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
-                                        BChatConnectedMediaStore.Entry entry, String grantId,
-                                        String secret, int attempt) {
-        if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                || !stillCurrent(scopedAccount, room)) return;
-        BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
-        mediaNativeUpload = call;
-        mediaIo.execute(() -> {
-            BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.status(
-                    call, ORIGIN, DATABASE, grantId, secret);
-            handler.post(() -> {
-                if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                        || !stillCurrent(scopedAccount, room)) return;
-                if (response.status == 202 || response.isTransportFailure()) {
-                    handler.postDelayed(() -> checkNativeMediaUpload(request, scopedAccount, room, entry,
-                            grantId, secret, attempt + 1), 1000);
-                } else applyNativeMediaResult(request, scopedAccount, room, entry, response, attempt);
-            });
-        });
-    }
-
-    private void applyNativeMediaResult(int request, AccountScope scopedAccount, Room room,
-                                        BChatConnectedMediaStore.Entry entry,
-                                        BChatNativeMediaUploader.Result response, int statusAttempt) {
-        if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                || !stillCurrent(scopedAccount, room)) return;
-        try {
-            JSONObject result = new JSONObject(response.body);
-            if (response.status == 200 && positiveId(result.get("api_version")) == 2
-                    && entry.networkUploadUuid().equals(result.getString("upload_uuid"))
-                    && ("staged".equals(result.getString("state"))
-                    || "attached".equals(result.getString("state")))) {
-                closeMediaUpload();
-                BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry,
-                        positiveId(result.get("media_id")));
-                sendConnectedMedia(scopedAccount, room, saved);
-                return;
+            if(stillCurrent(scopedAccount,room)){
+                chatNotice.setText(accepted?R.string.bchat_media_uploading:R.string.bchat_transfer_waiting_foreground);
+                refreshLocalRoom(room,false);
             }
-            JSONObject error = result.optJSONObject("error");
-            String code = error == null ? "native_upload_unconfirmed"
-                    : error.optString("code", "native_upload_unconfirmed");
-            if (!code.matches("[a-z_]{1,64}")) code = "native_upload_unconfirmed";
-            closeMediaUpload();
-            if (response.status == 400 || response.status == 409 || response.status == 413
-                    || response.status == 415) {
-                mediaStore.markUploadBlocked(scopedAccount, entry, code);
-                if (response.status == 409) loadRooms();
-                updatePendingUi();
-                chatNotice.setText(R.string.bchat_media_upload_blocked);
-            } else if (response.status == 429) {
-                chatNotice.setText(R.string.bchat_media_rejected);
-                updatePendingUi();
-            } else chatNotice.setText(R.string.chat_v2_uncertain);
         } catch (Exception invalid) {
             closeMediaUpload();
             if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
@@ -9694,6 +9756,25 @@ public final class OdooIdentityActivity extends Activity {
                                     BChatConnectedMediaStore.Entry entry) {
         if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed()
                 || entry.mediaId <= 0 || mediaConfirmBusy) return;
+        final BChatV2Outbox box=outbox;
+        mediaConfirmBusy=true;
+        local(scopedAccount,()->{
+            if(BChatStageAdmission.recover(box,mediaStore,scopedAccount,room.id,room.membershipId).dispatchBlocked)return null;
+            BChatSendTickets.Ticket head=box.tickets().head(scopedAccount,room.id,room.membershipId);
+            if(head==null||!head.matches(entry))return null;
+            return box.tickets().claimMediaHead(scopedAccount,room.id,room.membershipId,UUID.randomUUID().toString(),System.currentTimeMillis());
+        },(claim,error)->{
+            mediaConfirmBusy=false;
+            if(!stillCurrent(scopedAccount,room)||!mediaUploadAllowed()||error!=null||claim==null){
+                if(claim!=null)BChatStorageRepository.write(scopedAccount,()->{box.tickets().defer(scopedAccount,claim);return null;});
+                return;
+            }
+            sendClaimedConnectedMedia(scopedAccount,room,entry,claim);
+        });
+    }
+
+    private void sendClaimedConnectedMedia(AccountScope scopedAccount,Room room,
+            BChatConnectedMediaStore.Entry entry,BChatSendTickets.Ticket claim) {
         try {
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
@@ -9710,7 +9791,7 @@ public final class OdooIdentityActivity extends Activity {
             final int dispatch = ++mediaConfirmDispatchGeneration;
             updatePendingUi();
             dispatchConnectedMediaMessage(scopedAccount, room, payload.toString(), dispatch,
-                    mediaSessionGeneration, 0,
+            mediaSessionGeneration, 0, claim,
                     (statusCode, result) -> {
                         if (dispatch == mediaConfirmDispatchGeneration) {
                             mediaConfirmBusy = false;
@@ -9739,11 +9820,20 @@ public final class OdooIdentityActivity extends Activity {
                             // Do this before testing the current screen: a room reload or a
                             // quick navigation must not leave an already-sent image blocking
                             // the next message on the device.
-                            mediaStore.acknowledge(scopedAccount, entry);
-                            if (!stillCurrent(scopedAccount, room)) return;
-                            chatNotice.setText(R.string.chat_v2_sent);
-                            updatePendingUi();
-                            appendAcknowledgedMessage(scopedAccount, room, sentMessageId);
+                            android.content.Context app=getApplicationContext();
+                            BChatStorageRepository.submit(null,()->{
+                                try(BChatV2Outbox box=new BChatV2Outbox(app)){
+                                    if(!box.tickets().receipt(scopedAccount,claim,sentMessageId))return false;
+                                    BChatSendTickets.Ticket receipt=box.tickets().find(scopedAccount,"media",claim.uuid);
+                                    return box.tickets().retireMedia(scopedAccount,receipt,
+                                            ()->new BChatConnectedMediaStore(app).retireReceipted(scopedAccount,entry.uploadUuid,claim.fingerprint));
+                                }
+                            },(retired,error)->{
+                                if(!stillCurrent(scopedAccount,room))return;
+                                chatNotice.setText(error==null&&Boolean.TRUE.equals(retired)?R.string.chat_v2_sent:R.string.chat_v2_save_failed);
+                                refreshLocalRoom(room,false);
+                                appendAcknowledgedMessage(scopedAccount,room,sentMessageId);
+                            });
                         } catch (Exception invalid) {
                             // A 2xx response whose one-shot bridge body was truncated or malformed
                             // is still an uncertain write.  The verified history path can retire
@@ -9782,12 +9872,13 @@ public final class OdooIdentityActivity extends Activity {
      */
     private void dispatchConnectedMediaMessage(AccountScope scopedAccount, Room room, String payload,
                                                int dispatch, int session, int attempt,
-                                               V2Callback callback) {
+                                               BChatSendTickets.Ticket claim,V2Callback callback) {
         if (dispatch != mediaConfirmDispatchGeneration) return;
         if (session != mediaSessionGeneration || !stillCurrent(scopedAccount, room)
                 || !mediaUploadAllowed()) {
             mediaConfirmBusy = false;
             mediaConfirmRoom = null;
+            deferMediaLink(scopedAccount,claim);
             updatePendingUi();
             return;
         }
@@ -9795,13 +9886,20 @@ public final class OdooIdentityActivity extends Activity {
                 "payload", payload, callback)) return;
         if (attempt < MAX_NATIVE_GRANT_CONTROL_RETRIES) {
             handler.postDelayed(() -> dispatchConnectedMediaMessage(scopedAccount, room, payload,
-                    dispatch, session, attempt + 1, callback), NATIVE_GRANT_CONTROL_RETRY_MILLIS);
+                    dispatch, session, attempt + 1, claim, callback), NATIVE_GRANT_CONTROL_RETRY_MILLIS);
         } else {
             mediaConfirmBusy = false;
             mediaConfirmRoom = null;
+            deferMediaLink(scopedAccount,claim);
             updatePendingUi();
             chatNotice.setText(R.string.chat_v2_uncertain);
         }
+    }
+
+    private void deferMediaLink(AccountScope scope,BChatSendTickets.Ticket claim){
+        android.content.Context app=getApplicationContext();
+        BChatStorageRepository.submit(null,()->{try(BChatV2Outbox box=new BChatV2Outbox(app)){
+            return box.tickets().defer(scope,claim);}},(saved,error)->{});
     }
 
     /**
@@ -9820,15 +9918,13 @@ public final class OdooIdentityActivity extends Activity {
         handler.postDelayed(() -> {
             if (recovery != mediaConfirmRecoveryGeneration || !stillCurrent(scopedAccount, room)
                     || mediaStore == null) return;
-            try {
-                List<BChatConnectedMediaStore.Entry> pending = mediaStore.pendingForRoom(scopedAccount,
-                        room.id, room.membershipId);
+            {
+                if(!localMatches(room)){refreshLocalRoom(room,false);return;}
+                List<BChatConnectedMediaStore.Entry> pending = roomLocal.media;
                 boolean hasUploadedRecord = false;
                 for (BChatConnectedMediaStore.Entry entry : pending)
                     if (entry.mediaId > 0) hasUploadedRecord = true;
                 if (!hasUploadedRecord) return;
-            } catch (IOException unavailable) {
-                return;
             }
             if (v2Busy) {
                 if (attempt < 2)
@@ -9851,7 +9947,9 @@ public final class OdooIdentityActivity extends Activity {
         BChatV2Outbox.Entry head = roomLocal.head();
         if (head == null || "review".equals(head.state)) return;
         if ("receipt".equals(head.state)) { reconcileTextReceipt(account, room, head); return; }
-        if (!roomLocal.media.isEmpty()) return; // Shared media/text ordering belongs to C09.
+        if(roomLocal.sendHead==null||!"text".equals(roomLocal.sendHead.kind)
+                ||!head.uuid.equals(roomLocal.sendHead.uuid))return;
+        if(roomLocal.recovery!=null&&roomLocal.recovery.dispatchBlocked)return;
         long now = System.currentTimeMillis();
         if (head.nextAttemptAt > now || ("sending".equals(head.state) && head.leaseUntil > now)) {
             long due = Math.max(head.nextAttemptAt, head.leaseUntil);
@@ -9861,7 +9959,10 @@ public final class OdooIdentityActivity extends Activity {
         final AccountScope scope = account;
         final BChatV2Outbox box = outbox;
         textDispatchBusy = true;
-        local(scope, () -> box.claimHead(scope, room.id, room.membershipId, System.currentTimeMillis()), (entry, error) -> {
+        local(scope, () -> {
+            if(mediaStore!=null&&BChatStageAdmission.recover(box,mediaStore,scope,room.id,room.membershipId).dispatchBlocked)return null;
+            return box.claimHead(scope, room.id, room.membershipId, System.currentTimeMillis());
+        }, (entry, error) -> {
             if (error != null) { textDispatchBusy = false; chatNotice.setText(R.string.chat_v2_save_failed); return; }
             if (!stillCurrent(scope, room) || v2Busy) {
                 textDispatchBusy = false;
@@ -14499,6 +14600,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void logout() {
         if (closed || loggingOut) return;
+        if(transferCoordinator!=null)transferCoordinator.revoke(account);
         purgeHistory();
         pendingPush = null;
         pendingNotificationTaskId = 0;
@@ -14571,7 +14673,14 @@ public final class OdooIdentityActivity extends Activity {
         if (!recheckOnResume) processPendingPush();
     }
 
+    @Override public void onWindowFocusChanged(boolean focused){
+        super.onWindowFocusChanged(focused);
+        if(focused&&liveForeground&&verified&&!offlineHistory&&selectedRoom!=null&&outbox!=null)
+            handler.post(()->{if(!closed&&verified&&selectedRoom!=null)refreshLocalRoom(selectedRoom,false);});
+    }
+
     @Override protected void onPause() {
+        if(notificationSettingsPanel!=null)notificationSettingsPanel.pause();
         if (connectedAudioFocus != null) connectedAudioFocus.stop();
         saveLocalContext();
         liveForeground = false;
@@ -14606,6 +14715,7 @@ public final class OdooIdentityActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if(notificationSettingsPanel!=null)notificationSettingsPanel.resume();
         liveForeground = true;
         if (recheckOnResume && verified && !closed) {
             recheckOnResume = false;
@@ -14653,6 +14763,9 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        BChatStageAdmission.unobserve(stageAdmissionObserver);
+        if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
+        if(transferCoordinator!=null)transferCoordinator.unobserve(transferObserver);
         if (connectedAudioFocus != null) connectedAudioFocus.stop();
         if (connectedImagePreviews != null) connectedImagePreviews.close();
         ++mediaDownloadGeneration;

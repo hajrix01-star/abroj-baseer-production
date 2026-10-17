@@ -13,6 +13,33 @@ gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
 
 
+def message_social_fixture():
+    first = {'state': 'ok', 'attempts': 1, 'initial_backend_pid': 41, 'isolation': 'repeatable read'}
+    second = dict(first, initial_backend_pid=42)
+    one = dict(first, result={'api_version': 2, 'reaction_revision': 1, 'operation_revision': 1})
+    conflict = dict(second, state='revision_conflict', status=409, result=None)
+    saved = {'api_version': 2, 'saved': True, 'saved_revision': 1, 'operation_revision': 1,
+             'client_uuid': '00000000-0000-4000-8000-000000000044'}
+    return {
+        'database': 'bchat_maturity_test_20261017', 'independent_backends': 2,
+        'phases': {
+            'reaction_absent_cas': [one, conflict],
+            'saved_same_uuid': [dict(first, result=dict(saved, replayed=False)),
+                                dict(second, result=dict(saved, replayed=True))],
+            'legacy_social_empty_mentions': [dict(first, result={'api_version': 2, 'message_id': 71}),
+                                             dict(second, result={'api_version': 2, 'message_id': 71})],
+            'explicit_mentions_same_uuid': [dict(first, result={'api_version': 2, 'message_id': 72}),
+                                            dict(second, result={'api_version': 2, 'message_id': 72})],
+        },
+        'reaction_rows': 1, 'reaction_revision': 1, 'saved_rows': 1, 'saved_revision': 1,
+        'legacy_social_message_count': 1, 'explicit_message_count': 1, 'mention_rows': 1,
+        'operation_receipts': 2, 'receipt_timestamps_unchanged': True,
+        'fresh_mention_replay_verified': True, 'fresh_mention_digest_conflict_rejected': True,
+        'fresh_replay_witness': 'direct_read_only_helper_not_forced_unique_violation',
+        'cleanup_completed': True,
+    }
+
+
 class MaturityEvidenceGateTests(unittest.TestCase):
     def test_isolated_images_are_valid_sha256_and_match_the_existing_project_pin(self):
         workflow = (ADDON.parents[1] / '.github/workflows/bchat-cumulative-contracts.yml').read_text(encoding='utf-8')
@@ -63,6 +90,7 @@ class MaturityEvidenceGateTests(unittest.TestCase):
             'social': {'phases': {name: [deepcopy(one), deepcopy(two)] for name in gate.SOCIAL_PHASES},
                        'room_preference_rows': 1, 'diagnostic_events': 10, 'diagnostic_idempotent_events': 1,
                        'daily_quota_winners': 1},
+            'message_social': message_social_fixture(),
         }
         self.probes['social']['phases']['diagnostic_distinct_devices_daily_quota'] = [one, quota_loser]
 
@@ -72,6 +100,7 @@ class MaturityEvidenceGateTests(unittest.TestCase):
     def test_complete_synthetic_evidence_shape_is_accepted(self):
         report = self.verify()
         self.assertEqual(report['real_postgres_phases'], 10)
+        self.assertEqual(report['message_social_real_postgres_phases'], 4)
         self.assertGreater(report['core_test_kinds']['http'], 0)
         self.assertGreater(report['core_test_kinds']['orm'], 0)
         self.assertGreater(report['core_test_kinds']['basecase'], 0)
@@ -83,6 +112,61 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         del self.lines[0]
         with self.assertRaisesRegex(ValueError, 'Missing core test starts'):
             self.verify()
+
+    def test_message_social_completion_and_each_rr_phase_are_required(self):
+        del self.probes['message_social']
+        with self.assertRaisesRegex(ValueError, 'message social'):
+            self.verify()
+        self.probes['message_social'] = message_social_fixture()
+        for name in gate.MESSAGE_SOCIAL_PHASES:
+            original = deepcopy(self.probes['message_social']['phases'][name])
+            for mutation in ('missing', 'same_pid', 'wrong_isolation', 'failed'):
+                rows = deepcopy(original)
+                if mutation == 'missing':
+                    rows.pop()
+                elif mutation == 'same_pid':
+                    rows[1]['initial_backend_pid'] = rows[0]['initial_backend_pid']
+                elif mutation == 'wrong_isolation':
+                    rows[1]['isolation'] = 'read committed'
+                else:
+                    rows[0]['state'] = '40P01'
+                self.probes['message_social']['phases'][name] = rows
+                with self.subTest(phase=name, mutation=mutation), self.assertRaises(ValueError):
+                    self.verify()
+            self.probes['message_social']['phases'][name] = original
+
+    def test_message_social_counts_fresh_helper_and_cleanup_cannot_be_omitted(self):
+        for key in ('receipt_timestamps_unchanged', 'fresh_mention_replay_verified',
+                    'fresh_mention_digest_conflict_rejected', 'cleanup_completed'):
+            value = message_social_fixture()
+            value[key] = False
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_message_social(value)
+        for key in ('mention_rows', 'explicit_message_count', 'operation_receipts', 'reaction_revision'):
+            value = message_social_fixture()
+            value[key] += 1
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_message_social(value)
+        value = message_social_fixture()
+        value['phases']['saved_same_uuid'][1]['result']['replayed'] = False
+        with self.assertRaises(ValueError):
+            gate.verify_message_social(value)
+        value = message_social_fixture()
+        value['fresh_replay_witness'] = 'forced_unique_violation'
+        with self.assertRaises(ValueError):
+            gate.verify_message_social(value)
+
+    def test_message_social_response_revisions_are_strict_integers(self):
+        for phase, indexes, fields in (
+                ('reaction_absent_cas', (0,), ('reaction_revision', 'operation_revision')),
+                ('saved_same_uuid', (0, 1), ('saved_revision', 'operation_revision'))):
+            for index in indexes:
+                for field in fields:
+                    for invalid in (True, 1.0, '1'):
+                        value = message_social_fixture()
+                        value['phases'][phase][index]['result'][field] = invalid
+                        with self.subTest(phase=phase, row=index, field=field, invalid=invalid), self.assertRaises(ValueError):
+                            gate.verify_message_social(value)
 
     def test_skipped_test_is_rejected_even_with_clean_summary(self):
         self.lines.append('INFO fixture odoo.addons.baseer_bchat.tests.test_text_v2: skipped Example.test_one : HR missing')

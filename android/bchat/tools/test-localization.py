@@ -30,8 +30,12 @@ class LocalizationContracts(unittest.TestCase):
         room_list = room_list.split('private void loadRooms()', 1)[0]
         self.assertNotIn('room.companyId != selectedChatCompanyId', room_list)
         self.assertIn('companyNameForId(room.companyId, "")', room_list)
-        self.assertIn('labelColumn.addView(companyLabel, companySize)', room_list)
-        self.assertIn('companyName.toLowerCase(Locale.ROOT).contains(query)', room_list)
+        adapter = source('BChatRoomListAdapter.java')
+        self.assertIn('holder.company.setText(row.companyName)', adapter)
+        compact_adapter = re.sub(r'\s+', '', adapter)
+        self.assertIn('holder.company.setVisibility(row.companyName.isEmpty()?View.GONE:View.VISIBLE)', compact_adapter)
+        self.assertIn('labels.addView(company,companySize)', compact_adapter)
+        self.assertIn('row.companyName.toLowerCase(Locale.ROOT).contains(query)', source('BChatRoomRow.java'))
 
     def test_complete_resource_key_parity(self):
         self.assertEqual(strings('values'), strings('values-ar'))

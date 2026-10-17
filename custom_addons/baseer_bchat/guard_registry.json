@@ -507,6 +507,60 @@
         "android/bchat/tools/test-room-preferences-protocol.py"
       ],
       "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "durable-private-room-preference-intents",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Worker-only bounded account files preserve exact pending payloads and sticky dispatch state; strict recovery, explicit sync/readback, local CAS, matching acknowledgements and conservative cross-membership settlement never imply authentication or HTTP permission.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/RoomPreferencesStore.java",
+        "android/bchat/tests/room-preferences-store/**",
+        "android/bchat/tools/test-room-preferences-store.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "adaptive-cart-presentation-server-owned-orders",
+      "introduced": "2026-10-18",
+      "risk": "high",
+      "scope": "The cart uses adaptive scrollable production components with accessible quantity actions, without client amount math or changes to quote, idempotency, permission and submission owners.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatCartSheet.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OrderQuantityStepper.java",
+        "android/bchat/tools/test-orders-ui-contracts.py",
+        "android/bchat/tests/cart-sheet-android/**",
+        "android/bchat/tools/test-cart-sheet-android.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "room-list-recycling-and-current-owner",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Immutable compound room identity, bounded asynchronous diff work and synchronous ownership retraction preserve authorized room order/search and prevent stale clicks or avatar completions from republishing an old account or membership.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomRow.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomListAdapter.java",
+        "android/bchat/tests/room-list/**",
+        "android/bchat/tools/test-room-list.py",
+        "android/bchat/tools/test-room-list-hook.py",
+        "android/bchat/tests/performance-android/**",
+        "android/bchat/tools/test-performance-android.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "room-preference-controller-proof-provenance",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Room preference orchestration preserves exact durable intent and identity authority across callbacks; stale acknowledgements cannot borrow newer cached unmute state as proof. Controller component acceptance is not an authenticated Activity, FCM or mute-index integration claim.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/RoomPreferencesController.java",
+        "android/bchat/tests/room-preferences-controller/**",
+        "android/bchat/tools/test-room-preferences-controller.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
     }
   ]
 }

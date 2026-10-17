@@ -76,6 +76,10 @@ jobs:
           python3 android/bchat/tools/test-push-routing-state.py
           python3 android/bchat/tools/test-notification-rights-reset.py
           python3 android/bchat/tools/test-room-preferences-protocol.py
+          python3 android/bchat/tools/test-room-preferences-store.py
+          python3 android/bchat/tools/test-room-preferences-store.py --case ambiguous-epoch --label jvm-ambiguous
+          python3 android/bchat/tools/test-room-preferences-controller.py --label ci
+          python3 android/bchat/tools/test-room-list.py --label ci
           python3 android/bchat/tools/test-appearance-foundations.py
 
   isolated-core-orm:

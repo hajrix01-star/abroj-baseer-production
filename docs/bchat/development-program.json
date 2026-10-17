@@ -462,9 +462,9 @@
         "C26"
       ],
       "owner": "Android والأداء",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Room list only: immutable row/key/account-membership owner and RecyclerView/AsyncListDiffer with bounded latest work; synchronous detach/scrub before identity or rights changes; scoped avatar leases/cache now include membership. No MessageTimeline/backend/outbox changes in this slice",
+      "verificationEvidence": "Independent limited source/functional GO: Activity6304A031/Row20F5D698/AdapterF73194B2. Projection17 and Firebasejavac17s PASS. ActualAndroidX/fullActivity synthetic fixture114checks/8AR-EN-theme-font configurations on pre-token adapter; final dark-token delta15checks on final source separately, not129same-source tests. Captures reviewed; 117/117final input bytes matched. After-C11 comparison tooling prepared only, no after-performance or phone acceptance yet. Android-source-contract/source-structure/guard-integrity PASS after preserving relocated company-label/search guards",
       "acceptance": "مقارنة نفس الجهاز والبيانات؛ حفظ الموضع وتراجع العمل الزائد."
     },
     {
@@ -577,8 +577,8 @@
       ],
       "owner": "الخادم و Android",
       "status": "in_progress",
-      "implementationEvidence": "Private per-membership mute/pin/archive service with revision CAS and dispatch-time mute recheck. Android immutable RoomPreferencesProtocol validates exact native types/UTC/UUID, fixed8field replay payloads, current-epoch binding, ACK operation revision and monotone snapshot merge. No deviceclock expiry or manufactured freshness. Store/controller/HTTP/FCM integration and Android UI pending",
-      "verificationEvidence": "Backend included accepted202 checkpoint CI39071574755; actual absent-row CAS oneaccepted/one409 retained. Protocol935BDA6D independent source/component GO:363JVM semantic JSONObject-adapter checks separate from414 actualAndroid35 (363shared+51rawJSONtext).10/10native inputs matched; Firebaseproductjavac14s and currentAndroidsource/structure/guardintegrityPASS. No storage/controller/auth/HTTP/FCM/UI/completeC17acceptance; caller owns currentGET freshness and rights",
+      "implementationEvidence": "Private per-membership service with revision CAS/dispatch-time mute recheck. Immutable Protocol935 validates native types/UTC/UUID/fixed8field payload/ACK/monotone merge. Worker-only bounded AtomicFile Store implemented with exact sync+readback, sticky flags/localCAS and conservative unknown-epoch ACK settlement. Controller-only execution follows reviewed G2; HTTP/FCM/mute mirror/projection/Panel/Activity integration pending",
+      "verificationEvidence": "Backend accepted202 checkpoint CI39071574755. Protocol363JVM adapters+414Android35 limitedGO. StoreF17:369JVM adapter+369actualAndroid35 and20restart assertions/5PIDs, but4oldharnessinputs not archived (root matched16/16 before later edit; reviewer12/16 current). Empty-cache/two-membership ACK edge RED onF17 then23JVM+23actualAndroid35 on4F3BE60D;16/16archivedbytes and independent source/focusedcomponentGO. No new full369/restart rerun or powerloss. Controller5845A3F9 initial1084JVM missed staleACK borrowing cached newer unmute; independent NO-GO then exact REDcheck37. Controller1A1E7BD7 focused407JVM+SDK35stubcompile and13/13archivedinputs independently accepted; root defaultall1490actual assertions PASS on final source with13archivedinputs, not a sum1491. No Androidruntime/auth/HTTP/FCM/UI or completeC17 acceptance; cold mute-index design pending",
       "acceptance": "تفضيل المستخدم لا يغير غيره، ويستمر وفق العقد دون حذف تاريخ."
     },
     {
@@ -677,9 +677,9 @@
         "C12"
       ],
       "owner": "Android والمشتريات",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "BChatCartSheet replaces fixed item-height viewport and horizontal dialog footer with one adaptive scroll surface and full-width actions. Production line component wraps long names; expanded raw-quantity stepper reuses original increase/edit/decrease callbacks. Undo wraps vertically. No quote/amount math/UUID/persistence/permissions/submission-policy change",
+      "verificationEvidence": "Independent limited source/componentGO:41/41archived/liveinputs+APK, actualAndroid35 component2300assertions/8AR-EN light-dark font1/2 renders/20synthetic products; native numericIME observed in ONE ARlightfont2 journey.16frames; root/reviewer visually inspectedARfont2. ManifestA62AF637/result367D1E6C. Initial287 scroll assertion failed before animation settled; SAMEproductbytes passed after harness waitVisible, initial retained. Seven orders source tripwires+maturitywiring PASS. Undo and Activity owner-dismiss fence source-only. Fake action/quote/editor Host, not full productActivity/financialAPI/ownerphone/OEM acceptance",
       "acceptance": "20 صنفًا وخط 200% ولوحة مفاتيح؛ كل قيمة وإجراء قابلان للوصول، دون حساب مالي جديد في العميل."
     },
     {
@@ -729,7 +729,7 @@
       "owner": "الأداء والجودة",
       "status": "in_progress",
       "implementationEvidence": "Isolated noInternet harness compiles full tracked2570 Activity/Views/SQLite with synthetic reflection fixture. Initial diagnostic retained nativeForm alongside chatRoot: timeline height0 with IME259px; pending UUID was in durableSQLite/localTextRows/adapter, not proof of ownership or auto-scroll defect. Fixture-only showShell correction independently reviewed; no C11 product change",
-      "verificationEvidence": "Initial18 and diagnostic108 harness assertions are NOT a valid full-chat-layout performance baseline. Independent GO for one corrected frozen run: instrumentation7BD34D07/tool6A91AAA0, manifest9CF4C4FC and standalone test APK B08F281E. Exact compiled inputs verified before/after; current HEAD may differ but provenance must distinguish compiled2570. Corrected result not yet accepted; no phone/FCM/network/codec/audio/SLA or product APK acceptance",
+      "verificationEvidence": "Initial18 and diagnostic108 are layout-invalid, NOT baseline. Corrected PASS165/0blocked independently accepted as descriptive fixture only:113/113 inputs+compiledcopies+testAPK matched, manifest9CF4C4FC/result5296F8E2/provenance3D1AAAD4; compiled2570,runEnd68d284. Frame reports193/181/185 lost0/overflow0. Rooms8queries create529rows eachround,p95total121.878/162.696/119.424ms; inputUP→UUIDpreDraw172.137/128.108/125.244ms+durableSQLite+4updates. Separate26PSS samples median146045KiB/highestObserved169727KiB/steady5median152069KiB, not peak/leak. Android35 debug320x640dp AR/font1 syntheticidentity/data; no phone/FCM/network/codec/audio/SLA or product APK acceptance",
       "acceptance": "قياس أجهزة فعلية موثق قبل وبعد؛ لا تسجيل لمحتوى الرسائل ولا ادعاء FPS من المصدر."
     },
     {

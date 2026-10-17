@@ -356,8 +356,9 @@ public final class OdooIdentityActivity extends Activity {
     private int unreadMetadataGeneration;
     private AccountScope groupPhotoAccount;
     private Room groupPhotoRoom;
-    private final Map<String, List<ImageView>> groupAvatarWaiting = new LinkedHashMap<>();
-    private final LinkedList<Room> groupAvatarQueue = new LinkedList<>();
+    private final Map<String, List<GroupAvatarTarget>> groupAvatarWaiting = new LinkedHashMap<>();
+    private final LinkedList<GroupAvatarRequest> groupAvatarQueue = new LinkedList<>();
+    private GroupAvatarRequest groupAvatarActive;
     private boolean groupAvatarBusy;
     private WebMessagePort groupAvatarPort;
     private int groupAvatarNonce;
@@ -423,7 +424,7 @@ public final class OdooIdentityActivity extends Activity {
     private String orderQuoteCurrency;
     private boolean orderQuoteLoading;
     private Runnable orderQuoteTask;
-    private AlertDialog orderCartDialog;
+    private BChatCartSheet orderCartDialog;
     private AlertDialog receiptFlowDialog;
     private LinearLayout orderCartLinesView;
     private TextView orderCartTotalView;
@@ -500,7 +501,14 @@ public final class OdooIdentityActivity extends Activity {
     private long selectedReplyMessageId;
     private FrameLayout messageFrame;
     private String visibleSection = "chats";
-    private LinearLayout roomItems;
+    private FrameLayout roomItems;
+    private RecyclerView roomRecycler;
+    private BChatRoomListAdapter roomListAdapter;
+    private final BChatRoomListAdapter.Lane roomListLane = new BChatRoomListAdapter.Lane();
+    private AccountScope roomListAccount;
+    private int roomListSession, roomListGlobal;
+    private long roomListEpoch;
+    private boolean roomListAdmitted, roomListOffline;
     private EditText roomSearchInput;
     private LinearLayoutManager messageLayout;
     private MessageTimelineAdapter messageAdapter;
@@ -516,7 +524,7 @@ public final class OdooIdentityActivity extends Activity {
     private Button newerButton;
     private TextView refreshHint;
     private View roomBackButton;
-    private ScrollView roomScroll;
+    private FrameLayout roomScroll;
     private RecyclerView messageScroll;
     private LinearLayout olderControl;
     private LinearLayout newerControl;
@@ -1023,12 +1031,14 @@ public final class OdooIdentityActivity extends Activity {
         roomSearchSurface.setVisibility(View.GONE);
         roomListHeader.addView(roomSearchSurface, searchSurfaceSize);
         chatPane.addView(roomListHeader, new LinearLayout.LayoutParams(-1, -2));
-        roomScroll = new ScrollView(this);
-        roomScroll.setFillViewport(true);
+        roomScroll = new FrameLayout(this);
         roomScroll.setBackgroundColor(UiPalette.surface(this));
-        roomItems = new LinearLayout(this);
-        roomItems.setOrientation(LinearLayout.VERTICAL);
-        roomScroll.addView(roomItems);
+        roomRecycler = new RecyclerView(this);
+        roomRecycler.setLayoutManager(new LinearLayoutManager(this));
+        roomRecycler.setItemAnimator(null); // Search is frequent; no delayed/ghost removed rows.
+        roomScroll.addView(roomRecycler, new FrameLayout.LayoutParams(-1, -1));
+        roomItems = new FrameLayout(this); // Empty-state overlay, never a second list of rows.
+        roomScroll.addView(roomItems, new FrameLayout.LayoutParams(-1, -1));
         chatPane.addView(roomScroll, new LinearLayout.LayoutParams(-1, 0, 1));
         olderButton = new Button(this);
         olderButton.setText(R.string.chat_v2_older);
@@ -1615,6 +1625,54 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private View roomAvatarView(Room room) {
+        return roomAvatarView(room, () -> true);
+    }
+
+    private static final class GroupAvatarRequest {
+        final AccountScope scope;
+        final int session, global, version;
+        final long room, membership;
+        final String key;
+        GroupAvatarRequest(AccountScope scope,int session,int global,Room room) {
+            this.scope=scope;this.session=session;this.global=global;this.room=room.id;
+            membership=room.membershipId;version=room.avatarVersion;
+            key=scope.key+":"+this.room+":"+membership+":"+version;
+        }
+    }
+
+    private Room currentGroupAvatar(GroupAvatarRequest request) {
+        if(request==null || closed || !verified || offlineHistory || account!=request.scope
+                || epoch!=request.session || historyGlobalGeneration!=request.global
+                || !roomsVerifiedForSession || permissionAccount!=account || !permissionSet.chatView)return null;
+        for(Room room:rooms)if(room.id==request.room && room.membershipId==request.membership
+                && room.isGroup && room.avatarVersion==request.version && v1Companies.contains(room.companyId))return room;
+        return null;
+    }
+
+    private final class GroupAvatarTarget {
+        final GroupAvatarRequest request;
+        final ImageView image;
+        final java.util.function.BooleanSupplier bindingCurrent;
+        boolean released;
+        GroupAvatarTarget(GroupAvatarRequest request,ImageView image,java.util.function.BooleanSupplier current) {
+            this.request=request;this.image=image;bindingCurrent=current;image.setTag(this);
+        }
+        boolean current() { return !released && image.getTag()==this && bindingCurrent.getAsBoolean() && currentGroupAvatar(request)!=null; }
+        void release() {
+            if(released)return;released=true;image.setImageDrawable(null);image.setVisibility(View.GONE);
+            List<GroupAvatarTarget> waiting=groupAvatarWaiting.get(request.key);
+            if(waiting!=null){waiting.remove(this);if(waiting.isEmpty()) {
+                groupAvatarWaiting.remove(request.key);
+                groupAvatarQueue.removeIf(queued -> queued.key.equals(request.key));
+            }}
+        }
+    }
+
+    private void releaseGroupAvatarView(View view) {
+        if(view.getTag() instanceof GroupAvatarTarget)((GroupAvatarTarget)view.getTag()).release();
+    }
+
+    private View roomAvatarView(Room room, java.util.function.BooleanSupplier bindingCurrent) {
         FrameLayout holder = new FrameLayout(this);
         holder.addView(new Ui.Avatar(this, room.name, "group",
                 (int) ((room.id * 47) % 360)), new FrameLayout.LayoutParams(-1, -1));
@@ -1629,21 +1687,29 @@ public final class OdooIdentityActivity extends Activity {
         image.setClipToOutline(true);
         image.setVisibility(View.GONE);
         holder.addView(image, new FrameLayout.LayoutParams(-1, -1));
-        String key = account.key + ":" + room.id + ":" + room.avatarVersion;
+        GroupAvatarRequest request=new GroupAvatarRequest(account,epoch,historyGlobalGeneration,room);
+        GroupAvatarTarget target=new GroupAvatarTarget(request,image,bindingCurrent);
+        holder.setTag(target);
+        holder.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            public void onViewAttachedToWindow(View view) { if(!target.current())target.release(); }
+            public void onViewDetachedFromWindow(View view) { target.release(); }
+        });
+        if(!target.current()){target.release();return holder;}
+        String key = request.key;
         Bitmap cached = groupAvatarCache.get(key);
         if (cached != null) {
             image.setImageBitmap(cached);
             image.setVisibility(View.VISIBLE);
         }
         else {
-            List<ImageView> waiting = groupAvatarWaiting.get(key);
+            List<GroupAvatarTarget> waiting = groupAvatarWaiting.get(key);
             if (waiting == null) {
                 waiting = new ArrayList<>();
                 groupAvatarWaiting.put(key, waiting);
-                groupAvatarQueue.add(room);
+                groupAvatarQueue.add(request);
                 handler.post(this::pumpGroupAvatars);
             }
-            waiting.add(image);
+            waiting.add(target);
         }
         return holder;
     }
@@ -1652,13 +1718,21 @@ public final class OdooIdentityActivity extends Activity {
         if (groupAvatarBusy || groupAvatarQueue.isEmpty() || !verified || account == null
                 || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl())))
             return;
-        Room room = groupAvatarQueue.removeFirst();
-        AccountScope scoped = account;
-        int version = room.avatarVersion;
-        String key = scoped.key + ":" + room.id + ":" + version;
+        GroupAvatarRequest item = groupAvatarQueue.removeFirst();
+        AccountScope scoped = item.scope;
+        int version = item.version;
+        String key = item.key;
         if (!groupAvatarWaiting.containsKey(key)) { handler.post(this::pumpGroupAvatars); return; }
+        List<GroupAvatarTarget> admitted=groupAvatarWaiting.get(key);
+        for(GroupAvatarTarget target:new ArrayList<>(admitted))if(!target.current())target.release();
+        if(currentGroupAvatar(item)==null || !groupAvatarWaiting.containsKey(key)) {
+            List<GroupAvatarTarget> stale=groupAvatarWaiting.remove(key);
+            if(stale!=null)for(GroupAvatarTarget target:new ArrayList<>(stale))target.release();
+            handler.post(this::pumpGroupAvatars);return;
+        }
         groupAvatarBusy = true;
-        String path = V2_ROOMS + "/" + room.id + "/avatar?version=" + version;
+        groupAvatarActive = item;
+        String path = V2_ROOMS + "/" + item.room + "/avatar?version=" + version;
         String url = ORIGIN + path;
         int currentWeb = webEpoch;
         int currentPage = pageEpoch;
@@ -1669,7 +1743,8 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void onMessage(WebMessagePort port, WebMessage message) {
                 if (request != groupAvatarNonce || port != groupAvatarPort
                         || !verified || account != scoped || currentWeb != webEpoch
-                        || currentPage != pageEpoch || room.avatarVersion != version) return;
+                        || currentPage != pageEpoch) return;
+                if(currentGroupAvatar(item)==null){finishGroupAvatar(key,null,request);return;}
                 String encoded = null;
                 try {
                     String data = message.getData();
@@ -1714,7 +1789,8 @@ public final class OdooIdentityActivity extends Activity {
                 + "window.addEventListener('message',h);})();";
         web.evaluateJavascript(script, ignored -> {
             if (request == groupAvatarNonce && web != null && currentWeb == webEpoch
-                    && currentPage == pageEpoch && groupAvatarPort == channel[0])
+                    && currentPage == pageEpoch && groupAvatarPort == channel[0]
+                    && currentGroupAvatar(item)!=null && groupAvatarWaiting.containsKey(key))
                 web.postWebMessage(new WebMessage("group-avatar",
                         new WebMessagePort[]{channel[1]}), Uri.parse(ORIGIN));
         });
@@ -1728,15 +1804,18 @@ public final class OdooIdentityActivity extends Activity {
         if (request != groupAvatarNonce) return;
         ++groupAvatarNonce;
         if (groupAvatarPort != null) { groupAvatarPort.close(); groupAvatarPort = null; }
-        List<ImageView> waiting = groupAvatarWaiting.remove(key);
-        if (bitmap != null && waiting != null && verified && account != null
-                && key.startsWith(account.key + ":")) {
-            groupAvatarCache.put(key, bitmap);
-            for (ImageView target : waiting) {
-                target.setImageBitmap(bitmap);
-                target.setVisibility(View.VISIBLE);
+        List<GroupAvatarTarget> waiting = groupAvatarWaiting.remove(key);
+        if (bitmap != null && waiting != null && groupAvatarActive!=null
+                && key.equals(groupAvatarActive.key) && currentGroupAvatar(groupAvatarActive)!=null) {
+            boolean published=false;
+            for (GroupAvatarTarget target : waiting) {
+                if(!target.current()){target.release();continue;}
+                target.image.setImageBitmap(bitmap);
+                target.image.setVisibility(View.VISIBLE);published=true;
             }
+            if(published)groupAvatarCache.put(key,bitmap);
         }
+        groupAvatarActive=null;
         groupAvatarBusy = false;
         handler.post(this::pumpGroupAvatars);
     }
@@ -3471,6 +3550,7 @@ public final class OdooIdentityActivity extends Activity {
             while (keys.hasNext()) if (capabilities.opt(keys.next()) != Boolean.FALSE)
                 throw new IllegalArgumentException("Unexpected enabled capability");
             AccountScope nextAccount = new AccountScope(ORIGIN, DATABASE, uid);
+            clearRoomListNow();
             ++historyWriteGeneration; // Fence queued writes before account-switch cleanup.
             ++historyGlobalGeneration; // Also fence the previous Activity after a fast recreate.
             if (account != null && !account.key.equals(nextAccount.key))
@@ -4594,6 +4674,7 @@ public final class OdooIdentityActivity extends Activity {
             offlinePolicyReady(error == null && Boolean.TRUE.equals(saved));
         });
         if (!next.chatView) {
+            clearRoomListNow();
             invalidateReceiptRoomBinding();
             ++historyWriteGeneration;
             ++historyGlobalGeneration;
@@ -4658,6 +4739,7 @@ public final class OdooIdentityActivity extends Activity {
     private void restrictCompanyScope(AccountScope scope, Set<Long> allowed) {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
+        clearRoomListNow();
         if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
         if(transferCoordinator!=null)transferCoordinator.revoke(scope);
         invalidateReceiptRoomBinding();
@@ -5376,6 +5458,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeHistory() {
+        clearRoomListNow();
         invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
@@ -5396,6 +5479,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeCachedRoom(AccountScope scopedAccount, long roomId) {
+        clearRoomListNow();
         invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
@@ -5508,6 +5592,7 @@ public final class OdooIdentityActivity extends Activity {
                         record.name, record.policy, record.policyVersion));
                 v1Companies.add(record.companyId);
             }
+            admitRoomListSnapshot();
             shell.setVisibility(View.GONE);
             nativeForm.setVisibility(View.GONE);
             if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
@@ -5779,6 +5864,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void clearChatView() {
+        clearRoomListNow();
         closeReceiptDetails();
         if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
         ++mediaDownloadGeneration;
@@ -5828,6 +5914,7 @@ public final class OdooIdentityActivity extends Activity {
         groupPhotoRoom = null;
         groupAvatarWaiting.clear();
         groupAvatarQueue.clear();
+        groupAvatarActive = null;
         groupAvatarBusy = false;
         ++groupAvatarNonce;
         if (groupAvatarPort != null) { groupAvatarPort.close(); groupAvatarPort = null; }
@@ -6072,7 +6159,6 @@ public final class OdooIdentityActivity extends Activity {
     private void renderRooms() {
         if (roomItems == null) return;
         roomItems.removeAllViews();
-        roomItems.setGravity(Gravity.TOP);
         try {
             boolean hasPending = sendAllowed() && verified && account != null && outbox != null
                     && globalPendingAvailable;
@@ -6091,101 +6177,103 @@ public final class OdooIdentityActivity extends Activity {
             chatNotice.setText(R.string.chat_v2_save_failed);
             return;
         }
-        if (rooms.isEmpty()) {
-            chatNotice.setText("");
-            roomItems.setGravity(Gravity.CENTER);
-            roomItems.addView(Ui.emptyState(this, getString(R.string.chat_v2_no_rooms),
-                    getString(R.string.chat_v2_rooms_empty_hint)),
-                    new LinearLayout.LayoutParams(-1, -1));
-            return;
-        }
         chatNotice.setText("");
-        String query = roomSearchInput == null ? "" : roomSearchInput.getText().toString().trim()
-                .toLowerCase(Locale.ROOT);
-        int shown = 0;
+        if (!roomListOwnerCurrent(roomListEpoch)) { clearRoomListNow(); return; }
+        if (selectedRoom != null) return;
+        final long owner = roomListEpoch;
+        if (roomListAdapter == null) {
+            roomListAdapter = new BChatRoomListAdapter(new BChatRoomListAdapter.Host() {
+                public boolean current() { return roomListOwnerCurrent(owner); }
+                public boolean current(BChatRoomRow row) {
+                    Room room = currentRoomRow(owner, row.key);
+                    return room != null && room.companyId == row.company
+                            && room.avatarVersion == row.avatarVersion && room.isGroup == row.group;
+                }
+                public void open(BChatRoomRow.Key key) {
+                    Room room = currentRoomRow(owner, key);
+                    if (room != null && selectedRoom == null && "chats".equals(visibleSection)
+                            && roomScroll.getVisibility() == View.VISIBLE) selectRoom(room);
+                }
+                public Runnable avatar(BChatRoomRow row, FrameLayout slot) {
+                    Room room = currentRoomRow(owner, row.key);
+                    if (room == null || selectedRoom != null || !current(row)) return () -> {};
+                    View avatar = roomAvatarView(room, () -> current(row) && selectedRoom == null
+                            && "chats".equals(visibleSection) && roomScroll.getVisibility() == View.VISIBLE);
+                    slot.removeAllViews(); slot.addView(avatar, new FrameLayout.LayoutParams(-1, -1));
+                    return () -> { releaseGroupAvatarView(avatar); slot.removeView(avatar); };
+                }
+                public void committed(int count) { if (current()) renderRoomEmptyState(count); }
+            }, roomListLane);
+            roomRecycler.setAdapter(roomListAdapter);
+        }
+        List<BChatRoomRow> projection = new ArrayList<>();
         boolean showCompany = v1Companies.size() > 1;
+        String renderKey = getResources().getConfiguration().toString() + ":" + ChatAppearance.bodySp(this);
         for (Room room : rooms) {
             String companyName = showCompany ? companyNameForId(room.companyId, "") : "";
-            if (!query.isEmpty() && !room.name.toLowerCase(Locale.ROOT).contains(query)
-                    && !companyName.toLowerCase(Locale.ROOT).contains(query)) continue;
-            shown++;
-            LinearLayout entry = Ui.row(this);
-            Ui.pad(entry, 14, 8);
-            float fontScale = getResources().getConfiguration().fontScale;
-            entry.setMinimumHeight(Ui.dp(this, Ui.ROOM_ROW_MIN_DP * Math.max(1f, fontScale)));
-            entry.addView(roomAvatarView(room), new LinearLayout.LayoutParams(
-                    dp(Ui.ROOM_AVATAR_DP), dp(Ui.ROOM_AVATAR_DP)));
-            LinearLayout labelColumn = Ui.column(this);
-            LinearLayout titleRow = Ui.row(this);
-            TextView name = Ui.text(this, room.name, Ui.ROOM_TITLE_SP, Ui.INK, true);
-            name.setMaxLines(2);
-            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            titleRow.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-            if (!room.lastMessageAt.isEmpty()) {
-                TextView lastTime = Ui.text(this, formatRoomListTime(room.lastMessageAt),
-                        Ui.CHAT_TIME_SP, Ui.MUTED, false);
-                lastTime.setSingleLine(true);
-                LinearLayout.LayoutParams timeSize = new LinearLayout.LayoutParams(-2, -2);
-                timeSize.setMarginStart(dp(8));
-                titleRow.addView(lastTime, timeSize);
-            }
-            labelColumn.addView(titleRow, new LinearLayout.LayoutParams(-1, -2));
-            LinearLayout subtitleRow = Ui.row(this);
             String preview = room.lastMessagePreview.isEmpty()
                     ? (room.lastMessageKind.isEmpty()
                             ? getString(R.string.chat_v2_room_label)
                             : mediaKindDescription(room.lastMessageKind))
                     : room.lastMessagePreview;
-            TextView subtitle = Ui.text(this, preview, Ui.CHAT_PREVIEW_SP, Ui.MUTED, false);
-            subtitle.setSingleLine(true);
-            subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            subtitleRow.addView(subtitle, new LinearLayout.LayoutParams(0, -2, 1));
-            if (room.unreadCount > 0) {
-                TextView badge = Ui.text(this, room.unreadCount > 99 ? "99+"
-                        : String.valueOf(room.unreadCount), Ui.CHAT_META_SP, Color.WHITE, true);
-                badge.setGravity(Gravity.CENTER);
-                badge.setBackground(Ui.bg(Ui.GREEN, 20, this));
-                badge.setMinWidth(dp(22));
-                LinearLayout.LayoutParams badgeSize = new LinearLayout.LayoutParams(-2, dp(22));
-                badgeSize.setMarginStart(dp(8));
-                subtitleRow.addView(badge, badgeSize);
-            }
-            if (room.isGroup && room.hasActiveTask) {
-                TextView taskChip = Ui.text(this, getString(R.string.bchat_room_has_tasks),
-                        Ui.CHAT_META_SP, Ui.GREEN, true);
-                taskChip.setSingleLine(true);
-                taskChip.setBackground(Ui.bg(0xffe6f3fb, 14, this));
-                LinearLayout.LayoutParams taskChipSize = new LinearLayout.LayoutParams(-2, dp(22));
-                taskChipSize.setMarginStart(dp(8));
-                subtitleRow.addView(taskChip, taskChipSize);
-            }
-            labelColumn.addView(subtitleRow, new LinearLayout.LayoutParams(-1, -2));
-            if (showCompany && !companyName.isEmpty()) {
-                TextView companyLabel = Ui.text(this, companyName, Ui.CHAT_META_SP,
-                        Ui.MUTED, false);
-                companyLabel.setSingleLine(true);
-                companyLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                LinearLayout.LayoutParams companySize = new LinearLayout.LayoutParams(-1, -2);
-                companySize.topMargin = dp(2);
-                labelColumn.addView(companyLabel, companySize);
-            }
-            LinearLayout.LayoutParams labelSize = new LinearLayout.LayoutParams(0, -2, 1);
-            labelSize.setMarginStart(dp(10));
-            entry.addView(labelColumn, labelSize);
-            entry.setContentDescription(companyName.isEmpty() ? room.name
-                    : room.name + ", " + companyName);
-            Ui.clickable(entry);
-            entry.setOnClickListener(v -> selectRoom(room));
-            roomItems.addView(entry, new LinearLayout.LayoutParams(-1, -2));
-            LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(-1, dp(1));
-            dividerSize.setMarginStart(dp(72));
-            roomItems.addView(Ui.line(this), dividerSize);
+            projection.add(new BChatRoomRow(new BChatRoomRow.Key(account.key, room.id, room.membershipId),
+                    room.companyId, room.name, preview,
+                    room.lastMessageAt.isEmpty() ? "" : formatRoomListTime(room.lastMessageAt),
+                    companyName, getString(R.string.bchat_room_has_tasks), room.unreadCount,
+                    room.avatarVersion, room.isGroup, room.hasActiveTask, renderKey));
         }
-        if (shown == 0) {
-            roomItems.setGravity(Gravity.CENTER);
-            roomItems.addView(Ui.emptyState(this, getString(R.string.chat_v2_no_room_matches), ""),
-                    new LinearLayout.LayoutParams(-1, -1));
+        List<BChatRoomRow> filtered = BChatRoomRow.filter(projection,
+                roomSearchInput == null ? "" : roomSearchInput.getText().toString());
+        roomListAdapter.submit(filtered);
+        renderRoomEmptyState(filtered.size());
+    }
+
+    private void renderRoomEmptyState(int count) {
+        if (roomItems == null) return;
+        roomItems.removeAllViews(); roomItems.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        if (count == 0) roomItems.addView(Ui.emptyState(this,
+                getString(rooms.isEmpty() ? R.string.chat_v2_no_rooms : R.string.chat_v2_no_room_matches),
+                rooms.isEmpty() ? getString(R.string.chat_v2_rooms_empty_hint) : ""),
+                new FrameLayout.LayoutParams(-1, -1));
+    }
+
+    private boolean roomListOwnerCurrent(long owner) {
+        return roomListAdmitted && owner == roomListEpoch && !closed && account != null
+                && account == roomListAccount && epoch == roomListSession && historyGlobalGeneration == roomListGlobal
+                && offlineHistory == roomListOffline && permissionAccount == account && permissionSet.chatView
+                && (offlineHistory ? offlineChatCacheAvailable && offlinePersistenceReady : verified && roomsVerifiedForSession);
+    }
+
+    private Room currentRoomRow(long owner, BChatRoomRow.Key key) {
+        if (!roomListOwnerCurrent(owner) || !account.key.equals(key.account)) return null;
+        for (Room room : rooms) if (room.id == key.room && room.membershipId == key.membership
+                && v1Companies.contains(room.companyId)) return room;
+        return null;
+    }
+
+    /** Only accepted online/offline room-snapshot proof points call this; rendering never grants ownership. */
+    private void admitRoomListSnapshot() {
+        if (!roomListOwnerCurrent(roomListEpoch)) clearRoomListNow();
+        roomListAccount = account; roomListSession = epoch; roomListGlobal = historyGlobalGeneration;
+        roomListOffline = offlineHistory; roomListAdmitted = account != null;
+    }
+
+    private void invalidateRoomListForSnapshot(List<Room> next) {
+        boolean same = roomListOwnerCurrent(roomListEpoch) && next.size() == rooms.size();
+        if (same) for (Room prior : rooms) {
+            boolean found = false;
+            for (Room room : next) if (prior.sameMembership(room) && prior.companyId == room.companyId) { found = true; break; }
+            if (!found) { same = false; break; }
         }
+        if (!same) clearRoomListNow();
+    }
+
+    private void clearRoomListNow() {
+        ++roomListEpoch; roomListAdmitted = false; roomListAccount = null;
+        if (roomListAdapter != null) roomListAdapter.invalidateNow();
+        if (roomRecycler != null) roomRecycler.setAdapter(null);
+        roomListAdapter = null;
+        if (roomItems != null) { roomItems.removeAllViews(); roomItems.setVisibility(View.GONE); }
     }
 
     private void loadRooms() {
@@ -6259,6 +6347,7 @@ public final class OdooIdentityActivity extends Activity {
                     }
                     if (lostMembership) BChatPushState.contentInvalidated(this, account);
                 }
+                invalidateRoomListForSnapshot(validated);
                 Room active = selectedRoom;
                 Room refreshedActive = null;
                 if (active != null) {
@@ -6294,6 +6383,7 @@ public final class OdooIdentityActivity extends Activity {
                 rooms.clear();
                 rooms.addAll(validated);
                 roomsVerifiedForSession = true;
+                admitRoomListSnapshot();
                 refreshTransferAuthority();
                 ++roomMetadataGeneration;
                 if (historyCache != null && account != null) {
@@ -13060,46 +13150,14 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private LinearLayout orderQuantityStepper(OrderCartLine selected) {
-        LinearLayout stepper = Ui.row(this);
-        stepper.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
-        stepper.setClipToOutline(true);
-        stepper.addView(orderStepperAction("−", 19, R.string.order_decrease,
-                selected.option.product, () -> stepOrderQuantity(selected.option, -1)),
-                new LinearLayout.LayoutParams(dp(48), dp(48)));
-        View firstDivider = new View(this);
-        firstDivider.setBackgroundColor(UiPalette.line(this));
-        LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(dp(1), dp(24));
-        dividerSize.gravity = Gravity.CENTER_VERTICAL;
-        stepper.addView(firstDivider, dividerSize);
-        TextView quantity = orderStepperAction(selected.quantity, 14,
-                R.string.order_change_quantity, selected.option.product,
-                () -> editOrderQuantity(selected.option));
-        quantity.setContentDescription(getString(R.string.order_change_quantity)
-                + " " + selected.option.product + ": " + selected.quantity);
-        quantity.setSingleLine(true);
-        quantity.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        stepper.addView(quantity, new LinearLayout.LayoutParams(dp(56), dp(48)));
-        View secondDivider = new View(this);
-        secondDivider.setBackgroundColor(UiPalette.line(this));
-        LinearLayout.LayoutParams secondDividerSize = new LinearLayout.LayoutParams(dp(1), dp(24));
-        secondDividerSize.gravity = Gravity.CENTER_VERTICAL;
-        stepper.addView(secondDivider, secondDividerSize);
-        stepper.addView(orderStepperAction("+", 19, R.string.order_increase,
-                selected.option.product, () -> stepOrderQuantity(selected.option, 1)),
-                new LinearLayout.LayoutParams(dp(48), dp(48)));
-        return stepper;
+        return orderQuantityStepper(selected, false);
     }
 
-    private TextView orderStepperAction(String label, int textSize, int accessibilityLabel,
-            String product, Runnable action) {
-        TextView button = Ui.text(this, label, textSize, Ui.GREEN, true);
-        button.setGravity(Gravity.CENTER);
-        button.setMinWidth(dp(48));
-        button.setMinHeight(dp(48));
-        button.setContentDescription(getString(accessibilityLabel) + " " + product);
-        Ui.clickable(button);
-        button.setOnClickListener(v -> action.run());
-        return button;
+    private LinearLayout orderQuantityStepper(OrderCartLine selected, boolean expanded) {
+        return OrderQuantityStepper.create(this, selected.quantity, selected.option.product, expanded,
+                () -> stepOrderQuantity(selected.option, -1),
+                () -> editOrderQuantity(selected.option),
+                () -> stepOrderQuantity(selected.option, 1));
     }
 
     private OrderCartLine orderLineForProduct(long productId) {
@@ -13999,7 +14057,9 @@ public final class OdooIdentityActivity extends Activity {
                                                 ? R.string.order_share_pending : R.string.chat_v2_save_failed);
                                         return;
                                     }
+                                    invalidateRoomListForSnapshot(fresh);
                                     rooms.clear(); rooms.addAll(fresh);
+                                    admitRoomListSnapshot();
                                     pendingOrderShareRoom = chosen;
                                     selectRoom(chosen);
                                 });
@@ -14082,13 +14142,8 @@ public final class OdooIdentityActivity extends Activity {
                         choice -> { orderRepresentativeId = choice.id; updateOrderSelectors(); }));
         content.addView(orderCartRepresentativeButton, fieldSize(4));
         refreshOrderCartRoute();
-        ScrollView scroll = new ScrollView(this);
         orderCartLinesView = Ui.column(this);
-        scroll.addView(orderCartLinesView);
-        int visibleHeight = Math.min(400, Math.max(130,
-                getResources().getConfiguration().screenHeightDp - 300));
-        int desiredHeight = Math.min(visibleHeight, Math.max(150, orderCart.size() * 146));
-        content.addView(scroll, new LinearLayout.LayoutParams(-1, dp(desiredHeight)));
+        content.addView(orderCartLinesView, new LinearLayout.LayoutParams(-1, -2));
         orderCartTotalView = Ui.text(this, orderQuoteLabel(), 17, Ui.INK, true);
         Ui.pad(orderCartTotalView, 10, 10);
         orderCartTotalView.setBackground(Ui.bg(Ui.TASK_ACTIVE_TINT, 10, this));
@@ -14096,12 +14151,8 @@ public final class OdooIdentityActivity extends Activity {
         TextView disclaimer = Ui.text(this, getString(R.string.order_quote_disclaimer),
                 12, Ui.MUTED, false);
         content.addView(disclaimer);
-        orderCartDialog = new AlertDialog.Builder(this).setTitle(R.string.order_cart)
-                .setView(content)
-                .setPositiveButton(R.string.order_submit, (dialog, which) -> chooseOrderRoom())
-                .setNeutralButton(R.string.order_add_more, (dialog, which) -> { })
-                .setNegativeButton(R.string.task_close, null).create();
-        orderCartDialog.setOnDismissListener(dialog -> {
+        orderCartDialog = new BChatCartSheet(this, content, this::chooseOrderRoom, dismissed -> {
+            if (orderCartDialog != dismissed) return;
             orderCartDialog = null;
             orderCartLinesView = null;
             orderCartTotalView = null;
@@ -14110,13 +14161,7 @@ public final class OdooIdentityActivity extends Activity {
         });
         renderOrderCartLines();
         orderCartDialog.show();
-        Ui.decorateDialog(orderCartDialog);
-        if (orderCartDialog.getWindow() != null) {
-            orderCartDialog.getWindow().setGravity(Gravity.BOTTOM);
-            orderCartDialog.getWindow().setLayout(-1, -2);
-        }
-        orderCartDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setEnabled(!orderCart.isEmpty() && !hasPendingOrder());
+        orderCartDialog.setSubmitEnabled(!orderCart.isEmpty() && !hasPendingOrder());
     }
 
     private void renderOrderCartLines() {
@@ -14124,10 +14169,10 @@ public final class OdooIdentityActivity extends Activity {
         orderCartLinesView.removeAllViews();
         if (lastRemovedOrderLine != null && orderCart.size() < 100
                 && orderLineForProduct(lastRemovedOrderLine.option.productId) == null) {
-            LinearLayout undo = Ui.row(this);
+            LinearLayout undo = Ui.column(this);
             TextView removed = Ui.text(this, getString(R.string.order_removed_product,
                     lastRemovedOrderLine.option.product), 12, Ui.MUTED, false);
-            undo.addView(removed, new LinearLayout.LayoutParams(0, -2, 1));
+            undo.addView(removed, new LinearLayout.LayoutParams(-1, -2));
             Button restore = orderQuantityAction(getString(R.string.order_undo),
                     R.string.order_undo, lastRemovedOrderLine.option.product, () -> {
                         OrderCartLine line = lastRemovedOrderLine;
@@ -14136,7 +14181,10 @@ public final class OdooIdentityActivity extends Activity {
                         lastRemovedOrderLine = null;
                         afterOrderCartChange(true);
                     });
-            undo.addView(restore, new LinearLayout.LayoutParams(dp(80), dp(48)));
+            restore.setSingleLine(false);
+            restore.setMaxLines(Integer.MAX_VALUE);
+            restore.setEllipsize(null);
+            undo.addView(restore, new LinearLayout.LayoutParams(-1, -2));
             orderCartLinesView.addView(undo);
         }
         if (orderCart.isEmpty()) {
@@ -14144,31 +14192,14 @@ public final class OdooIdentityActivity extends Activity {
                     14, Ui.MUTED, false));
         }
         for (OrderCartLine line : new ArrayList<>(orderCart.values())) {
-            LinearLayout row = Ui.column(this);
-            Ui.pad(row, 10, 9);
-            row.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
-            LinearLayout heading = Ui.row(this);
-            TextView product = Ui.text(this, line.option.product, 15, Ui.INK, true);
-            product.setMaxLines(2);
-            product.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            heading.addView(product, new LinearLayout.LayoutParams(0, -2, 1));
-            FrameLayout remove = Ui.iconButton(this, "close", getString(R.string.order_remove)
-                    + " " + line.option.product);
-            remove.setOnClickListener(v -> removeOrderOption(line.option.id));
-            heading.addView(remove, new LinearLayout.LayoutParams(dp(48), dp(48)));
-            row.addView(heading);
-            row.addView(Ui.text(this, orderOptionLabel(line.option), 12, Ui.MUTED, false));
-            LinearLayout controls = Ui.row(this);
-            controls.setGravity(Gravity.END);
-            controls.addView(orderQuantityStepper(line), new LinearLayout.LayoutParams(-2, dp(48)));
-            row.addView(controls);
+            View row = BChatCartSheet.line(this, line.option.product, orderOptionLabel(line.option),
+                    orderQuantityStepper(line, true), () -> removeOrderOption(line.option.id));
             LinearLayout.LayoutParams rowSize = new LinearLayout.LayoutParams(-1, -2);
             rowSize.setMargins(0, 0, 0, dp(8));
             orderCartLinesView.addView(row, rowSize);
         }
         if (orderCartDialog != null && orderCartDialog.isShowing())
-            orderCartDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setEnabled(!orderCart.isEmpty() && !hasPendingOrder());
+            orderCartDialog.setSubmitEnabled(!orderCart.isEmpty() && !hasPendingOrder());
         refreshOrderQuoteLabels();
     }
 
@@ -15085,6 +15116,7 @@ public final class OdooIdentityActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (roomListAdmitted && !roomListOwnerCurrent(roomListEpoch)) clearRoomListNow();
         if (receiptDetailsPanel != null) receiptDetailsPanel.resume();
         if(notificationSettingsPanel!=null)notificationSettingsPanel.resume();
         liveForeground = true;
@@ -15134,6 +15166,8 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        clearRoomListNow();
+        roomListLane.close();
         closeReceiptDetails();
         BChatStageAdmission.unobserve(stageAdmissionObserver);
         if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}

@@ -1,0 +1,23 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'com.baseer.freshchat'
+ compileSdk 35
+ buildFeatures { buildConfig true }
+ defaultConfig {
+  applicationId 'com.baseer.bchat.performance.test'
+  minSdk 26
+  targetSdk 35
+  versionCode 1
+  versionName 'C26-isolated-baseline'
+  buildConfigField 'String','BCHAT_ORIGIN','"https://c26.invalid"'
+  buildConfigField 'String','BCHAT_DATABASE','"synthetic"'
+  buildConfigField 'String','BCHAT_RELEASE_DATE','"2026-10-18"'
+  buildConfigField 'String','BCHAT_SOURCE_COMMIT','"2570f3af16ba682c722039b29cf65376490a7c57"'
+  buildConfigField 'boolean','BCHAT_PUSH_ENABLED','false'
+  buildConfigField 'boolean','BCHAT_TRANSPORT_DIAGNOSTICS','false'
+  buildConfigField 'boolean','BCHAT_PUSH_REGISTRATION_DIAGNOSTICS','false'
+ }
+ buildTypes { debug { signingConfig=null; debuggable true; minifyEnabled false } }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+dependencies { implementation 'androidx.recyclerview:recyclerview:1.4.0' }

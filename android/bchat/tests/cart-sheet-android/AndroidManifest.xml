@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.cart.sheet.test">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+  <application android:label="Isolated cart presentation test" android:allowBackup="false"
+      android:debuggable="true" android:supportsRtl="true" android:theme="@style/AppTheme">
+    <activity android:name="com.baseer.freshchat.CartSheetTestActivity" android:exported="false"
+        android:windowSoftInputMode="adjustResize" />
+  </application>
+  <instrumentation android:name="com.baseer.freshchat.CartSheetInstrumentation"
+      android:targetPackage="com.baseer.bchat.cart.sheet.test" android:label="Cart presentation checks" />
+</manifest>

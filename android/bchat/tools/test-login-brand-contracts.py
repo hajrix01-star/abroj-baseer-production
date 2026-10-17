@@ -8,17 +8,22 @@ JAVA = ROOT / 'app/src/main/java/com/baseer/freshchat'
 
 
 class LoginBrandContracts(unittest.TestCase):
-    def test_original_mark_is_reused_without_recoloring(self):
+    def test_supplied_vector_mark_is_rendered_without_recoloring(self):
         mark = (JAVA / 'EntryMarkView.java').read_text(encoding='utf-8')
         login_brand = (JAVA / 'LoginBrandView.java').read_text(encoding='utf-8')
-        self.assertIn('R.drawable.baseer_mark_b', mark)
-        self.assertIn('setDrawShadow(false)', login_brand)
+        vector = (ROOT / 'app/src/main/res/drawable/bchat_mark_hq.xml').read_text(encoding='utf-8')
+        master = (ROOT / 'app/src/main/res/raw/bchat_mark_hq.svg').read_text(encoding='utf-8')
+        self.assertIn('R.drawable.bchat_mark_hq', mark)
+        self.assertIn('android:pathData', vector)
+        self.assertIn('viewBox="0 0 2048 2048"', master)
+        self.assertIn('original.draw(canvas)', mark)
+        self.assertNotIn('BitmapFactory', mark)
         self.assertNotIn('setColorFilter', mark + login_brand)
         self.assertNotIn('setTint', mark + login_brand)
 
     def test_brand_is_static_with_one_subtle_ambient_shadow(self):
         login_brand = (JAVA / 'LoginBrandView.java').read_text(encoding='utf-8')
-        self.assertIn('setDrawShadow(false)', login_brand)
+        self.assertIn('new ShadowView(context)', login_brand)
         self.assertIn('shadow.setAlpha(.22f);', login_brand)
         self.assertIn('mark.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO)', login_brand)
         self.assertNotIn('ValueAnimator', login_brand)
@@ -35,7 +40,7 @@ class LoginBrandContracts(unittest.TestCase):
         self.assertIn('installedBChatReleaseName()', identity)
         self.assertNotIn('bchat_login_tagline', identity)
         self.assertNotIn('footerSpacer', identity)
-        self.assertIn("versionCode 77; versionName '0.7.61-qa-brand-motion'", build)
+        self.assertIn("versionCode 78; versionName '0.7.62-qa-vector-brand'", build)
         for path in ('values/strings.xml', 'values-ar/strings.xml', 'values-en/strings.xml'):
             strings = (ROOT / 'app/src/main/res' / path).read_text(encoding='utf-8')
             self.assertIn('name="bchat_login_release_footer"', strings)

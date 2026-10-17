@@ -30,7 +30,6 @@ final class LoginBrandView extends FrameLayout {
         addView(shadow, shadowSize);
 
         mark = new EntryMarkView(context);
-        mark.setDrawShadow(false);
         mark.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         mark.setTranslationZ(Ui.dp(context, 2));
         LayoutParams markSize = new LayoutParams(Ui.dp(context, 140), Ui.dp(context, 140),

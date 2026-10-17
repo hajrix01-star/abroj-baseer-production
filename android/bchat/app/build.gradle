@@ -27,7 +27,7 @@ android {
  defaultConfig {
   applicationId 'com.baseer.bchat.preview'; minSdk 26; targetSdk 35
   // QA-only registration contract diagnostic. It exposes fixed stage codes only.
-  versionCode 78; versionName '0.7.62-qa-vector-brand'
+  versionCode 79; versionName '0.7.63-qa-login-footer'
   buildConfigField 'boolean', 'BCHAT_TRANSPORT_DIAGNOSTICS', 'false'
   buildConfigField 'boolean', 'BCHAT_PUSH_REGISTRATION_DIAGNOSTICS', 'true'
   buildConfigField 'boolean', 'BCHAT_PUSH_ENABLED', bchatPushEnabled ? 'true' : 'false'

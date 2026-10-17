@@ -34,6 +34,7 @@ import android.os.SystemClock;
 import android.util.Base64;
 import android.util.Log;
 import android.util.LruCache;
+import android.text.BidiFormatter;
 import android.text.InputType;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -186,6 +187,7 @@ public final class OdooIdentityActivity extends Activity {
     private TextView shellNotice;
     private Button shellRetry;
     private ScrollView nativeForm;
+    private TextView loginReleaseFooter;
     private LinearLayout shell;
     private EditText loginInput;
     private EditText passwordInput;
@@ -608,13 +610,17 @@ public final class OdooIdentityActivity extends Activity {
         layout.addView(status, new LinearLayout.LayoutParams(-1, -2));
 
         nativeForm = new ScrollView(this);
-        nativeForm.setFillViewport(true);
+        // The credentials occupy their natural height. A full-height child left an empty
+        // block beneath the sign-in control on some Android devices.
+        nativeForm.setFillViewport(false);
         nativeForm.setVerticalScrollBarEnabled(false);
+        nativeForm.setBackgroundColor(Color.WHITE);
         LinearLayout fields = new LinearLayout(this);
         fields.setOrientation(LinearLayout.VERTICAL);
         fields.setGravity(Gravity.CENTER_HORIZONTAL);
         fields.setPadding(dp(12), dp(20), dp(12), dp(14));
-        nativeForm.addView(fields, new ScrollView.LayoutParams(-1, -1));
+        fields.setBackgroundColor(Color.WHITE);
+        nativeForm.addView(fields, new ScrollView.LayoutParams(-1, -2));
         LoginBrandView mark = new LoginBrandView(this);
         LinearLayout.LayoutParams markSize = new LinearLayout.LayoutParams(dp(148), dp(158));
         markSize.gravity = Gravity.CENTER_HORIZONTAL;
@@ -634,16 +640,22 @@ public final class OdooIdentityActivity extends Activity {
         signIn.setEnabled(false);
         signIn.setOnClickListener(v -> submitLogin());
         fields.addView(signIn, fieldSize(12));
-        View footerDivider = Ui.line(this);
-        fields.addView(footerDivider, fieldSize(20));
-        TextView releaseFooter = new TextView(this);
-        releaseFooter.setText(getString(R.string.bchat_login_release_footer,
-                installedBChatReleaseName(), getString(R.string.bchat_login_release_date)));
-        releaseFooter.setTextSize(12);
-        releaseFooter.setTextColor(0xff64748b);
-        releaseFooter.setGravity(Gravity.CENTER);
-        fields.addView(releaseFooter, fieldSize(8));
         layout.addView(nativeForm, new LinearLayout.LayoutParams(-1, 0, 1));
+        // The installed build identity is a fixed part of the login screen, not a scrolling
+        // child that can be displaced by viewport resizing or a keyboard.
+        loginReleaseFooter = new TextView(this);
+        loginReleaseFooter.setText(getString(R.string.bchat_login_release_footer,
+                BidiFormatter.getInstance(AppLocale.rtl(this)).unicodeWrap(installedBChatReleaseName()),
+                getString(R.string.bchat_login_release_date)));
+        loginReleaseFooter.setTextSize(12);
+        loginReleaseFooter.setTextColor(0xff64748b);
+        loginReleaseFooter.setGravity(Gravity.CENTER);
+        loginReleaseFooter.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
+        loginReleaseFooter.setLayoutDirection(AppLocale.direction(this));
+        loginReleaseFooter.setPadding(0, dp(4), 0, dp(4));
+        LinearLayout.LayoutParams releaseFooterSize = new LinearLayout.LayoutParams(-1, -2);
+        releaseFooterSize.setMargins(0, dp(4), 0, dp(8));
+        layout.addView(loginReleaseFooter, releaseFooterSize);
 
         shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
@@ -3000,6 +3012,7 @@ public final class OdooIdentityActivity extends Activity {
                     submitting = false;
                     status.setText(R.string.auth_native_mfa);
                     nativeForm.setVisibility(View.GONE);
+                    if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
                     shell.setVisibility(View.GONE);
                     showWebChallenge();
                 } else if (isBridgeUrl(Uri.parse(url))) {
@@ -4101,6 +4114,7 @@ public final class OdooIdentityActivity extends Activity {
     private void showPermittedRoot() {
         if (shell != null) shell.setVisibility(View.GONE);
         if (chatRoot != null) chatRoot.setVisibility(View.VISIBLE);
+        if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
         if (layout != null) layout.setPadding(0, 0, 0, 0);
     }
 
@@ -4457,6 +4471,7 @@ public final class OdooIdentityActivity extends Activity {
                 else {
                     shell.setVisibility(View.GONE);
                     chatRoot.setVisibility(View.VISIBLE);
+                    if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
                     layout.setPadding(0, 0, 0, 0);
                     if (permissionSet.taskView) switchSection("tasks");
                     else {
@@ -4987,6 +5002,7 @@ public final class OdooIdentityActivity extends Activity {
             }
             shell.setVisibility(View.GONE);
             nativeForm.setVisibility(View.GONE);
+            if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
             status.setVisibility(View.GONE);
             chatRoot.setVisibility(View.VISIBLE);
             layout.setPadding(0, 0, 0, 0);
@@ -5524,6 +5540,7 @@ public final class OdooIdentityActivity extends Activity {
                 if (initial) {
                     shell.setVisibility(View.GONE);
                     chatRoot.setVisibility(View.VISIBLE);
+                    if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
                     layout.setPadding(0, 0, 0, 0);
                     showRooms();
                 } else renderRooms();
@@ -5559,6 +5576,7 @@ public final class OdooIdentityActivity extends Activity {
                     shellRetry.setVisibility(View.VISIBLE);
                 } else {
                     chatRoot.setVisibility(View.VISIBLE);
+                    if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
                     showRooms();
                     chatNotice.setText(uncertain ? R.string.chat_v2_uncertain : R.string.chat_v2_load_failed);
                 }
@@ -10612,6 +10630,7 @@ public final class OdooIdentityActivity extends Activity {
                         && chatRoot.getVisibility() != View.VISIBLE) {
                     shell.setVisibility(View.GONE);
                     chatRoot.setVisibility(View.VISIBLE);
+                    if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
                     layout.setPadding(0, 0, 0, 0);
                     switchSection("orders");
                 }
@@ -12907,6 +12926,7 @@ public final class OdooIdentityActivity extends Activity {
         v1Companies.clear();
         csrfToken = null;
         nativeForm.setVisibility(View.VISIBLE);
+        if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.VISIBLE);
         shell.setVisibility(View.GONE);
         chatRoot.setVisibility(View.GONE);
         status.setVisibility(View.VISIBLE);
@@ -12917,6 +12937,7 @@ public final class OdooIdentityActivity extends Activity {
     private void showShell() {
         layout.setPadding(dp(20), dp(16), dp(20), dp(16));
         nativeForm.setVisibility(View.GONE);
+        if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
         shell.setVisibility(View.VISIBLE);
         chatRoot.setVisibility(View.GONE);
         status.setVisibility(View.GONE);
@@ -12944,6 +12965,7 @@ public final class OdooIdentityActivity extends Activity {
             status.setVisibility(View.VISIBLE);
             status.setText(R.string.auth_logout_unconfirmed);
             nativeForm.setVisibility(View.GONE);
+            if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
             shell.setVisibility(View.GONE);
             hideWeb();
             localExit.setVisibility(View.VISIBLE);
@@ -12989,6 +13011,7 @@ public final class OdooIdentityActivity extends Activity {
         layout.setPadding(dp(20), dp(16), dp(20), dp(16));
         localExit.setVisibility(View.GONE);
         nativeForm.setVisibility(View.GONE);
+        if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
         shell.setVisibility(View.GONE);
         chatRoot.setVisibility(View.GONE);
         status.setVisibility(View.VISIBLE);

@@ -72,7 +72,7 @@ class VerifiedReadFallbackContracts(unittest.TestCase):
         self.assertIn("method:'POST'", direct)
         self.assertIn("credentials:'same-origin'", direct)
         self.assertIn("redirect:'manual'", direct)
-        self.assertIn('csrf_token:', direct)
+        self.assertIn("p.set('csrf_token'", direct)
         self.assertIn('new URLSearchParams', direct)
         self.assertIn('pollVerifiedGetFallback', direct)
         self.assertIn('V2_PUSH_REGISTER.equals(path)', direct)

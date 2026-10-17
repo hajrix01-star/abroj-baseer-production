@@ -8775,7 +8775,7 @@ public final class OdooIdentityActivity extends Activity {
             mediaNativeUpload = call;
             mediaIo.execute(() -> {
                 BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.upload(
-                        call, ORIGIN, grantId, secret, staged, entry.size, entry.mime);
+                        call, ORIGIN, DATABASE, grantId, secret, staged, entry.size, entry.mime);
                 handler.post(() -> finishNativeMediaUpload(request, scopedAccount, room, entry,
                         grantId, secret, response));
             });
@@ -8805,7 +8805,8 @@ public final class OdooIdentityActivity extends Activity {
         BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
         mediaNativeUpload = call;
         mediaIo.execute(() -> {
-            BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.status(call, ORIGIN, grantId, secret);
+            BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.status(
+                    call, ORIGIN, DATABASE, grantId, secret);
             handler.post(() -> {
                 if (closed || request != mediaUploadNonce || !mediaUploadBusy
                         || !stillCurrent(scopedAccount, room)) return;

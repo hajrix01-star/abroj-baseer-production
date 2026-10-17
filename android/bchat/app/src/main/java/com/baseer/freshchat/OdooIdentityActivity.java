@@ -5838,11 +5838,13 @@ public final class OdooIdentityActivity extends Activity {
         boolean mediaPending = false;
         boolean mediaPolicyChanged = false;
         try {
-            BChatConnectedMediaStore.Entry mediaEntry = mediaStore == null ? null
-                    : mediaStore.pending(account, selectedRoom.id, selectedRoom.membershipId);
-            mediaPending = mediaEntry != null;
-            mediaPolicyChanged = mediaEntry != null
-                    && mediaEntry.policyVersion != selectedRoom.invoicePolicyVersion;
+            List<BChatConnectedMediaStore.Entry> mediaEntries = mediaStore == null
+                    ? Collections.emptyList() : mediaStore.pendingForRoom(account, selectedRoom.id,
+                    selectedRoom.membershipId);
+            mediaPending = !mediaEntries.isEmpty();
+            for (BChatConnectedMediaStore.Entry mediaEntry : mediaEntries)
+                if (mediaEntry.policyVersion != selectedRoom.invoicePolicyVersion)
+                    mediaPolicyChanged = true;
         } catch (IOException damaged) { chatNotice.setText(R.string.chat_v2_save_failed); mediaPending = true; }
         boolean inFlight = mediaStageBusy || mediaUploadBusy || mediaConfirmBusy
                 && mediaConfirmRoom != null && mediaConfirmRoom.sameMembership(selectedRoom);
@@ -6960,18 +6962,19 @@ public final class OdooIdentityActivity extends Activity {
                                                            List<JSONObject> messages) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
-            BChatConnectedMediaStore.Entry pending = mediaStore.pending(scopedAccount,
+            List<BChatConnectedMediaStore.Entry> pending = mediaStore.pendingForRoom(scopedAccount,
                     room.id, room.membershipId);
-            if (pending == null || pending.mediaId <= 0) return;
+            if (pending.isEmpty()) return;
+            Set<Long> confirmedMediaIds = new HashSet<>();
             for (JSONObject message : messages) {
                 if (positiveId(message.opt("author_user_id")) != scopedAccount.userId
                         || !message.has("media")) continue;
                 MediaRecord serverMedia = new MediaRecord(message.getJSONObject("media"));
-                if (serverMedia.id == pending.mediaId) {
-                    mediaStore.acknowledge(scopedAccount, pending);
-                    return;
-                }
+                confirmedMediaIds.add(serverMedia.id);
             }
+            for (BChatConnectedMediaStore.Entry entry : pending)
+                if (entry.mediaId > 0 && confirmedMediaIds.contains(entry.mediaId))
+                    mediaStore.acknowledge(scopedAccount, entry);
         } catch (Exception ignored) {
             // Retaining the staged item is safer than hiding an uncertain send.  The next
             // verified history read will retry this idempotent reconciliation.
@@ -8761,6 +8764,13 @@ public final class OdooIdentityActivity extends Activity {
                             updatePendingUi();
                             appendAcknowledgedMessage(scopedAccount, room, sentMessageId);
                         } catch (Exception invalid) {
+                            // A 2xx response whose one-shot bridge body was truncated or malformed
+                            // is still an uncertain write.  The verified history path can retire
+                            // every matching staged media record without repeating the POST.
+                            if (statusCode >= 200 && statusCode < 300) {
+                                recoverUncertainMediaConfirmation(scopedAccount, room);
+                                return;
+                            }
                             if (!stillCurrent(scopedAccount, room)) return;
                             JSONObject error = result == null ? null : result.optJSONObject("error");
                             boolean policyChanged = statusCode == 409 && error != null
@@ -8799,9 +8809,12 @@ public final class OdooIdentityActivity extends Activity {
             if (recovery != mediaConfirmRecoveryGeneration || !stillCurrent(scopedAccount, room)
                     || mediaStore == null) return;
             try {
-                BChatConnectedMediaStore.Entry pending = mediaStore.pending(scopedAccount,
+                List<BChatConnectedMediaStore.Entry> pending = mediaStore.pendingForRoom(scopedAccount,
                         room.id, room.membershipId);
-                if (pending == null || pending.mediaId <= 0) return;
+                boolean hasUploadedRecord = false;
+                for (BChatConnectedMediaStore.Entry entry : pending)
+                    if (entry.mediaId > 0) hasUploadedRecord = true;
+                if (!hasUploadedRecord) return;
             } catch (IOException unavailable) {
                 return;
             }
@@ -8810,9 +8823,12 @@ public final class OdooIdentityActivity extends Activity {
                     recoverUncertainMediaConfirmation(scopedAccount, room, recovery, attempt + 1);
                 return;
             }
-            // loadMessages validates the authenticated history and calls the exact-ID
-            // reconciliation helper; an absent message remains pending for explicit review.
+            // loadMessages validates the authenticated history and reconciles every exact media
+            // ID in this room.  Retry only the read: an absent message remains pending for
+            // explicit review and this method never repeats the POST.
             loadMessages(0);
+            if (attempt < 2)
+                recoverUncertainMediaConfirmation(scopedAccount, room, recovery, attempt + 1);
         }, attempt == 0 ? 180L : 360L);
     }
 

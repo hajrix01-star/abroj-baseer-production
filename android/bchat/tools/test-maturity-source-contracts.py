@@ -18,7 +18,8 @@ ledger = read("app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.ja
 assert "MAX_EVENTS = 512" in ledger and "MAX_AGE_MILLIS = 7L" in ledger
 assert "new HashSet<>(stored)" in ledger and ".commit()" in ledger
 service = read("app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java")
-assert service.index("manager.notify(presentationKey") < service.index("BChatNotificationLedger.recordShown")
+assert service.index("manager.notify(notificationTag, 0,") < service.index("BChatNotificationLedger.recordShown")
+assert service.index("if (!posted || !channelPosted[0] || !bufferPosted[0] || !childPosted[0]) return;") < service.index("BChatNotificationLedger.recordShown")
 assert ".setOnlyAlertOnce(true)" in service
 palette = read("app/src/main/java/com/baseer/freshchat/UiPalette.java")
 assert "c.getColor(R.color.bchat_surface)" in palette

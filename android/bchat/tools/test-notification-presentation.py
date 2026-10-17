@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Execute the real service callback and ledger with deterministic Android API fixtures.
+"""Execute the real service callback, ledger and RAM buffer with explicit API fixtures.
 
---source checks the previous callback too; fixtures do not assert Android audio/device behavior.
+Channel, routing, posting admission, native style and Android are declared adapters. The native style has
+separate SDK35 construction tests. No Android display/audio/device behavior is inferred.
 """
 from pathlib import Path
 import argparse
@@ -88,6 +89,36 @@ final class BChatNotificationChannels {
  }
 }
 """
+admission = r"""
+package com.baseer.freshchat;
+/** Explicit admission boundary; the actual bounded registry has separate state/native tests. */
+final class BChatNotificationPresentationReset {
+ static boolean posting(NotificationPresentationHarness.NotificationManager manager,String tag,int id){
+   return id==1?!manager.rejectSummaryAdmission:!manager.rejectChildAdmission;
+ }
+}
+"""
+style = r"""
+package com.baseer.freshchat;
+import android.content.Context;
+/** Explicit native-style boundary adapter; real renderer has JVM/API35 construction tests. */
+final class BChatMessagingNotificationStyle {
+ static NotificationPresentationHarness.Notification.Builder create(Context context,String channel,
+     BChatNotificationConversations.Conversation room){
+   NotificationPresentationHarness host=(NotificationPresentationHarness)context;
+   NotificationPresentationHarness.Notification.Builder builder=
+       new NotificationPresentationHarness.Notification.Builder(context,channel)
+           .setContentTitle("BChat").setContentText(host.getString(1));
+   builder.n.messageCount=room.messages.size();
+   if(!"none".equals(room.mode)){
+     BChatNotificationConversations.Message last=room.messages.get(room.messages.size()-1);
+     builder.setContentTitle("full".equals(room.mode)&&!room.title.isEmpty()?room.title:last.sender);
+     if("full".equals(room.mode)&&!last.text.isEmpty())builder.setContentText(last.text);
+   }
+   return builder;
+ }
+}
+"""
 harness = r"""
 package com.baseer.freshchat;
 import android.content.*;
@@ -149,7 +180,7 @@ public class NotificationPresentationHarness extends Context {
  static class NotificationChannel {int getImportance(){return 4;}}
  static class Notification {
    static int VISIBILITY_PRIVATE=1,VISIBILITY_PUBLIC=2,GROUP_ALERT_CHILDREN=2,GROUP_ALERT_SUMMARY=1;static String CATEGORY_MESSAGE="message",CATEGORY_REMINDER="reminder";
-   String title,text,group,channelId;Notification publicView;int alertBehavior;boolean summary,onlyAlertOnce;
+   String title,text,group,channelId;Notification publicView;int alertBehavior,messageCount;boolean summary,onlyAlertOnce;
    static class Builder {
      Notification n=new Notification();
      Builder(Object c,String channel){n.channelId=channel;} Builder setSmallIcon(int i){return this;}
@@ -166,12 +197,14 @@ public class NotificationPresentationHarness extends Context {
  }
  static class NotificationManager {
    static int IMPORTANCE_NONE=0;
-   int calls,summaryCalls;boolean fail,blocked,failSummary;Notification last,lastSummary;
+   int calls,summaryCalls,cancellations;boolean fail,blocked,failSummary,rejectChildAdmission,rejectSummaryAdmission;Notification last,lastSummary;
+   String lastTag;Runnable onCancel;
    NotificationChannel getNotificationChannel(String channel){return new NotificationChannel();}
    boolean areNotificationsEnabled(){return !blocked;}
+   void cancel(String tag,int id){cancellations++;if(onCancel!=null){Runnable once=onCancel;onCancel=null;once.run();}}
    void notify(int id,Notification n){if(fail)throw new SecurityException();calls++;}
    void notify(String tag,int id,Notification n){if(fail||n.summary&&failSummary)throw new SecurityException();
-     if(n.summary){summaryCalls++;lastSummary=n;}else{calls++;last=n;}}
+     if(n.summary){summaryCalls++;lastSummary=n;}else{calls++;last=n;lastTag=tag;}}
  }
  __CALLBACK__
  __TEXT__
@@ -224,7 +257,9 @@ public class NotificationPresentationHarness extends Context {
    NotificationPresentationHarness sender=new NotificationPresentationHarness();sender.previewMode="sender";sender.onMessageReceived(privateMessage);
    check(sender.manager.last.title.equals("Secret sender")&&!sender.manager.last.text.equals("Private text"),"Sender mode never displays message preview");
    NotificationPresentationHarness full=new NotificationPresentationHarness();full.previewMode="full";full.onMessageReceived(privateMessage);
-   check(full.manager.last.title.equals("Secret sender")&&full.manager.last.text.equals("Private text"),"Explicit full permits filtered preview");
+   check(full.manager.last.title.equals("Secret room")&&full.manager.last.text.equals("Private text"),"Explicit full permits projected room title and filtered preview");
+   check(full.manager.lastTag.equals(ACCOUNT+":bchat-room:"+privateMessage.data.get("room_key")),
+     "Canonical room key owns the notification tag, not provider event ID or display name");
    check(full.manager.last.publicView.title.equals("BChat")&&full.manager.last.publicView.text.equals("private notification"),"Public lockscreen version remains generic");
    RemoteMessage legacy=new RemoteMessage("chat","52");legacy.data.remove("presentation_v");
    legacy.data.put("sender_name","Old sender");legacy.data.put("message_preview","Old private text");
@@ -263,6 +298,24 @@ public class NotificationPresentationHarness extends Context {
    check(failedSummary.manager.calls==1&&BChatNotificationLedger.contains(failedSummary,
      BChatNotificationLedger.key(ACCOUNT,"diagnostic","61"),System.currentTimeMillis()),
      "Accepted child is retired even when best-effort summary failed");
+   NotificationPresentationHarness refused=new NotificationPresentationHarness();refused.manager.rejectChildAdmission=true;
+   refused.onMessageReceived(test);
+   received=BChatNotificationDiagnostics.read(refused,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(refused.manager.calls==0&&received.displayedAt==0&&!BChatNotificationLedger.contains(refused,
+       BChatNotificationLedger.key(ACCOUNT,"diagnostic","61"),System.currentTimeMillis()),
+       "Refused posting admission does not notify, mark displayed, or retire shown");
+   refused.manager.rejectChildAdmission=false;refused.onMessageReceived(test);
+   check(refused.manager.calls==1,"Previously unadmitted event remains retryable");
+   NotificationPresentationHarness refusedSummary=new NotificationPresentationHarness();refusedSummary.manager.rejectSummaryAdmission=true;
+   refusedSummary.onMessageReceived(test);
+   received=BChatNotificationDiagnostics.read(refusedSummary,ACCOUNT,"61",uuid,System.currentTimeMillis());
+   check(refusedSummary.manager.calls==1&&refusedSummary.manager.summaryCalls==0&&received.displayedAt>0,
+       "Summary admission refusal does not undo the accepted child display");
+   NotificationPresentationHarness refusedSound=new NotificationPresentationHarness();refusedSound.manager.rejectChildAdmission=true;
+   RemoteMessage soundRetry=new RemoteMessage("chat","76");refusedSound.onMessageReceived(soundRetry);
+   refusedSound.manager.rejectChildAdmission=false;refusedSound.onMessageReceived(soundRetry);
+   check(refusedSound.manager.calls==1&&refusedSound.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
+       "Admission retry cannot replay the already reserved sound effect");
    NotificationPresentationHarness diagRestart=new NotificationPresentationHarness();diagRestart.named.putAll(denied.named);
    check(BChatNotificationDiagnostics.read(diagRestart,ACCOUNT,"61",uuid,System.currentTimeMillis()).displayedAt>0,"Diagnostic receipt survives process recreation");
    check(BChatNotificationDiagnostics.read(diagRestart,other,"61",uuid,System.currentTimeMillis())==null,"Another account cannot see local test receipt");
@@ -296,6 +349,38 @@ public class NotificationPresentationHarness extends Context {
    check(changedRoute.manager.calls==1&&changedRoute.manager.last.channelId.equals("bchat-chat-v1")
      &&changedRoute.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
      "Retry uses current routing and cannot replay an already reserved sound");
+   BChatNotificationConversations.reset();
+   BChatNotificationConversations.append(NotificationPresentation.parse(privateMessage.getData()),"sender");
+   NotificationPresentationHarness staleBuffer=new NotificationPresentationHarness();staleBuffer.previewMode="full";
+   staleBuffer.manager.onCancel=()->BChatNotificationConversations.reset();
+   staleBuffer.onMessageReceived(privateMessage);
+   check(staleBuffer.manager.calls==0&&!BChatNotificationLedger.contains(staleBuffer,
+     BChatNotificationLedger.key(ACCOUNT,"chat","51"),System.currentTimeMillis()),
+     "Buffer invalidated after projection rejects notify and shown retirement through all final gates");
+   staleBuffer.onMessageReceived(privateMessage);
+   check(staleBuffer.manager.calls==1&&staleBuffer.manager.last.alertBehavior==Notification.GROUP_ALERT_SUMMARY,
+     "A buffer-fence retry cannot replay the previously reserved sound");
+   BChatNotificationConversations.reset();
+   NotificationPresentationHarness window=new NotificationPresentationHarness();window.previewMode="full";
+   for(int i=1;i<=8;i++){
+     RemoteMessage item=new RemoteMessage("chat",String.valueOf(100+i));
+     item.data.put("sender_name","Same sender");item.data.put("sender_key",NotificationPresentation.senderKey(ACCOUNT,1,1,1,2));
+     item.data.put("conversation_title","Same display name");item.data.put("is_group","true");
+     item.data.put("message_preview","entry-"+i);item.data.put("sent_at_ms",String.valueOf(System.currentTimeMillis()+i));
+     window.onMessageReceived(item);
+   }
+   check(window.manager.last.messageCount==5&&window.manager.last.text.equals("entry-8"),
+     "Service projects the last five distinct chronological messages to the style boundary");
+   String priorRoomTag=window.manager.lastTag;
+   RemoteMessage otherRoom=new RemoteMessage("chat","120");
+   otherRoom.data.put("room_key",NotificationPresentation.roomKey(ACCOUNT,1,2,11));
+   otherRoom.data.put("message_key",NotificationPresentation.messageKey(ACCOUNT,1,2,11,120));
+   otherRoom.data.put("sender_key",NotificationPresentation.senderKey(ACCOUNT,1,2,11,2));
+   otherRoom.data.put("sender_name","Same sender");otherRoom.data.put("conversation_title","Same display name");
+   otherRoom.data.put("is_group","true");otherRoom.data.put("message_preview","another room");
+   window.onMessageReceived(otherRoom);
+   check(!window.manager.lastTag.equals(priorRoomTag)&&window.manager.last.messageCount==1,
+     "Identical room and sender names cannot combine different canonical room epochs");
    NotificationPresentationHarness diagBound=new NotificationPresentationHarness();
    for(int i=1;i<=40;i++)BChatNotificationDiagnostics.record(diagBound,ACCOUNT,String.valueOf(i),uuid,"received",now+i);
    Prefs diagnosticPrefs=diagBound.named.get("bchat-notification-diagnostics-v1");
@@ -316,6 +401,8 @@ with tempfile.TemporaryDirectory(prefix="bchat-presentation-", dir=temp_root) as
         "android/net/Uri.java": uri,
         "com/baseer/freshchat/BChatPushState.java": push_state,
         "com/baseer/freshchat/BChatNotificationChannels.java": channels,
+        "com/baseer/freshchat/BChatNotificationPresentationReset.java": admission,
+        "com/baseer/freshchat/BChatMessagingNotificationStyle.java": style,
         "com/baseer/freshchat/NotificationPresentationHarness.java": harness,
     }
     for relative, value in files.items():
@@ -325,6 +412,7 @@ with tempfile.TemporaryDirectory(prefix="bchat-presentation-", dir=temp_root) as
     ledger = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationLedger.java"
     diagnostic = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationDiagnostics.java"
     contract = root / "app/src/main/java/com/baseer/freshchat/NotificationPresentation.java"
-    sources = [str(path) for path in target.rglob("*.java")] + [str(ledger), str(diagnostic), str(contract)]
+    conversations = root / "app/src/main/java/com/baseer/freshchat/BChatNotificationConversations.java"
+    sources = [str(path) for path in target.rglob("*.java")] + [str(ledger), str(diagnostic), str(contract), str(conversations)]
     subprocess.run([shutil.which("javac") or "javac", "-encoding", "UTF-8", "-d", str(target), *sources], check=True)
     subprocess.run([shutil.which("java") or "java", "-cp", str(target), "com.baseer.freshchat.NotificationPresentationHarness"], check=True)

@@ -58,7 +58,8 @@ def run(*command, timeout=90):
 
 names = ("Ui", "UiPalette", "ChatAppearance", "AvatarInitials", "AppLocale", "AppLocalePolicy",
          "LocalSettings", "LocalSettingsPolicy", "BChatNotificationSettingsPanel", "BChatPushState",
-         "NotificationSettingsProtocol", "BChatNotificationDiagnostics", "BChatNotificationLedger", "BChatNotificationChannels")
+         "NotificationSettingsProtocol", "BChatNotificationDiagnostics", "BChatNotificationLedger", "BChatNotificationChannels",
+         "NotificationPresentation", "BChatNotificationConversations", "BChatNotificationPresentationReset")
 source = root / "app/src/main/java/com/baseer/freshchat"
 production = [source / (name + ".java") for name in names]
 production += [source / "sync/AccountScope.java", source / "sync/OutboxPolicy.java"]

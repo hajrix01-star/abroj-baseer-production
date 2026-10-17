@@ -5,11 +5,24 @@ This exercises account, preview and durable-snapshot interleavings, not Android 
 The preference adapter deliberately changes memory even when commit returns false.
 """
 from pathlib import Path
+import argparse
+import hashlib
+import json
+import re
 import shutil
 import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser()
+parser.add_argument('--evidence-label', help='New source-frozen evidence directory under artifacts/test-results')
+args = parser.parse_args()
+evidence = None
+if args.evidence_label:
+    if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}', args.evidence_label):
+        parser.error('evidence-label must be a short filename-safe label')
+    evidence = root / 'artifacts/test-results' / args.evidence_label
+    evidence.mkdir(parents=True, exist_ok=False)
 files = {
     "org/json/JSONObject.java": r"""
 package org.json;
@@ -44,10 +57,34 @@ public interface SharedPreferences {
 """,
     "android/app/NotificationManager.java": r"""
 package android.app;
+import android.service.notification.StatusBarNotification;
+import java.util.*;
 public class NotificationManager {
  public volatile boolean visible;
  public int cancellations;
- public void cancelAll(){visible=false;cancellations++;}
+ public String failTag;
+ public final List<String> cancelled=new ArrayList<>();
+ public final List<StatusBarNotification> rows=new ArrayList<>();
+ public StatusBarNotification[] getActiveNotifications(){
+   List<StatusBarNotification> current=new ArrayList<>(rows);
+   if(visible)current.add(new StatusBarNotification("00000000-0000-4000-8000-000000000001:chat:1",0));
+   return current.toArray(new StatusBarNotification[0]);
+ }
+ public void cancel(String tag,int id){
+   if(Objects.equals(tag,failTag))throw new SecurityException("explicit cancel adapter failure");
+   cancelled.add(tag+"#"+id);
+   if(tag.endsWith(":chat:1")&&id==0)visible=false;
+   rows.removeIf(row->id==row.getId()&&Objects.equals(tag,row.getTag()));cancellations++;
+ }
+ public void cancelAll(){throw new AssertionError("Must not cancel a C09 transfer or unrelated local row");}
+}
+""",
+    "android/service/notification/StatusBarNotification.java": r"""
+package android.service.notification;
+public final class StatusBarNotification {
+ private final String tag;private final int id;
+ public StatusBarNotification(String tag,int id){this.tag=tag;this.id=id;}
+ public String getTag(){return tag;}public int getId(){return id;}
 }
 """,
     "android/os/Looper.java": r"""
@@ -108,6 +145,16 @@ public class PushRoutingHarness extends Context {
  }
  @SuppressWarnings("unchecked") public <T>T getSystemService(Class<T> type){return (T)notifications;}
  static void check(boolean ok,String label){if(!ok)throw new AssertionError(label);checks++;}
+ static NotificationPresentation frame(){
+   Map<String,String> data=new HashMap<>();data.put("kind","chat");data.put("account_key",ACCOUNT);
+   data.put("event_id","91");data.put("presentation_v","1");data.put("sent_at_ms","1000");
+   data.put("room_key",NotificationPresentation.roomKey(ACCOUNT,1,1,1));
+   data.put("message_key",NotificationPresentation.messageKey(ACCOUNT,1,1,1,91));
+   data.put("sender_key",NotificationPresentation.senderKey(ACCOUNT,1,1,1,2));
+   data.put("sender_name","Private sender");data.put("conversation_title","Private group");
+   data.put("message_preview","Private body");data.put("is_group","true");
+   return NotificationPresentation.parse(data);
+ }
  static void flush()throws Exception{BChatStorageRepository.drain();Handler.drain();}
  static void restart(PushRoutingHarness app)throws Exception {
    flush();Field field=BChatPushState.class.getDeclaredField("state");field.setAccessible(true);field.set(null,null);
@@ -125,9 +172,51 @@ public class PushRoutingHarness extends Context {
  public static void main(String[] args)throws Exception {
    PushRoutingHarness app=new PushRoutingHarness();
    AccountScope scope=new AccountScope("https://example.invalid","bchat_fixture",1);
+   app.notifications.visible=true;
+   app.notifications.rows.add(new android.service.notification.StatusBarNotification(ACCOUNT+":bchat-summary",1));
+   app.notifications.rows.add(new android.service.notification.StatusBarNotification(ACCOUNT+":bchat-room:"+
+       NotificationPresentation.roomKey(ACCOUNT,1,1,1),0));
+   app.notifications.rows.add(new android.service.notification.StatusBarNotification(null,9001));
+   app.notifications.rows.add(new android.service.notification.StatusBarNotification("unrelated-local",701));
    BChatPushState.token(app,TOKEN);BChatPushState.verifiedAccount(app,scope);
    check(BChatPushState.installationId(app)==null,"new installation cannot dispatch before its commit");
    flush();register(app,scope);
+   check(!app.notifications.visible&&app.notifications.rows.size()==2,
+       "cold none/unknown retracts earlier-process business presentation only");
+   check(app.notifications.rows.get(0).getId()==9001&&app.notifications.rows.get(1).getId()==701,
+       "transfer-shaped null-tag row and unrelated local notification survive privacy cleanup");
+   for(String kind:new String[]{"chat","task","order","diagnostic"}) {
+     check(BChatNotificationPresentationReset.owned(ACCOUNT+":"+kind+":19",0),"only owned business event tag is retractable");
+     check(!BChatNotificationPresentationReset.owned(ACCOUNT+":"+kind+":19",9001),"business-looking transfer ID is not retractable");
+   }
+   check(!BChatNotificationPresentationReset.owned(null,0),"even null-tag ID zero is not a presentation row");
+   check(!BChatNotificationPresentationReset.owned(ACCOUNT+":chat:0",0),"invalid event ID is not presentation-owned");
+   check(!BChatNotificationPresentationReset.owned(ACCOUNT+":bchat-summary",0),"summary requires its own exact notification ID");
+   NotificationManager tracked=new NotificationManager();String invisible=ACCOUNT+":chat:91",summary=ACCOUNT+":bchat-summary";
+   check(BChatNotificationPresentationReset.posting(tracked,invisible,0)
+       &&BChatNotificationPresentationReset.posting(tracked,summary,1),"invisible owned posts admitted before native notify");
+   check(tracked.getActiveNotifications().length==0,"adapter holds no active rows for queued-post cancellation");
+   tracked.failTag=summary;BChatNotificationPresentationReset.cancel(tracked);
+   check(tracked.cancelled.contains(invisible+"#0"),"known invisible child receives exact cancellation without active scan");
+   int afterFailure=tracked.cancellations;tracked.failTag=null;BChatNotificationPresentationReset.cancel(tracked);
+   check(tracked.cancellations==afterFailure+1&&tracked.cancelled.contains(summary+"#1"),
+       "failed known summary cancellation remains retained for a later reset");
+   boolean allAdmitted=true;
+   for(int id=1;id<=BChatNotificationPresentationReset.MAX_KNOWN;id++)
+     allAdmitted &= BChatNotificationPresentationReset.posting(tracked,ACCOUNT+":task:"+id,0);
+   check(allAdmitted,"bounded tracker admits its declared512 distinct owned metadata rows");
+   tracked.failTag=ACCOUNT+":task:1";
+   check(!BChatNotificationPresentationReset.posting(tracked,ACCOUNT+":task:513",0),
+       "capacity cancel failure refuses admission instead of forgetting an uncancelled key");
+   check(!BChatNotificationPresentationReset.posting(tracked,ACCOUNT+":task:514",0),
+       "refused admission did not displace the oldest uncancelled key");
+   tracked.failTag=null;
+   check(BChatNotificationPresentationReset.posting(tracked,ACCOUNT+":task:513",0)
+       &&tracked.cancelled.contains(ACCOUNT+":task:1#0"),"capacity eviction queues exact cancellation before admitting replacement");
+   check(!BChatNotificationPresentationReset.posting(tracked,null,9001)
+       &&!BChatNotificationPresentationReset.posting(tracked,"unrelated-local",0),
+       "foreign and transfer rows cannot enter the business cancellation tracker");
+   BChatNotificationPresentationReset.cancel(tracked);
    BChatPushState.Delivery oldDelivery=BChatPushState.delivery(app,ACCOUNT);
    BChatPushState.clearAccount(app);
    check(!BChatPushState.present(oldDelivery,mode->app.notifications.visible=true)&&!app.notifications.visible,
@@ -144,13 +233,45 @@ public class PushRoutingHarness extends Context {
    BChatPushState.PreviewRequest first=BChatPushState.previewRequest(app,ACCOUNT);
    BChatPushState.acceptPreviewMode(app,first,"full",1,(ok,durable)->check(ok&&durable,"fresh authenticated preview committed"));
    flush();check(BChatPushState.previewMode(app,ACCOUNT).equals("full"),"explicit current full enabled");
+   BChatNotificationConversations.Change rich=BChatNotificationConversations.append(frame(),"full");
+   BChatPushState.Delivery preRights=BChatPushState.delivery(app,ACCOUNT);
+   BChatPushState.PreviewRequest unaffectedControl=BChatPushState.previewRequest(app,ACCOUNT);
+   BChatPushState.Registration unaffectedRegistration=BChatPushState.registration(app,scope);
+   BChatPushState.contentInvalidated(app,new AccountScope("https://example.invalid","bchat_fixture",99));
+   check(BChatNotificationConversations.present(rich.conversation,()->{}),
+       "wrong account cannot invalidate current conversation presentation");
+   BChatPushState.contentInvalidated(app,scope);
+   check(!BChatPushState.present(preRights,mode->{}),"rights presentation serial rejects a stale local provider callback");
+   check(!BChatNotificationConversations.present(rich.conversation,()->{}),"rights invalidation clears private RAM snapshot");
+   check(BChatPushState.currentPreviewRequest(unaffectedControl),"presentation invalidation preserves authenticated preview ticket");
+   BChatPushState.registeredAsync(app,unaffectedRegistration,ACCOUNT,
+       (ok,durable)->check(ok&&durable,"presentation serial does not invalidate registration ticket"));flush();
+   BChatNotificationConversations.Change beforePendingRegistration=BChatNotificationConversations.append(frame(),"full");
+   BChatPushState.Delivery beforePendingRights=BChatPushState.delivery(app,ACCOUNT);
+   BChatPushState.PreviewRequest stillCurrentControl=BChatPushState.previewRequest(app,ACCOUNT);
+   BChatPushState.Registration pendingRegistration=BChatPushState.registration(app,scope);
+   BChatPushState.registeredAsync(app,pendingRegistration,ACCOUNT,
+       (ok,durable)->check(ok&&durable,"same binding registration completes after rights reset"));
+   check(!BChatPushState.matches(app,ACCOUNT),"registration write held pending for rights interleaving");
+   BChatPushState.contentInvalidated(app,scope);
+   check(!BChatNotificationConversations.present(beforePendingRegistration.conversation,()->{}),
+       "rights reset clears rich RAM even while same binding registration commit is pending");
+   flush();
+   check(!BChatPushState.present(beforePendingRights,mode->{}),
+       "registration completion cannot revive delivery captured before rights reset");
+   check(BChatPushState.currentPreviewRequest(stillCurrentControl),
+       "pending-registration presentation reset preserves current authenticated privacy ticket");
    BChatPushState.Delivery beforeRecheck=BChatPushState.delivery(app,ACCOUNT);
    BChatPushState.verifiedAccount(app,scope);
    check(BChatPushState.present(beforeRecheck,mode->check(mode.equals("full"),"same-account recheck keeps preview")),
        "same-account bridge recheck preserves existing delivery generation");
    BChatPushState.PreviewRequest oldGet=BChatPushState.previewRequest(app,ACCOUNT);
+   BChatNotificationConversations.Change beforeNoneBuffer=BChatNotificationConversations.append(frame(),"full");
+   BChatPushState.Delivery beforeNoneDelivery=BChatPushState.delivery(app,ACCOUNT);
    BChatPushState.beginPreviewChange(app,ACCOUNT,"none",(ticket,durable)->check(ticket!=null&&durable,"none intent durably saved"));
    check(BChatPushState.previewMode(app,ACCOUNT).equals("none"),"none applies before disk or HTTP finishes");
+   check(!BChatNotificationConversations.present(beforeNoneBuffer.conversation,()->{}),"local privacy restriction clears rich RAM before disk completion");
+   check(!BChatPushState.present(beforeNoneDelivery,mode->{}),"local privacy restriction rejects previously captured delivery before disk completion");
    BChatPushState.acceptPreviewMode(app,oldGet,"full",1,(ok,durable)->check(!ok,"old GET full rejected after local none intent"));
    flush();
    BChatPushState.Delivery current=BChatPushState.delivery(app,ACCOUNT);
@@ -431,7 +552,28 @@ with tempfile.TemporaryDirectory(prefix="push-routing-", dir=temporary_root) as 
         path.write_text(content, encoding="utf-8")
     production = root / "app/src/main/java/com/baseer/freshchat"
     sources = list(target.rglob("*.java")) + [production / "BChatPushState.java",
+              production / "BChatNotificationPresentationReset.java", production / "BChatNotificationConversations.java",
+              production / "NotificationPresentation.java",
               production / "NotificationSettingsProtocol.java", root / "tests/NotificationSettingsProtocolTest.java",
               production / "sync/AccountScope.java", production / "sync/OutboxPolicy.java"]
-    subprocess.run([shutil.which("javac") or "javac", "-encoding", "UTF-8", "-d", str(target), *map(str, sources)], check=True)
-    subprocess.run([shutil.which("java") or "java", "-cp", str(target), "com.baseer.freshchat.PushRoutingHarness"], check=True)
+    inputs = sources + [Path(__file__).resolve()]
+    before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
+    if evidence:
+        for path in inputs:
+            relative = Path('adapters') / path.relative_to(target) if path.is_relative_to(target) else path.relative_to(root)
+            frozen = evidence / 'inputs' / relative
+            frozen.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, frozen)
+        (evidence / 'source-manifest.json').write_text(json.dumps(before, indent=2) + '\n', encoding='utf-8')
+    commands = [('compile', [shutil.which('javac') or 'javac', '-encoding', 'UTF-8', '-d', str(target), *map(str, sources)]),
+                ('run', [shutil.which('java') or 'java', '-cp', str(target), 'com.baseer.freshchat.PushRoutingHarness'])]
+    for name, command in commands:
+        result = subprocess.run(command, capture_output=bool(evidence), text=True, encoding='utf-8', errors='replace')
+        if evidence:
+            output = (result.stdout or '') + (result.stderr or '')
+            (evidence / (name + '.log')).write_text(output, encoding='utf-8')
+            print(output, end='')
+        if any(hashlib.sha256(p.read_bytes()).hexdigest() != before[str(p)] for p in inputs):
+            raise SystemExit('Test input changed during verification; frozen-source result rejected.')
+        if result.returncode:
+            raise SystemExit(result.returncode)

@@ -2663,6 +2663,12 @@ public final class OdooIdentityActivity extends Activity {
                 &&account.key.equals(scope.key)&&(chatAllowed()||permissionSet.taskView);
     }
 
+    private boolean notificationPresentationOwned(AccountScope scope) {
+        return scope != null && scope == account && !closed && verified && !offlineHistory
+                && (receiptStorageGeneration == historyGlobalGeneration
+                || receiptNeedsRoomRebind && receiptRebindGeneration == historyGlobalGeneration);
+    }
+
     private void ensureBChatNotificationChannel(NotificationManager notifications) {
         if (Build.VERSION.SDK_INT < 26 || notifications == null) return;
         if (notifications.getNotificationChannel("bchat-events-v3") != null) return;
@@ -4142,6 +4148,7 @@ public final class OdooIdentityActivity extends Activity {
         String kind = change.getString("kind");
         long roomId = change.has("room_id") ? positiveId(change.get("room_id")) : 0;
         if ("revoked".equals(kind)) {
+            if (notificationPresentationOwned(account)) BChatPushState.contentInvalidated(this, account);
             if (historyCache != null && account != null && roomId > 0)
                 try { purgeCachedRoom(account, roomId); }
                 catch (RuntimeException storage) { purgeHistory(); }
@@ -4151,6 +4158,7 @@ public final class OdooIdentityActivity extends Activity {
                 liveMessagesDirty = false;
             }
         } else if ("task_revoked".equals(kind)) {
+            if (notificationPresentationOwned(account)) BChatPushState.contentInvalidated(this, account);
             liveTasksDirty = true;
         } else if ("room".equals(kind)) {
             liveRoomsDirty = true;
@@ -4536,6 +4544,7 @@ public final class OdooIdentityActivity extends Activity {
                 || previous.orderView && !next.orderView || previous.orderCreate && !next.orderCreate
                 || previous.orderReceive && !next.orderReceive);
         if (revoked) {
+            if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
             flushDraftSave();
             BChatStorageRepository.invalidate(scope);
             ++localReadSerial;
@@ -4649,6 +4658,7 @@ public final class OdooIdentityActivity extends Activity {
     private void restrictCompanyScope(AccountScope scope, Set<Long> allowed) {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
+        if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
         if(transferCoordinator!=null)transferCoordinator.revoke(scope);
         invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
@@ -4807,8 +4817,10 @@ public final class OdooIdentityActivity extends Activity {
         }
         lastPermissionRefreshAt = now;
         final AccountScope scoped = account;
+        final int notificationSession = epoch, notificationGeneration = historyGlobalGeneration;
         fetchV2("GET", V2_BOOTSTRAP, null, (status, result) -> {
-            if (scoped != account || !verified) return;
+            if (scoped != account || !verified || notificationSession != epoch
+                    || notificationGeneration != historyGlobalGeneration) return;
             if (handleV2TransportFailure(status)) return;
             if (status == 403) { closeDeniedPermissionView(); return; }
             if (status >= 500 || status == 429) return; // A temporary service failure is not a revocation.
@@ -4860,7 +4872,12 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void verifyV2() {
+        final AccountScope notificationAccount = account;
+        final int notificationSession = epoch, notificationGeneration = historyGlobalGeneration;
+        if (closed || !verified || offlineHistory || notificationAccount == null) return;
         fetchV2("GET", V2_BOOTSTRAP, null, (statusCode, result) -> {
+            if (closed || !verified || offlineHistory || account != notificationAccount
+                    || notificationSession != epoch || notificationGeneration != historyGlobalGeneration) return;
             traceTransport("D08_V2_VERIFY_" + statusCode);
             if (handleV2TransportFailure(statusCode)) return;
             if (statusCode == 403) purgeHistory();
@@ -4896,6 +4913,9 @@ public final class OdooIdentityActivity extends Activity {
                 PermissionSet granted = permissionContract(result, account);
                 csrfToken = token;
                 BChatPushState.verifiedAccount(this, account);
+                // This fully validated bootstrap owns its captured generation even before the
+                // receipt binding exists. Clear old presentation before clearChatView resets it.
+                BChatPushState.contentInvalidated(this, notificationAccount);
                 requestFirebaseToken();
                 if (outbox == null) outbox = new BChatV2Outbox(this);
                 if (mediaStore == null) mediaStore = new BChatConnectedMediaStore(this);
@@ -6229,6 +6249,15 @@ public final class OdooIdentityActivity extends Activity {
                             || "file".equals(room.lastMessageKind)))
                         throw new IllegalArgumentException();
                     validated.add(room);
+                }
+                if (notificationPresentationOwned(account)) {
+                    boolean lostMembership = false;
+                    for (Room prior : rooms) {
+                        boolean retained = false;
+                        for (Room current : validated) if (prior.sameMembership(current)) { retained = true; break; }
+                        if (!retained) { lostMembership = true; break; }
+                    }
+                    if (lostMembership) BChatPushState.contentInvalidated(this, account);
                 }
                 Room active = selectedRoom;
                 Room refreshedActive = null;

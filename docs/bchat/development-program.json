@@ -524,7 +524,7 @@
       ],
       "owner": "Android والتنبيهات",
       "status": "in_progress",
-      "implementationEvidence": "Reviewed server/Java display identity/UTF8/privacy contract, durable512/7day sound reservation and nondisruptive audio tryAcquireIdle foundations. FCM system route reserves bymessagekey; invalid/oldchat payload generic silent; summary best-effort quiet, nonchat only-alert-once preserved. Explicit installation-wide channel opt-in/revert UI plus3fixedchannels and committedrouting implemented; existingv3/targetchoices neverreset. Unknownrouting genericQUIET; finalROUTING-to-STATE fence refusesstalechannel selection. Foregroundsoft broker/mute integration and C15MessagingStyle remainpending",
+      "implementationEvidence": "Reviewed server/Java display identity/UTF8/privacy contract, durable512/7day sound reservation and nondisruptive audio tryAcquireIdle foundations. FCM system route reserves bymessagekey; invalid/oldchat payload generic silent; summary best-effort quiet, nonchat only-alert-once preserved. Explicit installation-wide channel opt-in/revert UI plus3fixedchannels and committedrouting implemented; existingv3/targetchoices neverreset. Unknownrouting genericQUIET; finalROUTING-to-STATE fence refusesstalechannel selection. C15MessagingStyle source integrated separately; foregroundsoft broker/mute integration and complete acceptance remainpending",
       "verificationEvidence": "Limited source GO DEV092/093.10 purePython/567JVMcontract;39 extracted callback/ledger assertions with explicitAndroid/channeladapters;719 actualmodule JVM assertions with API26/35adapters;36nativeAndroid35channel/prefs+9newprocess assertions PASS. Settings1814assertions/8configs/12journeys/35decorcaptures withfakeHost;48inputhashes matched and19affectedframes reviewed byimplementer,5representatives byroot.187 actualAndroid media assertions include5idlefocus with injectedfocus/callboundary. Firebaseproductjavac22s/currentAndroidsource+structure+guardintegrityPASS. OutgoingpayloadORM includedaccepted202testcheckpoint. NoactualOSnotify/audio/FCM/OEM/API26runtime/fullActivity or completeC14acceptance",
       "acceptance": "صوت واحد لكل حدث؛ لا صوت للتاريخ أو عند تفعيل DND أو كتم القناة. ترحيل القنوات يحفظ اختيارات المستخدم."
     },
@@ -543,9 +543,9 @@
         "C14"
       ],
       "owner": "Android والتنبيهات",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Bounded20room/5message process-only projection, fresh MessagingStyle/Person28 renderer with26/27 fallback, generic none/sender privacy, per-room/recipient-epoch tags and generic silent summary under routing/channel/buffer gates. Presentation serial/reset separate from auth/control/sound ledger; selective cancellation preserves transfer/unrelated tags. Three rights/company/bootstrap registration interleavings fixed. Bounded512 known(tag,id) RAM registry admits before each native notify and cancels queued invisible rows; failedcancel retains/refuses, refusedchild cannot notify/shown, summary best-effort. No preview disk/network/avatar fetch/new dependencies",
+      "verificationEvidence": "Limited independent source and native fixture GO.430pure projection/196legacyJVM adapter/1881actualAndroid35 Builder+Parcel checks across48cases. Current387PushState+47protocol use actualReset with explicitplatform/prefs adapters;48callback use postingadmission adapter.35extracted Activity rights/proof checks, not fullActivity/HTTP. CurrentFirebaseproductjavac13s and Androidsource/structure/guardintegrity PASS. EarlierSettings1850/8configs/12journeys/35captures matched51inputs at its priorReset freeze, not latestReset revalidation. Native sameharness archivedA201 baseline failed4/20 lasting-summary windows; current169536BE passed20/20 (155assertions), then160main+19actualnewprocesscold. Independentreview matched15/15inputs each and14common nonReset inputs.1500ms window/final500ms sampledabsence is fixturecriterion, not instantcancel/SLA; cold covers visiblepriorprocessrows only. Synthetic auth/event/notificationdriver/executor/resources, not actualservice/FCM/HTTP/Activity/audio/OEM/API26/ownerphone/productacceptance",
       "acceptance": "MessagingStyle وسياق الغرفة والمرسل وأيقونة صحيحة؛ حسابان وغرفتان دون خلط."
     },
     {

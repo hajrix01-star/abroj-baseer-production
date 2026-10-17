@@ -469,6 +469,32 @@
         "android/bchat/tools/test-notification-contract.py"
       ],
       "suites": ["backend-contracts", "source-structure", "android-source-contract"]
+    },
+    {
+      "id": "bounded-conversation-notification-and-privacy-reset",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Private conversation presentation retains at most twenty RAM rooms and five messages per room, applies the current privacy ceiling before rendering, and retracts owned presentation without cancelling transfer notifications or resetting sound claims.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationConversations.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatMessagingNotificationStyle.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatNotificationPresentationReset.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
+        "android/bchat/tests/NotificationConversationsTest.java",
+        "android/bchat/tests/notification-messaging/**",
+        "android/bchat/tests/notification-rights-reset/**",
+        "android/bchat/tests/notification-privacy/**",
+        "android/bchat/tools/test-notification-conversations.py",
+        "android/bchat/tools/test-notification-conversations-hook.py",
+        "android/bchat/tools/test-notification-messaging.py",
+        "android/bchat/tools/test-notification-rights-reset.py",
+        "android/bchat/tools/test-notification-privacy-android.py",
+        "android/bchat/tools/test-notification-presentation.py",
+        "android/bchat/tools/test-push-routing-state.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
     }
   ]
 }

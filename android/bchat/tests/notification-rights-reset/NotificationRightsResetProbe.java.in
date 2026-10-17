@@ -1,0 +1,217 @@
+package com.baseer.freshchat;
+
+import com.baseer.freshchat.sync.AccountScope;
+import java.util.*;
+
+/** Source-specific seam probe, NOT the product Activity or Android/HTTP/PushState execution. */
+public final class NotificationRightsResetProbe {
+    private static int assertions;
+    private static final String DATABASE="synthetic", V2_BOOTSTRAP="/bchat/api/v2/bootstrap";
+    private AccountScope account=new AccountScope("https://notification-fixture.invalid",DATABASE,7);
+    private String pushScopeKey=account.key;
+    private int epoch=3,historyGlobalGeneration=7,historyWriteGeneration=4;
+    private int receiptStorageGeneration=7,receiptRebindGeneration;
+    private boolean receiptNeedsRoomRebind,closed,verified=true,offlineHistory;
+    private final Set<Long> v1Companies=new HashSet<>(Arrays.asList(1L,2L));
+    private final List<String> effects=new ArrayList<>();
+    private int clears,chatResets,permissionApplications,cachePurges,denials,loadRoomsCalls,profileChecks;
+    private boolean profileValid=true,permissionsValid=true,mediaAvailable,receiptsAvailable,receiptDeliverySupported,roomsVerifiedForSession;
+    private String csrfToken;
+    private PermissionSet permissionSet=new PermissionSet(true,true,true);
+    private final Transfer transferCoordinator=new Transfer();
+    private Panel notificationSettingsPanel;
+    private BChatV2Outbox outbox;
+    private BChatConnectedMediaStore mediaStore;
+    private JSONObject profileSnapshot;
+    private long selectedChatCompanyId,orderCompanyId;
+    private final StubView shellNotice=new StubView(),shell=new StubView(),chatRoot=new StubView();
+    private StubView loginReleaseFooter;
+    private final StubHandler handler=new StubHandler();
+    private V2Callback pending;
+
+    private static void check(boolean condition,String label){
+        if(!condition)throw new AssertionError(label);++assertions;
+    }
+    private interface V2Callback {void complete(int status,JSONObject response);}
+    private void fetchV2(String method,String path,Object body,V2Callback callback){pending=callback;effects.add("GET");}
+    private void reply(int status,JSONObject body){V2Callback callback=pending;pending=null;callback.complete(status,body);}
+    private void traceTransport(String ignored){}
+    private boolean handleV2TransportFailure(int status){return status==0;}
+    private void purgeHistory(){++cachePurges;}
+    private void invalidateReceiptRoomBinding(){
+        effects.add("receipt-invalidate");
+        receiptNeedsRoomRebind=receiptStorageGeneration==historyGlobalGeneration
+            ||receiptNeedsRoomRebind&&receiptRebindGeneration==historyGlobalGeneration;
+        receiptRebindGeneration=receiptNeedsRoomRebind?historyGlobalGeneration+1:0;
+        receiptStorageGeneration=0;
+    }
+    private void flushDraftSave(){effects.add("draft-flush");}
+    private void closeReceiptDetails(){}
+    private JSONObject verifiedProfile(JSONObject data,Set<Long> companies){
+        ++profileChecks;if(!profileValid)throw new IllegalArgumentException();return new JSONObject();
+    }
+    private PermissionSet permissionContract(JSONObject data,AccountScope scope){
+        if(!permissionsValid||scope!=account)throw new IllegalArgumentException();
+        return new PermissionSet(false,false,true);
+    }
+    private void requestFirebaseToken(){}
+    private void clearChatView(){
+        effects.add("chat-reset");++chatResets;receiptStorageGeneration=0;
+        receiptNeedsRoomRebind=false;receiptRebindGeneration=0;
+    }
+    private static boolean flag(JSONObject data,String key,boolean expected){return data.get(key)==Boolean.valueOf(expected);}
+    private static long positiveId(Object value){
+        if(!(value instanceof Number)||((Number)value).longValue()<=0)throw new IllegalArgumentException();
+        return ((Number)value).longValue();
+    }
+    private void refreshChatCompanySelector(){}
+    private long savedOrderCompany(AccountScope scope){return 0;}
+    private void loadLocalContext(AccountScope scope){}
+    private boolean chatAllowed(){return permissionSet.chatView;}
+    private void loadRooms(){++loadRoomsCalls;}
+    private void setScreenPadding(int a,int b){}
+    private void switchSection(String section){}
+    private void showShell(){}
+    private void maybeProbeOrderCapability(){}
+    private void maybeRegisterPush(){}
+    private void refreshAttentionBadge(){}
+    private void releaseWeb(){++denials;}
+
+    %OWNED%
+    %COMPANY_PREFIX%
+    %PERMISSION_PREFIX%
+    %VERIFY%
+
+    // Explicit platform/JSON/PushState/downstream-UI adapters, not product implementations.
+    private static final class BChatPushState {
+        static void verifiedAccount(NotificationRightsResetProbe host,AccountScope scope){host.pushScopeKey=scope.key;}
+        static void contentInvalidated(NotificationRightsResetProbe host,AccountScope scope){
+            if(scope==null||!scope.key.equals(host.pushScopeKey))return;
+            host.effects.add("presentation-clear");++host.clears;
+        }
+        static void clearAccount(NotificationRightsResetProbe host){host.effects.add("route-clear");++host.denials;}
+    }
+    private final class Transfer {void revoke(AccountScope scope){effects.add("transfer-revoke");}}
+    private static final class MediaRights {boolean view=true,upload=true,download=true;}
+    private static final class PermissionSet {
+        boolean chatView,chatSend,taskView,taskManage=true,media=true,groupCreate=true,groupManage=true;
+        boolean orderView=true,orderCreate=true,orderReceive=true;
+        MediaRights mediaRights=new MediaRights();
+        PermissionSet(boolean chatView,boolean chatSend,boolean taskView){
+            this.chatView=chatView;this.chatSend=chatSend;this.taskView=taskView;
+        }
+    }
+    private static final class Panel {void dismiss(){}}
+    private static final class BChatV2Outbox {BChatV2Outbox(Object ignored){}}
+    private static final class BChatConnectedMediaStore {BChatConnectedMediaStore(Object ignored){}}
+    private static final class ReceiptDeliveryProtocol {static boolean supported(JSONObject ignored){return true;}}
+    private static final class R {static final class string {static final int chat_v2_loading=1,chat_v2_denied=2;}}
+    private static final class View {static final int GONE=8,VISIBLE=0;}
+    private static final class StubView {void setText(int ignored){}void setVisibility(int ignored){}}
+    private static final class StubHandler {void post(Runnable ignored){}}
+    private static final class JSONObject {
+        final Map<String,Object> values=new LinkedHashMap<>();
+        JSONObject put(String key,Object value){values.put(key,value);return this;}
+        Object get(String key){if(!values.containsKey(key))throw new IllegalArgumentException(key);return values.get(key);}
+        String getString(String key){return (String)get(key);}
+        JSONObject getJSONObject(String key){return (JSONObject)get(key);}
+        JSONArray getJSONArray(String key){return (JSONArray)get(key);}
+        long optLong(String key){Object value=values.get(key);return value instanceof Number?((Number)value).longValue():0;}
+        Iterator<String> keys(){return values.keySet().iterator();}
+    }
+    private static final class JSONArray {
+        final List<Object> values=new ArrayList<>();
+        JSONArray(Object... values){this.values.addAll(Arrays.asList(values));}
+        int length(){return values.size();}Object get(int index){return values.get(index);}
+    }
+    private static JSONObject bootstrap(){
+        JSONObject caps=new JSONObject().put("rooms",true).put("messages",true).put("history",true)
+            .put("attachments",true).put("delivery_receipts",true).put("read_receipts",true).put("tasks",false);
+        return new JSONObject().put("api_version",2L).put("database",DATABASE).put("user_id",7L)
+            .put("csrf_token","synthetic-token").put("company_ids",new JSONArray(1L,2L)).put("capabilities",caps);
+    }
+
+    private static void companyCurrent(){
+        NotificationRightsResetProbe host=new NotificationRightsResetProbe();
+        host.restrictCompanyScope(host.account,Collections.singleton(1L));
+        check(host.clears==1,"P2 company reduction must clear presentation before rights rows are trimmed");
+        check(host.effects.indexOf("presentation-clear")<host.effects.indexOf("receipt-invalidate"),
+            "company presentation clear precedes receipt/global invalidation");
+        check(host.historyGlobalGeneration==8&&host.receiptStorageGeneration==0&&host.receiptNeedsRoomRebind
+            &&host.receiptRebindGeneration==8,"existing receipt rebind/invalidation order unchanged");
+        host=new NotificationRightsResetProbe();host.receiptStorageGeneration=0;
+        host.receiptNeedsRoomRebind=true;host.receiptRebindGeneration=7;
+        host.restrictCompanyScope(host.account,Collections.singleton(1L));
+        check(host.clears==1,"locally-owned pending rebind retains current rights-clear authority");
+        check(host.receiptRebindGeneration==8,"legitimate company rebind still advances once");
+    }
+    private static void companyFences(){
+        for(int scenario=0;scenario<6;++scenario){
+            NotificationRightsResetProbe host=new NotificationRightsResetProbe();
+            if(scenario==0)host.receiptStorageGeneration=6;
+            if(scenario==1){host.receiptStorageGeneration=0;host.receiptNeedsRoomRebind=true;host.receiptRebindGeneration=6;}
+            if(scenario==2)host.closed=true;
+            if(scenario==3)host.verified=false;
+            if(scenario==4)host.offlineHistory=true;
+            AccountScope target=scenario==5?new AccountScope(host.account.origin,DATABASE,7):host.account;
+            host.restrictCompanyScope(target,Collections.singleton(1L));
+            check(host.clears==0,"stale/unverified/offline/other-scope company response cannot cancel current presentation");
+        }
+        NotificationRightsResetProbe unchanged=new NotificationRightsResetProbe();
+        unchanged.restrictCompanyScope(unchanged.account,new HashSet<>(unchanged.v1Companies));
+        check(unchanged.clears==0&&unchanged.effects.isEmpty(),"unchanged company set does not cancel presentation");
+        NotificationRightsResetProbe expansion=new NotificationRightsResetProbe();
+        expansion.restrictCompanyScope(expansion.account,new HashSet<>(Arrays.asList(1L,2L,3L)));
+        check(expansion.clears==0&&expansion.effects.isEmpty(),"unverified company expansion is not a reset source");
+    }
+    private static void bootstrapCurrent(){
+        NotificationRightsResetProbe host=new NotificationRightsResetProbe();
+        host.receiptStorageGeneration=0; // New/reverified Activity has not accepted its v2 receipt binding yet.
+        host.verifyV2();host.reply(200,bootstrap());
+        check(host.clears==1,"P2 fresh authenticated bootstrap clears old presentation even before receipt binding exists");
+        check(host.effects.indexOf("presentation-clear")<host.effects.indexOf("chat-reset"),
+            "bootstrap proof clears presentation before clearChatView erases local ownership evidence");
+        check(host.profileChecks==1&&host.permissionApplications==1&&!host.permissionSet.chatView,
+            "full extracted bootstrap validates profile/permissions and applies a rights reduction");
+        check(host.receiptStorageGeneration==7&&!host.receiptNeedsRoomRebind&&host.receiptRebindGeneration==0,
+            "C13 bootstrap binding assignment remains after clearChatView and permission application");
+        check(host.chatResets==1&&host.denials==0,"successful proof keeps original view-reset path");
+    }
+    private static void bootstrapFences(){
+        for(int scenario=0;scenario<7;++scenario){
+            NotificationRightsResetProbe host=new NotificationRightsResetProbe();host.verifyV2();
+            if(scenario==0)++host.epoch;
+            if(scenario==1)++host.historyGlobalGeneration;
+            if(scenario==2)host.account=new AccountScope(host.account.origin,DATABASE,7);
+            if(scenario==3)host.account=new AccountScope(host.account.origin,DATABASE,8);
+            if(scenario==4)host.closed=true;
+            if(scenario==5)host.verified=false;
+            if(scenario==6)host.account=null;
+            host.reply(200,bootstrap());
+            check(host.clears==0&&host.chatResets==0&&host.permissionApplications==0&&host.denials==0,
+                "stale bootstrap scope/session/global/closed/verification cannot mutate presentation/current session");
+        }
+        for(int scenario=0;scenario<9;++scenario){
+            NotificationRightsResetProbe host=new NotificationRightsResetProbe();JSONObject data=bootstrap();
+            if(scenario==0)data.put("api_version",1L);
+            if(scenario==1)data.put("database","other");
+            if(scenario==2)data.put("user_id",8L);
+            if(scenario==3)data.put("csrf_token","");
+            if(scenario==4)data.put("company_ids",new JSONArray(1L));
+            if(scenario==5)data.getJSONObject("capabilities").put("messages",false);
+            if(scenario==6)host.profileValid=false;
+            if(scenario==7)host.permissionsValid=false;
+            host.verifyV2();host.reply(scenario==8?500:200,data);
+            check(host.clears==0&&host.chatResets==0&&host.permissionApplications==0,
+                "no successful presentation-clear authority before all bootstrap proof checks");
+        }
+        NotificationRightsResetProbe transport=new NotificationRightsResetProbe();transport.verifyV2();transport.reply(0,null);
+        check(transport.clears==0&&transport.chatResets==0,"temporary transport failure has no reset authority");
+    }
+    public static void main(String[] args){
+        String scenario=args[0];
+        if(!"bootstrap".equals(scenario)){companyCurrent();companyFences();}
+        if(!"company".equals(scenario)){bootstrapCurrent();bootstrapFences();}
+        System.out.println("PASS "+assertions+" extracted Activity rights/proof seam assertions; no full Activity/HTTP/Android/PushState execution");
+    }
+}

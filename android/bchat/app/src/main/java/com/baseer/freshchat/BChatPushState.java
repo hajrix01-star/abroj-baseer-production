@@ -47,7 +47,7 @@ public final class BChatPushState {
         String preview = "none", previewDesired, privacyScope, privacyInstallation;
         String controlUuid, controlAccount, durableControl;
         long controlRevision = -1;
-        long epoch, intent, previewRevision = -1, sequence, registrationSerial;
+        long epoch, intent, previewRevision = -1, sequence, registrationSerial, presentationSerial;
         State(Context context, NotificationManager manager) { this.context = context; notifications = manager; }
     }
     public static final class Registration {
@@ -87,8 +87,11 @@ public final class BChatPushState {
     static final class Delivery {
         private final State owner;
         private final String account;
-        private final long epoch;
-        private Delivery(State owner) { this.owner = owner; account = owner.account; epoch = owner.epoch; }
+        private final long epoch, presentationSerial;
+        private Delivery(State owner) {
+            this.owner = owner; account = owner.account; epoch = owner.epoch;
+            presentationSerial = owner.presentationSerial;
+        }
     }
     private static State current(Context context) {
         synchronized (ROUTING) { if (state != null) return state; }
@@ -147,7 +150,9 @@ public final class BChatPushState {
             s.savedInstallation = validUuid(installation) ? installation : null;
             // Never restore an opt-in from possibly stale/failed preference writes after process death.
             // Only a fresh authenticated preference response can enable sender/full in this process.
-            s.preview = "none"; s.previewRevision = -1; s.storageHealthy = read; s.ready = true;
+            s.preview = "none"; s.previewRevision = -1; s.storageHealthy = read;
+            clearPresentationLocked(s); // Cold/unknown privacy must also retract earlier-process rich rows.
+            s.ready = true;
             if (read && validPreview(desired) && s.scope != null && s.scope.equals(pendingScope)
                     && s.installation.equals(pendingInstallation)) {
                 s.previewDesired = desired; s.privacyScope = pendingScope; s.privacyInstallation = pendingInstallation;
@@ -177,8 +182,27 @@ public final class BChatPushState {
             s.previewDesired = null; s.privacyScope = null; s.privacyInstallation = null;
             clearControlLocked(s);
         }
-        // Serialized with the final notification gate: no old notify can run after cancellation.
-        if (s.notifications != null) try { s.notifications.cancelAll(); } catch (RuntimeException ignored) { }
+        clearPresentationLocked(s);
+    }
+    /** Only presentation is invalidated; authenticated registration/control tickets and sound claims survive. */
+    private static void clearPresentationLocked(State s) {
+        ++s.presentationSerial;
+        BChatNotificationConversations.reset();
+        BChatNotificationPresentationReset.cancel(s.notifications);
+    }
+    private static void previewLocked(State s, String mode) {
+        if (rank(mode) < rank(s.preview)) clearPresentationLocked(s);
+        s.preview = mode;
+    }
+    /** Called only after a current authenticated rights/membership result, never from a stale Activity. */
+    public static void contentInvalidated(Context context, AccountScope scope) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            // Retraction needs a current verified scope, not a durable delivery route. A same-binding
+            // registration write temporarily disables routing but must never defer a rights reset.
+            if (scope == null || !s.ready || !Objects.equals(scope.key, s.scope)) return;
+            clearPresentationLocked(s);
+        }
     }
     public static void verifiedAccount(Context context, AccountScope account) {
         if (account == null) throw new IllegalArgumentException("Verified account required");
@@ -234,6 +258,7 @@ public final class BChatPushState {
             boolean sameBinding = serverAccountKey.equals(s.account) && request.token.equals(s.registeredToken);
             s.account = serverAccountKey; s.registeredToken = request.token; s.routeDurable = false;
             if (!sameBinding) {
+                clearPresentationLocked(s);
                 s.preview = "none"; s.previewRevision = -1; ++s.intent;
                 if (!Objects.equals(s.scope, s.privacyScope) || !Objects.equals(s.installation, s.privacyInstallation)
                         || s.controlAccount != null && !serverAccountKey.equals(s.controlAccount)) {
@@ -275,6 +300,7 @@ public final class BChatPushState {
         synchronized (ROUTING) {
             State s = state;
             if (delivery == null || s != delivery.owner || !active(s) || s.epoch != delivery.epoch
+                    || s.presentationSerial != delivery.presentationSerial
                     || !delivery.account.equals(s.account)) return false;
             presentation.show(s.preview);
             return true;
@@ -304,7 +330,7 @@ public final class BChatPushState {
                 deliver(callback, null, false); return;
             }
             ++s.intent; s.previewDesired = desired; s.privacyScope = s.scope; s.privacyInstallation = s.installation;
-            if (rank(desired) < rank(s.preview)) s.preview = desired;
+            if (rank(desired) < rank(s.preview)) previewLocked(s, desired);
             PreviewRequest request = new PreviewRequest(s);
             persistLocked(s, saved -> MAIN.post(() -> {
                 boolean valid;
@@ -321,7 +347,7 @@ public final class BChatPushState {
                     || revision == state.previewRevision && !state.preview.equals(mode)) {
                 deliver(callback, false, false); return;
             }
-            State s = state; s.preview = mode; s.previewRevision = revision; s.previewDesired = null;
+            State s = state; previewLocked(s, mode); s.previewRevision = revision; s.previewDesired = null;
             s.privacyScope = null; s.privacyInstallation = null;
             persistLocked(s, saved -> MAIN.post(() -> {
                 boolean valid;
@@ -374,7 +400,7 @@ public final class BChatPushState {
             ++s.intent; s.previewDesired = desired; s.privacyScope = s.scope; s.privacyInstallation = s.installation;
             s.controlUuid = UUID.randomUUID().toString(); s.controlAccount = s.account;
             s.controlRevision = expectedRevision; s.durableControl = null;
-            if (rank(desired) < rank(s.preview)) s.preview = desired;
+            if (rank(desired) < rank(s.preview)) previewLocked(s, desired);
             saveControlTicketLocked(s, callback);
         }
     }
@@ -415,7 +441,7 @@ public final class BChatPushState {
             State s = state;
             boolean superseded = revision > operationRevision;
             String acceptedMode = superseded && rank(mode) > rank(s.preview) ? s.preview : mode;
-            s.preview = acceptedMode; s.previewRevision = revision;
+            previewLocked(s, acceptedMode); s.previewRevision = revision;
             // The original operation is proven, but its later replacement is not a new
             // opt-in by this UI. Keep the stricter ceiling across GET and process death.
             s.previewDesired = superseded ? acceptedMode : null;
@@ -509,7 +535,7 @@ public final class BChatPushState {
                             && Objects.equals(token, s.token) && Objects.equals(registered, s.registeredToken))
                         s.routeDurable = saved && validUuid(account);
                     // A failed broader preview write is never left enabled in RAM or restored on cold load.
-                    if (!saved && sequence == s.sequence) { s.preview = "none"; ++s.intent; }
+                    if (!saved && sequence == s.sequence) { previewLocked(s, "none"); ++s.intent; }
                     changedLocked();
                 }
             }

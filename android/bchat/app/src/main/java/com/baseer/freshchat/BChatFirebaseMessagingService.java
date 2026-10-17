@@ -92,29 +92,33 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
         // crash window after notify but before the durable presentation receipt.
         try {
             boolean[] channelPosted = {false};
+            boolean[] bufferPosted = {false};
+            boolean[] childPosted = {false};
             boolean posted = BChatPushState.present(delivery, mode -> {
                 channelPosted[0] = BChatNotificationChannels.present(channelRoute, () -> {
                 String privateMode = channelRoute.known ? mode : "none";
-                String sender = frame != null && !"none".equals(privateMode) ? frame.sender : "";
-                String preview = frame != null && "full".equals(privateMode) ? frame.preview : "";
-                if (frame != null && "full".equals(privateMode) && preview.isEmpty() && frame.attachment)
-                    preview = getString(R.string.bchat_push_attachment);
+                BChatNotificationConversations.Change projection = BChatNotificationConversations.append(frame, privateMode);
+                if (projection != null) for (String tag : projection.evictedTags) manager.cancel(tag, 0);
+                Runnable render = () -> {
                 Notification publicView = new Notification.Builder(this, channelRoute.channelId)
                         .setSmallIcon(R.drawable.ic_notification).setContentTitle("BChat")
                         .setContentText(getString(textId)).setVisibility(Notification.VISIBILITY_PUBLIC).build();
-                Notification.Builder builder = new Notification.Builder(this, channelRoute.channelId)
+                Notification.Builder builder = (projection == null
+                        ? new Notification.Builder(this, channelRoute.channelId)
+                            .setContentTitle("BChat").setContentText(getString(textId))
+                        : BChatMessagingNotificationStyle.create(this, channelRoute.channelId, projection.conversation))
                         .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle(sender.isEmpty() ? "BChat" : sender)
-                        .setContentText(preview.isEmpty() ? getString(textId) : preview)
                         .setContentIntent(open).setAutoCancel(true)
                         .setOnlyAlertOnce(!"chat".equals(kind) || !audible)
                         .setGroup(group).setGroupAlertBehavior(audible
                                 ? Notification.GROUP_ALERT_CHILDREN : Notification.GROUP_ALERT_SUMMARY)
                         .setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicView)
                         .setCategory("chat".equals(kind) ? Notification.CATEGORY_MESSAGE : Notification.CATEGORY_REMINDER);
-                if (!preview.isEmpty()) builder.setStyle(new Notification.BigTextStyle().bigText(preview));
                 // The final account/intent ceiling check and notify share the same short RAM lock.
-                manager.notify(presentationKey, 0, builder.build());
+                String notificationTag = projection == null ? presentationKey : projection.conversation.tag;
+                if (!BChatNotificationPresentationReset.posting(manager, notificationTag, 0)) return;
+                manager.notify(notificationTag, 0, builder.build());
+                childPosted[0] = true;
                 // A real group summary is required on Android26+. It is generic,
                 // independently silent even on a loud channel, and never retired
                 // as a chat receipt or as an audible message claim.
@@ -125,14 +129,18 @@ public final class BChatFirebaseMessagingService extends FirebaseMessagingServic
                         .setGroup(group).setGroupSummary(true)
                         .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
                         .setOnlyAlertOnce(true).setAutoCancel(true).build();
+                if (!BChatNotificationPresentationReset.posting(manager, account + ":bchat-summary", 1)) return;
                 try { manager.notify(account + ":bchat-summary", 1, summary); }
                 catch (SecurityException summaryRevoked) {
                     // The child was already accepted. A best-effort summary
                     // failure must not turn that into a failed/unknown event.
                 }
+                };
+                if (projection == null) { render.run(); bufferPosted[0] = true; }
+                else bufferPosted[0] = BChatNotificationConversations.present(projection.conversation, render);
                 });
             });
-            if (!posted || !channelPosted[0]) return;
+            if (!posted || !channelPosted[0] || !bufferPosted[0] || !childPosted[0]) return;
             if (diagnostic) BChatNotificationDiagnostics.record(this, account, event, diagnosticUuid,
                     "displayed", System.currentTimeMillis());
             BChatNotificationLedger.recordShown(this, presentationKey, System.currentTimeMillis());

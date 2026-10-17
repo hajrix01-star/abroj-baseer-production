@@ -94,7 +94,8 @@ print('PASS QA Gradle release version, installed-package About version and in-ap
 push=(root/'app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java').read_text(encoding='utf-8')
 for required in ('bchat-events-v3', 'setSound(Settings.System.DEFAULT_NOTIFICATION_URI',
                  'setVisibility(Notification.VISIBILITY_PRIVATE)', 'NotificationPresentation.parse(data)',
-                 'frame.sender', 'frame.preview', 'Notification.BigTextStyle'):
+                 'BChatNotificationConversations.append(frame, privateMode)',
+                 'BChatMessagingNotificationStyle.create(this, channelRoute.channelId, projection.conversation)'):
  assert required in push, required
 presentation=(root/'app/src/main/java/com/baseer/freshchat/NotificationPresentation.java').read_text(encoding='utf-8')
 for required in ('message_preview', 'sender_name', 'MAX_DATA_BYTES = 3072', 'presentation_v',
@@ -105,7 +106,7 @@ assert '.setOnlyAlertOnce(!"chat".equals(kind) || !audible)' in push
 assert 'Notification.GROUP_ALERT_SUMMARY' in push and 'Notification.GROUP_ALERT_CHILDREN' in push
 assert push.index('BChatNotificationChannels.load(this)') < push.index('BChatNotificationChannels.resolve(kind)')
 assert 'BChatNotificationChannels.present(channelRoute, () -> {' in push
-assert 'if (!posted || !channelPosted[0]) return;' in push
+assert 'if (!posted || !channelPosted[0] || !bufferPosted[0] || !childPosted[0]) return;' in push
 assert 'String privateMode = channelRoute.known ? mode : "none";' in push
 assert 'boolean audible = channelRoute.known &&' in push
 channels=(root/'app/src/main/java/com/baseer/freshchat/BChatNotificationChannels.java').read_text(encoding='utf-8')

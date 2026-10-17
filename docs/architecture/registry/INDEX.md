@@ -2,6 +2,8 @@
 
 ## BCH-DEV-20261017 — برنامج تطوير BChat الموحد (قيد التنفيذ، لا مرشح إصدار)
 
+checkpoint متحقق `c25ee2df500861e9d67064c02f344a8117fffee6`؛CI39063628834 على merge source `89722e88df2074c382304c03490c9ec3a7ba5148`:180 core بلافشل/skip،10مراحل PostgreSQL فعلية وشاهداSKIP LOCKED/room-lock PASS. GO مستقل للـcore فقط DEV057،لا للمنتج أوprocurement/OEM/FCM/FPS. قياسG6 المبكر ضمنDEV058 قبلتوسعةالميزات؛مرشحالإصدارلميبدأ.
+
 الأساسmain `5e061ac9` والمنتجv87 `9a3abda3`؛ الفرع `codex/bchat-unified-maturity-20261017`. تفويض المالك يشمل F01–F40 وD01–D08 مع نتيجة واحدة فقط، لاAPKجزئي. التصنيفARCHITECTURAL للـSQLitev5 وطابور النص واستعادة السياق وفصل حقوق الوسائط ودلالة الإيصالات؛ CONTROLLEDلعزلAtomicFileوعرضالثيموالحالة. بقي Android/Views/SQLite وOdoo/PostgreSQL/FCM، بلا رصة أو سلطة مالية جديدة. أودو مصدر الحقوق والعضوية والأرقام؛ الهاتف يملك نية محلية وUUID ثابتًا، ولا يعرض الاستعادة writableقبل مصادقة وحقوق حالية. مصفوفة المنتج/المستهلك: media_view/upload/download إضافات permissions.version1 معmediaقديممحافظ؛ مهاجرة4.15 تنقل الحق القديم مرة واحدة؛ SQLitev5 إضافية من1–4 لا تغيّر UUID؛ تغيير الخلفية لا ينشر علىQA/LIVEضمنالبناء. مراجعاتG2بشرائح وأدلةالجهازوحدودها في [سجل التنفيذ الحي](../../build-governance/BCHAT-DEVELOPMENT-PROGRAM.md)، والتتبع [خطة الأربعين](../../bchat/development-program.json). لا اعتماد سعة لسنوات أو قبول إصدار من الترجمة أو الاختبارات المحلية وحدها؛ المراجعة المستقلة النهائية لم تبدأ.
 
 ## BCH-NMU-2 — إصلاح رحلة مرفقات BChat (2026-10-17؛ مرشح QA)

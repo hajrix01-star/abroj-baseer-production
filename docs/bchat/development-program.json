@@ -330,7 +330,7 @@
       "owner": "Odoo والحقوق",
       "status": "in_progress",
       "implementationEvidence": "Effective admin, eligible receipts, separate media permissions and migration4.15 implemented",
-      "verificationEvidence": "Core ORM/HTTP included in180 PASS at f75d105b/CI39062882727; real permission-vs-send probe found40P01, correction under verification; full Activity journey pending",
+      "verificationEvidence": "Independent limited core checkpoint GO: CI39063628834 at c25ee2df/frozen merge89722e88,180 core PASS,10 real PostgreSQL phases and SKIP LOCKED/room compatibility witnesses PASS; full Activity journey and procurement bridge pending",
       "acceptance": "حالات سحب صلاحيات وشركات وآخر مشرف وقراءة دون رفع."
     },
     {
@@ -347,7 +347,7 @@
       "owner": "الخادم والتنبيهات",
       "status": "in_progress",
       "implementationEvidence": "FCM provider classifier/retry and independent cron recovery plus bounded Android event presentation ledger implemented",
-      "verificationEvidence": "Provider classifier contracts and Android callback/ledger checks pass; core180 PASS inCI39062882727 includes provider-boundary tests; real dispatcher/race gate and actual FCM/OEM delivery acceptance remain pending",
+      "verificationEvidence": "CI39063628834:180 core including provider boundaries and actual dispatcher SKIP LOCKED witness PASS;10 real PostgreSQL phases PASS. Android callback/ledger checks pass; no actual FCM/OEM delivery acceptance",
       "acceptance": "استجابة UNREGISTERED فعلية الشكل، وأخطاء 429 و 503 ودفعة بطيئة؛ لا تكرار مرئي."
     },
     {
@@ -363,7 +363,7 @@
       "owner": "الخادم و Android",
       "status": "in_progress",
       "implementationEvidence": "Private per-device server preferences and outgoing payload filtering; source-reviewed Android none/sender/full routing with registration tickets and durable conservative pending intent; settings UI pending",
-      "verificationEvidence": "23 callback/ledger and160 production routing adapter checks; core180 PASS inCI39062882727 includes outbound privacy HTTP-payload tests; settings UI and full real concurrency gate pending",
+      "verificationEvidence": "23 callback/ledger and160 production routing adapter checks; CI39063628834 core180 and real preview UUID/CAS races PASS; settings UI/durable control intent not yet implemented; no device delivery claim",
       "acceptance": "خيار بلا مقتطف لا يرسل النص للمزود؛ لا كشف شاشة القفل."
     },
     {
@@ -379,7 +379,7 @@
       "owner": "Android والتشغيل",
       "status": "in_progress",
       "implementationEvidence": "Server diagnostic-only push API and Android bounded received/displayed/blocked receipts implemented; settings integration and connection health pending",
-      "verificationEvidence": "23 callback/ledger checks distinguish denied/channel/notify/restart; notification ORM/HTTP included incore180 PASS CI39062882727; cross-device quota probe not completed and no actual FCM delivery claim",
+      "verificationEvidence": "23 callback/ledger checks; CI39063628834 core180 and actual same-UUID/cross-device daily quota races PASS (one accepted/one429,10 total). Settings UI/health pending; no actual FCM delivery claim",
       "acceptance": "فرق بين الإذن والتسجيل والخادم والطابور ووصول الجهاز، دون إنشاء رسائل أعمال وهمية."
     },
     {
@@ -562,7 +562,7 @@
       "owner": "الخادم و Android",
       "status": "in_progress",
       "implementationEvidence": "Bounded epoch/rights-scoped text and filename search/media API implemented; Android search/media UI pending",
-      "verificationEvidence": "Independent source review and core180 PASS CI39062882727 include search ORM/HTTP and EXPLAIN planning; no measured query latency/throughput claim; Android UI pending",
+      "verificationEvidence": "Independent source review and core180 PASS CI39063628834 include search ORM/HTTP and EXPLAIN planning; no measured query latency/throughput claim; Android UI pending",
       "acceptance": "بحث قديم عربي/إنجليزي وفلاتر وصفحات؛ لا محتوى قبل حقبة العضوية."
     },
     {
@@ -578,7 +578,7 @@
       "owner": "الخادم و Android",
       "status": "in_progress",
       "implementationEvidence": "Private per-membership mute/pin/archive service with revision CAS and dispatch-time mute recheck; Android UI pending",
-      "verificationEvidence": "Core180 PASS CI39062882727 includes preference ORM; real absent-row CAS probe not reached because preceding permission race failed; Android UI pending",
+      "verificationEvidence": "Core180 PASS CI39063628834 includes preference ORM; actual absent-row CAS returns one accepted/one409; Android UI pending",
       "acceptance": "تفضيل المستخدم لا يغير غيره، ويستمر وفق العقد دون حذف تاريخ."
     },
     {
@@ -594,7 +594,7 @@
       "owner": "الخادم و Android",
       "status": "in_progress",
       "implementationEvidence": "Canonical unique direct-pair service and third-party membership guard; no legacy room reclassification; Android UI pending",
-      "verificationEvidence": "Core180 PASS CI39062882727 includes direct-room ORM; real reverse-pair probe not reached because preceding permission race failed; Android UI pending",
+      "verificationEvidence": "Core180 PASS CI39063628834 includes direct-room ORM; actual reverse-pair race produces one room (onecreated/one replay); Android UI pending",
       "acceptance": "بدء متزامن يعيد غرفة واحدة مع سياسة الشركات والدليل."
     },
     {
@@ -611,7 +611,7 @@
       "owner": "الخادم و Android",
       "status": "in_progress",
       "implementationEvidence": "Paged member directory, atomic batch selection and append-only epoch-visible group audit API; Android UI pending",
-      "verificationEvidence": "Core180 PASS CI39062882727 includes directory/group-event ORM and99+2 rollback regression; no full Android UI or device acceptance",
+      "verificationEvidence": "Core180 PASS CI39063628834 includes directory/group-event ORM and99+2 rollback regression; no full Android UI or device acceptance",
       "acceptance": "صفحات مرشحين وسجل actor/action/target مع رؤية الحقبة الصحيحة."
     },
     {
@@ -889,8 +889,8 @@
     "G2": "approved only for registered slices; C09 design conditional on core checkpoint acceptance; later API/data/meaning changes need explicit review",
     "G3": "independently approved; existing Java/Views/SQLite/Odoo and dependencies; no new product libraries",
     "G4": "foundations approved; full Activity and later notification UI acceptance pending",
-    "G5": "PR413: core180 PASS CI39062882727; actual permission race found40P01 and remains NO GO pending correction/probe verification; no whole-program acceptance",
-    "G6": "not started; measured capacity proof required",
+    "G5": "Independent limited core checkpoint GO DEV057: CI39063628834 at c25ee2df/frozen merge89722e88,180 core,10 real PostgreSQL phases and two lock witnesses PASS; no whole-program/procurement/device acceptance",
+    "G6": "DEV058 early isolated service+DB measurement in preparation; no measured capacity acceptance yet",
     "G7": "not started; source/checkpoint commits are not final integration acceptance",
     "G8": "not started; no new product APK or final independent delivery decision"
   },

@@ -11,9 +11,10 @@ suffix="${ROOT##*/}"
 db="${suffix}-db"
 runner="${suffix}-orm"
 probe="${suffix}-probes"
+capacity="${suffix}-capacity"
 docker image inspect "$ODOO" >/dev/null
 docker image inspect "$PG" >/dev/null
-for name in "$db" "$runner" "$probe"; do
+for name in "$db" "$runner" "$probe" "$capacity"; do
     if docker container inspect "$name" >/dev/null 2>&1; then
         echo 'Test container already exists; inspect it, never overwrite.' >&2; exit 2
     fi
@@ -27,10 +28,11 @@ stop_ours() {
             -U bchat_test -d bchat_maturity_test_20261017 -A -F , -t -c \
             "SELECT pid,state,wait_event_type,wait_event,pg_blocking_pids(pid),EXTRACT(EPOCH FROM (clock_timestamp()-query_start))::integer FROM pg_stat_activity WHERE datname='bchat_maturity_test_20261017' AND pid<>pg_backend_pid()" \
             > "$ROOT/failure-db-state.log" 2>&1 || true
-        timeout --kill-after=2s 5s docker inspect --format '{{.State.OOMKilled}} {{.State.ExitCode}}' "$runner" \
+        timeout --kill-after=2s 5s docker inspect --format '{{.Name}} {{.State.OOMKilled}} {{.State.ExitCode}}' \
+            "$runner" "$probe" "$capacity" \
             > "$ROOT/failure-runtime-state.log" 2>&1 || true
     fi
-    for name in "$probe" "$runner" "$db"; do
+    for name in "$capacity" "$probe" "$runner" "$db"; do
         timeout --kill-after=2s 8s docker stop --time 5 "$name" >/dev/null 2>&1 || true
     done
 }
@@ -84,7 +86,19 @@ result=${PIPESTATUS[0]}
 set -e
 printf 'PROBE_PROCESS_EXIT=%s\n' "$result"
 test "$result" = 0
+# Reuse the just-initialized synthetic database: this is an early service/DB
+# measurement, not another environment or a device/HTTP capacity certificate.
+set +e
+timeout --kill-after=15s --signal=TERM 5m docker run --interactive --name "$capacity" "${common[@]}" "$ODOO" shell \
+    "${options[@]}" --no-http --log-level=info \
+    < "$ROOT/custom_addons/baseer_bchat/tools/run_maturity_capacity.py" 2>&1 | tee "$ROOT/capacity.log"
+result=${PIPESTATUS[0]}
+set -e
+printf 'CAPACITY_PROCESS_EXIT=%s\n' "$result"
+test "$result" = 0
 sha256sum --check "$ROOT/source.sha256" > "$ROOT/source-check.log"
 python3 "$ROOT/custom_addons/baseer_bchat/tools/check_maturity_evidence.py" \
     --root "$ROOT/custom_addons/baseer_bchat" --orm-log "$ROOT/orm.log" --probe-log "$ROOT/probes.log" \
     --source-commit "$BCHAT_SOURCE_COMMIT" --output "$ROOT/evidence.json"
+python3 "$ROOT/custom_addons/baseer_bchat/tools/check_maturity_capacity.py" \
+    --log "$ROOT/capacity.log" --source-commit "$BCHAT_SOURCE_COMMIT" --output "$ROOT/capacity-evidence.json"

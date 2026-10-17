@@ -182,8 +182,9 @@ def check_android_source() -> None:
             and "members/\" + authorId + \"/avatar" in activity,
             "private employee-avatar presentation is absent")
     require("reconcilePendingMediaFromVerifiedHistory" in activity
-            and "serverMedia.id == pending.mediaId" in activity
-            and "mediaStore.acknowledge(scopedAccount, pending);" in activity,
+            and "mediaStore.pendingForRoom(scopedAccount" in activity
+            and "confirmedMediaIds.contains(entry.mediaId)" in activity
+            and "mediaStore.acknowledge(scopedAccount, entry);" in activity,
             "media send acknowledgement recovery is absent")
 
 

@@ -33,6 +33,9 @@ class NativeMediaUploadContractTests(unittest.TestCase):
         self.assertIn("pg_advisory_xact_lock", GRANT)
         self.assertIn("_ensure_claim_current", GRANT)
         self.assertIn("_purge_verified", GRANT)
+        self.assertIn("_GRANT_ISSUE_WINDOW_SECONDS = 300", GRANT)
+        self.assertIn("_MAX_GRANT_ISSUES_PER_UPLOAD_WINDOW = 3", GRANT)
+        self.assertIn("'upload_rate_limited'", GRANT)
 
     def test_redemption_reuses_service_rechecks_instead_of_trusting_claims(self):
         self.assertIn('def _v2_mobile_upload_from_capability', SERVICE)
@@ -53,6 +56,14 @@ class NativeMediaUploadContractTests(unittest.TestCase):
         self.assertIn('_UPLOAD_LEASE_SECONDS = 90', GRANT)
         self.assertIn("'upload_in_progress'", GRANT)
         self.assertIn("_TOMBSTONE_RETENTION_HOURS = 24", GRANT)
+
+    def test_expiry_rechecks_a_locked_row_before_overwriting_a_receipt(self):
+        status = GRANT.split('def _status_capability', 1)[1].split('def _ensure_claim_current', 1)[0]
+        cron = GRANT.split('def _cron_expire_mobile_upload_grants', 1)[1]
+        self.assertIn("WHERE grant_id = %s FOR UPDATE", status)
+        self.assertIn("for stale_id in stale.ids", cron)
+        self.assertIn("WHERE id = %s FOR UPDATE", cron)
+        self.assertIn("grant.state == 'uploading'", cron)
 
 
 if __name__ == '__main__':

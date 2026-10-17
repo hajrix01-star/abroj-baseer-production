@@ -8400,7 +8400,14 @@ public final class OdooIdentityActivity extends Activity {
                     suppressDraftChanges = false;
                 }
                 if (selectedReplyMessageId == replyId) clearSelectedReply();
-                retryConnectedMedia();
+                // A just-staged file has never crossed the native transport, so begin the
+                // first upload directly.  Stored pending rows take the separate recovery
+                // path below: they must reconcile with the server before any byte retry.
+                try {
+                    uploadConnectedMedia(scopedAccount, room, finalStaged);
+                } catch (IOException unavailable) {
+                    chatNotice.setText(R.string.chat_v2_uncertain);
+                }
                 updatePendingUi();
             });
         }, "bchat-media-stage").start();
@@ -8438,10 +8445,12 @@ public final class OdooIdentityActivity extends Activity {
                                         discardConnectedMedia(scopedAccount, room, entry, 0);
                                     }).setNegativeButton(R.string.chat_v2_cancel, null)))
                     .setNegativeButton(R.string.chat_v2_cancel, null);
-            if (hasUploadedRecord) review.setPositiveButton(R.string.bchat_media_check_now,
-                    (dialog, which) -> checkConnectedMediaStatus(scopedAccount, room));
-            else if (!policyChanged && !uploadBlocked && mediaUploadAllowed())
-                review.setPositiveButton(R.string.chat_v2_retry, (dialog, which) -> retryConnectedMedia());
+            // The same read-only action is used for a lost native response (mediaId == 0)
+            // and for a lost message response (mediaId > 0).  In particular, an app restart
+            // must never make the first action re-upload local bytes.
+            if ((hasUploadedRecord || (!policyChanged && !uploadBlocked)) && mediaUploadAllowed())
+                review.setPositiveButton(R.string.bchat_media_check_now,
+                        (dialog, which) -> checkConnectedMediaStatus(scopedAccount, room));
             showPendingDialog(review);
         } catch (IOException invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
@@ -8508,12 +8517,43 @@ public final class OdooIdentityActivity extends Activity {
                 }
                 if (!"missing".equals(state)) throw new IOException();
                 updatePendingUi();
-                chatNotice.setText(R.string.bchat_media_status_upload_pending);
+                showMissingNativeMediaRetry(scopedAccount, room, entry);
             } catch (Exception unavailable) {
                 updatePendingUi();
                 chatNotice.setText(R.string.chat_v2_uncertain);
             }
         });
+    }
+
+    /**
+     * A retry is only offered after the authenticated reconciliation endpoint said that this
+     * exact upload UUID is missing.  This prevents an app restart from duplicating bytes while
+     * its earlier native response is merely unavailable locally.
+     */
+    private void showMissingNativeMediaRetry(AccountScope scopedAccount, Room room,
+                                             BChatConnectedMediaStore.Entry entry) {
+        if (!stillCurrent(scopedAccount, room) || entry == null || mediaStore == null
+                || entry.mediaId > 0 || !mediaUploadAllowed()) return;
+        chatNotice.setText(R.string.bchat_media_status_upload_pending);
+        showPendingDialog(new AlertDialog.Builder(this)
+                .setTitle(R.string.bchat_media_pending)
+                .setMessage(R.string.bchat_media_status_upload_pending)
+                .setPositiveButton(R.string.chat_v2_retry, (dialog, which) -> {
+                    if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
+                    try {
+                        for (BChatConnectedMediaStore.Entry current : mediaStore.pendingForRoom(
+                                scopedAccount, room.id, room.membershipId)) {
+                            if (current.mediaId <= 0
+                                    && current.networkUploadUuid().equals(entry.networkUploadUuid())) {
+                                uploadConnectedMedia(scopedAccount, room, current);
+                                break;
+                            }
+                        }
+                    } catch (IOException unavailable) {
+                        chatNotice.setText(R.string.chat_v2_save_failed);
+                    }
+                })
+                .setNegativeButton(R.string.chat_v2_cancel, null));
     }
 
     private void discardConnectedMedia(AccountScope scope, Room room,
@@ -8598,8 +8638,9 @@ public final class OdooIdentityActivity extends Activity {
                 sendConnectedMedia(scopedAccount, room, entry);
                 return;
             }
-            // No server media identity exists yet, so this is a genuine upload retry.
-            uploadConnectedMedia(scopedAccount, room, entry);
+            // A restored local row has no proof that its earlier native request failed.
+            // Reconcile first; only its explicit "missing" result offers a byte retry.
+            checkConnectedMediaStatus(scopedAccount, room);
         } catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
 

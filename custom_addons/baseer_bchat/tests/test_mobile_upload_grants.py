@@ -129,6 +129,19 @@ class BChatMobileUploadGrantCase(BChatMediaCase):
         missing = service._v2_reconcile_native_upload(self.room.id, metadata['upload_uuid'])
         self.assertEqual((missing['state'], missing.get('media_id')), ('missing', None))
 
+    def test_same_upload_grant_reissues_are_rate_limited(self):
+        raw = self._image()
+        metadata, _issued = self._issue(raw)
+        service = self.env['baseer.bchat.service'].with_user(self.manager)
+        # The first issue plus two controlled renewals accommodate a lost response while
+        # preventing an authenticated loop from accumulating expired receipts indefinitely.
+        service._v2_issue_mobile_upload_grant(self.room.id, metadata)
+        service._v2_issue_mobile_upload_grant(self.room.id, metadata)
+        with self.assertRaises(ProtocolError) as limited:
+            service._v2_issue_mobile_upload_grant(self.room.id, metadata)
+        self.assertEqual((limited.exception.code, limited.exception.status),
+                         ('upload_rate_limited', 429))
+
     def test_expired_tombstones_are_purged_only_by_the_verified_cron(self):
         raw = self._image()
         _, issued = self._issue(raw)

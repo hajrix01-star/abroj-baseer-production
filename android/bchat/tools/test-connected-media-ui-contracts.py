@@ -71,6 +71,18 @@ checks = {
         "if (entry.mediaId > 0)" in body("private void retryConnectedMedia()")
         and "sendConnectedMedia(scopedAccount, room, entry);" in body(
             "private void retryConnectedMedia()"),
+    "Restored M01 media reconciles before a byte retry after an app restart":
+        "uploadConnectedMedia(scopedAccount, room, finalStaged);" in body(
+            "private void stageConnectedMedia(")
+        and "retryConnectedMedia();" not in body("private void stageConnectedMedia(")
+        and "checkConnectedMediaStatus(scopedAccount, room);" in body(
+            "private void retryConnectedMedia()")
+        and "uploadConnectedMedia(scopedAccount, room, entry);" not in body(
+            "private void retryConnectedMedia()")
+        and "showMissingNativeMediaRetry(scopedAccount, room, entry);" in body(
+            "private void reconcileNativeMediaUpload(")
+        and "uploadConnectedMedia(scopedAccount, room, current);" in body(
+            "private void showMissingNativeMediaRetry("),
     "Verified media ACK retires local state before screen-lifetime checks":
         body("private void sendConnectedMedia(").index(
             "mediaStore.acknowledge(scopedAccount, entry);")

@@ -16,6 +16,8 @@ _SECRET_RE = re.compile(r'^[A-Za-z0-9_-]{43,128}$')
 _UPLOAD_LEASE_SECONDS = 90
 _TOMBSTONE_RETENTION_HOURS = 24
 _MAX_ACTIVE_GRANTS_PER_USER = 1
+_GRANT_ISSUE_WINDOW_SECONDS = 300
+_MAX_GRANT_ISSUES_PER_UPLOAD_WINDOW = 3
 
 
 class BChatMobileUploadGrant(models.Model):
@@ -94,6 +96,17 @@ class BChatMobileUploadGrant(models.Model):
         upload_uuid = canonical_uuid(vals.get('upload_uuid'))
         now = fields.Datetime.now()
         self.env.cr.execute('SELECT pg_advisory_xact_lock(%s)', [user_id])
+        # A missing grant response may be renewed, but repeated renewal of the exact same
+        # local upload must not create unbounded expired receipts.  The per-user advisory
+        # lock above makes this count atomic even when a session fires several requests.
+        self.env.cr.execute('''
+            SELECT count(*) FROM baseer_bchat_mobile_upload_grant
+            WHERE user_id = %s AND upload_uuid = %s AND create_date >= %s
+        ''', [user_id, upload_uuid, now - timedelta(seconds=_GRANT_ISSUE_WINDOW_SECONDS)])
+        issued_in_window = self.env.cr.fetchone()[0]
+        if issued_in_window >= _MAX_GRANT_ISSUES_PER_UPLOAD_WINDOW:
+            raise ProtocolError('upload_rate_limited',
+                                'This media upload is being retried too quickly.', 429)
         self.env.cr.execute('''
             SELECT id FROM baseer_bchat_mobile_upload_grant
             WHERE user_id = %s AND state IN ('issued', 'uploading')
@@ -225,7 +238,18 @@ class BChatMobileUploadGrant(models.Model):
     def _status_capability(self, grant_id, secret):
         grant_id = self._check_grant_id(grant_id)
         expected = self._secret_hash(secret)
-        grant = self.sudo().search([('grant_id', '=', grant_id)], limit=1)
+        # Lock and read the same row that may be completing an upload.  Without this,
+        # a status request that observed an old lease could overwrite a just-resolved
+        # receipt with ``expired`` after the upload transaction commits.
+        self.env.cr.execute('''
+            SELECT id FROM baseer_bchat_mobile_upload_grant
+            WHERE grant_id = %s FOR UPDATE
+        ''', [grant_id])
+        row = self.env.cr.fetchone()
+        grant = row and self.sudo().browse(row[0]).exists()
+        if grant:
+            grant.invalidate_recordset(['state', 'expires_at', 'upload_started_at',
+                                       'result_expires_at', 'media_id', 'failure_code'])
         if not grant or not hmac.compare_digest(grant.secret_hash, expected):
             raise ProtocolError('invalid_capability', 'The upload capability is invalid.', 401)
         now = fields.Datetime.now()
@@ -337,13 +361,29 @@ class BChatMobileUploadGrant(models.Model):
             '&', ('state', '=', 'resolved'), ('result_expires_at', '<', now),
             '&', ('state', '=', 'denied'), ('result_expires_at', '<', now),
         ], order='id', limit=limit)
-        for grant in stale:
-            values = {'state': 'expired'}
-            if grant.state == 'uploading': values['failure_code'] = 'upload_timeout'
-            grant._write_verified(values, _MOBILE_UPLOAD_GRANT_TOKEN)
+        # A native redemption can resolve while this cron is queued.  Re-lock and re-read
+        # every candidate before expiry so the cron never turns a fresh receipt into expired.
+        expired_count = 0
+        for stale_id in stale.ids:
+            self.env.cr.execute('''
+                SELECT id FROM baseer_bchat_mobile_upload_grant WHERE id = %s FOR UPDATE
+            ''', [stale_id])
+            row = self.env.cr.fetchone()
+            grant = row and self.sudo().browse(row[0]).exists()
+            if not grant:
+                continue
+            grant.invalidate_recordset(['state', 'expires_at', 'upload_started_at'])
+            if grant.state == 'issued' and grant.expires_at < now:
+                grant._write_verified({'state': 'expired'}, _MOBILE_UPLOAD_GRANT_TOKEN)
+                expired_count += 1
+            elif (grant.state == 'uploading' and grant.upload_started_at
+                  and grant.upload_started_at < now - timedelta(seconds=_UPLOAD_LEASE_SECONDS)):
+                grant._write_verified({'state': 'expired', 'failure_code': 'upload_timeout'},
+                                      _MOBILE_UPLOAD_GRANT_TOKEN)
+                expired_count += 1
         purge = self.sudo().search([
             ('state', '=', 'expired'),
             ('write_date', '<', now - timedelta(hours=_TOMBSTONE_RETENTION_HOURS)),
         ], order='write_date, id', limit=limit)
         purge._purge_verified(_MOBILE_UPLOAD_GRANT_TOKEN)
-        return {'api_version': 2, 'expired_count': len(stale), 'purged_count': len(purge)}
+        return {'api_version': 2, 'expired_count': expired_count, 'purged_count': len(purge)}

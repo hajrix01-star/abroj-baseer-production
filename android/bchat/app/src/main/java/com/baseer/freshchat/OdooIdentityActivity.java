@@ -253,6 +253,7 @@ public final class OdooIdentityActivity extends Activity {
     private int mediaUploadBytes;
     private boolean mediaUploadBusy;
     private boolean mediaConfirmBusy;
+    private boolean mediaReplayAfterInitialHistory;
     private Room mediaConfirmRoom;
     private AccountScope mediaPickerAccount;
     private Room mediaPickerRoom;
@@ -5715,6 +5716,7 @@ public final class OdooIdentityActivity extends Activity {
             refreshChatCompanySelector();
         }
         pendingNotificationMessageId = notifiedMessageId;
+        mediaReplayAfterInitialHistory = true;
         clearSelectedReply();
         nextBeforeId = 0;
         historicalWindow = false;
@@ -5762,7 +5764,6 @@ public final class OdooIdentityActivity extends Activity {
         suppressDraftChanges = false;
         draftActive = true; // Every new text is a draft until persisted into the outbox.
         updatePendingUi();
-        replayKnownConnectedMedia(account, room);
         showCachedMessages(room, 0, true);
         loadMessages(notifiedMessageId > 0 && notifiedMessageId < 2147483647L
                 ? notifiedMessageId + 1 : 0);
@@ -6889,6 +6890,14 @@ public final class OdooIdentityActivity extends Activity {
                     chatNotice.setOnClickListener(null);
                 }
                 updatePendingUi();
+                // Read and reconcile authenticated history before any idempotent replay.
+                // Posting first would occupy the single V2 transport and skip this initial
+                // room page, even when the server already contains the media message.
+                if (mediaReplayAfterInitialHistory) {
+                    mediaReplayAfterInitialHistory = false;
+                    AccountScope scopedAccount = account;
+                    handler.post(() -> replayKnownConnectedMedia(scopedAccount, room));
+                }
                 if (pendingOrderShareRoom == room) {
                     pendingOrderShareRoom = null;
                     retryPending();

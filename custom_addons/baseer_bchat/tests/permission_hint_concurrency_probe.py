@@ -16,7 +16,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
 
-from psycopg2.errors import SerializationFailure
+from psycopg2.errors import LockNotAvailable, SerializationFailure
 
 from odoo import Command, api
 
@@ -143,6 +143,98 @@ def run(env):
                 'provider_calls_while_locked': locked_calls, 'provider_calls_after_release': 1,
                 'final_state': final_state, 'synthetic_fixture_removed_before_races': True}
 
+    def room_lock_compatibility_witness():
+        """Real room helpers, permission write and FK insert on two backends.
+
+        The permission writer must commit its room hint while the room
+        mutator still owns its lock. Negative checks use the actual helpers
+        under savepoints, not a second copy of their locking SQL.
+        """
+        pids, isolations = [], []
+
+        def deadlines(cursor):
+            # SET LOCAL ends at commit/rollback; apply it for every new TX.
+            cursor.execute("SET LOCAL statement_timeout='3s'")
+            cursor.execute("SET LOCAL lock_timeout='2s'")
+
+        with registry.cursor() as mutator_cr, registry.cursor() as writer_cr:
+            for cursor in (mutator_cr, writer_cr):
+                deadlines(cursor)
+                cursor.execute('SHOW transaction_isolation')
+                isolation = cursor.fetchone()[0].strip().lower()
+                if isolation != 'repeatable read':
+                    raise AssertionError('Room-lock witness requires PostgreSQL REPEATABLE READ')
+                isolations.append(isolation)
+                cursor.execute('SELECT pg_backend_pid()')
+                pids.append(cursor.fetchone()[0])
+            if pids[0] == pids[1]:
+                raise AssertionError('Room-lock witness requires two independent backends')
+            mutator_cr.execute('SELECT name FROM baseer_bchat_room WHERE id=%s', [room_id])
+            if mutator_cr.fetchone() != ('Cursor race ' + marker,):
+                raise AssertionError('Room-lock witness does not own its synthetic room')
+            mutator_env = api.Environment(mutator_cr, admin_id, {'allowed_company_ids': [company_id]})
+            mutator_env['baseer.bchat.room']._lock_for_mutation(room_id)
+
+            writer_env = api.Environment(writer_cr, admin_id, {'allowed_company_ids': [company_id]})
+            writer_cr.execute('SELECT bchat_media_download FROM res_users WHERE id=%s', [a.id])
+            original_download = writer_cr.fetchone()[0]
+            writer_cr.execute('SELECT sequence FROM baseer_bchat_change_cursor WHERE user_id=%s', [a.id])
+            previous_sequence = writer_cr.fetchone()[0]
+            writer_env['res.users'].browse(a.id).write({'bchat_media_download': not original_download})
+            writer_cr.execute('''SELECT kind,room_id FROM baseer_bchat_change
+                                 WHERE user_id=%s AND sequence>%s''', [a.id, previous_sequence])
+            new_hints = writer_cr.fetchall()
+            permission_created = ('permissions', None) in new_hints
+            room_created = ('room', room_id) in new_hints
+            if not permission_created or not room_created:
+                raise AssertionError('The real permission write did not persist both required hints')
+            # The first backend deliberately has not committed or released.
+            writer_cr.commit()
+            hint_writer_completed = True
+            deadlines(writer_cr)
+            contender = api.Environment(writer_cr, admin_id, {'allowed_company_ids': [company_id]})
+            exclusion_states = {}
+            for name, lock in (
+                    ('mutation', contender['baseer.bchat.room']._lock_for_mutation),
+                    ('read_share', contender['baseer.bchat.room']._lock_for_read)):
+                try:
+                    with writer_cr.savepoint():
+                        lock(room_id)
+                except LockNotAvailable as error:
+                    if error.pgcode != '55P03':
+                        raise
+                    exclusion_states[name] = error.pgcode
+                else:
+                    raise AssertionError('A real %s helper bypassed the held room lock' % name)
+
+            mutator_cr.rollback()
+            # An actual read and mutation now succeed, not merely a NOWAIT
+            # SQL probe. The first writer rolled back, so no stale committed
+            # revision can be hidden by retrying the positive assertion.
+            contender['baseer.bchat.room']._lock_for_read(room_id)
+            contender['baseer.bchat.room']._lock_for_mutation(room_id)
+            claimed_after_release = True
+            writer_cr.rollback()
+            deadlines(writer_cr)
+            restore = api.Environment(writer_cr, admin_id, {'allowed_company_ids': [company_id]})
+            restore['res.users'].browse(a.id).write({'bchat_media_download': original_download})
+            writer_cr.execute('SELECT bchat_media_download FROM res_users WHERE id=%s', [a.id])
+            if writer_cr.fetchone()[0] is not original_download:
+                raise AssertionError('Room-lock witness did not restore its synthetic permission')
+            writer_cr.commit()
+        return {
+            'initial_backend_pids': pids, 'isolations': isolations,
+            'statement_timeout_ms': 3000, 'lock_timeout_ms': 2000,
+            'hint_writer_completed_while_room_locked': hint_writer_completed,
+            'permission_hint_created': permission_created, 'room_hint_created': room_created,
+            'mutation_excluded': exclusion_states.get('mutation') == '55P03',
+            'read_share_excluded': exclusion_states.get('read_share') == '55P03',
+            'mutation_exclusion_sqlstate': exclusion_states.get('mutation'),
+            'read_share_exclusion_sqlstate': exclusion_states.get('read_share'),
+            'claimed_after_release': claimed_after_release,
+            'fixture_marker_verified': True, 'original_permission_restored': True,
+        }
+
     def publish_with_window(service, user_ids, kind, **kwargs):
         result = original_publish(service, user_ids, kind, **kwargs)
         phase = getattr(thread_state, 'phase', None)
@@ -209,6 +301,7 @@ def run(env):
     service_class._change_publish = publish_with_window
     try:
         skip_locked_exclusion = skip_locked_dispatch_witness()
+        room_lock_compatibility = room_lock_compatibility_witness()
         phases.append(phase([
             ('a', lambda scoped: scoped['res.users'].browse(a.id).write({'bchat_media_download': False})),
             ('b', lambda scoped: scoped['res.users'].browse(b.id).write({'bchat_media_download': False})),
@@ -266,7 +359,8 @@ def run(env):
                 raise AssertionError('Committed per-user change sequences contain a gap')
         return {'independent_backends': len(backend_pids), 'phases': phases,
                 'message_count': 1, 'task_revision': 2, 'sequence_continuity': True,
-                'skip_locked_exclusion': skip_locked_exclusion}
+                'skip_locked_exclusion': skip_locked_exclusion,
+                'room_lock_compatibility': room_lock_compatibility}
     finally:
         service_class._change_publish = original_publish
         # Exact synthetic ownership is checked before removing fixtures. No

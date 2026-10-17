@@ -50,7 +50,16 @@ class MaturityEvidenceGateTests(unittest.TestCase):
                                 'statement_timeout_ms': 3000, 'lock_timeout_ms': 2000,
                                 'locked_excluded': True, 'claimed_after_release': True,
                                 'provider_calls_while_locked': 0, 'provider_calls_after_release': 1,
-                                'final_state': 'sent', 'synthetic_fixture_removed_before_races': True}},
+                                'final_state': 'sent', 'synthetic_fixture_removed_before_races': True},
+                            'room_lock_compatibility': {
+                                'initial_backend_pids': [33, 34], 'isolations': ['repeatable read', 'repeatable read'],
+                                'statement_timeout_ms': 3000, 'lock_timeout_ms': 2000,
+                                'hint_writer_completed_while_room_locked': True,
+                                'permission_hint_created': True, 'room_hint_created': True,
+                                'mutation_excluded': True, 'read_share_excluded': True,
+                                'mutation_exclusion_sqlstate': '55P03', 'read_share_exclusion_sqlstate': '55P03',
+                                'claimed_after_release': True, 'fixture_marker_verified': True,
+                                'original_permission_restored': True}},
             'social': {'phases': {name: [deepcopy(one), deepcopy(two)] for name in gate.SOCIAL_PHASES},
                        'room_preference_rows': 1, 'diagnostic_events': 10, 'diagnostic_idempotent_events': 1,
                        'daily_quota_winners': 1},
@@ -117,6 +126,25 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         del self.probes['social']['phases']['diagnostic_same_uuid']
         with self.assertRaisesRegex(ValueError, 'Incomplete social'):
             self.verify()
+
+    def test_room_fk_compatibility_and_real_mutator_reader_exclusion_are_required(self):
+        witness = self.probes['permissions'].pop('room_lock_compatibility')
+        with self.assertRaisesRegex(ValueError, 'room-lock'):
+            self.verify()
+        self.probes['permissions']['room_lock_compatibility'] = witness
+        for key, wrong in (
+                ('initial_backend_pids', [33, 33]),
+                ('isolations', ['read committed', 'repeatable read']),
+                ('hint_writer_completed_while_room_locked', False),
+                ('permission_hint_created', False), ('room_hint_created', False),
+                ('mutation_excluded', False), ('read_share_excluded', False),
+                ('mutation_exclusion_sqlstate', '40P01'), ('read_share_exclusion_sqlstate', '40001'),
+                ('claimed_after_release', False), ('original_permission_restored', False)):
+            original = witness[key]
+            witness[key] = wrong
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'room-lock'):
+                self.verify()
+            witness[key] = original
 
     def test_same_connection_or_non_rr_is_rejected(self):
         rows = self.probes['permissions']['phases'][0]

@@ -93,10 +93,12 @@ class BChatRoom(models.Model):
 
     @api.model
     def _lock_for_mutation(self, room_id):
-        # FOR UPDATE serializes writers; bumping the row forces Odoo's
-        # REPEATABLE READ transaction to retry instead of using a stale
-        # membership/message snapshot after a concurrent commit.
-        self.env.cr.execute('SELECT id FROM baseer_bchat_room WHERE id = %s FOR UPDATE', [room_id])
+        # Room identities never change. NO KEY UPDATE still excludes other
+        # mutators and the FOR SHARE read guard, but permits the KEY SHARE
+        # foreign-key check of a concurrent content-free eligibility hint.
+        # FOR UPDATE would invert room -> cursor versus cursor -> room-FK.
+        # Bumping revision retains Odoo's REPEATABLE READ retry boundary.
+        self.env.cr.execute('SELECT id FROM baseer_bchat_room WHERE id = %s FOR NO KEY UPDATE', [room_id])
         if not self.env.cr.fetchone():
             raise AccessError(self.env._('This room is unavailable.'))
         self.env.cr.execute('UPDATE baseer_bchat_room SET revision = revision + 1 WHERE id = %s', [room_id])

@@ -89,6 +89,19 @@ def verify(addon, orm_log, probe_log, source_commit):
             or skip_locked.get('final_state') != 'sent'
             or skip_locked.get('synthetic_fixture_removed_before_races') is not True):
         raise ValueError('Missing genuine dispatcher SKIP LOCKED exclusion/release proof')
+    room_lock = permissions.get('room_lock_compatibility', {})
+    room_pids = room_lock.get('initial_backend_pids', [])
+    if (len(room_pids) != 2 or any(type(pid) is not int or pid <= 0 for pid in room_pids)
+            or len(set(room_pids)) != 2
+            or room_lock.get('isolations') != ['repeatable read', 'repeatable read']
+            or room_lock.get('statement_timeout_ms') != 3000 or room_lock.get('lock_timeout_ms') != 2000
+            or any(room_lock.get(key) is not True for key in (
+                'hint_writer_completed_while_room_locked', 'permission_hint_created', 'room_hint_created',
+                'mutation_excluded', 'read_share_excluded', 'claimed_after_release',
+                'fixture_marker_verified', 'original_permission_restored'))
+            or room_lock.get('mutation_exclusion_sqlstate') != '55P03'
+            or room_lock.get('read_share_exclusion_sqlstate') != '55P03'):
+        raise ValueError('Missing genuine room-lock FK compatibility and writer/reader exclusion proof')
     if (len(permissions['phases']) != 5 or permissions['message_count'] != 1
             or permissions['task_revision'] != 2 or permissions['sequence_continuity'] is not True):
         raise ValueError('Incomplete permission/sequence proof')
@@ -111,7 +124,8 @@ def verify(addon, orm_log, probe_log, source_commit):
     return {
         'source_commit': source_commit, 'core_tests': len(expected), 'skipped': 0,
         'core_test_kinds': {kind: sum(value == kind for value in kinds.values()) for kind in sorted(set(kinds.values()))},
-        'real_postgres_phases': 10, 'dispatcher_skip_locked_proof': True, 'probes': probes,
+        'real_postgres_phases': 10, 'dispatcher_skip_locked_proof': True,
+        'room_lock_compatibility_proof': True, 'probes': probes,
         'limitations': ['Core module only; procurement bridge not executed',
                         'Synthetic DB and provider boundary; no live/OEM/FCM delivery or phone performance acceptance'],
     }

@@ -70,6 +70,18 @@ checks = {
             "if (!stillCurrent(scopedAccount, room)) return;",
             body("private void sendConnectedMedia(").index(
                 "mediaStore.acknowledge(scopedAccount, entry);")),
+    "Lost media-message replies reconcile verified history before generic transport recovery":
+        "if (statusCode == 0)" in body("private void sendConnectedMedia(")
+        and "recoverUncertainMediaConfirmation(scopedAccount, room);" in body(
+            "private void sendConnectedMedia(")
+        and body("private void sendConnectedMedia(").index(
+            "recoverUncertainMediaConfirmation(scopedAccount, room);")
+        < body("private void sendConnectedMedia(").index(
+            "handleV2TransportFailure(statusCode, true)")
+        and "pending.mediaId <= 0" in body(
+            "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,")
+        and "loadMessages(0);" in body(
+            "private void recoverUncertainMediaConfirmation(AccountScope scopedAccount, Room room,"),
     "Acknowledged rows never disable the cache after a long visible thread":
         "Collections.singletonList(message)" in body("private void appendAcknowledgedMessage("),
     "Conversation sides remain physically consistent in Arabic and English":

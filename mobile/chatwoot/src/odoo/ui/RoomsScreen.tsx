@@ -1,10 +1,11 @@
 import React from 'react';
-import { ScrollView, Text, Pressable, View } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import type { Bootstrap, Room } from '../core/ChatEngine';
-import { Button, colors, direction, Label, styles } from './components';
+import { IconButton, colors, direction, Label, styles } from './components';
 import type { Language, Translate } from './dictionary';
 import { companyActions } from './viewModel';
+import { CompanySelector } from './CompanySelector';
 
 export type ManagementMode = 'create' | 'direct' | 'policy' | 'members';
 export function RoomsScreen({
@@ -35,52 +36,35 @@ export function RoomsScreen({
   return (
     <View style={styles.fill}>
       <View style={styles.header}>
-        <Label language={language} muted>
-          {t('companies')}
-        </Label>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            gap: 8,
-            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
-          }}>
-          {identity.company_ids.map(id => {
-            const company = identity.profile?.companies.find(item => item.id === id);
-            const name =
-              (language === 'ar' ? company?.name_ar : company?.name_en) ||
-              company?.name ||
-              String(id);
-            return (
-              <Button
-                key={id}
-                quiet={id !== companyId}
-                title={name}
-                onPress={() => selectCompany(id)}
-              />
-            );
-          })}
-        </ScrollView>
+        <CompanySelector
+          identity={identity}
+          companyId={companyId}
+          onSelect={selectCompany}
+          language={language}
+          t={t}
+        />
         <View style={[styles.row, { flexDirection: language === 'ar' ? 'row-reverse' : 'row' }]}>
           {actions.createGroup && (
-            <Button
-              title={t('group')}
+            <IconButton
+              icon="members"
+              label={t('group')}
+              tone="primary"
               disabled={actions.disabled}
               onPress={() => manage('create')}
             />
           )}
           {actions.direct && (
-            <Button
-              quiet
-              title={t('direct')}
+            <IconButton
+              icon="user"
+              label={t('direct')}
               disabled={actions.disabled}
               onPress={() => manage('direct')}
             />
           )}
           {actions.policy && (
-            <Button
-              quiet
-              title={t('policy')}
+            <IconButton
+              icon="settings"
+              label={t('policy')}
               disabled={actions.disabled}
               onPress={() => manage('policy')}
             />

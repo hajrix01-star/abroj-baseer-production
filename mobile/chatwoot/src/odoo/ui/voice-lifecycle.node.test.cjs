@@ -10,6 +10,9 @@ function harness() {
   const slots = [];
   let index = 0;
   let effect;
+  let background;
+  const unlinked = [];
+  const staged = [];
   const player = { active: false, starts: 0, recorderStops: 0, playerStops: 0,
     async startRecorder(path) { this.active = true; this.starts++; return path; },
     async stopRecorder() { this.active = false; this.recorderStops++; return '/synthetic.m4a'; },
@@ -25,14 +28,15 @@ function harness() {
       }
     },
   };
-  const native = { AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) }, Platform: { OS: 'ios' } };
+  const native = { AppState: { currentState: 'active', addEventListener: (_event, callback) => { background = callback; return { remove() {} }; } }, Platform: { OS: 'ios' } };
   const recorder = { __esModule: true, default: class { constructor() { return player; } },
     AudioSourceAndroidType: { MIC: 1 }, OutputFormatAndroidType: { MPEG_4: 2 }, AudioEncoderAndroidType: { AAC: 3 }, AVEncodingOption: { aac: 'aac' } };
   const modules = {
     react,
     'react-native': native,
     'react-native-audio-recorder-player': recorder,
-    'react-native-blob-util': { fs: { dirs: { CacheDir: '/synthetic' }, unlink: async () => undefined } },
+    'react-native-blob-util': { fs: { dirs: { CacheDir: '/synthetic' }, unlink: async path => { unlinked.push(path); } } },
+    '../runtime': { stageFile: async (room, file) => { staged.push({ room, file }); return { uri: 'file:///owned-stage/voice.m4a', name: 'voice.m4a', kind: 'audio' }; } },
     './dictionary': { errorWord: () => 'error' },
   };
   const source = readFileSync(join(__dirname, 'MediaTools.tsx'), 'utf8');
@@ -42,7 +46,10 @@ function harness() {
   vm.runInNewContext(compiled, context, { filename: 'MediaTools.transpiled.cjs' });
   return {
     player,
-    render(canPlay, canRecord) { index = 0; return mod.exports.useVoiceSession('same-company-room-membership', () => undefined, canPlay, canRecord); },
+    unlinked,
+    staged,
+    render(canPlay, canRecord, scope = 'same-company-room-membership') { index = 0; return mod.exports.useVoiceSession(scope, () => undefined, canPlay, canRecord); },
+    background() { native.AppState.currentState = 'background'; background('background'); },
     close() { effect?.cleanup?.(); },
   };
 }
@@ -71,4 +78,34 @@ test('media-right withdrawal tears down native playback and recording with uncha
   assert.equal(app.player.active, false);
   assert.ok(app.player.playerStops > stops);
   app.close();
+});
+
+test('background and scope change stop recording before it can be sent', async () => {
+  const app = harness();
+  await app.render(true, true).start();
+  app.background(); await settled();
+  assert.equal(app.player.active, false);
+  assert.equal(app.staged.length, 0);
+  assert.ok(app.unlinked.every(path => path.startsWith('/synthetic/odoo-voice-')));
+  app.close();
+  const scoped = harness();
+  await scoped.render(true, true).start();
+  scoped.render(true, true, 'another-company-room-membership'); await settled();
+  assert.equal(scoped.player.active, false);
+  assert.equal(scoped.staged.length, 0);
+  scoped.close();
+});
+
+test('finish stages once and cleanup deletes recorder temporary bytes, never the staged attachment', async () => {
+  const app = harness();
+  await app.render(true, true).start();
+  const room = { id: 4, company_id: 1, membership_id: 9 };
+  const attachment = await app.render(true, true).finish(room);
+  assert.equal(attachment.uri, 'file:///owned-stage/voice.m4a');
+  assert.equal(app.staged.length, 1);
+  assert.equal(app.staged[0].room, room);
+  assert.ok(app.unlinked.length > 0);
+  assert.ok(app.unlinked.every(path => path.startsWith('/synthetic/odoo-voice-')));
+  app.close(); await settled();
+  assert.equal(app.unlinked.includes('/owned-stage/voice.m4a'), false);
 });

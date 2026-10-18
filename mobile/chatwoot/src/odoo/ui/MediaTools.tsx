@@ -12,7 +12,7 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 import type { Attachment, Room } from '../core/ChatEngine';
 import { localMedia, stageFile } from '../runtime';
-import { Button, Label, styles } from './components';
+import { Button, colors, IconButton, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 
 export function useVoiceSession(
@@ -187,6 +187,10 @@ export function AttachmentTools({
   language,
   t,
   report,
+  children,
+  hasText,
+  onSendText,
+  allowAttachments = true,
 }: {
   room: Room;
   disabled: boolean;
@@ -195,9 +199,21 @@ export function AttachmentTools({
   language: Language;
   t: Translate;
   report: (word: Word) => void;
+  children?: React.ReactNode;
+  hasText: boolean;
+  onSendText: () => void;
+  allowAttachments?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const operation = useRef(false);
+  useEffect(() => {
+    if (disabled || !allowAttachments || voice.recording) setExpanded(false);
+  }, [disabled, allowAttachments, voice.recording]);
   const attach = async (kind: 'image' | 'file') => {
+    if (disabled || !allowAttachments || operation.current || voice.recording) return;
+    operation.current = true;
+    setExpanded(false);
     setBusy(true);
     try {
       if (kind === 'image') {
@@ -233,41 +249,35 @@ export function AttachmentTools({
     } catch (e) {
       if (!(isErrorWithCode(e) && e.code === errorCodes.OPERATION_CANCELED)) report(errorWord(e));
     } finally {
+      operation.current = false;
+      setBusy(false);
+    }
+  };
+  const voiceAction = async () => {
+    if (disabled || !allowAttachments || operation.current) return;
+    operation.current = true;
+    setExpanded(false);
+    setBusy(true);
+    try {
+      if (voice.recording) {
+        const attachment = await voice.finish(room);
+        if (attachment) await enqueue(attachment);
+      } else await voice.start();
+    } catch (e) {
+      report(errorWord(e));
+    } finally {
+      operation.current = false;
       setBusy(false);
     }
   };
   return (
-    <View style={{ gap: 8 }}>
-      {voice.recording ? (
-        <View style={styles.row}>
-          <Label language={language}>
-            {t('recording')} · {String(Math.floor(voice.seconds / 60)).padStart(2, '0')}:
-            {String(voice.seconds % 60).padStart(2, '0')}
-          </Label>
-          <Button
-            title={t('stopSend')}
-            disabled={busy || disabled}
-            onPress={() => {
-              setBusy(true);
-              void voice
-                .finish(room)
-                .then(async attachment => {
-                  if (attachment) await enqueue(attachment);
-                })
-                .catch(e => report(errorWord(e)))
-                .finally(() => setBusy(false));
-            }}
-          />
-          <Button
-            quiet
-            title={t('cancel')}
-            onPress={() => {
-              void voice.stop();
-            }}
-          />
-        </View>
-      ) : (
-        <View style={[styles.row, { flexDirection: language === 'ar' ? 'row-reverse' : 'row' }]}>
+    <View style={{ gap: 8, width: '100%' }}>
+      {expanded && allowAttachments && !voice.recording && (
+        <View
+          style={[
+            styles.row,
+            { paddingHorizontal: 8, flexDirection: language === 'ar' ? 'row-reverse' : 'row' },
+          ]}>
           <Button
             quiet
             title={t('photo')}
@@ -284,16 +294,78 @@ export function AttachmentTools({
               void attach('file');
             }}
           />
-          <Button
-            quiet
-            title={t('voice')}
-            disabled={disabled || busy}
-            onPress={() => {
-              void voice.start();
-            }}
-          />
         </View>
       )}
+      <View
+        style={{
+          flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'flex-end',
+          gap: 8,
+        }}>
+        <View
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 48,
+            borderRadius: 25,
+            backgroundColor: colors.white,
+            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            paddingHorizontal: 2,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}>
+          {voice.recording ? (
+            <>
+              <IconButton
+                icon="close"
+                tone="danger"
+                label={t('cancel')}
+                onPress={() => {
+                  void voice.stop();
+                }}
+              />
+              <View style={{ flex: 1, minWidth: 0, paddingHorizontal: 6, paddingVertical: 5 }}>
+                <Label language={language} muted>
+                  {t('recording')} · {String(Math.floor(voice.seconds / 60)).padStart(2, '0')}:
+                  {String(voice.seconds % 60).padStart(2, '0')}
+                </Label>
+                <Label language={language} muted>
+                  {t('stopSend')}
+                </Label>
+              </View>
+            </>
+          ) : (
+            <>
+              {allowAttachments && (
+                <IconButton
+                  icon="attach"
+                  label={t('attachments')}
+                  disabled={disabled || busy}
+                  onPress={() => {
+                    if (!operation.current && !disabled) setExpanded(!expanded);
+                  }}
+                />
+              )}
+              {children}
+            </>
+          )}
+        </View>
+        <IconButton
+          icon={voice.recording ? 'stop' : hasText ? 'send' : 'mic'}
+          label={voice.recording ? t('stopSend') : hasText ? t('send') : t('voice')}
+          tone="primary"
+          size={22}
+          style={{ width: 48, height: 48, borderRadius: 24 }}
+          busy={busy}
+          disabled={disabled || busy || (!hasText && !allowAttachments)}
+          onPress={() => {
+            if (disabled || operation.current) return;
+            if (!voice.recording && hasText) onSendText();
+            else void voiceAction();
+          }}
+        />
+      </View>
     </View>
   );
 }

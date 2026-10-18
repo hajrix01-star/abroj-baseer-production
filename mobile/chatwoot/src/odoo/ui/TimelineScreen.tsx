@@ -1,16 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   Text,
   View,
+  type TextInput,
   type ViewToken,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import type { Attachment, ChatEngine, Message, Pending } from '../core/ChatEngine';
-import { Button, colors, direction, Field, IconButton, Label, styles } from './components';
+import { Button, colors, direction, Field, Icon, IconButton, Label, styles } from './components';
+import { companyDisplayName } from './companyNames';
+import { MessageQuote, MessageStatus } from './MessagePresentation';
+import { NEAR_BOTTOM_DP, TimelineFollow } from './timelineFollow';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
 import type { ChatView } from './useChat';
@@ -56,6 +61,52 @@ export function TimelineScreen({
   const mediaKey = presentationKey(chat.identity, room);
   const voice = useVoiceSession(mediaKey, setLocalError, viewMedia, canAttach);
   const sendBusy = useRef(false);
+  const draftRevision = useRef(0);
+  const replyRevision = useRef(0);
+  const list = useRef<FlashListRef<Row>>(null);
+  const input = useRef<TextInput>(null);
+  const follow = useRef(new TimelineFollow());
+  const scrollFrame = useRef<number | null>(null);
+  const dragging = useRef(false);
+  const [showLatest, setShowLatest] = useState(false);
+  const [actionsFor, setActionsFor] = useState<number | null>(null);
+  const live = useRef(true);
+  const latestAccess = useRef(canSend);
+  latestAccess.current = canSend;
+  // Coalesce geometry changes. A second frame lets recycled cells settle after the IME/input layout.
+  // A deliberate history drag cancels both frames; never pull the reader away from older messages.
+  const scrollLatest = useCallback(() => {
+    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    scrollFrame.current = requestAnimationFrame(() => {
+      if (!live.current || dragging.current || !follow.current.following) { scrollFrame.current = null; return; }
+      list.current?.scrollToEnd({ animated: false });
+      scrollFrame.current = requestAnimationFrame(() => {
+        scrollFrame.current = null;
+        if (live.current && !dragging.current && follow.current.following)
+          list.current?.scrollToEnd({ animated: false });
+      });
+    });
+  }, []);
+  const followGeometry = useCallback(() => {
+    if (follow.current.following && !dragging.current) scrollLatest();
+  }, [scrollLatest]);
+  useEffect(() => {
+    live.current = true;
+    const shown = Keyboard.addListener('keyboardDidShow', followGeometry);
+    const hidden = Keyboard.addListener('keyboardDidHide', followGeometry);
+    return () => {
+      live.current = false;
+      shown.remove(); hidden.remove();
+      if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    };
+  }, [followGeometry]);
+  const chooseReply = (message: Message) => {
+    if (!latestAccess.current || !live.current) return;
+    setActionsFor(null);
+    replyRevision.current++;
+    setReply(message);
+    input.current?.focus();
+  };
   useEffect(() => {
     setText('');
     setReply(null);
@@ -96,14 +147,21 @@ export function TimelineScreen({
   const send = async (attachment?: Attachment) => {
     if (sendBusy.current || !canSend) return;
     sendBusy.current = true;
+    const submittedDraft = draftRevision.current;
+    const submittedReply = replyRevision.current;
     setSending(true);
     setLocalError(null);
     try {
       if (attachment) await engine.enqueueAttachment(room, attachment, text, reply?.id);
       else await engine.enqueue(room, text, reply?.id);
-      setText('');
-      setReply(null);
+      if (!live.current || !latestAccess.current) return;
+      follow.current.ownEnqueued();
+      setShowLatest(false);
+      if (submittedDraft === draftRevision.current) setText('');
+      if (submittedReply === replyRevision.current) setReply(null);
+      setActionsFor(null);
       chat.capture();
+      scrollLatest();
       if (!chat.offline) await chat.sync();
     } catch (e) {
       setLocalError(errorWord(e));
@@ -118,6 +176,14 @@ export function TimelineScreen({
       .filter(item => item.room_id === room.id)
       .map(pending => ({ key: pending.client_uuid, pending })),
   ];
+  const lastKey = rows[rows.length - 1]?.key;
+  useEffect(() => {
+    if (follow.current.rows(lastKey)) scrollLatest();
+    else if (lastKey && !follow.current.following) setShowLatest(true);
+  }, [lastKey, scrollLatest]);
+  const companyName = companyDisplayName(
+    chat.identity?.profile?.companies.find(company => company.id === room.company_id), language, room.company_id,
+  );
   // AppShell owns the blocked/verification view. Never reveal retained rows if this screen is
   // rendered during a scope transition or without the server-authorized company/view right.
   if (
@@ -164,7 +230,7 @@ export function TimelineScreen({
               <Text
                 numberOfLines={1}
                 style={[styles.muted, { fontSize: 12, lineHeight: 18 }, direction(language)]}>
-                {room.is_group ? t('members') : t('direct')}
+                {companyName}
               </Text>
             </View>
             {room.is_group && (
@@ -179,12 +245,40 @@ export function TimelineScreen({
         </View>
         <View style={{ flex: 1, minHeight: 0 }}>
           <FlashList
+            ref={list}
             extraData={mediaKey}
             data={rows}
             viewabilityConfig={{ minimumViewTime: 600, viewAreaCoveragePercentThreshold: 75 }}
             onViewableItemsChanged={visibleChanged}
             keyExtractor={row => row.key}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="none"
+            onLoad={followGeometry}
+            onLayout={followGeometry}
+            onContentSizeChange={followGeometry}
+            scrollEventThrottle={16}
+            onScrollBeginDrag={() => {
+              dragging.current = true;
+              if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+              scrollFrame.current = null;
+            }}
+            onScrollEndDrag={() => { dragging.current = false; }}
+            onMomentumScrollBegin={() => {
+              dragging.current = true;
+              if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+              scrollFrame.current = null;
+            }}
+            onMomentumScrollEnd={() => { dragging.current = false; }}
+            onScroll={event => {
+              // Ignore intermediate programmatic geometry, but always honor deliberate dragging.
+              if (scrollFrame.current !== null && !dragging.current) return;
+              const { contentSize, layoutMeasurement, contentOffset } = event.nativeEvent;
+              // An IME resize may emit onScroll BEFORE onLayout/keyboardDidShow. Only a
+              // deliberate drag/momentum can opt out of following; geometry cannot do so.
+              if (!dragging.current && contentSize.height - layoutMeasurement.height - Math.max(0, contentOffset.y) > NEAR_BOTTOM_DP) return;
+              const atBottom = follow.current.scroll(contentSize.height, layoutMeasurement.height, contentOffset.y);
+              setShowLatest(!atBottom);
+            }}
             contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10 }}
             maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
             ListHeaderComponent={
@@ -211,22 +305,13 @@ export function TimelineScreen({
               const message = item.message;
               const pending = item.pending;
               const state = pending?.state ?? message?.delivery_state;
-              const status: Word = [
-                'queued',
-                'sending',
-                'unknown',
-                'failed',
-                'sent',
-                'delivered',
-                'read',
-              ].includes(state ?? '')
-                ? (state as Word)
-                : 'sent';
               return (
                 <Pressable
-                  onLongPress={() => {
-                    if (message && canSend) setReply(message);
-                  }}
+                  accessibilityLabel={message ? `${message.author_name}: ${message.text}` : pending?.text}
+                  accessibilityActions={message && canSend ? [{ name: 'reply', label: t('reply') }] : []}
+                  onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'reply' && message) chooseReply(message); }}
+                  onPress={() => { if (message && canSend) setActionsFor(actionsFor === message.id ? null : message.id); }}
+                  onLongPress={() => { if (message) chooseReply(message); }}
                   style={{
                     alignSelf: own
                       ? language === 'ar'
@@ -245,13 +330,13 @@ export function TimelineScreen({
                       styles.card,
                       {
                         backgroundColor: own ? colors.chatSent : colors.white,
-                        borderRadius: 16,
-                        borderBottomLeftRadius: !!own === (language === 'ar') ? 5 : 16,
-                        borderBottomRightRadius: !!own === (language === 'ar') ? 16 : 5,
+                        borderRadius: 18,
+                        borderBottomLeftRadius: !!own === (language === 'ar') ? 5 : 18,
+                        borderBottomRightRadius: !!own === (language === 'ar') ? 18 : 5,
                         gap: 4,
                         paddingHorizontal: 11,
                         paddingTop: 9,
-                        paddingBottom: 2,
+                        paddingBottom: 7,
                       },
                     ]}>
                     {message && !own && (
@@ -264,19 +349,10 @@ export function TimelineScreen({
                         {message.author_name}
                       </Text>
                     )}
-                    {message?.reply && (
-                      <View
-                        style={{
-                          borderStartWidth: 3,
-                          borderStartColor: colors.blue,
-                          paddingStart: 9,
-                        }}>
-                        <Label language={language} muted>
-                          {message.reply.unavailable
-                            ? t('unavailable')
-                            : `${String(message.reply.author_name ?? '')}: ${String(message.reply.text ?? '')}`}
-                        </Label>
-                      </View>
+                    {(message?.reply || pending?.reply_to_message_id) && (
+                      <MessageQuote language={language}
+                        author={String(message?.reply?.author_name ?? chat.history.messages.find(m => m.id === pending?.reply_to_message_id)?.author_name ?? '')}
+                        text={message?.reply?.unavailable ? t('unavailable') : String(message?.reply?.text ?? chat.history.messages.find(m => m.id === pending?.reply_to_message_id)?.text ?? t('unavailable'))} />
                     )}
                     {!!(message?.text || pending?.text) && (
                       <Text selectable style={[styles.text, direction(language)]}>
@@ -299,38 +375,38 @@ export function TimelineScreen({
                         {pending.attachment.name}
                       </Label>
                     )}
-                    <View style={[styles.row, { justifyContent: 'space-between' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4,
+                      alignSelf: language === 'ar' ? 'flex-start' : 'flex-end' }}>
                       {message?.created_at && (
                         <Text style={[styles.muted, { fontSize: 11, lineHeight: 16 }]}>
                           {messageTime(message.created_at)}
                         </Text>
                       )}
-                      {own && (
-                        <Text
-                          style={[
-                            styles.muted,
-                            { fontSize: 11, lineHeight: 16 },
-                            pending?.state === 'failed' && { color: colors.danger },
-                          ]}>
-                          {t(status)}
-                        </Text>
-                      )}
-                      {message && canSend && (
-                        <IconButton
-                          icon="reply"
-                          size={16}
-                          label={t('reply')}
-                          onPress={() => setReply(message)}
-                        />
-                      )}
+                      {own && <MessageStatus state={state} t={t} />}
                     </View>
                   </View>
+                  {message && canSend && actionsFor === message.id && (
+                    <View style={{ backgroundColor: colors.white, alignSelf: 'flex-start', borderRadius: 16,
+                      flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, marginTop: 4 }}>
+                      <IconButton icon="reply" label={t('reply')} onPress={() => chooseReply(message)} />
+                      <Text style={styles.muted}>{t('reply')}</Text>
+                    </View>
+                  )}
                 </Pressable>
               );
             }}
           />
+          {showLatest && (
+            <View style={{ position: 'absolute', bottom: 8, right: 12, backgroundColor: colors.white,
+              borderRadius: 24, borderWidth: 1, borderColor: colors.border }}>
+              <IconButton icon="down" label={t('latest')} onPress={() => {
+                follow.current.ownEnqueued(); setShowLatest(false); scrollLatest();
+              }} />
+            </View>
+          )}
         </View>
         <View
+          onLayout={followGeometry}
           style={{
             paddingHorizontal: 8,
             paddingTop: 6,
@@ -348,13 +424,12 @@ export function TimelineScreen({
           ) : (
             <>
               {reply && (
-                <View style={styles.row}>
+                <View style={[styles.row, { flexWrap: 'nowrap', flexDirection: language === 'ar' ? 'row-reverse' : 'row', backgroundColor: colors.pale, borderRadius: 12, paddingHorizontal: 4 }]}>
+                  <Icon icon="reply" size={18} color={colors.blue} />
                   <View style={styles.fill}>
-                    <Label language={language} muted>
-                      {t('replying')} {reply.author_name}: {reply.text.slice(0, 80)}
-                    </Label>
+                    <MessageQuote author={reply.author_name} text={reply.text} language={language} />
                   </View>
-                  <IconButton icon="close" label={t('cancel')} onPress={() => setReply(null)} />
+                  <IconButton icon="close" label={t('cancel')} onPress={() => { replyRevision.current++; setReply(null); }} />
                 </View>
               )}
               <AttachmentTools
@@ -371,13 +446,15 @@ export function TimelineScreen({
                 }}
                 allowAttachments={canAttach}>
                 <Field
+                  ref={input}
                   language={language}
                   multiline
                   value={text}
-                  onChangeText={setText}
+                  onChangeText={value => { draftRevision.current++; setText(value); }}
                   placeholder={t('message')}
                   accessibilityLabel={t('message')}
                   maxLength={16000}
+                  onContentSizeChange={followGeometry}
                   style={{
                     flex: 1,
                     minWidth: 0,

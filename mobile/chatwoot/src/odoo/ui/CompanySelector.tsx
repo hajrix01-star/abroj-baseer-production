@@ -11,14 +11,30 @@ export function CompanySelector({
   onSelect,
   language,
   t,
+  allowAll = false,
+  companyIds,
+  pickerOnly = false,
+  onDismiss,
 }: {
   identity: Bootstrap;
   companyId: number;
   onSelect: (id: number) => void;
   language: Language;
   t: Translate;
+  /** Local inbox filter only. 0 is never an operation company. */
+  allowAll?: boolean;
+  /** May restrict authorized companies, never expand them. */
+  companyIds?: number[];
+  pickerOnly?: boolean;
+  onDismiss?: () => void;
 }) {
-  const options = authorizedCompanies(identity, language);
+  const authorized = authorizedCompanies(identity, language).filter(
+    company => !companyIds || companyIds.includes(company.id),
+  );
+  const options =
+    allowAll && authorized.length
+      ? [{ id: 0, name: `${t('allCompanies')} (${String(authorized.length)})` }, ...authorized]
+      : authorized;
   const context = JSON.stringify([
     identity.database,
     identity.user_id,
@@ -28,9 +44,10 @@ export function CompanySelector({
     identity.permissions.chat_view,
     options,
   ]);
-  const [opened, setOpened] = useState<string | null>(null);
+  const [opened, setOpened] = useState<string | null>(pickerOnly ? context : null);
   const [query, setQuery] = useState('');
-  const openedRef = useRef<string | null>(null);
+  const openedRef = useRef<string | null>(pickerOnly ? context : null);
+  const initialized = useRef(false);
   const active = useRef(AppState.currentState === 'active');
   const latest = useRef({
     context,
@@ -44,8 +61,13 @@ export function CompanySelector({
     openedRef.current = null;
     setOpened(null);
     setQuery('');
+    onDismiss?.();
   };
   useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      return;
+    }
     close();
   }, [context]);
   useEffect(() => {
@@ -79,41 +101,43 @@ export function CompanySelector({
   const title = selected?.name || t(options.length ? 'selectCompany' : 'noCompanies');
   return (
     <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${t('selectCompany')}: ${title}`}
-        accessibilityState={{
-          expanded: visible,
-          disabled: !options.length || !latest.current.allowed,
-        }}
-        testID="company-selector"
-        disabled={!options.length || !latest.current.allowed}
-        onPress={() => {
-          if (active.current && latest.current.allowed) {
-            setQuery('');
-            openedRef.current = latest.current.context;
-            setOpened(latest.current.context);
-          }
-        }}
-        style={({ pressed }) => [
-          styles.row,
-          {
-            minHeight: 48,
-            flexWrap: 'nowrap',
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 12,
-            paddingHorizontal: 14,
-            backgroundColor: colors.white,
-            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
-          },
-          pressed && { opacity: 0.75 },
-        ]}>
-        <Text numberOfLines={1} style={[styles.text, direction(language), { flex: 1 }]}>
-          {title}
-        </Text>
-        <Icon icon="chevronDown" size={20} color={colors.muted} />
-      </Pressable>
+      {!pickerOnly && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t('selectCompany')}: ${title}`}
+          accessibilityState={{
+            expanded: visible,
+            disabled: !options.length || !latest.current.allowed,
+          }}
+          testID="company-selector"
+          disabled={!options.length || !latest.current.allowed}
+          onPress={() => {
+            if (active.current && latest.current.allowed) {
+              setQuery('');
+              openedRef.current = latest.current.context;
+              setOpened(latest.current.context);
+            }
+          }}
+          style={({ pressed }) => [
+            styles.row,
+            {
+              minHeight: 48,
+              flexWrap: 'nowrap',
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              backgroundColor: colors.white,
+              flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+            },
+            pressed && { opacity: 0.75 },
+          ]}>
+          <Text numberOfLines={1} style={[styles.text, direction(language), { flex: 1 }]}>
+            {title}
+          </Text>
+          <Icon icon="chevronDown" size={20} color={colors.muted} />
+        </Pressable>
+      )}
       {visible && (
         <Sheet title={t('selectCompany')} close={close} t={t}>
           <Field

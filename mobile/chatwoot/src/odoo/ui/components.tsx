@@ -29,6 +29,7 @@ export const colors = {
   danger: '#a12a32',
   chatBackground: '#f1f3f5',
   chatSent: '#dff0ff',
+  chatQuote: '#d4e8fc',
   composerBackground: '#ffffff',
 };
 
@@ -37,6 +38,11 @@ const iconPaths = {
   back: 'M15 5l-7 7 7 7',
   chevronDown: 'M6 9l6 6 6-6',
   check: 'M5 12l4 4L19 6',
+  doubleCheck: 'M18 6 7 17l-5-5M22 6 11 17l-2-2',
+  clock: 'M12 8v4l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
+  alert: 'M12 8v4M12 16h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
+  down: 'M12 5v14M5 12l7 7 7-7',
+  building: 'M6 22V3h12v19M3 22h18M9 7h1M14 7h1M9 11h1M14 11h1M10 22v-6h4v6',
   send: 'M4 4l17 8-17 8 3-8-3-8ZM7 12h14',
   mic: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0V5ZM5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8',
   stop: 'M7 7h10v10H7Z',
@@ -46,7 +52,7 @@ const iconPaths = {
   file: 'M5 3h9l5 5v13H5ZM14 3v6h5M8 13h8M8 17h6',
   members:
     'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM18 4a4 4 0 0 1 0 7M22 21v-2a4 4 0 0 0-3-4',
-  reply: 'M9 5l-7 7 7 7M2 12h12a7 7 0 0 1 7 7',
+  reply: 'M9 10 4 15l5 5M4 15h11a5 5 0 0 0 0-10h-2',
   settings: 'M4 7h16M4 17h16M9 4v6M15 14v6',
   user: 'M20 21v-2a6 6 0 0 0-6-6h-4a6 6 0 0 0-6 6v2M12 9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
   refresh: 'M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 14 6M18 18a8 8 0 0 1-14-6',
@@ -227,15 +233,16 @@ export function Button({
     </Pressable>
   );
 }
-export function Field({ language, ...props }: TextInputProps & { language: Language }) {
+export const Field = React.forwardRef<TextInput, TextInputProps & { language: Language }>(function Field({ language, ...props }, ref) {
   return (
     <TextInput
+      ref={ref}
       placeholderTextColor={colors.muted}
       {...props}
       style={[styles.input, direction(language), props.style]}
     />
   );
-}
+});
 export function Sheet({
   title,
   close,

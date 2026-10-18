@@ -125,6 +125,7 @@ const transport = {
     if (/\/rooms\/\d+\/messages$/.test(r.path) && r.method === 'POST') {
       const payload = JSON.parse(r.form!.payload!);
       const id = messages.length + 1;
+      const parent = messages.find(message => message.id === payload.reply_to_message_id);
       messages.push({
         id,
         author_user_id: 7,
@@ -132,6 +133,7 @@ const transport = {
         text: payload.text,
         created_at: '2026-10-18 12:31:00',
         delivery_state: 'sent',
+        ...(parent ? { reply: { id: parent.id, author_name: parent.author_name, text: parent.text } } : {}),
       });
       return {
         api_version: 2,

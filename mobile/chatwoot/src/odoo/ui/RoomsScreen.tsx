@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Text, Pressable, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import type { Bootstrap, Room } from '../core/ChatEngine';
-import { IconButton, colors, direction, Label, styles } from './components';
+import { Icon, IconButton, colors, direction, Label, styles } from './components';
 import type { Language, Translate } from './dictionary';
 import { companyActions } from './viewModel';
 import { CompanySelector } from './CompanySelector';
+import { authorizedCompanies } from './companyNames';
 
 export type ManagementMode = 'create' | 'direct' | 'policy' | 'members';
 export function RoomsScreen({
@@ -31,8 +32,57 @@ export function RoomsScreen({
   t: Translate;
   offline: boolean;
 }) {
-  const actions = companyActions(identity, companyId, offline);
-  const rows = rooms.filter(room => room.company_id === companyId);
+  const companies = authorizedCompanies(identity, language);
+  const allowedIds = companies.map(company => company.id);
+  const allowed = identity.permissions.chat_view === true;
+  const rows = allowed
+    ? rooms.filter(
+        room =>
+          allowedIds.includes(room.company_id) &&
+          (companyId === 0 || room.company_id === companyId),
+      )
+    : [];
+  const scope = JSON.stringify([
+    identity.database,
+    identity.user_id,
+    identity.permissions,
+    identity.company_ids,
+    identity.mobile_policy,
+    companyId,
+    language,
+    offline,
+  ]);
+  const actionScopes = companies
+    .filter(company => companyId === 0 || company.id === companyId)
+    .map(company => companyActions(identity, company.id, offline));
+  const actions = {
+    createGroup: allowed && actionScopes.some(action => action.createGroup),
+    direct: allowed && actionScopes.some(action => action.direct),
+    policy: allowed && actionScopes.some(action => action.policy),
+    disabled: offline,
+  };
+  const latest = useRef({ scope, rows, select, manage, actions });
+  latest.current = { scope, rows, select, manage, actions };
+  const openRoom = (room: Room) => {
+    const current = latest.current;
+    const fresh = current.rows.find(
+      item =>
+        item.id === room.id &&
+        item.company_id === room.company_id &&
+        item.membership_id === room.membership_id,
+    );
+    if (current.scope === scope && fresh) current.select(fresh);
+  };
+  const openManagement = (mode: ManagementMode) => {
+    const current = latest.current;
+    const permitted =
+      mode === 'create'
+        ? current.actions.createGroup
+        : mode === 'direct'
+          ? current.actions.direct
+          : mode === 'policy' && current.actions.policy;
+    if (current.scope === scope && permitted && !current.actions.disabled) current.manage(mode);
+  };
   return (
     <View style={styles.fill}>
       <View style={styles.header}>
@@ -42,6 +92,7 @@ export function RoomsScreen({
           onSelect={selectCompany}
           language={language}
           t={t}
+          allowAll
         />
         <View style={[styles.row, { flexDirection: language === 'ar' ? 'row-reverse' : 'row' }]}>
           {actions.createGroup && (
@@ -50,7 +101,7 @@ export function RoomsScreen({
               label={t('group')}
               tone="primary"
               disabled={actions.disabled}
-              onPress={() => manage('create')}
+              onPress={() => openManagement('create')}
             />
           )}
           {actions.direct && (
@@ -58,7 +109,7 @@ export function RoomsScreen({
               icon="user"
               label={t('direct')}
               disabled={actions.disabled}
-              onPress={() => manage('direct')}
+              onPress={() => openManagement('direct')}
             />
           )}
           {actions.policy && (
@@ -66,7 +117,7 @@ export function RoomsScreen({
               icon="settings"
               label={t('policy')}
               disabled={actions.disabled}
-              onPress={() => manage('policy')}
+              onPress={() => openManagement('policy')}
             />
           )}
         </View>
@@ -76,26 +127,33 @@ export function RoomsScreen({
         keyExtractor={room => String(room.id)}
         ListEmptyComponent={
           <View style={{ padding: 24 }}>
-            <Label language={language}>{t('noRooms')}</Label>
+            <Label language={language}>{t(companyId === 0 ? 'noRoomsAll' : 'noRooms')}</Label>
           </View>
         }
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={item.name}
-            onPress={() => select(item)}
+            accessibilityLabel={`${item.name} · ${companies.find(company => company.id === item.company_id)?.name ?? String(item.company_id)}`}
+            onPress={() => openRoom(item)}
             style={({ pressed }) => [
               styles.listRow,
               { backgroundColor: selected?.id === item.id ? colors.pale : colors.white },
               pressed && { opacity: 0.7 },
             ]}>
             <View
-              style={[styles.row, { flexDirection: language === 'ar' ? 'row-reverse' : 'row' }]}>
+              style={[
+                styles.row,
+                {
+                  flexWrap: 'nowrap',
+                  gap: 12,
+                  flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                },
+              ]}>
               <View
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 14,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
                   backgroundColor: colors.pale,
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -104,12 +162,38 @@ export function RoomsScreen({
                   {item.name.slice(0, 1)}
                 </Text>
               </View>
-              <View style={styles.fill}>
+              <View style={[styles.fill, { minWidth: 0, gap: 2 }]}>
                 <Text
                   numberOfLines={1}
                   style={[styles.text, { fontWeight: '600' }, direction(language)]}>
                   {item.name}
                 </Text>
+                <View
+                  style={[
+                    styles.row,
+                    {
+                      gap: 4,
+                      flexWrap: 'nowrap',
+                      alignSelf: language === 'ar' ? 'flex-end' : 'flex-start',
+                      flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                      maxWidth: '100%',
+                      paddingHorizontal: 7,
+                      borderRadius: 6,
+                      backgroundColor: colors.pale,
+                    },
+                  ]}>
+                  <Icon icon="building" size={12} color={colors.muted} />
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.muted,
+                      direction(language),
+                      { fontSize: 11, lineHeight: 19, flexShrink: 1 },
+                    ]}>
+                    {companies.find(company => company.id === item.company_id)?.name ??
+                      String(item.company_id)}
+                  </Text>
+                </View>
                 <Text numberOfLines={1} style={[styles.muted, direction(language)]}>
                   {item.last_message_preview || (item.is_group ? t('members') : t('direct'))}
                 </Text>

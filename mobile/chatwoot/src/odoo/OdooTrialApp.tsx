@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, BackHandler, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { ChatEngine } from './core/ChatEngine';
+import type { ChatEngine, Room } from './core/ChatEngine';
 import { getEngine } from './runtime';
 import { Button, colors, direction, IconButton, Label, styles } from './ui/components';
 import { translator, type Language } from './ui/dictionary';
@@ -13,34 +13,79 @@ import { useChat } from './ui/useChat';
 import { companyActions, presentationKey } from './ui/viewModel';
 import { VersionLabel } from './ui/VersionLabel';
 import { NavigationDrawer, type DrawerAction } from './ui/NavigationDrawer';
+import { CompanySelector } from './ui/CompanySelector';
+
+type CompanyMode = Exclude<ManagementMode, 'members'>;
+type ManagementTarget = {
+  mode: ManagementMode;
+  companyId: number;
+  room: Room | null;
+  scope: string;
+};
 
 export function SessionApp({ engine }: { engine: ChatEngine }) {
   const chat = useChat(engine);
   const [language, setLanguage] = useState<Language>('ar');
   const [companyId, setCompanyId] = useState(0);
-  const [management, setManagement] = useState<ManagementMode | null>(null);
+  const [management, setManagement] = useState<ManagementTarget | null>(null);
+  const [companyChoice, setCompanyChoice] = useState<{ mode: CompanyMode; scope: string } | null>(
+    null,
+  );
   const [menu, setMenu] = useState(false);
   const t = translator(language);
   const { width } = useWindowDimensions();
   const wide = width >= 850;
   const identity = chat.presentationReady ? chat.identity : null;
-  const canManage = !!identity && companyActions(identity, companyId, chat.offline).policy;
-  const scopeKey = `${identity?.user_id}/${companyId}/${JSON.stringify(identity?.permissions)}/${canManage}`;
+  const active = useRef(AppState.currentState === 'active');
+  const interactionEpoch = useRef(0);
+  const eligibleCompanies = (mode: CompanyMode) =>
+    !identity || identity.permissions.chat_view !== true
+      ? []
+      : identity.company_ids.filter(id => {
+          if (!Number.isSafeInteger(id) || id <= 0) return false;
+          const actions = companyActions(identity, id, chat.offline);
+          return mode === 'create'
+            ? actions.createGroup
+            : mode === 'direct'
+              ? actions.direct
+              : actions.policy;
+        });
+  const canManage = eligibleCompanies('policy').length > 0;
+  const scopeKey = JSON.stringify([
+    identity?.database,
+    identity?.user_id,
+    identity?.company_ids,
+    identity?.permissions,
+    identity?.mobile_policy,
+    companyId,
+    language,
+    chat.offline,
+    chat.busy,
+    chat.selected?.id,
+    chat.selected?.company_id,
+    chat.selected?.membership_id,
+    interactionEpoch.current,
+  ]);
   const liveScope = useRef(scopeKey);
   liveScope.current = scopeKey;
   const closeMenu = useCallback(() => setMenu(false), []);
   const openMenu = () => {
-    if (identity && liveScope.current === scopeKey) setMenu(true);
+    if (identity && active.current && liveScope.current === scopeKey) setMenu(true);
   };
   useEffect(() => {
     setMenu(false);
     setManagement(null);
+    setCompanyChoice(null);
   }, [scopeKey]);
   useEffect(() => {
     const listener = AppState.addEventListener('change', state => {
+      active.current = state === 'active';
       if (state !== 'active') {
+        interactionEpoch.current++;
+        liveScope.current = '';
         setMenu(false);
         setManagement(null);
+        setCompanyChoice(null);
       }
     });
     return () => listener.remove();
@@ -49,26 +94,56 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
     if (wide || !chat.selected) return;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (menu) setMenu(false);
+      else if (companyChoice) setCompanyChoice(null);
       else if (management) setManagement(null);
       else void chat.select(null);
       return true;
     });
     return () => listener.remove();
-  }, [wide, chat.selected, chat.select, menu, management]);
+  }, [wide, chat.selected, chat.select, menu, management, companyChoice]);
   useEffect(() => {
     if (!chat.identity) {
       setCompanyId(0);
       setManagement(null);
+      setCompanyChoice(null);
       return;
     }
-    if (!chat.identity.company_ids.includes(companyId))
-      setCompanyId(chat.identity.current_company_id || chat.identity.company_ids[0]!);
-  }, [chat.identity?.user_id, chat.identity?.company_ids.join(','), companyId]);
+    if (companyId !== 0 && !chat.identity.company_ids.includes(companyId)) setCompanyId(0);
+  }, [
+    chat.identity?.database,
+    chat.identity?.user_id,
+    chat.identity?.company_ids.join(','),
+    companyId,
+  ]);
+  const requestManagement = (mode: ManagementMode) => {
+    if (
+      !identity ||
+      !active.current ||
+      liveScope.current !== scopeKey ||
+      chat.offline ||
+      chat.busy ||
+      identity.permissions.chat_view !== true
+    )
+      return;
+    if (mode === 'members') {
+      const room = chat.selected;
+      if (!room?.is_group || !identity.company_ids.includes(room.company_id)) return;
+      setManagement({ mode, companyId: room.company_id, room, scope: scopeKey });
+      return;
+    }
+    const eligible = eligibleCompanies(mode);
+    if (!eligible.length) return;
+    if (companyId > 0) {
+      if (eligible.includes(companyId))
+        setManagement({ mode, companyId, room: null, scope: scopeKey });
+    } else setCompanyChoice({ mode, scope: scopeKey });
+  };
   const logout = () => {
     const perform = () => {
-      if (!identity || liveScope.current !== scopeKey) return;
+      if (!identity || !active.current || liveScope.current !== scopeKey) return;
       setMenu(false);
       setManagement(null);
+      setCompanyChoice(null);
       void chat.logout().catch(() => undefined);
     };
     if (chat.pending.length)
@@ -79,7 +154,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
     else perform();
   };
   const menuAction = (action: DrawerAction) => {
-    if (!identity || liveScope.current !== scopeKey) return;
+    if (!identity || !active.current || liveScope.current !== scopeKey) return;
     if (action === 'ar' || action === 'en') {
       setLanguage(action);
       return;
@@ -97,7 +172,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
     if (action === 'policy' && canManage && !chat.offline && !chat.busy) {
       const requested = liveScope.current;
       requestAnimationFrame(() => {
-        if (liveScope.current === requested) setManagement('policy');
+        if (liveScope.current === requested) requestManagement('policy');
       });
     }
   };
@@ -203,14 +278,31 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
                   t={t}
                   offline={chat.offline}
                   selectCompany={id => {
+                    if (
+                      !identity ||
+                      !active.current ||
+                      liveScope.current !== scopeKey ||
+                      identity.permissions.chat_view !== true ||
+                      (id !== 0 && !identity.company_ids.includes(id))
+                    )
+                      return;
                     setCompanyId(id);
                     setManagement(null);
+                    setCompanyChoice(null);
                     void chat.select(null);
                   }}
                   select={room => {
+                    if (
+                      !identity ||
+                      !active.current ||
+                      liveScope.current !== scopeKey ||
+                      identity.permissions.chat_view !== true ||
+                      !identity.company_ids.includes(room.company_id)
+                    )
+                      return;
                     void chat.select(room);
                   }}
-                  manage={setManagement}
+                  manage={requestManagement}
                 />
               </View>
             )}
@@ -228,7 +320,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
                         void chat.select(null);
                       }
                 }
-                manage={() => setManagement('members')}
+                manage={() => requestManagement('members')}
                 onMenu={wide ? undefined : openMenu}
               />
             ) : (
@@ -241,12 +333,42 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
               )
             )}
           </View>
-          {management && (
+          {companyChoice?.scope === scopeKey && identity?.permissions.chat_view === true && (
+            <CompanySelector
+              key={`${scopeKey}/${companyChoice.mode}`}
+              identity={identity}
+              companyId={0}
+              companyIds={eligibleCompanies(companyChoice.mode)}
+              pickerOnly
+              onDismiss={() => setCompanyChoice(null)}
+              onSelect={id => {
+                if (
+                  !active.current ||
+                  liveScope.current !== scopeKey ||
+                  id <= 0 ||
+                  !eligibleCompanies(companyChoice.mode).includes(id) ||
+                  chat.offline ||
+                  chat.busy
+                )
+                  return;
+                setCompanyChoice(null);
+                setManagement({
+                  mode: companyChoice.mode,
+                  companyId: id,
+                  room: null,
+                  scope: scopeKey,
+                });
+              }}
+              language={language}
+              t={t}
+            />
+          )}
+          {management?.scope === scopeKey && (
             <ManagementSheet
-              key={`${chat.identity.user_id}/${companyId}/${management}`}
-              mode={management}
-              companyId={companyId}
-              room={chat.selected}
+              key={`${chat.identity.user_id}/${management.companyId}/${management.mode}`}
+              mode={management.mode}
+              companyId={management.companyId}
+              room={management.room}
               engine={engine}
               close={() => setManagement(null)}
               changed={changed}

@@ -114,6 +114,7 @@ function session() {
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
     './ui/VersionLabel': { VersionLabel: 'VersionLabel' }, './ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
+    './ui/CompanySelector': { CompanySelector: 'CompanySelector' },
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');
   return { chat, calls, alerts, nativeApp, render: () => state.render(() => module.SessionApp({ engine: {} })),
@@ -209,6 +210,10 @@ test('SessionApp routes current-scope language, refresh and policy actions and i
   one(tree, 'NavigationDrawer').onAction('refresh');
   assert.ok(app.calls.includes('sync'));
   one(app.render(), 'NavigationDrawer').onAction('policy'); app.flushFrames();
+  const picker = one(app.render(), 'CompanySelector');
+  assert.equal(picker.pickerOnly, true);
+  assert.equal(picker.companyId, 0);
+  picker.onSelect(1);
   assert.equal(one(app.render(), 'ManagementSheet').mode, 'policy');
   one(app.render(), 'ManagementSheet').close();
   const previousAction = one(app.render(), 'NavigationDrawer').onAction;
@@ -242,4 +247,75 @@ test('background closes an open SessionApp drawer and management page without in
   assert.equal(one(tree, 'NavigationDrawer').visible, false);
   assert.equal(nodes(tree).some(node => node.type === 'ManagementSheet'), false);
   assert.deepEqual(app.calls, []);
+});
+
+test('unified inbox defaults to local 0 and operations require a positive explicit eligible company', () => {
+  const app = session();
+  assert.equal(one(app.render(), 'RoomsScreen').companyId, 0);
+  one(app.render(), 'RoomsScreen').manage('create');
+  let picker = one(app.render(), 'CompanySelector');
+  assert.deepEqual(Array.from(picker.companyIds), [1]);
+  assert.equal(picker.allowAll, undefined, 'operation selector never offers synthetic 0');
+  picker.onSelect(0);
+  assert.equal(nodes(app.render()).some(node => node.type === 'ManagementSheet'), false);
+  picker.onSelect(99);
+  assert.equal(nodes(app.render()).some(node => node.type === 'ManagementSheet'), false);
+  picker.onSelect(1);
+  const sheet = one(app.render(), 'ManagementSheet');
+  assert.equal(sheet.companyId, 1);
+  assert.equal(sheet.room, null);
+  assert.equal(one(app.render(), 'RoomsScreen').companyId, 0, 'operation company does not change inbox filter');
+  sheet.close();
+  one(app.render(), 'RoomsScreen').selectCompany(99);
+  assert.equal(one(app.render(), 'RoomsScreen').companyId, 0);
+  assert.deepEqual(app.calls, []);
+});
+
+test('members use the room company, independent of the selected inbox filter', () => {
+  const app = session();
+  app.chat.identity.company_ids = [1, 2];
+  app.chat.identity.mobile_policy.push({ company_id: 2, direct_enabled: true, can_manage: true });
+  one(app.render(), 'RoomsScreen').selectCompany(1);
+  const room = { id: 8, company_id: 2, membership_id: 18, is_group: true };
+  app.chat.selected = room;
+  one(app.render(), 'TimelineScreen').manage();
+  let sheet = one(app.render(), 'ManagementSheet');
+  assert.equal(sheet.mode, 'members');
+  assert.equal(sheet.companyId, 2);
+  assert.equal(sheet.room, room);
+  app.width(900);
+  assert.equal(one(app.render(), 'RoomsScreen').companyId, 1);
+});
+
+test('pending company operations and old room actions cannot survive revoke, mask, scope change or background', () => {
+  for (const scenario of ['companies', 'rights', 'masked', 'user', 'background']) {
+    const app = session();
+    app.chat.identity.company_ids = [1, 2];
+    one(app.render(), 'RoomsScreen').manage('create');
+    const oldPicker = one(app.render(), 'CompanySelector').onSelect;
+    const oldManage = one(app.render(), 'RoomsScreen').manage;
+    const oldSelect = one(app.render(), 'RoomsScreen').select;
+    if (scenario === 'companies') app.chat.identity.company_ids = [1];
+    if (scenario === 'rights') app.chat.identity.permissions.chat_view = false;
+    if (scenario === 'masked') app.chat.presentationReady = false;
+    if (scenario === 'user') app.chat.identity = identity(8);
+    if (scenario === 'background') app.nativeApp.change('background');
+    app.render();
+    oldPicker(2); oldManage('create'); oldSelect({ id: 8, company_id: 2, membership_id: 18 });
+    const tree = app.render();
+    assert.equal(nodes(tree).some(node => ['CompanySelector', 'ManagementSheet'].includes(node.type)), false, scenario);
+    assert.deepEqual(app.calls, [], scenario);
+  }
+});
+
+test('a revoked local company filter resets to all companies and closes old management targets', () => {
+  const app = session();
+  app.chat.identity.company_ids = [1, 2];
+  one(app.render(), 'RoomsScreen').selectCompany(2);
+  one(app.render(), 'RoomsScreen').manage('create');
+  assert.equal(one(app.render(), 'ManagementSheet').companyId, 2);
+  app.chat.identity.company_ids = [1];
+  const tree = app.render();
+  assert.equal(one(tree, 'RoomsScreen').companyId, 0);
+  assert.equal(nodes(tree).some(node => node.type === 'ManagementSheet'), false);
 });

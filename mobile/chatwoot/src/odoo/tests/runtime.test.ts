@@ -119,6 +119,12 @@ test('real native adapter maps no-cookie session fixture then rejects cross-room
   assert.equal(calls.filter(c => c.path.endsWith('/media/70/content')).length, before);
   const uri = await localMedia(roomA, { ...media, mime: 'image/png', sha256: 'b'.repeat(64) });
   assert.match(uri, /c1-r11-m21\/media-70\.pdf$/); assert.deepEqual(files.get(uri), payload);
+  const warmRequests = calls.length;
+  assert.equal(await localMedia(roomA, media), uri);
+  assert.equal(calls.length, warmRequests, 'warm scoped media rechecks local bytes without another messages/content request');
+  await assert.rejects(localMedia(roomA, { id: 71 }), { code: 'media_room_mismatch' });
+  assert.equal(calls.length, warmRequests + 1, 'unknown media association falls back to authoritative history');
+  assert.equal(calls.at(-1)!.path, '/bchat/api/v2/rooms/11/messages');
   engine.markDisconnected(); offline = true;
   assert.equal(await localMedia(roomA, media), uri);
   files.set(uri, Buffer.from('x'.repeat(payload.length)));
@@ -135,6 +141,9 @@ test('real runtime prunes revoked cache but preserves durable stages across same
   await engine.login('alice', 'private', true); assert.equal(files.has(staged.uri), true);
   mediaRight = false; await engine.refresh();
   assert.equal(files.has(uri), false); assert.equal(files.has(staged.uri), false); assert.equal(engine.pending().length, 0);
+  const revokedRequests = calls.length;
+  await assert.rejects(localMedia(roomA, media), { code: 'forbidden' });
+  assert.equal(calls.length, revokedRequests, 'authorization failure is never swallowed into a network fallback');
   mediaRight = true; await engine.refresh();
   const restored = await localMedia(roomA, media); assert.equal(files.has(restored), true);
   rooms = [roomB]; await engine.refresh(); assert.equal(files.has(restored), false);

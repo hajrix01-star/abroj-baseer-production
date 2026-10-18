@@ -51,6 +51,8 @@ const iconPaths = {
   mic: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0V5ZM5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8',
   stop: 'M7 7h10v10H7Z',
   close: 'M6 6l12 12M6 18L18 6',
+  more: 'M12 5h.01M12 12h.01M12 19h.01',
+  plus: 'M12 5v14M5 12h14',
   attach: 'M8 12l7-7a4 4 0 0 1 6 6L10 22a6 6 0 0 1-8-8L13 3M6 16l10-10',
   image: 'M4 4h16v16H4ZM4 16l5-5 4 4 3-3 4 4M15 8h.01',
   file: 'M5 3h9l5 5v13H5ZM14 3v6h5M8 13h8M8 17h6',
@@ -253,24 +255,28 @@ export function Sheet({
   children,
   t,
   style,
+  compact = false,
+  language = 'en',
 }: {
   title: string;
   close: () => void;
   children: React.ReactNode;
   t: Translate;
   style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+  language?: Language;
 }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <SafeAreaView style={styles.modal}>
-        <View style={[styles.panel, style]}>
-          <View style={[styles.row, { justifyContent: 'space-between' }]}>
-            <Text style={styles.title}>{title}</Text>
-            <Button quiet title={t('close')} onPress={close} />
+        <View style={[styles.panel, compact && { padding: 12, gap: 8 }, style]}>
+          <View style={compact ? { direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 } : [styles.row, { justifyContent: 'space-between' }]}>
+            <Text style={compact ? [styles.title, direction(language), { flex: 1, fontSize: 18 }] : styles.title}>{title}</Text>
+            {compact ? <IconButton icon="close" label={t('close')} onPress={close} /> : <Button quiet title={t('close')} onPress={close} />}
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ gap: 14, paddingBottom: 12 }}>
+            contentContainerStyle={{ gap: compact ? 8 : 14, paddingBottom: 12 }}>
             {children}
           </ScrollView>
         </View>

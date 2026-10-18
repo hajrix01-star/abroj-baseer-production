@@ -118,7 +118,7 @@ export function NavigationDrawer({
           <View
             accessibilityViewIsModal
             style={{
-              width: Math.min(width - 56, 304),
+              width: Math.min(width * 0.75, 304),
               backgroundColor: colors.white,
               paddingHorizontal: 8,
               paddingTop: 6,

@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, Switch, Text, View } from 'react-native';
 import type { ChatEngine, Room } from '../core/ChatEngine';
-import { Button, colors, Field, Label, Sheet, styles } from './components';
+import {
+  Button,
+  colors,
+  direction,
+  Field,
+  Icon,
+  IconButton,
+  Label,
+  Sheet,
+  styles,
+} from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import type { ManagementMode } from './RoomsScreen';
 
@@ -34,6 +44,10 @@ export function ManagementSheet({
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Word | null>(null);
+  const [expandedMember, setExpandedMember] = useState<number | null>(null);
+  useEffect(() => {
+    setExpandedMember(null);
+  }, [companyId, room?.id, room?.membership_id, mode, canManage]);
   useEffect(() => {
     let live = true;
     const timer = setTimeout(async () => {
@@ -94,7 +108,7 @@ export function ManagementSheet({
           ? t('policy')
           : t('members');
   return (
-    <Sheet title={title} close={close} t={t}>
+    <Sheet title={title} close={close} t={t} compact={mode === 'members'} language={language}>
       {mode === 'policy' ? (
         <>
           <View style={styles.row}>
@@ -135,17 +149,25 @@ export function ManagementSheet({
           {mode === 'members' && (
             <>
               {canManage && (
-                <View style={{ gap: 8 }}>
+                <View
+                  style={{
+                    flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                    direction: 'ltr',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}>
                   <Field
                     language={language}
                     accessibilityLabel={t('name')}
                     value={name}
                     onChangeText={setName}
                     maxLength={100}
+                    style={{ flex: 1, minWidth: 0, minHeight: 44 }}
                   />
-                  <Button
-                    quiet
-                    title={t('rename')}
+                  <IconButton
+                    icon="check"
+                    label={t('rename')}
+                    tone="primary"
                     disabled={!name.trim() || busy}
                     onPress={() => {
                       if (room)
@@ -154,52 +176,135 @@ export function ManagementSheet({
                   />
                 </View>
               )}
+              {!canManage && room && <Label language={language}>{room.name}</Label>}
               {members.map(member => (
                 <View
                   key={member.user_id}
-                  style={[styles.card, { borderWidth: 1, borderColor: colors.border }]}>
-                  <Label language={language}>
-                    {member.name}
-                    {member.is_admin ? ` · ${t('admin')}` : ''}
-                  </Label>
-                  {canManage && member.user_id !== engine.identity?.user_id && (
-                    <View style={styles.row}>
-                      <Button
-                        quiet
-                        title={t('remove')}
-                        disabled={busy}
-                        onPress={() => {
-                          if (room)
-                            void act(() =>
-                              engine.groupChange(room, {
-                                action: 'remove_member',
-                                user_id: member.user_id,
-                              }),
-                            );
-                        }}
-                      />
-                      <Button
-                        quiet
-                        title={member.is_admin ? t('demote') : t('makeAdmin')}
-                        disabled={busy}
-                        onPress={() => {
-                          if (room)
-                            void act(() =>
-                              engine.groupChange(room, {
-                                action: member.is_admin ? 'demote_admin' : 'promote_admin',
-                                user_id: member.user_id,
-                              }),
-                            );
-                        }}
-                      />
+                  testID={`group-member-${member.user_id}`}
+                  style={{
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                    paddingVertical: 4,
+                  }}>
+                  <View
+                    style={{
+                      minHeight: 48,
+                      flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                      direction: 'ltr',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}>
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        flexShrink: 0,
+                        backgroundColor: colors.pale,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Text
+                        accessible={false}
+                        style={{ color: colors.blue, fontSize: 16, fontWeight: '600' }}>
+                        {Array.from(member.name.trim())[0] ?? ''}
+                      </Text>
                     </View>
-                  )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        numberOfLines={2}
+                        accessibilityLabel={member.name}
+                        style={[
+                          styles.text,
+                          direction(language),
+                          { fontSize: 15, lineHeight: 21 },
+                        ]}>
+                        {member.name}
+                      </Text>
+                      {member.is_admin && (
+                        <Text
+                          style={[
+                            styles.muted,
+                            direction(language),
+                            { fontSize: 12, lineHeight: 16 },
+                          ]}>
+                          {t('admin')}
+                        </Text>
+                      )}
+                    </View>
+                    {canManage && member.user_id !== engine.identity?.user_id && (
+                      <IconButton
+                        icon="more"
+                        label={`${t(expandedMember === member.user_id ? 'close' : 'settings')}: ${member.name}`}
+                        disabled={busy}
+                        onPress={() =>
+                          setExpandedMember(
+                            expandedMember === member.user_id ? null : member.user_id,
+                          )
+                        }
+                      />
+                    )}
+                  </View>
+                  {canManage &&
+                    member.user_id !== engine.identity?.user_id &&
+                    expandedMember === member.user_id && (
+                      <View
+                        style={[
+                          styles.row,
+                          {
+                            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                            direction: 'ltr',
+                            paddingStart: 46,
+                            paddingBottom: 4,
+                          },
+                        ]}>
+                        <Button
+                          quiet
+                          title={t('remove')}
+                          accessibilityLabel={`${t('remove')}: ${member.name}`}
+                          disabled={busy}
+                          onPress={() => {
+                            if (room)
+                              void act(() =>
+                                engine.groupChange(room, {
+                                  action: 'remove_member',
+                                  user_id: member.user_id,
+                                }),
+                              );
+                          }}
+                        />
+                        <Button
+                          quiet
+                          title={member.is_admin ? t('demote') : t('makeAdmin')}
+                          accessibilityLabel={`${member.is_admin ? t('demote') : t('makeAdmin')}: ${member.name}`}
+                          disabled={busy}
+                          onPress={() => {
+                            if (room)
+                              void act(() =>
+                                engine.groupChange(room, {
+                                  action: member.is_admin ? 'demote_admin' : 'promote_admin',
+                                  user_id: member.user_id,
+                                }),
+                              );
+                          }}
+                        />
+                      </View>
+                    )}
                 </View>
               ))}
-              <Button
-                quiet
-                title={t('leave')}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('leave')}
+                accessibilityState={{ disabled: busy }}
                 disabled={busy}
+                style={{
+                  minHeight: 48,
+                  paddingHorizontal: 2,
+                  flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                  direction: 'ltr',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
                 onPress={() =>
                   Alert.alert(t('leave'), t('confirmLeave'), [
                     { text: t('cancel'), style: 'cancel' },
@@ -212,8 +317,17 @@ export function ManagementSheet({
                       },
                     },
                   ])
-                }
-              />
+                }>
+                <Icon icon="logout" color={colors.danger} size={18} />
+                <Text
+                  style={[
+                    styles.text,
+                    direction(language),
+                    { color: colors.danger, fontSize: 14 },
+                  ]}>
+                  {t('leave')}
+                </Text>
+              </Pressable>
             </>
           )}
           {(mode !== 'members' || canManage) && (
@@ -237,6 +351,9 @@ export function ManagementSheet({
                   <Pressable
                     key={user.user_id}
                     accessibilityRole="button"
+                    accessibilityLabel={
+                      mode === 'members' ? `${t('add')}: ${user.name}` : undefined
+                    }
                     disabled={busy}
                     onPress={() => {
                       if (mode === 'direct') {
@@ -258,14 +375,52 @@ export function ManagementSheet({
                       );
                     }}
                     style={[
-                      styles.listRow,
+                      mode === 'members'
+                        ? {
+                            minHeight: 48,
+                            paddingVertical: 6,
+                            paddingHorizontal: 2,
+                            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                            direction: 'ltr',
+                            alignItems: 'center',
+                            gap: 10,
+                            borderBottomWidth: 1,
+                            borderBottomColor: colors.border,
+                          }
+                        : styles.listRow,
                       selected.includes(user.user_id) && { backgroundColor: colors.pale },
                     ]}>
-                    <Label language={language}>
-                      {selected.includes(user.user_id) ? '✓ ' : ''}
-                      {user.name}
-                      {mode === 'members' ? ` · ${t('add')}` : ''}
-                    </Label>
+                    {mode === 'members' ? (
+                      <>
+                        <Text
+                          numberOfLines={2}
+                          accessibilityLabel={user.name}
+                          style={[
+                            styles.text,
+                            direction(language),
+                            { flex: 1, minWidth: 0, fontSize: 15, lineHeight: 21 },
+                          ]}>
+                          {user.name}
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                            direction: 'ltr',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}>
+                          <Icon icon="plus" size={18} color={colors.blue} />
+                          <Text style={[styles.muted, direction(language), { color: colors.blue }]}>
+                            {t('add')}
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <Label language={language}>
+                        {selected.includes(user.user_id) ? '✓ ' : ''}
+                        {user.name}
+                      </Label>
+                    )}
                   </Pressable>
                 ))}
               {!users.length && !busy && (

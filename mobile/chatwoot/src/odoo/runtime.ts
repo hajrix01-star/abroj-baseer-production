@@ -282,7 +282,11 @@ export async function localMedia(room: Room, descriptor: Record<string, unknown>
   // Prove room association before touching cache paths. Offline history contains
   // only this account/company/room/membership's remembered messages.
   const before = scope(room);
-  const media = trustedMedia(await getEngine().history(room), descriptor); fence(room, before);
+  let history = getEngine().rememberedHistory(room);
+  // Already-validated room metadata avoids one history HTTP request per visible
+  // image. A missing association still takes the original authoritative path.
+  if (!history?.messages.some(message => message.media?.id === descriptor.id)) history = await getEngine().history(room);
+  const media = trustedMedia(history, descriptor); fence(room, before);
   return serialMedia(async () => {
     fence(room, before); const snapshot = scope(room); const extension = extensions[media.mime];
     if (!extension || getEngine().identity?.permissions.media !== true) throw new ChatError('forbidden', 403);

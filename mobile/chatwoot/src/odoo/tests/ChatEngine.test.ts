@@ -15,7 +15,7 @@ const UUID = 'e458127f-777e-414f-ad44-256b06df8910';
 class Server {
   uid: number | null = 7; companyIds = [1]; rooms: Room[] = [room];
   offline = false; lostResponse = false; revoked = false; csrf = 'ephemeral';
-  sendRight = true; mediaRight = true; closed = 0; authenticateUid: number | null = 7;
+  sendRight = true; mediaRight = true; viewRight = true; closed = 0; authenticateUid: number | null = 7;
   groupLostResponse = false; groupIds = new Map<string, number>();
   receiptUnavailable = false; receiptWrongAck = false;
   calls: Request[] = []; messages: any[] = []; dedup = new Map<string, number>();
@@ -26,7 +26,7 @@ class Server {
     if (r.path === '/web/session/destroy') { this.closed++; return { jsonrpc: '2.0', result: null }; }
     if (r.path === '/web/session/authenticate') return { jsonrpc: '2.0', result: { uid: this.authenticateUid, db: 'trial' } };
     if (this.revoked) throw new ChatError('forbidden', 403);
-    if (r.path === '/bchat/api/v2/bootstrap') return { api_version: 2, user_id: this.uid, database: 'trial', company_ids: this.companyIds, csrf_token: this.csrf, permissions: { chat_view: true, chat_send: this.sendRight, media: this.mediaRight, group_create: true, revision: 1 } };
+    if (r.path === '/bchat/api/v2/bootstrap') return { api_version: 2, user_id: this.uid, database: 'trial', company_ids: this.companyIds, csrf_token: this.csrf, permissions: { chat_view: this.viewRight, chat_send: this.sendRight, media: this.mediaRight, group_create: true, revision: 1 } };
     if (r.path === '/bchat/api/v2/rooms' && r.method === 'GET') return { api_version: 2, rooms: this.rooms };
     if (r.path === '/bchat/api/v2/rooms' && r.method === 'POST') {
       const p = JSON.parse(r.form!.payload!);
@@ -66,6 +66,31 @@ function setup(storage = new MemoryStorage(), server = new Server(), extra: Part
   return { engine, storage, server, tick: (ms: number) => { time += ms; } };
 }
 const login = async (engine: ChatEngine) => engine.login('alice', 'NeverPersistThis', true);
+
+test('remembered history is a defensive no-network snapshot fenced by identity, rights, company, membership and offline lease', async () => {
+  const { engine, server, tick } = setup();
+  assert.throws(() => engine.rememberedHistory(room), { code: 'login_required' });
+  await login(engine);
+  const emptyCalls = server.calls.length;
+  assert.equal(engine.rememberedHistory(room), null); assert.equal(server.calls.length, emptyCalls);
+  server.messages = [{ id: 1, author_user_id: 7, author_name: 'Alice', text: '', created_at: '',
+    media: { id: 70, kind: 'image', mime: 'image/png', name: 'private.png', size: 10, sha256: 'a'.repeat(64) } }];
+  await engine.history(room); const before = server.calls.length;
+  const first = engine.rememberedHistory(room)!; first.messages[0]!.media!.sha256 = 'b'.repeat(64); first.messages.length = 0;
+  assert.equal(engine.rememberedHistory(room)!.messages[0]!.media!.sha256, 'a'.repeat(64));
+  assert.throws(() => engine.rememberedHistory({ ...room, company_id: 2 }), { code: 'room_unavailable' });
+  assert.throws(() => engine.rememberedHistory({ ...room, membership_id: 22 }), { code: 'room_unavailable' });
+  assert.equal(server.calls.length, before);
+  server.mediaRight = false; await engine.refresh();
+  assert.throws(() => engine.rememberedHistory(room), { code: 'forbidden' });
+  server.mediaRight = true; server.viewRight = false;
+  await assert.rejects(engine.refresh(), { code: 'identity_mismatch' });
+  assert.throws(() => engine.rememberedHistory(room), { code: 'login_required' });
+  server.viewRight = true; await login(engine); await engine.history(room);
+  engine.markDisconnected(); tick(24 * 60 * 60 * 1000 + 1);
+  assert.throws(() => engine.rememberedHistory(room), { code: 'offline_expired' });
+  assert.throws(() => engine.rememberedHistory(room), { code: 'offline_expired' });
+});
 
 test('login support stage preserves the original error code at each remote step', async () => {
   const stages = [

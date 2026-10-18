@@ -89,13 +89,13 @@ function appState() {
   return { currentState: 'active', addEventListener(_event, callback) { callbacks.add(callback); return { remove() { callbacks.delete(callback); } }; },
     change(value) { this.currentState = value; for (const callback of [...callbacks]) callback(value); } };
 }
-function drawer() {
+function drawer(width = 320) {
   const state = hookState(), nativeApp = appState(), events = [];
   const props = { visible: true, identity: identity(), language: 'ar', t: dictionary.translator('ar'),
     offline: false, pendingCount: 5, busy: false, canManage: true,
     close: () => events.push('close'), onAction: action => events.push(action) };
   const module = load('NavigationDrawer.tsx', { react: state.react, 'react/jsx-runtime': jsx,
-    'react-native': { AppState: nativeApp, Modal: 'Modal', Pressable: 'Pressable', ScrollView: 'ScrollView', Text: 'Text', View: 'View', useWindowDimensions: () => ({ width: 320 }) },
+    'react-native': { AppState: nativeApp, Modal: 'Modal', Pressable: 'Pressable', ScrollView: 'ScrollView', Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' }, './Brand': { Brand: 'Brand' } });
   return { props, events, nativeApp, render: () => state.render(() => module.NavigationDrawer(props)) };
 }
@@ -143,7 +143,7 @@ test('compact drawer keeps brand on the toggle row and all actions in the scroll
   const app = drawer();
   const tree = app.render();
   const pane = one(tree, 'View', p => p.accessibilityViewIsModal);
-  assert.equal(pane.style.width, 264);
+  assert.equal(pane.style.width, 240);
   const toggle = nodes(tree).find(n => n.type === 'IconButton' && n.props.icon === 'menu');
   const heading = nodes(tree).find(n => Array.isArray(n.props?.children) && n.props.children.includes(toggle));
   assert.equal(nodes(heading).filter(n => n.type === 'Brand').length, 1);
@@ -157,6 +157,16 @@ test('compact drawer keeps brand on the toggle row and all actions in the scroll
   const account = nodes(tree).find(n => n.type === 'View' && n.props.testID === 'drawer-account');
   assert.equal(account.props.style.flexDirection, 'row-reverse');
   assert.equal(one(account, 'Text', p => p.accessibilityLabel === app.props.identity.profile.name).numberOfLines, 2);
+});
+
+test('drawer uses 75 percent phone width without changing wide screen cap', () => {
+  for (const [width, expected] of [[320, 240], [360, 270], [400, 300], [900, 304]]) {
+    const app = drawer(width);
+    for (const language of ['ar', 'en']) {
+      app.props.language = language;
+      assert.equal(one(app.render(), 'View', p => p.accessibilityViewIsModal).style.width, expected);
+    }
+  }
 });
 
 test('shell menu is first on its language edge and drawer keeps the same edge toggle', () => {

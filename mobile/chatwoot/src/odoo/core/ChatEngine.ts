@@ -530,6 +530,14 @@ export class ChatEngine {
     else await this.storage.removeItem(`${key}history`);
     this.fence(e); await this.storage.setItem(`${this.prefix()}history-lru`, JSON.stringify([...this.histories.keys()]));
   }
+  /** Current authorized snapshot only; never fetches, renews a lease or exposes mutable cache. */
+  rememberedHistory(value: Room | number): History | null {
+    const account = this.requireIdentity();
+    if (account.permissions.chat_view !== true || account.permissions.media !== true) throw new ChatError('forbidden', 403);
+    const room = this.room(value);
+    const history = this.histories.get(this.scope(room));
+    return history ? copy(history) : null;
+  }
   async history(value: Room | number, beforeId?: number): Promise<History> {
     const room = this.room(value); const e = this.epoch;
     if (this.disconnected) return this.serial(async () => {

@@ -115,6 +115,26 @@ const transport = {
     if (r.path === '/bchat/api/v2/rooms' && r.method === 'GET') return { api_version: 2, rooms };
     if (r.path.startsWith('/bchat/api/v2/changes'))
       return { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
+    if (r.path.startsWith('/bchat/api/v2/mobile/candidates')) {
+      const query = decodeURIComponent(r.path.split('&q=')[1] || '').toLowerCase();
+      return { api_version: 2, users: [{user_id: 8, name: 'مدير المجموعة — Group administrator'},
+        {user_id: 9, name: 'عضو فريق العمل — Team member'},
+        {user_id: 10, name: 'موظف مرشح — Candidate employee'}].filter(user => user.name.toLowerCase().includes(query)) };
+    }
+    const group = /^\/bchat\/api\/v2\/rooms\/(\d+)\/group$/.exec(r.path);
+    if (group) {
+      const room = rooms.find(row => row.id === Number(group[1]));
+      if (!room) throw new ChatError('room_unavailable');
+      if (r.method === 'POST') {
+        const payload = JSON.parse(r.form!.payload!);
+        if (payload.action === 'rename') room.name = payload.name;
+        return { api_version: 2, room_id: room.id };
+      }
+      return { api_version: 2, room: { ...room, description: '' }, can_manage: true,
+        members: [{user_id: 7, name: identity.profile!.name, is_admin: true},
+          {user_id: 8, name: 'مدير المجموعة — Group administrator', is_admin: true},
+          {user_id: 9, name: 'عضو فريق العمل — Team member', is_admin: false}] };
+    }
     const receipt = /messages\/(\d+)\/receipts$/.exec(r.path);
     if (receipt)
       return {

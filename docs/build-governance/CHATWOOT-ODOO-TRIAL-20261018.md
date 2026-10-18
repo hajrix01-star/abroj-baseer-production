@@ -143,6 +143,26 @@
 
 أعاد GitHub القيمتين isDraft=false/isPrerelease=true وحجمًا وdigest مطابقين. أُعيد التنزيل من الرابط العام دون مصادقة إلى `output/chatwoot-odoo-artifacts-20261018/github-download/BChat-Trial-0.1.1-39449a26.apk`، وطابقت SHA256 أعلاه. ملاحظات الإصدار تنص أن هذا **تشخيص وليس إصلاحًا مثبتًا لدخول الهاتف**؛ وكما فيCW23 يشير tag التوزيع إلى base المنشور سابقًا وليس مصدر APK الجديد. الخطوة المطلوبة من المالك: التحديث فوق النسخة الحالية، ومحاولة دخول واحدة، وإرسال رمز الفحص إن فشلت. يبقى NO-GO التشغيلي وعطل دخول الهاتف مفتوحًا، وG5–G8 غير مغلقة؛ لا اختبارات ERP/Docker جديدة أو نشر لإضافة الإدارة.
 
+## استمرارية جلسة الهاتف — CW26 (مراجعة G2 محددة)
+
+قدّم المالك صورة0.1.1 بالرمز `LOGIN2-PROFILE-REDIRECT-303`: تجاوزت authenticate والتحقق من UID/DB، ثم أعاد طلب bootstrap تحويلًا303. لا يجوز تفسيره رفضًا لكلمة المرور أو مطالبة المالك بتغيير الحقوق. يرجّح انقطاع استمرارية الجلسة بين الطلبين؛ وجهة التحويل الفعلية/سبب الهاتف الدقيق لم يُجمعا. مصدر RN المثبت `ForwardingCookieHandler.addCookies` يستعمل `CookieManager.setCookie(url,cookie,null)` ثمflush دون callback اكتمال. لا يوجد إثبات أن التوقيت وحده سبب الهاتف.
+
+التصنيف `ARCHITECTURAL` محصور في ملكية jar native واستمرارية الجلسة؛ الفرع `codex/bchat-trial-session-continuity-20261018` من259c1fbb. G0/G1/G3/G4 القائمة يعاد استخدامها: لا ميزة جديدة أو مكتبة أو بيئة بيانات أو واجهة جديدة. **G2 قيد المراجعة للفرق فقط** قبل كتابة التطبيق: نفس مخزن CookieManager الخاص بالتطبيق للحفاظ على restart، لا مخزن ذاكرة فقط (قد يسبب فقد session ثم مسح outbox عند401). Container native ثابت exact HTTPS origin(host+port)، وJavaNetCookieJar حول CookieHandler أصلي؛ GET يقرأ عبر handler native القائم، وPUT ينتظر ValueCallback على main Handler بمهلة محدودة قبل اكتمال رد OkHttp. رفض/مهلة commit يفشلان مغلقًا، دون إعادة POST أو تجاوزTLS/redirect أو عرض/حفظCookieفيJS. لا قراءة جلسة متصفح المالك أو تسجيل دخولWebView؛ المخزن native الخاص بتطبيق التجربة نفسه. setCookieJar اللاحق من RN/BlobUtil لا يستبدل صاحب الجلسة؛ removeCookieJar لا يمحو المخزن الدائم لمجرد reload، بينما logout يظل مسار أودو مع انتظار حفظ Cookie الحذف.
+
+اختبار الفرق: JVM harness بواجهات RN/OkHttp/JavaNetCookieJar المثبتة وcookieStore اصطناعي متأخر، يثبت auth→bootstrap/upload/download والمهلة والرفض وexpiry/path/origin/port والحذف وrestart؛ callback Android يمر بالبناء الأصلي ويحتاج دليل جهاز منفصل. تثبيت factory فيMainApplication قبلloadReactNative بواسطةconfig-plugin محروس، ونسخ المصادر منnative/ إلىالمجلد المولد. لا أسرار أو اعتماديات جديدة، ولاDocker أو نشر خادم. تُراجع الاستمرارية والسحب وفشلlogout مستقلًا؛ قبول المصدر لا يغلق عطل الهاتف أوG5–G8. توجيه التحميل المحفوظ: المالك يريد **صفحة إصدارات GitHub دائمًا، لا رابطAPKمباشر**.
+
+### توضيح تصميم CW26 قبل التنفيذ
+
+أظهر `javap` على `JavaNetCookieJar` المثبت أنه يلتقط IOException ويسجلها ثم يكمل؛ لذلك انتظارPUT وحده لا يضمن فشل المصادقة مغلقًا، وunchecked قد يفلت من OkHttpAsyncCall. البديل المراجع: interceptor native يسلسل مرحلة رؤوس الطلبات للأصل الثابت؛ ينتظر أي commit سابق قبل الشبكة، وhandlerPUT يسجل callbacks المعلقة، ثم ينتظر interceptor نجاحها بعد chain.proceed وقبل تسليمResponse. الأخطاء IOException آمنة، ويُغلقResponse عند فشل الحفظ. المهلة لا تنسىpending؛ الطلب التالي لا يخرج حتى يستقر، والرفض/فشل المخزن يحجب العملية حتىrestart. لا قراءة body فيinterceptor، فيتحرر القفل قبل تنزيل جسم الوسائط؛ لا إعادةPOST. طُلب اعتماد هذا الفرق من حارسG2 قبل التنفيذ.
+
+اعتمد حارس `trial_gate_review` فرق G2 النهائي CW26 للتنفيذ: interceptor pre/post بمهلة وpending محفوظ، callback بلا قفل interceptor، رفضmainthread، إغلاقResponse عند الفشل، وعدم إعادةPOST، مع مخزن التطبيق الدائم والأصل والمنفذ الثابتين. أعيد اعتمادG2 لهذا الفرق فقط دون فتحG0/G1/G3/G4 غير المتغيرة. التنفيذ ومراجعته والبناء وإثبات الهاتف لم تكتمل بعد؛ لا إغلاقG5–G8.
+
+### تنفيذ CW26 والفحوص المحددة
+
+أضاف `mobile_core` ثلاث فئات تحت `mobile/chatwoot/native/android/.../session`: `CommitCookieHandler` و`OriginCookieJar` و`BaseerSessionNetworking`، وconfig-plugin محروسًا يولدها ويسجل factory قبلloadReactNative. استُخدم helper نفسه لتحديث Android المولد دون prebuild/clean. حُصر تجاهلGit في `/android/` و`/ios/` لإبقاء المصادر الأصلية الجديدة قابلة للتتبع. root يملك رقم0.1.2/build3 وسجل الأثر؛ runtime والجلسة الخادمية والصلاحيات لم تتغير.
+
+جمّع العامل المصادر ضد اعتمادات Android الفعلية المحددة في release-artifact-dependencies.xml: RN0.86.0 وOkHttp4.12.0 وJavaNetCookieJar4.9.2 وOkio3.16.0 وKotlin2.2.20 وandroid-36. نجح JVM harness بـ37 تحققًا اصطناعيًا: rotation ومشاركةbootstrap/upload/download، الأصل والمنفذ/path/expiry، logout وحفظstore عبر إعادة إنشاءcontainer، منعاستبدالjar، تأخيرcallback/مهلة محفوظة/منعPOSTالتالي/فشلcallback/إغلاقResponse/رفضmainthread قبلالقفل/حدود32Cookieو16KiBلكلدفعة. لا حسابات أو جلسات مستخدمين حقيقية في الفحص. أعادroot دمج المصدر المولد وشغل test:odoo بنتيجة **80/80** وTypeScript بنجاح؛ لم يعد اختباراتERP أوDocker أوharnessالعامل بلا تغيير. التنفيذ قيد مراجعة مستقلة قبل بناءAPK واعتماده كتجربة محدودة.
+
 ## سجل القرارات والعمليات
 
 | المعرّف | النوع | النية والنطاق | النتيجة/الأثر والتراجع |

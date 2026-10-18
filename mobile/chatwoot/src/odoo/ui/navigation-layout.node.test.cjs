@@ -95,7 +95,7 @@ function drawer(width = 320) {
     offline: false, pendingCount: 5, busy: false, canManage: true,
     close: () => events.push('close'), onAction: action => events.push(action) };
   const module = load('NavigationDrawer.tsx', { react: state.react, 'react/jsx-runtime': jsx,
-    'react-native': { AppState: nativeApp, Modal: 'Modal', Pressable: 'Pressable', ScrollView: 'ScrollView', Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
+    'react-native': { AppState: nativeApp, Modal: 'Modal', Pressable: 'Pressable', ScrollView: 'ScrollView', Switch: 'Switch', Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' }, './Brand': { Brand: 'Brand' } });
   return { props, events, nativeApp, render: () => state.render(() => module.NavigationDrawer(props)) };
 }
@@ -143,7 +143,7 @@ test('compact drawer keeps brand on the toggle row and all actions in the scroll
   const app = drawer();
   const tree = app.render();
   const pane = one(tree, 'View', p => p.accessibilityViewIsModal);
-  assert.equal(pane.style.width, 240);
+  assert.equal(pane.style.width, 208);
   const toggle = nodes(tree).find(n => n.type === 'IconButton' && n.props.icon === 'menu');
   const heading = nodes(tree).find(n => Array.isArray(n.props?.children) && n.props.children.includes(toggle));
   assert.equal(nodes(heading).filter(n => n.type === 'Brand').length, 1);
@@ -159,8 +159,8 @@ test('compact drawer keeps brand on the toggle row and all actions in the scroll
   assert.equal(one(account, 'Text', p => p.accessibilityLabel === app.props.identity.profile.name).numberOfLines, 2);
 });
 
-test('drawer uses 75 percent phone width without changing wide screen cap', () => {
-  for (const [width, expected] of [[320, 240], [360, 270], [400, 300], [900, 304]]) {
+test('drawer uses 65 percent phone width without changing wide screen cap', () => {
+  for (const [width, expected] of [[320, 208], [360, 234], [400, 260], [900, 304]]) {
     const app = drawer(width);
     for (const language of ['ar', 'en']) {
       app.props.language = language;

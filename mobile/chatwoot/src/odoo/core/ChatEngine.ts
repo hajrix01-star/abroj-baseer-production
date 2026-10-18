@@ -23,7 +23,16 @@ export interface Room {
   is_group: boolean; is_group_admin?: boolean; mobile_direct?: boolean;
   last_message_id?: number; last_message_preview?: string; unread_count?: number;
   invoice_policy?: string; invoice_policy_version?: number;
+  avatar_version?: number;
 }
+export interface GroupInfo {
+  api_version: 2;
+  room: { id: number; company_id: number; name: string; description: string; avatar_version: number; is_group: boolean };
+  members: { user_id: number; name: string; is_admin: boolean }[];
+  can_manage: boolean;
+}
+export interface GroupAvatarInput { uri: string; name: string; mime: string }
+export interface GroupAvatarAck { api_version: 2; room_id: number; avatar_version: number }
 export interface Message {
   id: number; author_user_id: number; author_name: string; text: string; created_at: string;
   delivery_state?: string; media?: Record<string, unknown>; reply?: Record<string, unknown>;
@@ -48,6 +57,7 @@ export interface Options {
   transport: Transport; storage: Storage; origin: string; database: string; uuid?: () => string; now?: () => number;
   upload?: (room: Room, attachment: Attachment, csrfToken: string, signal: AbortSignal) => Promise<{ media_id: number; policy_version?: number }>;
   removeAttachment?: (attachment: Attachment) => Promise<void>;
+  uploadGroupAvatar?: (room: Room, input: GroupAvatarInput, csrfToken: string, signal: AbortSignal) => Promise<GroupAvatarAck>;
 }
 export class ChatError extends Error {
   readonly code: string;
@@ -69,6 +79,13 @@ const object = (v: unknown): Record<string, any> => {
 };
 const denied = (e: unknown) => e instanceof ChatError && (e.status === 401 || e.status === 403 || ['forbidden', 'identity_mismatch', 'membership_changed', 'session_expired'].includes(e.code));
 const codeOf = (e: unknown) => e instanceof ChatError ? e.code : 'connection_failed';
+/** Match the existing server's UTF-8 group-description contract, including empty-to-clear. */
+export function groupDescription(value: unknown): string {
+  if (typeof value !== 'string') throw new ChatError('description_invalid');
+  const normalized = value.replace(/\r\n/g, '\n').trim();
+  if (/\p{C}/u.test(normalized.replace(/\n/g, '')) || new TextEncoder().encode(normalized).length > 1024) throw new ChatError('description_invalid');
+  return normalized;
+}
 
 export class ChatEngine {
   private readonly transport: Transport;
@@ -79,6 +96,7 @@ export class ChatEngine {
   private readonly now: () => number;
   private readonly upload?: Options['upload'];
   private readonly removeAttachment?: Options['removeAttachment'];
+  private readonly avatarUpload?: Options['uploadGroupAvatar'];
   private epoch = 0;
   private abort = new AbortController();
   private work: Promise<unknown> = Promise.resolve();
@@ -108,8 +126,10 @@ export class ChatEngine {
     this.root = `odoo-chat/v1/${encodeURIComponent(origin.origin)}/${encodeURIComponent(options.database)}/`;
     this.uuid = options.uuid ?? (() => globalThis.crypto.randomUUID()); this.now = options.now ?? Date.now;
     this.upload = options.upload; this.removeAttachment = options.removeAttachment;
+    this.avatarUpload = options.uploadGroupAvatar;
   }
   get identity(): Bootstrap | null { return this.account && !this.accessLocked ? copy(this.account) : null; }
+  get accountScope(): string | null { return this.account && !this.accessLocked ? `${this.prefix()}/epoch:${this.epoch}` : null; }
   get offline(): boolean { return this.disconnected; }
   get status(): string { return this.state; }
   get backoffMs(): number { return this.failures ? [5000, 10000, 20000, 30000][Math.min(this.failures - 1, 3)]! : 2000; }
@@ -359,6 +379,7 @@ export class ChatEngine {
     return raw.map(value => {
       const r = object(value);
       if (!id(r.id) || !id(r.company_id) || !id(r.membership_id) || typeof r.name !== 'string' || !this.account?.company_ids.includes(r.company_id) || seen.has(r.id)) throw new ChatError('invalid_rooms');
+      if (r.avatar_version !== undefined && (!Number.isSafeInteger(r.avatar_version) || r.avatar_version < 0)) throw new ChatError('invalid_rooms');
       seen.add(r.id); return r as Room;
     });
   }
@@ -785,12 +806,57 @@ export class ChatEngine {
     const result = await this.write('/bchat/api/v2/mobile/policy', { company_id: companyId, direct_enabled: enabled });
     await this.refresh(); this.fence(e); return result as Policy;
   }
-  async groupInfo(value: Room | number): Promise<{ api_version: 2; room: Room & { description: string }; members: { user_id: number; name: string; is_admin: boolean }[]; can_manage: boolean }> {
-    const room = this.room(value); return this.request(`/bchat/api/v2/rooms/${room.id}/group`, this.epoch);
+  async groupInfo(value: Room | number): Promise<GroupInfo> {
+    const e = this.epoch; const room = this.room(value);
+    const result = object(await this.request(`/bchat/api/v2/rooms/${room.id}/group`, e));
+    this.room(room); this.fence(e);
+    const detail = object(result.room);
+    if (result.api_version !== 2 || detail.id !== room.id || detail.company_id !== room.company_id
+        || typeof detail.name !== 'string' || !detail.name.trim() || new TextEncoder().encode(detail.name).length > 256
+        || typeof detail.is_group !== 'boolean' || detail.is_group !== room.is_group
+        || !Number.isSafeInteger(detail.avatar_version) || detail.avatar_version < 0
+        || typeof detail.description !== 'string' || groupDescription(detail.description) !== detail.description
+        || typeof result.can_manage !== 'boolean' || (!detail.is_group && result.can_manage)
+        || !Array.isArray(result.members) || result.members.length > 50
+        || result.members.some((member: any) => !id(member?.user_id) || typeof member.name !== 'string'
+          || new TextEncoder().encode(member.name).length > 1024 || typeof member.is_admin !== 'boolean')
+        || new Set(result.members.map((member: any) => member.user_id)).size !== result.members.length
+        || !result.members.some((member: any) => member.user_id === this.account?.user_id)) throw new ChatError('invalid_group');
+    this.roomRows = this.roomRows.map(row => row.id === room.id ? { ...row, avatar_version: detail.avatar_version } : row);
+    return copy(result as GroupInfo);
   }
   async groupChange(value: Room | number, change: { action: string; name?: string; description?: string; user_id?: number }) {
     const e = this.epoch;
-    const room = this.room(value); const result = await this.write(`/bchat/api/v2/rooms/${room.id}/group`, change);
+    const room = this.room(value);
+    if (change.action === 'set_description') change = { action: 'set_description', description: groupDescription(change.description) };
+    const result = await this.write(`/bchat/api/v2/rooms/${room.id}/group`, change);
+    if (result?.api_version !== 2 || result.room_id !== room.id || result.action !== change.action) throw new ChatError('invalid_group');
     await this.refresh(); this.fence(e); return result;
+  }
+  /** Online administrative mutation, not a durable message upload and never automatically retried. */
+  async setGroupAvatar(value: Room | number, input: GroupAvatarInput): Promise<GroupInfo> {
+    const e = this.epoch;
+    if (this.offline) throw new ChatError('connection_failed');
+    await this.refresh(); this.fence(e);
+    const room = this.room(value); const before = await this.groupInfo(room);
+    if (!before.room.is_group || !before.can_manage) throw new ChatError('group_manage_denied', 403);
+    if (!this.avatarUpload) throw new ChatError('avatar_invalid');
+    try {
+      const ack = await this.avatarUpload(room, input, this.account!.csrf_token!, this.abort.signal);
+      this.fence(e); this.room(room);
+      if (ack?.api_version !== 2 || ack.room_id !== room.id || !Number.isSafeInteger(ack.avatar_version)
+          || ack.avatar_version <= before.room.avatar_version) throw new ChatError('invalid_group');
+      await this.refresh(); this.fence(e);
+      const after = await this.groupInfo(room);
+      if (after.room.avatar_version !== ack.avatar_version) throw new ChatError('invalid_group');
+      return after;
+    } catch (error) {
+      this.fence(e);
+      if (error instanceof ChatError && ([400, 401, 403, 413, 415].includes(error.status)
+          || ['avatar_invalid', 'stale_session'].includes(error.code))) throw error;
+      // A later version is not proof that our POST committed: another admin may have written it.
+      try { await this.refresh(); this.fence(e); await this.groupInfo(room); } catch { this.fence(e); }
+      throw new ChatError('avatar_uncertain');
+    }
   }
 }

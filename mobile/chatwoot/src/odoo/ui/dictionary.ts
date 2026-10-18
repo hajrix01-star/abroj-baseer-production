@@ -7,6 +7,19 @@ const ar = {
   menu: 'القائمة',
   profile: 'الملف الشخصي',
   settings: 'الإعدادات',
+  chatSounds: 'أصوات المحادثة',
+  chatSoundsHint: 'أصوات الإرسال والوصول داخل المحادثة المفتوحة فقط.',
+  groupPhoto: 'صورة المجموعة',
+  changeGroupPhoto: 'تغيير الصورة',
+  groupDescription: 'وصف المجموعة',
+  saveDescription: 'حفظ الوصف',
+  descriptionPlaceholder: 'أضف وصفًا مختصرًا للمجموعة',
+  noDescription: 'لم يُضف وصف للمجموعة',
+  descriptionLimit: 'الحد الأقصى للوصف 1024 بايت بترميز UTF-8.',
+  descriptionInvalid: 'تعذر حفظ الوصف. استخدم نصًا عاديًا لا يتجاوز 1024 بايت بترميز UTF-8.',
+  avatarLimit: 'صورة JPEG أو PNG أو WEBP، حتى 2 MiB و4 ميجابكسل.',
+  avatarInvalid: 'اختر صورة JPEG أو PNG أو WEBP لا تتجاوز 2 MiB و4 ميجابكسل.',
+  avatarUncertain: 'تعذر تأكيد تغيير الصورة. حدّث معلومات المجموعة للتحقق قبل المحاولة مجددًا.',
   accountDetails: 'بيانات حساب أودو',
   language: 'لغة الواجهة',
   userId: 'رقم المستخدم',
@@ -112,6 +125,19 @@ const en: Record<Word, string> = {
   menu: 'Menu',
   profile: 'Profile',
   settings: 'Settings',
+  chatSounds: 'Conversation sounds',
+  chatSoundsHint: 'Send and receive sounds in the open conversation only.',
+  groupPhoto: 'Group photo',
+  changeGroupPhoto: 'Change photo',
+  groupDescription: 'Group description',
+  saveDescription: 'Save description',
+  descriptionPlaceholder: 'Add a short group description',
+  noDescription: 'No group description yet',
+  descriptionLimit: 'Description limit: 1024 UTF-8 bytes.',
+  descriptionInvalid: 'Could not save the description. Use plain text within 1024 UTF-8 bytes.',
+  avatarLimit: 'JPEG, PNG or WEBP, up to 2 MiB and 4 megapixels.',
+  avatarInvalid: 'Choose a JPEG, PNG or WEBP image within 2 MiB and 4 megapixels.',
+  avatarUncertain: 'The photo change could not be confirmed. Refresh group information before trying again.',
   accountDetails: 'Odoo account details',
   language: 'Interface language',
   userId: 'User ID',
@@ -216,6 +242,9 @@ export const translator = (language: Language) => (word: Word) =>
 export type Translate = ReturnType<typeof translator>;
 export function errorWord(error: unknown): Word {
   const code = (error as { code?: string })?.code;
+  if (code === 'description_invalid') return 'descriptionInvalid';
+  if (code === 'avatar_invalid') return 'avatarInvalid';
+  if (code === 'avatar_uncertain') return 'avatarUncertain';
   if (code === 'connection_failed') return 'connectionError';
   if (code === 'mfa_required') return 'mfa';
   if (['authentication_failed', 'login_failed', 'invalid_credentials'].includes(code ?? ''))
@@ -227,6 +256,7 @@ export function errorWord(error: unknown): Word {
   if (
     [
       'forbidden',
+      'group_manage_denied',
       'send_denied',
       'room_unavailable',
       'membership_changed',

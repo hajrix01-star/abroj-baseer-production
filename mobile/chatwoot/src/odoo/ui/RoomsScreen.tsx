@@ -1,15 +1,17 @@
 import React, { useRef } from 'react';
 import { Text, Pressable, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import type { Bootstrap, Room } from '../core/ChatEngine';
+import type { Bootstrap, ChatEngine, Room } from '../core/ChatEngine';
 import { Icon, IconButton, colors, direction, Label, styles } from './components';
 import type { Language, Translate } from './dictionary';
 import { companyActions } from './viewModel';
 import { CompanySelector } from './CompanySelector';
 import { authorizedCompanies } from './companyNames';
+import { GroupAvatar } from './GroupAvatar';
 
 export type ManagementMode = 'create' | 'direct' | 'policy' | 'members';
 export function RoomsScreen({
+  engine,
   identity,
   rooms,
   companyId,
@@ -21,6 +23,7 @@ export function RoomsScreen({
   t,
   offline,
 }: {
+  engine: ChatEngine;
   identity: Bootstrap;
   rooms: Room[];
   companyId: number;
@@ -149,19 +152,7 @@ export function RoomsScreen({
                   flexDirection: language === 'ar' ? 'row-reverse' : 'row',
                 },
               ]}>
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: colors.pale,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}>
-                <Text style={{ color: colors.blue, fontSize: 20, fontWeight: '700' }}>
-                  {item.name.slice(0, 1)}
-                </Text>
-              </View>
+              <GroupAvatar engine={engine} room={item} enabled={allowed && !offline} size={48} />
               <View style={[styles.fill, { minWidth: 0, gap: 2 }]}>
                 <Text
                   numberOfLines={1}

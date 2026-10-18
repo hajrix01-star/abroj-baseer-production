@@ -20,3 +20,13 @@ test('factory generation fails closed on template drift or non-origin configurat
   assert.throws(() => patch('unknown', 'https://qa.example.test'), /template changed/);
   assert.throws(() => patch(template + '\nloadReactNative(this)', 'https://qa.example.test'), /template changed/);
 });
+test('foreground feedback package registers once without touching session setup or linker exclusions', () => {
+  const input = 'PackageList(this).packages.apply {\n}\n' + template;
+  const updated = moduleValue.exports.patchFeedback(patch(input, 'https://qa.example.test'));
+  assert.equal((updated.match(/add\(com.baseer.bchat.trial.feedback.BWorkFeedbackPackage\(\)\)/g) || []).length, 1);
+  assert.equal(moduleValue.exports.patchFeedback(updated), updated);
+  assert.match(updated, /BaseerSessionNetworking.install/);
+  assert.throws(() => moduleValue.exports.patchFeedback('drift'), /template changed/);
+  assert.match(source, /'FeedbackController.java', 'BWorkFeedbackModule.java', 'BWorkFeedbackPackage.java'/);
+  assert.match(source, /'@react-native-firebase\/app', '@react-native-firebase\/messaging'/);
+});

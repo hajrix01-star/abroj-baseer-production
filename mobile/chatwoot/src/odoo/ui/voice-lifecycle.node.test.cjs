@@ -13,6 +13,7 @@ function harness() {
   let background;
   const unlinked = [];
   const staged = [];
+  const feedback = [];
   const player = { active: false, starts: 0, recorderStops: 0, playerStops: 0,
     async startRecorder(path) { this.active = true; this.starts++; return path; },
     async stopRecorder() { this.active = false; this.recorderStops++; return '/synthetic.m4a'; },
@@ -38,6 +39,7 @@ function harness() {
     'react-native-blob-util': { fs: { dirs: { CacheDir: '/synthetic' }, unlink: async path => { unlinked.push(path); } } },
     '../runtime': { stageFile: async (room, file) => { staged.push({ room, file }); return { uri: 'file:///owned-stage/voice.m4a', name: 'voice.m4a', kind: 'audio' }; } },
     './dictionary': { errorWord: () => 'error' },
+    './messageSounds': { setFeedbackVoice: (_owner, active) => feedback.push(active) },
   };
   const source = readFileSync(join(__dirname, 'MediaTools.tsx'), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
@@ -48,6 +50,7 @@ function harness() {
     player,
     unlinked,
     staged,
+    feedback,
     render(canPlay, canRecord, scope = 'same-company-room-membership') { index = 0; return mod.exports.useVoiceSession(scope, () => undefined, canPlay, canRecord); },
     background() { native.AppState.currentState = 'background'; background('background'); },
     close() { effect?.cleanup?.(); },
@@ -108,4 +111,11 @@ test('finish stages once and cleanup deletes recorder temporary bytes, never the
   assert.ok(app.unlinked.every(path => path.startsWith('/synthetic/odoo-voice-')));
   app.close(); await settled();
   assert.equal(app.unlinked.includes('/owned-stage/voice.m4a'), false);
+});
+test('voice acquisition suppresses feedback before native recording and releases it only after cleanup', async () => {
+  const app = harness(); const session = app.render(true, true);
+  const start = session.start(); assert.equal(app.feedback.at(-1), true);
+  await start; assert.equal(app.feedback.at(-1), true);
+  await app.render(true, true).stop(); assert.equal(app.feedback.at(-1), false);
+  app.close(); await settled(); assert.equal(app.feedback.at(-1), false);
 });

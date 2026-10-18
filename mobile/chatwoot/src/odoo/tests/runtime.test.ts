@@ -1,18 +1,20 @@
 /** Executes the real runtime with native-module seams, not a device/cookie proof. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { registerHooks } from 'node:module';
+import { createRequire, registerHooks } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
 
 const files = new Map<string, Buffer>(); const directories = new Set<string>(['file:///app/']);
+let beforeStat: ((uri: string) => Promise<void>) | undefined;
 const normalize = (uri: string) => uri.startsWith('file://') ? uri : `file://${uri}`;
 function makeDirectory(uri: string) {
   const parts = uri.replace(/^file:\/\//, '').split('/').filter(Boolean); let path = 'file:///';
   for (const part of parts) { path += `${part}/`; directories.add(path); }
 }
 const fs = {
-  documentDirectory: 'file:///app/',
+  documentDirectory: 'file:///app/', cacheDirectory: 'file:///cache/',
   async getInfoAsync(uri: string) {
+    if (beforeStat) await beforeStat(uri);
     const value = files.get(normalize(uri)); if (value) return { exists: true, isDirectory: false, size: value.length };
     return { exists: directories.has(uri.endsWith('/') ? uri : `${uri}/`), isDirectory: true, size: 0 };
   },
@@ -33,8 +35,11 @@ const asyncStorage = {
 };
 const payload = Buffer.from('%PDF-1.7 test data %%EOF'); const sha256 = createHash('sha256').update(payload).digest('hex');
 const media = { id: 70, kind: 'file', mime: 'application/pdf', name: 'private.pdf', size: payload.length, sha256 };
-const roomA = { id: 11, company_id: 1, membership_id: 21, name: 'A', is_group: true };
-const roomB = { id: 12, company_id: 1, membership_id: 22, name: 'B', is_group: true };
+const roomA = { id: 11, company_id: 1, membership_id: 21, name: 'A', is_group: true, avatar_version: 1 };
+const roomB = { id: 12, company_id: 1, membership_id: 22, name: 'B', is_group: true, avatar_version: 1 };
+const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aBz8AAAAASUVORK5CYII=', 'base64');
+let avatarBytes = png, avatarMime = 'image/png', avatarHeader: string | undefined;
+let avatarCanManage = true, avatarLostAck = false, avatarReads = 0, avatarUploads = 0, groupReads = 0;
 let rooms = [roomA, roomB]; let mediaRight = true; let offline = false; let redirect = false; let unauthorized = false; let revoked = false;
 let beforeNative: ((path: string) => Promise<void>) | undefined;
 let missingMetadata = false;
@@ -72,12 +77,33 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     else if (path === '/web/session/authenticate') body = { result: { uid: 7, db: 'trial' } };
     else if (path.endsWith('/bootstrap')) body = { api_version: 2, database: 'trial', user_id: 7, company_ids: [1], csrf_token: 'notpersisted', permissions: { chat_view: true, chat_send: true, media: mediaRight } };
     else if (path === '/bchat/api/v2/rooms') body = { api_version: 2, rooms };
+    else if (/\/rooms\/\d+\/group$/.test(path)) {
+      groupReads++; const room = rooms.find(row => row.id === Number(path.split('/').at(-2)))!;
+      body = { api_version: 2, room: { id: room.id, company_id: room.company_id, name: room.name, description: 'Synthetic group', avatar_version: room.avatar_version, is_group: true }, members: [{ user_id: 7, name: 'Synthetic member', is_admin: avatarCanManage }], can_manage: avatarCanManage };
+    }
+    else if (/\/rooms\/\d+\/avatar$/.test(path)) {
+      const room = rooms.find(row => row.id === Number(path.split('/').at(-2)))!;
+      if (method === 'POST') {
+        avatarUploads++;
+        assert.deepEqual((requestBody as any[]).map(field => field.name), ['csrf_token', 'file']);
+        assert.equal((requestBody as any[])[0].data, 'notpersisted');
+        assert.equal((requestBody as any[])[1].type, 'image/png');
+        assert.match((requestBody as any[])[1].data, /^native-file:\/cache\/odoo-group-avatar-/);
+        room.avatar_version++;
+        if (avatarLostAck) throw new Error('synthetic response lost');
+        body = { api_version: 2, room_id: room.id, avatar_version: room.avatar_version };
+      } else {
+        avatarReads++; headers['Content-Type'] = avatarMime; headers['Content-Length'] = String(avatarBytes.length);
+        headers['X-BChat-Avatar-Version'] = avatarHeader ?? String(room.avatar_version);
+      }
+    }
     else if (path.endsWith('/changes')) body = { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
     else if (path.endsWith('/11/messages')) body = { api_version: 2, messages: [{ id: 1, author_user_id: 7, author_name: 'A', text: '', created_at: '', media }], next_before_id: null };
     else if (path.endsWith('/12/messages')) body = { api_version: 2, messages: [], next_before_id: null };
     else if (path.endsWith('/media/70/content')) { headers['Content-Type'] = media.mime; headers['Content-Length'] = String(payload.length); if (options.path) files.set(normalize(String(options.path)), Buffer.from(payload)); }
     else throw new Error(`Unexpected test route ${path}`);
-    return { info: () => missingMetadata ? { rnfbEncode: 'utf8' } : ({ status, headers, redirects: [url] }), json: () => body };
+    const image = Buffer.from(avatarBytes);
+    return { info: () => missingMetadata ? { rnfbEncode: 'utf8' } : ({ status, headers, redirects: [url] }), json: () => body === undefined ? undefined : JSON.parse(JSON.stringify(body)), base64: () => image.toString('base64') };
   });
   task.cancel = () => task; task.progress = () => task;
   return task;
@@ -88,6 +114,7 @@ const mocks: Record<string, unknown> = {
   'expo-crypto': { CryptoDigestAlgorithm: { SHA256: 'SHA256' }, randomUUID, digestStringAsync: async (_algorithm: unknown, value: string) => createHash('sha256').update(value).digest('hex') },
   'expo-file-system/legacy': fs,
   'react-native-blob-util': { config: (options: Record<string, unknown>) => ({ fetch: (method: string, url: string, headers: Record<string, string>, body?: unknown) => nativeFetch(options, method, url, headers, body) }),
+    base64: createRequire(import.meta.url)('base-64'),
     wrap: (path: string) => `native-file:${path}`, fs: { hash: async (path: string) => createHash('sha256').update(files.get(normalize(path))!).digest('hex') } },
 };
 (globalThis as any).__odooNativeTestMocks = mocks;
@@ -109,7 +136,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, localMedia, stageFile } = await import('../runtime.ts');
+const { getEngine, localMedia, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -225,6 +252,112 @@ test('Odoo stateful authentication omits stateless database header and reaches s
       '/web/session/destroy', '/web/session/authenticate', '/bchat/api/v2/bootstrap', '/bchat/api/v2/rooms',
     ]);
   } finally { emulateOdooStatelessHeader = false; }
+});
+
+test('group avatar reader uses actual binary base64 decoder, membership scope, shared in-flight request and media-independent rights', async () => {
+  await engine.login('alice', 'private', true); clearGroupAvatars();
+  mediaRight = false; avatarCanManage = false; await engine.refresh();
+  const before = avatarReads;
+  const [a, b] = await Promise.all([readGroupAvatar(engine, roomA), readGroupAvatar(engine, roomA)]);
+  assert.deepEqual(a, b); assert.equal(avatarReads, before + 1); assert.equal(hasGroupAvatar(a.key), true);
+  assert.equal(a.uri, `data:image/png;base64,${png.toString('base64')}`);
+  assert.equal(await readGroupAvatar(engine, roomA).then(image => image.key), a.key);
+  assert.equal(avatarReads, before + 1);
+  engine.markDisconnected(); offline = true;
+  assert.equal((await readGroupAvatar(engine, roomA)).key, a.key, 'private warm image remains bounded by offline identity');
+  await assert.rejects(readGroupAvatar(engine, { ...roomA, membership_id: 999 }));
+  offline = false; mediaRight = true; avatarCanManage = true; await engine.refresh();
+});
+
+test('avatar version mismatch refreshes exact metadata and retries at most once, invalid headers and PNG are never cached', async () => {
+  clearGroupAvatars(); const old = { ...roomA }; roomA.avatar_version++;
+  const before = avatarReads, metadata = groupReads;
+  const image = await readGroupAvatar(engine, old);
+  assert.equal(image.version, roomA.avatar_version); assert.equal(avatarReads, before + 2); assert.equal(groupReads, metadata + 1);
+  for (const invalid of ['mime', 'version', 'dimensions', 'size']) {
+    clearGroupAvatars(); avatarBytes = Buffer.from(png);
+    if (invalid === 'mime') avatarMime = 'text/html';
+    if (invalid === 'version') avatarHeader = '01';
+    if (invalid === 'dimensions') avatarBytes.writeUInt32BE(257, 16);
+    if (invalid === 'size') avatarBytes = Buffer.concat([png, Buffer.alloc(256 * 1024)]);
+    await assert.rejects(readGroupAvatar(engine, roomA), { code: 'invalid_response' });
+    avatarMime = 'image/png'; avatarHeader = undefined; avatarBytes = png;
+  }
+  clearGroupAvatars(); avatarHeader = String(roomA.avatar_version + 1);
+  const bounded = avatarReads;
+  await assert.rejects(readGroupAvatar(engine, roomA), { code: 'invalid_response' });
+  assert.equal(avatarReads, bounded + 2); avatarHeader = undefined;
+});
+
+test('late avatar reads cannot restore a masked cache, and membership revocation clears permitted old data', async () => {
+  clearGroupAvatars(); let release!: () => void, started!: () => void;
+  const wait = new Promise<void>(resolve => { release = resolve; }); const waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path.endsWith('/avatar')) { beforeNative = undefined; started(); await wait; } };
+  const pending = readGroupAvatar(engine, roomA); const outcome = assert.rejects(pending, { code: 'stale_session' });
+  await waiting; clearGroupAvatars(); release(); await outcome;
+  const image = await readGroupAvatar(engine, roomA); assert.equal(hasGroupAvatar(image.key), true);
+  rooms = [roomB]; await engine.refresh(); assert.equal(hasGroupAvatar(image.key), false);
+  rooms = [roomA, roomB]; await engine.refresh();
+});
+
+test('actual data-URI LRU stays under 4MiB without evicting durable outbox or allowing stale generation cleanup', async () => {
+  clearGroupAvatars(); avatarBytes = Buffer.concat([png, Buffer.alloc(256 * 1024 - png.length)]);
+  const original = rooms; rooms = Array.from({ length: 15 }, (_, i) => ({ ...roomA, id: 100 + i, membership_id: 200 + i }));
+  await engine.refresh(); const images = [];
+  await engine.enqueue(rooms[0]!, 'Synthetic unACKed text survives avatar eviction');
+  const outbox = engine.pending();
+  for (const room of rooms) images.push(await readGroupAvatar(engine, room));
+  const retained = images.filter(image => hasGroupAvatar(image.key));
+  assert.ok(retained.length < images.length); assert.ok(retained.reduce((sum, item) => sum + item.uri.length, 0) <= 4 * 1024 * 1024);
+  assert.equal(hasGroupAvatar(images[0]!.key), false); assert.equal(hasGroupAvatar(images.at(-1)!.key), true);
+  assert.deepEqual(engine.pending(), outbox, 'avatar-only LRU never evicts unACKed messages');
+  rooms = original; avatarBytes = png; await engine.refresh();
+  let release!: () => void, started!: () => void;
+  const wait = new Promise<void>(resolve => { release = resolve; }); const waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path.endsWith('/bootstrap')) { beforeNative = undefined; started(); await wait; } };
+  const refresh = engine.refresh(); const stale = assert.rejects(refresh, { code: 'stale_session' }); await waiting;
+  await engine.login('alice', 'private', true); const current = await readGroupAvatar(engine, roomA);
+  release(); await stale; assert.equal(hasGroupAvatar(current.key), true, 'old generation cannot clear new avatar cache');
+});
+
+test('avatar multipart is exact, staged input is isolated, bounds are local, lost ACK never retries POST', async () => {
+  files.set('file:///external/avatar.png', png); const uploads = avatarUploads;
+  const before = await engine.setGroupAvatar(roomA, { uri: 'file:///external/avatar.png', name: 'private-source.png', mime: 'image/png' });
+  assert.equal(before.room.avatar_version, roomA.avatar_version); assert.equal(avatarUploads, uploads + 1);
+  assert.equal([...files.keys()].some(key => key.includes('odoo-group-avatar-')), false);
+  assert.equal(files.has('file:///external/avatar.png'), true);
+  const pending = engine.pending().length;
+  files.set('file:///external/oversize.png', Buffer.alloc(2 * 1024 * 1024 + 1));
+  await assert.rejects(engine.setGroupAvatar(roomA, { uri: 'file:///external/oversize.png', name: 'big.png', mime: 'image/png' }), { code: 'avatar_invalid' });
+  assert.equal(avatarUploads, uploads + 1); assert.equal(engine.pending().length, pending);
+  avatarCanManage = false;
+  await assert.rejects(engine.setGroupAvatar(roomA, { uri: 'file:///external/avatar.png', name: 'private.png', mime: 'image/png' }), { code: 'group_manage_denied' });
+  assert.equal(avatarUploads, uploads + 1); avatarCanManage = true;
+  avatarLostAck = true;
+  try { await assert.rejects(engine.setGroupAvatar(roomA, { uri: 'file:///external/avatar.png', name: 'private.png', mime: 'image/png' }), { code: 'avatar_uncertain' }); }
+  finally { avatarLostAck = false; }
+  assert.equal(avatarUploads, uploads + 2, 'uncertain mutation is attempted exactly once');
+  assert.equal([...files.keys()].some(key => key.includes('odoo-group-avatar-')), false);
+  const image = await readGroupAvatar(engine, roomA); let notifications = 0;
+  const unsubscribe = subscribeGroupAvatars(() => { notifications++; });
+  await engine.logout(); assert.equal(hasGroupAvatar(image.key), false); assert.ok(notifications > 0); unsubscribe();
+});
+
+test('avatar metadata await cannot carry a revoked membership into POST and always removes its temporary copy', async () => {
+  await engine.login('alice', 'private', true);
+  files.set('file:///external/fenced-avatar.png', png);
+  let release!: () => void, started!: () => void;
+  const wait = new Promise<void>(resolve => { release = resolve; }); const waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeStat = async uri => { if (uri.includes('/odoo-group-avatar-')) { beforeStat = undefined; started(); await wait; } };
+  const before = avatarUploads;
+  const upload = engine.setGroupAvatar(roomA, { uri: 'file:///external/fenced-avatar.png', name: 'group.png', mime: 'image/png' });
+  const rejected = assert.rejects(upload, { code: 'membership_changed' });
+  try {
+    await waiting; rooms = [roomB]; await engine.refresh(); release(); await rejected;
+    assert.equal(avatarUploads, before, 'no avatar POST after membership revoked during stat');
+    assert.equal([...files.keys()].some(key => key.includes('/odoo-group-avatar-')), false);
+    assert.equal(files.has('file:///external/fenced-avatar.png'), true);
+  } finally { beforeStat = undefined; release(); rooms = [roomA, roomB]; await engine.refresh(); }
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

@@ -23,6 +23,7 @@ import { localMedia, stageFile } from '../runtime';
 import { Button, colors, Icon, IconButton, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { ImageViewer } from './ImageViewer';
+import { setFeedbackVoice } from './messageSounds';
 
 export function useVoiceSession(
   scope: string,
@@ -40,8 +41,10 @@ export function useVoiceSession(
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const feedbackOwner = useRef({});
+  const voiceActive = useRef(false);
   const cleanup = async () => {
-    token.current++;
+    const cleaning = ++token.current;
     player.removeRecordBackListener();
     player.removePlayBackListener();
     try {
@@ -63,10 +66,14 @@ export function useVoiceSession(
         /* Already staged or deleted. */
       }
     }
-    if (alive.current) {
+    if (alive.current && cleaning === token.current) {
       setRecording(false);
       setPlaying(false);
       setSeconds(0);
+    }
+    if (cleaning === token.current) {
+      voiceActive.current = false;
+      if (!starting.current) setFeedbackVoice(feedbackOwner.current, false);
     }
   };
   useEffect(() => {
@@ -85,6 +92,7 @@ export function useVoiceSession(
   const start = async () => {
     if (starting.current || recording || !allowed.current.canRecord) return;
     starting.current = true;
+    setFeedbackVoice(feedbackOwner.current, true);
     try {
       const requested = ++token.current;
       if (Platform.OS === 'android') {
@@ -125,6 +133,7 @@ export function useVoiceSession(
           return;
         }
         setRecording(true);
+        voiceActive.current = true;
         player.addRecordBackListener(event => {
           if (current === token.current) setSeconds(Math.floor(event.currentPosition / 1000));
         });
@@ -136,6 +145,7 @@ export function useVoiceSession(
       report('error');
     } finally {
       starting.current = false;
+      setFeedbackVoice(feedbackOwner.current, voiceActive.current);
     }
   };
   const finish = async (room: Room): Promise<Attachment | null> => {
@@ -163,6 +173,8 @@ export function useVoiceSession(
   const play = async (uri: string) => {
     if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') return;
     await cleanup();
+    if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') return;
+    setFeedbackVoice(feedbackOwner.current, true);
     const current = ++token.current;
     try {
       await player.startPlayer(uri);
@@ -171,6 +183,7 @@ export function useVoiceSession(
         return;
       }
       setPlaying(true);
+      voiceActive.current = true;
       player.addPlayBackListener(event => {
         if (
           current === token.current &&

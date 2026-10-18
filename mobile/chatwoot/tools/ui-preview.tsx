@@ -1,6 +1,6 @@
 /** Isolated native layout fixture. Never imported by the application entry point. */
 import React, { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { NativeModules, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { registerRootComponent } from 'expo';
 import * as Crypto from 'expo-crypto';
@@ -21,6 +21,10 @@ import {
 } from '../src/odoo/core/ChatEngine';
 
 const marker = 'SYNTHETIC_UI_PREVIEW';
+const descriptions = new Map<number, string>([
+  [11, 'تنسيق المشتريات ومتابعة طلبات الفريق — Purchasing coordination.'],
+  [12, 'معلومات المجموعة للأعضاء — Read-only group information.'],
+]);
 const rooms: Room[] = [
   {
     id: 11,
@@ -29,6 +33,7 @@ const rooms: Room[] = [
     name: 'مجموعة المشتريات — Purchasing',
     is_group: true,
     is_group_admin: true,
+    avatar_version: 1,
     last_message_preview: 'تمت مراجعة الطلب، شكرًا لكم',
     unread_count: 2,
   },
@@ -38,6 +43,7 @@ const rooms: Room[] = [
     membership_id: 22,
     name: 'الإدارة — Management',
     is_group: true,
+    avatar_version: 0,
     last_message_preview: 'اجتماع فريق العمل',
   },
   {
@@ -46,6 +52,7 @@ const rooms: Room[] = [
     membership_id: 23,
     name: 'المبيعات — Sales',
     is_group: true,
+    avatar_version: 0,
     last_message_preview: 'Sales team',
   },
 ];
@@ -128,9 +135,12 @@ const transport = {
       if (r.method === 'POST') {
         const payload = JSON.parse(r.form!.payload!);
         if (payload.action === 'rename') room.name = payload.name;
-        return { api_version: 2, room_id: room.id };
+        if (payload.action === 'set_description') descriptions.set(room.id, payload.description);
+        return { api_version: 2, room_id: room.id, action: payload.action };
       }
-      return { api_version: 2, room: { ...room, description: '' }, can_manage: true,
+      return { api_version: 2, room: { id: room.id, company_id: room.company_id, name: room.name,
+        description: descriptions.get(room.id) ?? '', avatar_version: room.avatar_version ?? 0,
+        is_group: true }, can_manage: room.id === 11,
         members: [{user_id: 7, name: identity.profile!.name, is_admin: true},
           {user_id: 8, name: 'مدير المجموعة — Group administrator', is_admin: true},
           {user_id: 9, name: 'عضو فريق العمل — Team member', is_admin: false}] };
@@ -181,10 +191,16 @@ const engine = new ChatEngine({
   transport,
   origin: 'https://ui-preview.invalid',
   database: 'synthetic',
+  uploadGroupAvatar: async room => {
+    const current = rooms.find(row => row.id === room.id)!;
+    current.avatar_version = (current.avatar_version ?? 0) + 1;
+    return {api_version:2,room_id:room.id,avatar_version:current.avatar_version};
+  },
 });
 function PreviewApp() {
   const [ready, setReady] = useState(false);
-  const [surface, setSurface] = useState<'choose' | 'chat' | 'image'>('choose');
+  const [surface, setSurface] = useState<'choose' | 'chat' | 'image' | 'feedback'>('choose');
+  const [feedback, setFeedback] = useState('Not checked');
   const [imageUri, setImageUri] = useState('');
   const [imageLanguage, setImageLanguage] = useState<'ar' | 'en'>('ar');
   useEffect(() => {
@@ -196,7 +212,14 @@ function PreviewApp() {
     void FS.writeAsStringAsync(uri, png, { encoding: FS.EncodingType.Base64 }).then(() => {
       // Fixture-only native seam: actual Timeline/MediaTile/FlashList, synthetic local
       // resolution instead of a real Odoo account. Never imported by normal entry.
-      Object.assign(fixtureRuntime, { localMedia: async () => {
+      Object.assign(fixtureRuntime, {
+        // Synthetic UI-only seam. Runtime authorization/cache/upload tests use production code separately.
+        readGroupAvatar: async (_current:ChatEngine, room:Room) => ({
+          uri:`data:image/png;base64,${png}`,version:room.avatar_version ?? 0,
+          key:`SYNTHETIC_UI_PREVIEW/${room.company_id}/${room.id}/${room.membership_id}/${room.avatar_version}`,
+        }),
+        hasGroupAvatar: (key:string) => key.startsWith('SYNTHETIC_UI_PREVIEW/'),
+        localMedia: async () => {
         await new Promise(resolve => setTimeout(resolve, 250));
         return uri;
       } });
@@ -205,6 +228,17 @@ function PreviewApp() {
       setImageUri(uri);
     });
   }, []);
+  if (surface === 'feedback') return (
+    <SafeAreaProvider><SafeAreaView style={{flex:1,padding:20,gap:16,backgroundColor:'white'}}>
+      <Text>FF native tone acceptance (not an audible recording)</Text>
+      <Text accessibilityLabel="FF feedback result">{feedback}</Text>
+      {(['send','receive'] as const).map(kind => <Button key={kind} title={`FF ${kind} tone`}
+        onPress={() => { void NativeModules.BWorkFeedback.play(kind).then((accepted:boolean) =>
+          setFeedback(`${kind}: ${accepted ? 'accepted' : 'suppressed'}`)); }} />)}
+      <Button title="FF stop tone" onPress={() => NativeModules.BWorkFeedback.stop()} />
+      <Button title="FF back" onPress={() => setSurface('choose')} />
+    </SafeAreaView></SafeAreaProvider>
+  );
   return (
     <SafeAreaProvider>
       {!ready ? <Text>{marker}</Text> : surface === 'chat' ? <SessionApp engine={engine} /> : surface === 'image' ? (
@@ -215,6 +249,7 @@ function PreviewApp() {
           <View style={{ gap: 20 }}>
             <Text>{marker}</Text>
             <Button title="CW36 chat check" onPress={() => setSurface('chat')} />
+            <Button title="FF native feedback check" onPress={() => setSurface('feedback')} />
             <Button title="CW36 image check" disabled={!imageUri} onPress={() => { setImageLanguage('ar'); setSurface('image'); }} />
             <Button title="CW36 image English" disabled={!imageUri} onPress={() => { setImageLanguage('en'); setSurface('image'); }} />
           </View>

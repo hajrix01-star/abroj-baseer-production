@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, Switch, Text, View } from 'react-native';
-import type { ChatEngine, Room } from '../core/ChatEngine';
+import { ChatError, groupDescription, type ChatEngine, type GroupInfo, type Room } from '../core/ChatEngine';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { GroupAvatar } from './GroupAvatar';
 import {
   Button,
   colors,
@@ -45,11 +47,32 @@ export function ManagementSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Word | null>(null);
   const [expandedMember, setExpandedMember] = useState<number | null>(null);
+  const [description, setDescription] = useState('');
+  const [savedDescription, setSavedDescription] = useState('');
+  const [avatarVersion, setAvatarVersion] = useState(room?.avatar_version ?? 0);
+  const descriptionDirty = useRef(false);
+  const descriptionRevision = useRef(0);
+  const mutation = useRef(false);
+  const alive = useRef(true);
+  const readScope = () => `${engine.accountScope}/${engine.identity?.database}/${engine.identity?.user_id}/${room?.company_id}/${room?.id}/${room?.membership_id}`;
+  const identityScope = readScope();
+  const liveScope = useRef(identityScope); liveScope.current = identityScope;
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, [identityScope]);
+  const current = (requested: string) => alive.current && liveScope.current === requested && readScope() === requested;
+  const applyDetail = (detail: GroupInfo, saved?: { value: string; revision: number }) => {
+    setMembers(detail.members); setCanManage(detail.can_manage);
+    setAvatarVersion(detail.room.avatar_version); setSavedDescription(detail.room.description);
+    if (saved && detail.room.description !== saved.value) throw new ChatError('group_readback_mismatch');
+    if (!descriptionDirty.current || !detail.can_manage || saved?.revision === descriptionRevision.current) {
+      setDescription(detail.room.description); descriptionDirty.current = false;
+    }
+  };
   useEffect(() => {
     setExpandedMember(null);
   }, [companyId, room?.id, room?.membership_id, mode, canManage]);
   useEffect(() => {
     let live = true;
+    const requested = identityScope;
     const timer = setTimeout(async () => {
       setBusy(true);
       try {
@@ -62,10 +85,7 @@ export function ManagementSheet({
         } else {
           if (mode === 'members' && room) {
             const detail = await engine.groupInfo(room);
-            if (live) {
-              setMembers(detail.members);
-              setCanManage(detail.can_manage);
-            }
+            if (live && current(requested)) applyDetail(detail);
             if (!detail.can_manage) return;
           }
           const candidates = await engine.candidates(companyId, query);
@@ -82,22 +102,46 @@ export function ManagementSheet({
       clearTimeout(timer);
     };
   }, [companyId, engine, mode, query, room]);
-  const act = async (operation: () => Promise<unknown>, dismiss = false) => {
+  const act = async (operation: () => Promise<unknown>, dismiss = false, saved?: { value: string; revision: number }) => {
+    if (mutation.current) return;
+    mutation.current = true;
+    const requested = identityScope;
     setBusy(true);
     setError(null);
     try {
       const result = (await operation()) as { room_id?: number } | undefined;
+      if (!current(requested)) return;
       await changed(result?.room_id);
       if (dismiss) close();
       else if (room) {
         const detail = await engine.groupInfo(room);
-        setMembers(detail.members);
+        if (current(requested)) applyDetail(detail, saved);
       }
     } catch (e) {
-      setError(errorWord(e));
+      if (current(requested)) setError(errorWord(e));
     } finally {
-      setBusy(false);
+      mutation.current = false;
+      if (current(requested)) setBusy(false);
     }
+  };
+  const changePhoto = async () => {
+    if (!room || !canManage || busy || mutation.current || engine.offline) return;
+    const requested = identityScope;
+    mutation.current = true; setBusy(true); setError(null);
+    try {
+      const chosen = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1, maxWidth: 1600, maxHeight: 1600, quality: 0.9 });
+      if (!current(requested) || chosen.didCancel) return;
+      const asset = chosen.assets?.[0];
+      if (!asset?.uri || chosen.errorCode) throw new ChatError('avatar_invalid');
+      const detail = await engine.setGroupAvatar(room, { uri: asset.uri, name: asset.fileName ?? 'group.jpg', mime: asset.type ?? 'image/jpeg' });
+      if (!current(requested)) return;
+      applyDetail(detail); await changed();
+    } catch (e) {
+      if (!current(requested)) return;
+      // Refresh display after an uncertain upload, but never convert that outcome into success.
+      try { const detail = await engine.groupInfo(room); if (current(requested)) applyDetail(detail); } catch { /* Keep the last permitted presentation. */ }
+      if (current(requested)) setError(errorWord(e));
+    } finally { mutation.current = false; if (current(requested)) setBusy(false); }
   };
   const title =
     mode === 'create'
@@ -148,6 +192,10 @@ export function ManagementSheet({
           )}
           {mode === 'members' && (
             <>
+              {room && <View style={{ alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+                <GroupAvatar engine={engine} room={{ ...room, avatar_version: avatarVersion }} enabled={!engine.offline} size={64} label={t('groupPhoto')} />
+                {canManage && <Button quiet title={t('changeGroupPhoto')} disabled={busy || engine.offline} onPress={() => { void changePhoto(); }} />}
+              </View>}
               {canManage && (
                 <View
                   style={{
@@ -177,6 +225,25 @@ export function ManagementSheet({
                 </View>
               )}
               {!canManage && room && <Label language={language}>{room.name}</Label>}
+              <View style={{ gap: 6 }}>
+                <Label language={language} muted>{t('groupDescription')}</Label>
+                {canManage ? <>
+                  <Field language={language} multiline value={description} maxLength={1024} editable={!busy}
+                    placeholder={t('descriptionPlaceholder')} accessibilityLabel={t('groupDescription')}
+                    onChangeText={value => { descriptionRevision.current++; descriptionDirty.current = true; setDescription(value); }}
+                    style={{ minHeight: 68, maxHeight: 120, textAlignVertical: 'top' }} />
+                  <View style={[styles.row, { justifyContent: 'space-between', flexDirection: language === 'ar' ? 'row-reverse' : 'row', direction: 'ltr' }]}>
+                    <Text style={styles.muted}>{String(new TextEncoder().encode(description).length)}/1024</Text>
+                    <Button quiet title={t('saveDescription')} disabled={busy || engine.offline || !descriptionDirty.current}
+                      onPress={() => {
+                        try {
+                          const value = groupDescription(description); const revision = descriptionRevision.current;
+                          if (room) void act(() => engine.groupChange(room, { action: 'set_description', description: value }), false, { value, revision });
+                        } catch (e) { setError(errorWord(e)); }
+                      }} />
+                  </View>
+                </> : <Label language={language}>{savedDescription || t('noDescription')}</Label>}
+              </View>
               {members.map(member => (
                 <View
                   key={member.user_id}

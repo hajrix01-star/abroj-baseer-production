@@ -35,12 +35,29 @@ function copySources(projectRoot, applicationPackage) {
   for (const file of ['CommitCookieHandler.java', 'OriginCookieJar.java', 'BaseerSessionNetworking.java', 'SessionDiagnostics.java']) {
     fs.copyFileSync(path.join(__dirname, 'native/android', relative, file), path.join(destination, file));
   }
+  const feedback = 'com/baseer/bchat/trial/feedback';
+  const target = path.join(projectRoot, 'android/app/src/main/java', feedback);
+  fs.mkdirSync(target, { recursive: true });
+  for (const file of ['FeedbackController.java', 'BWorkFeedbackModule.java', 'BWorkFeedbackPackage.java']) {
+    fs.copyFileSync(path.join(__dirname, 'native/android', feedback, file), path.join(target, file));
+  }
+}
+function patchFeedback(source) {
+  const marker = '// bwork-feedback-package';
+  const registration = '          add(com.baseer.bchat.trial.feedback.BWorkFeedbackPackage()) ' + marker;
+  const anchor = 'PackageList(this).packages.apply {';
+  if (!source.includes(anchor)) throw new Error('BWork feedback package template changed');
+  if (source.includes(marker)) {
+    if (source.split(marker).length !== 2) throw new Error('BWork feedback package duplicated');
+    return source.replace(/^.*\/\/ bwork-feedback-package.*$/m, registration);
+  }
+  return source.replace(anchor, `${anchor}\n${registration}`);
 }
 // Reuse after a frozen source change without destructive Expo prebuild/clean.
 function applyNativeBoundary(projectRoot, applicationPackage, origin) {
   if (applicationPackage !== packageName) throw new Error('Odoo native session package changed');
   const application = path.join(projectRoot, 'android/app/src/main/java/com/baseer/bchat/trial/MainApplication.kt');
-  const updated = patchApplication(fs.readFileSync(application, 'utf8'), origin);
+  const updated = patchFeedback(patchApplication(fs.readFileSync(application, 'utf8'), origin));
   copySources(projectRoot, applicationPackage);
   fs.writeFileSync(application, updated);
 }
@@ -56,7 +73,7 @@ module.exports = config => {
   });
   config = withMainApplication(config, current => {
     if (current.modResults.language !== 'kt' || current.android?.package !== packageName) throw new Error('Odoo trial MainApplication package/language changed');
-    current.modResults.contents = patchApplication(current.modResults.contents, process.env.EXPO_PUBLIC_ODOO_ORIGIN);
+    current.modResults.contents = patchFeedback(patchApplication(current.modResults.contents, process.env.EXPO_PUBLIC_ODOO_ORIGIN));
     return current;
   });
   return withDangerousMod(config, ['android', async current => {
@@ -66,3 +83,4 @@ module.exports = config => {
 };
 module.exports.applyNativeBoundary = applyNativeBoundary;
 module.exports.patchApplication = patchApplication;
+module.exports.patchFeedback = patchFeedback;

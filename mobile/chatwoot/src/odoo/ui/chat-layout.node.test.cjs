@@ -152,6 +152,7 @@ function timeline() {
     'react-native': { Keyboard: { addListener: (name, callback) => { keyboard[name] = callback; return { remove() {} }; } }, AppState: { currentState: 'active' }, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'android' }, Pressable: 'Pressable', Text: 'Text', View: 'View' },
     '@shopify/flash-list': { FlashList: 'FlashList' }, './components': components, './dictionary': { errorWord: () => 'error' }, './viewModel': viewModel,
     './MediaTools': { AttachmentTools: tools, MediaTile: 'MediaTile', useVoiceSession: (_scope, _report, play, record) => { voiceRights.push([play, record]); return { recording: false }; } },
+    './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     './timelineFollow': load('timelineFollow.ts', {}),
     './companyNames': { companyDisplayName: () => 'Synthetic company' },
     './MessagePresentation': { MessageQuote: 'MessageQuote', MessageStatus: 'MessageStatus' },
@@ -160,6 +161,17 @@ function timeline() {
     flushFrames() { for (let i = 0; i < frames.length && i < 100; i++) { const callback = frames[i]; frames[i] = null; callback?.(); } },
     render: () => state.render(() => module.TimelineScreen(props)), release: () => release() };
 }
+test('send feedback occurs once only after a successful durable enqueue, not the initial tap or a failed retry', async () => {
+  const app = timeline(); app.props.chat.soundSent = () => app.calls.push('sound');
+  one(app.render(), 'Field').onChangeText('accepted');
+  const press = one(app.render(), app.tools).onSendText;
+  press(); press(); await settled(); assert.equal(app.calls.includes('sound'), false);
+  app.release(); await settled(); assert.equal(app.calls.filter(value => value === 'sound').length, 1);
+  app.props.engine.enqueue = async () => { throw new Error('synthetic failure'); };
+  one(app.render(), 'Field').onChangeText('retry'); one(app.render(), app.tools).onSendText(); await settled();
+  assert.equal(app.calls.filter(value => value === 'sound').length, 1);
+  assert.equal(one(app.render(), 'GroupAvatar').enabled, true);
+});
 
 test('Android composer avoidance uses the measured screen offset and ignores an older layout measurement', () => {
   const app = timeline();

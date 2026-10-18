@@ -4,6 +4,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   useWindowDimensions,
   View,
@@ -80,6 +81,9 @@ export function NavigationDrawer({
   canManage,
   close,
   onAction,
+  soundsEnabled = false,
+  soundsReady = false,
+  onSoundsChange,
 }: {
   visible: boolean;
   identity: Bootstrap | null;
@@ -91,6 +95,9 @@ export function NavigationDrawer({
   canManage: boolean;
   close: () => void;
   onAction: (action: DrawerAction) => void;
+  soundsEnabled?: boolean;
+  soundsReady?: boolean;
+  onSoundsChange?: (enabled: boolean) => void;
 }) {
   const [page, setPage] = useState<'home' | 'profile' | 'settings'>('home');
   const { width } = useWindowDimensions();
@@ -114,11 +121,16 @@ export function NavigationDrawer({
   return (
     <Modal visible transparent animationType="none" onRequestClose={exit}>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#15233366' }}>
-        <View style={{ flex: 1, direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
+        <View
+          style={{
+            flex: 1,
+            direction: 'ltr',
+            flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+          }}>
           <View
             accessibilityViewIsModal
             style={{
-              width: Math.min(width * 0.75, 304),
+              width: Math.min(width * 0.65, 304),
               backgroundColor: colors.white,
               paddingHorizontal: 8,
               paddingTop: 6,
@@ -134,11 +146,14 @@ export function NavigationDrawer({
               }}>
               <IconButton icon="menu" label={t('close')} onPress={close} />
               {page === 'home' ? (
-                <View style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}>
+                <View
+                  style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}>
                   <Brand variant="header" />
                 </View>
               ) : (
-                <Text numberOfLines={1} style={[styles.title, direction(language), { flex: 1, fontSize: 18 }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.title, direction(language), { flex: 1, fontSize: 18 }]}>
                   {title}
                 </Text>
               )}
@@ -154,10 +169,17 @@ export function NavigationDrawer({
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 12, gap: 4 }}>
               <View
                 testID="drawer-account"
-                style={{ paddingHorizontal: 12, paddingVertical: 16, gap: 12,
-                  direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row',
-                  alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border,
-                  marginBottom: 4 }}>
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 16,
+                  gap: 12,
+                  direction: 'ltr',
+                  flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  borderBottomWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: 4,
+                }}>
                 <View
                   style={{
                     width: 40,
@@ -173,13 +195,19 @@ export function NavigationDrawer({
                   </Text>
                 </View>
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                  <Text numberOfLines={2} accessibilityLabel={name}
-                    style={[styles.title, direction(language), { fontSize: 16, lineHeight: 22 }]}>{name}</Text>
-                  <Text style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
+                  <Text
+                    numberOfLines={2}
+                    accessibilityLabel={name}
+                    style={[styles.title, direction(language), { fontSize: 16, lineHeight: 22 }]}>
+                    {name}
+                  </Text>
+                  <Text
+                    style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
                     {t(offline ? 'offline' : 'connected')}
                   </Text>
                   {!!pendingCount && (
-                    <Text style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
+                    <Text
+                      style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
                       {t('queue')}: {String(pendingCount)}
                     </Text>
                   )}
@@ -249,6 +277,28 @@ export function NavigationDrawer({
                       onPress={() => onAction('policy')}
                     />
                   )}
+                  <View
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}>
+                    <View style={{ flex: 1 }}>
+                      <Label language={language}>{t('chatSounds')}</Label>
+                      <Label language={language} muted>
+                        {t('chatSoundsHint')}
+                      </Label>
+                    </View>
+                    <Switch
+                      accessibilityLabel={t('chatSounds')}
+                      value={soundsEnabled}
+                      disabled={!soundsReady || !onSoundsChange}
+                      onValueChange={onSoundsChange}
+                      trackColor={{ true: colors.blue }}
+                    />
+                  </View>
                   <View style={{ padding: 16 }}>
                     <Label language={language} muted>
                       {t('offlineNote')}
@@ -256,26 +306,32 @@ export function NavigationDrawer({
                   </View>
                 </>
               )}
-            <View style={{ borderTopWidth: 1, borderColor: colors.border, paddingTop: 6, marginTop: 8 }}>
-              <MenuRow
-                icon="refresh"
-                label={t('refresh')}
-                language={language}
-                disabled={busy}
-                onPress={() => onAction('refresh')}
-              />
-              <MenuRow
-                icon="logout"
-                label={t('logout')}
-                language={language}
-                disabled={busy}
-                danger
-                onPress={() => onAction('logout')}
-              />
-              <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-                <VersionLabel language={language} />
+              <View
+                style={{
+                  borderTopWidth: 1,
+                  borderColor: colors.border,
+                  paddingTop: 6,
+                  marginTop: 8,
+                }}>
+                <MenuRow
+                  icon="refresh"
+                  label={t('refresh')}
+                  language={language}
+                  disabled={busy}
+                  onPress={() => onAction('refresh')}
+                />
+                <MenuRow
+                  icon="logout"
+                  label={t('logout')}
+                  language={language}
+                  disabled={busy}
+                  danger
+                  onPress={() => onAction('logout')}
+                />
+                <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+                  <VersionLabel language={language} />
+                </View>
               </View>
-            </View>
             </ScrollView>
           </View>
           <Pressable

@@ -2,9 +2,14 @@ package com.baseer.bchat.trial.session;
 
 import com.facebook.react.modules.network.CookieJarContainer;
 import java.io.IOException;
+import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import okhttp3.Call;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.Headers;
@@ -12,6 +17,9 @@ import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.JavaNetCookieJar;
 import okhttp3.Response;
+import okhttp3.RequestBody;
+import okhttp3.MediaType;
+import okio.BufferedSink;
 
 /** One app-owned persistent native store; RN/BlobUtil cannot replace it with an async writer. */
 public final class OriginCookieJar implements CookieJarContainer, Interceptor {
@@ -19,6 +27,7 @@ public final class OriginCookieJar implements CookieJarContainer, Interceptor {
   private final CommitCookieHandler handler;
   private final JavaNetCookieJar delegate;
   private final Object requests = new Object();
+  private final Map<Call, Boolean> avatarAttempts = new WeakHashMap<>();
 
   public OriginCookieJar(String fixedOrigin, CommitCookieHandler handler) {
     HttpUrl parsed = HttpUrl.get(fixedOrigin);
@@ -33,6 +42,33 @@ public final class OriginCookieJar implements CookieJarContainer, Interceptor {
 
   private boolean allowed(HttpUrl url) {
     return url.isHttps() && url.host().equals(origin.host()) && url.port() == origin.port();
+  }
+  /** Claim the actual network attempt, not an outer cloned request which BlobUtil discards. */
+  public Interceptor avatarNetworkGuard() {
+    return chain -> {
+      HttpUrl url = chain.request().url();
+      if (!allowed(url) || !chain.request().method().equals("POST") || url.query() != null
+          || url.fragment() != null || !url.encodedPath().matches("/bchat/api/v2/rooms/[1-9][0-9]*/avatar")) {
+        return chain.proceed(chain.request());
+      }
+      synchronized (avatarAttempts) {
+        if (avatarAttempts.containsKey(chain.call())) throw new ProtocolException("avatar_upload_replay_blocked");
+        avatarAttempts.put(chain.call(), Boolean.TRUE);
+      }
+      RequestBody body = chain.request().body();
+      if (body == null) throw new ProtocolException("avatar_upload_body_required");
+      RequestBody once = new RequestBody() {
+        private final AtomicBoolean written = new AtomicBoolean();
+        @Override public MediaType contentType() { return body.contentType(); }
+        @Override public long contentLength() throws IOException { return body.contentLength(); }
+        @Override public boolean isOneShot() { return true; }
+        @Override public void writeTo(BufferedSink sink) throws IOException {
+          if (!written.compareAndSet(false, true)) throw new ProtocolException("avatar_upload_replay_blocked");
+          body.writeTo(sink);
+        }
+      };
+      return chain.proceed(chain.request().newBuilder().method("POST", once).build());
+    };
   }
 
   @Override public void setCookieJar(CookieJar ignored) { /* App-owned writer is authoritative. */ }

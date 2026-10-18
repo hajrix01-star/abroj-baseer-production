@@ -3,6 +3,13 @@ import { AppState } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import type { Bootstrap, ChatEngine, History, Pending, Room } from '../core/ChatEngine';
 import { errorWord, type Word } from './dictionary';
+import {
+  createMessageSounds,
+  soundActor,
+  soundRoom,
+  type MessageSounds,
+  type SoundState,
+} from './messageSounds';
 
 const emptyHistory: History = { api_version: 2, messages: [], next_before_id: null };
 export function useChat(engine: ChatEngine) {
@@ -15,6 +22,17 @@ export function useChat(engine: ChatEngine) {
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(true);
   const [presentationReady, setPresentationReady] = useState(false);
+  const [soundState, setSoundState] = useState<SoundState>({
+    actor: '',
+    ready: false,
+    enabled: false,
+  });
+  const sounds = useRef<MessageSounds | null>(null);
+  if (!sounds.current) sounds.current = createMessageSounds(setSoundState);
+  const soundBaselineReady = useRef(false);
+  const soundEpoch = useRef(0);
+  const presentation = useRef(presentationReady);
+  presentation.current = presentationReady;
   const selectedRef = useRef<Room | null>(null);
   const active = useRef(AppState.currentState === 'active');
   const online = useRef(true);
@@ -33,6 +51,7 @@ export function useChat(engine: ChatEngine) {
       /* TTL/identity blocks display. */
     }
     const account = engine.status === 'offline_expired' ? null : engine.identity;
+    sounds.current!.account(soundActor(account));
     if (engine.status === 'offline_expired') setError('expired');
     setIdentity(account);
     setRooms(rows);
@@ -51,11 +70,28 @@ export function useChat(engine: ChatEngine) {
       selectedRef.current = null;
       setSelected(null);
       setHistory(emptyHistory);
+      soundBaselineReady.current = false;
+      sounds.current!.reset();
+    } else if (old) {
+      const fresh = rows.find(
+        r =>
+          r.id === old.id &&
+          r.company_id === old.company_id &&
+          r.membership_id === old.membership_id,
+      );
+      if (fresh && (fresh.name !== old.name || fresh.avatar_version !== old.avatar_version)) {
+        selectedRef.current = fresh;
+        setSelected(fresh);
+      }
     }
   }, [engine]);
   const select = useCallback(
     async (room: Room | null) => {
       const g = ++generation.current;
+      const soundContext = soundEpoch.current;
+      const foreground = foregroundEpoch.current;
+      soundBaselineReady.current = false;
+      sounds.current!.reset();
       selectedRef.current = room;
       setSelected(room);
       setHistory(emptyHistory);
@@ -63,7 +99,20 @@ export function useChat(engine: ChatEngine) {
       if (!room) return;
       try {
         const page = await engine.history(room);
-        if (mounted.current && g === generation.current) setHistory(page);
+        if (mounted.current && g === generation.current) {
+          setHistory(page);
+          const account = engine.identity;
+          if (soundContext === soundEpoch.current && foreground === foregroundEpoch.current && active.current) {
+            sounds.current!.account(soundActor(account));
+            sounds.current!.observe(
+              soundRoom(soundActor(account), room),
+              page.messages,
+              account?.user_id ?? 0,
+              true,
+            );
+            soundBaselineReady.current = online.current && !engine.offline && presentation.current;
+          }
+        }
       } catch (e) {
         if (mounted.current && g === generation.current) setError(errorWord(e));
       } finally {
@@ -81,19 +130,41 @@ export function useChat(engine: ChatEngine) {
     const g = generation.current;
     const foreground = foregroundEpoch.current;
     const syncIdentity = engine.identity;
+    const soundWasReady = soundBaselineReady.current;
+    const soundContext = soundEpoch.current;
     try {
       if (engine.pending().some(p => p.state !== 'failed')) await engine.flush();
       else await engine.refresh();
       const room = selectedRef.current;
       if (room) {
         const page = await engine.history(room);
-        if (mounted.current && generation.current === g) setHistory(page);
+        if (mounted.current && generation.current === g) {
+          setHistory(page);
+          const account = engine.identity;
+          if (
+            active.current &&
+            foreground === foregroundEpoch.current &&
+            soundContext === soundEpoch.current &&
+            soundActor(account) === soundActor(syncIdentity)
+          ) {
+            sounds.current!.account(soundActor(account));
+            sounds.current!.observe(
+              soundRoom(soundActor(account), room),
+              page.messages,
+              account?.user_id ?? 0,
+              !soundWasReady || engine.offline || !online.current,
+            );
+            soundBaselineReady.current = !engine.offline && online.current;
+          }
+        }
       }
       if (mounted.current) setError(null);
       if (mounted.current && active.current && foreground === foregroundEpoch.current)
         setPresentationReady(true);
     } catch (e) {
       if (mounted.current) setError(errorWord(e));
+      soundBaselineReady.current = false;
+      sounds.current!.reset();
       const failure = e as { code?: string; status?: number };
       const unavailable =
         (failure.code === 'connection_failed' && !failure.status) ||
@@ -143,6 +214,11 @@ export function useChat(engine: ChatEngine) {
       const wasOnline = online.current;
       online.current = state.isConnected !== false && state.isInternetReachable !== false;
       if (!wasOnline && online.current) setPresentationReady(false);
+      if (wasOnline !== online.current) {
+        soundEpoch.current++;
+        soundBaselineReady.current = false;
+        sounds.current!.reset();
+      }
       if (!online.current) engine.markDisconnected();
       capture();
       if (!online.current && active.current) setPresentationReady(true);
@@ -151,6 +227,9 @@ export function useChat(engine: ChatEngine) {
     const subscription = AppState.addEventListener('change', state => {
       active.current = state === 'active';
       foregroundEpoch.current++;
+      soundEpoch.current++;
+      soundBaselineReady.current = false;
+      sounds.current!.reset();
       setPresentationReady(false);
       if (active.current) {
         if (!online.current) {
@@ -178,6 +257,7 @@ export function useChat(engine: ChatEngine) {
       clearTimeout(timer);
       stopNetwork();
       subscription.remove();
+      sounds.current!.close();
     };
   }, [capture, engine, sync]);
   const run = useCallback(
@@ -202,6 +282,8 @@ export function useChat(engine: ChatEngine) {
   );
   const logout = useCallback(async () => {
     generation.current++;
+    soundBaselineReady.current = false;
+    sounds.current!.account('');
     selectedRef.current = null;
     setSelected(null);
     setHistory(emptyHistory);
@@ -232,6 +314,28 @@ export function useChat(engine: ChatEngine) {
     capture,
     logout,
     older,
+    soundsEnabled:
+      soundState.actor === soundActor(identity) && soundState.ready && soundState.enabled,
+    soundsReady: soundState.actor === soundActor(identity) && soundState.ready,
+    setSoundsEnabled: (enabled: boolean) => {
+      if (
+        active.current &&
+        presentation.current &&
+        soundActor(engine.identity) === soundState.actor
+      )
+        sounds.current!.enabled(enabled);
+    },
+    soundSent: (room: Room) => {
+      const actor = soundActor(engine.identity);
+      if (
+        active.current &&
+        presentation.current &&
+        actor &&
+        actor === sounds.current!.snapshot().actor &&
+        soundRoom(actor, selectedRef.current) === soundRoom(actor, room)
+      )
+        sounds.current!.sent(soundRoom(actor, room));
+    },
   };
 }
 export type ChatView = ReturnType<typeof useChat>;

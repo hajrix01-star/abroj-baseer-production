@@ -6,7 +6,7 @@ import * as FS from 'expo-file-system/legacy';
 import BlobUtil from 'react-native-blob-util';
 import type { FetchBlobResponse, StatefulPromise } from 'react-native-blob-util';
 import { ChatEngine, ChatError } from './core/ChatEngine';
-import type { Attachment, Bootstrap, Pending, Request, Room } from './core/ChatEngine';
+import type { Attachment, Bootstrap, GroupAvatarAck, GroupAvatarInput, Pending, Request, Room } from './core/ChatEngine';
 import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia } from './core/nativeBoundary';
 import { nativeSessionTrace, networkFailure } from './core/loginDiagnostics';
 
@@ -28,6 +28,106 @@ const extensions: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
 };
+export interface GroupAvatarImage { uri: string; version: number; key: string }
+type AvatarEntry = GroupAvatarImage & { room: Room; actor: string; epoch: number; bytes: number };
+const avatars = new Map<string, AvatarEntry>();
+const avatarReads = new Map<string, Promise<GroupAvatarImage>>();
+let avatarEpoch = 0;
+const avatarListeners = new Set<() => void>();
+const AVATAR_CACHE_BYTES = 4 * 1024 * 1024; // Actual ASCII data-URI bytes, not a native heap claim.
+const avatarNotify = () => { for (const listener of avatarListeners) { try { listener(); } catch { /* Presentation observers cannot change transport results. */ } } };
+export function subscribeGroupAvatars(listener: () => void): () => void { avatarListeners.add(listener); return () => { avatarListeners.delete(listener); }; }
+export function hasGroupAvatar(key: string): boolean { return avatars.has(key); }
+export function clearGroupAvatars(): void { avatarEpoch++; avatarReads.clear(); if (avatars.size) { avatars.clear(); avatarNotify(); } }
+function pruneGroupAvatars(all = false): void {
+  let removed = false;
+  for (const [key, item] of avatars) {
+    try {
+      if (all || !engine || engine.identity?.permissions.chat_view !== true) throw new Error();
+      const live = scope(item.room);
+      const current = engine.rooms().find(room => room.id === item.room.id)!;
+      if (item.epoch !== generation || live.key !== item.actor || current.avatar_version !== item.version) throw new Error();
+    } catch { avatars.delete(key); removed = true; }
+  }
+  if (removed) avatarNotify();
+}
+function avatarScope(current: ChatEngine, room: Room) {
+  if (current !== getEngine() || current.identity?.permissions.chat_view !== true) throw new ChatError('stale_session');
+  const snapshot = scope(room);
+  if (!room.is_group) throw new ChatError('not_a_group');
+  return snapshot;
+}
+/** Private, memory-only group images; message-media ACLs and disk caching do not apply. */
+export async function readGroupAvatar(current: ChatEngine, room: Room): Promise<GroupAvatarImage> {
+  const snapshot = avatarScope(current, room);
+  const version = current.rooms().find(row => row.id === room.id)?.avatar_version ?? room.avatar_version ?? 0;
+  const key = `${snapshot.key}/${snapshot.epoch}/${avatarEpoch}/${room.company_id}/${room.id}/${room.membership_id}/${version}`;
+  const existing = avatarReads.get(key); if (existing) return existing;
+  const pending = loadGroupAvatar(current, room); avatarReads.set(key, pending);
+  try { return await pending; } finally { if (avatarReads.get(key) === pending) avatarReads.delete(key); }
+}
+async function loadGroupAvatar(current: ChatEngine, room: Room): Promise<GroupAvatarImage> {
+  pruneGroupAvatars();
+  const snapshot = avatarScope(current, room);
+  const readEpoch = avatarEpoch;
+  let version = current.rooms().find(row => row.id === room.id)?.avatar_version ?? room.avatar_version ?? 0;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!Number.isSafeInteger(version) || version <= 0) throw new ChatError('avatar_missing', 404);
+    const key = `${snapshot.key}/${room.company_id}/${room.id}/${room.membership_id}/${version}`;
+    const cached = avatars.get(key);
+    if (cached) { avatars.delete(key); avatars.set(key, cached); return { uri: cached.uri, version, key }; }
+    if (current.offline) throw new ChatError('avatar_missing', 404);
+    try {
+      const response = await sessionNative(`/bchat/api/v2/rooms/${room.id}/avatar?version=${version}`, 'GET', { Accept: 'image/png' }, undefined, undefined, undefined, 256 * 1024);
+      fence(room, snapshot); avatarScope(current, room);
+      if (readEpoch !== avatarEpoch) throw new ChatError('stale_session');
+      const headers = headersOf(response);
+      if (!/^(0|[1-9]\d*)$/.test(headers['x-bchat-avatar-version'] ?? '')) throw new ChatError('invalid_response');
+      if (Number(headers['x-bchat-avatar-version']) !== version) {
+        if (attempt) throw new ChatError('invalid_response');
+        const detail = await current.groupInfo(room); fence(room, snapshot);
+        version = detail.room.avatar_version; pruneGroupAvatars(); continue;
+      }
+      if ((headers['content-type'] ?? '').split(';')[0].trim() !== 'image/png') throw new ChatError('invalid_response');
+      const encoded = await response.base64();
+      if (typeof encoded !== 'string' || encoded.length > 349528 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) throw new ChatError('invalid_response');
+      const raw = BlobUtil.base64.decode(encoded);
+      const size = (offset: number) => ((raw.charCodeAt(offset) * 0x1000000) + (raw.charCodeAt(offset + 1) << 16) + (raw.charCodeAt(offset + 2) << 8) + raw.charCodeAt(offset + 3));
+      if (raw.length < 24 || raw.length > 256 * 1024 || raw.slice(0, 8) !== '\x89PNG\r\n\x1a\n' || raw.slice(12, 16) !== 'IHDR'
+          || size(8) !== 13 || size(16) <= 0 || size(16) > 256 || size(20) <= 0 || size(20) > 256
+          || headers['content-length'] !== undefined && Number(headers['content-length']) !== raw.length) throw new ChatError('invalid_response');
+      fence(room, snapshot); avatarScope(current, room);
+      if (readEpoch !== avatarEpoch || current.rooms().find(row => row.id === room.id)?.avatar_version !== version) throw new ChatError('stale_session');
+      const uri = `data:image/png;base64,${encoded}`;
+      avatars.set(key, { uri, version, key, room: { ...room }, actor: snapshot.key, epoch: generation, bytes: uri.length });
+      while ([...avatars.values()].reduce((sum, item) => sum + item.bytes, 0) > AVATAR_CACHE_BYTES) avatars.delete(avatars.keys().next().value!);
+      avatarNotify(); return { uri, version, key };
+    } catch (error) { avatars.delete(key); avatarNotify(); throw error; }
+  }
+  throw new ChatError('invalid_response');
+}
+async function uploadGroupAvatar(room: Room, input: GroupAvatarInput, csrfToken: string, signal: AbortSignal): Promise<GroupAvatarAck> {
+  const snapshot = avatarScope(getEngine(), room);
+  if (!/^(file|content):\/\//.test(input.uri) || !['image/jpeg', 'image/png', 'image/webp'].includes(input.mime)) throw new ChatError('avatar_invalid');
+  const root = FS.cacheDirectory ?? FS.documentDirectory;
+  if (!root) throw new ChatError('avatar_invalid');
+  const temporary = `${root}odoo-group-avatar-${Crypto.randomUUID()}${extensions[input.mime]}`;
+  try {
+    await FS.copyAsync({ from: input.uri, to: temporary }); fence(room, snapshot);
+    const info = await FS.getInfoAsync(temporary);
+    if (!info.exists || info.isDirectory || info.size <= 0 || info.size > 2 * 1024 * 1024) throw new ChatError('avatar_invalid', 413);
+    if (signal.aborted) throw new ChatError('stale_session');
+    fence(room, snapshot); avatarScope(getEngine(), room);
+    const response = await sessionNative(`/bchat/api/v2/rooms/${room.id}/avatar`, 'POST', { Accept: 'application/json', 'Content-Type': 'multipart/form-data' }, [
+      { name: 'csrf_token', data: csrfToken },
+      { name: 'file', filename: `group${extensions[input.mime]}`, type: input.mime, data: BlobUtil.wrap(decodeURI(temporary.replace(/^file:\/\//, ''))) },
+    ], signal);
+    fence(room, snapshot);
+    if (!(headersOf(response)['content-type'] ?? '').includes('application/json')) throw new ChatError('invalid_response');
+    let ack: GroupAvatarAck; try { ack = response.json(); } catch { throw new ChatError('invalid_response'); }
+    clearGroupAvatars(); return ack;
+  } finally { await FS.deleteAsync(temporary, { idempotent: true }).catch(() => undefined); }
+}
 function fixedURL(path: string): string {
   const origin = new URL(config.origin);
   if (origin.protocol !== 'https:' || origin.username || origin.password || origin.pathname !== '/' || origin.search || origin.hash || !config.database) throw new ChatError('configuration_required');
@@ -38,6 +138,7 @@ function fixedURL(path: string): string {
 }
 function cancelNative(): void {
   generation++;
+  clearGroupAvatars();
   for (const task of tasks) task.cancel(() => undefined);
   tasks.clear();
 }
@@ -173,6 +274,8 @@ async function upload(room: Room, attachment: Attachment, csrfToken: string, sig
 }
 /** Remove only regex-validated app-owned files, never an arbitrary directory. */
 async function pruneMedia(mode: 'snapshot' | 'cacheOnly' | 'logout', expectedGeneration = generation): Promise<void> {
+  if (expectedGeneration !== generation) throw new ChatError('stale_session');
+  pruneGroupAvatars(mode !== 'snapshot');
   return serialMedia(async () => {
     if (!FS.documentDirectory) return;
     const epoch = expectedGeneration;
@@ -250,7 +353,7 @@ export function getEngine(): NativeChatEngine {
   if (!engine) {
     fixedURL('/bchat/api/v2/bootstrap');
     engine = new NativeChatEngine({ origin: config.origin, database: config.database, storage: AsyncStorage, uuid: Crypto.randomUUID,
-      transport: { request, cancelAll: cancelNative }, upload, removeAttachment: a => removeOwned(a.uri),
+      transport: { request, cancelAll: cancelNative }, upload, removeAttachment: a => removeOwned(a.uri), uploadGroupAvatar,
     });
   }
   return engine;

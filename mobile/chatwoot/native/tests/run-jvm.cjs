@@ -28,9 +28,36 @@ const cp = [path.join(temp, 'classes.jar'), path.join(android, 'platforms/androi
   artifact('com.squareup.okio', 'okio-jvm', '3.16.0', '.jar'),
   artifact('org.jetbrains.kotlin', 'kotlin-stdlib', '2.2.20', '.jar')].join(path.delimiter);
 const source = path.join(__dirname, '../android/com/baseer/bchat/trial/session');
+// Compile the actual installed BlobUtil inner interceptor, with only Android response wrappers
+// replaced by dependency-free delegates. Preserve its captured req, catches and second proceed.
+const blobSource = fs.readFileSync(path.join(__dirname, '../../node_modules/react-native-blob-util/android/src/main/java/com/ReactNativeBlobUtil/ReactNativeBlobUtilReq.java'), 'utf8');
+const blobStart = blobSource.indexOf('clientBuilder.addInterceptor(new Interceptor() {');
+const blobRetry = blobSource.indexOf('return chain.proceed(chain.request());', blobStart);
+const blobEnd = blobSource.indexOf('\n            });', blobRetry);
+if (blobStart < 0 || blobRetry < 0 || blobEnd < 0) throw new Error('Installed BlobUtil interceptor template changed');
+const inner = blobSource.slice(blobStart, blobEnd + '\n            });'.length);
+const captured = path.join(temp, 'CapturedBlobUtilInterceptor.java');
+fs.writeFileSync(captured, `package com.baseer.bchat.trial.session;
+import java.io.*; import java.net.*; import okhttp3.*; import okio.BufferedSource;
+public final class CapturedBlobUtilInterceptor {
+ @interface NonNull {} enum Mode { KeepInMemory, FileStorage }
+ Mode responseType=Mode.KeepInMemory; String taskId="synthetic",destPath="synthetic"; boolean timeout;
+ static class Options { boolean increment,overwrite; } Options options=new Options();
+ static class ReactNativeBlobUtilImpl { static Object RCTContext; }
+ static class ReactNativeBlobUtilDefaultResp extends ResponseBody {
+  final ResponseBody body; ReactNativeBlobUtilDefaultResp(Object c,String id,ResponseBody b,boolean i){body=b;}
+  public MediaType contentType(){return body.contentType();} public long contentLength(){return body.contentLength();}
+  public BufferedSource source(){return body.source();}
+ }
+ static class ReactNativeBlobUtilFileResp extends ReactNativeBlobUtilDefaultResp {
+  ReactNativeBlobUtilFileResp(Object c,String id,ResponseBody b,String p,boolean o){super(c,id,b,o);}
+ }
+ public void install(OkHttpClient.Builder clientBuilder, final Request req) { ${inner} }
+}`);
 execFileSync(bin('javac'), ['-encoding', 'UTF-8', '-cp', cp, '-d', temp,
   ...['CommitCookieHandler.java', 'OriginCookieJar.java', 'BaseerSessionNetworking.java', 'SessionDiagnostics.java'].map(file => path.join(source, file)),
-  path.join(__dirname, 'SessionCookieHarness.java'), path.join(__dirname, 'SessionDiagnosticsHarness.java')], { stdio: 'inherit' });
+  path.join(__dirname, 'SessionCookieHarness.java'), path.join(__dirname, 'SessionDiagnosticsHarness.java'), path.join(__dirname, 'AvatarReplayHarness.java'), captured], { stdio: 'inherit' });
 execFileSync(bin('java'), ['-ea', '-cp', temp + path.delimiter + cp, 'com.baseer.bchat.trial.session.SessionCookieHarness'], { stdio: 'inherit' });
 execFileSync(bin('java'), ['-ea', '-cp', temp + path.delimiter + cp, 'com.baseer.bchat.trial.session.SessionDiagnosticsHarness'], { stdio: 'inherit' });
+execFileSync(bin('java'), ['-ea', '-cp', temp + path.delimiter + cp, 'com.baseer.bchat.trial.session.AvatarReplayHarness'], { stdio: 'inherit' });
 console.log('Compiled production Android adapter with installed RN and android-36 classes. Temporary classes: ' + temp);

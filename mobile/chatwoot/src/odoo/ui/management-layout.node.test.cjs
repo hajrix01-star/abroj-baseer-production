@@ -11,6 +11,7 @@ function hooks() {
   let index = 0, dirty = false, effects = [];
   return {
     react: {
+      useRef(initial) { const at = index++; return slots[at] ?? (slots[at] = { current: initial }); },
       useState(initial) {
         const at = index++;
         if (!(at in slots)) slots[at] = typeof initial === 'function' ? initial() : initial;
@@ -50,7 +51,7 @@ async function settled() { for (let i = 0; i < 15; i++) await Promise.resolve();
 function harness(manage = true) {
   const state = hooks(), timers = new Map(), calls = [], alerts = [];
   let nextTimer = 0, deferred = null, release;
-  const detail = { can_manage: manage, members: [
+  const detail = { api_version: 2, room: { id: 4, company_id: 1, name: 'Synthetic group', description: 'Saved description', avatar_version: 0, is_group: true }, can_manage: manage, members: [
     { user_id: 7, name: 'Current admin', is_admin: true },
     { user_id: 8, name: 'اسم عضو طويل للاختبار يحافظ على مرونة عرض الاسم', is_admin: false },
     { user_id: 9, name: 'Another admin', is_admin: true },
@@ -69,12 +70,16 @@ function harness(manage = true) {
           ? { ...member, is_admin: payload.action === 'promote_admin' } : member);
       }
       if (payload.action === 'remove_member') detail.members = detail.members.filter(member => member.user_id !== payload.user_id);
+      if (payload.action === 'set_description') detail.room.description = payload.description;
     },
   };
   const props = { mode: 'members', companyId: 1, room: { id: 4, company_id: 1, membership_id: 12, name: 'Synthetic group' },
     engine, language: 'ar', t: key => key, close: () => calls.push('close'), changed: async () => { calls.push('changed'); } };
   const element = (type, props) => ({ type, props: props || {} });
   const modules = { react: state.react, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
+    '../core/ChatEngine': { groupDescription: value => value.replace(/\r\n/g, '\n').trim(), ChatError: class extends Error {} },
+    './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
+    'react-native-image-picker': { launchImageLibrary: async () => ({ didCancel: true }) },
     'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert: (title, message, buttons) => alerts.push({ title, message, buttons }) } },
     './components': { Button: 'Button', Field: 'Field', Icon: 'Icon', IconButton: 'IconButton', Label: 'Label', Sheet: 'Sheet',
       colors: { pale: 'pale', blue: 'blue', border: 'border', danger: 'danger' }, direction: language => ({ textAlign: language === 'ar' ? 'right' : 'left' }),
@@ -85,7 +90,7 @@ function harness(manage = true) {
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS,
     target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   const module = { exports: {} };
-  vm.runInNewContext(compiled, { module, exports: module.exports, require: name => modules[name] ?? {},
+  vm.runInNewContext(compiled, { module, exports: module.exports, require: name => modules[name] ?? {}, TextEncoder,
     setTimeout: callback => { const id = ++nextTimer; timers.set(id, callback); return id; }, clearTimeout: id => timers.delete(id) }, { filename: 'ManagementSheet.tsx' });
   return { props, calls, alerts, detail, render: () => state.render(() => module.exports.ManagementSheet(props)),
     async load() { for (const [id, callback] of [...timers]) { timers.delete(id); await callback(); } },

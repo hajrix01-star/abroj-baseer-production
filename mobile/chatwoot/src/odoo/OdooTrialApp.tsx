@@ -207,7 +207,9 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
               <Brand />
             </View>
             {identity ? (
-              <Text numberOfLines={1} style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
+              <Text
+                numberOfLines={1}
+                style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
                 {t(chat.offline ? 'offline' : 'connected')}
               </Text>
             ) : (
@@ -277,6 +279,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
                     : styles.fill,
                 ]}>
                 <RoomsScreen
+                  engine={engine}
                   identity={chat.identity}
                   rooms={chat.rooms}
                   companyId={companyId}
@@ -397,6 +400,9 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
         canManage={canManage}
         close={closeMenu}
         onAction={menuAction}
+        soundsEnabled={chat.soundsEnabled}
+        soundsReady={chat.soundsReady}
+        onSoundsChange={chat.setSoundsEnabled}
       />
     </SafeAreaView>
   );

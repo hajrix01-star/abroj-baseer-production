@@ -18,6 +18,7 @@ import { MessageQuote, MessageStatus } from './MessagePresentation';
 import { TimelineFollow } from './timelineFollow';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
+import { GroupAvatar } from './GroupAvatar';
 import type { ChatView } from './useChat';
 import {
   canViewMedia,
@@ -61,13 +62,24 @@ export function TimelineScreen({
   const viewMedia = chat.presentationReady && canViewMedia(chat.identity, room);
   const mediaKey = presentationKey(chat.identity, room);
   const previewScope = `${chat.identity?.database}/${mediaKey}`;
-  const [visibleImages, setVisibleImages] = useState<{ scope: string; ids: number[] }>({ scope: '', ids: [] });
-  const previewChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
-    const ids = viewableItems.filter(item => item.isViewable && item.item.message?.media?.kind === 'image')
-      .map(item => item.item.message!.id).sort((a, b) => a - b);
-    setVisibleImages(previous => previous.scope === previewScope && previous.ids.join(',') === ids.join(',')
-      ? previous : { scope: previewScope, ids });
-  }, [previewScope]);
+  const [visibleImages, setVisibleImages] = useState<{ scope: string; ids: number[] }>({
+    scope: '',
+    ids: [],
+  });
+  const previewChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
+      const ids = viewableItems
+        .filter(item => item.isViewable && item.item.message?.media?.kind === 'image')
+        .map(item => item.item.message!.id)
+        .sort((a, b) => a - b);
+      setVisibleImages(previous =>
+        previous.scope === previewScope && previous.ids.join(',') === ids.join(',')
+          ? previous
+          : { scope: previewScope, ids },
+      );
+    },
+    [previewScope],
+  );
   const voice = useVoiceSession(mediaKey, setLocalError, viewMedia, canAttach);
   const sendBusy = useRef(false);
   const draftRevision = useRef(0);
@@ -94,12 +106,18 @@ export function TimelineScreen({
         let { content, viewport, offset } = scrollGeometry.current;
         const current = list.current;
         try {
-          if (current?.getChildContainerDimensions && current.getWindowSize && current.getAbsoluteLastScrollOffset) {
+          if (
+            current?.getChildContainerDimensions &&
+            current.getWindowSize &&
+            current.getAbsoluteLastScrollOffset
+          ) {
             content = current.getChildContainerDimensions().height + current.getFirstItemOffset();
             viewport = current.getWindowSize().height;
             offset = current.getAbsoluteLastScrollOffset();
           }
-        } catch { /* Before FlashList initializes, use the latest native measurements. */ }
+        } catch {
+          /* Before FlashList initializes, use the latest native measurements. */
+        }
         if (viewport > 0 && Math.abs(Math.max(0, content - viewport) - offset) <= 1) return;
         current?.scrollToEnd({ animated: false });
       });
@@ -114,7 +132,8 @@ export function TimelineScreen({
     const hidden = Keyboard.addListener('keyboardDidHide', followGeometry);
     return () => {
       live.current = false;
-      shown.remove(); hidden.remove();
+      shown.remove();
+      hidden.remove();
       if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
     };
   }, [followGeometry]);
@@ -173,6 +192,7 @@ export function TimelineScreen({
       if (attachment) await engine.enqueueAttachment(room, attachment, text, reply?.id);
       else await engine.enqueue(room, text, reply?.id);
       if (!live.current || !latestAccess.current) return;
+      chat.soundSent?.(room);
       follow.current.ownEnqueued();
       setShowLatest(false);
       if (submittedDraft === draftRevision.current) setText('');
@@ -201,7 +221,9 @@ export function TimelineScreen({
     else if (lastKey && !follow.current.following) setShowLatest(true);
   }, [lastKey, scrollLatest]);
   const companyName = companyDisplayName(
-    chat.identity?.profile?.companies.find(company => company.id === room.company_id), language, room.company_id,
+    chat.identity?.profile?.companies.find(company => company.id === room.company_id),
+    language,
+    room.company_id,
   );
   // AppShell owns the blocked/verification view. Never reveal retained rows if this screen is
   // rendered during a scope transition or without the server-authorized company/view right.
@@ -229,9 +251,14 @@ export function TimelineScreen({
           <View
             style={[
               styles.row,
-              { direction: 'ltr', flexWrap: 'nowrap', flexDirection: language === 'ar' ? 'row-reverse' : 'row' },
+              {
+                direction: 'ltr',
+                flexWrap: 'nowrap',
+                flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+              },
             ]}>
             {onMenu && <IconButton icon="menu" label={t('menu')} onPress={onMenu} />}
+            <GroupAvatar engine={engine} room={room} enabled={chat.presentationReady} size={38} />
             <View style={[styles.fill, { minWidth: 0 }]}>
               <Text
                 numberOfLines={1}
@@ -269,14 +296,17 @@ export function TimelineScreen({
             data={rows}
             viewabilityConfig={{ minimumViewTime: 600, viewAreaCoveragePercentThreshold: 75 }}
             onViewableItemsChanged={visibleChanged}
-            viewabilityConfigCallbackPairs={[{ viewabilityConfig: previewViewability, onViewableItemsChanged: previewChanged }]}
+            viewabilityConfigCallbackPairs={[
+              { viewabilityConfig: previewViewability, onViewableItemsChanged: previewChanged },
+            ]}
             keyExtractor={row => row.key}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="none"
             onLoad={followGeometry}
             onCommitLayoutEffect={followGeometry}
             onLayout={event => {
-              if (event?.nativeEvent?.layout) scrollGeometry.current.viewport = event.nativeEvent.layout.height;
+              if (event?.nativeEvent?.layout)
+                scrollGeometry.current.viewport = event.nativeEvent.layout.height;
               followGeometry();
             }}
             onContentSizeChange={(_width, height) => {
@@ -289,20 +319,32 @@ export function TimelineScreen({
               if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
               scrollFrame.current = null;
             }}
-            onScrollEndDrag={() => { dragging.current = false; }}
+            onScrollEndDrag={() => {
+              dragging.current = false;
+            }}
             onMomentumScrollBegin={() => {
               dragging.current = true;
               if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
               scrollFrame.current = null;
             }}
-            onMomentumScrollEnd={() => { dragging.current = false; }}
+            onMomentumScrollEnd={() => {
+              dragging.current = false;
+            }}
             onScroll={event => {
               const { contentSize, layoutMeasurement, contentOffset } = event.nativeEvent;
-              scrollGeometry.current = { content: contentSize.height, viewport: layoutMeasurement.height, offset: contentOffset.y };
+              scrollGeometry.current = {
+                content: contentSize.height,
+                viewport: layoutMeasurement.height,
+                offset: contentOffset.y,
+              };
               // Only gestures change reader intent in either direction. Expanding the viewport
               // may expose the last row, but must not re-arm following when IME opens again.
               if (!dragging.current) return;
-              const atBottom = follow.current.scroll(contentSize.height, layoutMeasurement.height, contentOffset.y);
+              const atBottom = follow.current.scroll(
+                contentSize.height,
+                layoutMeasurement.height,
+                contentOffset.y,
+              );
               setShowLatest(!atBottom);
             }}
             contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10 }}
@@ -333,11 +375,22 @@ export function TimelineScreen({
               const state = pending?.state ?? message?.delivery_state;
               return (
                 <Pressable
-                  accessibilityLabel={message ? `${message.author_name}: ${message.text}` : pending?.text}
-                  accessibilityActions={message && canSend ? [{ name: 'reply', label: t('reply') }] : []}
-                  onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'reply' && message) chooseReply(message); }}
-                  onPress={() => { if (message && canSend) setActionsFor(actionsFor === message.id ? null : message.id); }}
-                  onLongPress={() => { if (message) chooseReply(message); }}
+                  accessibilityLabel={
+                    message ? `${message.author_name}: ${message.text}` : pending?.text
+                  }
+                  accessibilityActions={
+                    message && canSend ? [{ name: 'reply', label: t('reply') }] : []
+                  }
+                  onAccessibilityAction={event => {
+                    if (event.nativeEvent.actionName === 'reply' && message) chooseReply(message);
+                  }}
+                  onPress={() => {
+                    if (message && canSend)
+                      setActionsFor(actionsFor === message.id ? null : message.id);
+                  }}
+                  onLongPress={() => {
+                    if (message) chooseReply(message);
+                  }}
                   style={{
                     alignSelf: own
                       ? language === 'ar'
@@ -376,9 +429,26 @@ export function TimelineScreen({
                       </Text>
                     )}
                     {(message?.reply || pending?.reply_to_message_id) && (
-                      <MessageQuote language={language}
-                        author={String(message?.reply?.author_name ?? chat.history.messages.find(m => m.id === pending?.reply_to_message_id)?.author_name ?? '')}
-                        text={message?.reply?.unavailable ? t('unavailable') : String(message?.reply?.text ?? chat.history.messages.find(m => m.id === pending?.reply_to_message_id)?.text ?? t('unavailable'))} />
+                      <MessageQuote
+                        language={language}
+                        author={String(
+                          message?.reply?.author_name ??
+                            chat.history.messages.find(m => m.id === pending?.reply_to_message_id)
+                              ?.author_name ??
+                            '',
+                        )}
+                        text={
+                          message?.reply?.unavailable
+                            ? t('unavailable')
+                            : String(
+                                message?.reply?.text ??
+                                  chat.history.messages.find(
+                                    m => m.id === pending?.reply_to_message_id,
+                                  )?.text ??
+                                  t('unavailable'),
+                              )
+                        }
+                      />
                     )}
                     {!!(message?.text || pending?.text) && (
                       <Text selectable style={[styles.text, direction(language)]}>
@@ -389,7 +459,10 @@ export function TimelineScreen({
                       <MediaTile
                         key={`${mediaKey}/${message.id}/${String(message.media.id)}`}
                         scopeKey={previewScope}
-                        previewVisible={visibleImages.scope === previewScope && visibleImages.ids.includes(message.id)}
+                        previewVisible={
+                          visibleImages.scope === previewScope &&
+                          visibleImages.ids.includes(message.id)
+                        }
                         room={room}
                         media={message.media}
                         voice={voice}
@@ -403,8 +476,13 @@ export function TimelineScreen({
                         {pending.attachment.name}
                       </Label>
                     )}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4,
-                      alignSelf: language === 'ar' ? 'flex-start' : 'flex-end' }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        alignSelf: language === 'ar' ? 'flex-start' : 'flex-end',
+                      }}>
                       {message?.created_at && (
                         <Text style={[styles.muted, { fontSize: 11, lineHeight: 16 }]}>
                           {messageTime(message.created_at)}
@@ -414,9 +492,21 @@ export function TimelineScreen({
                     </View>
                   </View>
                   {message && canSend && actionsFor === message.id && (
-                    <View style={{ backgroundColor: colors.white, alignSelf: 'flex-start', borderRadius: 16,
-                      flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, marginTop: 4 }}>
-                      <IconButton icon="reply" label={t('reply')} onPress={() => chooseReply(message)} />
+                    <View
+                      style={{
+                        backgroundColor: colors.white,
+                        alignSelf: 'flex-start',
+                        borderRadius: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: 8,
+                        marginTop: 4,
+                      }}>
+                      <IconButton
+                        icon="reply"
+                        label={t('reply')}
+                        onPress={() => chooseReply(message)}
+                      />
                       <Text style={styles.muted}>{t('reply')}</Text>
                     </View>
                   )}
@@ -425,11 +515,25 @@ export function TimelineScreen({
             }}
           />
           {showLatest && (
-            <View style={{ position: 'absolute', bottom: 8, right: 12, backgroundColor: colors.white,
-              borderRadius: 24, borderWidth: 1, borderColor: colors.border }}>
-              <IconButton icon="down" label={t('latest')} onPress={() => {
-                follow.current.ownEnqueued(); setShowLatest(false); scrollLatest();
-              }} />
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 12,
+                backgroundColor: colors.white,
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}>
+              <IconButton
+                icon="down"
+                label={t('latest')}
+                onPress={() => {
+                  follow.current.ownEnqueued();
+                  setShowLatest(false);
+                  scrollLatest();
+                }}
+              />
             </View>
           )}
         </View>
@@ -452,12 +556,33 @@ export function TimelineScreen({
           ) : (
             <>
               {reply && (
-                <View style={[styles.row, { flexWrap: 'nowrap', flexDirection: language === 'ar' ? 'row-reverse' : 'row', backgroundColor: colors.pale, borderRadius: 12, paddingHorizontal: 4 }]}>
+                <View
+                  style={[
+                    styles.row,
+                    {
+                      flexWrap: 'nowrap',
+                      flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                      backgroundColor: colors.pale,
+                      borderRadius: 12,
+                      paddingHorizontal: 4,
+                    },
+                  ]}>
                   <Icon icon="reply" size={18} color={colors.blue} />
                   <View style={styles.fill}>
-                    <MessageQuote author={reply.author_name} text={reply.text} language={language} />
+                    <MessageQuote
+                      author={reply.author_name}
+                      text={reply.text}
+                      language={language}
+                    />
                   </View>
-                  <IconButton icon="close" label={t('cancel')} onPress={() => { replyRevision.current++; setReply(null); }} />
+                  <IconButton
+                    icon="close"
+                    label={t('cancel')}
+                    onPress={() => {
+                      replyRevision.current++;
+                      setReply(null);
+                    }}
+                  />
                 </View>
               )}
               <AttachmentTools
@@ -478,7 +603,10 @@ export function TimelineScreen({
                   language={language}
                   multiline
                   value={text}
-                  onChangeText={value => { draftRevision.current++; setText(value); }}
+                  onChangeText={value => {
+                    draftRevision.current++;
+                    setText(value);
+                  }}
                   placeholder={t('message')}
                   accessibilityLabel={t('message')}
                   maxLength={16000}

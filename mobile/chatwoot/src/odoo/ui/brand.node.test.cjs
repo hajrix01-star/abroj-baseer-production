@@ -55,8 +55,10 @@ test('header and narrow-drawer brand slots account for raster clear space withou
 test('native branding preserves update identity and uses separate Odoo assets', () => {
   const config = readFileSync(join(root, 'app.config.ts'), 'utf8');
   assert.ok(config.includes("name: trial ? 'BWork' : 'Chatwoot'"));
-  assert.ok(config.includes("version: trial ? '0.1.13'"));
-  assert.ok(config.includes('versionCode: 14'));
+  // Branding protects update identity, not a stale release number. Actual upgrade ordering
+  // remains part of APK acceptance; legitimate version increments must not fail this test.
+  assert.match(config, /version:\s*trial\s*\?\s*'\d+\.\d+\.\d+'/);
+  assert.match(config, /versionCode:\s*[1-9]\d*\b/);
   assert.ok(config.includes("package: trial ? 'com.baseer.bchat.trial'"));
   assert.ok(config.includes("scheme: trial ? 'bchat-trial'"));
   assert.ok(config.includes("trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png'"));

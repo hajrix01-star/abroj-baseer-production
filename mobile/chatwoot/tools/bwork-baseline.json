@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "approvedAppSource": "8c6a91438423342f9fef740769b89bc3e9dd1901",
+  "approvedVersion": "0.1.14/build15",
+  "suites": ["test:bwork-gate", "test:odoo", "test:brand"],
+  "invariants": [
+    { "id": "navigation-edge", "description": "القائمة ثابتة في جهة اللغة داخل المحادثة وخارجها", "suite": "test:odoo", "test": "conversation menu occupies the same leading physical language edge as inbox, with Back opposite" },
+    { "id": "drawer-width", "description": "عرض القائمة المعتمد 65% دون تغيير حد العرض الواسع", "suite": "test:odoo", "test": "drawer uses 65 percent phone width without changing wide screen cap" },
+    { "id": "brand", "description": "مساحة الشعار المعتمدة في الهيدر والقائمة دون توسيع القائمة", "suite": "test:brand", "test": "header and narrow-drawer brand slots account for raster clear space without widening the drawer" },
+    { "id": "unified-inbox", "description": "قائمة موحدة للمحادثات، والعمليات مقيدة بالشركة المصرح بها", "suite": "test:odoo", "test": "unified inbox defaults to local 0 and operations require a positive explicit eligible company" },
+    { "id": "ime-follow", "description": "متابعة الرسالة الأخيرة عند تغير الكيبورد والمحرر دون إغلاقه", "suite": "test:odoo", "test": "actual list follows keyboard/viewport/composer changes and durable own sends, without dismissing keyboard" },
+    { "id": "reply", "description": "إجراء الرد يفتح الاقتباس ويحافظ عليه وعلى المسودة عند فشل الحفظ", "suite": "test:odoo", "test": "reply uses contextual affordance, focuses input and retains quote on failed enqueue; receipt cluster has no permanent reply" },
+    { "id": "receipts", "description": "علامات الإرسال والوصول والقراءة من حالة الخادم دون اختلاق قراءة", "suite": "test:odoo", "test": "receipt icons preserve server and queue semantics including unknown; no fabricated read state" },
+    { "id": "image-preview", "description": "عرض مصغر تلقائي للصورة الظاهرة والمصرح بها", "suite": "test:odoo", "test": "visible image resolves its real scoped thumbnail automatically, without opening the full-screen viewer" },
+    { "id": "image-original", "description": "الأصل يفتح عمدًا وبمسار مستقل عن المعاينة", "suite": "test:odoo", "test": "full-screen opening resolves the original separately while preview keeps its pin until hidden" },
+    { "id": "durable-send", "description": "استعادة الإرسال بعد فقدان الرد أو إعادة التشغيل دون تكرار", "suite": "test:odoo", "test": "durable UUID recovers lost response and process restart without duplicate" },
+    { "id": "scope-isolation", "description": "لا تتجاوز معرفات الغرف عضوية المستخدم وشركته", "suite": "test:odoo", "test": "room IDs cannot bypass membership/company validation" },
+    { "id": "old-history", "description": "الوصول لما بعد 500 رسالة ضمن نافذة محدودة دون فقد الصفحات", "suite": "test:odoo", "test": "720-message sparse history traverses past500 with moving180 window, stable cursors and no duplicates" },
+    { "id": "legacy-gaps", "description": "الانتقال من السجل القديم لا يقفز فوق فجوات داخلية", "suite": "test:odoo", "test": "offline legacy islands revalidate as one proven window and every internal-hole message remains reachable" },
+    { "id": "outbox-on-db-failure", "description": "تعطل قاعدة الكاش لا يحذف الرسائل المعلقة", "suite": "test:odoo", "test": "restore reconciliation DB failure cannot purge existing durable outbox" },
+    { "id": "group-description", "description": "حفظ وصف المجموعة والتحقق من قراءته مع منع تكرار الحفظ", "suite": "test:odoo", "test": "admin description uses actual normalization, exact payload/readback and empty clear; duplicate save is serialized" },
+    { "id": "group-rights", "description": "العضو العادي يقرأ معلومات المجموعة ولا يرى أدوات الإدارة", "suite": "test:odoo", "test": "ordinary group member sees description/avatar without editor, photo picker or mutation controls" },
+    { "id": "foreground-sounds", "description": "الصوت للرسالة الجديدة فقط وليس للتاريخ والردود الذاتية والتحديثات", "suite": "test:odoo", "test": "startup/select/history/catchup/self/receipt/prepend are silent; one new remote batch sounds once and advances while muted" },
+    { "id": "installed-version", "description": "رقم الإصدار من النسخة المثبتة في اللغتين وليس قيمة ثابتة", "suite": "test:odoo", "test": "header version reflects installed binary metadata in Arabic and English" }
+  ],
+  "openGaps": [
+    { "id": "message-information", "status": "not-implemented-in-reviewed-bwork-versions", "description": "خيار معلومات الرسالة غير موجود في 0.1.13 و0.1.14 وفي الواجهة الأولى التي روجعت؛ لا يوجد دليل أنه حُذف في تحديث الأرشيف. ليس غيابه ثابتًا معتمدًا؛ يلزم تحديد النسخة السابقة المقصودة أو طلب تنفيذ الوظيفة." }
+  ]
+}

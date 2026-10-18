@@ -463,8 +463,8 @@
       ],
       "owner": "Android والأداء",
       "status": "in_progress",
-      "implementationEvidence": "Room list only: immutable row/key/account-membership owner and RecyclerView/AsyncListDiffer with bounded latest work; synchronous detach/scrub before identity or rights changes; scoped avatar leases/cache now include membership. No MessageTimeline/backend/outbox changes in this slice",
-      "verificationEvidence": "Independent limited source/functional GO: Activity6304A031/Row20F5D698/AdapterF73194B2. Projection17 and Firebasejavac17s PASS. ActualAndroidX/fullActivity synthetic fixture114checks/8AR-EN-theme-font configurations on pre-token adapter; final dark-token delta15checks on final source separately, not129same-source tests. Captures reviewed; 117/117final input bytes matched. After-C11 comparison tooling prepared only, no after-performance or phone acceptance yet. Android-source-contract/source-structure/guard-integrity PASS after preserving relocated company-label/search guards",
+      "implementationEvidence": "Room list: immutable row/key/account-membership owner and RecyclerView/AsyncListDiffer with bounded latest work; synchronous detach/scrub before identity or rights changes; scoped avatar leases/cache include membership. Separately pure TimelineRowsAF0D/ChangePlan5925 preserve exact render fields/neighbor context/stable IDs with bounded plans; no MessageTimeline Activity hook, backend or outbox changes from that model stage",
+      "verificationEvidence": "Independent limited source/functional GO: Activity6304A031/Row20F5D698/AdapterF73194B2. Projection17 and Firebasejavac17s PASS. ActualAndroidX/fullActivity synthetic fixture114checks/8AR-EN-theme-font configurations on pre-token adapter; final dark-token delta15checks on final source separately, not129same-source tests. Captures reviewed;117/117final input bytes matched. After-C11 comparison219checks independently accepted descriptively under C26/DEV115: room-search framep95 lower,scroll nearunchanged,input-to-localrow slower in3rounds,not isolated causal proof or phone acceptance. Android-source-contract/source-structure/guard-integrity PASS after preserving relocated company-label/search guards",
       "acceptance": "مقارنة نفس الجهاز والبيانات؛ حفظ الموضع وتراجع العمل الزائد."
     },
     {
@@ -561,8 +561,8 @@
       ],
       "owner": "الخادم و Android",
       "status": "in_progress",
-      "implementationEvidence": "Bounded epoch/rights-scoped text and filename search/media API implemented; Android search/media UI pending",
-      "verificationEvidence": "Independent source review and core180 PASS CI39063628834 include search ORM/HTTP and EXPLAIN planning; no measured query latency/throughput claim; Android UI pending",
+      "implementationEvidence": "Existing bounded epoch/rights-scoped search/media API; immutable RoomExploreProtocol5BB and native Panel56E9 implemented. Root Activity Host, exact POST search allowlist and canonical openMessage wiring under source/seam review. Optional bootstrap history_search_contract_version:1 added locally, no new capability or query storage",
+      "verificationEvidence": "Existing backend core180 CI39063628834 covers search ORM/HTTP and EXPLAIN, not new optional bootstrap field/test assertions. Protocol91JVM with declared JSON/media-constants adapters independently accepted. Standalone Panel710native checks plus91actual SDK JSON cases separately,8AR-EN/light-dark/font1-2 configurations,27captures and real IME; manifestE91B19C4/rawAFCA954F/APKBD17CA14 independently accepted with54/54copies and5reviewedPNGs. Activity81426B53 sourceGO and final fullActivity Firebasejavac16s/hashstable before/after; source/structure/registry/directPOSTallowlist checks PASS. Executable Activity Host/jump seam pending; component synthetic Host, no authenticated Activity/HTTP/media/receipt/phone/performance or complete C16 acceptance",
       "acceptance": "بحث قديم عربي/إنجليزي وفلاتر وصفحات؛ لا محتوى قبل حقبة العضوية."
     },
     {
@@ -577,8 +577,8 @@
       ],
       "owner": "الخادم و Android",
       "status": "in_progress",
-      "implementationEvidence": "Private per-membership service with revision CAS/dispatch-time mute recheck. Immutable Protocol935 validates native types/UTC/UUID/fixed8field payload/ACK/monotone merge. Worker-only bounded AtomicFile Store implemented with exact sync+readback, sticky flags/localCAS and conservative unknown-epoch ACK settlement. Controller-only execution follows reviewed G2; HTTP/FCM/mute mirror/projection/Panel/Activity integration pending",
-      "verificationEvidence": "Backend accepted202 checkpoint CI39071574755. Protocol363JVM adapters+414Android35 limitedGO. StoreF17:369JVM adapter+369actualAndroid35 and20restart assertions/5PIDs, but4oldharnessinputs not archived (root matched16/16 before later edit; reviewer12/16 current). Empty-cache/two-membership ACK edge RED onF17 then23JVM+23actualAndroid35 on4F3BE60D;16/16archivedbytes and independent source/focusedcomponentGO. No new full369/restart rerun or powerloss. Controller5845A3F9 initial1084JVM missed staleACK borrowing cached newer unmute; independent NO-GO then exact REDcheck37. Controller1A1E7BD7 focused407JVM+SDK35stubcompile and13/13archivedinputs independently accepted; root defaultall1490actual assertions PASS on final source with13archivedinputs, not a sum1491. No Androidruntime/auth/HTTP/FCM/UI or completeC17 acceptance; cold mute-index design pending",
+      "implementationEvidence": "Private per-membership service with revision CAS/dispatch-time mute recheck. Immutable Protocol935 and worker AtomicFile Store4F preserve exact durable intents. Index12214C52/PortC778BC6A add bounded cold floors with floor-first/clear-last token CAS and same-attempt Controller admission; ControllerCB40BF50 separates serverDecisionReady from index/UI health. No Activity/FCM/Panel/projection wiring yet. Recovery proposal retains unknown operations; absence is not obsolete-epoch proof and blockedCode is not authenticated HTTP rejection",
+      "verificationEvidence": "Backend202 CI39071574755 unchanged. Protocol363JVM+414Android35 limitedGO. Historical StoreF17 full369JVM+369Android35+20restart/5PIDs lacks4archived harness inputs; focused ambiguous-epoch RED then23JVM+23Android35 on4F has16/16archivedbytes, no newfull/restart/powerloss. Historical Controller1A defaultall1490 actual PASS. Admission source7F has920index-portJVM,1508ControllerJVM and229Android35 plus4seed/5clear/3verify restart assertions over3PIDs, not full UI/auth/HTTP/FCM. Metadata-after-markStarted RED then78GREEN116; rename-onlyCB40 focused116/20matched inputs, not a native/full rerun. Independent limited source/component GO on finalIndex/Port/CB40. serverDecisionReady is not current index health or confirmed local unmute; no complete C17 acceptance",
       "acceptance": "تفضيل المستخدم لا يغير غيره، ويستمر وفق العقد دون حذف تاريخ."
     },
     {
@@ -644,9 +644,9 @@
         "C16"
       ],
       "owner": "Android والخادم",
-      "status": "pending",
-      "implementationEvidence": null,
-      "verificationEvidence": null,
+      "status": "in_progress",
+      "implementationEvidence": "Root Activity canonical jump from search and available reply IDs: current identity/membership/rights/nonce gates, single-message validation then bounded history page containing target with actual cursor, preserving draft/outbox. Existing-window scroll supersedes earlier request; no read ACK from a search or quote. External URL policy remains pending",
+      "verificationEvidence": "Independent source-only GO on Activity81426B53, plus final fullActivity Firebasejavac16s with identical source SHA before/after. Executable actual Host/jump seam tests pending. No authenticated HTTP, owner-phone, outside-window runtime or full C21 acceptance yet",
       "acceptance": "أصل خارج النافذة يُجلب ضمن الحقوق؛ مخطط رابط غير آمن لا يُفتح."
     },
     {
@@ -728,8 +728,8 @@
       ],
       "owner": "الأداء والجودة",
       "status": "in_progress",
-      "implementationEvidence": "Isolated noInternet harness compiles full tracked2570 Activity/Views/SQLite with synthetic reflection fixture. Initial diagnostic retained nativeForm alongside chatRoot: timeline height0 with IME259px; pending UUID was in durableSQLite/localTextRows/adapter, not proof of ownership or auto-scroll defect. Fixture-only showShell correction independently reviewed; no C11 product change",
-      "verificationEvidence": "Initial18 and diagnostic108 are layout-invalid, NOT baseline. Corrected PASS165/0blocked independently accepted as descriptive fixture only:113/113 inputs+compiledcopies+testAPK matched, manifest9CF4C4FC/result5296F8E2/provenance3D1AAAD4; compiled2570,runEnd68d284. Frame reports193/181/185 lost0/overflow0. Rooms8queries create529rows eachround,p95total121.878/162.696/119.424ms; inputUP→UUIDpreDraw172.137/128.108/125.244ms+durableSQLite+4updates. Separate26PSS samples median146045KiB/highestObserved169727KiB/steady5median152069KiB, not peak/leak. Android35 debug320x640dp AR/font1 syntheticidentity/data; no phone/FCM/network/codec/audio/SLA or product APK acceptance",
+      "implementationEvidence": "Isolated noInternet fullActivity/Views/SQLite synthetic fixture. Corrected baseline2570 after fixture-only showShell repair is frozen. After-C11 snapshot from exactGit b8aa47a936a4ed99121990bc61708181714cea12,120committed/128copied records and explicit tool/copy/APK gates; GitLF versus reviewedliveCRLF normalized only. C11+Cart+Prefs compile delta declared, not isolated causal C11 proof",
+      "verificationEvidence": "Baseline165/0blocked,113inputs,manifest9CF4/result5296/provenance3D1A independently accepted; initial18/108 layout-invalid retained. After219/0blocked,128copiedinputs,manifestF7AF8F37/raw65D981BA/provenanceBF76F430/APK428C66EA independently accepted descriptively. Same100rooms/500messages/c0cb8e fixture,3rounds173/171/177,lost0/overflow0. Rooms TOTAL framep95ms121.878/162.696/119.424→28.879/18.192/24.350 (not query/network latency);529oldentrycreations versus7newholders/22binds,not529binds. Scrollp95nearunchanged. InputUP→UUIDpreDraw SLOWER172.137/128.108/125.244→212.664/165.832/142.609ms; no send improvement/causal blame from one run. SQLiteUUID+4updates and anchor preserved. PSS25versus26samples median136463vs146045KiB/highestObserved137755vs169727/steady5median133363vs152069,not peak/leak. EmulatorAndroid35debug320x640dp AR/font1 only; no auth/HTTP/FCM/codec/audio/phone/OEM/SLA/productacceptance",
       "acceptance": "قياس أجهزة فعلية موثق قبل وبعد؛ لا تسجيل لمحتوى الرسائل ولا ادعاء FPS من المصدر."
     },
     {

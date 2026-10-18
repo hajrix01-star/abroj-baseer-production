@@ -35,7 +35,7 @@ final class RoomPreferencesController {
             this.authority = authority; globalGeneration = global; repositoryGeneration = repository;
             roomId = room; membershipId = membership; this.contractVersion = contractVersion;
         }
-        private boolean same(Binding other) {
+        boolean same(Binding other) {
             return other != null && authority.valid() && other.authority.valid()
                     && account == other.account && accountIdentity == other.accountIdentity
                     && sessionIdentity == other.sessionIdentity && authority == other.authority
@@ -71,11 +71,14 @@ final class RoomPreferencesController {
         final Code code;
         final RoomPreferencesProtocol.Snapshot snapshot;
         final RoomPreferencesStore.Operation pending;
-        final boolean writeReady;
+        /** Fresh server GET plus preference-Store inputs only. NOT UI-control enablement,
+         * current index/mirror health, durable Admission or local mute-release confirmation.
+         * Future Panel wiring must observe index health/async clear feedback separately. */
+        final boolean serverDecisionReady;
         private ViewState(Phase phase, Code code, RoomPreferencesProtocol.Snapshot snapshot,
-                RoomPreferencesStore.Operation pending, boolean writeReady) {
+                RoomPreferencesStore.Operation pending, boolean serverDecisionReady) {
             this.phase = phase; this.code = code; this.snapshot = snapshot;
-            this.pending = pending; this.writeReady = writeReady;
+            this.pending = pending; this.serverDecisionReady = serverDecisionReady;
         }
     }
 
@@ -84,9 +87,10 @@ final class RoomPreferencesController {
         final Binding binding;
         final long viewTicket;
         final String clientUuid;
+        final RoomPreferencesProtocol.Pending pending;
         final RestrictionReason reason;
         private RestrictionTicket(Ticket ticket, RoomPreferencesProtocol.Pending pending, RestrictionReason reason) {
-            binding = ticket.binding; viewTicket = ticket.view; clientUuid = pending.clientUuid; this.reason = reason;
+            binding = ticket.binding; viewTicket = ticket.view; clientUuid = pending.clientUuid; this.pending = pending; this.reason = reason;
         }
     }
     enum ProofReason { CURRENT_GET_COMMITTED, MATCHED_ACK_COMMITTED }
@@ -110,7 +114,10 @@ final class RoomPreferencesController {
         Object checkpoint(Binding binding);
         /** RAM-only conservative floor; implementation must recheck Authority/binding/ticket.
          * No clock-based expiry, route/hash inference, disk, notification or audio work here. */
-        void block(RestrictionTicket ticket);
+        Object prepare(RestrictionTicket ticket);
+        /** Opaque exact admission, not a generic boolean HTTP permission. Mandatory immediately
+         * before stage/mark and actual new/retry POST. Same object for the whole attempt. */
+        boolean currentDurable(Object admission, Binding expected, RoomPreferencesProtocol.Pending exact);
         /** Atomically verify current Authority AND identical nonnull checkpoint before removing
          * this binding's floor. A controller-side check followed by unchecked removal is invalid.
          * Future concrete port uses a short RAM/ROUTING gate, no I/O. Never a global unmute. */
@@ -232,7 +239,8 @@ final class RoomPreferencesController {
                 RoomPreferencesProtocol.Snapshot cached = snapshot(saved.state);
                 // A valid but older GET cannot promote a newer disk snapshot into fresh authority.
                 boolean currentObservation = cached != null && cached.revision == response.revision;
-                fresh = currentObservation && !hasRoomPending(saved.state) ? response : null;
+                fresh = currentObservation && ticket.muteCheckpoint != null && mute.get() != null
+                        && !hasRoomPending(saved.state) ? response : null;
                 emit(fresh == null ? Phase.CACHED : Phase.READY,
                         pending == null ? Code.OK : Code.PENDING_REVIEW, cached, pending, fresh != null);
                 if (fresh != null && !fresh.muted && identity(ticket.binding))
@@ -243,25 +251,27 @@ final class RoomPreferencesController {
 
     void submit(String uuid, String until, boolean forever, boolean pinned, boolean archived) {
         mainThread();
-        if (closed || paused || busy || fresh == null || !state.writeReady) return;
+        if (closed || paused || busy || fresh == null || !state.serverDecisionReady) return;
         Ticket ticket = begin();
         if (!active(ticket)) return;
         final RoomPreferencesProtocol.Pending pending;
         try { pending = RoomPreferencesProtocol.newPending(fresh, uuid, until, forever, pinned, archived); }
         catch (RuntimeException invalid) { emit(Phase.ERROR, Code.INVALID_INPUT, state.snapshot, state.pending, false); return; }
         fresh = null; busy = true;
-        restoreFloor(ticket, pending, RestrictionReason.USER_INTENT);
+        final Object admission = prepareAttempt(ticket, pending, RestrictionReason.USER_INTENT);
+        if (admission == null) { admissionError(ticket); return; }
         emit(Phase.SAVING, Code.OK, state.snapshot, null, false);
         final long expected = storeRevision;
         scheduler.worker(() -> {
             if (!active(ticket)) return;
+            if (!currentDurable(ticket, pending, admission)) { scheduler.main(() -> admissionError(ticket)); return; }
             RoomPreferencesStore.Result staged = store.stage(pending, expected);
             scheduler.main(() -> {
                 if (!active(ticket)) return;
                 if (staged.kind != RoomPreferencesStore.Kind.COMMITTED) { busy = false; storageError(staged); return; }
                 storeRevision = staged.state.revision;
                 emit(Phase.PENDING, Code.PENDING_REVIEW, snapshot(staged.state), operation(staged.state), false);
-                markAndPost(ticket, pending, false);
+                markAndPost(ticket, pending, false, admission);
             });
         });
     }
@@ -286,15 +296,17 @@ final class RoomPreferencesController {
                     busy = false; emit(Phase.BLOCKED, Code.PENDING_REVIEW, snapshot(loaded.state), pending, false); return;
                 }
                 storeRevision = loaded.state.revision;
-                restoreFloor(ticket, pending, RestrictionReason.EXPLICIT_RETRY);
-                markAndPost(ticket, pending.pending, pending.dispatchStarted);
+                Object admission = prepareAttempt(ticket, pending.pending, RestrictionReason.EXPLICIT_RETRY);
+                if (admission == null) { admissionError(ticket); return; }
+                markAndPost(ticket, pending.pending, pending.dispatchStarted, admission);
             });
         });
     }
 
-    private void markAndPost(Ticket ticket, RoomPreferencesProtocol.Pending pending, boolean retryStarted) {
+    private void markAndPost(Ticket ticket, RoomPreferencesProtocol.Pending pending, boolean retryStarted, Object admission) {
         scheduler.worker(() -> {
             if (!active(ticket)) return;
+            if (!currentDurable(ticket, pending, admission)) { scheduler.main(() -> admissionError(ticket)); return; }
             RoomPreferencesStore.Result marked = store.markDispatchStarted(pending);
             scheduler.main(() -> {
                 if (!active(ticket)) return;
@@ -307,13 +319,17 @@ final class RoomPreferencesController {
                     busy = false; storageError(marked); return;
                 }
                 storeRevision = marked.state.revision;
-                requestPost(ticket, pending);
+                // Keep exact durable flags even if the port disappears at the final gate.
+                // No extra observer event: the next outcome publishes this current metadata.
+                state = new ViewState(Phase.PENDING, Code.PENDING_REVIEW, snapshot(marked.state), exact, false);
+                requestPost(ticket, pending, admission);
             });
         });
     }
 
-    private void requestPost(Ticket ticket, RoomPreferencesProtocol.Pending pending) {
+    private void requestPost(Ticket ticket, RoomPreferencesProtocol.Pending pending, Object admission) {
         if (!active(ticket)) return;
+        if (!currentDurable(ticket, pending, admission)) { admissionError(ticket); return; }
         final Ticket request = dispatchTicket(ticket);
         Host port = host.get();
         AtomicBoolean answered = new AtomicBoolean();
@@ -419,8 +435,24 @@ final class RoomPreferencesController {
     }
     private void restoreFloor(Ticket ticket, RoomPreferencesProtocol.Pending pending, RestrictionReason reason) {
         if ((pending.muteForever || pending.mutedUntil != null) && active(ticket)) {
-            MutePort port = mute.get(); if (port != null) port.block(new RestrictionTicket(ticket, pending, reason));
+            prepareAttempt(ticket, pending, reason);
         }
+    }
+    private Object prepareAttempt(Ticket ticket, RoomPreferencesProtocol.Pending pending, RestrictionReason reason) {
+        if (!active(ticket)) return null;
+        MutePort port = mute.get();
+        try { return port == null ? null : port.prepare(new RestrictionTicket(ticket, pending, reason)); }
+        catch (RuntimeException unavailable) { return null; }
+    }
+    private boolean currentDurable(Ticket ticket, RoomPreferencesProtocol.Pending pending, Object admission) {
+        if (admission == null || !active(ticket)) return false;
+        MutePort port = mute.get();
+        try { return port != null && port.currentDurable(admission, ticket.binding, pending); }
+        catch (RuntimeException unavailable) { return false; }
+    }
+    private void admissionError(Ticket ticket) {
+        if (!active(ticket)) return;
+        busy = false; fresh = null; emit(Phase.ERROR, Code.STORAGE_UNAVAILABLE, state.snapshot, state.pending, false);
     }
     private void release(Ticket ticket, RoomPreferencesStore.State state, RoomPreferencesProtocol.Snapshot snapshot,
             String uuid, ProofReason reason) {

@@ -171,6 +171,8 @@ class BChatTextCase(TransactionCase):
         self.assertFalse(self._service(self.member)._bootstrap()['integration_enabled'])
         v2 = self._service(self.member)._v2_bootstrap()
         self.assertEqual(v2['api_version'], 2)
+        self.assertEqual(v2['history_search_contract_version'], 1)
+        self.assertNotIn('history_search', v2['capabilities'])
         self.assertEqual(v2['user_id'], self.member.id)
         self.assertEqual(v2['current_company_id'], self.company.id)
         self.assertTrue(v2['capabilities']['messages'])

@@ -561,6 +561,47 @@
         "android/bchat/tools/test-room-preferences-controller.py"
       ],
       "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "room-mute-durable-floor-and-dispatch-admission",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Private bounded cold mute floors commit before preference dispatch. An exact opaque admission and dispatch checkpoint fence old clears; unknown index state remains conservative. Component evidence is not Activity or FCM wiring acceptance.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomMuteIndex.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomMutePort.java",
+        "android/bchat/tests/room-mute-index/**",
+        "android/bchat/tools/test-room-mute-index.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "room-explore-read-only-current-membership",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Bounded immutable search and media pages remain tied to a current authorized room and recipient membership. Search text is a POST body, never a URL or persisted query. Search metadata cannot authorize receipts or media actions.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/RoomExploreProtocol.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomExplorePanel.java",
+        "android/bchat/tests/room-explore/**",
+        "android/bchat/tests/room-explore-android/**",
+        "android/bchat/tools/test-room-explore.py",
+        "android/bchat/tools/test-room-explore-android.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "timeline-immutable-rows-and-bounded-change-plan",
+      "introduced": "2026-10-18",
+      "risk": "high",
+      "scope": "Pure immutable rows preserve compound owner identity, exact content and neighboring date/sender context. Bounded structural change plans do not establish canonical, storage, receipt or Activity authority.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTimelineRows.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTimelineChangePlan.java",
+        "android/bchat/tests/timeline-rows/**",
+        "android/bchat/tools/test-timeline-rows.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
     }
   ]
 }

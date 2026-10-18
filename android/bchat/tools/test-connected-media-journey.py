@@ -323,6 +323,17 @@ public class SmallPostHarness {
     check(!blocked.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/messages/other","payload","x",(s,b)->{}),"Unlisted route admitted");
     check(!blocked.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/messages","metadata","x",(s,b)->{}),"Wrong message form key admitted");
     check(blocked.web.evaluations==0,"Rejected request dispatched JavaScript");
+    SmallPostHarness search=new SmallPostHarness();
+    check(search.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/search","payload","fixture-read-query",(s,b)->{}),"Read-only search not admitted");
+    check(search.web.evaluations==1&&search.polls==1,"Search did not use the existing one-shot direct lane");
+    SmallPostHarness invalidSearch=new SmallPostHarness();
+    check(!invalidSearch.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/search?q=secret","payload","x",(s,b)->{}),"Search query leaked into URL");
+    check(!invalidSearch.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/search","metadata","x",(s,b)->{}),"Search accepted wrong outer form key");
+    check(!invalidSearch.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/search/more","payload","x",(s,b)->{}),"Search accepted path suffix");
+    check(!invalidSearch.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/0/search","payload","x",(s,b)->{}),"Search accepted zero room");
+    String multibyte=new String(new char[4097]).replace('\0','\u0639');
+    check(!invalidSearch.postSmallFormDirectlyInWebView("/bchat/api/v2/rooms/1/search","payload",multibyte,(s,b)->{}),"Search exceeded UTF8 control budget");
+    check(invalidSearch.web.evaluations==0,"Rejected search executed JavaScript");
     System.out.println("PASS production direct POST route/form allowlist and busy admission");
     System.out.println("SCRIPT:"+Base64.getEncoder().encodeToString(h.web.script.getBytes(StandardCharsets.UTF_8)));
   }

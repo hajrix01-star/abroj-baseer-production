@@ -2,6 +2,10 @@
 
 ## BCH-DEV-20261017 — برنامج تطوير BChat الموحد (قيد التنفيذ، لا مرشح إصدار)
 
+DEV118 ينسخ انتظار المصدر/native فيDEV117: قبول مستقل محدود Activity81426B53 +Panel56E9/Protocol5BB، و54/54bytes و710component/91nativeJSON منفصلان مع5لقطات reviewed وIMEمتحققفعليًا. fullFirebasejavac16s للمصدر81426ثابتSHAقبلوبعد؛ هذا ليسHTTP/مصادقةأوقبولوظيفةjump. حارسseamعلىالأجسامالفعليةقيدالتجهيز، وC16/C21مفتوحان.
+
+DEV116–117: Index12214C52/PortC778BC6A/ControllerCB40BF50 مقبولة مكوّنًا مستقلًا فقط؛ native/full على7F، وتصحيحmetadata78ثمrenameCB40 له116focused منفصلة. PureTimelineAF0D473F/592513C0 له2386JVM وقبول مستقل بلاActivityhooks. Protocolبحث5BB له91JVM؛ Panel56E9 له710native+91nativeJSON/8configs/27PNG قيد مطابقة القبول. ربط Activity للبحث والقفز canonical قيد مراجعة وفحص seam، لاHTTP/هاتف. bootstrapSearch metadataاختياري لم يُختبرORMبعد. أدواتJVM الجديدة وحمايةالمسارات موصولةCIمحليًا؛لاpush/نشر/APKمنتج. [السجل الحي](../../build-governance/BCHAT-DEVELOPMENT-PROGRAM.md).
+
 آخر checkpoint متحقق `b2ab4ebcb19c34d5f8eebc41b6084b80917432d7`؛ CI39071574755 وSource39071574754 SUCCESS، ومصدر merge مجمّد `57c8abff11b7392933381d71fe317616caaf39e2` فوق main5e061ac9. جرد202 بداية فريدة (178ORM و13HTTP و11BaseCase) بلا فشل/خطأ/skip، و16 مرحلة PostgreSQL فعلية وشاهدا SKIP LOCKED/room-lock و120/120 بصمة Git مصدر PASS. قياس G6 المحدود في DEV089/091: 100 غرفة، مجموعة50،500→531 رسالة،64 عينة (4إحماء+60قياسًا)، واتصالان RR للإرسال المتزامن فقط. median history15.715ms وsearch16.072ms مشاهدتان لهذه الجولة؛ المقارنة مع DEV075 ليست إثبات تحسن سببي أو وعد سلاسة. GO مستقل للـcheckpoint ومتابعة الشرائح المعتمدة فقط، لا للمنتج أوprocurement/OEM/FCM/FPS؛ مرشح الإصدار لم يبدأ.
 
 دلتا DEV061–075: C09 نقل/FIFO وSQLite v6 نالا مراجعة مصدر واختبارات معزولة منها29 فحصًا عبر إعادة تشغيل العملية؛ C05/C06 لوحة التنبيهات والتحكم الدائم نالا مراجعة مصدر و1120 فحص واجهة مع Host معلن مصطنع؛ C32 backend اجتاز11 اختبار ORM/HTTP و4 مراحل RR الجديدة ضمن checkpoint الحالي. لا قبول C09 كامل أو هاتف/OEM/FCM أو APK جديد. C13 عقد الإيصالات وC14/C15 عقد العرض والصوت معتمدان تصميمًا بحدودهما؛ التنفيذ التالي لا يغير الأدلة السابقة.
@@ -19,6 +23,8 @@
 دلتا DEV108–112: Protocol محفوظ فيcheckpointمحلي68d28439،ولاpushأونشر. C26correctedbaselineنالGOوصفيًا مستقلًا (113/113inputs،result5296F8E2): 100غرفة/500رسالة اصطناعيةعلىAndroid35debug320×640AR/font1،3roundsبلاlost/overflow؛البحث8queriesيعيدإنشاء529صفًا،لاFPSهاتف/SLA. C11RecyclerView/immutable/diff-owner/avatar-lease نالGOمحدودsource/functional على6304A031/20F5D698/F73194B2:114فحصًا قبلتصحيحاللون و15للنسخةالنهائيةمنفصلة،لا129للمصدرنفسه؛ aftercomparisonلمينفذبعد. Store4F3BE60DنالGOلفرقACKepochمع23JVM+23Android35 ومدخلاتمؤرشفة؛دليلF17الأقدم369+20بحدودالأرشفةمعلنلايُنسبللمصدرالجديدكاملًا. C23CartSheet/Stepperنالsource/componentGO(2300assertions/8renders،41/41inputs)،لاfinancialAPI/Activity/phoneقبول. Controller5845غيرموصولNO-GOلـcachedfalseACKproof،إصلاحهقيدRED/GREEN. حراسAndroid/source/registryPASSبلاORM/PG/G6جديد. لاAPKمنتج،والتسليميبقىواحدًا.
 
 تحديث DEV113 ينسخ انتظار Controller أعلاه: أُثبت RED على5845، ثم نال1A1E7BD7 قبول source/component مستقلًا مع407JVM و13/13مدخلًا مؤرشفًا. root نفذ defaultall للمصدر المصحح:1490 تحققًا فعليًا PASS (لا1491مجموعًا). proof يحمل ACK نفسه، ولا يستعير unmute منcacheأحدث. CI موصول، دون Androidruntime/HTTP/FCM/Activity أو قبولC17كامل؛ تصميمindexالكتمالبارد وبوابةstageمازالا قيدالمراجعة.
+
+DEV115: checkpoint محلي b8aa47a936a4ed99121990bc61708181714cea12 يحفظ C11/C23/Store/Controller ومداخل فحصها دونpush. قياسC26after واحد مقبول وصفيًا:219/0blocked،120Git/128copied وAPK428C66EA مطابقة مستقلة،manifestF7AF8F37/raw65D981BA. p95زمنالإطارأثناءالبحث انخفضفيالمحاكي،والتمريرمتقارب؛input→UUIDpreDrawزادفيالجولاتالثلاث،فلاادعاءتحسنإرسال. PSSمشاهدأقل25vs26samplesلاpeak/leak. لاسببيةC11حصريةمعcompileddeltaCart/Prefs،ولاauth/HTTP/FCM/audio/هاتف/SLA. G2floorindex/portقبلstageمعتمدcomponentفقطوقيدالتنفيذ،لاActivity/FCMربط.
 
 ## BCH-NMU-2 — إصلاح رحلة مرفقات BChat (2026-10-17؛ مرشح QA)
 

@@ -32,6 +32,7 @@ class BChatTextService(models.AbstractModel):
             'current_company_id': (user.company_id.id
                                    if user.company_id.id in allowed_company_ids else None),
             'receipt_delivery_contract_version': 1,
+            'history_search_contract_version': 1,
             'capabilities': {
                 'rooms': True, 'messages': True, 'history': True,
                 'attachments': True, 'tasks': False, 'shifts': False,

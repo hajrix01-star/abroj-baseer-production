@@ -79,6 +79,9 @@ jobs:
           python3 android/bchat/tools/test-room-preferences-store.py
           python3 android/bchat/tools/test-room-preferences-store.py --case ambiguous-epoch --label jvm-ambiguous
           python3 android/bchat/tools/test-room-preferences-controller.py --label ci
+          python3 android/bchat/tools/test-room-mute-index.py --label ci
+          python3 android/bchat/tools/test-room-explore.py --label ci
+          python3 android/bchat/tools/test-timeline-rows.py --label ci
           python3 android/bchat/tools/test-room-list.py --label ci
           python3 android/bchat/tools/test-appearance-foundations.py
 

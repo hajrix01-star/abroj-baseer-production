@@ -79,7 +79,16 @@ public final class ControllerCases {
         final List<RoomPreferencesController.DurableProof> releases = new ArrayList<>();
         Object muteCheckpoint = new Object();
         int checkpoints, rejectedReleases;
-        boolean floorHeld;
+        boolean floorHeld, nullCheckpoint;
+        Object admission;
+        static final class Prepared {
+            final RoomPreferencesController.Binding binding;
+            final RoomPreferencesProtocol.Pending pending;
+            final Object checkpoint;
+            Prepared(RoomPreferencesController.RestrictionTicket ticket, Object checkpoint) {
+                binding = ticket.binding; pending = ticket.pending; this.checkpoint = checkpoint;
+            }
+        }
         boolean acceptGet = true, acceptPost = true, throwGet, throwPost;
         Fixture() {
             File owned = new File(root, "fixture-" + (++fixtures));
@@ -112,11 +121,19 @@ public final class ControllerCases {
         }
         public void changed(RoomPreferencesController.ViewState value) { check(queue.isMain(), "Observer on MAIN"); views.add(value); }
         public Object checkpoint(RoomPreferencesController.Binding value) {
-            check(queue.isMain() && value == binding, "Checkpoint read at MAIN dispatch, exact scope"); ++checkpoints; return muteCheckpoint;
+            check(queue.isMain() && value == binding, "Checkpoint read at MAIN dispatch, exact scope"); ++checkpoints; return nullCheckpoint ? null : muteCheckpoint;
         }
-        public void block(RoomPreferencesController.RestrictionTicket value) {
+        public Object prepare(RoomPreferencesController.RestrictionTicket value) {
             check(value.binding == binding && value.binding.authority.valid(), "Floor bound to current identity");
-            muteCheckpoint = new Object(); floorHeld = true; blocks.add(value);
+            muteCheckpoint = new Object();
+            if (value.pending.muteForever || value.pending.mutedUntil != null) { floorHeld = true; blocks.add(value); }
+            admission = new Prepared(value, muteCheckpoint); return admission;
+        }
+        public boolean currentDurable(Object value, RoomPreferencesController.Binding expected, RoomPreferencesProtocol.Pending pending) {
+            if (value != admission || !(value instanceof Prepared)) return false;
+            Prepared prepared = (Prepared) value;
+            return prepared.binding == expected && expected.authority.valid() && prepared.checkpoint == muteCheckpoint
+                    && prepared.pending.clientUuid.equals(pending.clientUuid) && prepared.pending.payload.equals(pending.payload);
         }
         public void release(RoomPreferencesController.DurableProof value) {
             // Deterministic single-MAIN fixture for the future atomic RAM port, not ROUTING/FCM.
@@ -137,7 +154,7 @@ public final class ControllerCases {
         void ready(long revision) throws Exception {
             controller.open(); queue.drain(); eq(gets.size(), 1, "One explicit GET");
             gets.get(0).complete(200, json(MEMBER, revision, null, false, false, false)); queue.drain();
-            check(controller.state().writeReady, "Only current GET plus durable snapshot enables new intent");
+            check(controller.state().serverDecisionReady, "Only current GET plus durable snapshot enables new intent");
             check(!load().state.snapshot(ROOM).freshGet, "Disk snapshot never fresh");
         }
         void send(boolean muted) {
@@ -155,9 +172,9 @@ public final class ControllerCases {
         finally { Looper.mainForTest(true); }
         fixture.controller.open(); fixture.queue.drain();
         eq(fixture.controller.state().phase, RoomPreferencesController.Phase.CACHED, "Absent is read-only while GET outstanding");
-        check(!fixture.controller.state().writeReady && fixture.releases.isEmpty(), "Absent is not authenticated unmute");
+        check(!fixture.controller.state().serverDecisionReady && fixture.releases.isEmpty(), "Absent is not authenticated unmute");
         fixture.gets.get(0).complete(200, json(MEMBER, 3, null, false, false, false)); fixture.queue.drain();
-        check(fixture.controller.state().writeReady && fixture.releases.size() == 1, "Fresh GET durable proof only after save");
+        check(fixture.controller.state().serverDecisionReady && fixture.releases.size() == 1, "Fresh GET durable proof only after save");
         eq(fixture.releases.get(0).reason, RoomPreferencesController.ProofReason.CURRENT_GET_COMMITTED, "GET proof reason");
         Fixture unsupported = new Fixture(); unsupported.binding = unsupported.binding(ACCOUNT, unsupported.accountIdentity, unsupported.sessionIdentity,
                 new RoomPreferencesController.Authority(), 1, 1, MEMBER, 2); unsupported.replaceController(); unsupported.controller.open();
@@ -171,20 +188,20 @@ public final class ControllerCases {
         fixture.controller.pause(); int observed = fixture.views.size();
         fixture.gets.get(0).complete(200, json(MEMBER, 3, null, false, false, false)); fixture.queue.drain();
         check(fixture.load().kind == RoomPreferencesStore.Kind.ABSENT && fixture.views.size() == observed, "Paused GET cannot save or draw");
-        fixture.controller.resume(); check(fixture.gets.size() == 1 && !fixture.controller.state().writeReady, "Resume no auto GET/freshness");
+        fixture.controller.resume(); check(fixture.gets.size() == 1 && !fixture.controller.state().serverDecisionReady, "Resume no auto GET/freshness");
         fixture.controller.refresh(); fixture.queue.drain(); fixture.gets.get(1).complete(200, json(MEMBER, 4, null, false, false, false)); fixture.queue.drain();
-        check(fixture.controller.state().writeReady && fixture.controller.state().snapshot.revision == 4, "Explicit new GET obtains fresh state");
+        check(fixture.controller.state().serverDecisionReady && fixture.controller.state().snapshot.revision == 4, "Explicit new GET obtains fresh state");
         Fixture bad = new Fixture(); bad.controller.open(); bad.queue.drain(); bad.gets.get(0).complete(200, error("private_server_error")); bad.queue.drain();
-        check(!bad.controller.state().writeReady && bad.load().kind == RoomPreferencesStore.Kind.ABSENT, "Invalid GET never stored or writable");
+        check(!bad.controller.state().serverDecisionReady && bad.load().kind == RoomPreferencesStore.Kind.ABSENT, "Invalid GET never stored or writable");
         Fixture higher = new Fixture(); higher.cache(MEMBER, 9); higher.controller.open(); higher.queue.drain();
         higher.gets.get(0).complete(200, json(MEMBER, 8, null, false, false, false)); higher.queue.drain();
-        check(higher.controller.state().snapshot.revision == 9 && !higher.controller.state().writeReady && higher.releases.isEmpty(), "Older GET displays newer cache without freshness/release");
+        check(higher.controller.state().snapshot.revision == 9 && !higher.controller.state().serverDecisionReady && higher.releases.isEmpty(), "Older GET displays newer cache without freshness/release");
         Fixture conflict = new Fixture(); conflict.controller.open(); conflict.queue.drain(); conflict.cache(MEMBER, 6);
         conflict.gets.get(0).complete(200, json(MEMBER, 7, null, false, false, false)); conflict.queue.drain();
-        check(!conflict.controller.state().writeReady && conflict.controller.state().code == RoomPreferencesController.Code.STORAGE_CONFLICT, "GET save CAS failure no write authority");
+        check(!conflict.controller.state().serverDecisionReady && conflict.controller.state().code == RoomPreferencesController.Code.STORAGE_CONFLICT, "GET save CAS failure no write authority");
         Fixture epoch = new Fixture(); epoch.cache(MEMBER + 1, 2); epoch.controller.open(); epoch.queue.drain();
         epoch.gets.get(0).complete(200, json(MEMBER, 3, null, false, false, false)); epoch.queue.drain();
-        check(!epoch.controller.state().writeReady && epoch.controller.state().code == RoomPreferencesController.Code.MEMBERSHIP_CHANGED, "No implicit cache epoch reconciliation");
+        check(!epoch.controller.state().serverDecisionReady && epoch.controller.state().code == RoomPreferencesController.Code.MEMBERSHIP_CHANGED, "No implicit cache epoch reconciliation");
     }
 
     private static void dispatchOrdering() throws Exception {
@@ -201,7 +218,7 @@ public final class ControllerCases {
         fixture.controller.close(); fixture.replaceController(); fixture.controller.open(); fixture.queue.drain();
         check(fixture.posts.size() == 1 && fixture.blocks.size() > floors + 1, "Restore floor, never auto POST");
         fixture.gets.get(1).complete(200, json(MEMBER, 3, null, false, false, false)); fixture.queue.drain();
-        check(!fixture.controller.state().writeReady && fixture.releases.size() == released, "GET unmuted cannot lift unknown pending floor");
+        check(!fixture.controller.state().serverDecisionReady && fixture.releases.size() == released, "GET unmuted cannot lift unknown pending floor");
         fixture.controller.retryExplicit(UUID2); fixture.queue.drain(); check(fixture.posts.size() == 1, "Wrong UUID no retry grant");
         fixture.controller.retryExplicit(UUID); fixture.queue.drain();
         check(fixture.posts.size() == 2 && exact.equals(fixture.payloads.get(1)), "Explicit started retry exact UUID/payload, no rebase");
@@ -268,7 +285,7 @@ public final class ControllerCases {
             fixture.posts.get(0).complete(code.equals("permission_denied") ? 403 : 409, error(code)); fixture.queue.drain();
             RoomPreferencesStore.Operation pending = fixture.load().state.operation(ROOM, MEMBER);
             check(pending != null && pending.dispatchStarted && !pending.blockedCode.isEmpty(), "Denial preserves exact started operation");
-            check(!fixture.controller.state().writeReady && fixture.controller.state().phase == RoomPreferencesController.Phase.BLOCKED, "Denied no replace/overwrite");
+            check(!fixture.controller.state().serverDecisionReady && fixture.controller.state().phase == RoomPreferencesController.Phase.BLOCKED, "Denied no replace/overwrite");
             fixture.controller.retryExplicit(UUID); fixture.queue.drain(); check(fixture.posts.size() == 1, "Blocked not retryable");
             check(!Files.readString(fixture.file().toPath()).contains("DO_NOT_EXPOSE_RAW_BODY"), "Only allowlisted codes persisted");
         }
@@ -288,7 +305,7 @@ public final class ControllerCases {
         check(invalid.load().state.pending.size() == 1 && invalid.controller.state().phase == RoomPreferencesController.Phase.UNKNOWN,
                 "Wrong UUID 200 remains unknown, never saved");
         Fixture noGet = new Fixture(); noGet.acceptGet = false; noGet.controller.open(); noGet.queue.drain();
-        check(!noGet.controller.state().writeReady && noGet.controller.state().code == RoomPreferencesController.Code.REQUEST_UNKNOWN, "Rejected transport GET no fresh snapshot");
+        check(!noGet.controller.state().serverDecisionReady && noGet.controller.state().code == RoomPreferencesController.Code.REQUEST_UNKNOWN, "Rejected transport GET no fresh snapshot");
         Fixture noPost = new Fixture(); noPost.ready(2); noPost.acceptPost = false; noPost.send(false);
         check(noPost.controller.state().phase == RoomPreferencesController.Phase.UNKNOWN && noPost.load().state.pending.get(0).dispatchStarted,
                 "Transport refusal after started remains conservative unknown");
@@ -304,7 +321,7 @@ public final class ControllerCases {
         }
         Fixture corrupt = new Fixture(); File metadata = corrupt.file(); Files.createDirectories(metadata.getParentFile().toPath());
         Files.writeString(metadata.toPath(), "{broken"); corrupt.controller.open(); corrupt.queue.drain();
-        check(corrupt.gets.isEmpty() && corrupt.posts.isEmpty() && !corrupt.controller.state().writeReady, "Corrupt store neither overwritten nor bypassed");
+        check(corrupt.gets.isEmpty() && corrupt.posts.isEmpty() && !corrupt.controller.state().serverDecisionReady, "Corrupt store neither overwritten nor bypassed");
         eq(Files.readString(metadata.toPath()), "{broken", "Corrupt bytes retained");
         Fixture collected = new Fixture(); collected.ready(2);
         java.lang.reflect.Field weak = RoomPreferencesController.class.getDeclaredField("host"); weak.setAccessible(true);
@@ -330,7 +347,7 @@ public final class ControllerCases {
         check(fixture.checkpoints == 1, "Checkpoint taken at GET dispatch, not construction/load");
         fixture.replaceController(); RoomPreferencesController second = fixture.controller;
         second.open(); fixture.queue.drain(); fixture.gets.get(1).complete(200, json(MEMBER, 2, null, false, false, false)); fixture.queue.drain();
-        check(second.state().writeReady, "Independent second controller has a current observation");
+        check(second.state().serverDecisionReady, "Independent second controller has a current observation");
         first.submit(UUID, null, false, false, false); fixture.queue.drain();
         check(fixture.checkpoints == 3, "POST checkpoint taken only after both commits");
         int released = fixture.releases.size();
@@ -343,8 +360,9 @@ public final class ControllerCases {
                 "Atomic port rejects old proof after another controller changed checkpoint");
         check(fixture.load().state.pending.isEmpty() && fixture.posts.size() == 1,
                 "New floor is not proof of another write; failed CAS no POST/no intent overwrite");
-        Fixture absent = new Fixture(); absent.muteCheckpoint = null; absent.ready(2);
-        check(absent.releases.isEmpty(), "Missing checkpoint is not permission to release");
+        Fixture absent = new Fixture(); absent.nullCheckpoint = true; absent.controller.open(); absent.queue.drain();
+        absent.gets.get(0).complete(200, json(MEMBER, 2, null, false, false, false)); absent.queue.drain();
+        check(absent.releases.isEmpty() && !absent.controller.state().serverDecisionReady, "Missing checkpoint is no release or new-intent permission");
     }
 
     private static void ackProofMatrix() throws Exception {
@@ -395,7 +413,7 @@ public final class ControllerCases {
         }
         for (int fence = 0; fence < 3; fence++) {
             Fixture fixture = new Fixture(); fixture.ready(1); fixture.floorHeld = true;
-            if (fence == 0) fixture.muteCheckpoint = null;
+            if (fence == 0) fixture.nullCheckpoint = true;
             fixture.send(false); int released = fixture.releases.size(), observed = fixture.views.size();
             fixture.posts.get(0).complete(200, ack(fixture.payloads.get(0), 2, false));
             fixture.queue.ui(); fixture.queue.disk(); // ACK committed before final effect gate.
@@ -414,4 +432,6 @@ public final class ControllerCases {
         else { basics(); staleGets(); dispatchOrdering(); viewFences(); authorityFences(); failedCommitsAndDenials(); replayAndValidation(); additionalFences(); crossControllerMuteFence(); ackProofMatrix(); }
         System.out.println("PASS " + checks + " production RoomPreferencesController assertions with actual Store/JVM files; declared queue/transport/Android/JSON adapters; no Android/HTTP/FCM/Activity claim");
     }
+    static void componentRoot(File owned) { root = owned; checks = 0; fixtures = 0; }
+    static int fixtureChecks() { return checks; }
 }

@@ -491,6 +491,9 @@ public final class OdooIdentityActivity extends Activity {
     private AlertDialog profileDialog;
     private AlertDialog groupCreateDialog;
     private AlertDialog groupInfoDialog;
+    private BChatRoomExplorePanel roomExplorePanel;
+    private long roomExploreGeneration, messageJumpSerial;
+    private boolean historySearchSupported;
     private boolean recreateForLanguage;
     private LinearLayout composerRow;
     private TextView recordingBadge;
@@ -1474,11 +1477,133 @@ public final class OdooIdentityActivity extends Activity {
         if (permissionSet.taskView)
             entries.add(AnchoredMenu.Entry.action(getString(R.string.task_room_tasks), "clock",
                     () -> openTasks(room.id)));
+        if (historySearchSupported) {
+            entries.add(AnchoredMenu.Entry.action(getString(R.string.explore_search_title), "search",
+                    () -> showRoomExplore(room, false)));
+            if (mediaAllowed()) entries.add(AnchoredMenu.Entry.action(getString(R.string.explore_media_title), "attach",
+                    () -> showRoomExplore(room, true)));
+        }
         entries.add(AnchoredMenu.Entry.action(getString(R.string.chat_v2_refresh), "refresh",
                 this::refreshCurrentSection));
         roomActionMenu.show(anchor, getString(R.string.chat_v2_room_actions),
                 () -> verified && account == scopedAccount && selectedRoom == room
                         && chatTitleBar.isShown(), entries);
+    }
+
+    private void closeRoomExplore() {
+        ++roomExploreGeneration; ++messageJumpSerial;
+        BChatRoomExplorePanel previous = roomExplorePanel; roomExplorePanel = null;
+        if (previous != null) previous.dismiss();
+    }
+
+    private boolean exploreBindingCurrent(AccountScope expected, Room room, int session, int global,
+            long repository, long generation) {
+        return !closed && verified && !offlineHistory && liveForeground && account == expected
+                && expected != null && epoch == session && historyGlobalGeneration == global
+                && BChatStorageRepository.generation(expected) == repository
+                && roomExploreGeneration == generation && selectedRoom == room
+                && roomsVerifiedForSession && currentInfoRoom(room) == room && chatAllowed()
+                && v1Companies.contains(room.companyId);
+    }
+
+    private void showRoomExplore(Room room, boolean gallery) {
+        if (!historySearchSupported || room == null || selectedRoom != room || !chatAllowed()
+                || offlineHistory || gallery && !mediaAllowed()) return;
+        closeRoomExplore();
+        final AccountScope expected = account;
+        final int session = epoch, global = historyGlobalGeneration;
+        final long repository = BChatStorageRepository.generation(expected), generation = roomExploreGeneration;
+        roomExplorePanel = new BChatRoomExplorePanel(this, new BChatRoomExplorePanel.Host() {
+            private boolean current() { return exploreBindingCurrent(expected, room, session, global, repository, generation); }
+            @Override public AccountScope account() { return current() ? expected : null; }
+            @Override public boolean current(AccountScope candidate, long id, long member, long version) {
+                return candidate == expected && id == room.id && member == room.membershipId
+                        && version == generation && current();
+            }
+            @Override public boolean supported() { return current() && historySearchSupported; }
+            @Override public boolean mediaAllowed() { return current() && OdooIdentityActivity.this.mediaAllowed(); }
+            @Override public boolean read(RoomExploreProtocol.Query query, BChatRoomExplorePanel.Reply reply) {
+                if (!current() || !historySearchSupported || query == null || reply == null
+                        || query.roomId != room.id || query.membershipId != room.membershipId
+                        || (query.gallery || query.kind != RoomExploreProtocol.Kind.ALL
+                            && query.kind != RoomExploreProtocol.Kind.TEXT) && !mediaAllowed()) return false;
+                V2Callback callback = (status, body) -> { if (current()) reply.complete(status, body); };
+                if (query.gallery) return fetchV2ReadDirectlyInWebView(query.path(), callback);
+                return postSmallFormDirectlyInWebView(query.path(), "payload", query.payload().toString(), callback);
+            }
+            @Override public void openMessage(long id) {
+                if (!current()) return;
+                closeRoomExplore(); jumpToCanonicalMessage(room, id);
+            }
+            @Override public String timeLabel(String stamp) { return formatMessageTime(stamp); }
+        }, expected, room.id, room.membershipId, generation, gallery);
+        roomExplorePanel.show();
+    }
+
+    /** Neither a quoted/search snippet nor a notification is canonical message authority. */
+    private void jumpToCanonicalMessage(Room room, long target) {
+        if (closed || room == null || room != selectedRoom || account == null
+                || target <= 0 || target > OutboxPolicy.MAX_RECORD_ID || !liveForeground) return;
+        // A second jump, including an already displayed target, supersedes a pending one.
+        closeRoomExplore();
+        final long request = ++messageJumpSerial, generation = roomExploreGeneration;
+        final AccountScope expected = account;
+        final int session = epoch, global = historyGlobalGeneration;
+        final long repository = BChatStorageRepository.generation(expected);
+        int present = messagePosition(target);
+        boolean currentWindow = offlineHistory ? currentInfoRoom(room) == room
+                : exploreBindingCurrent(expected, room, session, global, repository, generation);
+        if (present >= 0 && currentWindow) {
+            // Existing epoch-bound canonical/cache rows can be scrolled without another read.
+            // This action is not an ACK. Actual layout+viewport and durable pin gates still own it.
+            messageLayout.scrollToPositionWithOffset(present, dp(32));
+            messageScroll.postOnAnimation(() -> {
+                if (messageJumpSerial == request && messagePosition(target) >= 0
+                        && exploreBindingCurrent(expected, room, session, global, repository, generation))
+                    scanVisibleMessageReceipts();
+            });
+            return;
+        }
+        if (!exploreBindingCurrent(expected, room, session, global, repository, generation)
+                || !receiptDeliverySupported) {
+            chatNotice.setText(R.string.explore_unavailable); return;
+        }
+        if (v2Busy || webV2GetFallbackBusy) { chatNotice.setText(R.string.explore_unconfirmed); return; }
+        chatNotice.setText(R.string.chat_v2_loading);
+        fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + target, null, (status, body) -> {
+            if (messageJumpSerial != request || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
+            try {
+                if (status != 200 || body == null || positiveId(body.get("api_version")) != 2) throw new IllegalArgumentException();
+                requireReceiptEpoch(body, room);
+                List<JSONObject> canonical = validateMessageList(new JSONArray().put(body.getJSONObject("message")), 0);
+                if (positiveId(canonical.get(0).get("id")) != target) throw new IllegalArgumentException();
+                long before = target == OutboxPolicy.MAX_RECORD_ID ? 0 : target + 1;
+                fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages"
+                        + (before == 0 ? "" : "?before_id=" + before), null, (pageStatus, response) -> {
+                    if (messageJumpSerial != request || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
+                    try {
+                        if (pageStatus != 200 || response == null || positiveId(response.get("api_version")) != 2) throw new IllegalArgumentException();
+                        requireReceiptEpoch(response, room);
+                        List<JSONObject> window = validateMessageList(response.getJSONArray("messages"), before);
+                        boolean found = false;
+                        for (JSONObject item : window) if (positiveId(item.get("id")) == target) found = true;
+                        if (!response.has("next_before_id")) throw new IllegalArgumentException();
+                        Object rawCursor = response.opt("next_before_id");
+                        long cursor = rawCursor == null || rawCursor == JSONObject.NULL ? 0 : positiveId(rawCursor);
+                        if (!found || cursor > 0 && (window.isEmpty() || cursor != positiveId(window.get(0).get("id")))) throw new IllegalArgumentException();
+                        // Only now commit the visible historical window. Never inject the single
+                        // GET/search row or synthesize a cursor when the history page omitted it.
+                        ScrollAnchor anchor = currentScrollAnchor();
+                        persistReceiptCanonical(expected, room, window);
+                        nextBeforeId = cursor; historicalWindow = true;
+                        scrollAfterOwnSend = false; olderPageLoading = olderPageFailed = false;
+                        renderMessageWindow(room, window, false, target, anchor);
+                        newerControl.setVisibility(View.VISIBLE); updateOlderControl();
+                        chatNotice.setText("");
+                    } catch (Exception unavailable) { chatNotice.setText(R.string.explore_unavailable); }
+                });
+            } catch (Exception unavailable) { chatNotice.setText(R.string.explore_unavailable); }
+        });
     }
 
     private void chooseGroupCompany() {
@@ -3692,15 +3817,16 @@ public final class OdooIdentityActivity extends Activity {
     private boolean postSmallFormDirectlyInWebView(String path, String field, String payload,
                                                    V2Callback callback) {
         boolean mediaMessage = path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/messages");
+        boolean roomSearch = path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/search");
         boolean notificationControl="/bchat/api/v2/notifications/preferences".equals(path)
                 ||"/bchat/api/v2/notifications/test".equals(path);
-        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage ||notificationControl
+        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage ||notificationControl || roomSearch
                 || path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/mobile-upload-grants");
         if (closed || !verified || account == null || csrfToken == null || callback == null
                 || payload == null || payload.length() > (mediaMessage ? 49152
-                        : V2_PUSH_REGISTER.equals(path)||notificationControl ? 8192 : 4096) || field == null
-                || notificationControl&&payload.getBytes(StandardCharsets.UTF_8).length>8192
-                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)||notificationControl
+                        : V2_PUSH_REGISTER.equals(path)||notificationControl || roomSearch ? 8192 : 4096) || field == null
+                || (notificationControl || roomSearch)&&payload.getBytes(StandardCharsets.UTF_8).length>8192
+                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)||notificationControl || roomSearch
                         ? "payload".equals(field) : "metadata".equals(field))
                 || !field.matches("[a-z_]{1,32}") || !supported || webV2GetFallbackBusy
                 || v2Busy || web == null || web.getUrl() == null
@@ -4610,6 +4736,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void applyPermissionSet(AccountScope scope, PermissionSet next) {
         PermissionSet previous = permissionSet;
+        if (permissionAccount != scope || !next.sameAs(previous)) closeRoomExplore();
         if (!next.chatView) closeReceiptDetails();
         if(!next.chatView&&!next.taskView&&notificationSettingsPanel!=null){
             notificationSettingsPanel.dismiss();notificationSettingsPanel=null;
@@ -4739,6 +4866,7 @@ public final class OdooIdentityActivity extends Activity {
     private void restrictCompanyScope(AccountScope scope, Set<Long> allowed) {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
+        closeRoomExplore();
         clearRoomListNow();
         if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
         if(transferCoordinator!=null)transferCoordinator.revoke(scope);
@@ -4926,6 +5054,9 @@ public final class OdooIdentityActivity extends Activity {
                     }
                 }
                 PermissionSet next = permissionContract(result, scoped);
+                boolean searchSupported = RoomExploreProtocol.supported(result);
+                if (historySearchSupported != searchSupported) closeRoomExplore();
+                historySearchSupported = searchSupported;
                 boolean gainedChat = !permissionSet.chatView && next.chatView;
                 if (permissionAccount != scoped || !next.sameAs(permissionSet))
                     applyPermissionSet(scoped, next);
@@ -5014,6 +5145,7 @@ public final class OdooIdentityActivity extends Activity {
                 receiptsAvailable = flag(caps, "delivery_receipts", true)
                         && flag(caps, "read_receipts", true);
                 receiptDeliverySupported = ReceiptDeliveryProtocol.supported(result);
+                historySearchSupported = RoomExploreProtocol.supported(result);
                 receiptStorageGeneration = historyGlobalGeneration;
                 receiptNeedsRoomRebind = false;
                 receiptRebindGeneration = 0;
@@ -5866,6 +5998,8 @@ public final class OdooIdentityActivity extends Activity {
     private void clearChatView() {
         clearRoomListNow();
         closeReceiptDetails();
+        closeRoomExplore();
+        historySearchSupported = false;
         if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
         ++mediaDownloadGeneration;
         restorationIntent = null;
@@ -6100,6 +6234,7 @@ public final class OdooIdentityActivity extends Activity {
     private void showRooms() {
         if (!chatAllowed() && !offlineHistory) return;
         closeReceiptDetails();
+        closeRoomExplore();
         restoringContext = false;
         if (roomActionMenu != null) roomActionMenu.dismiss();
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
@@ -6587,6 +6722,7 @@ public final class OdooIdentityActivity extends Activity {
                 || v2Busy || (!offlineHistory && csrfToken == null)) return;
         closeReceiptDetails();
         flushDraftSave();
+        closeRoomExplore();
         ++localReadSerial;
         roomLocal = null; localTextRows.clear(); localReadBusy = false;
         roomDraftNeedsRestore = true;
@@ -8481,6 +8617,11 @@ public final class OdooIdentityActivity extends Activity {
             snippet.setEllipsize(android.text.TextUtils.TruncateAt.END);
             snippet.setBackground(Ui.bg(Ui.LIGHT, 8, this));
             Ui.pad(snippet, 8, 5);
+            if (!quoted.has("unavailable")) {
+                final long parentId = positiveId(quoted.get("id"));
+                snippet.setMinHeight(dp(48)); Ui.clickable(snippet);
+                snippet.setOnClickListener(ignored -> jumpToCanonicalMessage(room, parentId));
+            }
             bubble.addView(snippet, new LinearLayout.LayoutParams(-1, -2));
         }
         if (!body.isEmpty()) {
@@ -15080,6 +15221,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onPause() {
+        closeRoomExplore();
         if (receiptDetailsPanel != null) receiptDetailsPanel.pause();
         if(notificationSettingsPanel!=null)notificationSettingsPanel.pause();
         if (connectedAudioFocus != null) connectedAudioFocus.stop();
@@ -15169,6 +15311,7 @@ public final class OdooIdentityActivity extends Activity {
         clearRoomListNow();
         roomListLane.close();
         closeReceiptDetails();
+        closeRoomExplore();
         BChatStageAdmission.unobserve(stageAdmissionObserver);
         if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
         if(transferCoordinator!=null)transferCoordinator.unobserve(transferObserver);

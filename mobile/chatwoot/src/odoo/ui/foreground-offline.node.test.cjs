@@ -180,6 +180,18 @@ async function ready() {
   return app;
 }
 
+test('late older navigation cannot replace a newer explicit latest selection or emit a receive tone', async () => {
+  const app = await ready(); let release;
+  app.engine.latest = async () => ({ api_version: 2, messages: [{ id: 900, author_user_id: 9 }], next_before_id: 900 });
+  await app.render().select(app.engine.rooms()[0]);
+  app.engine.history = async (_room, before) => before ? new Promise(resolve => { release = resolve; }) : app.engine.latest();
+  const older = app.render().older(); await settled();
+  await app.render().latest();
+  release({ api_version: 2, messages: [{ id: 1, author_user_id: 9 }], next_before_id: null }); await older;
+  assert.equal(app.render().history.messages[0].id, 900);
+  assert.equal(app.tones.length, 0);
+});
+
 test('foreground permits valid offline cache when internet is up but Odoo/VPN is unavailable', async () => {
   for (const failure of ['network', '503']) {
     const app = await ready();

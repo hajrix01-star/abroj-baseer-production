@@ -98,7 +98,7 @@ export function useChat(engine: ChatEngine) {
       setError(null);
       if (!room) return;
       try {
-        const page = await engine.history(room);
+        const page = await (engine.latest ? engine.latest(room) : engine.history(room));
         if (mounted.current && g === generation.current) {
           setHistory(page);
           const account = engine.identity;
@@ -142,6 +142,7 @@ export function useChat(engine: ChatEngine) {
           setHistory(page);
           const account = engine.identity;
           if (
+            !page.archive?.browsing &&
             active.current &&
             foreground === foregroundEpoch.current &&
             soundContext === soundEpoch.current &&
@@ -155,7 +156,7 @@ export function useChat(engine: ChatEngine) {
               !soundWasReady || engine.offline || !online.current,
             );
             soundBaselineReady.current = !engine.offline && online.current;
-          }
+          } else if (page.archive?.browsing) soundBaselineReady.current = false;
         }
       }
       if (mounted.current) setError(null);
@@ -291,13 +292,23 @@ export function useChat(engine: ChatEngine) {
   }, [engine, run]);
   const older = useCallback(async () => {
     const room = selectedRef.current;
-    const g = generation.current;
     if (!room || !history.next_before_id) return;
+    const g = ++generation.current; soundBaselineReady.current = false;
     await run(async () => {
       const page = await engine.history(room, history.next_before_id!);
-      if (g === generation.current) setHistory(page);
+      if (mounted.current && g === generation.current) setHistory(page);
     });
   }, [engine, history.next_before_id, run]);
+  const newer = useCallback(async () => {
+    const room = selectedRef.current; if (!room) return;
+    const g = ++generation.current; soundBaselineReady.current = false;
+    await run(async () => { const page = await engine.newer(room); if (mounted.current && g === generation.current) setHistory(page); });
+  }, [engine, run]);
+  const latest = useCallback(async () => {
+    const room = selectedRef.current; if (!room) return;
+    const g = ++generation.current; soundBaselineReady.current = false;
+    await run(async () => { const page = await engine.latest(room); if (mounted.current && g === generation.current) setHistory(page); });
+  }, [engine, run]);
   return {
     identity,
     rooms,
@@ -314,6 +325,8 @@ export function useChat(engine: ChatEngine) {
     capture,
     logout,
     older,
+    newer,
+    latest,
     soundsEnabled:
       soundState.actor === soundActor(identity) && soundState.ready && soundState.enabled,
     soundsReady: soundState.actor === soundActor(identity) && soundState.ready,

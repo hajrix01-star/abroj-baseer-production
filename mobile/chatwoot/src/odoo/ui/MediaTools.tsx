@@ -19,7 +19,7 @@ import AudioRecorderPlayer, {
   OutputFormatAndroidType,
 } from 'react-native-audio-recorder-player';
 import type { Attachment, Room } from '../core/ChatEngine';
-import { localMedia, stageFile } from '../runtime';
+import { localMediaLease, stageFile, type LocalMediaLease } from '../runtime';
 import { Button, colors, Icon, IconButton, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { ImageViewer } from './ImageViewer';
@@ -43,8 +43,10 @@ export function useVoiceSession(
   const [playing, setPlaying] = useState(false);
   const feedbackOwner = useRef({});
   const voiceActive = useRef(false);
+  const playbackRelease = useRef<(() => void) | null>(null);
   const cleanup = async () => {
     const cleaning = ++token.current;
+    const releasingPlayback = playbackRelease.current; playbackRelease.current = null;
     player.removeRecordBackListener();
     player.removePlayBackListener();
     try {
@@ -57,6 +59,7 @@ export function useVoiceSession(
     } catch {
       /* No player active. */
     }
+    releasingPlayback?.();
     const path = temporary.current;
     temporary.current = null;
     if (path) {
@@ -170,10 +173,11 @@ export function useVoiceSession(
       return null;
     }
   };
-  const play = async (uri: string) => {
-    if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') return;
+  const play = async (uri: string, release?: () => void) => {
+    if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') { release?.(); return; }
     await cleanup();
-    if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') return;
+    if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') { release?.(); return; }
+    playbackRelease.current = release ?? null;
     setFeedbackVoice(feedbackOwner.current, true);
     const current = ++token.current;
     try {
@@ -424,10 +428,13 @@ export function MediaTile({
     media.size,
     media.sha256,
     media.name,
+    media.thumbnail_available,
   ]);
   const [cached, setCached] = useState<{ key: string; uri: string } | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [showing, setShowing] = useState<string | null>(null);
+  const [full, setFull] = useState<{ key: string; uri: string } | null>(null);
+  const leases = useRef<{ preview: LocalMediaLease | null; full: LocalMediaLease | null }>({ preview: null, full: null });
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
   const live = useRef({
     key,
@@ -452,16 +459,19 @@ export function MediaTile({
   const presentation = `${key}/${live.current.revision}`;
   const revision = live.current.revision;
   const uri = cached?.key === presentation ? cached.uri : null;
+  const fullUri = full?.key === presentation ? full.uri : null;
   const busy = opening === presentation;
   useEffect(() => {
     live.current.active = AppState.currentState === 'active';
     const invalidate = () => {
       live.current.serial++;
-      if (live.current.busy) live.current.previewAttempted = false;
+      live.current.previewAttempted = false;
       live.current.busy = false;
       live.current.intentional = false;
       setShowing(null);
       setOpening(null);
+      leases.current.preview?.release(); leases.current.full?.release();
+      leases.current = { preview: null, full: null }; setCached(null); setFull(null);
     };
     const listener = AppState.addEventListener('change', state => {
       live.current.active = state === 'active';
@@ -472,6 +482,7 @@ export function MediaTile({
       live.current.active = false;
       live.current.serial++;
       live.current.busy = false;
+      leases.current.preview?.release(); leases.current.full?.release(); leases.current = { preview: null, full: null };
       listener.remove();
     };
   }, [key]);
@@ -502,16 +513,29 @@ export function MediaTile({
       AppState.currentState === 'active';
     setOpening(presentation);
     try {
-      // Keep runtime's association, identity, permission, hash and session fences.
-      // Automatic calls are viewport-gated below. No remote URI is ever rendered.
-      const local = await localMedia(room, media);
-      if (!current()) return;
+      // The viewport receives a real protected thumbnail, never a full image.
+      // Deliberate opening independently resolves the original with its SHA.
+      let local = await localMediaLease(room, media, intentional || media.kind !== 'image' ? 'original' : 'preview');
+      if (!current()) { local.release(); return; }
       if (media.kind === 'image') {
-        if (!local.startsWith('file://')) throw new Error('invalid_local_image');
-        setCached({ key: presentation, uri: local });
-        if (live.current.intentional) setShowing(presentation);
-      } else if (media.kind === 'audio') await voice.play(local);
-      else await FileViewer.open(local.replace(/^file:\/\//, ''), { showOpenWithDialog: true });
+        if (!local.uri.startsWith('file://')) { local.release(); throw new Error('invalid_local_image'); }
+        if (!intentional) {
+          leases.current.preview?.release(); leases.current.preview = local;
+          setCached({ key: presentation, uri: local.uri });
+          if (!live.current.intentional) return;
+          local = await localMediaLease(room, media, 'original');
+          if (!current()) { local.release(); return; }
+          if (!local.uri.startsWith('file://')) { local.release(); throw new Error('invalid_local_image'); }
+        }
+        leases.current.full?.release(); leases.current.full = local;
+        setFull({ key: presentation, uri: local.uri }); setShowing(presentation);
+      } else if (media.kind === 'audio') await voice.play(local.uri, local.release);
+      else {
+        // The native activity owns the file while the private timeline is masked.
+        // Its dismiss callback survives this component's intentional unmount.
+        try { await FileViewer.open(local.uri.replace(/^file:\/\//, ''), { showOpenWithDialog: true, onDismiss: local.release }); }
+        catch (error) { local.release(); throw error; }
+      }
     } catch (e) {
       // Off-line cache misses and other automatic failures stay local and quiet.
       // A deliberate retry still reports the normal actionable runtime error.
@@ -531,6 +555,11 @@ export function MediaTile({
         live.current.busy = false;
         live.current.previewAttempted = false;
         setOpening(null);
+      }
+      if (leases.current.preview && showing !== presentation) {
+        leases.current.preview.release(); leases.current.preview = null; setCached(null);
+        // Permit a fresh scoped cache lookup when a virtualized row returns.
+        live.current.previewAttempted = false;
       }
       return;
     }
@@ -565,9 +594,9 @@ export function MediaTile({
               justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
             })}>
-            {uri ? (
+            {uri || showing === presentation && fullUri ? (
               <Image
-                source={{ uri }}
+                source={{ uri: uri ?? fullUri! }}
                 resizeMode="contain"
                 accessible={false}
                 style={{ width: '100%', height: '100%' }}
@@ -600,14 +629,26 @@ export function MediaTile({
               )}
             </View>
           </Pressable>
-          {showing === presentation && uri && (
+          {showing === presentation && fullUri && (
             <ImageViewer
-              key={`${presentation}/${uri}`}
-              uri={uri}
+              key={`${presentation}/${fullUri}`}
+              uri={fullUri}
               name={String(media.name ?? t('photo'))}
               language={language}
               t={t}
-              onClose={() => setShowing(null)}
+              onClose={() => {
+                if (live.current.key !== key || live.current.revision !== revision) return;
+                setShowing(null); setFull(null);
+                if (!leases.current.preview && leases.current.full) {
+                  leases.current.preview = leases.current.full;
+                  setCached({ key: presentation, uri: leases.current.full.uri });
+                } else leases.current.full?.release();
+                leases.current.full = null;
+                if (!previewVisible) {
+                  leases.current.preview?.release(); leases.current.preview = null;
+                  setCached(null); live.current.previewAttempted = false;
+                }
+              }}
             />
           )}
         </>

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia } from '../core/nativeBoundary.ts';
+import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia, validThumbnail } from '../core/nativeBoundary.ts';
 import type { History } from '../core/ChatEngine.ts';
 
 const media = { id: 70, kind: 'file', mime: 'application/pdf', name: 'approved.pdf', size: 1024, sha256: 'a'.repeat(64) };
@@ -54,8 +54,15 @@ test('runtime source uses no-follow client on all network paths with scoped hist
   const runtime = readFileSync(new URL('../runtime.ts', import.meta.url), 'utf8');
   assert.match(runtime, /BlobUtil\.config\(\{ \.\.\.nativeSessionOptions/);
   assert.doesNotMatch(runtime, /\bawait fetch\(/);
-  assert.match(runtime, /trustedMedia\(await getEngine\(\)\.history\(room\), descriptor\)/);
-  assert.match(runtime, /cached\.size === media\.size && await hashFile\(uri\) === media\.sha256/);
-  assert.match(runtime, /await hashFile\(partial\) !== media\.sha256/);
+  assert.match(runtime, /getEngine\(\)\.mediaAssociation\(room, Number\(descriptor\.id\)\)/);
+  assert.match(runtime, /cached\.size === expected\.bytes && await hashFile\(uri\) === expected\.sha256/);
+  assert.match(runtime, /digest !== media\.sha256/);
   assert.doesNotMatch(runtime, /CookieManager|\.getCookies\(|\.getCookie\(/);
+});
+test('thumbnail JPEG parser bounds dimensions, structure, type and length', () => {
+  const jpeg = Buffer.from([255,216,255,192,0,11,8,0,1,0,1,1,1,17,0,255,218,0,8,1,1,0,0,63,0,1,255,217]);
+  assert.equal(validThumbnail(jpeg.toString('binary')), true);
+  for (const bytes of [Buffer.from('not JPEG'), Buffer.concat([jpeg, Buffer.alloc(128 * 1024)]),
+    (() => { const bad = Buffer.from(jpeg); bad[7] = 1; bad[8] = 1; return bad; })(), jpeg.subarray(0, jpeg.length - 1)])
+    assert.equal(validThumbnail(bytes.toString('binary')), false);
 });

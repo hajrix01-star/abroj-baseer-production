@@ -161,6 +161,27 @@ function timeline() {
     flushFrames() { for (let i = 0; i < frames.length && i < 100; i++) { const callback = frames[i]; frames[i] = null; callback?.(); } },
     render: () => state.render(() => module.TimelineScreen(props)), release: () => release() };
 }
+test('archive controls navigate cached pages offline and durable sends do not snap a browsing timeline', async () => {
+  const app = timeline(); let scrolls = 0;
+  app.props.chat.history.next_before_id = 10;
+  app.props.chat.history.archive = { browsing: true, partial: true, older: { kind: 'cached', cursor: 10 }, newer: { kind: 'cached', cursor: 10 } };
+  app.props.chat.older = async () => app.calls.push('older');
+  app.props.chat.newer = async () => app.calls.push('newer');
+  app.props.chat.latest = async () => app.calls.push('latest');
+  let tree = app.render(); let list = one(tree, 'FlashList');
+  list.ref.current = { scrollToEnd: () => scrolls++ }; app.flushFrames();
+  const older = one(list.ListHeaderComponent, 'Button'); assert.equal(older.disabled, false); older.onPress();
+  assert.equal(one(list.ListHeaderComponent, 'Label').children, 'archiveGap');
+  one(list.ListFooterComponent, 'Button').onPress();
+  one(tree, 'Field').onChangeText('keep reader position'); tree = app.render();
+  one(tree, app.tools).onSendText(); app.release(); await settled(); app.render(); app.flushFrames();
+  assert.equal(scrolls, 0); assert.equal(one(app.render(), 'Field').value, '');
+  one(app.render(), 'IconButton', props => props.icon === 'down').onPress(); await settled();
+  assert.ok(app.calls.includes('older')); assert.ok(app.calls.includes('newer')); assert.ok(app.calls.includes('latest'));
+  app.props.chat.history.archive.older.kind = 'gap'; list = one(app.render(), 'FlashList');
+  assert.equal(one(list.ListHeaderComponent, 'Button').disabled, true, 'offline gap is not presented as cached or complete');
+});
+
 test('send feedback occurs once only after a successful durable enqueue, not the initial tap or a failed retry', async () => {
   const app = timeline(); app.props.chat.soundSent = () => app.calls.push('sound');
   one(app.render(), 'Field').onChangeText('accepted');

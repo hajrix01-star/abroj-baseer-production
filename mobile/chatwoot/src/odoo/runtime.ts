@@ -6,22 +6,33 @@ import * as FS from 'expo-file-system/legacy';
 import BlobUtil from 'react-native-blob-util';
 import type { FetchBlobResponse, StatefulPromise } from 'react-native-blob-util';
 import { ChatEngine, ChatError } from './core/ChatEngine';
-import type { Attachment, Bootstrap, GroupAvatarAck, GroupAvatarInput, Pending, Request, Room } from './core/ChatEngine';
-import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia } from './core/nativeBoundary';
+import type { Attachment, Bootstrap, GroupAvatarAck, GroupAvatarInput, History, Pending, Request, Room } from './core/ChatEngine';
+import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia, validThumbnail } from './core/nativeBoundary';
 import { nativeSessionTrace, networkFailure } from './core/loginDiagnostics';
+import { historyArchive, mediaCacheCatalog } from './storage/nativeArchive';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
   database: (process.env.EXPO_PUBLIC_ODOO_DATABASE ?? '').trim(),
 });
 const MAX_FILE = 10 * 1024 * 1024;
-const MAX_ACCOUNT = 50 * 1024 * 1024;
+const MAX_STAGED = 50 * 1024 * 1024;
+const MAX_CACHE = 128 * 1024 * 1024;
+const MAX_CACHE_FILES = 5000;
+const MAX_THUMBNAIL = 128 * 1024;
 const mediaRoot = `${FS.documentDirectory ?? ''}odoo-chat-media/`;
 const tasks = new Set<StatefulPromise<FetchBlobResponse>>();
 const reservations = new Map<string, { epoch: number; at: number }>();
 let generation = 0;
 let engine: NativeChatEngine | undefined;
 let mediaWork: Promise<unknown> = Promise.resolve();
+type CacheEntry = { uri: string; bytes: number; sha256: string | null; usedAt: number };
+type ActorFiles = { cache: Map<string, CacheEntry>; stages: Map<string, number>; cacheBytes: number; stageBytes: number };
+const actorFiles = new Map<string, ActorFiles>();
+const mediaPins = new Map<string, Set<object>>();
+let discoveredActors = false;
+export type MediaVariant = 'preview' | 'original';
+export interface LocalMediaLease { uri: string; release(): void }
 const extensions: Record<string, string> = {
   'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp',
   'audio/mp4': '.m4a', 'application/pdf': '.pdf', 'text/plain': '.txt',
@@ -139,6 +150,7 @@ function fixedURL(path: string): string {
 function cancelNative(): void {
   generation++;
   clearGroupAvatars();
+  mediaPins.clear();
   for (const task of tasks) task.cancel(() => undefined);
   tasks.clear();
 }
@@ -223,6 +235,10 @@ function fence(room: Room, expected: ReturnType<typeof scope>): void {
   const actual = scope(room);
   if (actual.epoch !== expected.epoch || actual.uid !== expected.uid) throw new ChatError('stale_session');
 }
+function mediaFence(room: Room, expected: ReturnType<typeof scope>): void {
+  fence(room, expected);
+  if (getEngine().identity?.permissions.media !== true) throw new ChatError('forbidden', 403);
+}
 async function actorDirectory(key: string): Promise<string> {
   if (!FS.documentDirectory) throw new ChatError('native_storage_required');
   return `${mediaRoot}${await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, key)}/`;
@@ -232,20 +248,77 @@ function owned(uri: string): boolean {
   const parts = uri.slice(mediaRoot.length).split('/');
   return parts.length === 3 && actorPattern.test(parts[0]) && scopePattern.test(parts[1]) && mediaFilePattern.test(parts[2]);
 }
+/** SQL catalog keys are digests, never native filesystem directory strings. */
+function catalogActor(actorDirectory: string): string {
+  const digest = actorDirectory.startsWith(mediaRoot) ? actorDirectory.slice(mediaRoot.length, -1) : '';
+  if (!actorDirectory.endsWith('/') || !actorPattern.test(digest)) throw new ChatError('invalid_attachment');
+  return digest;
+}
 async function removeOwned(uri: string): Promise<void> {
   if (!owned(uri)) throw new ChatError('invalid_attachment');
   await FS.deleteAsync(uri, { idempotent: true });
+  const actor = uri.slice(0, uri.indexOf('/', mediaRoot.length) + 1);
+  const state = actorFiles.get(actor);
+  if (state) {
+    const cached = state.cache.get(uri);
+    if (cached) { state.cacheBytes -= cached.bytes; state.cache.delete(uri); }
+    const staged = state.stages.get(uri);
+    if (staged !== undefined) { state.stageBytes -= staged; state.stages.delete(uri); }
+  }
+  mediaPins.delete(uri);
+  if (uri.split('/').at(-1)!.startsWith('media-') && !uri.endsWith('.part')) await mediaCacheCatalog.remove(catalogActor(actor), uri);
 }
-async function bytesIn(path: string, budget = { files: 0 }): Promise<number> {
-  const info = await FS.getInfoAsync(path);
-  if (!info.exists) return 0;
-  if (!info.isDirectory) { if (++budget.files > 1000) throw new ChatError('media_quota'); return info.size; }
-  let bytes = 0;
-  for (const entry of await FS.readDirectoryAsync(path)) { bytes += await bytesIn(`${path.replace(/\/$/, '')}/${entry}`, budget); if (bytes > MAX_ACCOUNT) throw new ChatError('media_quota'); }
-  return bytes;
+/** Reconcile legacy/cache files once per actor, never recursively on each image. */
+async function loadActorFiles(actor: string, epoch = generation): Promise<ActorFiles> {
+  const existing = actorFiles.get(actor); if (existing) return existing;
+  const state: ActorFiles = { cache: new Map(), stages: new Map(), cacheBytes: 0, stageBytes: 0 };
+  const saved = new Map<string, CacheEntry>();
+  for (const item of await mediaCacheCatalog.list(catalogActor(actor))) {
+    if (owned(item.uri) && item.uri.startsWith(actor) && !item.uri.split('/').at(-1)!.startsWith('stage-')
+        && Number.isSafeInteger(item.bytes) && item.bytes > 0 && item.bytes <= MAX_FILE
+        && /^[a-f0-9]{64}$/.test(item.sha256) && Number.isFinite(item.usedAt) && item.usedAt >= 0)
+      saved.set(item.uri, item);
+    else await mediaCacheCatalog.remove(catalogActor(actor), item.uri);
+    if (epoch !== generation) throw new ChatError('stale_session');
+  }
+  const info = await FS.getInfoAsync(actor);
+  if (info.exists && info.isDirectory) for (const directory of await FS.readDirectoryAsync(actor)) {
+    if (!scopePattern.test(directory)) continue;
+    const path = `${actor}${directory}/`, directoryInfo = await FS.getInfoAsync(path);
+    if (!directoryInfo.exists || !directoryInfo.isDirectory) continue;
+    for (const filename of await FS.readDirectoryAsync(path)) {
+      if (!mediaFilePattern.test(filename)) continue;
+      if (epoch !== generation) throw new ChatError('stale_session');
+      const uri = `${path}${filename}`, stat = await FS.getInfoAsync(uri);
+      if (!stat.exists || stat.isDirectory) continue;
+      if (filename.startsWith('stage-')) { state.stages.set(uri, stat.size); state.stageBytes += stat.size; }
+      else if (filename.endsWith('.part') || stat.size <= 0 || stat.size > MAX_FILE) {
+        if (epoch !== generation) throw new ChatError('stale_session');
+        await removeOwned(uri); saved.delete(uri);
+      } else {
+        const prior = saved.get(uri);
+        state.cache.set(uri, { uri, bytes: stat.size, sha256: prior?.bytes === stat.size ? prior.sha256 : null,
+          usedAt: prior?.usedAt ?? 0 });
+        state.cacheBytes += stat.size; saved.delete(uri);
+      }
+    }
+  }
+  for (const uri of saved.keys()) { if (epoch !== generation) throw new ChatError('stale_session'); await mediaCacheCatalog.remove(catalogActor(actor), uri); }
+  if (epoch !== generation) throw new ChatError('stale_session');
+  state.cache = new Map([...state.cache.values()].sort((a, b) => a.usedAt - b.usedAt || a.uri.localeCompare(b.uri)).map(entry => [entry.uri, entry]));
+  actorFiles.set(actor, state); return state;
 }
-async function capacity(actor: string, additional: number): Promise<void> {
-  if (await bytesIn(actor) + additional > MAX_ACCOUNT) throw new ChatError('media_quota');
+async function capacity(actor: string, additional: number, stage = false): Promise<void> {
+  const epoch = generation, state = await loadActorFiles(actor, epoch);
+  if (stage) { if (state.stageBytes + additional > MAX_STAGED || state.stages.size >= 200 && additional > 0) throw new ChatError('media_quota'); return; }
+  const victims = state.cache.values();
+  while (state.cacheBytes + additional > MAX_CACHE || state.cache.size + (additional > 0 ? 1 : 0) > MAX_CACHE_FILES) {
+    let victim: CacheEntry | undefined;
+    for (const item of victims) if (!mediaPins.get(item.uri)?.size) { victim = item; break; }
+    if (!victim) throw new ChatError('media_quota');
+    if (epoch !== generation) throw new ChatError('stale_session');
+    await removeOwned(victim.uri);
+  }
 }
 async function hashFile(uri: string): Promise<string> { return BlobUtil.fs.hash(decodeURI(uri.replace(/^file:\/\//, '')), 'sha256'); }
 async function verifyAttachment(room: Room, attachment: Attachment): Promise<void> {
@@ -287,28 +360,28 @@ async function pruneMedia(mode: 'snapshot' | 'cacheOnly' | 'logout', expectedGen
     const actorName = actor?.slice(mediaRoot.length).replace(/\/$/, '');
     const permitted = new Set(rooms.map(r => `c${r.company_id}-r${r.id}-m${r.membership_id}`));
     const staged = new Set(pending.flatMap(p => p.attachment ? [p.attachment.uri] : []));
-    const rootInfo = await FS.getInfoAsync(mediaRoot); if (!rootInfo.exists || !rootInfo.isDirectory) return;
-    for (const actorEntry of await FS.readDirectoryAsync(mediaRoot)) {
-      if (!actorPattern.test(actorEntry)) continue;
-      const actorPath = `${mediaRoot}${actorEntry}/`; const actorInfo = await FS.getInfoAsync(actorPath);
-      if (!actorInfo.exists || !actorInfo.isDirectory) continue;
-      for (const scopeEntry of await FS.readDirectoryAsync(actorPath)) {
-        if (!scopePattern.test(scopeEntry)) continue;
-        const directory = `${actorPath}${scopeEntry}/`; const directoryInfo = await FS.getInfoAsync(directory);
-        if (!directoryInfo.exists || !directoryInfo.isDirectory) continue;
-        for (const filename of await FS.readDirectoryAsync(directory)) {
-          if (!mediaFilePattern.test(filename)) continue;
-          if (epoch !== generation) throw new ChatError('stale_session');
-          const uri = `${directory}${filename}`; const fileInfo = await FS.getInfoAsync(uri);
-          if (!fileInfo.exists || fileInfo.isDirectory) continue;
-          const matchingScope = valid && actorEntry === actorName && permitted.has(scopeEntry);
-          const reservation = reservations.get(uri);
-          const reserved = reservation && reservation.epoch === epoch && Date.now() - reservation.at < 5 * 60 * 1000 && matchingScope;
-          const keep = retainNativeFile({ filename, mode, validIdentity: valid, matchingScope, mediaRight: identity?.permissions.media === true,
-            sendRight: identity?.permissions.chat_send === true, pending: staged.has(uri), reserved: !!reserved });
-          if (!keep) { if (epoch !== generation) throw new ChatError('stale_session'); await removeOwned(uri); reservations.delete(uri); }
-        }
+    if (!discoveredActors) {
+      const rootInfo = await FS.getInfoAsync(mediaRoot);
+      if (rootInfo.exists && rootInfo.isDirectory) for (const entry of await FS.readDirectoryAsync(mediaRoot)) {
+        if (actorPattern.test(entry)) await loadActorFiles(`${mediaRoot}${entry}/`, epoch);
       }
+      if (epoch !== generation) throw new ChatError('stale_session');
+      discoveredActors = true;
+    }
+    if (actor) await loadActorFiles(actor, epoch);
+    for (const [actorPath, state] of actorFiles) {
+      const actorEntry = actorPath.slice(mediaRoot.length).replace(/\/$/, '');
+      for (const uri of [...state.cache.keys(), ...state.stages.keys()]) {
+        if (epoch !== generation) throw new ChatError('stale_session');
+        const relative = uri.slice(actorPath.length), [scopeEntry, filename] = relative.split('/');
+        const matchingScope = valid && actorEntry === actorName && permitted.has(scopeEntry!);
+        const reservation = reservations.get(uri);
+        const reserved = reservation && reservation.epoch === epoch && Date.now() - reservation.at < 5 * 60 * 1000 && matchingScope;
+        const keep = retainNativeFile({ filename: filename!, mode, validIdentity: valid, matchingScope, mediaRight: identity?.permissions.media === true,
+          sendRight: identity?.permissions.chat_send === true, pending: staged.has(uri), reserved: !!reserved });
+        if (!keep) { await removeOwned(uri); reservations.delete(uri); }
+      }
+      if (actorPath === actor && mode === 'snapshot') await capacity(actor, 0);
     }
   });
 }
@@ -352,7 +425,7 @@ class NativeChatEngine extends ChatEngine {
 export function getEngine(): NativeChatEngine {
   if (!engine) {
     fixedURL('/bchat/api/v2/bootstrap');
-    engine = new NativeChatEngine({ origin: config.origin, database: config.database, storage: AsyncStorage, uuid: Crypto.randomUUID,
+    engine = new NativeChatEngine({ origin: config.origin, database: config.database, storage: AsyncStorage, archive: historyArchive, uuid: Crypto.randomUUID,
       transport: { request, cancelAll: cancelNative }, upload, removeAttachment: a => removeOwned(a.uri), uploadGroupAvatar,
     });
   }
@@ -369,46 +442,88 @@ export function stageFile(room: Room, input: { uri: string; name: string; mime: 
     if (new TextEncoder().encode(name).length > 160) name = `attachment${extensions[input.mime]}`;
     const actor = await actorDirectory(snapshot.key); const directory = `${actor}c${room.company_id}-r${room.id}-m${room.membership_id}/`;
     await FS.makeDirectoryAsync(directory, { intermediates: true });
+    const state = await loadActorFiles(actor);
     const upload_uuid = Crypto.randomUUID(); const uri = `${directory}stage-${upload_uuid}${extensions[input.mime]}`;
     try {
       const original = await FS.getInfoAsync(input.uri);
-      if (original.exists && !original.isDirectory) { if (original.size > (kind === 'image' ? MAX_FILE / 2 : MAX_FILE)) throw new ChatError('file_too_large'); await capacity(actor, original.size); }
+      if (original.exists && !original.isDirectory) { if (original.size > (kind === 'image' ? MAX_FILE / 2 : MAX_FILE)) throw new ChatError('file_too_large'); await capacity(actor, original.size, true); }
       await FS.copyAsync({ from: input.uri, to: uri }); const info = await FS.getInfoAsync(uri);
       if (!info.exists || info.isDirectory || info.size <= 0 || info.size > (kind === 'image' ? MAX_FILE / 2 : MAX_FILE)) throw new ChatError('file_too_large');
-      await capacity(actor, 0); const sha256 = await hashFile(uri); fence(room, snapshot);
+      await capacity(actor, info.size, true);
+      state.stages.set(uri, info.size); state.stageBytes += info.size;
+      const sha256 = await hashFile(uri); mediaFence(room, snapshot);
+      if (getEngine().identity?.permissions.chat_send !== true) throw new ChatError('forbidden', 403);
       reservations.set(uri, { epoch: snapshot.epoch, at: Date.now() });
       return { uri, name, mime: input.mime, kind, size: info.size, sha256, upload_uuid };
     } catch (error) { await removeOwned(uri).catch(() => undefined); throw error; }
   });
 }
-export async function localMedia(room: Room, descriptor: Record<string, unknown>): Promise<string> {
-  // Prove room association before touching cache paths. Offline history contains
-  // only this account/company/room/membership's remembered messages.
+function pinLocal(uri: string): LocalMediaLease {
+  const token = {}, owners = mediaPins.get(uri) ?? new Set<object>(); owners.add(token); mediaPins.set(uri, owners);
+  return { uri, release() { const current = mediaPins.get(uri); if (current !== owners) return; current.delete(token); if (!current.size) mediaPins.delete(uri); } };
+}
+/** Compatibility resolver; presentation owners use a lease to prevent LRU races. */
+export async function localMedia(room: Room, descriptor: Record<string, unknown>, variant: MediaVariant = 'original'): Promise<string> {
+  const lease = await localMediaLease(room, descriptor, variant); lease.release(); return lease.uri;
+}
+export async function localMediaLease(room: Room, descriptor: Record<string, unknown>, variant: MediaVariant = 'original'): Promise<LocalMediaLease> {
   const before = scope(room);
-  let history = getEngine().rememberedHistory(room);
-  // Already-validated room metadata avoids one history HTTP request per visible
-  // image. A missing association still takes the original authoritative path.
-  if (!history?.messages.some(message => message.media?.id === descriptor.id)) history = await getEngine().history(room);
-  const media = trustedMedia(history, descriptor); fence(room, before);
+  if (!Number.isSafeInteger(descriptor.id) || Number(descriptor.id) <= 0) throw new ChatError('invalid_attachment');
+  const associated = await getEngine().mediaAssociation(room, Number(descriptor.id));
+  let history: History | null = associated ? { api_version: 2, messages: [associated], next_before_id: null } : null;
+  // Unknown IDs retain the bounded authoritative fallback; known archived media
+  // never forces an HTTP history request or a full archive scan.
+  if (!history) history = await getEngine().history(room);
+  const media = trustedMedia(history, descriptor); mediaFence(room, before);
   return serialMedia(async () => {
-    fence(room, before); const snapshot = scope(room); const extension = extensions[media.mime];
+    mediaFence(room, before); const snapshot = scope(room); const extension = extensions[media.mime];
     if (!extension || getEngine().identity?.permissions.media !== true) throw new ChatError('forbidden', 403);
     const actor = await actorDirectory(snapshot.key); const directory = `${actor}c${room.company_id}-r${room.id}-m${room.membership_id}/`;
-    const uri = `${directory}media-${media.id}${extension}`; const cached = await FS.getInfoAsync(uri);
+    const state = await loadActorFiles(actor, snapshot.epoch);
+    const preview = variant === 'preview' && media.kind === 'image' && media.thumbnail_available === true;
+    const uri = `${directory}media-${media.id}${preview ? '-preview.jpg' : extension}`;
+    const cached = await FS.getInfoAsync(uri);
     if (cached.exists && !cached.isDirectory) {
-      if (cached.size === media.size && await hashFile(uri) === media.sha256) { fence(room, snapshot); return uri; }
+      const expected = preview ? state.cache.get(uri) : { bytes: media.size, sha256: media.sha256 };
+      if (expected?.sha256 && cached.size === expected.bytes && await hashFile(uri) === expected.sha256) {
+        mediaFence(room, snapshot);
+        const usedAt = Date.now(), entry = { uri, bytes: cached.size, sha256: expected.sha256, usedAt };
+        if (!state.cache.has(uri)) state.cacheBytes += cached.size;
+        state.cache.delete(uri); state.cache.set(uri, entry);
+        await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot); return pinLocal(uri);
+      }
       await removeOwned(uri);
     }
+    // Legacy images may reuse a downloaded original, but a scroll never starts
+    // a large original download simply because a thumbnail is unavailable.
+    if (variant === 'preview' && !preview) throw new ChatError('media_not_cached');
     if (getEngine().offline) throw new ChatError('media_not_cached');
-    await capacity(actor, media.size); await FS.makeDirectoryAsync(directory, { intermediates: true });
-    const partial = `${directory}media-${media.id}-${Crypto.randomUUID()}.part`;
+    const limit = preview ? MAX_THUMBNAIL : media.size;
+    await capacity(actor, limit); await FS.makeDirectoryAsync(directory, { intermediates: true });
+    const partial = `${directory}media-${media.id}-${Crypto.randomUUID()}.part`; let moved = false;
     try {
-      const response = await sessionNative(`/bchat/api/v2/media/${media.id}/content`, 'GET', { Accept: media.mime, 'Accept-Encoding': 'identity' }, undefined, undefined, partial, media.size);
-      fence(room, snapshot); const headers = headersOf(response);
-      if ((headers['content-type'] ?? '').split(';')[0].trim() !== media.mime || headers['content-length'] !== undefined && Number(headers['content-length']) !== media.size) throw new ChatError('invalid_response');
+      mediaFence(room, snapshot);
+      const mime = preview ? 'image/jpeg' : media.mime;
+      const response = await sessionNative(`/bchat/api/v2/media/${media.id}/${preview ? 'thumbnail' : 'content'}`, 'GET', { Accept: mime, 'Accept-Encoding': 'identity' }, undefined, undefined, partial, limit);
+      mediaFence(room, snapshot); const headers = headersOf(response);
+      if ((headers['content-type'] ?? '').split(';')[0].trim() !== mime) throw new ChatError('invalid_response');
       const info = await FS.getInfoAsync(partial);
-      if (!info.exists || info.isDirectory || info.size !== media.size || await hashFile(partial) !== media.sha256) throw new ChatError('attachment_changed');
-      fence(room, snapshot); await FS.moveAsync({ from: partial, to: uri }); fence(room, snapshot); return uri;
-    } catch (error) { await removeOwned(partial).catch(() => undefined); throw error; }
+      if (!info.exists || info.isDirectory || info.size <= 0 || info.size > limit
+          || headers['content-length'] !== undefined && (!/^[1-9]\d*$/.test(headers['content-length']) || Number(headers['content-length']) !== info.size)) throw new ChatError('invalid_response');
+      const digest = await hashFile(partial);
+      if (!preview && (info.size !== media.size || digest !== media.sha256)) throw new ChatError('attachment_changed');
+      if (preview) {
+        const encoded = await FS.readAsStringAsync(partial, { encoding: FS.EncodingType.Base64 });
+        if (!validThumbnail(BlobUtil.base64.decode(encoded))) throw new ChatError('invalid_response');
+      }
+      mediaFence(room, snapshot); await FS.moveAsync({ from: partial, to: uri }); moved = true; mediaFence(room, snapshot);
+      const entry = { uri, bytes: info.size, sha256: digest, usedAt: Date.now() };
+      state.cacheBytes += info.size; state.cache.set(uri, entry);
+      await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot); return pinLocal(uri);
+    } catch (error) {
+      await removeOwned(partial).catch(() => undefined);
+      if (moved) await removeOwned(uri).catch(() => undefined);
+      throw error;
+    }
   });
 }

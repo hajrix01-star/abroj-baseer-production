@@ -87,6 +87,7 @@ export function TimelineScreen({
   const list = useRef<FlashListRef<Row>>(null);
   const input = useRef<TextInput>(null);
   const follow = useRef(new TimelineFollow());
+  const browsing = useRef(false); browsing.current = chat.history.archive?.browsing === true;
   const scrollFrame = useRef<number | null>(null);
   const scrollGeometry = useRef({ content: 0, viewport: 0, offset: 0 });
   const dragging = useRef(false);
@@ -102,7 +103,7 @@ export function TimelineScreen({
     scrollFrame.current = requestAnimationFrame(() => {
       scrollFrame.current = requestAnimationFrame(() => {
         scrollFrame.current = null;
-        if (!live.current || dragging.current || !follow.current.following) return;
+        if (!live.current || browsing.current || dragging.current || !follow.current.following) return;
         let { content, viewport, offset } = scrollGeometry.current;
         const current = list.current;
         try {
@@ -193,13 +194,13 @@ export function TimelineScreen({
       else await engine.enqueue(room, text, reply?.id);
       if (!live.current || !latestAccess.current) return;
       chat.soundSent?.(room);
-      follow.current.ownEnqueued();
-      setShowLatest(false);
+      if (!browsing.current) follow.current.ownEnqueued();
+      setShowLatest(browsing.current);
       if (submittedDraft === draftRevision.current) setText('');
       if (submittedReply === replyRevision.current) setReply(null);
       setActionsFor(null);
       chat.capture();
-      scrollLatest();
+      if (!browsing.current) scrollLatest();
       // The durable local queue owns retry/ACK. Network latency must not hold the composer lock.
       if (!chat.offline) void chat.sync().catch(() => undefined);
     } catch (e) {
@@ -212,14 +213,15 @@ export function TimelineScreen({
   const rows: Row[] = [
     ...chat.history.messages.map(message => ({ key: `message-${message.id}`, message })),
     ...chat.pending
-      .filter(item => item.room_id === room.id)
+      .filter(item => item.room_id === room.id && item.company_id === room.company_id && item.membership_id === room.membership_id)
       .map(pending => ({ key: pending.client_uuid, pending })),
   ];
   const lastKey = rows[rows.length - 1]?.key;
   useEffect(() => {
+    if (browsing.current) { follow.current.following = false; setShowLatest(true); return; }
     if (follow.current.rows(lastKey)) scrollLatest();
     else if (lastKey && !follow.current.following) setShowLatest(true);
-  }, [lastKey, scrollLatest]);
+  }, [lastKey, scrollLatest, chat.history.archive?.browsing]);
   const companyName = companyDisplayName(
     chat.identity?.profile?.companies.find(company => company.id === room.company_id),
     language,
@@ -350,17 +352,22 @@ export function TimelineScreen({
             contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10 }}
             maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
             ListHeaderComponent={
-              chat.history.next_before_id ? (
+              <View>
+              {chat.history.archive?.partial && <Label language={language} muted>{t('archiveGap')}</Label>}
+              {chat.history.next_before_id ? (
                 <Button
                   quiet
                   title={t('older')}
-                  disabled={chat.offline || chat.busy}
+                  disabled={chat.busy || chat.offline && chat.history.archive?.older.kind !== 'cached'}
                   onPress={() => {
+                    follow.current.following = false; setShowLatest(true);
                     void chat.older().catch(() => undefined);
                   }}
                 />
-              ) : null
+              ) : null}
+              </View>
             }
+            ListFooterComponent={chat.history.archive?.browsing && chat.history.archive.newer.kind === 'cached' ? <Button quiet title={t('newer')} disabled={chat.busy} onPress={() => { void chat.newer().catch(() => undefined); }} /> : null}
             ListEmptyComponent={
               <View style={{ padding: 24 }}>
                 <Label language={language} muted>
@@ -514,7 +521,7 @@ export function TimelineScreen({
               );
             }}
           />
-          {showLatest && (
+          {(showLatest || chat.history.archive?.browsing) && (
             <View
               style={{
                 position: 'absolute',
@@ -527,11 +534,12 @@ export function TimelineScreen({
               }}>
               <IconButton
                 icon="down"
-                label={t('latest')}
+                label={chat.history.archive?.browsing ? t('newer') : t('latest')}
+                disabled={chat.busy}
                 onPress={() => {
-                  follow.current.ownEnqueued();
-                  setShowLatest(false);
-                  scrollLatest();
+                  const finish = () => { if (live.current) { follow.current.ownEnqueued(); setShowLatest(false); scrollLatest(); } };
+                  if (chat.history.archive?.browsing) void chat.latest().then(finish).catch(() => undefined);
+                  else finish();
                 }}
               />
             </View>

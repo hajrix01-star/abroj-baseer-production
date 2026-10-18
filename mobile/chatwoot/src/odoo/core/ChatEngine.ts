@@ -1,5 +1,8 @@
 /** Odoo-owned chat domain. No native dependencies, credentials or telemetry. */
 import type { LoginStage, NetworkFailure } from './loginDiagnostics';
+import type { ArchiveEdge, ArchiveQuery, ArchiveSlice, HistoryArchive, HistoryScope } from './HistoryArchive.ts';
+import { ARCHIVE_LIMITS, ArchiveError } from './HistoryArchive.ts';
+import { MemoryHistoryArchive } from './MemoryHistoryArchive.ts';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -37,7 +40,8 @@ export interface Message {
   id: number; author_user_id: number; author_name: string; text: string; created_at: string;
   delivery_state?: string; media?: Record<string, unknown>; reply?: Record<string, unknown>;
 }
-export interface History { api_version: 2; messages: Message[]; next_before_id: number | null }
+export interface History { api_version: 2; messages: Message[]; next_before_id: number | null;
+  archive?: { older: ArchiveEdge; newer: ArchiveEdge; partial: boolean; browsing: boolean; latestId: number | null; unverified?: boolean } }
 export interface Pending {
   client_uuid: string; room_id: number; company_id: number; membership_id: number;
   text: string; reply_to_message_id?: number; created_at: number;
@@ -58,6 +62,7 @@ export interface Options {
   upload?: (room: Room, attachment: Attachment, csrfToken: string, signal: AbortSignal) => Promise<{ media_id: number; policy_version?: number }>;
   removeAttachment?: (attachment: Attachment) => Promise<void>;
   uploadGroupAvatar?: (room: Room, input: GroupAvatarInput, csrfToken: string, signal: AbortSignal) => Promise<GroupAvatarAck>;
+  archive?: HistoryArchive;
 }
 export class ChatError extends Error {
   readonly code: string;
@@ -97,6 +102,12 @@ export class ChatEngine {
   private readonly upload?: Options['upload'];
   private readonly removeAttachment?: Options['removeAttachment'];
   private readonly avatarUpload?: Options['uploadGroupAvatar'];
+  private readonly archive: HistoryArchive;
+  private archiveCleanup = new Set<string>();
+  private archiveOwner: string | null = null;
+  private browsing = new Set<string>();
+  private historyPumps = new Map<string, Promise<History>>();
+  private windowVersions = new Map<string, number>();
   private epoch = 0;
   private abort = new AbortController();
   private work: Promise<unknown> = Promise.resolve();
@@ -127,6 +138,7 @@ export class ChatEngine {
     this.uuid = options.uuid ?? (() => globalThis.crypto.randomUUID()); this.now = options.now ?? Date.now;
     this.upload = options.upload; this.removeAttachment = options.removeAttachment;
     this.avatarUpload = options.uploadGroupAvatar;
+    this.archive = options.archive ?? new MemoryHistoryArchive();
   }
   get identity(): Bootstrap | null { return this.account && !this.accessLocked ? copy(this.account) : null; }
   get accountScope(): string | null { return this.account && !this.accessLocked ? `${this.prefix()}/epoch:${this.epoch}` : null; }
@@ -146,6 +158,7 @@ export class ChatEngine {
     this.account = null; this.roomRows = []; this.histories.clear(); this.queue.clear();
     this.remembered = false; this.verifiedAt = 0; this.changeCursor = 0; this.disconnected = true;
     this.refreshing = null; this.pumping = null; this.state = 'signed_out';
+    this.browsing.clear(); this.historyPumps.clear(); this.windowVersions.clear();
     this.accessLocked = false;
     this.receiptWork = Promise.resolve(); this.receiptPumps.clear(); this.receiptAcks.clear();
     return this.epoch;
@@ -155,6 +168,45 @@ export class ChatEngine {
     return `${this.root}u/${uid}/`;
   }
   private scope(room: Room): string { return `${this.prefix()}c/${room.company_id}/r/${room.id}/m/${room.membership_id}/`; }
+  private archiveScope(room: Room): HistoryScope { return { account: this.prefix(), companyId: room.company_id, roomId: room.id, membershipId: room.membership_id }; }
+  private archiveGuard(e: number, room?: Room, internal = false): () => void {
+    const account = this.prefix();
+    return () => {
+      this.fence(e);
+      if (!this.account || this.prefix() !== account || this.account.permissions.chat_view !== true) throw new ChatError('stale_session');
+      if (!internal) this.requireIdentity();
+      if (room && (!this.account.company_ids.includes(room.company_id) || !this.roomRows.some(row => row.id === room.id && row.company_id === room.company_id && row.membership_id === room.membership_id))) throw new ChatError('membership_changed', 403);
+    };
+  }
+  /** Epoch-only cleanup authority remains usable after account reset. Called under serial. */
+  private async drainArchiveCleanup(e: number): Promise<void> {
+    for (const account of [...this.archiveCleanup]) {
+      this.fence(e); await this.archive.purgeAccount(account, () => this.fence(e)); this.fence(e);
+      this.archiveCleanup.delete(account);
+    }
+  }
+  private async reconcileArchive(e: number): Promise<void> {
+    const guard = this.archiveGuard(e, undefined, true);
+    await this.archive.reconcile(this.prefix(), this.roomRows.map(room => this.archiveScope(room)), this.account!.permissions.media === true, guard); guard();
+  }
+  private async migrateLegacyHistory(e: number): Promise<void> {
+    for (const room of this.roomRows) {
+      const key = `${this.scope(room)}history`, guard = this.archiveGuard(e, room, this.accessLocked);
+      let raw: string | null;
+      try { raw = await this.storage.getItem(key); guard(); }
+      catch { guard(); await this.storage.removeItem(key); continue; }
+      if (!raw) continue;
+      let history: History;
+      try {
+        if (new TextEncoder().encode(raw).length > HISTORY_LIMITS.roomBytes) throw new ChatError('invalid_history');
+        history = this.validHistory(JSON.parse(raw));
+      } catch { guard(); await this.storage.removeItem(key); continue; }
+      // Import ACK is the only authority to remove this replaceable legacy source.
+      try { await this.archive.importLegacy(this.archiveScope(room), history, guard); guard(); }
+      catch { guard(); throw new ChatError('history_storage_unavailable'); }
+      await this.storage.removeItem(key); guard();
+    }
+  }
   private async removeStoredAttachments(entries: [string, string][]) {
     const attachments = new Map<string, Attachment>();
     for (const [key, value] of entries) if (key.includes('/outbox/') || key.includes('/ack/')) {
@@ -219,8 +271,9 @@ export class ChatEngine {
   }
   private async invalidate(e: number) {
     this.fence(e); const root = this.root;
-    this.reset();
-    await this.serial(() => this.purge(root));
+    if (this.archiveOwner) this.archiveCleanup.add(this.archiveOwner);
+    const cleanup = this.reset();
+    await this.serial(async () => { this.fence(cleanup); await this.drainArchiveCleanup(cleanup); await this.purge(root); });
   }
   private async loadStoredAccount(e: number) {
     this.fence(e);
@@ -229,27 +282,7 @@ export class ChatEngine {
     // structurally valid scopes, then reconcile every scope with /rooms.
     if (!Array.isArray(rooms) || rooms.length > 100) throw new ChatError('invalid_rooms');
     this.roomRows = rooms.filter(r => id(r.id) && id(r.company_id) && id(r.membership_id) && typeof r.name === 'string');
-    let order: string[] = [];
-    try { const value = JSON.parse(await this.storage.getItem(`${this.prefix()}history-lru`) ?? '[]'); if (Array.isArray(value)) order = value.filter(key => typeof key === 'string').slice(-100); } catch { /* Order is a hint, never an identity source. */ }
-    const cacheRooms = [...this.roomRows].sort((a, b) => order.indexOf(this.scope(a)) - order.indexOf(this.scope(b)));
-    for (const room of cacheRooms) {
-      const key = this.scope(room);
-      try {
-        const history = await this.storage.getItem(`${key}history`); this.fence(e);
-        if (history) await this.cacheHistory(room, this.validHistory(JSON.parse(history)), e);
-      } catch {
-        // CursorWindow can reject a legacy oversized value before JSON parsing.
-        // Cache failure must never turn into deletion of unACKed operations.
-        this.fence(e); this.histories.delete(key);
-        try { await this.storage.removeItem(`${key}history`); }
-        catch { throw new ChatError('history_storage_unavailable'); }
-      }
-    }
     const keys = await this.storage.getAllKeys(); this.fence(e);
-    const retainedHistory = new Set([...this.histories.keys()].map(scope => `${scope}history`));
-    for (const key of keys) if (key.startsWith(this.prefix()) && key.endsWith('/history') && !retainedHistory.has(key)) {
-      try { await this.storage.removeItem(key); } catch { throw new ChatError('history_storage_unavailable'); }
-    }
     for (const key of keys.filter(k => k.startsWith(this.prefix()) && k.includes('/outbox/')).sort()) {
       const value = await this.storage.getItem(key); this.fence(e);
       if (!value) continue;
@@ -275,6 +308,7 @@ export class ChatEngine {
     const e = this.reset(); this.state = 'connecting'; this.accessLocked = true;
     return this.lifecycleRun(async () => {
       this.fence(e);
+      await this.serial(() => this.drainArchiveCleanup(e)); this.fence(e);
       // Keep unACKed operations durable through network/password/MFA failures.
       // A durable lock prevents offline restore until the same uid/db is proven.
       const prior = await this.serial(async () => {
@@ -301,7 +335,12 @@ export class ChatEngine {
         loginStage = 'storage';
         await this.serial(async () => {
           this.fence(e);
-          if (prior.uid !== result.uid) { await this.purge(this.root); await this.storage.setItem(`${this.root}authentication-required`, 'true'); }
+          if (prior.uid !== result.uid) {
+            if (prior.uid) this.archiveCleanup.add(this.prefix(prior.uid));
+            this.archiveCleanup.add(this.prefix(result.uid)); await this.drainArchiveCleanup(e);
+            await this.purge(this.root); await this.storage.setItem(`${this.root}authentication-required`, 'true');
+          }
+          this.archiveOwner = this.prefix(result.uid);
           await this.storage.setItem(`${this.root}owner`, JSON.stringify({ user_id: result.uid })); this.fence(e);
         });
         bootstrapRequested = true;
@@ -315,6 +354,7 @@ export class ChatEngine {
         this.verifiedAt = this.now();
         loginStage = 'storage';
         await this.serial(async () => {
+          await this.migrateLegacyHistory(e);
           this.fence(e); await this.persistIdentity(e);
           if (!remember) await this.storage.removeItem(`${this.root}identity`);
           await this.storage.removeItem(`${this.root}authentication-required`); this.fence(e);
@@ -352,7 +392,14 @@ export class ChatEngine {
           this.state = 'offline_expired'; return false;
         }
         this.account = b as Bootstrap; this.verifiedAt = saved.verifiedAt; this.remembered = true;
+        this.archiveOwner = this.prefix(); await this.drainArchiveCleanup(e);
         await this.loadStoredAccount(e); this.roomRows = this.validRooms(this.roomRows);
+        try { await this.reconcileArchive(e); await this.migrateLegacyHistory(e); }
+        catch (error) {
+          this.fence(e);
+          if (error instanceof ChatError && denied(error)) throw error;
+          throw new ChatError('history_storage_unavailable');
+        }
         this.state = 'offline'; return true;
       } catch (error) {
         this.fence(e); this.account = null; this.roomRows = []; this.histories.clear(); this.queue.clear();
@@ -365,8 +412,9 @@ export class ChatEngine {
     });
   }
   async logout(): Promise<void> {
+    if (this.archiveOwner) this.archiveCleanup.add(this.archiveOwner);
     const e = this.reset();
-    await this.serial(() => this.purge(this.root));
+    await this.serial(async () => { this.fence(e); await this.drainArchiveCleanup(e); await this.purge(this.root); });
     return this.lifecycleRun(async () => {
       this.fence(e);
       try { await this.closeSession(e, 4); }
@@ -411,6 +459,7 @@ export class ChatEngine {
       // An enqueue already holding the disk mutex may have completed meanwhile.
       reconcileMemory();
       for (const scope of revokedScopes) await this.purge(scope);
+      await this.reconcileArchive(e);
       const companyPrefixes = new Set<string>();
       for (const key of await this.storage.getAllKeys()) if (key.startsWith(this.prefix())) {
         const match = /^c\/(\d+)\//.exec(key.slice(this.prefix().length));
@@ -420,9 +469,6 @@ export class ChatEngine {
       for (const [uuid, pending] of removedPending) {
         const key = `${this.prefix()}c/${pending.company_id}/r/${pending.room_id}/m/${pending.membership_id}/outbox/${uuid}`;
         await this.storage.removeItem(key); await this.removeStoredAttachments([[key, JSON.stringify(pending)]]);
-      }
-      if (this.remembered) for (const key of stripMedia) {
-        const history = this.histories.get(key); if (history) await this.storage.setItem(`${key}history`, JSON.stringify(history));
       }
       this.fence(e); await this.persistIdentity(e);
     });
@@ -436,6 +482,7 @@ export class ChatEngine {
         if (!rooms.some(r => r.id === old.id && r.company_id === old.company_id && r.membership_id === old.membership_id)) await this.dropRoom(old, e);
       }
       this.fence(e); this.roomRows = rooms;
+      await this.reconcileArchive(e);
       for (const [uuid, p] of this.queue) {
         const room = rooms.find(r => r.id === p.room_id);
         const directDisabled = room?.mobile_direct && !this.account?.mobile_policy?.find(policy => policy.company_id === room.company_id)?.direct_enabled;
@@ -452,6 +499,7 @@ export class ChatEngine {
   private async dropRoom(room: Room, e: number) {
     this.fence(e); const scope = this.scope(room);
     this.histories.delete(scope); this.roomRows = this.roomRows.filter(r => !(r.id === room.id && r.company_id === room.company_id && r.membership_id === room.membership_id));
+    this.browsing.delete(scope); await this.reconcileArchive(e);
     for (const [key, p] of this.queue) if (p.room_id === room.id && p.company_id === room.company_id && p.membership_id === room.membership_id) this.queue.delete(key);
     for (const key of this.receiptAcks.keys()) if (key.startsWith(scope)) this.receiptAcks.delete(key);
     await this.purge(scope); this.fence(e);
@@ -514,10 +562,10 @@ export class ChatEngine {
   }
   private fitHistory(history: History): { history: History; json: string; bytes: number } {
     const encoder = new TextEncoder();
-    const base: History = { api_version: 2, messages: [], next_before_id: history.next_before_id };
+    const base: History = { api_version: 2, messages: [], next_before_id: history.next_before_id, ...(history.archive ? { archive: copy(history.archive) } : {}) };
     let bytes = encoder.encode(JSON.stringify(base)).length;
     const newest: Message[] = [];
-    for (let index = history.messages.length - 1; index >= 0 && newest.length < HISTORY_LIMITS.roomMessages; index--) {
+    for (let index = history.messages.length - 1; index >= 0 && newest.length < ARCHIVE_LIMITS.windowMessages; index--) {
       const message = history.messages[index]!;
       const additional = encoder.encode(JSON.stringify(message)).length + (newest.length ? 1 : 0);
       if (bytes + additional > HISTORY_LIMITS.roomBytes) {
@@ -526,7 +574,11 @@ export class ChatEngine {
       }
       bytes += additional; newest.push(message);
     }
-    base.messages = newest.reverse(); const json = JSON.stringify(base);
+    base.messages = newest.reverse();
+    if (base.archive && newest.length < history.messages.length && base.messages.length) {
+      base.next_before_id = base.messages[0]!.id; base.archive.older = { kind: 'cached', cursor: base.next_before_id };
+    }
+    const json = JSON.stringify(base);
     return { history: base, json, bytes: encoder.encode(json).length };
   }
   private historyUsage(): { bytes: number; messages: number } {
@@ -544,12 +596,8 @@ export class ChatEngine {
       const oldest = this.histories.keys().next().value!;
       this.histories.delete(oldest); evicted.push(oldest); usage = this.historyUsage();
     }
-    // Reclaim old history first, keeping even transient disk usage bounded.
-    for (const scope of evicted) { this.fence(e); await this.storage.removeItem(`${scope}history`); }
+    // Archive retention is independent from this small JS view/LRU. Never evict durable sends.
     this.fence(e);
-    if (this.remembered) await this.storage.setItem(`${key}history`, fitted.json);
-    else await this.storage.removeItem(`${key}history`);
-    this.fence(e); await this.storage.setItem(`${this.prefix()}history-lru`, JSON.stringify([...this.histories.keys()]));
   }
   /** Current authorized snapshot only; never fetches, renews a lease or exposes mutable cache. */
   rememberedHistory(value: Room | number): History | null {
@@ -559,35 +607,127 @@ export class ChatEngine {
     const history = this.histories.get(this.scope(room));
     return history ? copy(history) : null;
   }
+  /** Canonical association, not authority granted by a caller-provided file descriptor. */
+  async mediaAssociation(value: Room | number, mediaId: number): Promise<Message | null> {
+    const room = this.room(value), e = this.epoch;
+    if (!id(mediaId)) throw new ChatError('invalid_media');
+    const scopeGuard = this.archiveGuard(e, room);
+    const guard = () => { scopeGuard(); if (this.account?.permissions.media !== true) throw new ChatError('forbidden', 403); };
+    guard();
+    const hot = this.histories.get(this.scope(room))?.messages.find(message => message.media?.id === mediaId);
+    if (hot) return copy(hot);
+    return this.serial(async () => { guard(); const message = await this.archive.findMedia(this.archiveScope(room), mediaId, guard); guard(); return message ? copy(message) : null; });
+  }
   async history(value: Room | number, beforeId?: number): Promise<History> {
     const room = this.room(value); const e = this.epoch;
+    if (beforeId !== undefined) return this.navigateHistory(room, 'before', beforeId);
     if (this.disconnected) return this.serial(async () => {
-      this.fence(e); this.room(room); const key = this.scope(room); const saved = this.histories.get(key);
-      if (saved) { this.histories.delete(key); this.histories.set(key, saved); await this.storage.setItem(`${this.prefix()}history-lru`, JSON.stringify([...this.histories.keys()])); this.fence(e); }
-      return copy(saved ?? { api_version: 2, messages: [], next_before_id: null });
+      const guard = this.archiveGuard(e, room); guard();
+      const old = this.histories.get(this.scope(room)); if (old && this.browsing.has(this.scope(room))) return copy(old);
+      const slice = await this.archive.read(this.archiveScope(room), { direction: 'latest', limit: ARCHIVE_LIMITS.windowMessages, maxBytes: ARCHIVE_LIMITS.windowBytes }, guard); guard();
+      const page = this.sliceHistory(slice, false); await this.cacheHistory(room, page, e); return copy(page);
     });
     return this.readHistory(room, beforeId, e);
+  }
+  /** Only explicit latest resets browsing; routine sync/history never snaps back. */
+  async latest(value: Room | number): Promise<History> {
+    const room = this.room(value), scope = this.scope(room);
+    this.windowVersions.set(scope, (this.windowVersions.get(scope) ?? 0) + 1); this.browsing.delete(scope);
+    return this.history(room);
+  }
+  async newer(value: Room | number): Promise<History> {
+    const room = this.room(value), last = this.histories.get(this.scope(room))?.messages.at(-1)?.id;
+    return last ? this.navigateHistory(room, 'after', last) : this.latest(room);
+  }
+  private sliceHistory(slice: ArchiveSlice, browsing: boolean): History {
+    return { api_version: 2, messages: copy(slice.messages), next_before_id: slice.older.kind === 'end' ? null : slice.messages[0]?.id ?? slice.older.cursor,
+      archive: { older: copy(slice.older), newer: copy(slice.newer), partial: slice.partial, browsing, latestId: slice.latestId, unverified: slice.unverified } };
+  }
+  private mergeWindow(old: History | undefined, slice: ArchiveSlice, direction: 'before' | 'after'): History {
+    // Legacy rows can contain internal holes. Never carry provisional islands into a proven cursor.
+    if (old?.archive?.unverified && !slice.unverified && slice.messages.length) old = undefined;
+    const rows = new Map<number, Message>(); for (const row of old?.messages ?? []) rows.set(row.id, row); for (const row of slice.messages) rows.set(row.id, row);
+    const ordered = [...rows.values()].sort((a, b) => a.id - b.id), candidates = direction === 'before' ? ordered : [...ordered].reverse();
+    const selected: Message[] = []; let used = 2;
+    for (const message of candidates) {
+      const size = new TextEncoder().encode(JSON.stringify(message)).length + (selected.length ? 1 : 0);
+      if (selected.length >= ARCHIVE_LIMITS.windowMessages || used + size > ARCHIVE_LIMITS.windowBytes - 2048) break;
+      used += size; selected.push(message);
+    }
+    if (direction === 'after') selected.reverse();
+    const older = direction === 'before' ? slice.older : old?.archive?.older ?? slice.older;
+    const newer = direction === 'after' ? slice.newer : old?.archive?.newer ?? slice.newer;
+    const trimOlder = selected[0]?.id !== ordered[0]?.id, trimNewer = selected.at(-1)?.id !== ordered.at(-1)?.id;
+    const metadata = { older: trimOlder ? { kind: 'cached' as const, cursor: selected[0]!.id } : older,
+      newer: trimNewer ? { kind: 'cached' as const, cursor: selected.at(-1)!.id } : newer,
+      partial: slice.partial || old?.archive?.partial === true, browsing: true, latestId: slice.latestId,
+      unverified: slice.unverified || old?.archive?.unverified === true };
+    return { api_version: 2, messages: copy(selected), next_before_id: metadata.older.kind === 'end' ? null : selected[0]?.id ?? metadata.older.cursor, archive: metadata };
+  }
+  private async navigateHistory(room: Room, direction: 'before' | 'after', anchorId: number): Promise<History> {
+    if (!id(anchorId)) throw new ChatError('invalid_before_id');
+    const scope = this.scope(room), pump = `${scope}${direction}/${anchorId}`, running = this.historyPumps.get(pump); if (running) return running;
+    const e = this.epoch, version = (this.windowVersions.get(scope) ?? 0) + 1;
+    this.windowVersions.set(scope, version); this.browsing.add(scope);
+    const run = (async () => {
+      const guard = this.archiveGuard(e, room);
+      const oldWindow = this.histories.get(scope);
+      const provisionalLast = oldWindow?.archive?.unverified ? oldWindow.messages.at(-1)?.id : undefined;
+      const revalidate = direction === 'before' && !this.disconnected && provisionalLast !== undefined;
+      // The provisional first row may be below an internal hole: validate from the visible upper edge.
+      const verifiedAnchor = revalidate && provisionalLast! < Number.MAX_SAFE_INTEGER ? provisionalLast! + 1 : undefined;
+      const query: ArchiveQuery = { direction: revalidate && verifiedAnchor === undefined ? 'latest' : direction,
+        anchorId: revalidate ? verifiedAnchor : anchorId, limit: ARCHIVE_LIMITS.pageMessages, maxBytes: ARCHIVE_LIMITS.pageBytes };
+      let slice = await this.serial(async () => { guard(); const result = await this.archive.read(this.archiveScope(room), query, guard); guard(); return result; });
+      if (direction === 'before' && !this.disconnected && (revalidate || slice.unverified || !slice.messages.length && slice.older.kind !== 'end')) {
+        await this.fetchHistoryPage(room, revalidate ? verifiedAnchor : anchorId, e);
+        slice = await this.serial(async () => { guard(); const result = await this.archive.read(this.archiveScope(room), query, guard); guard(); return result; });
+      }
+      return this.serial(async () => {
+        guard(); const old = this.histories.get(scope);
+        if (version !== this.windowVersions.get(scope)) return copy(old ?? this.sliceHistory(slice, this.browsing.has(scope)));
+        const window = this.mergeWindow(revalidate ? undefined : old, slice, direction); await this.cacheHistory(room, window, e); guard(); return copy(window);
+      });
+    })();
+    this.historyPumps.set(pump, run);
+    try { return await run; }
+    catch (error) { return this.historyFailure(room, e, error); }
+    finally { if (this.historyPumps.get(pump) === run) this.historyPumps.delete(pump); }
+  }
+  private async fetchHistoryPage(room: Room, beforeId: number | undefined, e: number): Promise<History> {
+    const page = this.validHistory(await this.request(`/bchat/api/v2/rooms/${room.id}/messages${beforeId ? `?before_id=${beforeId}` : ''}`, e));
+    const guard = this.archiveGuard(e, room, true);
+    await this.serial(async () => { guard(); await this.archive.commitPage(this.archiveScope(room), { beforeId: beforeId ?? null, history: page }, guard); guard(); });
+    return page;
   }
   private async readHistory(room: Room, beforeId: number | undefined, e: number): Promise<History> {
     if (beforeId !== undefined && !id(beforeId)) throw new ChatError('invalid_before_id');
     try {
-      const page = this.validHistory(await this.request(`/bchat/api/v2/rooms/${room.id}/messages${beforeId ? `?before_id=${beforeId}` : ''}`, e));
+      const page = await this.fetchHistoryPage(room, beforeId, e);
       await this.serial(async () => {
-        this.fence(e); this.room(room);
-        const key = this.scope(room); const old = this.histories.get(key);
-        const messages = new Map<number, Message>();
-        for (const m of old?.messages ?? []) messages.set(m.id, m);
-        for (const m of page.messages) messages.set(m.id, m);
-        const merged: History = { api_version: 2, messages: [...messages.values()].sort((a, b) => a.id - b.id).slice(-HISTORY_LIMITS.roomMessages), next_before_id: beforeId || !old ? page.next_before_id : old.next_before_id };
-        await this.cacheHistory(room, merged, e);
+        const guard = this.archiveGuard(e, room, true); guard();
+        const key = this.scope(room), old = this.histories.get(key);
+        if (!page.messages.length && page.next_before_id === null) this.browsing.delete(key);
+        if (old && this.browsing.has(key)) {
+          const changed = new Map(page.messages.map(message => [message.id, message]));
+          const last = old.messages.at(-1)?.id ?? 0, latestId = page.messages.at(-1)?.id ?? null;
+          const updated = { ...old, messages: old.messages.map(message => changed.get(message.id) ?? message) };
+          if (updated.archive && latestId !== null) updated.archive = { ...updated.archive, latestId,
+            newer: latestId > last ? { kind: 'gap', cursor: last || null } : updated.archive.newer };
+          await this.cacheHistory(room, updated, e);
+        } else {
+          const slice = await this.archive.read(this.archiveScope(room), { direction: 'latest', limit: ARCHIVE_LIMITS.windowMessages, maxBytes: ARCHIVE_LIMITS.windowBytes }, guard); guard();
+          await this.cacheHistory(room, this.sliceHistory(slice, false), e);
+        }
       });
       return copy(this.histories.get(this.scope(room))!);
-    } catch (error) {
-      if (e === this.epoch && error instanceof ChatError && error.status === 401) await this.invalidate(e);
-      else if (e === this.epoch && denied(error)) await this.serial(async () => { await this.dropRoom(room, e); await this.persistIdentity(e); });
-      else if (e === this.epoch && (!(error instanceof ChatError) || !error.status)) { this.disconnected = true; this.failures++; }
-      throw error;
-    }
+    } catch (error) { return this.historyFailure(room, e, error); }
+  }
+  private async historyFailure(room: Room, e: number, error: unknown): Promise<never> {
+    if (e === this.epoch && error instanceof ChatError && error.status === 401) await this.invalidate(e);
+    else if (e === this.epoch && denied(error)) await this.serial(async () => { await this.dropRoom(room, e); await this.persistIdentity(e); });
+    else if (e === this.epoch && !(error instanceof ArchiveError) && (!(error instanceof ChatError) || !error.status)) { this.disconnected = true; this.failures++; }
+    throw error;
   }
   pending(value?: Room | number): Pending[] {
     const account = this.requireIdentity(); const room = value === undefined ? null : this.room(value);

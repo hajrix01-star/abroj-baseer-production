@@ -56,7 +56,11 @@ function mediaHarness(kind = 'image') {
     scopeKey: 'synthetic-db/user7', t, language: 'ar', report: word => errors.push(word) };
   const mod = load('MediaTools.tsx', { react: state.react, 'react/jsx-runtime': jsx, 'react-native': native,
     './components': components, './ImageViewer': { ImageViewer: 'ImageViewer' }, './dictionary': { errorWord: () => 'error' },
-    '../runtime': { localMedia: async (room, media) => { calls.push(['localMedia', room, media]); return pending.promise; } },
+    '../runtime': { localMediaLease: async (room, media, variant) => {
+      calls.push(['localMediaLease', room, media, variant]);
+      const uri = await pending.promise;
+      return { uri, release() { calls.push(['release', uri]); } };
+    } },
     'react-native-file-viewer': { open: async (...args) => calls.push(['file', ...args]) },
   });
   return { props, calls, errors, render: () => state.render(() => mod.MediaTile(props)),
@@ -68,6 +72,7 @@ test('visible image resolves its real scoped thumbnail automatically, without op
   const app = mediaHarness(); app.props.previewVisible = true; app.render();
   assert.equal(app.calls.length, 1, 'a visible image automatically resolves the scoped local image');
   assert.equal(app.calls[0][1], app.props.room); assert.equal(app.calls[0][2], app.props.media);
+  assert.equal(app.calls[0][3], 'preview');
   app.pending().resolve('file:///scoped/automatic.jpg'); await settled();
   const tree = app.render();
   assert.equal(one(tree, 'Image').source.uri, 'file:///scoped/automatic.jpg');
@@ -91,9 +96,9 @@ test('image keeps 240x180 geometry before and after explicit download; duplicate
   one(loaded, 'ImageViewer').onClose();
   const closed = app.render();
   assert.equal(nodes(closed).some(node => node.type === 'ImageViewer'), false);
-  assert.equal(one(closed, 'Image').source.uri, 'file:///scoped/image31.jpg', 'thumbnail survives closing');
+  assert.equal(nodes(closed).some(node => node.type === 'Image'), false, 'a hidden row releases its preview on close');
   app.next(); one(closed, 'Pressable').onPress();
-  assert.equal(app.calls.length, 2, 'reopening still uses guarded localMedia, not a new network shortcut');
+  assert.equal(app.calls.filter(c => c[0] === 'localMediaLease').length, 2, 'reopening still uses guarded localMedia, not a new network shortcut');
   app.pending().resolve('file:///scoped/image31.jpg'); await settled();
   assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/image31.jpg');
 });
@@ -152,7 +157,7 @@ test('file and audio retain guarded local resolution, file-viewer and playback p
     assert.equal(nodes(tree).some(node => ['ImageViewer', 'Pressable'].includes(node.type)), false);
     one(tree, 'Button').onPress();
     app.pending().resolve('file:///scoped/attachment'); await settled();
-    assert.equal(app.calls[0][0], 'localMedia'); assert.equal(app.calls[0][1], app.props.room);
+    assert.equal(app.calls[0][0], 'localMediaLease'); assert.equal(app.calls[0][1], app.props.room);
     assert.equal(app.calls[0][2], app.props.media);
     assert.equal(app.calls[1][0], kind === 'audio' ? 'play' : 'file');
     assert.equal(app.calls[1][1], kind === 'audio' ? 'file:///scoped/attachment' : '/scoped/attachment');
@@ -214,6 +219,7 @@ test('a tap during automatic thumbnail loading joins one scoped request and inte
   assert.notEqual(tile.disabled, true); assert.equal(tile.accessibilityState.busy, true);
   tile.onPress(); tile.onPress(); app.render(); assert.equal(app.calls.length, 1);
   app.pending().resolve('file:///scoped/intentional.jpg'); await settled();
+  assert.deepEqual(app.calls.filter(c => c[0] === 'localMediaLease').map(c => c[3]), ['preview', 'original']);
   assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/intentional.jpg');
 });
 test('automatic offline/cache failure is silent and never retries on rerender or repeated visibility; explicit retry works', async () => {
@@ -234,7 +240,7 @@ test('automatic preview is foreground-only, ignores interrupted results and resu
   const old = app.pending(); app.appState('background'); app.render();
   old.resolve('file:///scoped/stale-background.jpg'); await settled();
   assert.equal(nodes(app.render()).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
-  app.next(); app.appState('active'); app.render(); assert.equal(app.calls.length, 2);
+  app.next(); app.appState('active'); app.render(); assert.equal(app.calls.filter(c => c[0] === 'localMediaLease').length, 2);
   app.pending().resolve('file:///scoped/foreground.jpg'); await settled();
   const tree = app.render(); assert.equal(one(tree, 'Image').source.uri, 'file:///scoped/foreground.jpg');
   assert.equal(nodes(tree).some(node => node.type === 'ImageViewer'), false);
@@ -245,7 +251,7 @@ test('leaving viewport cancels acceptance of automatic results; returning resolv
   old.resolve('file:///scoped/hidden.jpg'); await settled();
   assert.equal(nodes(app.render()).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
   app.next(); app.props.previewVisible = true; app.render();
-  assert.equal(app.calls.length, 2);
+  assert.equal(app.calls.filter(c => c[0] === 'localMediaLease').length, 2);
   app.pending().resolve('file:///scoped/visible.jpg'); await settled();
   assert.equal(one(app.render(), 'Image').source.uri, 'file:///scoped/visible.jpg');
   assert.equal(nodes(app.render()).some(node => node.type === 'ImageViewer'), false);
@@ -265,4 +271,36 @@ test('visible automatic loads retain account/membership/recycling fences and ign
   const revoked = mediaHarness(); revoked.props.previewVisible = true; revoked.render(); revoked.unmount();
   revoked.pending().resolve('file:///scoped/revoked.jpg'); await settled();
   assert.equal(revoked.lateWrites, 0); assert.deepEqual(revoked.errors, []);
+});
+test('full-screen opening resolves the original separately while preview keeps its pin until hidden', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  app.pending().resolve('file:///scoped/thumb.jpg'); await settled();
+  app.next(); one(app.render(), 'Pressable').onPress();
+  app.pending().resolve('file:///scoped/original.jpg'); await settled();
+  let tree = app.render();
+  assert.equal(one(tree, 'Image').source.uri, 'file:///scoped/thumb.jpg');
+  assert.equal(one(tree, 'ImageViewer').uri, 'file:///scoped/original.jpg');
+  assert.deepEqual(app.calls.filter(c => c[0] === 'localMediaLease').map(c => c[3]), ['preview', 'original']);
+  one(tree, 'ImageViewer').onClose(); tree = app.render();
+  assert.equal(app.calls.some(c => c[0] === 'release' && c[1].endsWith('original.jpg')), true);
+  assert.equal(app.calls.some(c => c[0] === 'release' && c[1].endsWith('thumb.jpg')), false);
+  app.props.previewVisible = false; app.render();
+  assert.equal(app.calls.some(c => c[0] === 'release' && c[1].endsWith('thumb.jpg')), true);
+});
+test('external file retains its native lease through timeline unmount and releases only on dismiss', async () => {
+  const app = mediaHarness('file'); one(app.render(), 'Button').onPress();
+  app.pending().resolve('file:///scoped/document.pdf'); await settled();
+  const opened = app.calls.find(c => c[0] === 'file'); assert.ok(opened);
+  app.unmount(); assert.equal(app.calls.some(c => c[0] === 'release'), false);
+  opened[2].onDismiss(); assert.equal(app.calls.filter(c => c[0] === 'release').length, 1);
+});
+test('loaded preview releases on background and reacquires through a fresh scoped lookup on return', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  app.pending().resolve('file:///scoped/thumbnail.jpg'); await settled(); app.render();
+  app.appState('background'); app.render();
+  assert.equal(app.calls.some(c => c[0] === 'release'), true);
+  app.next(); app.appState('active'); app.render();
+  assert.equal(app.calls.filter(c => c[0] === 'localMediaLease').length, 2);
+  app.pending().resolve('file:///scoped/revalidated.jpg'); await settled();
+  assert.equal(one(app.render(), 'Image').source.uri, 'file:///scoped/revalidated.jpg');
 });

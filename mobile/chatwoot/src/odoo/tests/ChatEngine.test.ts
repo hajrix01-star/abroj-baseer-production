@@ -2,9 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ChatEngine, ChatError, HISTORY_LIMITS } from '../core/ChatEngine.ts';
 import type { Request, Storage, Room, Options, Attachment } from '../core/ChatEngine.ts';
+import { MemoryHistoryArchive } from '../core/MemoryHistoryArchive.ts';
+import { ARCHIVE_LIMITS } from '../core/HistoryArchive.ts';
 
 class MemoryStorage implements Storage {
   data = new Map<string, string>();
+  // Shared archive fixture models the separate durable DB across engine instances.
+  archive = new MemoryHistoryArchive();
   async getItem(key: string) { return this.data.get(key) ?? null; }
   async setItem(key: string, value: string) { this.data.set(key, value); }
   async removeItem(key: string) { this.data.delete(key); }
@@ -62,7 +66,7 @@ class Server {
 }
 function setup(storage = new MemoryStorage(), server = new Server(), extra: Partial<Options> = {}) {
   let time = 1_000_000; let seq = 0;
-  const engine = new ChatEngine({ storage, transport: server, origin: 'https://odoo.example', database: 'trial', now: () => time, uuid: () => seq++ ? UUID.replace('e458127f', 'a458127f') : UUID, ...extra });
+  const engine = new ChatEngine({ storage, archive: storage.archive, transport: server, origin: 'https://odoo.example', database: 'trial', now: () => time, uuid: () => seq++ ? UUID.replace('e458127f', 'a458127f') : UUID, ...extra });
   return { engine, storage, server, tick: (ms: number) => { time += ms; } };
 }
 const login = async (engine: ChatEngine) => engine.login('alice', 'NeverPersistThis', true);
@@ -147,7 +151,7 @@ test('offline reads survive restart and use scoped membership cache', async () =
   await engine.enqueue(room, 'visible'); await engine.flush(); await engine.history(room);
   server.offline = true; const next = setup(storage, server); assert.equal(await next.engine.restoreOffline(), true);
   assert.equal((await next.engine.history(room)).messages[0]!.text, 'visible');
-  assert.ok([...storage.data.keys()].some(k => k.includes('/u/7/c/1/r/11/m/21/history')));
+  assert.equal([...storage.data.keys()].some(k => k.endsWith('/history')), false, 'history lives in archive, not AsyncStorage');
 });
 test('revoked membership deletes room cache/outbox before replay', async () => {
   const { engine, storage, server } = setup(); await login(engine); await engine.history(room); await engine.enqueue(room, 'do not send');
@@ -496,6 +500,7 @@ test('history room/account UTF8 byte quotas trim valid JSON and evict only least
   for (let index = 0; index < 3; index++) await engine.history(roomRows[index]!);
   await engine.history(roomRows[0]!); // Touch room zero, making room one the oldest.
   for (let index = 3; index < 6; index++) await engine.history(roomRows[index]!);
+  await engine.history(roomRows[0]!); // Archive whole-scope quota differs from legacy fitted-JSON quota.
   for (const [, json] of storedHistories(storage)) {
     assert.ok(new TextEncoder().encode(json).length <= HISTORY_LIMITS.roomBytes);
     assert.ok(JSON.parse(json).messages.length <= HISTORY_LIMITS.roomMessages);
@@ -510,17 +515,17 @@ test('history room/account UTF8 byte quotas trim valid JSON and evict only least
   for (const scopedRoom of roomRows) messages += (await engine.history(scopedRoom)).messages.length;
   assert.ok(messages <= HISTORY_LIMITS.accountMessages);
 });
-test('history memory cap is2000 messages even when byte quota would allow more; restart preserves outbox', async () => {
-  const { server, roomRows } = syntheticHistoryServer(6, 500, 'small');
+test('bounded180 hot windows obey account cap and separate archive survives restart without rewriting outbox', async () => {
+  const { server, roomRows } = syntheticHistoryServer(12, 180, 'small');
   const { engine, storage } = setup(undefined, server); await login(engine); await engine.enqueue(roomRows[0]!, 'durable');
   for (const scopedRoom of roomRows) await engine.history(scopedRoom);
   engine.markDisconnected(); let messages = 0;
   for (const scopedRoom of roomRows) messages += (await engine.history(scopedRoom)).messages.length;
-  assert.equal(messages, HISTORY_LIMITS.accountMessages); assert.ok(historyBytes(storage) <= HISTORY_LIMITS.accountBytes);
+  assert.ok(messages <= HISTORY_LIMITS.accountMessages); assert.ok(messages >= ARCHIVE_LIMITS.windowMessages); assert.equal(storedHistories(storage).length, 0);
   const next = setup(storage, server); assert.equal(await next.engine.restoreOffline(), true);
   let restored = 0;
   for (const scopedRoom of roomRows) restored += (await next.engine.history(scopedRoom)).messages.length;
-  assert.equal(restored, HISTORY_LIMITS.accountMessages); assert.equal(next.engine.pending()[0]!.client_uuid, UUID);
+  assert.ok(restored <= HISTORY_LIMITS.accountMessages); assert.ok(restored >= ARCHIVE_LIMITS.windowMessages); assert.equal(next.engine.pending()[0]!.client_uuid, UUID);
   assert.ok(storedHistories(storage).every(([, json]) => new TextEncoder().encode(json).length <= HISTORY_LIMITS.roomBytes));
 });
 test('restore trims legacy oversized history keys without deleting pending operations', async () => {

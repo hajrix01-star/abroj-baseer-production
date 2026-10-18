@@ -3,8 +3,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire, registerHooks } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
+import { SqliteArchiveStore } from '../storage/SqliteHistoryArchive.ts';
+import type { ArchiveDatabase } from '../storage/SqliteHistoryArchive.ts';
 
 const files = new Map<string, Buffer>(); const directories = new Set<string>(['file:///app/']);
+let directoryReads = 0;
 let beforeStat: ((uri: string) => Promise<void>) | undefined;
 const normalize = (uri: string) => uri.startsWith('file://') ? uri : `file://${uri}`;
 function makeDirectory(uri: string) {
@@ -20,6 +24,7 @@ const fs = {
   },
   async makeDirectoryAsync(uri: string) { makeDirectory(uri); },
   async readDirectoryAsync(uri: string) {
+    directoryReads++;
     const prefix = uri.endsWith('/') ? uri : `${uri}/`; const entries = new Set<string>();
     for (const key of [...directories, ...files.keys()]) if (key.startsWith(prefix) && key !== prefix) entries.add(key.slice(prefix.length).split('/')[0]!);
     return [...entries];
@@ -27,6 +32,23 @@ const fs = {
   async deleteAsync(uri: string) { files.delete(normalize(uri)); },
   async copyAsync({ from, to }: { from: string; to: string }) { const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), Buffer.from(bytes)); },
   async moveAsync({ from, to }: { from: string; to: string }) { const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), bytes); files.delete(normalize(from)); },
+  EncodingType: { Base64: 'base64' },
+  async readAsStringAsync(uri: string) { const bytes = files.get(normalize(uri)); if (!bytes) throw new Error('missing file'); return bytes.toString('base64'); },
+};
+const sqlite = new DatabaseSync(':memory:');
+const database: ArchiveDatabase = {
+  async execAsync(sql) { sqlite.exec(sql); },
+  async runAsync(sql, ...values) { return sqlite.prepare(sql).run(...values); },
+  async getFirstAsync<T>(sql: string, ...values: (string | number | null)[]) { return sqlite.prepare(sql).get(...values) as T ?? null; },
+  async getAllAsync<T>(sql: string, ...values: (string | number | null)[]) { return sqlite.prepare(sql).all(...values) as T[]; },
+};
+const sqlArchive = new SqliteArchiveStore(async () => database);
+const strictCatalogActor = (actor: string) => assert.match(actor, /^[a-f0-9]{64}$/, 'real SQLite catalog accepts an actor digest, never a file directory');
+const catalog = {
+  async list(actor: string) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.list(actor); },
+  async put(actor: string, entry: { uri: string; bytes: number; sha256: string; usedAt: number }) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.put(actor, entry); },
+  async remove(actor: string, uri: string) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.remove(actor, uri); },
+  async touch(actor: string, uri: string, at: number) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.touch(actor, uri, at); },
 };
 const storage = new Map<string, string>();
 const asyncStorage = {
@@ -35,6 +57,12 @@ const asyncStorage = {
 };
 const payload = Buffer.from('%PDF-1.7 test data %%EOF'); const sha256 = createHash('sha256').update(payload).digest('hex');
 const media = { id: 70, kind: 'file', mime: 'application/pdf', name: 'private.pdf', size: payload.length, sha256 };
+const thumbnail = Buffer.from([255,216,255,192,0,11,8,0,1,0,1,1,1,17,0,255,218,0,8,1,1,0,0,63,0,1,255,217]);
+const imageBytes = Buffer.from('synthetic original image bytes');
+const imageMedia = { id: 170, kind: 'image', mime: 'image/jpeg', name: 'synthetic.jpg', size: imageBytes.length,
+  sha256: createHash('sha256').update(imageBytes).digest('hex'), thumbnail_available: true };
+const extraMedia = new Map<number, { metadata: typeof media | typeof imageMedia; bytes: Buffer }>();
+let thumbnailBytes = thumbnail, thumbnailMime = 'image/jpeg';
 const roomA = { id: 11, company_id: 1, membership_id: 21, name: 'A', is_group: true, avatar_version: 1 };
 const roomB = { id: 12, company_id: 1, membership_id: 22, name: 'B', is_group: true, avatar_version: 1 };
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aBz8AAAAASUVORK5CYII=', 'base64');
@@ -98,9 +126,21 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
       }
     }
     else if (path.endsWith('/changes')) body = { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
-    else if (path.endsWith('/11/messages')) body = { api_version: 2, messages: [{ id: 1, author_user_id: 7, author_name: 'A', text: '', created_at: '', media }], next_before_id: null };
+    else if (path.endsWith('/11/messages')) body = { api_version: 2, messages: [
+      { id: 1, author_user_id: 7, author_name: 'A', text: '', created_at: '', media },
+      ...[...extraMedia.values()].map((item, index) => ({ id: index + 2, author_user_id: 7, author_name: 'A', text: '', created_at: '', media: item.metadata })),
+    ], next_before_id: null };
     else if (path.endsWith('/12/messages')) body = { api_version: 2, messages: [], next_before_id: null };
     else if (path.endsWith('/media/70/content')) { headers['Content-Type'] = media.mime; headers['Content-Length'] = String(payload.length); if (options.path) files.set(normalize(String(options.path)), Buffer.from(payload)); }
+    else if (/\/media\/\d+\/thumbnail$/.test(path)) {
+      headers['Content-Type'] = thumbnailMime; headers['Content-Length'] = String(thumbnailBytes.length);
+      if (options.path) files.set(normalize(String(options.path)), Buffer.from(thumbnailBytes));
+    }
+    else if (/\/media\/\d+\/content$/.test(path)) {
+      const item = extraMedia.get(Number(path.split('/').at(-2)))!;
+      headers['Content-Type'] = item.metadata.mime; headers['Content-Length'] = String(item.bytes.length);
+      if (options.path) files.set(normalize(String(options.path)), Buffer.from(item.bytes));
+    }
     else throw new Error(`Unexpected test route ${path}`);
     const image = Buffer.from(avatarBytes);
     return { info: () => missingMetadata ? { rnfbEncode: 'utf8' } : ({ status, headers, redirects: [url] }), json: () => body === undefined ? undefined : JSON.parse(JSON.stringify(body)), base64: () => image.toString('base64') };
@@ -109,6 +149,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
   return task;
 }
 const mocks: Record<string, unknown> = {
+  './storage/nativeArchive': { mediaCacheCatalog: catalog, historyArchive: sqlArchive },
   'react-native': { Platform: { OS: 'android' } },
   '@react-native-async-storage/async-storage': asyncStorage,
   'expo-crypto': { CryptoDigestAlgorithm: { SHA256: 'SHA256' }, randomUUID, digestStringAsync: async (_algorithm: unknown, value: string) => createHash('sha256').update(value).digest('hex') },
@@ -136,7 +177,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, localMedia, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars } = await import('../runtime.ts');
+const { getEngine, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -358,6 +399,135 @@ test('avatar metadata await cannot carry a revoked membership into POST and alwa
     assert.equal([...files.keys()].some(key => key.includes('/odoo-group-avatar-')), false);
     assert.equal(files.has('file:///external/fenced-avatar.png'), true);
   } finally { beforeStat = undefined; release(); rooms = [roomA, roomB]; await engine.refresh(); }
+});
+
+test('real previews fetch only protected thumbnails; explicit original stays separate and warm lookup avoids directory scans', async () => {
+  await engine.login('alice', 'private', true);
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes }); await engine.history(roomA);
+  const before = calls.length, scans = directoryReads;
+  const a = await localMediaLease(roomA, { id: imageMedia.id, thumbnail_available: false }, 'preview');
+  assert.match(a.uri, /media-170-preview\.jpg$/); assert.deepEqual(files.get(a.uri), thumbnail);
+  assert.deepEqual(calls.slice(before).map(c => c.path), ['/bchat/api/v2/media/170/thumbnail']);
+  const b = await localMediaLease(roomA, { id: imageMedia.id }, 'preview');
+  assert.equal(b.uri, a.uri); assert.equal(calls.length, before + 1); assert.equal(directoryReads, scans);
+  const full = await localMediaLease(roomA, { id: imageMedia.id }, 'original');
+  assert.match(full.uri, /media-170\.jpg$/); assert.deepEqual(files.get(full.uri), imageBytes);
+  assert.notEqual(full.uri, a.uri); assert.equal(directoryReads, scans);
+  a.release(); a.release(); b.release(); full.release();
+  await engine.refresh(); assert.equal(directoryReads, scans, 'polling no longer recursively scans native cache');
+  extraMedia.clear(); await engine.history(roomA);
+});
+
+test('thumbnail failure never downloads original; legacy previews require an already verified original', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes }); await engine.history(roomA);
+  for (const invalid of ['mime', 'dimensions', 'length']) {
+    thumbnailBytes = Buffer.from(thumbnail);
+    if (invalid === 'mime') thumbnailMime = 'text/html';
+    if (invalid === 'dimensions') { thumbnailBytes[7] = 1; thumbnailBytes[8] = 1; }
+    if (invalid === 'length') thumbnailBytes = Buffer.alloc(128 * 1024 + 1);
+    const before = calls.length;
+    await assert.rejects(localMediaLease(roomA, { id: imageMedia.id }, 'preview'), { code: 'invalid_response' });
+    assert.deepEqual(calls.slice(before).map(c => c.path), ['/bchat/api/v2/media/170/thumbnail']);
+    assert.equal([...files.keys()].some(uri => uri.endsWith('.part')), false);
+    thumbnailBytes = thumbnail; thumbnailMime = 'image/jpeg';
+  }
+  extraMedia.set(imageMedia.id, { metadata: { ...imageMedia, thumbnail_available: false }, bytes: imageBytes }); await engine.history(roomA);
+  const before = calls.length;
+  await assert.rejects(localMediaLease(roomA, { id: imageMedia.id, thumbnail_available: true }, 'preview'), { code: 'media_not_cached' });
+  assert.equal(calls.length, before, 'caller cannot turn missing thumbnail into an automatic original download');
+  const original = await localMediaLease(roomA, { id: imageMedia.id }); original.release();
+  const preview = await localMediaLease(roomA, { id: imageMedia.id }, 'preview');
+  assert.equal(preview.uri, original.uri); preview.release(); extraMedia.clear(); await engine.history(roomA);
+});
+
+test('128MiB LRU evicts only replaceable cache, preserving live leases and protected stages; all-pinned fails safely', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  const bytes = Buffer.alloc(10 * 1024 * 1024, 80), digest = createHash('sha256').update(bytes).digest('hex');
+  for (let n = 0; n < 15; n++) extraMedia.set(300 + n, { metadata: { ...media, id: 300 + n, size: bytes.length, sha256: digest }, bytes });
+  await engine.history(roomA);
+  files.set('file:///external/protected.pdf', payload);
+  const staged = await stageFile(roomA, { uri: 'file:///external/protected.pdf', name: 'protected.pdf', mime: media.mime });
+  await engine.enqueueAttachment(roomA, staged);
+  const held = await localMediaLease(roomA, { id: 300 });
+  const evicted = await localMedia(roomA, { id: 301 });
+  for (let n = 2; n < 13; n++) await localMedia(roomA, { id: 300 + n });
+  assert.equal(files.has(held.uri), true); assert.equal(files.has(evicted), false); assert.equal(files.has(staged.uri), true);
+  const pins = [held];
+  for (let n = 2; n < 13; n++) pins.push(await localMediaLease(roomA, { id: 300 + n }));
+  const before = calls.length;
+  await assert.rejects(localMediaLease(roomA, { id: 313 }), { code: 'media_quota' });
+  assert.equal(calls.length, before); assert.equal([...files.keys()].some(uri => uri.endsWith('.part')), false);
+  for (const lease of pins) lease.release();
+  const next = await localMediaLease(roomA, { id: 313 }); next.release();
+  assert.equal(files.has(staged.uri), true); assert.ok(Number((sqlite.prepare('SELECT SUM(bytes) AS bytes FROM media_cache').get() as any).bytes) <= 128 * 1024 * 1024);
+  extraMedia.clear(); await engine.logout(); await engine.login('alice', 'private', true);
+});
+
+test('concurrent thumbnail leases share one network body; offline corruption is removed rather than trusted', async () => {
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes }); await engine.history(roomA);
+  const before = calls.length;
+  const [first, second] = await Promise.all([localMediaLease(roomA, { id: 170 }, 'preview'), localMediaLease(roomA, { id: 170 }, 'preview')]);
+  assert.equal(first.uri, second.uri); assert.equal(calls.length, before + 1);
+  first.release(); second.release(); files.set(first.uri, Buffer.alloc(thumbnail.length, 1));
+  engine.markDisconnected(); offline = true;
+  try {
+    await assert.rejects(localMediaLease(roomA, { id: 170 }, 'preview'), { code: 'media_not_cached' });
+    assert.equal(files.has(first.uri), false);
+  } finally { offline = false; await engine.refresh(); }
+  extraMedia.clear(); await engine.history(roomA);
+});
+
+test('membership revoked during thumbnail response cannot commit or expose a late cached image', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes }); await engine.history(roomA);
+  let release!: () => void, started!: () => void;
+  const wait = new Promise<void>(resolve => { release = resolve; }), waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path.endsWith('/thumbnail')) { beforeNative = undefined; started(); await wait; } };
+  const preview = localMediaLease(roomA, { id: 170 }, 'preview'); const rejected = assert.rejects(preview, { code: 'membership_changed' });
+  await waiting; rooms = [roomB]; const refreshing = engine.refresh();
+  for (let n = 0; n < 100 && engine.rooms().some(row => row.id === roomA.id); n++) await Promise.resolve();
+  assert.equal(engine.rooms().some(row => row.id === roomA.id), false);
+  release(); await rejected; await refreshing;
+  assert.equal([...files.keys()].some(uri => uri.includes('media-170')), false);
+  rooms = [roomA, roomB]; extraMedia.clear(); await engine.refresh();
+});
+
+test('SQLite catalog seam recovers a verified preview after a fresh runtime module without re-downloading', async () => {
+  await engine.login('alice', 'private', true);
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes }); await engine.history(roomA);
+  const original = await localMediaLease(roomA, { id: 170 }, 'preview'); original.release();
+  // A fresh module models process-local maps/pins disappearing; only files and
+  // persisted catalog/identity remain. Actual SQLite persistence has its own harness.
+  const restarted = await import(new URL('../runtime.ts?media-restart', import.meta.url).href);
+  const fresh = restarted.getEngine(); await fresh.login('alice', 'private', true); await fresh.history(roomA);
+  const before = calls.length;
+  const recovered = await restarted.localMediaLease(roomA, { id: 170 }, 'preview');
+  assert.equal(recovered.uri, original.uri); assert.equal(calls.length, before); recovered.release();
+  await fresh.logout(); extraMedia.clear(); await engine.login('alice', 'private', true);
+});
+
+test('file-count LRU reconciles more than the old 1000-file ceiling and evicts deterministically at 5000', async () => {
+  await engine.logout();
+  const actorHash = createHash('sha256').update('https://odoo.example|trial|7').digest('hex');
+  const actor = `file:///app/odoo-chat-media/${actorHash}/`, directory = `${actor}c1-r11-m21/`;
+  makeDirectory(directory);
+  const one = Buffer.from('x'), digest = createHash('sha256').update(one).digest('hex');
+  for (let n = 0; n < 5001; n++) {
+    const uri = `${directory}media-${10000 + n}.pdf`; files.set(uri, one);
+    // A legacy/orphan file can exist outside the catalog after interruption;
+    // the strict SQL catalog itself correctly refuses a 5001st indexed row.
+    if (n > 0) await catalog.put(actorHash, { uri, bytes: 1, sha256: digest, usedAt: n });
+  }
+  const restarted = await import(new URL('../runtime.ts?file-count-restart', import.meta.url).href);
+  const fresh = restarted.getEngine(); await fresh.login('alice', 'private', true);
+  assert.equal(files.has(`${directory}media-10000.pdf`), false);
+  assert.equal(files.has(`${directory}media-10001.pdf`), true);
+  assert.equal((await catalog.list(actorHash)).length, 5000);
+  await fresh.history(roomA); await restarted.localMedia(roomA, media);
+  assert.equal(files.has(`${directory}media-10001.pdf`), false);
+  assert.equal(files.has(`${directory}media-15000.pdf`), true);
+  await fresh.logout(); await engine.login('alice', 'private', true);
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

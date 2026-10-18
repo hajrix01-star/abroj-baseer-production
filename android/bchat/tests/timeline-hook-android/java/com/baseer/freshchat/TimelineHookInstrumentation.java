@@ -28,7 +28,7 @@ public final class TimelineHookInstrumentation extends Instrumentation {
     Object room,secondRoom,permission; Class<?> roomType,permissionType,ownerType;
     BChatV2Outbox outbox; ConnectedHistoryCache cache;
     RecyclerView timeline; LinearLayoutManager layout; CountingTimelineAdapter adapter;
-    List<JSONObject> original; int checks; String selectedCase="functional"; final JSONArray journeys=new JSONArray();
+    List<JSONObject> original; int checks; String selectedCase="functional",fixtureLanguage="ar"; final JSONArray journeys=new JSONArray();
     interface Work { void run() throws Exception; }
     void check(boolean ok,String label){++checks;if(!ok)throw new AssertionError(label);}
     void ui(Work work){AtomicReference<Throwable> failure=new AtomicReference<>();runOnMainSync(()->{try{work.run();}catch(Throwable error){failure.set(error);}});if(failure.get()!=null)throw new AssertionError("MAIN action",failure.get());}
@@ -46,7 +46,7 @@ public final class TimelineHookInstrumentation extends Instrumentation {
         // Public test instantiation seam: the same final production Activity, before
         // attach/resources. No subclass/product/global configuration modification.
         Configuration override=new Configuration();override.fontScale=2f;
-        Locale language=Locale.forLanguageTag("ar");override.setLocale(language);override.setLayoutDirection(language);
+        Locale language=Locale.forLanguageTag(fixtureLanguage);override.setLocale(language);override.setLayoutDirection(language);
         override.uiMode=Configuration.UI_MODE_NIGHT_YES;
         target.applyOverrideConfiguration(override);return target;
     }
@@ -57,6 +57,8 @@ public final class TimelineHookInstrumentation extends Instrumentation {
             check(Build.VERSION.SDK_INT==35,"actual SDK35");
             check(!BuildConfig.BCHAT_PUSH_ENABLED&&BuildConfig.BCHAT_ORIGIN.equals("https://timeline.invalid"),"test transport configuration");
             check(context.getPackageManager().checkPermission("android.permission.INTERNET",PACKAGE)!=0,"no INTERNET permission");
+            if(selectedCase.equals("pending-layout"))pendingLayout(result);
+            else {
             context.getSharedPreferences("bchat-appearance-v1",0).edit().putString("theme","dark").putInt("body_sp",16).commit();
             context.getSharedPreferences("bchat-local-settings-v1",0).edit().putString("interface-language","ar").commit();
             activity=(OdooIdentityActivity)startActivitySync(new Intent(context,OdooIdentityActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -71,17 +73,173 @@ public final class TimelineHookInstrumentation extends Instrumentation {
             if(selectedCase.equals("send-visibility"))sendVisibility(result);
             else if(selectedCase.equals("functional")){unchangedAndFieldChange();neighborAndAnchor();emptyAndLocals();mediaAndIdleAudio();invalidationJourneys();sameRoomAba();}
             else throw new IllegalArgumentException("Unknown isolated case");
-            check(get("web")==null,"no transport recreated");passed=true;
+            check(get("web")==null,"no transport recreated");
+            }
+            passed=true;
         }catch(Throwable failure){try{result.put("failure",failure.toString()).put("stack",new JSONArray(Arrays.asList(failure.getStackTrace())));}catch(Exception ignored){}}
         try{result.put("passed",passed).put("checks",checks).put("case",selectedCase).put("journeys",journeys)
             .put("base_commit",BuildConfig.BCHAT_SOURCE_COMMIT).put("activity_sha256",BuildConfig.BCHAT_TARGET_ACTIVITY_SHA)
-            .put("configuration_fixture","Explicit public early Activity override AR/RTL+dark+font2, not appearance/locale preference restoration acceptance; no global device setting change")
-            .put("scope","Full unmodified Activity/AndroidX/SQLite, synthetic account/permissions/canonical and receipt proof inputs. One AR/dark/font2 functional run; no auth/HTTP/FCM/benchmark.")
-            .put("media_limits","Native cached-image/recycle/queued-target and synthetic idle-audio owner/control checks only. No inflight decode/download, playing, focus, codec or owner-phone claim; unchanged callback bodies reuse prior separately scoped evidence.");
+            .put("configuration_fixture",selectedCase.equals("pending-layout")?"Two early Activity overrides AR/EN dark font2 on the actual <=320dp device window; no global setting or fake viewport. Not locale preference restoration acceptance.":"Explicit public early Activity override AR/RTL+dark+font2, not appearance/locale preference restoration acceptance; no global device setting change")
+            .put("scope",selectedCase.equals("pending-layout")?"Actual production Activity/updatePendingUi/native TextView.Layout; synthetic identity/permissions/view-route reflection and real SQLite text+stale entries. Typed synthetic media Entry only (no file/staging/upload). No button action invoked; no INTERNET/WebView; not auth/HTTP/FCM/send/performance acceptance.":"Full unmodified Activity/AndroidX/SQLite, synthetic account/permissions/canonical and receipt proof inputs. One AR/dark/font2 functional run; no auth/HTTP/FCM/benchmark.")
+            .put("media_limits",selectedCase.equals("pending-layout")?"Media metadata is explicitly synthetic and supplied only to RoomLocalSnapshot. updatePendingUi alone decides pending-control visibility; no forced button visibility, file, claim or transfer.":"Native cached-image/recycle/queued-target and synthetic idle-audio owner/control checks only. No inflight decode/download, playing, focus, codec or owner-phone claim; unchanged callback bodies reuse prior separately scoped evidence.");
             try(FileOutputStream file=context.openFileOutput("timeline-hook-results.json",0)){file.write(result.toString(2).getBytes(StandardCharsets.UTF_8));}
-            status.putString("stream",(passed?"PASS ":"FAIL ")+checks+" full Activity timeline functional checks; "+result.optString("failure","")+"\n");
+            status.putString("stream",(passed?"PASS ":"FAIL ")+checks+" full Activity "+selectedCase+" checks; "+result.optString("failure","")+"\n");
         }catch(Exception error){passed=false;status.putString("stream","FAIL result write "+error);}
         if(activity!=null)ui(()->activity.finish());finish(passed?-1:1,status);
+    }
+    /** Local-layout-only fixture: no select/send/retry/review click or transport invocation. */
+    void pendingLayout(JSONObject result)throws Exception{
+        JSONArray configurations=new JSONArray();result.put("pending_layout",configurations);
+        scope=new AccountScope("https://timeline.invalid","synthetic",7);
+        roomType=Class.forName("com.baseer.freshchat.OdooIdentityActivity$Room");
+        Constructor<?> roomConstructor=roomType.getDeclaredConstructor(long.class,long.class,long.class,String.class);roomConstructor.setAccessible(true);
+        room=roomConstructor.newInstance(1L,1L,1001L,"Pending layout");
+        permissionType=Class.forName("com.baseer.freshchat.OdooIdentityActivity$PermissionSet");permission=parsePermission(true,true);
+        outbox=new BChatV2Outbox(context);
+        check(outbox.enqueue(scope,1,1001,"synthetic current pending")!=null,"real current SQLite pending seed");
+        check(outbox.enqueue(scope,1,999,"synthetic prior-membership pending")!=null,"real stale SQLite pending seed");
+        // The media branch needs only immutable metadata. No stage/import/claim/file is invented.
+        Constructor<BChatConnectedMediaStore.Entry> mediaConstructor=BChatConnectedMediaStore.Entry.class.getDeclaredConstructor(JSONObject.class);mediaConstructor.setAccessible(true);
+        BChatConnectedMediaStore.Entry syntheticMedia=mediaConstructor.newInstance(new JSONObject()
+            .put("account_key",scope.key).put("upload_uuid","00000000-0000-4000-8000-000000000001")
+            .put("client_uuid","00000000-0000-4000-8000-000000000002").put("kind","image").put("mime","image/png")
+            .put("name","synthetic.png").put("sha256","0000000000000000000000000000000000000000000000000000000000000001")
+            .put("text","").put("room_id",1).put("company_id",1).put("membership_id",1001)
+            .put("reply_to_message_id",0).put("media_id",0).put("size",1).put("policy_version",1));
+        Class<?> localType=Class.forName("com.baseer.freshchat.OdooIdentityActivity$RoomLocalSnapshot");
+        Constructor<?> localConstructor=localType.getDeclaredConstructors()[0];localConstructor.setAccessible(true);
+        List<BChatV2Outbox.Entry> textPending=outbox.roomEntries(scope,1,1001);
+        Object local=localConstructor.newInstance(1L,1001L,textPending,outbox.firstStale(scope,1,1001),
+            outbox.draftRecord(scope,1,1001),Collections.singletonList(syntheticMedia),null,outbox.tickets().head(scope,1,1001),null);
+        String before=pendingDiskSnapshot();
+        result.put("sqlite_before",new JSONObject(before));
+        for(String language:new String[]{"ar","en"}){
+            fixtureLanguage=language;
+            context.getSharedPreferences("bchat-appearance-v1",0).edit().putString("theme","dark").putInt("body_sp",16).commit();
+            context.getSharedPreferences("bchat-local-settings-v1",0).edit().putString("interface-language",language).commit();
+            activity=(OdooIdentityActivity)startActivitySync(new Intent(context,OdooIdentityActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            await("pending actual Activity initialization",()->{try{return get("messageScroll")!=null&&get("historyCache")!=null;}catch(Exception e){return false;}});
+            SystemClock.sleep(350);ui(()->call("releaseWeb"));settle();
+            Configuration config=activity.getResources().getConfiguration();float density=activity.getResources().getDisplayMetrics().density;
+            JSONObject report=new JSONObject().put("locale",config.getLocales().get(0).toLanguageTag()).put("fontScale",config.fontScale)
+                .put("density",density).put("screen_width_dp",config.screenWidthDp).put("display_width_px",activity.getResources().getDisplayMetrics().widthPixels);
+            configurations.put(report);
+            String layoutBefore=pendingDiskSnapshot();report.put("sqlite_before_layout",new JSONObject(layoutBefore));
+            check(config.fontScale==2f&&language.equals(config.getLocales().get(0).getLanguage()),language+" actual font2/locale");
+            check(config.screenWidthDp>0&&config.screenWidthDp<=320,"actual device width <=320dp, not resized fixture");
+            ui(()->{
+                call("invalidateMessageTimelineOwner");set("account",scope);set("verified",true);set("offlineHistory",false);set("permissionSet",permission);set("permissionAccount",scope);
+                set("csrfToken","synthetic-only");set("outbox",outbox);set("mediaStore",null);set("mediaAvailable",true);
+                set("receiptsAvailable",false);set("receiptDeliverySupported",false);set("liveStarted",false);set("liveForeground",true);set("v2Busy",true);
+                set("globalPendingKnown",true);set("globalPendingAvailable",false);set("visibleSection","chats");set("roomsVerifiedForSession",true);set("selectedRoom",room);
+                Set<Long> companies=field("v1Companies");companies.clear();companies.add(1L);List<Object> rooms=field("rooms");rooms.clear();rooms.add(room);
+                call("showShell");call("showPermittedRoot");
+                check((Boolean)call("admitMessageTimelineOwner",new Class<?>[]{roomType},room),"synthetic account/room owner ticket admitted, not authentication");
+                call("publishMessageRows",new Class<?>[]{List.class,List.class},Collections.emptyList(),textPending);
+                // Same room-route view fixture as the existing full Activity suite. Never changes pending button visibility/layout/text.
+                for(String name:new String[]{"brandBar","bottomTabs","roomListHeader","roomSearchSurface","roomScroll","olderControl","newerControl"})visibility(name,false);
+                for(String name:new String[]{"chatTitleBar","messageFrame","composerRow"})visibility(name,true);
+                set("roomLocal",local);set("roomDraftNeedsRestore",false);set("draftActive",false);
+                call("updatePendingUi");
+            });
+            settle();await("pending native positive geometry",()->{try{return((Button)get("resolvePendingButton")).getLayout()!=null&&((View)get("pendingActionsRow")).getHeight()>0;}catch(Exception e){return false;}});
+            screenshot("timeline-pending-layout-"+language+".png");
+            ui(()->{
+                ViewGroup route=field("chatPane");View decor=activity.getWindow().getDecorView();View viewport=field("messageScroll");View frame=field("messageFrame");
+                Rect viewportLocalClip=new Rect();boolean hasViewportClip=viewport.getLocalVisibleRect(viewportLocalClip);
+                int[] viewportLocation=new int[2];viewport.getLocationOnScreen(viewportLocation);
+                Rect viewportScreenClip=new Rect(viewportLocalClip);viewportScreenClip.offset(viewportLocation[0],viewportLocation[1]);
+                Rect viewportWindow=new Rect();viewport.getWindowVisibleDisplayFrame(viewportWindow);
+                Rect visibleViewport=new Rect(viewportScreenClip);boolean intersectsWindow=visibleViewport.intersect(viewportWindow);if(!intersectsWindow)visibleViewport.setEmpty();
+                boolean viewportIdentity=true;JSONArray viewportAncestors=new JSONArray();
+                for(View node=viewport;node!=null;){boolean identity=node.getMatrix().isIdentity()&&node.getTranslationX()==0&&node.getTranslationY()==0;
+                    viewportIdentity&=identity;viewportAncestors.put(new JSONObject().put("class",node.getClass().getSimpleName()).put("identity",identity)
+                        .put("translation_x",node.getTranslationX()).put("translation_y",node.getTranslationY()));
+                    android.view.ViewParent parent=node.getParent();node=parent instanceof View?(View)parent:null;}
+                report.put("route_width_dp",route.getWidth()/density).put("decor_width_dp",decor.getWidth()/density)
+                    .put("message_viewport",nativeViewGeometry(viewport).put("has_local_visible_rect",hasViewportClip).put("local_clip",rectangle(viewportLocalClip))
+                        .put("clip_screen",rectangle(viewportScreenClip)).put("visible_window",rectangle(viewportWindow)).put("window_intersection",rectangle(visibleViewport))
+                        .put("intersects_window",intersectsWindow).put("ancestor_transforms",viewportAncestors).put("identity_ancestors",viewportIdentity)
+                        .put("coordinate_rule","identity local visible clip + getLocationOnScreen, intersected with window frame in screen coordinates; full size remains separate"))
+                    .put("message_frame",nativeViewGeometry(frame))
+                    .put("message_height_fraction_of_route",route.getHeight()>0?(double)viewport.getHeight()/route.getHeight():0);
+                JSONArray siblings=new JSONArray();report.put("visible_route_children",siblings);
+                for(int n=0;n<route.getChildCount();++n)if(route.getChildAt(n).getVisibility()==View.VISIBLE)
+                    siblings.put(nativeViewGeometry(route.getChildAt(n)).put("child_index",n).put("class",route.getChildAt(n).getClass().getSimpleName()));
+                check(route.getWidth()>0&&route.getWidth()/density<=320.01f,"actual room-route width <=320dp");
+                check(decor.getWidth()>0&&decor.getWidth()/density<=320.01f,"actual full decor width <=320dp");
+                check(viewport.isShown()&&viewport.getWidth()>0&&viewport.getHeight()>0,"all pending rows leave a positive actual message viewport");
+                check(viewportIdentity,"message viewport and all ancestors have identity screen transform");
+                check(hasViewportClip&&viewportLocalClip.width()>0&&viewportLocalClip.height()>0,"message viewport has positive actual local visible clip");
+                check(viewportWindow.contains(viewportScreenClip)&&intersectsWindow&&visibleViewport.width()>0&&visibleViewport.height()>0,"message viewport screen clip is inside and positively intersects actual visible window");
+                JSONArray controls=new JSONArray();report.put("controls",controls);List<Rect> rectangles=new ArrayList<>();
+                for(String name:new String[]{"mediaReviewButton","retryButton","resolvePendingButton","stalePendingButton"}){
+                    Button button=field(name);JSONObject geometry=pendingButtonGeometry(button,name,controls);
+                    Rect bounds=new Rect(geometry.getInt("screen_left"),geometry.getInt("screen_top"),geometry.getInt("screen_right"),geometry.getInt("screen_bottom"));
+                    check(!Rect.intersects(visibleViewport,bounds),name+" does not overlap actual visible message viewport in screen coordinates");
+                    for(Rect previous:rectangles)check(!Rect.intersects(previous,bounds),name+" does not overlap another pending action");rectangles.add(bounds);
+                }
+                check(get("web")==null&&get("v2Port")==null,"no WebView/transport port after pending presentation");
+                check((Boolean)get("v2Busy")&&!(Boolean)get("textDispatchBusy")&&!(Boolean)get("mediaUploadBusy")&&!(Boolean)get("mediaConfirmBusy"),"layout did not dispatch send/upload/confirm");
+            });
+            String layoutAfter=pendingDiskSnapshot();report.put("sqlite_after_layout",new JSONObject(layoutAfter));
+            check(layoutBefore.equals(layoutAfter),language+" entire SQLite pending/draft/ticket/context values unchanged by opening/layout");
+            journeys.put("pending-layout-"+language+"-font2-real-SQLite-native-text-and-touch-geometry");
+            ui(()->activity.finish());waitForIdleSync();activity=null;diskDrain();
+        }
+        JSONObject seedQueue=new JSONObject(before),finalState=new JSONObject(pendingDiskSnapshot()),finalQueue=new JSONObject(finalState.toString());
+        seedQueue.remove("local_context");finalQueue.remove("local_context");
+        check(seedQueue.toString().equals(finalQueue.toString()),"pending/draft/ticket rows unchanged across both layouts and Activity teardown");
+        result.put("sqlite_after",finalState).put("button_actions_invoked",0)
+            .put("view_route_fixture","Reflection uses the existing room-route setup: hides room list/search/header, brand/tabs and empty pagination controls; shows title/message/composer. No pending-control visibility, dimensions, strings or font overrides. Visible route siblings and message-height fraction are recorded, not a smoothness/space-quality acceptance threshold.")
+            .put("no_post_boundary","No button action, no INTERNET permission, no WebView/v2Port, v2Busy true. All four SQLite tables unchanged during each layout; pending/draft/tickets unchanged across teardown too. Normal onPause local_context persistence is not suppressed and is outside the layout-only comparison. Not a real HTTP observer/authentication claim.");
+    }
+    String pendingDiskSnapshot()throws Exception{
+        JSONObject dump=new JSONObject();
+        for(String table:new String[]{"pending_text","draft_text","send_ticket","local_context"}){
+            JSONArray rows=new JSONArray();try(Cursor c=outbox.getReadableDatabase().rawQuery("SELECT * FROM "+table+" WHERE account_key=? ORDER BY rowid",new String[]{scope.key})){
+                while(c.moveToNext()){JSONArray cells=new JSONArray();for(int i=0;i<c.getColumnCount();++i)cells.put(new JSONObject().put("column",c.getColumnName(i)).put("type",c.getType(i)).put("value",c.isNull(i)?JSONObject.NULL:c.getString(i)));rows.put(cells);}}
+            dump.put(table,rows);
+        }return dump.toString();
+    }
+    JSONObject nativeViewGeometry(View view)throws Exception{
+        int[] location=new int[2];view.getLocationOnScreen(location);Rect clip=new Rect();boolean visible=view.getLocalVisibleRect(clip);
+        return new JSONObject().put("width_px",view.getWidth()).put("height_px",view.getHeight()).put("shown",view.isShown())
+            .put("screen_left",location[0]).put("screen_top",location[1]).put("screen_right",location[0]+view.getWidth()).put("screen_bottom",location[1]+view.getHeight())
+            .put("has_local_visible_rect",visible).put("local_clip",rectangle(clip));
+    }
+    JSONObject pendingButtonGeometry(Button button,String name,JSONArray output)throws Exception{
+        float density=button.getResources().getDisplayMetrics().density;
+        int[] offset=new int[2];button.getLocationOnScreen(offset);Rect full=new Rect(offset[0],offset[1],offset[0]+button.getWidth(),offset[1]+button.getHeight());
+        Rect visible=new Rect();boolean locallyVisible=button.getLocalVisibleRect(visible);Rect localFull=new Rect(0,0,button.getWidth(),button.getHeight());
+        Rect frame=new Rect();button.getWindowVisibleDisplayFrame(frame);
+        JSONObject metric=nativeViewGeometry(button).put("name",name).put("text",button.getText().toString()).put("width_dp",button.getWidth()/density).put("height_dp",button.getHeight()/density)
+            .put("full_local",rectangle(localFull)).put("clip_local",rectangle(visible)).put("visible_window",rectangle(frame))
+            .put("coordinate_rule","identity full local size + getLocationOnScreen; never root-space global rect or clipped target size");output.put(metric);
+        check(button.getVisibility()==View.VISIBLE&&button.isShown()&&button.isAttachedToWindow(),name+" shown by production updatePendingUi");
+        check(button.isEnabled()&&button.isClickable()&&button.hasOnClickListeners(),name+" retains enabled click action without invocation");
+        check(button.getWidth()/density>=47.99f&&button.getHeight()/density>=47.99f,name+" touch target >=48dp");
+        check(button.getWidth()/density<=320.01f,name+" fits real narrow route width");
+        android.text.Layout text=button.getLayout();check(text!=null&&text.getLineCount()>0,name+" real TextView.Layout");
+        CharSequence rendered=button.getTransformationMethod()==null?button.getText():button.getTransformationMethod().getTransformation(button.getText(),button);
+        check(text.getLineEnd(text.getLineCount()-1)==rendered.length(),name+" complete transformed text laid out");
+        int contentWidth=button.getWidth()-button.getCompoundPaddingLeft()-button.getCompoundPaddingRight();
+        int contentHeight=button.getHeight()-button.getCompoundPaddingTop()-button.getCompoundPaddingBottom();JSONArray lines=new JSONArray();
+        metric.put("content_width",contentWidth).put("content_height",contentHeight).put("text_height",text.getHeight()).put("layout_width",text.getWidth())
+            .put("text_size_px",button.getTextSize()).put("lines",lines);
+        check(text.getHeight()<=contentHeight,name+" text height within actual compound padding");
+        for(int n=0;n<text.getLineCount();++n){
+            lines.put(new JSONObject().put("start",text.getLineStart(n)).put("end",text.getLineEnd(n)).put("width",text.getLineWidth(n)).put("max",text.getLineMax(n))
+                .put("top",text.getLineTop(n)).put("bottom",text.getLineBottom(n)).put("ellipsis",text.getEllipsisCount(n)));
+            check(text.getEllipsisCount(n)==0,name+" no ellipsis line "+n);
+            check(text.getLineMax(n)<=contentWidth+.5f,name+" full line width not clipped "+n);
+            check(text.getLineTop(n)>=0&&text.getLineBottom(n)<=contentHeight,name+" full line height not clipped "+n);
+        }
+        for(View node=button;node!=null;){check(node.getMatrix().isIdentity()&&node.getTranslationX()==0&&node.getTranslationY()==0,name+" identity screen transform");android.view.ViewParent parent=node.getParent();node=parent instanceof View?(View)parent:null;}
+        check(locallyVisible,name+" actual local visible rect");
+        check(visible.equals(localFull),name+" entire unclipped local target visible");visible.offset(offset[0],offset[1]);
+        check(frame.contains(full),name+" entire action reachable inside actual visible window");
+        return metric.put("clip_screen",rectangle(visible));
     }
     @SuppressWarnings("unchecked") void install()throws Exception{
         scope=new AccountScope("https://timeline.invalid","synthetic",7);roomType=Class.forName("com.baseer.freshchat.OdooIdentityActivity$Room");

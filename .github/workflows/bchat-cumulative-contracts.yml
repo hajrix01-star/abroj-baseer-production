@@ -79,9 +79,11 @@ jobs:
           python3 android/bchat/tools/test-room-preferences-protocol.py
           python3 android/bchat/tools/test-room-preferences-store.py
           python3 android/bchat/tools/test-room-preferences-store.py --case ambiguous-epoch --label jvm-ambiguous
+          python3 android/bchat/tools/test-room-preferences-store.py --case membership-snapshot --label ci-membership-snapshot
           python3 android/bchat/tools/test-room-preferences-controller.py --label ci
           python3 android/bchat/tools/test-room-mute-index.py --label ci
           python3 android/bchat/tools/test-room-mute-index.py --case recovery --label ci-recovery
+          python3 android/bchat/tools/test-room-mute-index.py --case foreign-rebind --label ci-foreign-rebind
           python3 android/bchat/tools/test-room-preferences-owner.py --label ci
           python3 android/bchat/tools/test-room-explore-hook.py --label ci
           python3 android/bchat/tools/test-room-explore.py --label ci

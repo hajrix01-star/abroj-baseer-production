@@ -121,6 +121,7 @@ public final class BChatPushState {
         final String scope, account;
         final BChatRoomPreferencesOwner roomOwner;
         final BChatRoomPreferencesOwner.Frame frame;
+        final Object lifetimeKey; // Opaque rendezvous key, NEVER sufficient authority alone.
         private final State state;
         private final long epoch;
         private final Object bindingGeneration;
@@ -129,18 +130,29 @@ public final class BChatPushState {
             this.state = state; scope = state.scope; account = state.account; epoch = state.epoch;
             roomOwner = state.roomOwner; frame = roomOwner == null ? null : roomOwner.snapshot();
             bindingGeneration = state.bindingGeneration; needsVerifiedBindings = state.needsVerifiedBindings;
+            lifetimeKey = bindingGeneration;
+        }
+    }
+    static final class RoomPublication {
+        final BChatRoomPreferencesOwner.Kind kind;
+        final RoomRoute route;
+        private RoomPublication(BChatRoomPreferencesOwner.Kind kind, RoomRoute route) {
+            this.kind = kind; this.route = route;
         }
     }
     private static RoomRoute roomRouteLocked(State s) {
         return validScope(s.scope) && validUuid(s.account) ? new RoomRoute(s) : null;
     }
     private static boolean currentRoomRouteLocked(RoomRoute ticket) {
+        return currentRoomLifetimeLocked(ticket)
+                && (ticket.roomOwner == null || ticket.roomOwner.snapshot() == ticket.frame);
+    }
+    private static boolean currentRoomLifetimeLocked(RoomRoute ticket) {
         State s = state;
         return ticket != null && s == ticket.state && s.epoch == ticket.epoch
                 && s.bindingGeneration == ticket.bindingGeneration
                 && Objects.equals(s.scope, ticket.scope) && Objects.equals(s.account, ticket.account)
-                && s.roomOwner == ticket.roomOwner
-                && (ticket.roomOwner == null || ticket.roomOwner.snapshot() == ticket.frame);
+                && s.roomOwner == ticket.roomOwner;
     }
     /** Worker prelude on the EXISTING serial disk lane, called directly, never queue+wait.
      * Factory and index I/O are outside ROUTING. Failure never grants scoped presentation.
@@ -150,6 +162,7 @@ public final class BChatPushState {
         synchronized (ROUTING) { if (!currentRoomRouteLocked(ticket)) return; }
         BChatRoomPreferencesOwner owner = ticket.roomOwner;
         BChatRoomPreferencesOwner.Frame frame = ticket.frame;
+        boolean attached = false;
         if (owner == null) {
             BChatRoomMuteIndex index = new BChatRoomMuteIndex(ticket.state.context, ticket.scope, ticket.account);
             BChatRoomPreferencesOwner created = new BChatRoomPreferencesOwner(index, ROOM_GATE, ROOM_SCHEDULER);
@@ -157,10 +170,21 @@ public final class BChatPushState {
                 created.invalidateBindings(created.snapshot(), BChatRoomPreferencesOwner.Reason.RIGHTS_CHANGED);
             synchronized (ROUTING) {
                 if (!currentRoomRouteLocked(ticket)) { created.revokeRoute(created.snapshot()); return; }
-                ticket.state.roomOwner = created; owner = created; frame = created.snapshot();
+                ticket.state.roomOwner = created; owner = created; frame = created.snapshot(); attached = true;
             }
         }
-        owner.loadColdWorker(frame); // A late load cannot publish routes or rearm an invalid Frame.
+        try {
+            owner.loadColdWorker(frame); // A late load cannot publish routes or rearm an invalid Frame.
+        } finally {
+            boolean hint;
+            synchronized (ROUTING) {
+                State s = state;
+                hint = attached && s == ticket.state && s.epoch == ticket.epoch
+                        && s.bindingGeneration == ticket.bindingGeneration && s.roomOwner == owner
+                        && Objects.equals(s.scope, ticket.scope) && Objects.equals(s.account, ticket.account);
+            }
+            if (hint) changedLocked(); // Enqueue outside Gate; an observation hint, not authority.
+        }
     }
     private static void invalidateRoomOwnerLocked(State s, boolean terminal, BChatRoomPreferencesOwner.Reason reason) {
         s.bindingGeneration = new Object(); s.needsVerifiedBindings = true;
@@ -210,6 +234,36 @@ public final class BChatPushState {
             State s = state;
             return s != null && active(s) && verifiedScope != null && verifiedScope.key.equals(s.scope)
                     && verifiedScope.key.equals(s.verifiedRAMScope) && s.roomOwner != null ? roomRouteLocked(s) : null;
+        }
+    }
+    /** Existing immutable Route only; no new Authority, I/O or selected-room dependence.
+     * Frame may have advanced normally, but the original process lifetime must still hold. */
+    static BChatRoomMutePort.Route currentRoomBinding(RoomRoute lifetime, long roomId) {
+        synchronized (ROUTING) {
+            if (!currentRoomLifetimeLocked(lifetime) || !active(state)
+                    || !Objects.equals(state.scope, state.verifiedRAMScope) || lifetime.roomOwner == null)
+                return null;
+            return lifetime.roomOwner.currentRoom(roomId);
+        }
+    }
+    /** MAIN only. The full authenticated rooms reply must own ORIGINAL's captured Frame.
+     * Owner copies/validates/hashes outside ROUTING; its final publication CAS is unchanged.
+     * No caller may stamp an old reply with a newly observed route after a failed CAS. */
+    static RoomPublication publishRoomRoutes(RoomRoute original, BChatRoomPreferencesOwner.VerifiedRoutes verified) {
+        if (Looper.myLooper() != Looper.getMainLooper()) throw new IllegalStateException("Room publication requires MAIN");
+        synchronized (ROUTING) {
+            if (!currentRoomRouteLocked(original) || !active(state) || original.roomOwner == null
+                    || !Objects.equals(state.scope, state.verifiedRAMScope))
+                return new RoomPublication(BChatRoomPreferencesOwner.Kind.STALE, null);
+        }
+        BChatRoomPreferencesOwner.PublishResult published = original.roomOwner.publishVerifiedRoutes(original.frame, verified);
+        synchronized (ROUTING) {
+            if (!currentRoomLifetimeLocked(original) || !active(state)
+                    || !Objects.equals(state.scope, state.verifiedRAMScope)
+                    || original.roomOwner.snapshot() != published.frame)
+                return new RoomPublication(BChatRoomPreferencesOwner.Kind.STALE, null);
+            return new RoomPublication(published.kind, published.kind == BChatRoomPreferencesOwner.Kind.PUBLISHED
+                    ? roomRouteLocked(state) : null);
         }
     }
     private static State current(Context context) {

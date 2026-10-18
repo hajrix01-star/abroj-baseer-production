@@ -121,6 +121,22 @@ final class BChatRoomPreferencesOwner implements BChatRoomMutePort.RouteSource {
 
     Frame snapshot() { return gate.run(() -> frame); }
 
+    /** RAM lookup only. Caller still owns authentication and the process route lifetime.
+     * A normal full refresh can retain this exact Binding in a newer Frame. */
+    BChatRoomMutePort.Route currentRoom(long roomId) {
+        return gate.run(() -> {
+            if (frame.revoked || !frame.scopedAvailable) return null;
+            BChatRoomMutePort.Route route = frame.routes.get(roomId);
+            return route != null && route.binding.authority.valid() ? route : null;
+        });
+    }
+
+    /** Same fixed worker-only index, not recovery permission or a new writer/mirror.
+     * The recovery manager must recheck its original ticket before/after each I/O. */
+    BChatRoomMuteIndex recoveryIndex(Frame expected) {
+        return gate.run(() -> rejected(expected) == null ? index : null);
+    }
+
     /** Atomic verified projection for Port; no caller callback or ordinary Activity fields. */
     public BChatRoomMutePort.Route current(RoomPreferencesController.Binding expected) {
         return gate.run(() -> {

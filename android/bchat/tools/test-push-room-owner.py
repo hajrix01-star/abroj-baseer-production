@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DEV148: actual production PushState+Owner/Port/Index, eight focused JVM families.
+"""DEV148/167: actual production PushState+Owner/Port/Index, nine focused JVM families.
 Existing routing Android/preferences/queue templates + Store AtomicFile/Gson-JSON adapters,
 actual private JVM index files. SDK35 stub compile only, never Gradle/ADB/native/auth/FCM.
 Archives actual generated adapter/source/tool bytes before compiling those frozen inputs.
@@ -38,7 +38,7 @@ def gson_file(explicit):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--label', required=True)
-parser.add_argument('--case', choices=('all', 'factory-reconcile', 'health-post'), default='all')
+parser.add_argument('--case', choices=('all', 'factory-reconcile', 'health-post', 'integration-gateway'), default='all')
 parser.add_argument('--gson-jar', type=Path)
 parser.add_argument('--android-jar', type=Path, help='Optional existing SDK35 stub only')
 args = parser.parse_args()
@@ -127,7 +127,7 @@ with tempfile.TemporaryDirectory(prefix='push-owner-compile-', dir=output) as di
     run(javac, '-encoding', 'UTF-8', '-source', '8', '-target', '8', '-Xlint:-options', '-cp', gson, '-d', classes, *compile_inputs)
     raw = run(java, '-cp', os.pathsep.join([str(classes), str(gson)]), 'com.baseer.freshchat.PushOwnerCases', files, args.case)
     (output / 'jvm.log').write_text(raw, encoding='utf-8')
-    expected_families = 8 if args.case == 'all' else 1
+    expected_families = 9 if args.case == 'all' else 1
     match = re.search(r'^PASS ([1-9][0-9]*) production PushState room Owner assertions; ' + str(expected_families) + r' focused families$', raw, re.M)
     rows = re.findall(r'^FAMILY ([a-z0-9-]+) PASS ([1-9][0-9]*)$', raw, re.M)
     if not match or len(rows) != expected_families or len({name for name, _ in rows}) != expected_families:

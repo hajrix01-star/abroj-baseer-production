@@ -17,6 +17,7 @@ public final class StoreJvm {
         };
         int checks = args.length > 1 && args[1].equals("ambiguous-epoch") ? StoreCases.ambiguousEpoch(host)
                 : args.length > 1 && args[1].equals("recovery") ? StoreRecoveryCases.run(host)
+                : args.length > 1 && args[1].equals("membership-snapshot") ? StoreMembershipSnapshotCases.run(host)
                 : StoreCases.run(host) + StoreRecoveryCases.run(host);
         System.out.println("PASS " + checks + " production RoomPreferencesStore checks on actual JVM files with explicit Context/Looper/AtomicFile/Gson-JSON adapters; no Android/process-restart/HTTP");
     }

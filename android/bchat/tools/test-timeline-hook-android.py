@@ -18,7 +18,7 @@ parser.add_argument('--label', required=True)
 parser.add_argument('--base-commit', required=True)
 parser.add_argument('--expected-activity-sha256', required=True)
 parser.add_argument('--run-built', action='store_true')
-parser.add_argument('--case', dest='test_case', choices=('functional', 'send-visibility'), default='functional')
+parser.add_argument('--case', dest='test_case', choices=('functional', 'send-visibility', 'pending-layout'), default='functional')
 args = parser.parse_args()
 if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,47}', args.label):
     raise SystemExit('Fresh bounded label required')
@@ -166,7 +166,8 @@ if not args.run_built:
                 'copied_input_sha256': copied, 'excluded_sources': excluded,
                 'media_body_inventory': media,
                 'source_epochs': 'Only target Activity is live reviewed bytes; all other production Java/resources and transparent wrapper/templates are exact explicit Git-base blobs. No live Store/Controller/Port WIP.',
-                'scope': 'One functional full Activity/AndroidX/SQLite fixture; synthetic identity/proofs, no auth/HTTP/FCM/benchmark/codec/inflight/audio-playing claim'}
+                'scope': ('Two AR/EN dark/font2 actual <=320dp full Activity pending-layout configurations; native TextView.Layout/touch/overlap/message-viewport geometry, synthetic reflected identity/view route, real SQLite current/stale entries, explicitly synthetic media metadata only. No button clicks/auth/HTTP/FCM/send/benchmark claim.'
+                          if args.test_case == 'pending-layout' else 'One functional full Activity/AndroidX/SQLite fixture; synthetic identity/proofs, no auth/HTTP/FCM/benchmark/codec/inflight/audio-playing claim')}
     (output / 'source-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
 
     def build_frozen():
@@ -232,7 +233,9 @@ if args.run_built:
         raise SystemExit('No native result; no acceptance manufactured')
     (output / 'timeline-hook-results.json').write_bytes(evidence.stdout)
     native = json.loads(evidence.stdout)
-    images = ('timeline-send-visibility.png',) if args.test_case == 'send-visibility' else ('timeline-ar-dark-font2-anchor.png', 'timeline-ar-dark-font2-media.png')
+    images = (('timeline-pending-layout-ar.png', 'timeline-pending-layout-en.png') if args.test_case == 'pending-layout'
+              else ('timeline-send-visibility.png',) if args.test_case == 'send-visibility'
+              else ('timeline-ar-dark-font2-anchor.png', 'timeline-ar-dark-font2-media.png'))
     for name in images:
         image = subprocess.run([str(adb), '-s', 'emulator-5580', 'exec-out', 'run-as', PACKAGE,
                                 'cat', 'files/' + name], capture_output=True, timeout=15)

@@ -144,6 +144,35 @@ final class RoomPreferencesStore {
         }
     }
 
+    /** Exact metadata-only epoch replacement, NOT authentication/current-membership proof.
+     * A future Host must independently own the complete current authenticated rooms result
+     * and this new binding's actual GET. Neither provenCurrentMember nor freshGet proves it.
+     * No caller is wired here; pending operations and mute/index state are not reconciled.
+     */
+    Result replaceMembershipSnapshotExact(RoomPreferencesProtocol.Snapshot oldSnapshot,
+            RoomPreferencesProtocol.Snapshot freshSnapshot, long provenCurrentMember, long expectedStoreRevision) {
+        worker();
+        synchronized (FILE_LOCK) {
+            Read current = read(); if (!current.usable()) return current.result;
+            State state = current.result.state;
+            if (!validSnapshot(oldSnapshot) || !validSnapshot(freshSnapshot) || !freshSnapshot.freshGet
+                    || provenCurrentMember <= 0 || provenCurrentMember > Integer.MAX_VALUE
+                    || oldSnapshot.roomId != freshSnapshot.roomId || provenCurrentMember != freshSnapshot.membershipId
+                    || oldSnapshot.membershipId == freshSnapshot.membershipId) return result(Kind.INVALID, state);
+            if (expectedStoreRevision != state.revision) return result(Kind.CONFLICT, state);
+            RoomPreferencesProtocol.Snapshot stored = state.snapshot(oldSnapshot.roomId);
+            if (stored == null) return result(Kind.NO_MATCH, state);
+            // Full canonical CAS includes derived muted, not only mergeSnapshot metadata.
+            if (!snapshotJson(stored).equals(snapshotJson(oldSnapshot))) return result(Kind.CONFLICT, state);
+            try {
+                List<RoomPreferencesProtocol.Snapshot> snapshots = new ArrayList<>(state.snapshots);
+                snapshots.remove(stored); snapshots.add(cached(freshSnapshot));
+                // Revisions are per membership: a lower fresh revision across epochs is valid.
+                return commit(current, snapshots, state.pending);
+            } catch (IllegalArgumentException | JSONException invalid) { return result(Kind.INVALID, state); }
+        }
+    }
+
     Result markDispatchStarted(RoomPreferencesProtocol.Pending operation) {
         worker();
         synchronized (FILE_LOCK) {

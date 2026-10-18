@@ -66,6 +66,8 @@ workflow = (REPO / ".github/workflows/bchat-cumulative-contracts.yml").read_text
 for test in ("test-connected-media-store.py", "test-notification-presentation.py", "test-push-routing-state.py", "test-appearance-foundations.py", "test-room-preferences-protocol.py", "test-room-preferences-store.py", "test-room-preferences-controller.py", "test-room-mute-index.py", "test-room-explore.py", "test-room-explore-hook.py", "test-group-people-protocol.py", "test-timeline-rows.py"):
     assert test in workflow and (ROOT / "tools" / test).is_file()
 assert "test-room-mute-index.py --case recovery --label ci-recovery" in workflow
+assert "test-room-mute-index.py --case foreign-rebind --label ci-foreign-rebind" in workflow
+assert "test-room-preferences-store.py --case membership-snapshot --label ci-membership-snapshot" in workflow
 assert "test-room-preferences-owner.py --label ci" in workflow
 assert (ROOT / "tools/test-room-preferences-owner.py").is_file()
 for command in ("test-push-room-owner.py --label ci", "test-display-time.py --label ci"):

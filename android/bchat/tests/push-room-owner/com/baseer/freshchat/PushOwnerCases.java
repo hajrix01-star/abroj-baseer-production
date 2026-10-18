@@ -201,7 +201,9 @@ public final class PushOwnerCases {
         }
         App failedPrefs = fresh(true); failedPrefs.failPreferences = true; failedPrefs.ready();
         check(!BChatPushState.matches(failedPrefs, ACCOUNT) && owner() == null, "Preferences failure completes readiness without restoring route");
-        App rejectedNotice = fresh(true); rejectedNotice.start(); Handler.rejectNext = true;
+        // Preserve the original FINAL load-notice fault boundary: the new attach hint
+        // is posted first inside prepareRoomOwnerWorker and is not this oracle's target.
+        App rejectedNotice = fresh(true); rejectedNotice.start(); Handler.rejectAfterPosts = 1;
         try { BChatStorageRepository.one(); check(false, "Rejected fixture MAIN notice was not reported"); }
         catch (AssertionError expected) { check(expected.getCause() instanceof java.util.concurrent.RejectedExecutionException, "Original queue rejection is not swallowed"); }
         check(((CountDownLatch) field(state(), "loaded")).getCount() == 0 && BChatPushState.ready(rejectedNotice), "Readiness countDown completes even when final change-notice scheduling throws");
@@ -397,6 +399,101 @@ public final class PushOwnerCases {
         check(delivered.get(delivered.size() - 1).effectiveBlocked, "Persisted health notice cannot release existing floor"); accepted.close();
         BChatPushState.clearAccount(app); flush(); check(!BChatPushState.present(current, mode -> { }), "Old Delivery never crosses terminal account lifetime");
     }
+    static BChatRoomPreferencesOwner.VerifiedRoutes routes(App app, int version, long member) {
+        return new BChatRoomPreferencesOwner.VerifiedRoutes(app.scope, app.accountIdentity,
+                app.sessionIdentity, 1, 2, version, Arrays.asList(7L),
+                Arrays.asList(new BChatRoomPreferencesOwner.RoomSpec(7, 17, member)));
+    }
+    static void integrationGateway() throws Exception {
+        App app = fresh(true); app.start();
+        int[] hints = {0};
+        SharedPreferences.OnSharedPreferenceChangeListener listener = (preferences, key) -> {
+            noGate("Attach observer executes outside ROUTING"); ++hints[0];
+        };
+        BChatPushState.observe(app, listener);
+        Handler.drain(); check(hints[0] == 0, "Initial pre-prefs observation is not an attach notice");
+        BChatStorageRepository.one();
+        check(hints[0] == 0 && owner() != null, "Attach enqueues, never invokes observer from worker/gate");
+        Handler.drain();
+        check(hints[0] == 2, "One attach hint plus existing cold-load final hint, bounded and no self-queue");
+        BChatPushState.stopObserving(app, listener);
+        check(BChatPushState.roomRoute(app.scope) == null, "Cold notice never invents verified authentication");
+        BChatPushState.verifiedAccount(app, app.scope); flush();
+        BChatPushState.RoomRoute initial = BChatPushState.roomRoute(app.scope);
+        check(initial != null && initial.lifetimeKey != null, "Verified live observation has opaque lifetime key");
+        BChatRoomPreferencesOwner owner = initial.roomOwner;
+        int reads = app.fileReads;
+        BChatRoomMuteIndex index = owner.recoveryIndex(initial.frame);
+        check(index != null && index == owner.recoveryIndex(initial.frame)
+                && index == field(owner, "index"), "Recovery returns SAME fixed Index, no factory");
+        check(owner.recoveryIndex(null) == null, "Absent Frame never grants an index reference");
+        check(BChatPushState.currentRoomBinding(initial, 17) == null
+                && BChatPushState.currentRoomBinding(null, 17) == null, "Lookup cannot invent missing routes");
+        BChatPushState.RoomPublication missing = BChatPushState.publishRoomRoutes(null, routes(app, 1, 23));
+        check(missing.kind == BChatRoomPreferencesOwner.Kind.STALE && missing.route == null,
+                "Missing original dispatch ticket cannot publish");
+        BChatPushState.RoomPublication first = BChatPushState.publishRoomRoutes(initial, routes(app, 1, 23));
+        check(first.kind == BChatRoomPreferencesOwner.Kind.PUBLISHED && first.route != null
+                && first.route.frame != initial.frame && first.route.lifetimeKey == initial.lifetimeKey,
+                "Strict publication returns advanced Frame in SAME lifetime");
+        BChatRoomMutePort.Route retained = BChatPushState.currentRoomBinding(first.route, 17);
+        check(retained != null && retained.binding.authority.valid()
+                && BChatPushState.currentRoomBinding(first.route, 999) == null, "Lookup yields exact existing authorized Route only");
+        check(owner.recoveryIndex(initial.frame) == null, "Recovery index access is Frame-strict, unlike lifetime lookup");
+        BChatPushState.RoomPublication stale = BChatPushState.publishRoomRoutes(initial, routes(app, 1, 23));
+        check(stale.kind == BChatRoomPreferencesOwner.Kind.STALE && stale.route == null
+                && owner.snapshot() == first.route.frame, "Old full-rooms Frame is not stamped as current");
+        BChatPushState.RoomPublication refreshed = BChatPushState.publishRoomRoutes(first.route, routes(app, 1, 23));
+        check(refreshed.kind == BChatRoomPreferencesOwner.Kind.PUBLISHED
+                && refreshed.route.frame != first.route.frame
+                && BChatPushState.currentRoomBinding(first.route, 17) == retained
+                && BChatPushState.currentRoomBinding(refreshed.route, 17) == retained,
+                "Normal full refresh retains exact Binding and older lifetime lookup, not old publication permission");
+        check(app.fileReads == reads, "All gateway/index-reference/publication operations are RAM-only");
+        BChatPushState.contentInvalidated(app, app.scope);
+        BChatPushState.RoomRoute invalidated = BChatPushState.roomRoute(app.scope);
+        check(invalidated != null && invalidated.lifetimeKey != initial.lifetimeKey
+                && !retained.binding.authority.valid() && BChatPushState.currentRoomBinding(first.route, 17) == null,
+                "Generation invalidation revokes old Binding/lifetime before reuse");
+        check(BChatPushState.publishRoomRoutes(refreshed.route, routes(app, 1, 23)).kind == BChatRoomPreferencesOwner.Kind.STALE,
+                "Prior generation cannot republish same IDs");
+        BChatPushState.RoomPublication restored = BChatPushState.publishRoomRoutes(invalidated, routes(app, 1, 23));
+        BChatRoomMutePort.Route next = BChatPushState.currentRoomBinding(restored.route, 17);
+        check(restored.kind == BChatRoomPreferencesOwner.Kind.PUBLISHED && next != null && next != retained
+                && next.binding.authority.valid() && BChatPushState.currentRoomBinding(first.route, 17) == null,
+                "Current explicit projection creates new Authority without reviving old callback");
+        BChatPushState.RoomPublication unsupported = BChatPushState.publishRoomRoutes(restored.route, routes(app, 0, 23));
+        check(unsupported.kind == BChatRoomPreferencesOwner.Kind.UNSUPPORTED && unsupported.route == null
+                && !next.binding.authority.valid() && BChatPushState.currentRoomBinding(restored.route, 17) == null,
+                "Unsupported CURRENT projection fails closed and does not return an enabled route");
+        BChatPushState.RoomRoute blocked = BChatPushState.roomRoute(app.scope);
+        BChatPushState.RoomPublication malformed = BChatPushState.publishRoomRoutes(blocked, null);
+        check(malformed.kind == BChatRoomPreferencesOwner.Kind.INVALID && malformed.route == null,
+                "Malformed current projection is typed INVALID, never readiness");
+        BChatPushState.RoomRoute current = BChatPushState.roomRoute(app.scope);
+        AtomicBoolean mainOnly = new AtomicBoolean();
+        Thread other = new Thread(() -> {
+            try { BChatPushState.publishRoomRoutes(current, routes(app, 1, 23)); }
+            catch (IllegalStateException expected) { mainOnly.set(true); }
+        });
+        other.start(); other.join(1000);
+        check(!other.isAlive() && mainOnly.get(), "Worker cannot publish routes as MAIN");
+        check(app.fileReads == reads, "Gateway invalidation/errors never introduce disk I/O");
+        BChatRoomPreferencesOwner.Frame beforeLogout = owner.snapshot();
+        BChatPushState.clearAccount(app);
+        check(owner.recoveryIndex(beforeLogout) == null && BChatPushState.currentRoomBinding(current, 17) == null
+                && BChatPushState.roomRoute(app.scope) == null, "Terminal logout revokes references and room lookup");
+        flush();
+        for (boolean falseReturn : new boolean[]{false, true}) {
+            App rejectedHint = fresh(true); rejectedHint.start();
+            if (falseReturn) Handler.falseNext = true; else Handler.rejectNext = true;
+            BChatStorageRepository.one(); Handler.drain();
+            check(BChatPushState.ready(rejectedHint) && ((CountDownLatch) field(state(), "loaded")).getCount() == 0,
+                    "Rejected attach hint cannot strand the original readiness boundary");
+            check(owner() != null && owner().snapshot().routes.isEmpty() && BChatPushState.roomRoute(rejectedHint.scope) == null,
+                    "Rejected attach hint never publishes authenticated bindings");
+        }
+    }
     static Object lock() {
         try { return field(null, "ROUTING"); } catch (Exception failure) { throw new AssertionError(failure); }
     }
@@ -405,6 +502,7 @@ public final class PushOwnerCases {
         String selection = args.length > 1 ? args[1] : "all";
         if (selection.equals("factory-reconcile")) family("pre-ready-marker-factory-cas", PushOwnerCases::preReadyFactoryFence);
         else if (selection.equals("health-post")) family("captured-frame-final-predicate", PushOwnerCases::finalPredicate);
+        else if (selection.equals("integration-gateway")) family("integration-gateway-ram", PushOwnerCases::integrationGateway);
         else {
         family("cold-readiness-bare-index", PushOwnerCases::coldReadiness);
         family("failure-unscoped-independence", PushOwnerCases::failuresIndependent);
@@ -414,6 +512,7 @@ public final class PushOwnerCases {
         family("stale-state-registration-workers", PushOwnerCases::staleWorkers);
         family("content-versus-preview", PushOwnerCases::contentVersusPreview);
         family("captured-frame-final-predicate", PushOwnerCases::finalPredicate);
+        family("integration-gateway-ram", PushOwnerCases::integrationGateway);
         }
         JSONObject counts = new JSONObject(); for (Map.Entry<String, Integer> family : families.entrySet()) counts.put(family.getKey(), family.getValue());
         JSONObject result = new JSONObject().put("schema", 1).put("assertions", checks).put("families", counts)

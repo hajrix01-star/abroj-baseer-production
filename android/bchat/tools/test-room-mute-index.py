@@ -39,7 +39,7 @@ def gson_file(explicit):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--label', required=True)
-parser.add_argument('--case', choices=('all', 'admission-state', 'recovery', 'health'), default='all')
+parser.add_argument('--case', choices=('all', 'admission-state', 'recovery', 'health', 'foreign-rebind'), default='all')
 parser.add_argument('--gson-jar', type=Path)
 parser.add_argument('--android-jar', type=Path)
 parser.add_argument('--port-source', type=Path, help='Focused health regression against an archived Port; no native run')
@@ -70,10 +70,16 @@ adapters = root / 'tests/room-preferences-store/jvm'
 production = [source / name for name in ('BChatRoomMuteIndex.java', 'BChatRoomMutePort.java',
     'RoomPreferencesController.java', 'RoomPreferencesStore.java', 'RoomPreferencesProtocol.java',
     'NotificationPresentation.java', 'sync/AccountScope.java', 'sync/OutboxPolicy.java')]
+foreign = args.case == 'foreign-rebind'
+if foreign:
+    production = [source / name for name in ('BChatRoomMuteIndex.java', 'NotificationPresentation.java')]
 java_inputs = production + sorted(path for path in adapters.rglob('*.java') if 'com/baseer/' not in path.as_posix())
-java_inputs += sorted((root / 'tests/room-preferences-controller').rglob('*.java'))
-java_inputs += sorted((tests / 'shared').rglob('*.java')) + sorted((tests / 'jvm').rglob('*.java'))
-inputs = java_inputs + sorted(path for path in (tests / 'native').rglob('*') if path.is_file()) + [Path(__file__).resolve()]
+if foreign:
+    java_inputs += sorted((tests / 'rebind').rglob('*.java'))
+else:
+    java_inputs += sorted((root / 'tests/room-preferences-controller').rglob('*.java'))
+    java_inputs += sorted((tests / 'shared').rglob('*.java')) + sorted((tests / 'jvm').rglob('*.java'))
+inputs = java_inputs + ([] if foreign else sorted(path for path in (tests / 'native').rglob('*') if path.is_file())) + [Path(__file__).resolve()]
 output = root / 'artifacts/room-mute-index' / args.label
 output.mkdir(parents=True, exist_ok=False)
 archive = output / 'inputs'
@@ -86,6 +92,12 @@ for path in inputs:
     hashes[name] = hashlib.sha256(raw).hexdigest()
 scope = ('Production index/port/controller and actual JVM private files; explicit Android Context/Looper/AtomicFile/'
          'Gson-JSON/queue/HTTP fixtures, no Android runtime/FCM/Activity/wiring/power-loss claim')
+if foreign:
+    scope = ('DEV163 actual production Index + NotificationPresentation.roomKey and JVM files; explicit Context/Looper/'
+             'AtomicFile/Gson-JSON/fault adapters. No Port/Controller/Store/Host/auth/HTTP/Android runtime/FCM/'
+             'process-kill/power-loss/manager-wiring claim. All existing slots complete canonical V1 same foreign '
+             'route; bak then base; partial/orphan/mixed/unsupported refuse without mutation/evidence. '
+             'Real SHA256 used: computed source/destination overlap guard is source-reviewed, no artificial collision adapter.')
 (output / 'source-manifest.json').write_text(json.dumps({'schema': 1, 'scope': scope, 'case': args.case, 'archived_inputs': 'inputs',
     'compiled_from_archived_inputs': True, 'source_sha256': hashes,
     'port_source_override': port_override.relative_to(root).as_posix() if port_override else None,
@@ -120,9 +132,10 @@ with tempfile.TemporaryDirectory(prefix='room-mute-', dir=output) as folder:
         raise SystemExit('Existing JDK required')
     run(javac, '-encoding', 'UTF-8', '-cp', gson, '-d', classes,
         *(archive / path.relative_to(root) for path in java_inputs))
-    result = run(java, '-cp', os.pathsep.join([str(classes), str(gson)]), 'com.baseer.freshchat.RoomMuteCases', files, args.case)
+    main = 'com.baseer.freshchat.RebindCases' if foreign else 'com.baseer.freshchat.RoomMuteCases'
+    result = run(java, '-cp', os.pathsep.join([str(classes), str(gson)]), main, files, args.case)
     (output / 'jvm.log').write_text(result, encoding='utf-8')
-    match = re.search(r'^PASS ([1-9][0-9]*) production room mute component assertions', result)
+    match = re.search(r'^PASS ([1-9][0-9]*) production room mute component assertions', result, re.M)
     if not match:
         raise SystemExit('Missing component assertion evidence')
     if args.android_jar:
@@ -133,6 +146,7 @@ with tempfile.TemporaryDirectory(prefix='room-mute-', dir=output) as folder:
     frozen()
     (output / 'evidence.json').write_text(json.dumps({'schema': 1, 'passed': True, 'scope': scope, 'case': args.case,
         'assertions': int(match.group(1)), 'source_inputs': len(inputs), 'source_archive_before_after_equal': True,
+        'focused_groups': [{'name': name, 'assertions': int(count)} for name, count in re.findall(r'^GROUP ([a-z0-9-]+) assertions=([0-9]+)$', result, re.M)] if foreign else None,
         'android35_stub_compile_only': bool(args.android_jar)}, indent=2), encoding='utf-8')
     print(result, end='')
 

@@ -15,7 +15,7 @@ import type { Attachment, ChatEngine, Message, Pending } from '../core/ChatEngin
 import { Button, colors, direction, Field, Icon, IconButton, Label, styles } from './components';
 import { companyDisplayName } from './companyNames';
 import { MessageQuote, MessageStatus } from './MessagePresentation';
-import { NEAR_BOTTOM_DP, TimelineFollow } from './timelineFollow';
+import { TimelineFollow } from './timelineFollow';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
 import type { ChatView } from './useChat';
@@ -270,12 +270,10 @@ export function TimelineScreen({
             }}
             onMomentumScrollEnd={() => { dragging.current = false; }}
             onScroll={event => {
-              // Ignore intermediate programmatic geometry, but always honor deliberate dragging.
-              if (scrollFrame.current !== null && !dragging.current) return;
+              // Only gestures change reader intent in either direction. Expanding the viewport
+              // may expose the last row, but must not re-arm following when IME opens again.
+              if (!dragging.current) return;
               const { contentSize, layoutMeasurement, contentOffset } = event.nativeEvent;
-              // An IME resize may emit onScroll BEFORE onLayout/keyboardDidShow. Only a
-              // deliberate drag/momentum can opt out of following; geometry cannot do so.
-              if (!dragging.current && contentSize.height - layoutMeasurement.height - Math.max(0, contentOffset.y) > NEAR_BOTTOM_DP) return;
               const atBottom = follow.current.scroll(contentSize.height, layoutMeasurement.height, contentOffset.y);
               setShowLatest(!atBottom);
             }}

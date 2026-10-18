@@ -270,6 +270,8 @@ test('IME geometry onScroll arriving before keyboard/onLayout cannot opt out of 
   list.onScrollEndDrag(); list.onMomentumScrollBegin();
   list.onScroll({ nativeEvent: { contentSize: { height: 2000 }, layoutMeasurement: { height: 350 }, contentOffset: { y: 700 } } });
   list.onMomentumScrollEnd(); const reader = scrolls;
+  // Keyboard hide grows viewport enough to expose the tail. That is not reader intent.
+  list.onScroll({ nativeEvent: { contentSize: { height: 2000 }, layoutMeasurement: { height: 1300 }, contentOffset: { y: 700 } } });
   app.keyboard.keyboardDidShow(); list.onContentSizeChange(); app.flushFrames();
   assert.equal(scrolls, reader);
 });
